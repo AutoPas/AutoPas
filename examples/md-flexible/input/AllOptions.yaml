@@ -35,6 +35,21 @@ tuning-acquisition-function          :  upper-confidence-bound
 fastParticlesThrow                   :  false
 globalForce                          :  [0, 0, 0]
 load-balancer                        :  InvertedPressure
+Sites:
+  0:
+    epsilon                          :  1.
+    sigma                            :  1.
+    mass                             :  0.5
+# Uncomment below to run a multi-site simulation.
+#Molecules:
+#  0:
+#    # Multi-site molecules have LJ sites, with site-types that correspond to specific site LJ information given above
+#    # and respective relative unrotated site positions. Moment-of-inertia is given as the 3 non-zero elements of a diagonal
+#    # 3x3 Moment-of-inertia matrix. It is the user's responsibility that the site masses, positions, and Moment of Inertia
+#    # match.
+#    site-types                       : [ 0, 0, 0 ]
+#    relative-site-positions          : [ [ 0.74349607, 1.20300191, 0. ], [ 0.3249197, -1.37638192, 0. ], [-1.37638192, -0.3249197, 0. ] ]
+#    moment-of-inertia                : [ 5.23606798, 0.76393202, 6. ]
 Objects:                         
   CubeGrid:
     0:
@@ -42,10 +57,11 @@ Objects:
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
-      particle-type                  :  0
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
+      # given for site-0. For multi-site simulations, this fills the object with multi-site molecules with the multi-site
+      # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
+      # information.
+      particle-type-id               :  0
   CubeGauss:
     0:
       distribution-mean              :  [2, 2, 2]
@@ -54,40 +70,28 @@ Objects:
       box-length                     :  [8, 8, 8]
       bottomLeftCorner               :  [15, 15, 15]
       velocity                       :  [0, 0, 0]
-      particle-type                  :  1
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      particle-type-id               :  0
   CubeUniform:
     0:
       numberOfParticles              :  100
       box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [15, 0, 0]
       velocity                       :  [0, 0, 0]
-      particle-type                  :  2
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      particle-type-id               :  0
   CubeClosestPacked:
     0:
       box-length                     :  [4, 4, 4]
       bottomLeftCorner               :  [0, 0, 15]
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
-      particle-type                  :  3
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      particle-type-id               :  0
   Sphere:
     0:
       center                         :  [4, 16, 4]
       radius                         :  3
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
-      particle-type                  :  4
-      particle-epsilon               :  1
-      particle-sigma                 :  1
-      particle-mass                  :  1
+      particle-type-id               :  0
 thermostat:
   initialTemperature                 :  1
   targetTemperature                  :  4

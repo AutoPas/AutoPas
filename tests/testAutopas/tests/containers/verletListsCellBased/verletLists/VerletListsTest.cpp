@@ -8,7 +8,7 @@
 
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -306,9 +306,9 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
 
   Molecule p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, 0);
   verletLists.addHaloParticle(p);
-  autopas::LJFunctor<Molecule> ljFunctor(cutoff);
+  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIterationTraversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false>
+  autopas::VLListIterationTraversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false>
       verletTraversal(&ljFunctor);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -331,11 +331,11 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
                                                                verletLists1.getBoxMax(), 100);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
                                                                verletLists2.getBoxMax(), 100);
-  autopas::LJFunctor<Molecule> ljFunctor(cutoff);
+  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIterationTraversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, false>
+  autopas::VLListIterationTraversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, false>
       verletTraversal1(&ljFunctor);
-  autopas::VLListIterationTraversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false>
+  autopas::VLListIterationTraversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false>
       soaTraversal(&ljFunctor);
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);

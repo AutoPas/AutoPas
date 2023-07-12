@@ -8,7 +8,6 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
@@ -16,13 +15,14 @@
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/StaticCellSelector.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
 using LJFunctorGlobals =
-    autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                       /*globals*/ true>;
+    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                     /*globals*/ true>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(LJFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
@@ -245,8 +245,9 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigne
         << "Called from line: " << line;
   }
 
-  EXPECT_NEAR(functor->getUpot(), 16128.983372449373 * numParticles / 2., 1e-5) << "wrong upot calculated" << std::endl
-                                                                                << "Called from line: " << line;
+  EXPECT_NEAR(functor->getPotentialEnergy(), 16128.983372449373 * numParticles / 2., 1e-5)
+      << "wrong upot calculated" << std::endl
+      << "Called from line: " << line;
   EXPECT_NEAR(functor->getVirial(), 195072. * numParticles / 2., 1e-5) << "wrong virial calculated" << std::endl
                                                                        << "Called from line: " << line;
 }
@@ -272,7 +273,7 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecul
         << "wrong force calculated.";
   }
 
-  EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.983372449373)
+  EXPECT_DOUBLE_EQ(functor1->getPotentialEnergy() + functor2->getPotentialEnergy(), 16128.983372449373)
       << "wrong upot calculated" << std::endl
       << "Called from line: " << line;
   EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated" << std::endl

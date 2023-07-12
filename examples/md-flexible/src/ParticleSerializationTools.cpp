@@ -12,30 +12,63 @@ namespace {
 /**
  * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
  */
+#if MD_FLEXIBLE_MODE == MULTISITE
+constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
+    mdLib::MultisiteMoleculeLJ::AttributeNames::id,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::posX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::posY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::posZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::forceX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::forceY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::forceZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion0,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion1,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion2,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion3,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::typeId,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
+#else
 constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
-    ParticleType::AttributeNames::id,
-    ParticleType::AttributeNames::posX,
-    ParticleType::AttributeNames::posY,
-    ParticleType::AttributeNames::posZ,
-    ParticleType::AttributeNames::velocityX,
-    ParticleType::AttributeNames::velocityY,
-    ParticleType::AttributeNames::velocityZ,
-    ParticleType::AttributeNames::forceX,
-    ParticleType::AttributeNames::forceY,
-    ParticleType::AttributeNames::forceZ,
-    ParticleType::AttributeNames::oldForceX,
-    ParticleType::AttributeNames::oldForceY,
-    ParticleType::AttributeNames::oldForceZ,
-    ParticleType::AttributeNames::typeId,
-    ParticleType::AttributeNames::ownershipState};
+    mdLib::MoleculeLJ::AttributeNames::id,
+    mdLib::MoleculeLJ::AttributeNames::posX,
+    mdLib::MoleculeLJ::AttributeNames::posY,
+    mdLib::MoleculeLJ::AttributeNames::posZ,
+    mdLib::MoleculeLJ::AttributeNames::velocityX,
+    mdLib::MoleculeLJ::AttributeNames::velocityY,
+    mdLib::MoleculeLJ::AttributeNames::velocityZ,
+    mdLib::MoleculeLJ::AttributeNames::forceX,
+    mdLib::MoleculeLJ::AttributeNames::forceY,
+    mdLib::MoleculeLJ::AttributeNames::forceZ,
+    mdLib::MoleculeLJ::AttributeNames::oldForceX,
+    mdLib::MoleculeLJ::AttributeNames::oldForceY,
+    mdLib::MoleculeLJ::AttributeNames::oldForceZ,
+    mdLib::MoleculeLJ::AttributeNames::typeId,
+    mdLib::MoleculeLJ::AttributeNames::ownershipState};
+#endif
 
 /**
- * The combined size in byte of the attributes which need to be communicated using MPI.
+ * The combined size in byte of the simple attributes which need to be communicated using MPI.
  */
+#if MD_FLEXIBLE_MODE == MULTISITE
+constexpr size_t AttributesSize = 200;
+#else
 constexpr size_t AttributesSize = 120;
+#endif
 
 /**
- * Serializes the attribute defined by I.
+ * Serializes the attribute of a molecule defined by I.
  * @param particle: The particle who's attribute needs to be serialized.
  * @param attributeVector: The container in which the serialized attribute will be stored.
  * @param startIndex: The startindex in the container where to store the serialized attribute.
@@ -81,7 +114,7 @@ void serializeParticleImpl(const ParticleType &particle, std::vector<char> &seri
 }
 
 /**
- * The implementation fo deserializeParticle using the expansion operator.
+ * The implementation of deserializeParticle using the expansion operator.
  * @param particleData: The particle data which will be deserialized.
  * @param particle: The particle to which the deserialized attributes will be applied.
  */
