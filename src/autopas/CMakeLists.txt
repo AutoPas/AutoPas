@@ -25,6 +25,7 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         Eigen3
         xsimd
+        mipp
     PRIVATE
         # harmony are only needed privately when building AutoPas.
         harmony

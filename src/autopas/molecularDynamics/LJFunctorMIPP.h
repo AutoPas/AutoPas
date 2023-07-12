@@ -7,11 +7,13 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "xsimd/xsimd.hpp"
+#include <mipp.h>
 
 
 
 namespace autopas {
+
+using namespace mipp;
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
@@ -30,16 +32,16 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 
-class LJFunctorXSIMD
+class LJFunctorMIPP
     : public Functor<Particle,
-                     LJFunctorXSIMD<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+                     LJFunctorMIPP<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
     using SoAArraysType = typename Particle::SoAArraysType;
 
    public:
     /**
    * Deleted default constructor
      */
-     LJFunctorXSIMD() = delete;
+     LJFunctorMIPP() = delete;
 
     private:
      /**
@@ -47,12 +49,12 @@ class LJFunctorXSIMD
    * @param cutoff
    * @note param dummy unused, only there to make the signature different from the public constructor.
       */
-     explicit LJFunctorXSIMD(double cutoff, void * /*dummy*/)
+     explicit LJFunctorMIPP(double cutoff, void * /*dummy*/)
          : Functor<Particle,
-                   LJFunctorXSIMD<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
-           _cutoffsquare{cutoff * cutoff},
+                   LJFunctorMIPP<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
+           _cutoffsquare(cutoff * cutoff),
            _cutoffsquareAoS(cutoff * cutoff),
-           _upotSum{0.},
+           _upotSum(0.),
            _virialSum{0., 0., 0.},
            _aosThreadData(),
            _postProcessed{false} {
@@ -70,7 +72,7 @@ class LJFunctorXSIMD
    *
    * @param cutoff
       */
-     explicit LJFunctorXSIMD(double cutoff) : LJFunctorXSIMD(cutoff, nullptr) {
+     explicit LJFunctorMIPP(double cutoff) : LJFunctorMIPP(cutoff, nullptr) {
        static_assert(not useMixing,
                      "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                      "mixing to false.");
@@ -82,8 +84,8 @@ class LJFunctorXSIMD
    * @param cutoff
    * @param particlePropertiesLibrary
       */
-     explicit LJFunctorXSIMD(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-         : LJFunctorXSIMD(cutoff, nullptr) {
+     explicit LJFunctorMIPP(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+         : LJFunctorMIPP(cutoff, nullptr) {
        static_assert(useMixing,
                      "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                      "or set mixing to true.");
@@ -200,10 +202,10 @@ class LJFunctorXSIMD
 
        const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-       xsimd::batch<double> virialSumX{0};
-       xsimd::batch<double> virialSumY{0};
-       xsimd::batch<double> virialSumZ{0};
-       xsimd::batch<double> upotSum{0};
+       Reg<double> virialSumX = 0.;
+       Reg<double> virialSumY = 0.;
+       Reg<double> virialSumZ = 0.;
+       Reg<double> upotSum = 0.;
 
        for (size_t i = soa.getNumberOfParticles() - 1; (long)i >= 0; --i) {
          if (ownedStatePtr[i] == OwnershipState::dummy) {
@@ -213,15 +215,16 @@ class LJFunctorXSIMD
          static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
                        "OwnershipStates underlying type should be int64_t!");
 
-         xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr[i])};
+         Reg<int64_t> ownedStateI = static_cast<int64_t>(ownedStatePtr[i]);
 
-         xsimd::batch<double> fxacc{0};
-         xsimd::batch<double> fyacc{0};
-         xsimd::batch<double> fzacc{0};
+         Reg<double> fxacc = 0.;
+         Reg<double> fyacc = 0.;
+         Reg<double> fzacc = 0.;
 
-         xsimd::batch<double> x1 = xsimd::broadcast(xptr[i]);
-         xsimd::batch<double> y1 = xsimd::broadcast(yptr[i]);
-         xsimd::batch<double> z1 = xsimd::broadcast(zptr[i]);
+
+         Reg<double> x1 = xptr[i];
+         Reg<double> y1 = yptr[i];
+         Reg<double> z1 = zptr[i];
 
          size_t j = 0;
 
@@ -243,9 +246,9 @@ class LJFunctorXSIMD
          }
 
 
-         double sumfx = xsimd::reduce_add(fxacc);
-         double sumfy = xsimd::reduce_add(fyacc);
-         double sumfz = xsimd::reduce_add(fzacc);
+         double sumfx = sum(fxacc);
+         double sumfy = sum(fyacc);
+         double sumfz = sum(fzacc);
 
          fxptr[i] += sumfx;
          fyptr[i] += sumfy;
@@ -255,22 +258,15 @@ class LJFunctorXSIMD
        if constexpr (calculateGlobals) {
          const int threadnum = autopas_get_thread_num();
 
-         double globals[] = {
-             xsimd::reduce_add(virialSumX),
-             xsimd::reduce_add(virialSumY),
-             xsimd::reduce_add(virialSumZ),
-             xsimd::reduce_add(upotSum)
-         };
-
          double factor = 1.;
          // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
          // false, since for newton3 disabled we divide by two later on.
          factor *= newton3 ? .5 : 1.;
          // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
-         _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-         _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-         _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-         _aosThreadData[threadnum].upotSum += globals[3] * factor;
+         _aosThreadData[threadnum].virialSum[0] += sum(virialSumX) * factor;
+         _aosThreadData[threadnum].virialSum[1] += sum(virialSumY) * factor;
+         _aosThreadData[threadnum].virialSum[2] += sum(virialSumZ) * factor;
+         _aosThreadData[threadnum].upotSum += sum(upotSum) * factor;
        }
      }
 
@@ -299,10 +295,10 @@ class LJFunctorXSIMD
        const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
        const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
-       xsimd::batch<double> virialSumX{0};
-       xsimd::batch<double> virialSumY{0};
-       xsimd::batch<double> virialSumZ{0};
-       xsimd::batch<double> upotSum{0};
+       Reg<double> virialSumX = 0.;
+       Reg<double> virialSumY = 0.;
+       Reg<double> virialSumZ = 0.;
+       Reg<double> upotSum = 0.;
 
        for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
          if (ownedStatePtr1[i] == OwnershipState::dummy) {
@@ -310,19 +306,17 @@ class LJFunctorXSIMD
            continue;
          }
 
-         xsimd::batch<double> fxacc{0};
-         xsimd::batch<double> fyacc{0};
-         xsimd::batch<double> fzacc{0};
+         Reg<double> fxacc = 0.;
+         Reg<double> fyacc = 0.;
+         Reg<double> fzacc = 0.;
 
          static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
                        "OwnershipStates underlying type should be int64_t!");
-         // ownedStatePtr1 contains int64_t, so we broadcast these to make an __m256i.
-         // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-         xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr1[i])};
+         Reg<int64_t> ownedStateI = static_cast<int64_t>(ownedStatePtr1[i]);
 
-         const xsimd::batch<double> x1 = xsimd::broadcast(x1ptr[i]);
-         const xsimd::batch<double> y1 = xsimd::broadcast(y1ptr[i]);
-         const xsimd::batch<double> z1 = xsimd::broadcast(z1ptr[i]);
+         const Reg<double> x1 = x1ptr[i];
+         const Reg<double> y1 = y1ptr[i];
+         const Reg<double> z1 = z1ptr[i];
 
          // floor soa2 numParticles to multiple of vecLength
          unsigned int j = 0;
@@ -337,20 +331,13 @@ class LJFunctorXSIMD
                                     y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
                                     &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
 
-         fx1ptr[i] += xsimd::reduce_add(fxacc);
-         fy1ptr[i] += xsimd::reduce_add(fyacc);
-         fz1ptr[i] += xsimd::reduce_add(fzacc);
+         fx1ptr[i] += sum(fxacc);
+         fy1ptr[i] += sum(fyacc);
+         fz1ptr[i] += sum(fzacc);
        }
 
        if constexpr (calculateGlobals) {
          const int threadnum = autopas_get_thread_num();
-
-         double globals[] = {
-             xsimd::reduce_add(virialSumX),
-             xsimd::reduce_add(virialSumY),
-             xsimd::reduce_add(virialSumZ),
-             xsimd::reduce_add(upotSum)
-         };
 
          // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
          // that we do not add the energy multiple times!
@@ -359,10 +346,10 @@ class LJFunctorXSIMD
            energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
          }
 
-         _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
-         _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
-         _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
-         _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
+         _aosThreadData[threadnum].virialSum[0] += sum(virialSumX) * energyfactor;
+         _aosThreadData[threadnum].virialSum[1] +=  sum(virialSumY) * energyfactor;
+         _aosThreadData[threadnum].virialSum[2] += sum(virialSumZ) * energyfactor;
+         _aosThreadData[threadnum].upotSum += sum(upotSum) * energyfactor;
        }
      }
      /**
@@ -395,16 +382,17 @@ class LJFunctorXSIMD
    * @param rest
       */
      template <bool newton3, bool remainderIsMasked>
-     inline void SoAKernel(const size_t j, const xsimd::batch<int64_t> &ownedStateI, const int64_t *const __restrict ownedStatePtr2,
-                           const xsimd::batch<double> &x1, const xsimd::batch<double> &y1, const xsimd::batch<double> &z1, const double *const __restrict x2ptr,
+     inline void SoAKernel(const size_t j, const Reg<int64_t> &ownedStateI, const int64_t *const __restrict ownedStatePtr2,
+                           const Reg<double> &x1, const Reg<double> &y1, const Reg<double> &z1, const double *const __restrict x2ptr,
                            const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                            double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
-                           xsimd::batch<double> &fxacc, xsimd::batch<double> &fyacc, xsimd::batch<double> &fzacc, xsimd::batch<double> *virialSumX, xsimd::batch<double> *virialSumY,
-                           xsimd::batch<double> *virialSumZ, xsimd::batch<double> *upotSum, const unsigned int rest = 0) {
-       xsimd::batch<double> epsilon24s = _epsilon24;
-       xsimd::batch<double> sigmaSquares = _sigmaSquare;
-       xsimd::batch<double> shift6s = _shift6;
+                           Reg<double> &fxacc, Reg<double> &fyacc, Reg<double> &fzacc, Reg<double> *virialSumX, Reg<double> *virialSumY,
+                           Reg<double> *virialSumZ, Reg<double> *upotSum, const unsigned int rest = 0) {
+       Reg<double> epsilon24s = _epsilon24;
+       Reg<double> sigmaSquares = _sigmaSquare;
+       Reg<double> shift6s = _shift6;
+
        if (useMixing) {
          // the first argument for set lands in the last bits of the register
          epsilon24s = {
@@ -425,139 +413,110 @@ class LJFunctorXSIMD
                _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0))};
          }
        }
-       xsimd::batch<double> x2;
-       xsimd::batch<double> y2;
-       xsimd::batch<double> z2;
-       // load only masked values
-       //TODO: doesnt work with other sized batches than 4
-       if(remainderIsMasked) {
-         x2 = {
-           _masks[rest-1].get(0) ? x2ptr[j] : 0,
-           _masks[rest-1].get(1) ? x2ptr[j + 1] : 0,
-           _masks[rest-1].get(2) ? x2ptr[j + 2] : 0,
-           _masks[rest-1].get(3) ? x2ptr[j + 3] : 0,
-         };
-         y2 = {
-             _masks[rest-1].get(0) ? y2ptr[j] : 0,
-             _masks[rest-1].get(1) ? y2ptr[j + 1] : 0,
-             _masks[rest-1].get(2) ? y2ptr[j + 2] : 0,
-             _masks[rest-1].get(3) ? y2ptr[j + 3] : 0,
-         };
-         z2 = {
-             _masks[rest-1].get(0) ? z2ptr[j] : 0,
-             _masks[rest-1].get(1) ? z2ptr[j + 1] : 0,
-             _masks[rest-1].get(2) ? z2ptr[j + 2] : 0,
-             _masks[rest-1].get(3) ? z2ptr[j + 3] : 0,
-         };
-       } else {
-         x2 = xsimd::load_unaligned(&x2ptr[j]);
-         y2 = xsimd::load_unaligned(&y2ptr[j]);
-         z2 = xsimd::load_unaligned(&z2ptr[j]);
-       }
-       const xsimd::batch<double> drx = xsimd::sub(x1,x2);
-       const xsimd::batch<double> dry = xsimd::sub(y1,y2);
-       const xsimd::batch<double> drz = xsimd::sub(z1,z2);
 
-       const xsimd::batch<double> drx2 = xsimd::mul(drx, drx);
-       const xsimd::batch<double> dry2 = xsimd::mul(dry, dry);
-       const xsimd::batch<double> drz2 = xsimd::mul(drz, drz);
+       Reg<double> x2 = remainderIsMasked ? maskzld(_masks[rest - 1], &x2ptr[j]) : loadu(&x2ptr[j]);
+       Reg<double> y2 = remainderIsMasked ? maskzld(_masks[rest - 1], &y2ptr[j]) : loadu(&y2ptr[j]);
+       Reg<double> z2 = remainderIsMasked ? maskzld(_masks[rest - 1], &z2ptr[j]) : loadu(&z2ptr[j]);
 
-       const xsimd::batch<double> dr2PART = xsimd::add(drx2, dry2);
-       const xsimd::batch<double> dr2 = xsimd::add(dr2PART, drz2);
+       const Reg<double> drx = sub(x1,x2);
+       const Reg<double> dry = sub(y1,y2);
+       const Reg<double> drz = sub(z1,z2);
+
+       const Reg<double> drx2 = mul(drx, drx);
+       const Reg<double> dry2 = mul(dry, dry);
+       const Reg<double> drz2 = mul(drz, drz);
+
+       const Reg<double> dr2PART = add(drx2, dry2);
+       const Reg<double> dr2 = add(dr2PART, drz2);
 
        // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
        // signaling = throw error if NaN is encountered
        // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
 
-       const xsimd::batch_bool<double> cutoffMask = xsimd::le(dr2, _cutoffsquare);
-       const xsimd::batch<int64_t> _zeroI = xsimd::to_int(_zero);
-       const xsimd::batch<int64_t> ownedStateJ = remainderIsMasked
-                                                     ? xsimd::select(xsimd::batch_bool_cast<int64_t>(_masks[rest - 1]), 
-                                                               xsimd::load_unaligned(&ownedStatePtr2[j]), _zeroI)
-                                                     : xsimd::load_unaligned(&ownedStatePtr2[j]);
-       const xsimd::batch_bool<double> dummyMask = xsimd::batch_bool_cast<double>(xsimd::neq(ownedStateJ, _zeroI));
+       Msk<mipp::N<double>()> cutoffMask = cmple(dr2, _cutoffsquare);
+
+       const Reg<int64_t> ownedStateJ = remainderIsMasked
+                                            ? maskzld(_masks[rest - 1], &ownedStatePtr2[j])
+                                            : loadu(&ownedStatePtr2[j]);
+
+       const Msk<mipp::N<double>()> dummyMask = cmpneq(ownedStateJ, _zeroI);
        
-       const xsimd::batch_bool<double> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
+       const Msk<mipp::N<double>()> cutoffDummyMask = andb(cutoffMask, dummyMask);
 
        // if everything is masked away return from this function.
-       if (none(cutoffDummyMask)) {
+       if (testz(cutoffDummyMask)) {
          return;
        }
 
-       const xsimd::batch<double> invdr2 = xsimd::div(_one, dr2);
-       const xsimd::batch<double> lj2 = xsimd::mul(sigmaSquares, invdr2);
-       const xsimd::batch<double> lj4 = xsimd::mul(lj2, lj2);
-       const xsimd::batch<double> lj6 = xsimd::mul(lj2, lj4);
-       const xsimd::batch<double> lj12 = xsimd::mul(lj6, lj6);
-       const xsimd::batch<double> lj12m6 = xsimd::sub(lj12, lj6);
-       const xsimd::batch<double> lj12m6alj12 = xsimd::add(lj12m6, lj12);
-       const xsimd::batch<double> lj12m6alj12e = xsimd::mul(lj12m6alj12, epsilon24s);
-       const xsimd::batch<double> fac = xsimd::mul(lj12m6alj12e, invdr2);
+       const Reg<double> invdr2 = div(_one, dr2);
+       const Reg<double> lj2 = mul(sigmaSquares, invdr2);
+       const Reg<double> lj4 = mul(lj2, lj2);
+       const Reg<double> lj6 = mul(lj2, lj4);
+       const Reg<double> lj12 = mul(lj6, lj6);
+       const Reg<double> lj12m6 = sub(lj12, lj6);
+       const Reg<double> lj12m6alj12 = add(lj12m6, lj12);
+       const Reg<double> lj12m6alj12e = mul(lj12m6alj12, epsilon24s);
+       const Reg<double> fac = mul(lj12m6alj12e, invdr2);
 
 
-       const xsimd::batch<double> facMasked =
-           remainderIsMasked ? xsimd::select(xsimd::bitwise_and(cutoffDummyMask, _masks[rest - 1]), fac, _zero)
-                             : xsimd::select(cutoffDummyMask, fac, _zero);
+       const Reg<double> facMasked =
+           remainderIsMasked ? blend(fac, _zero, andb(cutoffDummyMask, _masks[rest - 1]))
+                             : blend(fac, _zero, cutoffDummyMask);
 
-       const xsimd::batch<double> fx = xsimd::mul(drx, facMasked);
-       const xsimd::batch<double> fy = xsimd::mul(dry, facMasked);
-       const xsimd::batch<double> fz = xsimd::mul(drz, facMasked);
+       const Reg<double> fx = mul(drx, facMasked);
+       const Reg<double> fy = mul(dry, facMasked);
+       const Reg<double> fz = mul(drz, facMasked);
 
 
-       fxacc = xsimd::add(fxacc, fx);
-       fyacc = xsimd::add(fyacc, fy);
-       fzacc = xsimd::add(fzacc, fz);
+       fxacc = add(fxacc, fx);
+       fyacc = add(fyacc, fy);
+       fzacc = add(fzacc, fz);
 
        // if newton 3 is used subtract fD from particle j
 
        if constexpr (newton3) {
-         const xsimd::batch<double> fx2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fx2ptr[j]), _zero) : xsimd::load_unaligned(&fx2ptr[j]);
-         const xsimd::batch<double> fy2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fy2ptr[j]), _zero) : xsimd::load_unaligned(&fy2ptr[j]);
-         const xsimd::batch<double> fz2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fz2ptr[j]), _zero) : xsimd::load_unaligned(&fz2ptr[j]);
+         const Reg<double> fx2 =
+             remainderIsMasked ? maskzld(_masks[rest - 1], &fx2ptr[j]) : loadu(&fx2ptr[j]);
+         const Reg<double> fy2 =
+             remainderIsMasked ? maskzld(_masks[rest - 1], &fy2ptr[j]) : loadu(&fy2ptr[j]);
+         const Reg<double> fz2 =
+             remainderIsMasked ? maskzld(_masks[rest - 1], &fz2ptr[j]) : loadu(&fz2ptr[j]);
 
-         const xsimd::batch<double> fx2new = xsimd::sub(fx2, fx);
-         const xsimd::batch<double> fy2new = xsimd::sub(fy2, fy);
-         const xsimd::batch<double> fz2new = xsimd::sub(fz2, fz);
+         const Reg<double> fx2new = sub(fx2, fx);
+         const Reg<double> fy2new = sub(fy2, fy);
+         const Reg<double> fz2new = sub(fz2, fz);
 
 
-        // store only masked values
-         if(remainderIsMasked) {
-           for(int i = 0; _masks[rest - 1].get(i); ++i) {
-             fx2ptr[j + i] = fx2new.get(i);
-             fy2ptr[j + i] = fy2new.get(i);
-             fz2ptr[j + i] = fz2new.get(i);
-           }
-         } else {
-           xsimd::store_unaligned(&fx2ptr[j], fx2new);
-           xsimd::store_unaligned(&fy2ptr[j], fy2new);
-           xsimd::store_unaligned(&fz2ptr[j], fz2new);
-         }
+         remainderIsMasked ? maskst(_masks[rest - 1], &fx2ptr[j], fx2new)
+                           : storeu(&fx2ptr[j], fx2new);
+         remainderIsMasked ? maskst(_masks[rest - 1], &fy2ptr[j], fy2new)
+                           : storeu(&fy2ptr[j], fy2new);
+         remainderIsMasked ? maskst(_masks[rest - 1], &fz2ptr[j], fz2new)
+                           : storeu(&fz2ptr[j], fz2new);
        }
 
        if constexpr (calculateGlobals) {
-         const xsimd::batch<double> virialX = xsimd::mul(fx, drx);
-         const xsimd::batch<double> virialY = xsimd::mul(fy, dry);
-         const xsimd::batch<double> virialZ = xsimd::mul(fz, drz);
+         const Reg<double> virialX = mul(fx, drx);
+         const Reg<double> virialY = mul(fy, dry);
+         const Reg<double> virialZ = mul(fz, drz);
 
-         const xsimd::batch<double> updot = wrapperFMA(epsilon24s, lj12m6, shift6s);
+         // Global Potential
+         const Reg<double> upot = fmadd(epsilon24s, lj12m6, shift6s);
 
-         const __m256d upotMasked =
-             remainderIsMasked ? xsimd::select(xsimd::bitwise_and(cutoffDummyMask, _masks[rest - 1]), updot, _zero)
-                               : xsimd::select(cutoffDummyMask, updot, _zero);
-         xsimd::batch_bool<double> ownedMaskI = xsimd::eq(to_float(ownedStateI), to_float(_ownedStateOwnedMM256i));
-         xsimd::batch<double> energyFactor = xsimd::select(ownedMaskI, _one, _zero);
+         const Reg<double> upotMasked =
+             remainderIsMasked ? blend(upot, _zero, andb(cutoffDummyMask, _masks[rest - 1]))
+                               : blend(upot, _zero, cutoffDummyMask);
+
+         Msk<N<int64_t>()> ownedMaskI = cmpeq(ownedStateI, _ownedStateOwnedMM256i);
+         Reg<double> energyFactor = blend(_one, _zero, ownedMaskI);
          if constexpr (newton3) {
-           xsimd::batch_bool<double> ownedMaskJ =
-               xsimd::eq(to_float(ownedStateJ), to_float(_ownedStateOwnedMM256i));
-           energyFactor = xsimd::add(energyFactor, xsimd::select(ownedMaskJ, _one, _zero));
+           Msk<N<int64_t>()> ownedMaskJ = cmpeq(ownedStateJ, _ownedStateOwnedMM256i);
+           energyFactor = add(energyFactor, blend(_one, _zero, ownedMaskJ));
          }
-         *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
-         *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
-         *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
-         *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
+         *upotSum = fmadd(energyFactor, upotMasked, *upotSum);
+         *virialSumX = fmadd(energyFactor, virialX, *virialSumX);
+         *virialSumY = fmadd(energyFactor, virialY, *virialSumY);
+         *virialSumZ = fmadd(energyFactor, virialZ, *virialSumZ);
        }
 
 
@@ -602,21 +561,21 @@ class LJFunctorXSIMD
        const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
        // accumulators
-       xsimd::batch<double> virialSumX{0};
-       xsimd::batch<double> virialSumY{0};
-       xsimd::batch<double> virialSumZ{0};
-       xsimd::batch<double> upotSum{0};
-       xsimd::batch<double> fxacc{0};
-        xsimd::batch<double> fyacc{0};
-         xsimd::batch<double> fzacc{0};
+       Reg<double> virialSumX = 0.;
+       Reg<double> virialSumY = 0.;
+       Reg<double> virialSumZ = 0.;
+       Reg<double> upotSum = 0.;
+       Reg<double> fxacc = 0.;
+       Reg<double> fyacc = 0.;
+       Reg<double> fzacc = 0.;
 
        // broadcast particle 1
-       const xsimd::batch<double> x1 = xsimd::broadcast(xptr[indexFirst]);
-       const xsimd::batch<double> y1 = xsimd::broadcast(yptr[indexFirst]);
-       const xsimd::batch<double> z1 = xsimd::broadcast(zptr[indexFirst]);
+       const Reg<double> x1 = xptr[indexFirst];
+       const Reg<double> y1 = yptr[indexFirst];
+       const Reg<double> z1 = zptr[indexFirst];
        // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
        // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-       xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr[indexFirst])};
+       Reg<int64_t> ownedStateI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
 
        alignas(64) std::array<double, vecLength> x2tmp{};
        alignas(64) std::array<double, vecLength> y2tmp{};
@@ -717,29 +676,22 @@ class LJFunctorXSIMD
          }
        }
 
-       fxptr[indexFirst] += xsimd::reduce_add(fxacc);
-       fyptr[indexFirst] += xsimd::reduce_add(fyacc);
-       fzptr[indexFirst] += xsimd::reduce_add(fzacc);
+       fxptr[indexFirst] += sum(fxacc);
+       fyptr[indexFirst] += sum(fyacc);
+       fzptr[indexFirst] += sum(fzacc);
 
        if constexpr (calculateGlobals) {
          const int threadnum = autopas_get_thread_num();
-
-         double globals[] = {
-             xsimd::reduce_add(virialSumX),
-             xsimd::reduce_add(virialSumY),
-             xsimd::reduce_add(virialSumZ),
-             xsimd::reduce_add(upotSum)
-         };
 
          double factor = 1.;
          // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
          // false, since for newton3 disabled we divide by two later on.
          factor *= newton3 ? .5 : 1.;
          // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
-         _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-         _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-         _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-         _aosThreadData[threadnum].upotSum += globals[3] * factor;
+         _aosThreadData[threadnum].virialSum[0] += sum(virialSumX) * factor;
+         _aosThreadData[threadnum].virialSum[1] += sum(virialSumY) * factor;
+         _aosThreadData[threadnum].virialSum[2] += sum(virialSumZ) * factor;
+         _aosThreadData[threadnum].upotSum += sum(upotSum) * factor;
        }
 
      }
@@ -876,7 +828,7 @@ class LJFunctorXSIMD
        if constexpr (applyShift) {
          _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare.get(0));
        } else {
-         _shift6 = 0;
+         _shift6.set0();
        }
         _epsilon24AoS = epsilon24;
         _sigmaSquareAoS = sigmaSquare;
@@ -889,19 +841,7 @@ class LJFunctorXSIMD
 
     private:
      /**
-   * Wrapper function for FMA. If FMA is not supported it executes first the multiplication then the addition.
-   * @param factorA
-   * @param factorB
-   * @param summandC
-   * @return A * B + C
-      */
-     inline xsimd::batch<double> wrapperFMA(const xsimd::batch<double> &factorA, const xsimd::batch<double> &factorB, const xsimd::batch<double> &summandC) {
-       //TODO: if fma not supported, is it still working with xsimd?
-       return xsimd::fma(factorA, factorB, summandC);
-     }
-
-     /**
-   * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
+      * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
       */
      class AoSThreadData {
       public:
@@ -923,20 +863,21 @@ class LJFunctorXSIMD
      static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 
-     const xsimd::batch<double> _zero{0};
-     const xsimd::batch<double> _one{1.};
-     const xsimd::batch<int64_t> _vindex{0, 1, 3, 4};
-     const xsimd::batch_bool<double> _masks[3] {
-         xsimd::batch_bool<double>(true, false, false, false),
-         xsimd::batch_bool<double>(true, true, false, false),
-         xsimd::batch_bool<double>(true, true, true, false)
+     const Reg<double> _zero = 0.;
+     const Reg<int64_t> _zeroI = 0.;
+     const Reg<double> _one = 1.;
+     const Reg<int64_t> _vindex{0, 1, 3, 4};
+     const Msk<N<double>()> _masks[3] {
+         Msk<N<double>()>{true, false, false, false},
+         Msk<N<double>()>{true, true, false, false},
+         Msk<N<double>()>{true, true, true, false}
      };
-     const xsimd::batch<int64_t> _ownedStateDummyMM256i{0x0};
-     const xsimd::batch<int64_t> _ownedStateOwnedMM256i{static_cast<int64_t>(OwnershipState::owned)};
-     const xsimd::batch<double> _cutoffsquare{};
-     xsimd::batch<double> _shift6{0};
-     xsimd::batch<double> _epsilon24{};
-     xsimd::batch<double> _sigmaSquare{};
+     const Reg<int64_t> _ownedStateDummyMM256i = 0.;
+     const Reg<int64_t> _ownedStateOwnedMM256i = static_cast<int64_t>(OwnershipState::owned);
+     const Reg<double> _cutoffsquare;
+     Reg<double> _shift6 = 0.;
+     Reg<double> _epsilon24{};
+     Reg<double> _sigmaSquare{};
 
      const double _cutoffsquareAoS = 0;
      double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0;
@@ -957,6 +898,6 @@ class LJFunctorXSIMD
 
      // number of double values that fit into a vector register.
      // MUST be power of 2 because some optimizations make this assumption
-     constexpr static size_t vecLength = xsimd::batch<double>::size;
+     constexpr static int vecLength = N<double>();
 };
 }
