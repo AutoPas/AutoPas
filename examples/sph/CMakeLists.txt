@@ -7,7 +7,7 @@ file(
 
 add_executable(sph-main ${MY_SRC})
 
-target_link_libraries(sph-main autopas)
+target_link_libraries(sph-main autopas SPHLibrary)
 
 # -----------------test-----------------
 # add check for current target

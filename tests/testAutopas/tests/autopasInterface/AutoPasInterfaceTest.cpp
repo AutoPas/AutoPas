@@ -8,11 +8,11 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule, true, false> *);
 
 constexpr double cutoff = 1.1;
 constexpr double skinPerTimestep = 0.2;
@@ -234,8 +234,9 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigne
         << "Called from line: " << line;
   }
 
-  EXPECT_NEAR(functor->getUpot(), 16128.983372449373 * numParticles / 2., 1e-5) << "wrong upot calculated" << std::endl
-                                                                                << "Called from line: " << line;
+  EXPECT_NEAR(functor->getPotentialEnergy(), 16128.983372449373 * numParticles / 2., 1e-5)
+      << "wrong upot calculated" << std::endl
+      << "Called from line: " << line;
   EXPECT_NEAR(functor->getVirial(), 195072. * numParticles / 2., 1e-5) << "wrong virial calculated" << std::endl
                                                                        << "Called from line: " << line;
 }
@@ -261,7 +262,7 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecul
         << "wrong force calculated.";
   }
 
-  EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.983372449373)
+  EXPECT_DOUBLE_EQ(functor1->getPotentialEnergy() + functor2->getPotentialEnergy(), 16128.983372449373)
       << "wrong upot calculated" << std::endl
       << "Called from line: " << line;
   EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated" << std::endl
@@ -330,8 +331,8 @@ void testSimulationLoop(testingTuple options) {
 
   addParticlePair({9.99, 5., 5.});
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
-                     /* globals */ true>
+  mdLib::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
+                   /* globals */ true>
       functor(cutoff);
   functor.setParticleProperties(24.0, 1);
   // do first simulation loop
@@ -413,8 +414,8 @@ void testHaloCalculation(testingTuple options) {
     }
   }
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ true>
+  mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                   /*globals*/ true>
       functor(cutoff);
   functor.setParticleProperties(24, 1);
 
@@ -579,9 +580,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
   functor1.setParticleProperties(24.0, 1);
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
   functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);
