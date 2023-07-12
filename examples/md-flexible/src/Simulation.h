@@ -11,6 +11,7 @@
 #include <string>
 #include <tuple>
 
+#include "TimeDiscretization.h"
 #include "autopas/AutoPasDecl.h"
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
@@ -37,7 +38,10 @@ class Simulation {
   ~Simulation() = default;
 
   /**
-   * Runs the simulation
+   * Runs the simulation, implementing velocity verlet.
+   *
+   * If md-flexible is compiled for multi-site molecules, rotational integration is done with an implementation of the
+   * the quaternion approach (A) as described in Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods.
    */
   void run();
 
@@ -111,6 +115,11 @@ class Simulation {
     autopas::utils::Timer positionUpdate;
 
     /**
+     * Records the time used for the quaternion updates of all particles.
+     */
+    autopas::utils::Timer quaternionUpdate;
+
+    /**
      * Records the time used for the total force update of all particles.
      */
     autopas::utils::Timer forceUpdateTotal;
@@ -139,6 +148,11 @@ class Simulation {
      * Records the time used for the velocity updates of all particles.
      */
     autopas::utils::Timer velocityUpdate;
+
+    /**
+     * Records the time used for the angular velocity updates of all particles.
+     */
+    autopas::utils::Timer angularVelocityUpdate;
 
     /**
      * Records the time used for actively simulating the provided scenario.
@@ -244,7 +258,13 @@ class Simulation {
   void updatePositions();
 
   /**
-   * Updates the forces of particles in the local AutoPas container.
+   * Update the quaternion orientation of the particles in the local AutoPas container.
+   */
+  void updateQuaternions();
+
+  /**
+   * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
+   * is used).
    */
   void updateForces();
 
@@ -252,6 +272,11 @@ class Simulation {
    * Updates the velocities of particles in the local AutoPas container.
    */
   void updateVelocities();
+
+  /**
+   * Updates the angular velocities of the particles in the local AutoPas container.
+   */
+  void updateAngularVelocities();
 
   /**
    * Updates the thermostat of for the local domain.

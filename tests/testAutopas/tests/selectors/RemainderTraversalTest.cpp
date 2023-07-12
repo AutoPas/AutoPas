@@ -13,6 +13,7 @@
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/selectors/tuningStrategy/FullSearch.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -83,7 +84,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
-  autopas::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>
+  mdLib::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>
       functor(cutoff);
   // Choose sigma != distance so we get Upot != 0
   constexpr double sigma = 2.;
@@ -120,9 +121,10 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
     }
   }
   // if halo particles are involved only expect half the Upot
-  const double expectedUpot = 4 * epsilon * (std::pow(sigma / expectedDist, 12.) - std::pow(sigma / expectedDist, 6.)) *
-                              ((numParticlesHaloBuffers != 0 or not particlesContainerHalo.empty()) ? 0.5 : 1);
-  EXPECT_NEAR(expectedUpot, functor.getUpot(), 1e-12);
+  const double expectedPotentialEnergy =
+      4 * epsilon * (std::pow(sigma / expectedDist, 12.) - std::pow(sigma / expectedDist, 6.)) *
+      ((numParticlesHaloBuffers != 0 or not particlesContainerHalo.empty()) ? 0.5 : 1);
+  EXPECT_NEAR(expectedPotentialEnergy, functor.getPotentialEnergy(), 1e-12);
 }
 
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_container_container_NoN3) {
@@ -356,7 +358,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
 
   logicHandler.setParticleBuffers(particlesBuffer, haloParticlesBuffer);
 
-  autopas::LJFunctor<Molecule> functor(cutoff);
+  mdLib::LJFunctor<Molecule> functor(cutoff);
   functor.setParticleProperties(24, 1);
   // do the actual test
   logicHandler.iteratePairwisePipeline(&functor);

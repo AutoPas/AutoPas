@@ -8,8 +8,8 @@
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/MoleculeLJ.h"
 #include "src/ParticleSerializationTools.h"
+#include "src/TypeDefinitions.h"
 
 /**
  * Test class for the ParticleSerializationTools.
@@ -25,5 +25,5 @@ class ParticleSerializationToolsTest : public AutoPasTestBase {
   /**
    * Molecule used for testing.
    */
-  autopas::MoleculeLJ<double> _molecule;
+  ParticleType _molecule;
 };
