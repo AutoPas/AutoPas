@@ -64,14 +64,13 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
     } else if (type == "reset" || in.eof()) {
       while (not configQueue.empty()) {
         _tuningStrategy->optimizeSuggestions(configQueue, evidenceCollection);
-        try {
+        // Check that we actually hava data for the chosen configuration.
+        // If not ignore it and carry on with the evaluation of the rest of the tuning.
+        if (traversalTimes.count(configQueue.back()) > 0) {
           const auto &[time, iteration] = traversalTimes.at(configQueue.back());
           Evidence evidence{iteration, tuningPhase, time};
           evidenceCollection.addEvidence(configQueue.back(), evidence);
           _tuningStrategy->addEvidence(configQueue.back(), evidence);
-        } catch (std::out_of_range &e) {
-          // std::cerr << "Could not find data for configuration " << _tuningStrategy->getCurrentConfiguration() <<
-          // std::endl;
         }
       }
 
