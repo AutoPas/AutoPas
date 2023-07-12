@@ -258,22 +258,15 @@ class LJFunctorMIPP
        if constexpr (calculateGlobals) {
          const int threadnum = autopas_get_thread_num();
 
-         double globals[] = {
-             sum(virialSumX),
-             sum(virialSumY),
-             sum(virialSumZ),
-             sum(upotSum)
-         };
-
          double factor = 1.;
          // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
          // false, since for newton3 disabled we divide by two later on.
          factor *= newton3 ? .5 : 1.;
          // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
-         _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-         _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-         _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-         _aosThreadData[threadnum].upotSum += globals[3] * factor;
+         _aosThreadData[threadnum].virialSum[0] += sum(virialSumX) * factor;
+         _aosThreadData[threadnum].virialSum[1] += sum(virialSumY) * factor;
+         _aosThreadData[threadnum].virialSum[2] += sum(virialSumZ) * factor;
+         _aosThreadData[threadnum].upotSum += sum(upotSum) * factor;
        }
      }
 
@@ -319,8 +312,6 @@ class LJFunctorMIPP
 
          static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
                        "OwnershipStates underlying type should be int64_t!");
-         // ownedStatePtr1 contains int64_t, so we broadcast these to make an __m256i.
-         // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
          Reg<int64_t> ownedStateI = static_cast<int64_t>(ownedStatePtr1[i]);
 
          const Reg<double> x1 = x1ptr[i];
@@ -348,13 +339,6 @@ class LJFunctorMIPP
        if constexpr (calculateGlobals) {
          const int threadnum = autopas_get_thread_num();
 
-         double globals[] = {
-             sum(virialSumX),
-             sum(virialSumY),
-             sum(virialSumZ),
-             sum(upotSum)
-         };
-
          // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
          // that we do not add the energy multiple times!
          double energyfactor = 1.;
@@ -362,10 +346,10 @@ class LJFunctorMIPP
            energyfactor *= 0.5;  // we count the energies partly to one of the two cells!
          }
 
-         _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
-         _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
-         _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
-         _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
+         _aosThreadData[threadnum].virialSum[0] += sum(virialSumX) * energyfactor;
+         _aosThreadData[threadnum].virialSum[1] +=  sum(virialSumY) * energyfactor;
+         _aosThreadData[threadnum].virialSum[2] += sum(virialSumZ) * energyfactor;
+         _aosThreadData[threadnum].upotSum += sum(upotSum) * energyfactor;
        }
      }
      /**
@@ -430,9 +414,9 @@ class LJFunctorMIPP
          }
        }
 
-       Reg<double> x2 = remainderIsMasked ? maskzlds(_masks[rest - 1], &x2ptr[j]) : loadu(&x2ptr[j]);
-       Reg<double> y2 = remainderIsMasked ? maskzlds(_masks[rest - 1], &y2ptr[j]) : loadu(&y2ptr[j]);
-       Reg<double> z2 = remainderIsMasked ? maskzlds(_masks[rest - 1], &z2ptr[j]) : loadu(&z2ptr[j]);
+       Reg<double> x2 = remainderIsMasked ? maskzld(_masks[rest - 1], &x2ptr[j]) : loadu(&x2ptr[j]);
+       Reg<double> y2 = remainderIsMasked ? maskzld(_masks[rest - 1], &y2ptr[j]) : loadu(&y2ptr[j]);
+       Reg<double> z2 = remainderIsMasked ? maskzld(_masks[rest - 1], &z2ptr[j]) : loadu(&z2ptr[j]);
 
        const Reg<double> drx = sub(x1,x2);
        const Reg<double> dry = sub(y1,y2);
@@ -450,8 +434,9 @@ class LJFunctorMIPP
        // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
 
        Msk<mipp::N<double>()> cutoffMask = cmple(dr2, _cutoffsquare);
+
        const Reg<int64_t> ownedStateJ = remainderIsMasked
-                                            ? maskzlds(_masks[rest - 1], &ownedStatePtr2[j])
+                                            ? maskzld(_masks[rest - 1], &ownedStatePtr2[j])
                                             : loadu(&ownedStatePtr2[j]);
 
        const Msk<mipp::N<double>()> dummyMask = cmpneq(ownedStateJ, _zeroI);
@@ -491,22 +476,22 @@ class LJFunctorMIPP
 
        if constexpr (newton3) {
          const Reg<double> fx2 =
-             remainderIsMasked ? maskzlds(_masks[rest - 1], &fx2ptr[j]) : loadu(&fx2ptr[j]);
+             remainderIsMasked ? maskzld(_masks[rest - 1], &fx2ptr[j]) : loadu(&fx2ptr[j]);
          const Reg<double> fy2 =
-             remainderIsMasked ? maskzlds(_masks[rest - 1], &fy2ptr[j]) : loadu(&fy2ptr[j]);
+             remainderIsMasked ? maskzld(_masks[rest - 1], &fy2ptr[j]) : loadu(&fy2ptr[j]);
          const Reg<double> fz2 =
-             remainderIsMasked ? maskzlds(_masks[rest - 1], &fz2ptr[j]) : loadu(&fz2ptr[j]);
+             remainderIsMasked ? maskzld(_masks[rest - 1], &fz2ptr[j]) : loadu(&fz2ptr[j]);
 
          const Reg<double> fx2new = sub(fx2, fx);
          const Reg<double> fy2new = sub(fy2, fy);
          const Reg<double> fz2new = sub(fz2, fz);
 
 
-         remainderIsMasked ? masksts(_masks[rest - 1], &fx2ptr[j], fx2new)
+         remainderIsMasked ? maskst(_masks[rest - 1], &fx2ptr[j], fx2new)
                            : storeu(&fx2ptr[j], fx2new);
-         remainderIsMasked ? masksts(_masks[rest - 1], &fy2ptr[j], fy2new)
+         remainderIsMasked ? maskst(_masks[rest - 1], &fy2ptr[j], fy2new)
                            : storeu(&fy2ptr[j], fy2new);
-         remainderIsMasked ? masksts(_masks[rest - 1], &fz2ptr[j], fz2new)
+         remainderIsMasked ? maskst(_masks[rest - 1], &fz2ptr[j], fz2new)
                            : storeu(&fz2ptr[j], fz2new);
        }
 
@@ -516,7 +501,7 @@ class LJFunctorMIPP
          const Reg<double> virialZ = mul(fz, drz);
 
          // Global Potential
-         const Reg<double> upot = wrapperFMA(epsilon24s, lj12m6, shift6s);
+         const Reg<double> upot = fmadd(epsilon24s, lj12m6, shift6s);
 
          const Reg<double> upotMasked =
              remainderIsMasked ? blend(upot, _zero, andb(cutoffDummyMask, _masks[rest - 1]))
@@ -528,10 +513,10 @@ class LJFunctorMIPP
            Msk<N<int64_t>()> ownedMaskJ = cmpeq(ownedStateJ, _ownedStateOwnedMM256i);
            energyFactor = add(energyFactor, blend(_one, _zero, ownedMaskJ));
          }
-         *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
-         *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
-         *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
-         *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
+         *upotSum = fmadd(energyFactor, upotMasked, *upotSum);
+         *virialSumX = fmadd(energyFactor, virialX, *virialSumX);
+         *virialSumY = fmadd(energyFactor, virialY, *virialSumY);
+         *virialSumZ = fmadd(energyFactor, virialZ, *virialSumZ);
        }
 
 
@@ -698,22 +683,15 @@ class LJFunctorMIPP
        if constexpr (calculateGlobals) {
          const int threadnum = autopas_get_thread_num();
 
-         double globals[] = {
-             sum(virialSumX),
-             sum(virialSumY),
-             sum(virialSumZ),
-             sum(upotSum)
-         };
-
          double factor = 1.;
          // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
          // false, since for newton3 disabled we divide by two later on.
          factor *= newton3 ? .5 : 1.;
          // In case we have a non-cell-wise owned state, we have multiplied everything by two, so we divide it by 2 again.
-         _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-         _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-         _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-         _aosThreadData[threadnum].upotSum += globals[3] * factor;
+         _aosThreadData[threadnum].virialSum[0] += sum(virialSumX) * factor;
+         _aosThreadData[threadnum].virialSum[1] += sum(virialSumY) * factor;
+         _aosThreadData[threadnum].virialSum[2] += sum(virialSumZ) * factor;
+         _aosThreadData[threadnum].upotSum += sum(upotSum) * factor;
        }
 
      }
@@ -863,18 +841,7 @@ class LJFunctorMIPP
 
     private:
      /**
-   * Wrapper function for FMA. If FMA is not supported it executes first the multiplication then the addition.
-   * @param factorA
-   * @param factorB
-   * @param summandC
-   * @return A * B + C
-      */
-     inline Reg<double> wrapperFMA(const Reg<double> &factorA, const Reg<double> &factorB, const Reg<double> &summandC) {
-       return fmadd(factorA, factorB, summandC);
-     }
-
-     /**
-   * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
+      * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
       */
      class AoSThreadData {
       public:
