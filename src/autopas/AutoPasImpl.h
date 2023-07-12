@@ -198,6 +198,12 @@ std::vector<Particle> AutoPas<Particle>::updateContainer() {
 template <class Particle>
 std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &boxMin,
                                                    const std::array<double, 3> &boxMax) {
+  if (_allowedCellSizeFactors->isInterval()) {
+    AutoPasLog(WARN,
+               "The allowed Cell Size Factors are a continuous interval but internally only those values that "
+               "yield unique numbers of cells are used. Resizing does not cause these values to be recalculated so "
+               "the same configurations might now yield different and non-unique numbers of cells!");
+  }
   _logicHandlerInfo.boxMin = boxMin;
   _logicHandlerInfo.boxMax = boxMax;
   return _logicHandler->resizeBox(boxMin, boxMax);
