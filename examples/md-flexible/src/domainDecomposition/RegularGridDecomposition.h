@@ -11,7 +11,6 @@
 #include <memory>
 
 #include "DomainDecomposition.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/utils/WrapMPI.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
