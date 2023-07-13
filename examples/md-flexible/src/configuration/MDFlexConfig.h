@@ -533,7 +533,7 @@ class MDFlexConfig {
   /**
    * siteStr
    */
-  static inline const char *siteStr{"Sites"};
+  static inline const char *const siteStr{"Sites"};
   /**
    * epsilonMap
    */
@@ -554,19 +554,19 @@ class MDFlexConfig {
   /**
    * moleculesStr
    */
-  static inline const char *moleculesStr{"Molecules"};
+  static inline const char *const moleculesStr{"Molecules"};
   /**
    * moleculeToSiteIdStr
    */
-  static inline const char *moleculeToSiteIdStr{"site-types"};
+  static inline const char *const moleculeToSiteIdStr{"site-types"};
   /**
    * moleculeToSitePosStr
    */
-  static inline const char *moleculeToSitePosStr{"relative-site-positions"};
+  static inline const char *const moleculeToSitePosStr{"relative-site-positions"};
   /**
    * momentOfInertiaStr
    */
-  static inline const char *momentOfInertiaStr{"moment-of-inertia"};
+  static inline const char *const momentOfInertiaStr{"moment-of-inertia"};
   // Maps where the molecule type information is actually stored
   /**
    * molToSiteIdMap
@@ -584,16 +584,16 @@ class MDFlexConfig {
   /**
    * objectsStr
    */
-  static inline const char *objectsStr{"Objects"};
+  static inline const char *const objectsStr{"Objects"};
   /**
    * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is
    * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
    */
-  static inline const char *particleTypeStr{"particle-type-id"};
+  static inline const char *const particleTypeStr{"particle-type-id"};
   /**
    * bottomLeftBackCornerStr
    */
-  static inline const char *bottomLeftBackCornerStr{"bottomLeftCorner"};
+  static inline const char *const bottomLeftBackCornerStr{"bottomLeftCorner"};
   /**
    * velocityStr
    */
