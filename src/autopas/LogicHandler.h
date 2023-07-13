@@ -1152,6 +1152,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     ++_stepsSinceLastListRebuild;
 
     _autoTuner.bumpIterationCounters();
+    ++_iteration;
   }
   return stillTuning;
 }
