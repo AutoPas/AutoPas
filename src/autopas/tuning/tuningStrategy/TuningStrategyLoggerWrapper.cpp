@@ -15,9 +15,9 @@ TuningStrategyLoggerWrapper::TuningStrategyLoggerWrapper(std::unique_ptr<TuningS
                                                          const std::string &outputSuffix)
     : _actualTuningStrategy(std::move(actualTuningStrategy)) {
   std::stringstream filename;
-  filename << "tuningLog-";
+  filename << "tuningLog_";
+  filename << outputSuffix << (outputSuffix.empty() ? "" : "_");
   filename << utils::Timer::getDateStamp();
-  filename << '-' << outputSuffix;
   filename << ".txt";
   _logOut.open(filename.str());
 }

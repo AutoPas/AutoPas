@@ -11,10 +11,12 @@
 autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
     : _loggerName("IterationLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  auto outputFileName("AutoPas_iterationPerformance_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
+  const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
+  const auto outputFileName("AutoPas_iterationPerformance_" + outputSuffix + fillerAfterSuffix +
+                            utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // Create and register a non-asychronous logger to write the header.
-  auto headerLoggerName = _loggerName + "header";
+  const auto headerLoggerName = _loggerName + "header";
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   // set the pattern to the message only
   headerLogger->set_pattern("%v");

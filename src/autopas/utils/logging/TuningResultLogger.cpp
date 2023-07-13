@@ -11,7 +11,9 @@
 autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix)
     : _loggerName("TuningResultLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGRESULTS
-  auto outputFileName("AutoPas_tuningResults_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
+  const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
+  auto outputFileName("AutoPas_tuningResults_" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() +
+                      ".csv");
   // create and register the actual logger
   auto logger = spdlog::basic_logger_mt(_loggerName, outputFileName);
   // since this logger only writes rarely flush instantly in order to not lose any information if autopas is killed

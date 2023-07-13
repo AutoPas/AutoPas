@@ -736,10 +736,8 @@ class MDFlexConfig {
   /**
    * The suffix for files created by the tuning logger.
    */
-  MDFlexOption<std::string, __LINE__> outputSuffix{"default", "output-suffix", true,
-                                                   "An identifier that is contained in the filename "
-                                                   "of the logged tuning information (e.g. if setting "
-                                                   "--use-tuning-logger=true"};
+  MDFlexOption<std::string, __LINE__> outputSuffix{"", "output-suffix", true,
+                                                   "An identifier that is contained in the filename of all log files."};
 
   /**
    * valueOffset used for cli-output alignment
