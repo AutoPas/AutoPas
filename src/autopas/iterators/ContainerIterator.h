@@ -326,11 +326,7 @@ class ContainerIterator {
       // if getParticle told us that the container doesn't have a particle in the first vector for our thread...
       if (_currentParticle == nullptr and not _additionalVectors.empty()) {
         // determine which additional vector this thread should start to iterate
-        // we invert the assignment of threads to additional vectors because if there are more threads than cells
-        // these surplus threads can then directly start with the additional vectors
-        _currentVectorIndex = (_behavior & IteratorBehavior::forceSequential)
-                                  ? 0
-                                  : autopas_get_num_threads() - 1 - autopas_get_thread_num();
+        _currentVectorIndex = (_behavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num();
         _currentParticleIndex = 0;
         _iteratingAdditionalVectors = true;
       } else {
