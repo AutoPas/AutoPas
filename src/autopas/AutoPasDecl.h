@@ -956,6 +956,8 @@ class AutoPas {
 
   size_t getNumDummyParticles() { return _logicHandler->getNumDummyParticles(); }
 
+  size_t getNeighborListRebuilds() {return _logicHandler->getNeighborListRebuilds(); }
+
  private:
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
 

@@ -176,6 +176,10 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
+  size_t getNeighborListRebuilds() {
+    return 0;
+  }
+
  private:
   /**
    * @copydoc VLCNeighborListInterface::applyBuildFunctor()

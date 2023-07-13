@@ -104,17 +104,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
 
-    /*
-    // count number of current dummy particles
-    size_t dummyCounter {0};
-    for (auto pIter = this->begin(); pIter != this->end(); ++pIter) {
-      if (pIter->isDummy()) {
-        ++dummyCounter;
-      }
-    }
-    _dummyParticleCounter.push_back(dummyCounter);
-    */
-
     traversal->initTraversal();
     traversal->traverseParticlePairs();
     traversal->endTraversal();
@@ -173,6 +162,10 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
   size_t getNumDummyParticles() override {
     return std::accumulate(this->_dummyParticleCounter.begin(), this->_dummyParticleCounter.end(), 0);
+  }
+
+  size_t getNeighborListRebuilds () override {
+    return _neighborList.getNeighborListRebuilds();
   }
 
  protected:

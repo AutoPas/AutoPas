@@ -128,15 +128,18 @@ public:
      }
    }
 
+   size_t neighborListRebuilds {0};
+
    // initialize empty lists for every particle-cell pair
    // TODO : think about chunk size
-#pragma omp parallel for schedule(dynamic, 15)
+#pragma omp parallel for schedule(dynamic, 15) reduction(+:neighborListRebuilds)
    for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
      _aosNeighborList[firstCellIndex].resize(neighborCells);
      size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
      for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
        // reserve vector of neighbor lists for every particle in cell1
        cellPair.reserve(numParticlesFirstCell);
+       neighborListRebuilds += numParticlesFirstCell;
        size_t particleIndexCurrentCell = 0;
        for (auto &particle : cells[firstCellIndex]) {
          // for each particle in cell1 make a pair of particle and neighbor list
@@ -154,7 +157,7 @@ public:
        }
      }
    }
-
+   _numRebuildNeighborListsCounter.push_back(neighborListRebuilds);
    // fill the lists
    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType, partialRebuilding);
  }
@@ -222,6 +225,10 @@ public:
    }
  }
 
+ size_t getNeighborListRebuilds() {
+   return std::accumulate(_numRebuildNeighborListsCounter.begin(), _numRebuildNeighborListsCounter.end(), 0);
+ }
+
 protected:
  void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                         double interactionLength, const TraversalOption buildTraversalOption,
@@ -279,5 +286,7 @@ protected:
   */
  SoAListType _soaNeighborList = std::vector<
      std::vector<std::vector<std::pair<size_t, std::vector<size_t, autopas::AlignedAllocator<size_t>>>>>>();
+
+ std::vector<size_t> _numRebuildNeighborListsCounter {};
 };
 }  // namespace autopas

@@ -116,6 +116,8 @@ class ParticleContainerInterface {
 
   virtual size_t getNumDummyParticles() {return 0; }
 
+  virtual size_t getNeighborListRebuilds() {return 0;}
+
  protected:
   /**
    * Adds a particle to the container.

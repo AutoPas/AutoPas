@@ -457,6 +457,10 @@ class LogicHandler {
     return _autoTuner.getContainer()->getNumDummyParticles();
   }
 
+  size_t getNeighborListRebuilds() const {
+    return _autoTuner.getContainer()->getNeighborListRebuilds();
+  }
+
  private:
   void checkMinimalSize() {
     auto container = _autoTuner.getContainer();
