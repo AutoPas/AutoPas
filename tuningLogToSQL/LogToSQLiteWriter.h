@@ -8,8 +8,12 @@
 #include <stdexcept>
 #include <tuple>
 
-#include "sqlite3.h"
+#include <sqlite3.h>
 
+/**
+ * This namespace defines functions to both read and write tuning log entries. 
+ * They are declared and documented in src/autopas/tuning/tuningStrategy/TuningLogEntry.h. TODO(tobias): Move definition there.
+ */
 namespace autopas::tuningLogEntry {
 template <class T>
 void toStringHelper(std::ostream &in, const T &val) {
@@ -49,8 +53,12 @@ size_t readReset(std::stringstream &str) { return std::get<0>(fromString<size_t>
 std::string writeLiveInfo(const LiveInfo &liveInfo) { return toString(std::string{"liveInfo"}, liveInfo); }
 
 LiveInfo readLiveInfo(std::stringstream &str) { return std::get<0>(fromString<LiveInfo>(str)); }
-};  // namespace autopas::tuningLogEntry
+};  // namespace autopas::TuningLogEntry
 
+/**
+ * A small helper callback to print out SQLite statement results.
+ * The arguments are according to the requirements for callbacks that are passed to sqlite3_exec.
+ */
 static int callback(void*, int argc, char** argv, char** azColName) {
   for(int i = 0; i < argc; ++i) {
     std::cout << azColName[i] << " = " << (argv[i] ? argv[i] : "NULL") << " ";
@@ -59,8 +67,16 @@ static int callback(void*, int argc, char** argv, char** azColName) {
   return 0;
 }
 
+/**
+ * A utility function that escapes single quotes in the passed string with another single quote.
+ * @param str The string to escape.
+ * @returns The escaped string.
+ */
 static std::string escapeSingleQuotesForSQL(const std::string& str) {
   std::string result;
+  // If we call this function, we expect that there often are single quotes in the string.
+  // In many cases, there isn't just one, so reserve a bit of extra memory to decrease the
+  // chance that two resizes are necessary.
   result.reserve(str.size() + 6);
 
   for(char c : str) {
@@ -73,8 +89,17 @@ static std::string escapeSingleQuotesForSQL(const std::string& str) {
   return result;
 }
 
+/**
+ * This class creates a SQLite3 database with a schema for tuning log entries, and offers 
+ * methods to write files containing such log entries to it.
+ *
+ */
 class LogToSQLiteWriter {
  public:
+  /**
+   * The constructor. It creates the database.
+   * @param databaseName The name of the database file to create.
+   */
   explicit LogToSQLiteWriter(const std::string& databaseName) : _db(nullptr) {
     auto failed = sqlite3_open(databaseName.c_str(), &_db);
 
@@ -85,7 +110,12 @@ class LogToSQLiteWriter {
 
     createSchema();
   }
-
+  
+  /**
+   * Write a file containing tuning log entries to the database.
+   * @param filename The name of the file with the log entries that should be written to 
+   * the database.
+   */
   void write(const char* filename) {
     std::ifstream in{filename};
 
@@ -150,29 +180,46 @@ class LogToSQLiteWriter {
     sendQuery(insertScenarios.str().c_str());
     sendQuery(insertMeasurements.str().c_str());
   }
-
- ~LogToSQLiteWriter() {
-   sqlite3_close(_db);
- }
-
-private:
- void createSchema() {
-   sendQuery(schemaSQL);
- }
-
- void sendQuery(const char* query) {
-   char* errMsg = nullptr;
-   auto returnCode = sqlite3_exec(_db, query, callback, nullptr, &errMsg);
-
-   if(returnCode != SQLITE_OK) {
-     AutoPasLog(ERROR, "SQL error: {}", errMsg);
-     sqlite3_free(errMsg);
-   }
- }
+  
+  /**
+   * The destructor. It closes the databsae.
+   */
+  ~LogToSQLiteWriter() {
+    sqlite3_close(_db);
+  }
 
  private:
-  sqlite3* _db;
+  /**
+   * Helper function to create the schema defined in the schemaSQL static member.
+   */
+  void createSchema() {
+    sendQuery(schemaSQL);
+  }
 
+  /**
+   * Helper Function to send arbitrary queries to the SQLite3 database.
+   * The results are not returned but printed using the static callback() function.
+   * @param query The query to send.
+   */
+  void sendQuery(const char* query) {
+    char* errMsg = nullptr;
+     auto returnCode = sqlite3_exec(_db, query, callback, nullptr, &errMsg);
+
+     if(returnCode != SQLITE_OK) {
+       AutoPasLog(ERROR, "SQL error: {}", errMsg);
+       sqlite3_free(errMsg);
+     }
+  }
+
+ private:
+  /**
+   * The SQLite database object. It is created in the constructor and destructed in the destructor.
+   */
+  sqlite3* _db;
+  
+  /**
+   * The schema of the SQLite database. See explanation in README.md.
+   */
   static constexpr const char* schemaSQL = R"SQL(
 CREATE TABLE ScenarioRaw (
   filename VARCHAR(1024) PRIMARY KEY,
