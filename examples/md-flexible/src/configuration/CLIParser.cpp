@@ -257,8 +257,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_XSIMD;
         } else if(strArg.find("mipp") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_MIPP;
-        }
-        else {
+        } else if(strArg.find("simde") != string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
+        } else {
           cerr << "Unknown functor: " << strArg << endl;
           cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'"
                << endl;

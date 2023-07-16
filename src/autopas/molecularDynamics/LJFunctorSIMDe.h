@@ -13,6 +13,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
+#include <x86/avx.h>
+
 namespace autopas {
 
 /**
@@ -52,7 +54,7 @@ namespace autopas {
         explicit LJFunctorSIMDe(double cutoff, void * /*dummy*/)
                 : Functor<Particle,
                 LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
-                  _cutoffsquare{_mm256_set1_pd(cutoff * cutoff)},
+                  _cutoffsquare{simde_mm256_set1_pd(cutoff * cutoff)},
                   _cutoffsquareAoS(cutoff * cutoff),
                   _upotSum{0.},
                   _virialSum{0., 0., 0.},
@@ -203,10 +205,10 @@ namespace autopas {
 
             const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-            __m256d virialSumX = _mm256_setzero_pd();
-            __m256d virialSumY = _mm256_setzero_pd();
-            __m256d virialSumZ = _mm256_setzero_pd();
-            __m256d upotSum = _mm256_setzero_pd();
+            simde__m256d virialSumX = simde_mm256_setzero_pd();
+            simde__m256d virialSumY = simde_mm256_setzero_pd();
+            simde__m256d virialSumZ = simde_mm256_setzero_pd();
+            simde__m256d upotSum = simde_mm256_setzero_pd();
 
             // reverse outer loop s.th. inner loop always beginns at aligned array start
             // typecast to detect underflow
@@ -218,17 +220,17 @@ namespace autopas {
 
                 static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
                               "OwnershipStates underlying type should be int64_t!");
-                // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
-                // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-                __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[i]));
+                // ownedStatePtr contains int64_t, so we broadcast these to make an simde__m256i.
+                // simde_mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
+                simde__m256i ownedStateI = simde_mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[i]));
 
-                __m256d fxacc = _mm256_setzero_pd();
-                __m256d fyacc = _mm256_setzero_pd();
-                __m256d fzacc = _mm256_setzero_pd();
+                simde__m256d fxacc = simde_mm256_setzero_pd();
+                simde__m256d fyacc = simde_mm256_setzero_pd();
+                simde__m256d fzacc = simde_mm256_setzero_pd();
 
-                const __m256d x1 = _mm256_broadcast_sd(&xptr[i]);
-                const __m256d y1 = _mm256_broadcast_sd(&yptr[i]);
-                const __m256d z1 = _mm256_broadcast_sd(&zptr[i]);
+                const simde__m256d x1 = simde_mm256_broadcast_sd(&xptr[i]);
+                const simde__m256d y1 = simde_mm256_broadcast_sd(&yptr[i]);
+                const simde__m256d z1 = simde_mm256_broadcast_sd(&zptr[i]);
 
                 size_t j = 0;
                 // floor soa numParticles to multiple of vecLength
@@ -249,21 +251,21 @@ namespace autopas {
                 }
 
                 // horizontally reduce fDacc to sumfD
-                const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
-                const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
+                const simde__m256d hSumfxfy = simde_mm256_hadd_pd(fxacc, fyacc);
+                const simde__m256d hSumfz = simde_mm256_hadd_pd(fzacc, fzacc);
 
-                const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
-                const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
+                const simde__m128d hSumfxfyLow = simde_mm256_extractf128_pd(hSumfxfy, 0);
+                const simde__m128d hSumfzLow = simde_mm256_extractf128_pd(hSumfz, 0);
 
-                const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
-                const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
+                const simde__m128d hSumfxfyHigh = simde_mm256_extractf128_pd(hSumfxfy, 1);
+                const simde__m128d hSumfzHigh = simde_mm256_extractf128_pd(hSumfz, 1);
 
-                const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
-                const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
+                const simde__m128d sumfxfyVEC = simde_mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
+                const simde__m128d sumfzVEC = simde_mm_add_pd(hSumfzLow, hSumfzHigh);
 
                 const double sumfx = sumfxfyVEC[0];
                 const double sumfy = sumfxfyVEC[1];
-                const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+                const double sumfz = simde_mm_cvtsd_f64(sumfzVEC);
 
                 fxptr[i] += sumfx;
                 fyptr[i] += sumfy;
@@ -274,21 +276,21 @@ namespace autopas {
                 const int threadnum = autopas_get_thread_num();
 
                 // horizontally reduce virialSumX and virialSumY
-                const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
-                const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
-                const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-                const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+                const simde__m256d hSumVirialxy = simde_mm256_hadd_pd(virialSumX, virialSumY);
+                const simde__m128d hSumVirialxyLow = simde_mm256_extractf128_pd(hSumVirialxy, 0);
+                const simde__m128d hSumVirialxyHigh = simde_mm256_extractf128_pd(hSumVirialxy, 1);
+                const simde__m128d hSumVirialxyVec = simde_mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
                 // horizontally reduce virialSumZ and upotSum
-                const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
-                const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
-                const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
-                const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+                const simde__m256d hSumVirialzUpot = simde_mm256_hadd_pd(virialSumZ, upotSum);
+                const simde__m128d hSumVirialzUpotLow = simde_mm256_extractf128_pd(hSumVirialzUpot, 0);
+                const simde__m128d hSumVirialzUpotHigh = simde_mm256_extractf128_pd(hSumVirialzUpot, 1);
+                const simde__m128d hSumVirialzUpotVec = simde_mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
 
                 // globals = {virialX, virialY, virialZ, uPot}
                 double globals[4];
-                _mm_store_pd(&globals[0], hSumVirialxyVec);
-                _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+                simde_mm_store_pd(&globals[0], hSumVirialxyVec);
+                simde_mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
                 double factor = 1.;
                 // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
@@ -326,10 +328,10 @@ namespace autopas {
             const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
             const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
-            __m256d virialSumX = _mm256_setzero_pd();
-            __m256d virialSumY = _mm256_setzero_pd();
-            __m256d virialSumZ = _mm256_setzero_pd();
-            __m256d upotSum = _mm256_setzero_pd();
+            simde__m256d virialSumX = simde_mm256_setzero_pd();
+            simde__m256d virialSumY = simde_mm256_setzero_pd();
+            simde__m256d virialSumZ = simde_mm256_setzero_pd();
+            simde__m256d upotSum = simde_mm256_setzero_pd();
 
             for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
                 if (ownedStatePtr1[i] == OwnershipState::dummy) {
@@ -337,19 +339,19 @@ namespace autopas {
                     continue;
                 }
 
-                __m256d fxacc = _mm256_setzero_pd();
-                __m256d fyacc = _mm256_setzero_pd();
-                __m256d fzacc = _mm256_setzero_pd();
+                simde__m256d fxacc = simde_mm256_setzero_pd();
+                simde__m256d fyacc = simde_mm256_setzero_pd();
+                simde__m256d fzacc = simde_mm256_setzero_pd();
 
                 static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
                               "OwnershipStates underlying type should be int64_t!");
-                // ownedStatePtr1 contains int64_t, so we broadcast these to make an __m256i.
-                // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-                __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr1[i]));
+                // ownedStatePtr1 contains int64_t, so we broadcast these to make an simde__m256i.
+                // simde_mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
+                simde__m256i ownedStateI = simde_mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr1[i]));
 
-                const __m256d x1 = _mm256_broadcast_sd(&x1ptr[i]);
-                const __m256d y1 = _mm256_broadcast_sd(&y1ptr[i]);
-                const __m256d z1 = _mm256_broadcast_sd(&z1ptr[i]);
+                const simde__m256d x1 = simde_mm256_broadcast_sd(&x1ptr[i]);
+                const simde__m256d y1 = simde_mm256_broadcast_sd(&y1ptr[i]);
+                const simde__m256d z1 = simde_mm256_broadcast_sd(&z1ptr[i]);
 
                 // floor soa2 numParticles to multiple of vecLength
                 unsigned int j = 0;
@@ -365,21 +367,21 @@ namespace autopas {
                                              &virialSumX, &virialSumY, &virialSumZ, &upotSum, rest);
 
                 // horizontally reduce fDacc to sumfD
-                const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
-                const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
+                const simde__m256d hSumfxfy = simde_mm256_hadd_pd(fxacc, fyacc);
+                const simde__m256d hSumfz = simde_mm256_hadd_pd(fzacc, fzacc);
 
-                const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
-                const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
+                const simde__m128d hSumfxfyLow = simde_mm256_extractf128_pd(hSumfxfy, 0);
+                const simde__m128d hSumfzLow = simde_mm256_extractf128_pd(hSumfz, 0);
 
-                const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
-                const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
+                const simde__m128d hSumfxfyHigh = simde_mm256_extractf128_pd(hSumfxfy, 1);
+                const simde__m128d hSumfzHigh = simde_mm256_extractf128_pd(hSumfz, 1);
 
-                const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
-                const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
+                const simde__m128d sumfxfyVEC = simde_mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
+                const simde__m128d sumfzVEC = simde_mm_add_pd(hSumfzLow, hSumfzHigh);
 
                 const double sumfx = sumfxfyVEC[0];
                 const double sumfy = sumfxfyVEC[1];
-                const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+                const double sumfz = simde_mm_cvtsd_f64(sumfzVEC);
 
                 fx1ptr[i] += sumfx;
                 fy1ptr[i] += sumfy;
@@ -390,21 +392,21 @@ namespace autopas {
                 const int threadnum = autopas_get_thread_num();
 
                 // horizontally reduce virialSumX and virialSumY
-                const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
-                const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
-                const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-                const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+                const simde__m256d hSumVirialxy = simde_mm256_hadd_pd(virialSumX, virialSumY);
+                const simde__m128d hSumVirialxyLow = simde_mm256_extractf128_pd(hSumVirialxy, 0);
+                const simde__m128d hSumVirialxyHigh = simde_mm256_extractf128_pd(hSumVirialxy, 1);
+                const simde__m128d hSumVirialxyVec = simde_mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
                 // horizontally reduce virialSumZ and upotSum
-                const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
-                const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
-                const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
-                const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+                const simde__m256d hSumVirialzUpot = simde_mm256_hadd_pd(virialSumZ, upotSum);
+                const simde__m128d hSumVirialzUpotLow = simde_mm256_extractf128_pd(hSumVirialzUpot, 0);
+                const simde__m128d hSumVirialzUpotHigh = simde_mm256_extractf128_pd(hSumVirialzUpot, 1);
+                const simde__m128d hSumVirialzUpotVec = simde_mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
 
                 // globals = {virialX, virialY, virialZ, uPot}
                 double globals[4];
-                _mm_store_pd(&globals[0], hSumVirialxyVec);
-                _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+                simde_mm_store_pd(&globals[0], hSumVirialxyVec);
+                simde_mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
                 // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
                 // that we do not add the energy multiple times!
@@ -450,30 +452,30 @@ namespace autopas {
          * @param rest
          */
         template <bool newton3, bool remainderIsMasked>
-        inline void SoAKernel(const size_t j, const __m256i ownedStateI, const int64_t *const __restrict ownedStatePtr2,
-                              const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict x2ptr,
+        inline void SoAKernel(const size_t j, const simde__m256i ownedStateI, const int64_t *const __restrict ownedStatePtr2,
+                              const simde__m256d &x1, const simde__m256d &y1, const simde__m256d &z1, const double *const __restrict x2ptr,
                               const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                               double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                               double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
-                              __m256d &fxacc, __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY,
-                              __m256d *virialSumZ, __m256d *upotSum, const unsigned int rest = 0) {
-            __m256d epsilon24s = _epsilon24;
-            __m256d sigmaSquares = _sigmaSquare;
-            __m256d shift6s = _shift6;
+                              simde__m256d &fxacc, simde__m256d &fyacc, simde__m256d &fzacc, simde__m256d *virialSumX, simde__m256d *virialSumY,
+                              simde__m256d *virialSumZ, simde__m256d *upotSum, const unsigned int rest = 0) {
+            simde__m256d epsilon24s = _epsilon24;
+            simde__m256d sigmaSquares = _sigmaSquare;
+            simde__m256d shift6s = _shift6;
             if (useMixing) {
                 // the first argument for set lands in the last bits of the register
-                epsilon24s = _mm256_set_pd(
+                epsilon24s = simde_mm256_set_pd(
                         not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
                         not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
                         not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
                         _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
-                sigmaSquares = _mm256_set_pd(
+                sigmaSquares = simde_mm256_set_pd(
                         not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
                         not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
                         not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
                         _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)));
                 if constexpr (applyShift) {
-                    shift6s = _mm256_set_pd(
+                    shift6s = simde_mm256_set_pd(
                             (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
                             (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
                             (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
@@ -481,103 +483,103 @@ namespace autopas {
                 }
             }
 
-            const __m256d x2 = remainderIsMasked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&x2ptr[j]);
-            const __m256d y2 = remainderIsMasked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&y2ptr[j]);
-            const __m256d z2 = remainderIsMasked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&z2ptr[j]);
+            const simde__m256d x2 = remainderIsMasked ? simde_mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : simde_mm256_loadu_pd(&x2ptr[j]);
+            const simde__m256d y2 = remainderIsMasked ? simde_mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : simde_mm256_loadu_pd(&y2ptr[j]);
+            const simde__m256d z2 = remainderIsMasked ? simde_mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : simde_mm256_loadu_pd(&z2ptr[j]);
 
-            const __m256d drx = _mm256_sub_pd(x1, x2);
-            const __m256d dry = _mm256_sub_pd(y1, y2);
-            const __m256d drz = _mm256_sub_pd(z1, z2);
+            const simde__m256d drx = simde_mm256_sub_pd(x1, x2);
+            const simde__m256d dry = simde_mm256_sub_pd(y1, y2);
+            const simde__m256d drz = simde_mm256_sub_pd(z1, z2);
 
-            const __m256d drx2 = _mm256_mul_pd(drx, drx);
-            const __m256d dry2 = _mm256_mul_pd(dry, dry);
-            const __m256d drz2 = _mm256_mul_pd(drz, drz);
+            const simde__m256d drx2 = simde_mm256_mul_pd(drx, drx);
+            const simde__m256d dry2 = simde_mm256_mul_pd(dry, dry);
+            const simde__m256d drz2 = simde_mm256_mul_pd(drz, drz);
 
-            const __m256d dr2PART = _mm256_add_pd(drx2, dry2);
-            const __m256d dr2 = _mm256_add_pd(dr2PART, drz2);
+            const simde__m256d dr2PART = simde_mm256_add_pd(drx2, dry2);
+            const simde__m256d dr2 = simde_mm256_add_pd(dr2PART, drz2);
 
             // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
             // signaling = throw error if NaN is encountered
             // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
-            const __m256d cutoffMask = _mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
+            const simde__m256d cutoffMask = simde_mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
 
             // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
-            const __m256i ownedStateJ = remainderIsMasked
-                                        ? _mm256_castpd_si256(_mm256_maskload_pd(
+            const simde__m256i ownedStateJ = remainderIsMasked
+                                        ? simde_mm256_castpd_si256(simde_mm256_maskload_pd(
                             reinterpret_cast<double const *>(&ownedStatePtr2[j]), _masks[rest - 1]))
-                                        : _mm256_loadu_si256(reinterpret_cast<const __m256i *>(&ownedStatePtr2[j]));
+                                        : simde_mm256_loadu_si256(reinterpret_cast<const simde__m256i *>(&ownedStatePtr2[j]));
             // This requires that dummy is the first entry in OwnershipState!
-            const __m256d dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
-            const __m256d cutoffDummyMask = _mm256_and_pd(cutoffMask, dummyMask);
+            const simde__m256d dummyMask = simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
+            const simde__m256d cutoffDummyMask = simde_mm256_and_pd(cutoffMask, dummyMask);
 
             // if everything is masked away return from this function.
-            if (_mm256_movemask_pd(cutoffDummyMask) == 0) {
+            if (simde_mm256_movemask_pd(cutoffDummyMask) == 0) {
                 return;
             }
 
-            const __m256d invdr2 = _mm256_div_pd(_one, dr2);
-            const __m256d lj2 = _mm256_mul_pd(sigmaSquares, invdr2);
-            const __m256d lj4 = _mm256_mul_pd(lj2, lj2);
-            const __m256d lj6 = _mm256_mul_pd(lj2, lj4);
-            const __m256d lj12 = _mm256_mul_pd(lj6, lj6);
-            const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
-            const __m256d lj12m6alj12 = _mm256_add_pd(lj12m6, lj12);
-            const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, epsilon24s);
-            const __m256d fac = _mm256_mul_pd(lj12m6alj12e, invdr2);
+            const simde__m256d invdr2 = simde_mm256_div_pd(_one, dr2);
+            const simde__m256d lj2 = simde_mm256_mul_pd(sigmaSquares, invdr2);
+            const simde__m256d lj4 = simde_mm256_mul_pd(lj2, lj2);
+            const simde__m256d lj6 = simde_mm256_mul_pd(lj2, lj4);
+            const simde__m256d lj12 = simde_mm256_mul_pd(lj6, lj6);
+            const simde__m256d lj12m6 = simde_mm256_sub_pd(lj12, lj6);
+            const simde__m256d lj12m6alj12 = simde_mm256_add_pd(lj12m6, lj12);
+            const simde__m256d lj12m6alj12e = simde_mm256_mul_pd(lj12m6alj12, epsilon24s);
+            const simde__m256d fac = simde_mm256_mul_pd(lj12m6alj12e, invdr2);
 
-            const __m256d facMasked =
-                    remainderIsMasked ? _mm256_and_pd(fac, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                                      : _mm256_and_pd(fac, cutoffDummyMask);
+            const simde__m256d facMasked =
+                    remainderIsMasked ? simde_mm256_and_pd(fac, simde_mm256_and_pd(cutoffDummyMask, simde_mm256_castsi256_pd(_masks[rest - 1])))
+                                      : simde_mm256_and_pd(fac, cutoffDummyMask);
 
-            const __m256d fx = _mm256_mul_pd(drx, facMasked);
-            const __m256d fy = _mm256_mul_pd(dry, facMasked);
-            const __m256d fz = _mm256_mul_pd(drz, facMasked);
+            const simde__m256d fx = simde_mm256_mul_pd(drx, facMasked);
+            const simde__m256d fy = simde_mm256_mul_pd(dry, facMasked);
+            const simde__m256d fz = simde_mm256_mul_pd(drz, facMasked);
 
-            fxacc = _mm256_add_pd(fxacc, fx);
-            fyacc = _mm256_add_pd(fyacc, fy);
-            fzacc = _mm256_add_pd(fzacc, fz);
+            fxacc = simde_mm256_add_pd(fxacc, fx);
+            fyacc = simde_mm256_add_pd(fyacc, fy);
+            fzacc = simde_mm256_add_pd(fzacc, fz);
 
             // if newton 3 is used subtract fD from particle j
             if constexpr (newton3) {
-                const __m256d fx2 =
-                        remainderIsMasked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fx2ptr[j]);
-                const __m256d fy2 =
-                        remainderIsMasked ? _mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fy2ptr[j]);
-                const __m256d fz2 =
-                        remainderIsMasked ? _mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fz2ptr[j]);
+                const simde__m256d fx2 =
+                        remainderIsMasked ? simde_mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : simde_mm256_loadu_pd(&fx2ptr[j]);
+                const simde__m256d fy2 =
+                        remainderIsMasked ? simde_mm256_maskload_pd(&fy2ptr[j], _masks[rest - 1]) : simde_mm256_loadu_pd(&fy2ptr[j]);
+                const simde__m256d fz2 =
+                        remainderIsMasked ? simde_mm256_maskload_pd(&fz2ptr[j], _masks[rest - 1]) : simde_mm256_loadu_pd(&fz2ptr[j]);
 
-                const __m256d fx2new = _mm256_sub_pd(fx2, fx);
-                const __m256d fy2new = _mm256_sub_pd(fy2, fy);
-                const __m256d fz2new = _mm256_sub_pd(fz2, fz);
+                const simde__m256d fx2new = simde_mm256_sub_pd(fx2, fx);
+                const simde__m256d fy2new = simde_mm256_sub_pd(fy2, fy);
+                const simde__m256d fz2new = simde_mm256_sub_pd(fz2, fz);
 
-                remainderIsMasked ? _mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new)
-                                  : _mm256_storeu_pd(&fx2ptr[j], fx2new);
-                remainderIsMasked ? _mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new)
-                                  : _mm256_storeu_pd(&fy2ptr[j], fy2new);
-                remainderIsMasked ? _mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new)
-                                  : _mm256_storeu_pd(&fz2ptr[j], fz2new);
+                remainderIsMasked ? simde_mm256_maskstore_pd(&fx2ptr[j], _masks[rest - 1], fx2new)
+                                  : simde_mm256_storeu_pd(&fx2ptr[j], fx2new);
+                remainderIsMasked ? simde_mm256_maskstore_pd(&fy2ptr[j], _masks[rest - 1], fy2new)
+                                  : simde_mm256_storeu_pd(&fy2ptr[j], fy2new);
+                remainderIsMasked ? simde_mm256_maskstore_pd(&fz2ptr[j], _masks[rest - 1], fz2new)
+                                  : simde_mm256_storeu_pd(&fz2ptr[j], fz2new);
             }
 
             if constexpr (calculateGlobals) {
                 // Global Virial
-                const __m256d virialX = _mm256_mul_pd(fx, drx);
-                const __m256d virialY = _mm256_mul_pd(fy, dry);
-                const __m256d virialZ = _mm256_mul_pd(fz, drz);
+                const simde__m256d virialX = simde_mm256_mul_pd(fx, drx);
+                const simde__m256d virialY = simde_mm256_mul_pd(fy, dry);
+                const simde__m256d virialZ = simde_mm256_mul_pd(fz, drz);
 
                 // Global Potential
-                const __m256d upot = wrapperFMA(epsilon24s, lj12m6, shift6s);
+                const simde__m256d upot = wrapperFMA(epsilon24s, lj12m6, shift6s);
 
-                const __m256d upotMasked =
-                        remainderIsMasked ? _mm256_and_pd(upot, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
-                                          : _mm256_and_pd(upot, cutoffDummyMask);
+                const simde__m256d upotMasked =
+                        remainderIsMasked ? simde_mm256_and_pd(upot, simde_mm256_and_pd(cutoffDummyMask, simde_mm256_castsi256_pd(_masks[rest - 1])))
+                                          : simde_mm256_and_pd(upot, cutoffDummyMask);
 
-                __m256d ownedMaskI =
-                        _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateI), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-                __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskI);
+                simde__m256d ownedMaskI =
+                        simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateI), simde_mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+                simde__m256d energyFactor = simde_mm256_blendv_pd(_zero, _one, ownedMaskI);
                 if constexpr (newton3) {
-                    __m256d ownedMaskJ =
-                            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateJ), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-                    energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskJ));
+                    simde__m256d ownedMaskJ =
+                            simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateJ), simde_mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+                    energyFactor = simde_mm256_add_pd(energyFactor, simde_mm256_blendv_pd(_zero, _one, ownedMaskJ));
                 }
                 *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
                 *virialSumX = wrapperFMA(energyFactor, virialX, *virialSumX);
@@ -625,21 +627,21 @@ namespace autopas {
             const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
             // accumulators
-            __m256d virialSumX = _mm256_setzero_pd();
-            __m256d virialSumY = _mm256_setzero_pd();
-            __m256d virialSumZ = _mm256_setzero_pd();
-            __m256d upotSum = _mm256_setzero_pd();
-            __m256d fxacc = _mm256_setzero_pd();
-            __m256d fyacc = _mm256_setzero_pd();
-            __m256d fzacc = _mm256_setzero_pd();
+            simde__m256d virialSumX = simde_mm256_setzero_pd();
+            simde__m256d virialSumY = simde_mm256_setzero_pd();
+            simde__m256d virialSumZ = simde_mm256_setzero_pd();
+            simde__m256d upotSum = simde_mm256_setzero_pd();
+            simde__m256d fxacc = simde_mm256_setzero_pd();
+            simde__m256d fyacc = simde_mm256_setzero_pd();
+            simde__m256d fzacc = simde_mm256_setzero_pd();
 
             // broadcast particle 1
-            const auto x1 = _mm256_broadcast_sd(&xptr[indexFirst]);
-            const auto y1 = _mm256_broadcast_sd(&yptr[indexFirst]);
-            const auto z1 = _mm256_broadcast_sd(&zptr[indexFirst]);
-            // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
-            // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-            __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[indexFirst]));
+            const auto x1 = simde_mm256_broadcast_sd(&xptr[indexFirst]);
+            const auto y1 = simde_mm256_broadcast_sd(&yptr[indexFirst]);
+            const auto z1 = simde_mm256_broadcast_sd(&zptr[indexFirst]);
+            // ownedStatePtr contains int64_t, so we broadcast these to make an simde__m256i.
+            // simde_mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
+            simde__m256i ownedStateI = simde_mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[indexFirst]));
 
             alignas(64) std::array<double, vecLength> x2tmp{};
             alignas(64) std::array<double, vecLength> y2tmp{};
@@ -661,13 +663,13 @@ namespace autopas {
                 // SIMDe2 variant:
                 // create buffer for 4 interaction particles
                 // and fill buffers via gathering
-                //      const __m256d x2tmp = _mm256_i64gather_pd(&xptr[j], _vindex, 1);
-                //      const __m256d y2tmp = _mm256_i64gather_pd(&yptr[j], _vindex, 1);
-                //      const __m256d z2tmp = _mm256_i64gather_pd(&zptr[j], _vindex, 1);
-                //      const __m256d fx2tmp = _mm256_i64gather_pd(&fxptr[j], _vindex, 1);
-                //      const __m256d fy2tmp = _mm256_i64gather_pd(&fyptr[j], _vindex, 1);
-                //      const __m256d fz2tmp = _mm256_i64gather_pd(&fzptr[j], _vindex, 1);
-                //      const __m256i typeID2tmp = _mm256_i64gather_epi64(&typeIDptr[j], _vindex, 1);
+                //      const simde__m256d x2tmp = simde_mm256_i64gather_pd(&xptr[j], _vindex, 1);
+                //      const simde__m256d y2tmp = simde_mm256_i64gather_pd(&yptr[j], _vindex, 1);
+                //      const simde__m256d z2tmp = simde_mm256_i64gather_pd(&zptr[j], _vindex, 1);
+                //      const simde__m256d fx2tmp = simde_mm256_i64gather_pd(&fxptr[j], _vindex, 1);
+                //      const simde__m256d fy2tmp = simde_mm256_i64gather_pd(&fyptr[j], _vindex, 1);
+                //      const simde__m256d fz2tmp = simde_mm256_i64gather_pd(&fzptr[j], _vindex, 1);
+                //      const simde__m256i typeID2tmp = simde_mm256_i64gather_epi64(&typeIDptr[j], _vindex, 1);
 
                 for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
                     x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
@@ -704,13 +706,13 @@ namespace autopas {
                 // create buffer for 4 interaction particles
                 // and fill buffers via gathering
                 //      TODO: use masked load because there will not be enough data left for the whole gather
-                //      const __m256d x2tmp = _mm256_i64gather_pd(&xptr[j], _vindex, 1);
-                //      const __m256d y2tmp = _mm256_i64gather_pd(&yptr[j], _vindex, 1);
-                //      const __m256d z2tmp = _mm256_i64gather_pd(&zptr[j], _vindex, 1);
-                //      const __m256d fx2tmp = _mm256_i64gather_pd(&fxptr[j], _vindex, 1);
-                //      const __m256d fy2tmp = _mm256_i64gather_pd(&fyptr[j], _vindex, 1);
-                //      const __m256d fz2tmp = _mm256_i64gather_pd(&fzptr[j], _vindex, 1);
-                //      const __m256d typeID2tmp = _mm256_i64gather_pd(&typeIDptr[j], _vindex, 1);
+                //      const simde__m256d x2tmp = simde_mm256_i64gather_pd(&xptr[j], _vindex, 1);
+                //      const simde__m256d y2tmp = simde_mm256_i64gather_pd(&yptr[j], _vindex, 1);
+                //      const simde__m256d z2tmp = simde_mm256_i64gather_pd(&zptr[j], _vindex, 1);
+                //      const simde__m256d fx2tmp = simde_mm256_i64gather_pd(&fxptr[j], _vindex, 1);
+                //      const simde__m256d fy2tmp = simde_mm256_i64gather_pd(&fyptr[j], _vindex, 1);
+                //      const simde__m256d fz2tmp = simde_mm256_i64gather_pd(&fzptr[j], _vindex, 1);
+                //      const simde__m256d typeID2tmp = simde_mm256_i64gather_pd(&typeIDptr[j], _vindex, 1);
 
                 for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
                     x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
@@ -741,21 +743,21 @@ namespace autopas {
             }
 
             // horizontally reduce fDacc to sumfD
-            const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
-            const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
+            const simde__m256d hSumfxfy = simde_mm256_hadd_pd(fxacc, fyacc);
+            const simde__m256d hSumfz = simde_mm256_hadd_pd(fzacc, fzacc);
 
-            const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
-            const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
+            const simde__m128d hSumfxfyLow = simde_mm256_extractf128_pd(hSumfxfy, 0);
+            const simde__m128d hSumfzLow = simde_mm256_extractf128_pd(hSumfz, 0);
 
-            const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
-            const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
+            const simde__m128d hSumfxfyHigh = simde_mm256_extractf128_pd(hSumfxfy, 1);
+            const simde__m128d hSumfzHigh = simde_mm256_extractf128_pd(hSumfz, 1);
 
-            const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
-            const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
+            const simde__m128d sumfxfyVEC = simde_mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
+            const simde__m128d sumfzVEC = simde_mm_add_pd(hSumfzLow, hSumfzHigh);
 
             const double sumfx = sumfxfyVEC[0];
             const double sumfy = sumfxfyVEC[1];
-            const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+            const double sumfz = simde_mm_cvtsd_f64(sumfzVEC);
 
             fxptr[indexFirst] += sumfx;
             fyptr[indexFirst] += sumfy;
@@ -765,21 +767,21 @@ namespace autopas {
                 const int threadnum = autopas_get_thread_num();
 
                 // horizontally reduce virialSumX and virialSumY
-                const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
-                const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
-                const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-                const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
+                const simde__m256d hSumVirialxy = simde_mm256_hadd_pd(virialSumX, virialSumY);
+                const simde__m128d hSumVirialxyLow = simde_mm256_extractf128_pd(hSumVirialxy, 0);
+                const simde__m128d hSumVirialxyHigh = simde_mm256_extractf128_pd(hSumVirialxy, 1);
+                const simde__m128d hSumVirialxyVec = simde_mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
 
                 // horizontally reduce virialSumZ and upotSum
-                const __m256d hSumVirialzUpot = _mm256_hadd_pd(virialSumZ, upotSum);
-                const __m128d hSumVirialzUpotLow = _mm256_extractf128_pd(hSumVirialzUpot, 0);
-                const __m128d hSumVirialzUpotHigh = _mm256_extractf128_pd(hSumVirialzUpot, 1);
-                const __m128d hSumVirialzUpotVec = _mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
+                const simde__m256d hSumVirialzUpot = simde_mm256_hadd_pd(virialSumZ, upotSum);
+                const simde__m128d hSumVirialzUpotLow = simde_mm256_extractf128_pd(hSumVirialzUpot, 0);
+                const simde__m128d hSumVirialzUpotHigh = simde_mm256_extractf128_pd(hSumVirialzUpot, 1);
+                const simde__m128d hSumVirialzUpotVec = simde_mm_add_pd(hSumVirialzUpotHigh, hSumVirialzUpotLow);
 
                 // globals = {virialX, virialY, virialZ, uPot}
                 double globals[4];
-                _mm_store_pd(&globals[0], hSumVirialxyVec);
-                _mm_store_pd(&globals[2], hSumVirialzUpotVec);
+                simde_mm_store_pd(&globals[0], hSumVirialxyVec);
+                simde_mm_store_pd(&globals[2], hSumVirialzUpotVec);
 
                 double factor = 1.;
                 // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
@@ -923,13 +925,13 @@ namespace autopas {
          * @param sigmaSquare
          */
         void setParticleProperties(double epsilon24, double sigmaSquare) {
-            _epsilon24 = _mm256_set1_pd(epsilon24);
-            _sigmaSquare = _mm256_set1_pd(sigmaSquare);
+            _epsilon24 = simde_mm256_set1_pd(epsilon24);
+            _sigmaSquare = simde_mm256_set1_pd(sigmaSquare);
             if constexpr (applyShift) {
-                _shift6 = _mm256_set1_pd(
+                _shift6 = simde_mm256_set1_pd(
                         ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquare, _cutoffsquare[0]));
             } else {
-                _shift6 = _mm256_setzero_pd();
+                _shift6 = simde_mm256_setzero_pd();
             }
 
             _epsilon24AoS = epsilon24;
@@ -949,8 +951,9 @@ namespace autopas {
          * @param summandC
          * @return A * B + C
          */
-        inline __m256d wrapperFMA(const __m256d &factorA, const __m256d &factorB, const __m256d &summandC) {
-            return _mm256_fmadd_pd(factorA, factorB, summandC);
+        inline simde__m256d wrapperFMA(const simde__m256d &factorA, const simde__m256d &factorB, const simde__m256d &summandC) {
+            const simde__m256d tmp = simde_mm256_mul_pd(factorA, factorB);
+            return simde_mm256_add_pd(summandC, tmp);
         }
 
         /**
@@ -975,20 +978,20 @@ namespace autopas {
         // make sure of the size of AoSThreadData
         static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-        const __m256d _zero{_mm256_set1_pd(0.)};
-        const __m256d _one{_mm256_set1_pd(1.)};
-        const __m256i _vindex = _mm256_set_epi64x(0, 1, 3, 4);
-        const __m256i _masks[3]{
-                _mm256_set_epi64x(0, 0, 0, -1),
-                _mm256_set_epi64x(0, 0, -1, -1),
-                _mm256_set_epi64x(0, -1, -1, -1),
+        const simde__m256d _zero{simde_mm256_set1_pd(0.)};
+        const simde__m256d _one{simde_mm256_set1_pd(1.)};
+        const simde__m256i _vindex = simde_mm256_set_epi64x(0, 1, 3, 4);
+        const simde__m256i _masks[3]{
+                simde_mm256_set_epi64x(0, 0, 0, -1),
+                simde_mm256_set_epi64x(0, 0, -1, -1),
+                simde_mm256_set_epi64x(0, -1, -1, -1),
         };
-        const __m256i _ownedStateDummyMM256i{0x0};
-        const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
-        const __m256d _cutoffsquare{};
-        __m256d _shift6 = _mm256_setzero_pd();
-        __m256d _epsilon24{};
-        __m256d _sigmaSquare{};
+        const simde__m256i _ownedStateDummyMM256i{0x0};
+        const simde__m256i _ownedStateOwnedMM256i{simde_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
+        const simde__m256d _cutoffsquare{};
+        simde__m256d _shift6 = simde_mm256_setzero_pd();
+        simde__m256d _epsilon24{};
+        simde__m256d _sigmaSquare{};
 
         const double _cutoffsquareAoS = 0;
         double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0;
