@@ -14,6 +14,8 @@
 #include "autopas/utils/inBox.h"
 
 #include <x86/avx.h>
+//for fused-multiply add needs separate import
+#include <x86/fma.h>
 
 namespace autopas {
 
@@ -952,8 +954,9 @@ namespace autopas {
          * @return A * B + C
          */
         inline simde__m256d wrapperFMA(const simde__m256d &factorA, const simde__m256d &factorB, const simde__m256d &summandC) {
-            const simde__m256d tmp = simde_mm256_mul_pd(factorA, factorB);
-            return simde_mm256_add_pd(summandC, tmp);
+            //const simde__m256d tmp = simde_mm256_mul_pd(factorA, factorB);
+            //return simde_mm256_add_pd(summandC, tmp);
+            return simde_mm256_fmadd_pd(factorA, factorB, summandC);
         }
 
         /**
