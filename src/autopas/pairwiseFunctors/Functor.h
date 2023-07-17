@@ -140,8 +140,7 @@ class Functor {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                                bool newton3) {
+                                const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorVerlet: not yet implemented");
   }
 
@@ -214,6 +213,13 @@ class Functor {
    * @return true if and only if this functor is relevant for auto-tuning.
    */
   virtual bool isRelevantForTuning() = 0;
+
+  /**
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to iteratePairwise
+   * using different functors in the logs.
+   * @return name of functor.
+   */
+  virtual std::string getName() { return "Functor"; }
 
   /**
    * Getter for the functor's cutoff

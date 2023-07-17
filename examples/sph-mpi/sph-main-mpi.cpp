@@ -10,10 +10,10 @@
 #include <cmath>
 #include <iostream>
 
+#include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
-#include "autopas/sph/autopassph.h"
 
-using Particle = autopas::sph::SPHParticle;
+using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
@@ -373,8 +373,8 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
 void densityPressureHydroForce(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<double, 3> &globalBoxMin,
                                const std::array<double, 3> &globalBoxMax) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor<Particle> densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
+  sphLib::SPHCalcDensityFunctor<Particle> densityFunctor;
+  sphLib::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
 
   // 1.first calculate density
   // 1.1 to calculate the density we need the halo particles
@@ -537,7 +537,7 @@ int main(int argc, char *argv[]) {
 
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
-  for (double time = 0.; time < t_end && step < 55; time += dt, ++step) {
+  for (double time = 0.; time < t_end && step < 55; time += dt, ++step, sphSystem.incrementIterationCounters()) {
     if (rank == 0) {
       std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
     }

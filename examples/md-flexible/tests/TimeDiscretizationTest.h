@@ -12,17 +12,32 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPas.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
-#include "testingHelpers/commonTypedefs.h"
+#include "autopas/utils/ArrayMath.h"
+#include "autopasTools/generators/GridGenerator.h"
+#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include "src/TimeDiscretization.h"
+#include "src/configuration/MDFlexConfig.h"
+
+namespace {
+/**
+ * Initializes an AutoPas container for a simple 5x5x5 domain, and fills it with particles.
+ * @param autopasContainer
+ */
+void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer);
+
+/**
+ * Initialise particle properties library with a single site type (and multi-site molecule type, if needed)
+ * @param PPL
+ */
+void initPPL(ParticlePropertiesLibrary<> &PPL);
+
+}  // namespace
 
 class TimeDiscretizationTest : public AutoPasTestBase {
  public:
-  TimeDiscretizationTest() : AutoPasTestBase(), _particlePropertiesLibrary(1) {
-    _particlePropertiesLibrary.addType(0, 1, 1, 1);
-    _particlePropertiesLibrary.calculateMixingCoefficients();
-  }
-  static void fillWithParticlesAndInit(autopas::AutoPas<Molecule> &autopas);
-
- protected:
-  ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
+  /**
+   * Constructor.
+   */
+  TimeDiscretizationTest() = default;
 };

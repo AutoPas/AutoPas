@@ -8,11 +8,11 @@
 #include <cmath>
 #include <iostream>
 
+#include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
-#include "autopas/sph/autopassph.h"
 #include "autopas/utils/ArrayUtils.h"
 
-using Particle = autopas::sph::SPHParticle;
+using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
@@ -205,8 +205,8 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
 
 void densityPressureHydroForce(AutoPasContainer &sphSystem) {
   // declare the used functors
-  autopas::sph::SPHCalcDensityFunctor<Particle> densityFunctor;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
+  sphLib::SPHCalcDensityFunctor<Particle> densityFunctor;
+  sphLib::SPHCalcHydroForceFunctor<Particle> hydroForceFunctor;
 
   std::cout << "\nhaloupdate\n" << std::endl;
 
@@ -348,7 +348,7 @@ int main() {
   // 1 ---- START MAIN LOOP ----
   size_t step = 0;
   autopas::utils::Timer perlooptimer;
-  for (double time = 0.; time < t_end; time += dt, ++step) {
+  for (double time = 0.; time < t_end; time += dt, ++step, sphSystem.incrementIterationCounters()) {
     perlooptimer.start();
     std::cout << "\n-------------------------\ntime step " << step << "(t = " << time << ")..." << std::endl;
     // 1.1 Leap frog: Initial Kick & Full Drift

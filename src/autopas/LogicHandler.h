@@ -329,7 +329,6 @@ class LogicHandler {
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
-    ++_stepsSinceLastListRebuild;
 
     return result;
   }
@@ -367,6 +366,9 @@ class LogicHandler {
                               static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
     if (behavior & IteratorBehavior::owned) {
       for (auto &buffer : _particleBuffer) {
+        // Don't insert empty buffers. This also means that we won't pick up particles added during iterating if they
+        // go to the buffers. But since we wouldn't pick them up if they go into the container to a cell that the
+        // iterators already passed this is unsupported anyways.
         if (not buffer.isEmpty()) {
           additionalVectors.push_back(&(buffer._particles));
         }
@@ -455,6 +457,10 @@ class LogicHandler {
    * @return
    */
   [[nodiscard]] unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
+
+  void incrementNumStepsSinceLastRebuild() {
+    _stepsSinceLastListRebuild++;
+  }
 
  private:
   void checkMinimalSize() {

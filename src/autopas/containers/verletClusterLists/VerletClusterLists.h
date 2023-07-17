@@ -35,6 +35,14 @@ namespace autopas {
  *
  * This Container does (currently?) not make use of the cellSizeFactor.
  *
+ * The _particlesToAdd buffer structure is (currently) still necessary, even if the LogicHandler basically holds
+ * the same buffer structure. In principle, moving the particles directly into one of the towers would be possible,
+ * since particles are moved from LogicHandler to VCL only in a rebuild iteration. However, storing the particles in a
+ * tower (e.g. tower0) is only possible very inefficiently, since several threads would write to this buffer at the same
+ * time. Even if we could add the particles to tower0 efficiently, there are still problems in getRegionIterator(),
+ * because this function is executed between the addition of particles and the actual rebuild. getRegionIterator()
+ * expects that all particles are already sorted correctly into the towers (if we do not use _particlesToAdd).
+ *
  * @note See VerletClusterListsRebuilder for the layout of the towers and clusters.
  *
  * @tparam Particle
@@ -163,16 +171,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Adds the given particle to the container. rebuildVerletLists() has to be called to have it actually sorted in.
+   * Adds the given particle to the container. rebuildTowersAndClusters() has to be called to have it actually sorted
+   * in.
    * @param p The particle to add.
    */
   void addParticleImpl(const Particle &p) override {
-    _isValid = ValidityState::invalid;
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     _particlesToAdd[autopas_get_thread_num()].push_back(p);
   }
 
   void addHaloParticleImpl(const Particle &haloParticle) override {
-    _isValid = ValidityState::invalid;
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     Particle copy = haloParticle;
     copy.setOwnershipState(OwnershipState::halo);
     _particlesToAdd[autopas_get_thread_num()].push_back(copy);
@@ -184,16 +193,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     Particle pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
 
-    typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectors;
-    additionalVectors.reserve(_particlesToAdd.size());
-    for (auto &v : _particlesToAdd) {
-      additionalVectors.push_back(&v);
-    }
-
     // this might be called from a parallel region so force this iterator to be sequential
     for (auto it =
              getRegionIterator(pCopy.getR() - (this->getVerletSkin() / 2), pCopy.getR() + (this->getVerletSkin() / 2),
-                               IteratorBehavior::halo | IteratorBehavior::forceSequential, &additionalVectors);
+                               IteratorBehavior::halo | IteratorBehavior::forceSequential, nullptr);
          it.isValid(); ++it) {
       if (pCopy.getID() == it->getID()) {
         *it = pCopy;
@@ -243,7 +246,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       }
     }
     if (deletedSomething) {
-      _isValid = ValidityState::invalid;
+      _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     }
   }
 
@@ -364,7 +367,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         }
       }
     }
-    _isValid = ValidityState::invalid;
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     return invalidParticles;
   }
 
@@ -389,50 +392,52 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] ContainerIterator<Particle, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
-    // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
-    // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-    typename ContainerIterator<Particle, true, false>::ParticleVecType additionalVectorsTmp;
-    if (additionalVectors) {
-      additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
-      additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
+    // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
+    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    if (_isValid != ValidityState::invalid) {
+      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      // the status is not invalid
+      if (not particlesToAddEmpty(autopas_get_thread_num())) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::begin(): Error: particle container is valid, but _particlesToAdd isn't empty!");
+      }
+      // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
+      // from LogicHandler.
+      return ContainerIterator<Particle, true, false>(*this, behavior, additionalVectors);
     } else {
-      additionalVectorsTmp.reserve(_particlesToAdd.size());
+      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+      // store all pointers in a temporary which is passed to the ParticleIterator constructor.
+      typename ContainerIterator<Particle, true, false>::ParticleVecType additionalVectorsToPass;
+      appendBuffersHelper(additionalVectors, additionalVectorsToPass);
+      return ContainerIterator<Particle, true, false>(*this, behavior, &additionalVectorsToPass);
     }
-    for (auto &vec : _particlesToAdd) {
-      additionalVectorsTmp.push_back(&vec);
-    }
-    return ContainerIterator<Particle, true, false>(*this, behavior, &additionalVectorsTmp);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
    * @note const version.
-   * @note This function additionally iterates over the _particlesToAdd vector if the tower-structure isn't valid.
    */
   [[nodiscard]] ContainerIterator<Particle, false, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
+    // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
+    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
-      if (not particlesToAddEmpty()) {
+      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      // the status is not invalid
+      if (not particlesToAddEmpty(autopas_get_thread_num())) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
       }
-      // If the particles are sorted into the towers, we can simply use the iteration over towers.
+      // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
+      // from LogicHandler.
       return ContainerIterator<Particle, false, false>(*this, behavior, additionalVectors);
     } else {
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
-      typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectorsTmp;
-      if (additionalVectors) {
-        additionalVectorsTmp.reserve(_particlesToAdd.size() + additionalVectors->size());
-        additionalVectorsTmp.insert(additionalVectorsTmp.end(), additionalVectors->begin(), additionalVectors->end());
-      } else {
-        additionalVectorsTmp.reserve(_particlesToAdd.size());
-      }
-      for (auto &vec : _particlesToAdd) {
-        additionalVectorsTmp.push_back(&vec);
-      }
-      return ContainerIterator<Particle, false, false>(*this, behavior, &additionalVectorsTmp);
+      typename ContainerIterator<Particle, false, false>::ParticleVecType additionalVectorsToPass;
+      appendBuffersHelper(additionalVectors, additionalVectorsToPass);
+      return ContainerIterator<Particle, false, false>(*this, behavior, &additionalVectorsToPass);
     }
   }
 
@@ -463,7 +468,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
-            "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+            "VerletClusterLists::forEach() const: Error: particle container is valid, but _particlesToAdd isn't "
+            "empty!");
       }
     }
 
@@ -512,7 +518,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
-            "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+            "VerletClusterLists::reduce() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
       }
     }
 
@@ -539,39 +545,56 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
-    typename ContainerIterator<Particle, true, true>::ParticleVecType additionalContainerVectors;
-    additionalContainerVectors.reserve(_particlesToAdd.size() + additionalVectors->size());
-    for (auto &v : _particlesToAdd) {
-      additionalContainerVectors.push_back(&v);
+    // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
+    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    if (_isValid != ValidityState::invalid) {
+      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      // the status is not invalid
+      if (not particlesToAddEmpty(autopas_get_thread_num())) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::reduce() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+      }
+      // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
+      // from LogicHandler.
+      return ContainerIterator<Particle, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    } else {
+      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+      // store all pointers in a temporary which is passed to the ParticleIterator constructor.
+      typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectorsToPass;
+      appendBuffersHelper(additionalVectors, additionalVectorsToPass);
+      return ContainerIterator<Particle, true, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
+                                                     higherCorner);
     }
-    additionalContainerVectors.insert(additionalContainerVectors.end(), additionalVectors->begin(),
-                                      additionalVectors->end());
-    return ContainerIterator<Particle, true, true>(*this, behavior, &additionalContainerVectors, lowerCorner,
-                                                   higherCorner);
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version.
-   * @note This function additionally iterates over _particlesToAdd if the container structure isn't valid.
    */
   [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
-    if (_isValid != ValidityState::invalid && not particlesToAddEmpty()) {
-      autopas::utils::ExceptionHandler::exception(
-          "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+    // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
+    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    if (_isValid != ValidityState::invalid) {
+      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      // the status is not invalid
+      if (not particlesToAddEmpty(autopas_get_thread_num())) {
+        autopas::utils::ExceptionHandler::exception(
+            "VerletClusterLists::getRegionIterator() const: Error: particle container is valid, but _particlesToAdd "
+            "isn't empty!");
+      }
+      // If the particles are sorted into the towers, we can simply use the iteration over towers + additionalVectors
+      // from LogicHandler.
+      return ContainerIterator<Particle, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+    } else {
+      // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
+      // store all pointers in a temporary which is passed to the ParticleIterator constructor.
+      typename ContainerIterator<Particle, false, true>::ParticleVecType additionalVectorsToPass;
+      appendBuffersHelper(additionalVectors, additionalVectorsToPass);
+      return ContainerIterator<Particle, false, true>(*this, behavior, &additionalVectorsToPass, lowerCorner,
+                                                      higherCorner);
     }
-    typename ContainerIterator<Particle, false, true>::ParticleVecType additionalContainerVectors;
-    additionalContainerVectors.reserve(_particlesToAdd.size() + additionalVectors->size());
-    for (auto &v : _particlesToAdd) {
-      additionalContainerVectors.push_back(&v);
-    }
-    additionalContainerVectors.insert(additionalContainerVectors.end(), additionalVectors->begin(),
-                                      additionalVectors->end());
-    return ContainerIterator<Particle, false, true>(
-        *this, behavior, _isValid != ValidityState::invalid ? nullptr : &additionalContainerVectors, lowerCorner,
-        higherCorner);
   }
 
   /**
@@ -614,7 +637,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
-            "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+            "VerletClusterLists::forEachInRegion() const: Error: particle container is valid, but _particlesToAdd "
+            "isn't empty!");
       }
     }
 
@@ -684,7 +708,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (_isValid != ValidityState::invalid) {
       if (not particlesToAddEmpty()) {
         autopas::utils::ExceptionHandler::exception(
-            "VerletClusterLists::begin() const: Error: particle container is valid, but _particlesToAdd isn't empty!");
+            "VerletClusterLists::reduceInRegion() const: Error: particle container is valid, but _particlesToAdd isn't "
+            "empty!");
       }
     }
     // If the particles are sorted into the towers, we can simply use the iteration over towers.
@@ -1021,7 +1046,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency; }
 
   void deleteAllParticles() override {
-    _isValid = ValidityState::invalid;
+    _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
     std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
@@ -1049,7 +1074,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _builder->rebuildTowersAndClusters();
 
     _towerSideLengthReciprocal = 1 / _towerSideLength;
-    _isValid = ValidityState::cellsValidListsInvalid;
+    _isValid.store(ValidityState::cellsValidListsInvalid, std::memory_order::memory_order_relaxed);
     for (auto &tower : _towers) {
       tower.setParticleDeletionObserver(this);
     }
@@ -1309,20 +1334,47 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * Contains all particles that should be added to the container during the next rebuild.
    * Outer vector is for Thread buffer to allow parallel particle insertion.
+   * This has to be a mutable so we can call appendBuffersHelper() from const and non-const functions.
    */
-  std::vector<std::vector<Particle>> _particlesToAdd;
+  mutable std::vector<std::vector<Particle>> _particlesToAdd;
 
   /**
-   * Checks if there are particles in at least one thread buffer of _particlesToAdd.
-   * @return true iff all thread buffer are empty.
+   * Checks if there are particles in the buffers of _particlesToAdd.
+   * @param bufferID the buffer ID to check for emptiness. If bufferID == -1, all buffers are checked
+   * @return true if all buffers are empty or if one of the specified buffers is empty.
    */
-  [[nodiscard]] bool particlesToAddEmpty() const {
-    for (auto &threadBuffer : _particlesToAdd) {
-      if (not threadBuffer.empty()) {
-        return false;
+  [[nodiscard]] bool particlesToAddEmpty(int bufferID = -1) const {
+    if (bufferID == -1) {
+      for (auto &threadBuffer : _particlesToAdd) {
+        if (not threadBuffer.empty()) {
+          return false;
+        }
       }
+      return true;
+    } else {
+      return _particlesToAdd[bufferID].empty();
     }
-    return true;
+  }
+
+  /**
+   * Helper function for begin() and getRegionIterator() that merges all buffers from _particlesToAdd and
+   * additionalVectors into a single buffer
+   *
+   * @tparam VecVec Type of datastructure of additional vectors. Expected is a vector of vectors.
+   * @param additionalVectors Additional vectors from LogicHandler.
+   * @param outVec The buffer where additionalVectors + _particlesToAdd will be stored.
+   */
+  template <class VecVec>
+  void appendBuffersHelper(VecVec *additionalVectors, VecVec &outVec) const {
+    if (additionalVectors) {
+      outVec.reserve(_particlesToAdd.size() + additionalVectors->size());
+      outVec.insert(outVec.end(), additionalVectors->begin(), additionalVectors->end());
+    } else {
+      outVec.reserve(_particlesToAdd.size());
+    }
+    for (auto &vec : _particlesToAdd) {
+      outVec.push_back(&vec);
+    }
   }
 
   /**

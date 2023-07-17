@@ -20,6 +20,7 @@
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TriwiseTraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
@@ -544,6 +545,8 @@ class AutoPas {
       containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
+
+
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
@@ -584,6 +587,11 @@ class AutoPas {
    * @return bool indicating if search space is trivial.
    */
   [[nodiscard]] bool searchSpaceIsTrivial();
+
+  /**
+   * Increments any iteration-based counters within AutoPas.
+   */
+  [[nodiscard]] void incrementIterationCounters();
 
   /**
    * Set coordinates of the lower corner of the domain.
@@ -915,6 +923,13 @@ class AutoPas {
   }
 
   /**
+   * Setter for the tuning metric option.
+   * For possible tuning metric choices see options::TuningMetricOption::Value.
+   * @param tuningMetricOption
+   */
+  void setTuningMetricOption(TuningMetricOption tuningMetricOption) { _tuningMetricOption = tuningMetricOption; }
+
+  /**
    * Setter for the mpi strategy option
    * @param mpiStrategyOption
    */
@@ -1036,6 +1051,12 @@ class AutoPas {
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    */
   TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
+
+  /**
+   * Strategy option for the auto tuner.
+   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
+   */
+  TuningMetricOption _tuningMetricOption{TuningMetricOption::time};
 
   /**
    * Strategy for the configuration selector.

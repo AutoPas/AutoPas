@@ -43,15 +43,20 @@ class IterationLogger {
    * Log the given arguments and the internal buffer to the csv file.
    * @param configuration
    * @param iteration
+   * @param functorName
    * @param inTuningPhase
    * @param timeIteratePairwise Time for Container::iteratePairwise().
    * @param timeRemainderTraversal Time for AutoTuner::doRemainderTraversal().
    * @param timeRebuildNeighborLists Time for Container::rebuildNeighborLists().
    * @param timeIteratePairwiseTotal Time for AutoTuner::iteratePairwise(). This is slightly more than the sum of the
    * above. Additional steps, only included in this timer are e.g. Functor::initTraversal() and Functor::endTraversal().
+   * @param energyPsys Energy in Joules for the entire measured system since the last measurement.
+   * @param energyPkg Energy in Joules for the CPU package since the last measurement.
+   * @param energyRam Energy in Joules for the RAM since the last measurement.
    */
-  void logIteration(const Configuration &configuration, size_t iteration, bool inTuningPhase, long timeIteratePairwise,
-                    long timeRemainderTraversal, long timeRebuildNeighborLists, long timeIteratePairwiseTotal);
+  void logIteration(const Configuration &configuration, size_t iteration, std::string functorName, bool inTuningPhase, long timeIteratePairwise,
+                    long timeRemainderTraversal, long timeRebuildNeighborLists, long timeIteratePairwiseTotal,
+                    double energyPsys, double energyPkg, double energyRam);
 
  private:
   std::string _loggerName;
