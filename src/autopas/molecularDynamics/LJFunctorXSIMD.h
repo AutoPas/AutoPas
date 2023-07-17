@@ -407,23 +407,23 @@ class LJFunctorXSIMD
        xsimd::batch<double> shift6s = _shift6;
        if (useMixing) {
          // the first argument for set lands in the last bits of the register
-         epsilon24s = {
-             not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-             not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-             not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-             _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0))};
-         sigmaSquares = {
-             not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-             not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-             not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-             _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0))};
-         if constexpr (applyShift) {
-           shift6s = {
-               (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-               (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-               (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-               _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0))};
-         }
+           epsilon24s = {
+                   _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)),
+                   not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                   not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                   not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+           sigmaSquares = {
+                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)),
+                   not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                   not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                   not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+           if constexpr (applyShift) {
+               shift6s = {
+                       _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)),
+                       (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                       (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                       (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+           }
        }
        xsimd::batch<double> x2;
        xsimd::batch<double> y2;
