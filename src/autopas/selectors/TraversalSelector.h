@@ -71,7 +71,7 @@ class TraversalSelector {
    * @return Smartpointer to the traversal.
    */
   template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-  static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
+  static std::unique_ptr<PairwiseTraversalInterface> generateTraversal(TraversalOption traversalType,
                                                                PairwiseFunctor &pairwiseFunctor,
                                                                const TraversalSelectorInfo &info);
 
@@ -95,7 +95,7 @@ class TraversalSelector {
 
 template <class ParticleCell>
 template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
+std::unique_ptr<PairwiseTraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info) {
   switch (traversalType) {
     // Direct sum
@@ -261,7 +261,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
-  return std::unique_ptr<TraversalInterface>(nullptr);
+  return std::unique_ptr<PairwiseTraversalInterface>(nullptr);
 }
 template <class ParticleCell>
 template <class PairwiseFunctor>

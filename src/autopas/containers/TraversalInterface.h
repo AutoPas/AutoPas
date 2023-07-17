@@ -54,11 +54,6 @@ class TraversalInterface {
    * Finalizes the traversal. Should be called after traverse().
    */
   virtual void endTraversal() = 0;
-
-  /**
-   * Traverses all particle pairs.
-   */
-  virtual void traverseParticlePairs() = 0;
 };
 
 }  // namespace autopas

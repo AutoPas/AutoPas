@@ -135,7 +135,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return invalidParticles;
   }
 
-  void iteratePairwise(TraversalInterface *traversal) override {
+  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
     if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
     }
@@ -186,7 +186,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                  this->getVerletSkin());
   }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {}
+  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {}
 
   std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                            IteratorBehavior iteratorBehavior,

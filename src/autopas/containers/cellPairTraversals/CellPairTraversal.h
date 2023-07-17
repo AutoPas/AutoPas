@@ -10,7 +10,7 @@
 #include <array>
 #include <vector>
 
-#include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/PairwiseTraversalInterface.h"
 
 namespace autopas {
 
@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam ParticleCell type of cells.
  */
 template <class ParticleCell>
-class CellPairTraversal : public TraversalInterface {
+class CellPairTraversal : public PairwiseTraversalInterface {
  public:
   /**
    * Constructor of CellPairTraversal.

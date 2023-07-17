@@ -193,7 +193,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  void setUpTraversal(TraversalInterface *traversal) override {
+  void setUpTraversal(PairwiseTraversalInterface *traversal) override {
     auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
 
     if (vTraversal) {

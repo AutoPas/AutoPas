@@ -96,7 +96,7 @@ class VLCNeighborListInterface {
    * for both VLCCellPairNeighborList and VLCAllCellsNeighborList.
    * @param traversal the current traversal
    */
-  virtual void setUpTraversal(TraversalInterface *traversal) = 0;
+  virtual void setUpTraversal(PairwiseTraversalInterface *traversal) = 0;
 
  protected:
   /**
