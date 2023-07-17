@@ -392,6 +392,12 @@ class LJFunctorMIPP
        Reg<double> epsilon24s = _epsilon24;
        Reg<double> sigmaSquares = _sigmaSquare;
        Reg<double> shift6s = _shift6;
+        //TODO mask
+       const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtr(*typeID1ptr, 0) : nullptr;
+       Reg<double> epsilon24s_test = useMixing ? gather(mixingDataPtr, _vindex3) : _epsilon24;
+       Reg<double> sigmaSquares_test = useMixing ? gather(mixingDataPtr + 1, _vindex3) : _sigmaSquare;
+       Reg<double> shift6s_test = useMixing ? gather(mixingDataPtr + 2, _vindex3) : _shift6;
+
 
        if (useMixing) {
          // the first argument for set lands in the last bits of the register
@@ -411,6 +417,11 @@ class LJFunctorMIPP
                (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
                (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
                _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0))};
+         }
+         if(!remainderIsMasked) {
+             assert(epsilon24s.cmpneq(epsilon24s_test).testz());
+             assert(sigmaSquares.cmpneq(sigmaSquares_test).testz());
+             assert(shift6s.cmpneq(shift6s_test).testz());
          }
        }
 
@@ -522,7 +533,22 @@ class LJFunctorMIPP
 
      }
 
-    public:
+    inline Reg<int64_t> initVIndex3() {
+        int64_t indexes[N<double>()];
+        for(int i = 0; i < N<double>(); ++i) {
+            indexes[i] = i * 3;
+        }
+        return load(indexes);
+    }
+    inline Reg<int64_t> initVIndex1() {
+        int64_t indexes[N<double>()];
+        for(int i = 0; i < N<double>(); ++i) {
+            indexes[i] = i;
+        }
+        return load(indexes);
+    }
+
+public:
      // clang-format off
   /**
    * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
@@ -866,7 +892,8 @@ class LJFunctorMIPP
      const Reg<double> _zero = 0.;
      const Reg<int64_t> _zeroI = 0.;
      const Reg<double> _one = 1.;
-     const Reg<int64_t> _vindex{0, 1, 3, 4};
+     Reg<int64_t> _vindex3 = initVIndex3();
+     Reg<int64_t> _vindex1 = initVIndex1();
      const Msk<N<double>()> _masks[3] {
          Msk<N<double>()>{true, false, false, false},
          Msk<N<double>()>{true, true, false, false},
