@@ -119,7 +119,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
 
 /**
  * Creates a grid of particles in the given AutoPas object.
- * Grid width is `sparsity * ( boxLength / ((cutoff + skin) * cellSizeFactor) )`.
+ * The grid width is `sparsity * cellLength`
  * E.g., for a sparsity of 1, 1 particle is inserted for every cell. For a sparsity of .5, 8 particles are inserted.
  * The lower corner of the grid is offset from boxMin by half the grid width in every dimension.
  * This way there should be one particle in every third Linked Cells cell.
