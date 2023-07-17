@@ -8,10 +8,12 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::FlopCounterFunctor<Molecule> *);
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> *);
 
 /**
  * Generates a square of four particles, iterates over it with the FlopCounter and checks its values
@@ -35,7 +37,8 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
     autoPas.addParticle(m);
   }
 
-  autopas::FlopCounterFunctor<Molecule> flopCounterFunctor(autoPas.getCutoff());
+  mdLib::LJFunctor<Molecule> ljFunctor(autoPas.getCutoff());
+  autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> flopCounterFunctor(ljFunctor, autoPas.getCutoff());
 
   autoPas.iteratePairwise(&flopCounterFunctor);
 
@@ -47,9 +50,9 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   auto expectedKernelCalls = molVec.size();
   ASSERT_EQ(expectedKernelCalls, flopCounterFunctor.getKernelCalls());
 
-  // distance calculations cost 8 flops
-  auto expectedFlops = expectedDistanceCalculations * 8 + expectedKernelCalls;
-  ASSERT_EQ(expectedFlops, flopCounterFunctor.getFlops(1));
+  // distance calculations cost 8 flops, LJ kernel calls with Newton 3 cost 18 flops
+  auto expectedFlops = expectedDistanceCalculations * 8 + expectedKernelCalls * 18;
+  ASSERT_EQ(expectedFlops, flopCounterFunctor.getFlops());
 
   // two out of three particles are in range
   auto expectedHitRate = 2. / 3.;
@@ -70,7 +73,8 @@ TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
 
   double cutoff = 1.;
 
-  autopas::FlopCounterFunctor<Molecule> functor(cutoff);
+  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
+  autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> functor(ljFunctor, cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
@@ -110,7 +114,8 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
 
   double cutoff = 1.;
 
-  autopas::FlopCounterFunctor<Molecule> functor(cutoff);
+  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
+  autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> functor(ljFunctor, cutoff);
 
   autopas::FullParticleCell<Molecule> cell1;
   cell1.addParticle(p1);

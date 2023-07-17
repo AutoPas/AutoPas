@@ -14,7 +14,26 @@ include(autopas_all)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+
+# Set CMake option for md-flexible mode
+set(MD_FLEXIBLE_MODE
+        "SINGLE-SITE"
+        CACHE
+        STRING "Choose the mode of md-flexible to be compiled."
+        )
+set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLE-SITE;MULTI-SITE")
+
+# Define numerical values for different md-flexible modes
+target_compile_definitions(md-flexible PUBLIC SINGLESITE=0 )
+target_compile_definitions(md-flexible PUBLIC MULTISITE=1)
+
+# Define numerical value for actually compiled md-flexible mode, as per above.
+if (MD_FLEXIBLE_MODE MATCHES "SINGLE-SITE")
+    target_compile_definitions(md-flexible PUBLIC MD_FLEXIBLE_MODE=0)
+elseif(MD_FLEXIBLE_MODE MATCHES "MULTI-SITE")
+    target_compile_definitions(md-flexible PUBLIC MD_FLEXIBLE_MODE=1)
+endif()
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
@@ -29,6 +48,16 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
 )
+
+# --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
+if (MD_FLEXIBLE_MODE MATCHES "MULTI-SITE")
+    if (MD_FLEXIBLE_FUNCTOR_AVX)
+        message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_SVE)
+        message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+endif()
 
 # --- copy script files to build dir ---
 file(

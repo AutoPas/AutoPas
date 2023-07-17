@@ -20,20 +20,11 @@
 class Object {
  public:
   /**
-   * Type of all particles generated.
-   */
-  using ParticleType = ::ParticleType;
-
-  /**
    * Constructor that should be used by inheriting types.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    */
-  Object(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass)
-      : _velocity(velocity), _typeId(typeId), _epsilon(epsilon), _sigma(sigma), _mass(mass) {}
+  Object(const std::array<double, 3> &velocity, unsigned long typeId) : _velocity(velocity), _typeId(typeId) {}
 
   virtual ~Object() = default;
 
@@ -52,7 +43,15 @@ class Object {
     ParticleType particle{};
     particle.setID(particleId);
     particle.setTypeId(_typeId);
+    particle.setOwnershipState(autopas::OwnershipState::owned);
     particle.setV(_velocity);
+    particle.setF({0.0, 0.0, 0.0});
+    particle.setOldF({0.0, 0.0, 0.0});
+#if MD_FLEXIBLE_MODE == MULTISITE
+    particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
+    particle.setAngularVel({0.0, 0.0, 0.0});
+    particle.setTorque({0.0, 0.0, 0.0});
+#endif
 
     return particle;
   }
@@ -68,24 +67,6 @@ class Object {
    * @return typeId
    */
   [[nodiscard]] unsigned long getTypeId() const { return _typeId; }
-
-  /**
-   * Getter for Epsilon.
-   * @return epsilon
-   */
-  [[nodiscard]] double getEpsilon() const { return _epsilon; }
-
-  /**
-   * Getter for Sigma.
-   * @return sigma
-   */
-  [[nodiscard]] double getSigma() const { return _sigma; }
-
-  /**
-   * Getter for Mass.
-   * @return mass
-   */
-  [[nodiscard]] double getMass() const { return _mass; }
 
   /**
    * Getter for the smallest x,y,z coordinates for Object
@@ -118,16 +99,14 @@ class Object {
    */
   [[nodiscard]] virtual std::string to_string() const {
     std::ostringstream output;
+#if MD_FLEXIBLE_MODE == MULTISITE
+    const auto typeName = "molecule-id";
+#else
+    const auto typeName = "site-id";
+#endif
     output << std::setw(_valueOffset) << std::left << "velocity"
            << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << std::endl;
-    output << std::setw(_valueOffset) << std::left << "particle-type"
-           << ":  " << _typeId << std::endl;
-    output << std::setw(_valueOffset) << std::left << "particle-epsilon"
-           << ":  " << _epsilon << std::endl;
-    output << std::setw(_valueOffset) << std::left << "particle-sigma"
-           << ":  " << _sigma << std::endl;
-    output << std::setw(_valueOffset) << std::left << "particle-mass"
-           << ":  " << _mass << std::endl;
+    output << std::setw(_valueOffset) << std::left << typeName << ":  " << _typeId << std::endl;
     return output.str();
   };
 
@@ -148,21 +127,10 @@ class Object {
    */
   std::array<double, 3> _velocity;
   /**
-   * Type of every particle in the object.
+   * Type of every particle in the object. For single-site simulations, this refers directly to the siteId. For
+   * multi-site simulations, this refers to the molId.
    */
   unsigned long _typeId;
-  /**
-   * Epsilon of every particle in the object.
-   */
-  double _epsilon;
-  /**
-   * Sigma of every particle in the object.
-   */
-  double _sigma;
-  /**
-   * Mass of every particle in the object.
-   */
-  double _mass;
   /**
    * valueOffset of MDFlexConfig - expected indent
    */
