@@ -16,7 +16,6 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
-#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -918,14 +917,6 @@ class AutoPas {
    */
   void setTuningMetricOption(TuningMetricOption tuningMetricOption) {
     _autoTunerInfo.tuningMetric = tuningMetricOption;
-  }
-
-  /**
-   * Setter for the mpi strategy option
-   * @param mpiStrategyOption
-   */
-  void setMPIStrategy(MPIStrategyOption mpiStrategyOption) {
-    _tuningStrategyFactoryInfo.mpiStrategyOption = mpiStrategyOption;
   }
 
   /**

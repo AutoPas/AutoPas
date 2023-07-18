@@ -377,14 +377,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning metric!"));
 
         config.tuningMetricOption.value = *parsedOptions.begin();
-      } else if (key == config.mpiStrategyOption.name) {
-        expected = "Exactly one MPI strategy option out of the possible values.";
-        description = config.mpiStrategyOption.description;
-
-        const auto parsedOptions = autopas::MPIStrategyOption::parseOptions(
-            parseSequenceOneElementExpected(node[key], "Pass exactly one MPI strategy!"));
-
-        config.mpiStrategyOption.value = *parsedOptions.begin();
       } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
         expected = "Floating-point Value";
         description = config.MPITuningMaxDifferenceForBucket.description;

@@ -17,7 +17,7 @@ ActiveHarmony::ActiveHarmony(const std::set<ContainerOption> &allowedContainerOp
                              const std::set<TraversalOption> &allowedTraversalOptions,
                              const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                             const std::set<Newton3Option> &allowedNewton3Options, MPIStrategyOption mpiStrategyOption,
+                             const std::set<Newton3Option> &allowedNewton3Options, bool mpiDivideAndConquer,
                              AutoPas_MPI_Comm comm)
     : _allowedContainerOptions(allowedContainerOptions),
       _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
@@ -25,9 +25,9 @@ ActiveHarmony::ActiveHarmony(const std::set<ContainerOption> &allowedContainerOp
       _allowedLoadEstimatorOptions(allowedLoadEstimatorOptions),
       _allowedDataLayoutOptions(allowedDataLayoutOptions),
       _allowedNewton3Options(allowedNewton3Options),
-      _mpiStrategyOption(mpiStrategyOption),
+      _mpiDivideAndConquer(mpiDivideAndConquer),
       _comm(comm),
-      _nonLocalServer(getenv("HARMONY_HOST") != nullptr and mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+      _nonLocalServer(getenv("HARMONY_HOST") != nullptr and mpiDivideAndConquer) {
   if (searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception("ActiveHarmony: No valid configurations could be created.");
   }
@@ -174,7 +174,7 @@ void ActiveHarmony::resetHarmony() {
   AutoPas_MPI_Comm_size(_comm, &commSize);
   AutoPas_MPI_Comm_rank(_comm, &rank);
 
-  if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+  if (_mpiDivideAndConquer) {
     AutoPas_MPI_Barrier(_comm);
   }
   // free memory
@@ -191,7 +191,7 @@ void ActiveHarmony::resetHarmony() {
     AutoPasLog(DEBUG, "Search space is {}; skipping harmony initialization.",
                searchSpaceIsTrivial() ? "trivial" : "empty");
     // Barrier in case the search space is bigger for some ranks
-    if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+    if (_mpiDivideAndConquer) {
       AutoPas_MPI_Barrier(_comm);
     }
   } else {
@@ -219,12 +219,12 @@ void ActiveHarmony::resetHarmony() {
         utils::ExceptionHandler::exception("ActiveHarmony::reset: Error starting task.");
       }
 
-      if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+      if (_mpiDivideAndConquer) {
         AutoPas_MPI_Barrier(_comm);
       }
     } else {
       // only join a session if using the divideAndConquer mpi strategy, we are not rank 0 and a server is specified.
-      if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+      if (_mpiDivideAndConquer) {
         AutoPas_MPI_Barrier(_comm);
       }
 
@@ -295,7 +295,7 @@ void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
   // set the size of the initial simplex (as portion of the total search space)
   ah_def_cfg(hdef, "INIT_RADIUS", "0.7");
 
-  if (_mpiStrategyOption == MPIStrategyOption::divideAndConquer) {
+  if (_mpiDivideAndConquer) {
     // set the size of the tuning session
     char numbuf[12];
     snprintf(numbuf, sizeof(numbuf), "%d", commSize);

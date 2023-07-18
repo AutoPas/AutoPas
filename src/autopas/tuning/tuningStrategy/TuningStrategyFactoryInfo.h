@@ -10,7 +10,6 @@
 
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
-#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
@@ -64,9 +63,10 @@ struct TuningStrategyFactoryInfo {
 
   // MPI Tuning Options
   /**
-   * Whether the chosen tuning strategy will be parallelized by the MPI wrapper.
+   * If MPIParallelizedStrategy is in the list of strategies this should be set to true to notify other strategies
+   * if necessary.
    */
-  MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI;
+  bool mpiDivideAndConquer{false};
   /**
    * Maximum absolute difference in similarity metric for two ranks to fall in the same bucket.
    */

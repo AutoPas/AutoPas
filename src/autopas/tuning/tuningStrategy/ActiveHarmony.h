@@ -17,7 +17,6 @@
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
@@ -50,8 +49,7 @@ class ActiveHarmony : public TuningStrategyInterface {
                 const std::set<TraversalOption> &allowedTraversalOptions,
                 const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                 const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                const std::set<Newton3Option> &allowedNewton3Options, MPIStrategyOption mpiStrategyOption,
-                AutoPas_MPI_Comm comm);
+                const std::set<Newton3Option> &allowedNewton3Options, bool mpiDivideAndConquer, AutoPas_MPI_Comm comm);
 
   ~ActiveHarmony() override;
 
@@ -94,7 +92,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   std::set<Newton3Option> _allowedNewton3Options;
 
   size_t _tuningPhase{0};
-  MPIStrategyOption _mpiStrategyOption;
+  bool _mpiDivideAndConquer;
   AutoPas_MPI_Comm _comm;
   bool _nonLocalServer;
 

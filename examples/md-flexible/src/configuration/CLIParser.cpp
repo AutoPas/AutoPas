@@ -56,7 +56,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.logFileName,
       config.logLevel,
       config.maxTuningPhasesWithoutTest,
-      config.mpiStrategyOption,
       config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
@@ -514,17 +513,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.tuningMetricOption.value = *parsedOptions.begin();
-        break;
-      }
-      case decltype(config.mpiStrategyOption)::getoptChar: {
-        auto parsedOptions = autopas::MPIStrategyOption::parseOptions(strArg);
-        if (parsedOptions.size() != 1) {
-          cerr << "Pass exactly one mpi strategy option. AutoPas cannot switch between several." << endl
-               << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
-          displayHelp = true;
-        }
-        config.mpiStrategyOption.value = *parsedOptions.begin();
         break;
       }
       case decltype(config.MPITuningMaxDifferenceForBucket)::getoptChar: {

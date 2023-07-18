@@ -250,8 +250,9 @@ std::string MDFlexConfig::to_string() const {
       })) {
     printOption(acquisitionFunctionOption);
   }
-  printOption(mpiStrategyOption);
-  if (mpiStrategyOption.value == autopas::MPIStrategyOption::divideAndConquer) {
+  // if MPI divide and conquer is in the strategies print its parameters
+  if (std::find(tuningStrategyOptions.value.begin(), tuningStrategyOptions.value.end(),
+                autopas::TuningStrategyOption::mpiDivideAndConquer) != tuningStrategyOptions.value.end()) {
     printOption(MPITuningMaxDifferenceForBucket);
     printOption(MPITuningWeightForMaxDensity);
   }

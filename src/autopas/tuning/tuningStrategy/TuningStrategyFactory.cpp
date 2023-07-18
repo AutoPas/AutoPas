@@ -6,7 +6,6 @@
 
 #include "TuningStrategyFactory.h"
 
-#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
 #include "autopas/tuning/tuningStrategy/BayesianClusterSearch.h"
@@ -78,7 +77,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::activeHarmony: {
       // If a AH-server is provided, but MPI is disallowed, we have to ignore the server.
-      if (std::getenv("HARMONY_HOST") != nullptr and info.mpiStrategyOption == MPIStrategyOption::noMPI) {
+      if (std::getenv("HARMONY_HOST") != nullptr and not info.mpiDivideAndConquer) {
         unsetenv("HARMONY_HOST");
         AutoPasLog(WARN,
                    "HARMONY_HOST is set to a value, but the MPI strategy option is set to noMPI. "
@@ -88,7 +87,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       tuningStrategy = std::make_unique<ActiveHarmony>(
           searchSpaceDimensions.containerOptions, NumberSetFinite<double>{searchSpaceDimensions.cellSizeFactors},
           searchSpaceDimensions.traversalOptions, searchSpaceDimensions.loadEstimatorOptions,
-          searchSpaceDimensions.dataLayoutOptions, searchSpaceDimensions.newton3Options, info.mpiStrategyOption,
+          searchSpaceDimensions.dataLayoutOptions, searchSpaceDimensions.newton3Options, info.mpiDivideAndConquer,
           info.autopasMpiCommunicator);
       break;
     }
@@ -110,6 +109,12 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
       utils::ExceptionHandler::exception(
           "Cannot use the TuningStrategy mpiDivideAndConquer without AUTOPAS_INTERNODE_TUNING=ON.");
 #endif
+      if (not info.mpiDivideAndConquer) {
+        AutoPasLog(WARN,
+                   "Using TuningStrategy::mpiDivideAndConquer, but TuningStrategyFactoryInfo.mpiDivideAndConquer "
+                   "is false. Other strategies will not be notified that the search space is split which might cause "
+                   "problems.");
+      }
       tuningStrategy = std::make_unique<MPIParallelizedStrategy>(
           MPIParallelizedStrategy::createFallBackConfiguration(searchSpace), info.autopasMpiCommunicator,
           info.mpiTuningMaxDifferenceForBucket, info.mpiTuningWeightForMaxDensity);
