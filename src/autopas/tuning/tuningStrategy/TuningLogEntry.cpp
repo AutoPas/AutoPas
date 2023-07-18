@@ -22,8 +22,6 @@ bool readTune(std::stringstream &str) { return std::get<0>(fromString<bool>(str)
 
 std::string writeReset(size_t iteration) { return toString(std::string{"reset"}, iteration); }
 
-size_t readReset(std::stringstream &str) { return std::get<0>(fromString<size_t>(str)); }
-
 std::string writeLiveInfo(const autopas::LiveInfo &liveInfo) { return toString(std::string{"liveInfo"}, liveInfo); }
 
 autopas::LiveInfo readLiveInfo(std::stringstream &str) { return std::get<0>(fromString<LiveInfo>(str)); }

@@ -4,7 +4,7 @@ The rule checker for rule based tuning can be used to verify that the partial or
 1. Run a suite of benchmark scenarios using full-search tuning with enabled data collection (`md-flexible --use-tuning-log true`) and one tuning phase.  
 Each simulation gives you a `tuningLog.txt` file.
 2. Come up with new rules (through theoretical modeling, developer knowledge, benchmarks etc.) in a file `tuningRules.txt`.
-3. Call `ruleChecker tuningRules.txt tuningLog.txt tuningLog2.txt ...`  
+3. Call `ruleChecker tuningRules.rule tuningLog.txt tuningLog2.txt ...`  
 This will replay all logs from the benchmarks and use the rule based tuning strategy in verify mode on them. This means that it executes the rule file, creates the partial order of configurations, but instead of filtering out configurations, it checks in the logs whether the partial order contradicts the observation in the benchmark.  
 For example, the rule file might state that configurations with the `VerletClusterLists` container are always faster than `LinkedCells` containers in scenarios with less than 2 particles per cell, but in the benchmarks, `VerletClusterLists` using the `AoS` data layout and no Newton3 was actually slightly slower than `LinkedCells`, `c08`, `SoA`, `Newton3`.  
 The rule checker logs all such observations together with the actual difference in performance. Now, you can use this information to adjust the rule file.

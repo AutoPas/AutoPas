@@ -117,7 +117,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override {
     if (_verifyModeEnabled and _tuningTime > 0) {
-      AutoPasLog(DEBUG, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
+      AutoPasLog(INFO, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
                  _wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size(),
                  // TODO: This lambda could probably be replaced by some formatting parameters in the fmt string.
                  [&]() {
@@ -130,11 +130,13 @@ class RuleBasedTuning : public TuningStrategyInterface {
 
     _tuningTime = 0;
     _wouldHaveSkippedTuningTime = 0;
+    _removedConfigurations.clear();
+    optimizeSuggestions(configQueue, evidenceCollection);
   }
 
   /**
    * @returns in verify mode the summed up time that would have been skipped if verify mode was disabled and
-   * configurations would have been skipped due to the rules.
+   * configurations would have been skipped due to the rules in the last tuning phase.
    */
   [[nodiscard]] auto getLifetimeWouldHaveSkippedTuningTime() const { return _wouldHaveSkippedTuningTimeLifetime; }
 
@@ -153,7 +155,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   void verifyCurrentConfigTime(const Configuration &configuration) const {
     for (const auto &order : _lastApplicableConfigurationOrders) {
-      bool shouldBeBetter;
+      bool shouldBeBetter{};
       if (order.smaller.matches(configuration)) {
         shouldBeBetter = true;
       } else if (order.greater.matches(configuration)) {
@@ -186,8 +188,10 @@ class RuleBasedTuning : public TuningStrategyInterface {
   void optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override {
     _lastApplicableConfigurationOrders = applyRules(configQueue);
-    configQueue.clear();
-    std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
+    if (not _verifyModeEnabled) {
+      configQueue.clear();
+      std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
+    }
   }
 
  private:
@@ -228,20 +232,19 @@ class RuleBasedTuning : public TuningStrategyInterface {
     }
 
     std::list<Configuration> newSearchSpace{searchSpace.begin(), searchSpace.end()};
-    _removedConfigurations.clear();
-    auto &removedConfigsLocal = _removedConfigurations;
-    newSearchSpace.remove_if([&toRemovePatterns, &removedConfigsLocal](const Configuration &configuration) {
+    newSearchSpace.remove_if([&](const Configuration &configuration) {
       const bool remove = std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
                                       [&configuration](const auto &pattern) { return pattern.matches(configuration); });
       if (remove) {
-        removedConfigsLocal.insert(configuration);
+        _removedConfigurations.insert(configuration);
       }
       return remove;
     });
     AutoPasLog(DEBUG, "Rules remove {} out of {} configurations", _originalSearchSpace.size() - newSearchSpace.size(),
                _originalSearchSpace.size());
     if (not _verifyModeEnabled) {
-      this->_searchSpace = {newSearchSpace.begin(), newSearchSpace.end()};
+      _searchSpace.clear();
+      _searchSpace.insert(newSearchSpace.begin(), newSearchSpace.end());
     }
 
     return applicableConfigurationOrders;
@@ -249,16 +252,16 @@ class RuleBasedTuning : public TuningStrategyInterface {
 
   std::set<Configuration> _searchSpace;
   const std::list<Configuration> _originalSearchSpace{};
-  std::unordered_set<Configuration, ConfigHash> _removedConfigurations;
+  std::set<Configuration> _removedConfigurations;
   std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
   bool _verifyModeEnabled;
   std::string _ruleFileName;
 
   std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
-  long _tuningTime = 0;
-  long _wouldHaveSkippedTuningTime = 0;
-  long _tuningTimeLifetime = 0;
-  long _wouldHaveSkippedTuningTimeLifetime = 0;
+  long _tuningTime{0};
+  long _wouldHaveSkippedTuningTime{0};
+  long _tuningTimeLifetime{0};
+  long _wouldHaveSkippedTuningTimeLifetime{0};
 
   PrintTuningErrorFunType _tuningErrorPrinter;
 

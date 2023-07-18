@@ -52,7 +52,6 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
     if (type == "evidence") {
       evidenceAdded = true;
       const auto &[time, iteration, config] = tuningLogEntry::readEvidence(stream);
-      // std::cout << "Add data for configuration " << config << std::endl;
       traversalTimes[config] = {time, iteration};
     } else if (type == "tune") {
       // Do nothing in former tune
@@ -60,30 +59,31 @@ std::optional<Configuration> TuningStrategyLogReplayer::replay() {
       const auto &liveInfo = tuningLogEntry::readLiveInfo(stream);
       AutoPasLog(INFO, "\t{}", liveInfo.toString());
       _tuningStrategy->receiveLiveInfo(liveInfo);
-    } else if (type == "reset" || in.eof()) {
-      while (not configQueue.empty()) {
-        _tuningStrategy->optimizeSuggestions(configQueue, evidenceCollection);
-        // Check that we actually hava data for the chosen configuration.
-        // If not ignore it and carry on with the evaluation of the rest of the tuning.
-        if (traversalTimes.count(configQueue.back()) > 0) {
-          const auto &[time, iteration] = traversalTimes.at(configQueue.back());
-          const Evidence evidence{iteration, tuningPhase, time};
-          evidenceCollection.addEvidence(configQueue.back(), evidence);
-          _tuningStrategy->addEvidence(configQueue.back(), evidence);
-        }
-        configQueue.pop_back();
-      }
-
+    } else if (type == "reset" or in.eof()) {
+      // skip the initial reset
       if (evidenceAdded) {
+        _tuningStrategy->reset(0, 0, configQueue, evidenceCollection);
+        while (not configQueue.empty()) {
+          _tuningStrategy->optimizeSuggestions(configQueue, evidenceCollection);
+          // Check that we actually hava data for the chosen configuration.
+          // If not ignore it and carry on with the evaluation of the rest of the tuning.
+          if (traversalTimes.count(configQueue.back()) > 0) {
+            const auto &[time, iteration] = traversalTimes.at(configQueue.back());
+            const Evidence evidence{iteration, tuningPhase, time};
+            evidenceCollection.addEvidence(configQueue.back(), evidence);
+            _tuningStrategy->addEvidence(configQueue.back(), evidence);
+          }
+          configQueue.pop_back();
+        }
+
         const auto [conf, evidence] = evidenceCollection.getLatestOptimalConfiguration();
         AutoPasLog(INFO, "Best Configuration found: {}", conf.toShortString());
         bestConfiguration = conf;
         evidenceAdded = false;
       }
 
-      const auto &iteration = tuningLogEntry::readReset(stream);
       ++tuningPhase;
-      _tuningStrategy->reset(iteration, tuningPhase, configQueue, evidenceCollection);
+      _tuningStrategy->reset(0, tuningPhase, configQueue, evidenceCollection);
       traversalTimes.clear();
     }
   }

@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyLogReplayer.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
@@ -33,11 +34,6 @@ int main(int argc, char **argv) {
   if (not getenv("DISABLE_DEBUG_LOG")) {
     autopas::Logger::get()->set_level(spdlog::level::info);
   }
-  auto containers = autopas::ContainerOption::getAllOptions();
-  auto traversals = autopas::TraversalOption::getAllOptions();
-  auto loadEstimators = autopas::LoadEstimatorOption::getAllOptions();
-  auto dataLayouts = autopas::DataLayoutOption::getAllOptions();
-  auto newton3Options = autopas::Newton3Option::getAllOptions();
 
   // Map configuration to indices of files where they were best
   std::map<autopas::Configuration, std::vector<int>> bestConfigs;
@@ -73,11 +69,14 @@ int main(int argc, char **argv) {
   const std::string rulesfile{argv[1]};
   const autopas::NumberSetFinite<double> csfs({1., 2.});
   const std::set<autopas::Configuration> searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
-      containers, traversals, loadEstimators, dataLayouts, newton3Options, &csfs
-      );
+      autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
+      autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
+      autopas::Newton3Option::getAllOptions(), &csfs);
+
   for (int i = 2; i < argc; i++) {
     const std::string filename{argv[i]};
-    AutoPasLog(INFO, "Checking file {}: {}", i, filename);
+    // -1 because the first file is the rules file
+    AutoPasLog(INFO, "Checking file {}: {}", i - 1, filename);
     auto strategy =
         std::make_shared<autopas::RuleBasedTuning>(searchSpace, /*verification mode*/ true, rulesfile, errorHandler);
     autopas::TuningStrategyLogReplayer logReplayer{filename, strategy, searchSpace};
