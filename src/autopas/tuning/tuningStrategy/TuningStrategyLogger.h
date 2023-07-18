@@ -1,5 +1,5 @@
 /**
- * @file TuningStrategyLoggerWrapper.h
+ * @file TuningStrategyLogger.h
  * @author humig
  * @date 24.09.2021
  */

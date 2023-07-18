@@ -1,5 +1,5 @@
 /**
- * @file TuningStrategyLoggerWrapper.cpp
+ * @file TuningStrategyLogger.cpp
  * @author humig
  * @date 24.09.2021
  */
