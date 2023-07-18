@@ -41,7 +41,7 @@ class ActiveHarmony : public TuningStrategyInterface {
    * @param allowedLoadEstimatorOptions
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
-   * @param mpiStrategyOption
+   * @param mpiDivideAndConquer
    * @param comm
    */
   ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
