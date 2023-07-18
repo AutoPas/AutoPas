@@ -85,6 +85,9 @@ bool AutoTuner::tuneConfiguration() {
   utils::Timer tuningTimer;
   tuningTimer.start();
 
+  // We finished collection samples for this config so remove it from the queue
+  _configQueue.pop_back();
+
   // We plan to test a new config so clear all samples.
   _samplesNotRebuildingNeighborLists.clear();
   _samplesRebuildingNeighborLists.clear();
@@ -116,6 +119,8 @@ bool AutoTuner::tuneConfiguration() {
     const auto [optConf, optEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
     _configQueue.push_back(optConf);
     stillTuning = false;
+    // fill up sample buffer to indicate we are not collecting samples anymore
+    _samplesRebuildingNeighborLists.resize(_maxSamples);
   }
   tuningTimer.stop();
 
@@ -133,8 +138,6 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
     return {getCurrentConfig(), true};
   } else {
     // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a phase)
-    // We finished collection samples for this config so remove it from the queue
-    _configQueue.pop_back();
     // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all strategies
     const bool stillTuning = tuneConfiguration();
     return {getCurrentConfig(), stillTuning};
