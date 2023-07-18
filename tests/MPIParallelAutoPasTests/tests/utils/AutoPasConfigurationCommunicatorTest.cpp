@@ -17,6 +17,24 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
   EXPECT_EQ(passedConfig, config);
 }
 
+// Test if serializing and deserializing a vector of configurations works as expected.
+TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserializeVector) {
+  const std::vector<autopas::Configuration> configurations = {
+      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::disabled},
+      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c04,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::disabled},
+      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::disabled},
+  };
+  const auto serializedConfigs = serializeConfigurations(configurations);
+  const auto passedConfig = deserializeConfigurations(serializedConfigs);
+  EXPECT_EQ(passedConfig, configurations);
+}
+
 // Test if the optimization distributes the configuration with the lowest provided time.
 TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   int rank;
@@ -235,4 +253,57 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeInvalid) {
 
   // There are 8 configurations in the Cartesian product, but none are valid.
   EXPECT_EQ(size, 0);
+}
+
+TEST_F(AutoPasConfigurationCommunicatorTest, testGatherConfigs) {
+  int rank{};
+  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+  constexpr int numRanksExpected = 3;
+  int numRanks{};
+  AutoPas_MPI_Comm_size(AUTOPAS_MPI_COMM_WORLD, &numRanks);
+
+  ASSERT_EQ(numRanks, numRanksExpected) << "This test expects there to be three communicating MPI ranks!";
+
+  const std::vector<Configuration> expectedConfigurations{
+      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::disabled},
+      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c04,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::disabled},
+      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::disabled},
+  };
+
+  const auto localConf = [&]() -> std::vector<Configuration> {
+    switch (rank) {
+      case 0: {
+        return {
+            expectedConfigurations[0],
+        };
+      }
+      case 1: {
+        return {
+            expectedConfigurations[1],
+        };
+      }
+      case 2: {
+        return {
+            expectedConfigurations[2],
+        };
+      }
+      default: {
+        // should never happen.
+        return {};
+      };
+    }
+  }();
+
+  const auto gatheredConfigurations =
+      autopas::utils::AutoPasConfigurationCommunicator::gatherConfigurations(AUTOPAS_MPI_COMM_WORLD, localConf, 0);
+
+  if (rank == 0) {
+    EXPECT_EQ(expectedConfigurations, gatheredConfigurations);
+  }
 }

@@ -103,11 +103,25 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, d
 SerializedConfiguration serializeConfiguration(Configuration configuration);
 
 /**
+ * Serialize a vector of configuration objects into a vector of bytes via serializeConfiguration().
+ * @param configurations
+ * @return Concatenated byte representations of configurations.
+ */
+std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> &configurations);
+
+/**
  * Recreates a Configuration object from the object obtained by _serializeConfiguration.
  * @param config: The SerializedConfiguration objects returned by _serializeConfiguration.
  * @return The deserialized Configuration object.
  */
 Configuration deserializeConfiguration(SerializedConfiguration config);
+
+/**
+ * Deserialize a vector of bytes into a vector of configurations.
+ * @param configurationsSerialized
+ * @return
+ */
+std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized);
 
 /**
  * Handles communication to select the globally best configuration.
@@ -118,5 +132,15 @@ Configuration deserializeConfiguration(SerializedConfiguration config);
  */
 Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
                                             long localOptimalTime);
+
+/**
+ * Gather the configuration vectors of all ranks in the communicator into one vector at the root process.
+ * @param comm
+ * @param localConfigurations
+ * @param root
+ * @return Combined vector of configurations
+ */
+std::vector<Configuration> gatherConfigurations(AutoPas_MPI_Comm comm,
+                                                const std::vector<Configuration> &localConfigurations, int root);
 
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator

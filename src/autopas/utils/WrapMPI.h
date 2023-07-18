@@ -227,15 +227,30 @@ enum AutoPas_MPI_Request {
  */
 enum AutoPas_MPI_Error {
   AUTOPAS_MPI_SUCCESS = 0,
-  AUTOPAS_MPI_ERR_ARG,
+  AUTOPAS_MPI_ERR_BUFFER,
+  AUTOPAS_MPI_ERR_COUNT,
+  AUTOPAS_MPI_ERR_TYPE,
+  AUTOPAS_MPI_ERR_TAG,
   AUTOPAS_MPI_ERR_COMM,
   AUTOPAS_MPI_ERR_RANK,
+  AUTOPAS_MPI_ERR_ROOT,
+  AUTOPAS_MPI_ERR_GROUP,
+  AUTOPAS_MPI_ERR_OP,
+  AUTOPAS_MPI_ERR_TOPOLOGY,
+  AUTOPAS_MPI_ERR_DIMS,
+  AUTOPAS_MPI_ERR_ARG,
+  AUTOPAS_MPI_ERR_UNKNOWN,
+  AUTOPAS_MPI_ERR_TRUNCATE,
+  AUTOPAS_MPI_ERR_OTHER,
+  AUTOPAS_MPI_ERR_INTERN,
+  AUTOPAS_MPI_ERR_IN_STATUS,
+  AUTOPAS_MPI_ERR_PENDING,
   AUTOPAS_MPI_ERR_REQUEST,
-  AUTOPAS_MPI_ERR_TYPE,
+  AUTOPAS_MPI_ERR_LASTCODE,
 };
 /** Dummy for MPI_MAX_ERROR_STRING */
 #define AUTOPAS_MPI_MAX_ERROR_STRING 256
-/** Indicator for Collectives to happe in-place */
+/** Indicator for Collectives to happen in-place */
 #define AUTOPAS_MPI_IN_PLACE ((void *)1)
 
 #endif
@@ -547,6 +562,38 @@ inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[
                                AutoPas_MPI_Status *array_of_statuses);
 
 /**
+ * Wraooer for MPI_Gather
+ * @param buffer_send
+ * @param count_send
+ * @param datatype_send
+ * @param buffer_recv
+ * @param count_recv
+ * @param datatype_recv
+ * @param root
+ * @param comm
+ * @return
+ */
+inline int AutoPas_MPI_Gather(const void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                              void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv, int root,
+                              AutoPas_MPI_Comm comm);
+
+/**
+ * Wrapper for MPI_Gatherv
+ * @param buffer_send
+ * @param count_send
+ * @param datatype_send
+ * @param buffer_recv
+ * @param count_recv
+ * @param displs
+ * @param datatype_recv
+ * @param root
+ * @param comm
+ * @return
+ */
+inline int AutoPas_MPI_Gatherv(const void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                               void *buffer_recv, const int *count_recv, const int *displs,
+                               AutoPas_MPI_Datatype datatype_recv, int root, AutoPas_MPI_Comm comm);
+/**
  * Wrapper for MPI_Allgather
  * @param buffer_send: send buffer
  * @param count_send: number of elements in send buffer
@@ -690,6 +737,19 @@ inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[
   return MPI_Waitall(count, array_of_requests, array_of_statuses);
 }
 
+inline int AutoPas_MPI_Gather(const void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                              void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv, int root,
+                              AutoPas_MPI_Comm comm) {
+  return MPI_Gather(buffer_send, count_send, datatype_send, buffer_recv, count_recv, datatype_recv, root, comm);
+}
+
+inline int AutoPas_MPI_Gatherv(const void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                               void *buffer_recv, const int *count_recv, const int *displs,
+                               AutoPas_MPI_Datatype datatype_recv, int root, AutoPas_MPI_Comm comm) {
+  return MPI_Gatherv(buffer_send, count_send, datatype_send, buffer_recv, count_recv, displs, datatype_recv, root,
+                     comm);
+}
+
 inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
                                  void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
                                  AutoPas_MPI_Comm comm) {
@@ -709,12 +769,27 @@ inline int AutoPas_MPI_Finalized(int *flag) {
 
 int AutoPas_MPI_Error_string(int errorcode, char *string, int *resultlen) {
   static const std::map<int, const char *> errorStrings = {
-      {AUTOPAS_MPI_SUCCESS, "MPI_SUCCESS: no errors"},
-      {AUTOPAS_MPI_ERR_ARG, "MPI_ERR_ARG: invalid argument of some other kind"},
-      {AUTOPAS_MPI_ERR_COMM, "MPI_ERR_COMM: invalid communicator"},
-      {AUTOPAS_MPI_ERR_RANK, "MPI_ERR_RANK: invalid rank"},
-      {AUTOPAS_MPI_ERR_REQUEST, "MPI_ERR_REQUEST: invalid Request"},
-      {AUTOPAS_MPI_ERR_TYPE, "MPI_ERR_TYPE: invalid datatype"},
+      {AUTOPAS_MPI_SUCCESS, "MPI_SUCCESS: Successful return code"},
+      {AUTOPAS_MPI_ERR_BUFFER, "MPI_ERR_BUFFER: Invalid buffer pointer"},
+      {AUTOPAS_MPI_ERR_COUNT, "MPI_ERR_COUNT: Invalid count argument"},
+      {AUTOPAS_MPI_ERR_TYPE, "MPI_ERR_TYPE: Invalid datatype argument"},
+      {AUTOPAS_MPI_ERR_TAG, "MPI_ERR_TAG: Invalid tag argument"},
+      {AUTOPAS_MPI_ERR_COMM, "MPI_ERR_COMM: Invalid communicator"},
+      {AUTOPAS_MPI_ERR_RANK, "MPI_ERR_RANK: Invalid rank"},
+      {AUTOPAS_MPI_ERR_ROOT, "MPI_ERR_ROOT: Invalid root"},
+      {AUTOPAS_MPI_ERR_GROUP, "MPI_ERR_GROUP: Null group passed to function"},
+      {AUTOPAS_MPI_ERR_OP, "MPI_ERR_OP: Invalid operation"},
+      {AUTOPAS_MPI_ERR_TOPOLOGY, "MPI_ERR_TOPOLOGY: Invalid topology"},
+      {AUTOPAS_MPI_ERR_DIMS, "MPI_ERR_DIMS: Illegal dimension argument"},
+      {AUTOPAS_MPI_ERR_ARG, "MPI_ERR_ARG: Invalid argument"},
+      {AUTOPAS_MPI_ERR_UNKNOWN, "MPI_ERR_UNKNOWN: Unknown error"},
+      {AUTOPAS_MPI_ERR_TRUNCATE, "MPI_ERR_TRUNCATE: message truncated on receive"},
+      {AUTOPAS_MPI_ERR_OTHER, "MPI_ERR_OTHER: Other error; use Error_string"},
+      {AUTOPAS_MPI_ERR_INTERN, "MPI_ERR_INTERN: internal error code"},
+      {AUTOPAS_MPI_ERR_IN_STATUS, "MPI_ERR_IN_STATUS: Look in status for error value"},
+      {AUTOPAS_MPI_ERR_PENDING, "MPI_ERR_PENDING: Pending request"},
+      {AUTOPAS_MPI_ERR_REQUEST, "MPI_ERR_REQUEST: illegal mpi_request handle"},
+      {AUTOPAS_MPI_ERR_LASTCODE, "MPI_ERR_LASTCODE: Last error code -- always at end"},
   };
   snprintf(string, AUTOPAS_MPI_MAX_ERROR_STRING, "%s", errorStrings.at(errorcode));
   *resultlen = strnlen(string, AUTOPAS_MPI_MAX_ERROR_STRING);
@@ -824,9 +899,14 @@ inline int AutoPas_MPI_Request_free(AutoPas_MPI_Request *request) {
   }
 }
 
-inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
-                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
-                                 AutoPas_MPI_Comm comm) {
+inline int AutoPas_MPI_Gather(const void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                              void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv, int root,
+                              AutoPas_MPI_Comm comm) {
+  // in the non-MPI case this is equivalent to Allgather since there should be only one rank
+  if (root != 0) {
+    return AUTOPAS_MPI_ERR_ROOT;
+  }
+  // if MPI_IN_PLACE is passed nothing has to be done since everything is already in the receive buffer.
   if (buffer_send != AUTOPAS_MPI_IN_PLACE) {
     for (long i = 0; i < (count_recv / count_send); i++)
       // offsets from pointers are of type ptrdiff_t which is an alias for long. Hence, i should be long.
@@ -834,6 +914,21 @@ inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_
              count_send * sizeof(datatype_send));
   }
   return AUTOPAS_MPI_SUCCESS;
+}
+
+inline int AutoPas_MPI_Gatherv(const void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                               void *buffer_recv, const int *count_recv, const int *displs,
+                               AutoPas_MPI_Datatype datatype_recv, int root, AutoPas_MPI_Comm comm) {
+  return AutoPas_MPI_Gather(buffer_send, count_send, datatype_send,
+                            // get offset address : receive buffer + displacement[0] * sizeof(receiveType)
+                            static_cast<char *>(buffer_recv) + static_cast<std::ptrdiff_t>(displs[0] * datatype_recv),
+                            count_recv[0], datatype_recv, root, comm);
+}
+
+inline int AutoPas_MPI_Allgather(void *buffer_send, int count_send, AutoPas_MPI_Datatype datatype_send,
+                                 void *buffer_recv, int count_recv, AutoPas_MPI_Datatype datatype_recv,
+                                 AutoPas_MPI_Comm comm) {
+  return AutoPas_MPI_Gather(buffer_send, count_send, datatype_send, buffer_recv, count_recv, datatype_recv, 0, comm);
 }
 
 inline int AutoPas_MPI_Comm_split(AutoPas_MPI_Comm old_communicator, int color, int key,

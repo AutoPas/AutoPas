@@ -188,6 +188,19 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   return config;
 }
 
+std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> &configurations) {
+  // The size of one configuration in bytes as defined by the class type.
+  constexpr auto serializedConfSize = std::tuple_size_v<SerializedConfiguration>;
+
+  std::vector<std::byte> confsSerialized{};
+  confsSerialized.reserve(configurations.size() * serializedConfSize);
+  for (const auto &conf : configurations) {
+    const auto serializedConf = serializeConfiguration(conf);
+    confsSerialized.insert(confsSerialized.end(), serializedConf.begin(), serializedConf.end());
+  }
+  return confsSerialized;
+}
+
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor{0.};
   std::memcpy(&cellSizeFactor, &config[5], sizeof(double));
@@ -196,12 +209,29 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
           static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4])};
 }
 
+std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {
+  // The size of one configuration in bytes as defined by the class type.
+  constexpr auto serializedConfSize = std::tuple_size_v<SerializedConfiguration>;
+
+  std::vector<Configuration> configurations{};
+  configurations.reserve(configurationsSerialized.size() / serializedConfSize);
+  for (size_t i = 0; i < configurationsSerialized.size(); i += serializedConfSize) {
+    // copy the bytes of one configuration into a dedicated buffer
+    SerializedConfiguration serializedConfig{};
+    std::copy(configurationsSerialized.begin() + i, configurationsSerialized.begin() + i + serializedConfSize,
+              serializedConfig.begin());
+    // turn the byte buffer into a config and store it in the return vector
+    configurations.push_back(deserializeConfiguration(serializedConfig));
+  }
+  return configurations;
+}
+
 void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, double smoothedHomogeneity,
                               double maxDensity, double MPITuningMaxDifferenceForBucket,
                               double MPITuningWeightForMaxDensity) {
-  int rank;
+  int rank{};
   AutoPas_MPI_Comm_rank(comm, &rank);
-  int commSize;
+  int commSize{};
   AutoPas_MPI_Comm_size(comm, &commSize);
 
   // If invalid values are passed, every rank gets its own bucket.
@@ -246,6 +276,36 @@ void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, d
   }
   // split MPI_Comm in as many new communications as there are groups with similar scenarios
   AutoPas_MPI_Comm_split(comm, my_bucket, rank, bucket);
+}
+
+std::vector<Configuration> gatherConfigurations(AutoPas_MPI_Comm comm,
+                                                const std::vector<Configuration> &localConfigurations, int root) {
+  int rank{};
+  AutoPas_MPI_Comm_rank(comm, &rank);
+  int numRanks{};
+  AutoPas_MPI_Comm_size(comm, &numRanks);
+
+  // turn local vector of configurations into a vector of bits that we can send
+  std::vector<std::byte> localConfsSerialized = serializeConfigurations(localConfigurations);
+
+  const auto localNumBytes = static_cast<int>(localConfsSerialized.size());
+  std::vector<int> globalNumBytes(numRanks);
+  AutoPas_MPI_Gather(&localNumBytes, 1, AUTOPAS_MPI_INT, globalNumBytes.data(), 1, AUTOPAS_MPI_INT, root, comm);
+
+  const auto totalNumBytes = std::reduce(globalNumBytes.begin(), globalNumBytes.end());
+  std::vector<std::byte> globalConfsSerialized(totalNumBytes);
+
+  // offsets of each ranks data in the receive-buffer
+  std::vector<int> displacements(numRanks);
+  for (int i = 1; i < numRanks; ++i) {
+    // -1 because we calculate zero based indices via sizes
+    displacements[i] = displacements[i - 1] + globalNumBytes[i];
+  }
+
+  AutoPas_MPI_Gatherv(localConfsSerialized.data(), localNumBytes, AUTOPAS_MPI_BYTE, globalConfsSerialized.data(),
+                      globalNumBytes.data(), displacements.data(), AUTOPAS_MPI_BYTE, root, comm);
+
+  return deserializeConfigurations(globalConfsSerialized);
 }
 
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator
