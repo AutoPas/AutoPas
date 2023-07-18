@@ -33,9 +33,9 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(info.maxSamples),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
-          tuningStrategies.begin(), tuningStrategies.end(), false, std::logical_or(),
+          _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
-      _needsLiveInfo(std::transform_reduce(tuningStrategies.begin(), tuningStrategies.end(), false, std::logical_or(),
+      _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
       _samplesNotRebuildingNeighborLists(info.maxSamples),
       _searchSpace(searchSpace),
