@@ -373,4 +373,12 @@ const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _co
 const std::vector<std::unique_ptr<TuningStrategyInterface>> &AutoTuner::getTuningStrategies() const {
   return _tuningStrategies;
 }
+
+void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
+  for (auto &tuningStrategy : _tuningStrategies) {
+    tuningStrategy->receiveLiveInfo(liveInfo);
+  }
+}
+
+const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 }  // namespace autopas

@@ -74,17 +74,13 @@ class AutoTuner {
    * Getter for the primary metric for tuning.
    * @return
    */
-  const TuningMetricOption &getTuningMetric() const { return _tuningMetric; }
+  const TuningMetricOption &getTuningMetric() const;
 
   /**
    * Pass live info on to all tuning strategies.
    * @param liveInfo
    */
-  void receiveLiveInfo(const LiveInfo &liveInfo) {
-    for (auto &tuningStrategy : _tuningStrategies) {
-      tuningStrategy->receiveLiveInfo(liveInfo);
-    }
-  }
+  void receiveLiveInfo(const LiveInfo &liveInfo);
 
   /**
    * Indicator whether tuner needs homogeneity and max density information before the next call to prepareIteration().
