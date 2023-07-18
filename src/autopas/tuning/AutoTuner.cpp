@@ -13,7 +13,7 @@
 
 #include "autopas/tuning/selectors/OptimumSelector.h"
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyLoggerWrapper.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
 #include "autopas/tuning/utils/Smoothing.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -23,8 +23,7 @@ namespace autopas {
 AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace,
                      const AutoTunerInfo &info, unsigned int rebuildFrequency, const std::string &outputSuffix)
     : _selectorStrategy(info.selectorStrategy),
-      _tuningStrategies(info.useTuningStrategyLoggerProxy ? wrapTuningStrategies(tuningStrategies, outputSuffix)
-                                                          : std::move(tuningStrategies)),
+      _tuningStrategies(std::move(tuningStrategies)),
       _iteration(0),
       _tuningInterval(info.tuningInterval),
       _iterationsSinceTuning(info.tuningInterval),  // init to max so that tuning happens in first iteration
@@ -49,17 +48,6 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     autopas::utils::ExceptionHandler::exception("AutoTuner: Passed tuning strategy has an empty search space.");
   }
   AutoPasLog(DEBUG, "Points in search space: {}", _searchSpace.size());
-}
-
-std::vector<std::unique_ptr<TuningStrategyInterface>> AutoTuner::wrapTuningStrategies(
-    std::vector<std::unique_ptr<TuningStrategyInterface>> &tuningStrategies, const std::string &outputSuffix) {
-  std::vector<std::unique_ptr<TuningStrategyInterface>> wrappedStrategies{};
-  wrappedStrategies.reserve(tuningStrategies.size());
-  std::transform(tuningStrategies.begin(), tuningStrategies.end(), std::back_inserter(wrappedStrategies),
-                 [&](auto &tuningStrategy) {
-                   return std::make_unique<TuningStrategyLoggerWrapper>(std::move(tuningStrategy), outputSuffix);
-                 });
-  return wrappedStrategies;
 }
 
 AutoTuner &AutoTuner::operator=(AutoTuner &&other) noexcept {

@@ -242,9 +242,6 @@ class AutoTuner {
    */
   bool tuneConfiguration();
 
-  static std::vector<std::unique_ptr<TuningStrategyInterface>> wrapTuningStrategies(
-      std::vector<std::unique_ptr<TuningStrategyInterface>> &tuningStrategies, const std::string &outputSuffix);
-
   /**
    * Strategy how to reduce the sampled values to one value.
    */

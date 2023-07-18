@@ -30,9 +30,5 @@ struct AutoTunerInfo {
    * Number of samples that shall be collected per combination.
    */
   unsigned int maxSamples{3};
-  /**
-   * Whether to use the tuning strategy logger proxy to log tuning information.
-   */
-  bool useTuningStrategyLoggerProxy{false};
 };
 }  // namespace autopas

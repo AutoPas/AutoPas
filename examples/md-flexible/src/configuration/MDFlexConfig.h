@@ -723,7 +723,7 @@ class MDFlexConfig {
    * @see TuningStrategyLoggerProxy
    */
   MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true,
-                                               "If tuning information should be logged"};
+                                               "If tuning information should be logged. Possible Values: (true false)"};
 
   /**
    * The suffix for files created by the tuning logger.

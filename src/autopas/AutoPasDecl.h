@@ -963,7 +963,7 @@ class AutoPas {
    * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.
    * @param useTuningLogger
    */
-  void setUseTuningLogger(bool useTuningLogger) { _autoTunerInfo.useTuningStrategyLoggerProxy = useTuningLogger; }
+  void setUseTuningLogger(bool useTuningLogger) { _useTuningStrategyLoggerProxy = useTuningLogger; }
 
   /**
    * Set rule file name for the RuleBasedTuning.
@@ -987,6 +987,10 @@ class AutoPas {
    * Information needed for the LogicHandler.
    */
   LogicHandlerInfo _logicHandlerInfo{};
+  /**
+   * Whether to insert the tuning strategy logger into the list of strategies.
+   */
+  bool _useTuningStrategyLoggerProxy{false};
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */

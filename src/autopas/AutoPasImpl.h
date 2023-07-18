@@ -23,6 +23,7 @@
 // These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
 #include "autopas/LogicHandler.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSetFinite.h"
 
@@ -101,6 +102,9 @@ void AutoPas<Particle>::init() {
   for (const auto &strategy : _tuningStrategyOptions) {
     tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
         searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
+  }
+  if (_useTuningStrategyLoggerProxy) {
+    tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
   }
   _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
                                                     _verletRebuildFrequency, _outputSuffix);
