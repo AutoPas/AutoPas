@@ -134,4 +134,6 @@ void MPIParallelizedStrategy::receiveSmoothedHomogeneityAndMaxDensity(double hom
   _smoothedHomogeneity = homogeneity;
   _maxDensity = maxDensity;
 }
+
+const AutoPas_MPI_Comm &MPIParallelizedStrategy::getBucket() const { return _bucket; }
 }  // namespace autopas

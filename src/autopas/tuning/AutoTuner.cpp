@@ -376,5 +376,10 @@ bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {
   return _needsHomogeneityAndMaxDensity and _iterationsSinceTuning > _tuningInterval - numIterationsForHomogeneity and
          _iterationsSinceTuning <= _tuningInterval;
 }
+
 const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
+
+const std::vector<std::unique_ptr<TuningStrategyInterface>> &AutoTuner::getTuningStrategies() const {
+  return _tuningStrategies;
+}
 }  // namespace autopas

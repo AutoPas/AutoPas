@@ -298,8 +298,8 @@ std::vector<Configuration> gatherConfigurations(AutoPas_MPI_Comm comm,
   // offsets of each ranks data in the receive-buffer
   std::vector<int> displacements(numRanks);
   for (int i = 1; i < numRanks; ++i) {
-    // -1 because we calculate zero based indices via sizes
-    displacements[i] = displacements[i - 1] + globalNumBytes[i];
+    // the displacement is the sum of all previous numBytes
+    displacements[i] = displacements[i - 1] + globalNumBytes[i - 1];
   }
 
   AutoPas_MPI_Gatherv(localConfsSerialized.data(), localNumBytes, AUTOPAS_MPI_BYTE, globalConfsSerialized.data(),

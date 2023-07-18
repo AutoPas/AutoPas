@@ -205,6 +205,12 @@ class AutoTuner {
    */
   const std::vector<Configuration> &getConfigQueue() const;
 
+  /**
+   * Get the list of tuning strategies that are used.
+   * @return
+   */
+  const std::vector<std::unique_ptr<TuningStrategyInterface>> &getTuningStrategies() const;
+
  private:
   /**
    * Measures consumed energy for tuning
@@ -311,7 +317,7 @@ class AutoTuner {
   std::vector<double> _homogeneitiesOfLastTenIterations{};
 
   /**
-   * Buffer for the homogeneities of the last ten Iterations
+   * Buffer for the maximum densities of the last ten Iterations.
    */
   std::vector<double> _maxDensitiesOfLastTenIterations{};
 

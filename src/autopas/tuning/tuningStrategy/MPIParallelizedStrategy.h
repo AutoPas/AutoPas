@@ -61,6 +61,12 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   void rejectConfiguration(const Configuration &configuration, bool indefinitely) override;
 
   /**
+   * Get the MPI communicator for this rank's bucket.
+   * @return
+   */
+  const AutoPas_MPI_Comm &getBucket() const;
+
+  /**
    * Create a resilient configuration that should always be applicable.
    *
    * The idea is to pick some configuration that is basically always applicable (lc_c08) and guess from the search space
