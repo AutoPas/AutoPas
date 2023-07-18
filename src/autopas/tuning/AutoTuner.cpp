@@ -144,8 +144,10 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
     // If we are still collecting samples from one config return immediately.
     return {getCurrentConfig(), true};
   } else {
+    // This case covers any iteration in a tuning phase where a new configuration is needed (even the start of a phase)
     // We finished collection samples for this config so remove it from the queue
     _configQueue.pop_back();
+    // If we are at the start of a phase tuneConfiguration() will also refill the queue and call reset on all strategies
     const bool stillTuning = tuneConfiguration();
     return {getCurrentConfig(), stillTuning};
   }
@@ -356,7 +358,7 @@ bool AutoTuner::prepareIteration() {
       }
     }();
 
-    // reset all strategies and pass homo and maxDensity info if needed
+    // pass homogeneity and maxDensity info if needed
     for (const auto &tuningStrat : _tuningStrategies) {
       tuningStrat->receiveSmoothedHomogeneityAndMaxDensity(homogeneity, maxDensity);
     }
@@ -374,4 +376,5 @@ bool AutoTuner::needsHomogeneityAndMaxDensityBeforePrepare() const {
   return _needsHomogeneityAndMaxDensity and _iterationsSinceTuning > _tuningInterval - numIterationsForHomogeneity and
          _iterationsSinceTuning <= _tuningInterval;
 }
+const std::vector<Configuration> &AutoTuner::getConfigQueue() const { return _configQueue; }
 }  // namespace autopas

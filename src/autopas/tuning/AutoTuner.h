@@ -102,8 +102,7 @@ class AutoTuner {
   bool prepareIteration();
 
   /**
-   * Increase internal iteration counters by one.
-   * FIXME: Should this really be called at the end of the iteration? (Currently it is)
+   * Increase internal iteration counters by one. Should be called at the end of an iteration.
    */
   void bumpIterationCounters();
 
@@ -199,6 +198,12 @@ class AutoTuner {
    * @param time Time it took to obtain these measurements.
    */
   void addHomogeneityAndMaxDensity(double homogeneity, double maxDensity, long time);
+
+  /**
+   * Getter for the current queue of configurations.
+   * @return
+   */
+  const std::vector<Configuration> &getConfigQueue() const;
 
  private:
   /**
