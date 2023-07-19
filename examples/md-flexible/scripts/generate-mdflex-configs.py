@@ -114,9 +114,22 @@ def generate(domainSize,
     data['cell-size'] = [cellSizeFactor]
     data['Objects'] = make_object(domainSize, numParticles, distribution)
 
-    outFilename = str(domainSize) + '-' + str(numParticles) + '-' + str(distribution) + '-' + str(cutoff) + '-' \
-                  + str(verletSkinToCutoffFactor) + '-' + str(rebuildFrequencySkinFactorFactor) + '-' \
-                  + functor + '-' + str(cellSizeFactor) + '.yaml'
+    outFilename = ((str(domainSize)
+                    + '-' + str(numParticles)
+                    + '-' + str(distribution)
+                    + '-' + str(cutoff)
+                    + '-' + str(verletSkinToCutoffFactor)
+                    + '-' + str(rebuildFrequencySkinFactorFactor)
+                    + '-' + functor
+                    + '-' + str(cellSizeFactor)
+                    + '.yaml')
+                   .replace('\'', '')
+                   .replace(', ', '_')
+                   .replace('(', '')
+                   .replace(')', '')
+                   .replace('Lennard-Jones 12-6', 'LJ')
+                   .replace(' ', '_'))
+
     with open(outFilename, 'w') as fileOutput:
         yaml.dump(data, fileOutput, sort_keys=False)
 
