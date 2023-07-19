@@ -6,19 +6,25 @@
 #pragma once
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include "src/TypeDefinitions.h"
 #include "testingHelpers/commonTypedefs.h"
 
-extern template class autopas::AutoPas<Molecule>;
+extern template class autopas::AutoPas<ParticleType>;
 
 class ThermostatTest : public AutoPasTestBase,
                        public ::testing::WithParamInterface<std::tuple<double, double, double>> {
  public:
-  using AutoPasType = autopas::AutoPas<Molecule>;
+  using AutoPasType = autopas::AutoPas<ParticleType>;
 
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
-    _particlePropertiesLibrary.addType(0, 1., 1., 1.);
-    _particlePropertiesLibrary.addType(1, 1., 1., 2.);
+    _particlePropertiesLibrary.addSiteType(0, 1., 1., 1.);
+    _particlePropertiesLibrary.addSiteType(1, 1., 1., 2.);
+#if MD_FLEXIBLE_MODE == MULTISITE
+    _particlePropertiesLibrary.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+    _particlePropertiesLibrary.addMolType(1, {0, 0, 1}, {{0., -0.05, 0.}, {0.5, 0., 0.}, {0., 0.25, 0.25}},
+                                          {1., 1., 1.});
+#endif
     _particlePropertiesLibrary.calculateMixingCoefficients();
   }
 
@@ -29,14 +35,14 @@ class ThermostatTest : public AutoPasTestBase,
    * @param dummy
    * @param particlesPerDim
    */
-  void initContainer(AutoPasType &autopas, const Molecule &dummy, std::array<size_t, 3> particlesPerDim);
+  void initContainer(AutoPasType &autopas, const ParticleType &dummy, std::array<size_t, 3> particlesPerDim);
 
   /**
    * Applies brownian motion to a system and checks that all velocities have changed.
    * @param dummyMolecule
    * @param useCurrentTemp
    */
-  void testBrownianMotion(const Molecule &dummyMolecule, double targetTemperature);
+  void testBrownianMotion(const ParticleType &dummyMolecule, double targetTemperature);
 
   ParticlePropertiesLibrary<double, size_t> _particlePropertiesLibrary;
   AutoPasType _autopas;

@@ -21,17 +21,13 @@ class CubeClosestPacked : public Object {
    * Constructor.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    * @param particleSpacing distance between all neighboring particles
    * @param boxLength
    * @param bottomLeftCorner
    */
-  CubeClosestPacked(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma,
-                    double mass, double particleSpacing, const std::array<double, 3> &boxLength,
-                    const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId, epsilon, sigma, mass),
+  CubeClosestPacked(const std::array<double, 3> &velocity, unsigned long typeId, double particleSpacing,
+                    const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
+      : Object(velocity, typeId),
         _boxLength(boxLength),
         _particleSpacing(particleSpacing),
         _bottomLeftCorner(bottomLeftCorner),

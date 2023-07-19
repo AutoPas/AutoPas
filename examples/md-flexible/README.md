@@ -11,6 +11,14 @@ Alternatively you can build the documentation on your own:
 * requirements: [Doxygen](http://www.doxygen.nl/)
 * `make doc_doxygen_md-flexible`
 
+## MD-flexible modes
+MD-flexible supports two types of particle simulation: single-site and multi-site Molecular
+Dynamics simulations. Single-Site MD supports simple MD simulations using only single-site
+Lennard-Jones molecules. Multi-Site MD supports molecules formed from fixed rigid bodies of
+LJ sites. The different modes can be toggled at compile time (see below) and requires slightly
+different input files (see `AllOptions.yaml`).
+
+
 ## Compiling
 To build MD-Flexible execute the following from the AutoPas root folder:
 ```bash
@@ -18,6 +26,19 @@ mkdir build && cd $_
 cmake ..
 make md-flexible
 ```
+
+### Compiling with different md-flexible modes
+To compile md-flexible in single-site MD mode, set `MD_FLEXIBLE_MODE` to `SINGLE-SITE` via `cmake`:
+```bash
+cmake -DMD_FLEXIBLE_MODE=SINGLE-SITE ..
+```
+Alternatively, md-flexible can be compiled in multi-site MD mode, by setting `MD_FLEXIBLE_MODE` to
+`MULTI-SITE` via `cmake`:
+```bash
+cmake -DMD_FLEXIBLE_MODE=MULTI-SITE ..
+```
+
+By default, md-flexible is compiled in single-site MD mode.
 
 ### Compiling with MPI
 To use the MPI parallelization of md-flexible activate `MD_FLEXIBLE_USE_MPI` via `cmake`:
