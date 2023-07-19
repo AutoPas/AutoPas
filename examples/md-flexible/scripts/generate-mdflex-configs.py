@@ -4,9 +4,9 @@ from yaml.loader import SafeLoader
 
 # if available use tqdm for a progress bar otherwise fall back to itertools
 try:
-    from tqdm.contrib.itertools import product
+    from tqdm.contrib import itertools
 except ImportError:
-    from itertools import product
+    import itertools
 
 # Script to generate a wide range of yaml input files intended to be used as benchmarks
 # to judge the adaptability of tuning strategies.
@@ -189,8 +189,8 @@ if __name__ == "__main__":
     numScenarios = 0
     # loop over cartesian product of all generator options
     for domainSize, numParticles, distribution, cutoff, verletSkinToCutoffFactor, functor, cellSizeFactor in \
-            product(domainSizes.items(), particleCounts.items(), distributions.items(), cutoffs.items(),
-                    verletSkinToCutoffFactors.items(), functors.items(), cellSizeFactors.items()):
+            itertools.product(domainSizes.items(), particleCounts.items(), distributions.items(), cutoffs.items(),
+                              verletSkinToCutoffFactors.items(), functors.items(), cellSizeFactors.items()):
         # check if this
         if isInteresting(domainSize[0], numParticles[0], distribution[0], cutoff[0], verletSkinToCutoffFactor[0],
                          rebuildFrequencySkinFactorFactor, functor[0], cellSizeFactor[0]):
