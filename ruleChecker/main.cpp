@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
   unsigned long wouldHaveSkippedTuningTimeSum = 0;
   const std::string rulesfile{argv[1]};
   const autopas::NumberSetFinite<double> csfs({1., 2.});
-  const std::set<autopas::Configuration> searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+  const std::set<autopas::Configuration> searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
       autopas::Newton3Option::getAllOptions(), &csfs);

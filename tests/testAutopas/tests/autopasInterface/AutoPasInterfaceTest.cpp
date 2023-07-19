@@ -504,7 +504,7 @@ using ::testing::Values;
 using ::testing::ValuesIn;
 
 INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
-                         ::testing::ValuesIn(autopas::SearchSpaceGenerators::optionCrossProduct(
+                         ::testing::ValuesIn(autopas::SearchSpaceGenerators::cartesianProduct(
                              autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),

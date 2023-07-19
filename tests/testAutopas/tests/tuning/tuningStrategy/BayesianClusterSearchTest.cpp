@@ -26,7 +26,7 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
 
-  const auto searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors);
   autopas::BayesianClusterSearch bayesClusterSearch(containerOptions, cellSizeFactors, traversalOptions,
                                                     loadEstimatorOptions, dataLayoutOptions, newton3Options,
@@ -81,7 +81,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1.};
 
-  const auto searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors);
   autopas::BayesianClusterSearch bayesClusterSearch(
       containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
@@ -156,7 +156,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
-  const auto searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors);
   autopas::BayesianClusterSearch bayesClusterSearch(
       containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
@@ -243,7 +243,7 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
-  const auto searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors);
   autopas::BayesianClusterSearch bayesClusterSearch(
       containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,

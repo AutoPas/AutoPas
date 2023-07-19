@@ -22,7 +22,7 @@ TEST_F(BayesianSearchTest, testMaxEvidence) {
   const std::set<autopas::Newton3Option> newton3Options{autopas::Newton3Option::disabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
 
-  const auto searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors);
   autopas::BayesianSearch bayesSearch(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
                                       dataLayoutOptions, newton3Options, maxEvidence);
@@ -64,7 +64,7 @@ TEST_F(BayesianSearchTest, testFindBest) {
                                                         autopas::Newton3Option::enabled};
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
-  const auto searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors);
   autopas::BayesianSearch bayesSearch(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
                                       dataLayoutOptions, newton3Options, maxEvidence,

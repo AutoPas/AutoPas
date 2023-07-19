@@ -59,7 +59,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       .Times(testing::AtLeast(1))
       .WillRepeatedly(testing::WithArgs<0, 1>(
           testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
-  const auto searchSpace = autopas::SearchSpaceGenerators::optionCrossProduct(
+  const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
       autopas::Newton3Option::getAllOptions(), &cellSizeFactors);

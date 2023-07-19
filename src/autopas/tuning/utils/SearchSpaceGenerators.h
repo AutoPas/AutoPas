@@ -17,7 +17,7 @@
 namespace autopas::SearchSpaceGenerators {
 
 /**
- * Helper struct for all dimensions of a full cross product search space.
+ * Helper struct for all dimensions of a full cartesian product search space.
  */
 struct OptionSpace {
   /**
@@ -56,17 +56,17 @@ struct OptionSpace {
  * @param allowedCellSizeFactors
  * @return A set containing all valid configurations.
  */
-std::set<Configuration> optionCrossProduct(const std::set<ContainerOption> &allowedContainerOptions,
-                                           const std::set<TraversalOption> &allowedTraversalOptions,
-                                           const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
-                                           const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                           const std::set<Newton3Option> &allowedNewton3Options,
-                                           const NumberSet<double> *allowedCellSizeFactors);
+std::set<Configuration> cartesianProduct(const std::set<ContainerOption> &allowedContainerOptions,
+                                         const std::set<TraversalOption> &allowedTraversalOptions,
+                                         const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
+                                         const std::set<DataLayoutOption> &allowedDataLayoutOptions,
+                                         const std::set<Newton3Option> &allowedNewton3Options,
+                                         const NumberSet<double> *allowedCellSizeFactors);
 
 /**
  * Crudely trying to reconstruct the dimensions of the search space from a given set of options.
  *
- * @note It is assumed that searchSet is a full cross product.
+ * @note It is assumed that searchSet is a complete cartesian product of all contained options.
  *
  * @param searchSet
  * @return
