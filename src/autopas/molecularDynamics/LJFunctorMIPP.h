@@ -61,6 +61,7 @@ class LJFunctorMIPP
        if (calculateGlobals) {
          _aosThreadData.resize(autopas_get_max_threads());
        }
+       initMask();
      }
 
     public:
@@ -389,41 +390,44 @@ class LJFunctorMIPP
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
                            Reg<double> &fxacc, Reg<double> &fyacc, Reg<double> &fzacc, Reg<double> *virialSumX, Reg<double> *virialSumY,
                            Reg<double> *virialSumZ, Reg<double> *upotSum, const unsigned int rest = 0) {
-       Reg<double> epsilon24s = _epsilon24;
-       Reg<double> sigmaSquares = _sigmaSquare;
-       Reg<double> shift6s = _shift6;
         //TODO mask
        const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtr(*typeID1ptr, 0) : nullptr;
-       Reg<double> epsilon24s_test = useMixing ? gather(mixingDataPtr, _vindex3) : _epsilon24;
-       Reg<double> sigmaSquares_test = useMixing ? gather(mixingDataPtr + 1, _vindex3) : _sigmaSquare;
-       Reg<double> shift6s_test = useMixing ? gather(mixingDataPtr + 2, _vindex3) : _shift6;
+       Reg<double> epsilon24s_test = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr, _vindex3) : gather(mixingDataPtr, _vindex3);
+       Reg<double> sigmaSquares_test = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+1, _vindex3) : gather(mixingDataPtr + 1, _vindex3);
+       Reg<double> shift6s_test = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+2, _vindex3) : gather(mixingDataPtr + 2, _vindex3);
 
+         Reg<double> epsilon24s = 0.;
+         Reg<double> sigmaSquares = 0.;
+         Reg<double> shift6s = 0.;
 
-       if (useMixing) {
-         // the first argument for set lands in the last bits of the register
-         epsilon24s = {
-             not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-             not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-             not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-             _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0))};
-         sigmaSquares = {
-             not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-             not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-             not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-             _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0))};
-         if constexpr (applyShift) {
-           shift6s = {
-               (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-               (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-               (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-               _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0))};
+         if (useMixing) {
+             epsilon24s = {
+                     _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)),
+                     not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                     not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                     not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+             sigmaSquares = {
+                     _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)),
+                     not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                     not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                     not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+             if constexpr (applyShift) {
+                 shift6s = {
+                         _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)),
+                         (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                         (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                         (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+             }
+         } else {
+             epsilon24s = _epsilon24;
+             sigmaSquares = _sigmaSquare;
+             shift6s = _shift6;
          }
-         if(!remainderIsMasked) {
-             assert(epsilon24s.cmpneq(epsilon24s_test).testz());
-             assert(sigmaSquares.cmpneq(sigmaSquares_test).testz());
-             assert(shift6s.cmpneq(shift6s_test).testz());
-         }
-       }
+
+         assert(epsilon24s.cmpneq(epsilon24s_test).testz());
+         assert(sigmaSquares.cmpneq(sigmaSquares_test).testz());
+         assert(shift6s.cmpneq(shift6s_test).testz());
+
 
        Reg<double> x2 = remainderIsMasked ? maskzld(_masks[rest - 1], &x2ptr[j]) : loadu(&x2ptr[j]);
        Reg<double> y2 = remainderIsMasked ? maskzld(_masks[rest - 1], &y2ptr[j]) : loadu(&y2ptr[j]);
@@ -546,6 +550,14 @@ class LJFunctorMIPP
             indexes[i] = i;
         }
         return load(indexes);
+    }
+
+    inline void initMask() {
+        bool tmp[N<double>()] = {false};
+        for(int i = 0; i < N<double>() - 1; ++i) {
+            tmp[i] = true;
+            _masks[i].set(tmp);
+        }
     }
 
 public:
@@ -894,11 +906,7 @@ public:
      const Reg<double> _one = 1.;
      Reg<int64_t> _vindex3 = initVIndex3();
      Reg<int64_t> _vindex1 = initVIndex1();
-     const Msk<N<double>()> _masks[3] {
-         Msk<N<double>()>{true, false, false, false},
-         Msk<N<double>()>{true, true, false, false},
-         Msk<N<double>()>{true, true, true, false}
-     };
+     Msk<N<double>()> _masks[N<double>() - 1];
      const Reg<int64_t> _ownedStateDummyMM256i = 0.;
      const Reg<int64_t> _ownedStateOwnedMM256i = static_cast<int64_t>(OwnershipState::owned);
      const Reg<double> _cutoffsquare;
