@@ -30,6 +30,7 @@ namespace autopas::TuningStrategyFactory {
  * @param evidenceFirstPrediction
  * @param acquisitionFunctionOption
  * @param extrapolationMethodOption
+ * @param ruleFileName
  * @param outputSuffix
  * @param mpiStrategyOption
  * @param comm MPI communicator for MPI based strategies. (Default value only used for tests)
@@ -43,6 +44,6 @@ std::unique_ptr<autopas::TuningStrategyInterface> generateTuningStrategy(
     unsigned int maxEvidence, double relativeOptimum, unsigned int maxTuningPhasesWithoutTest,
     double relativeBlacklistRange, unsigned int evidenceFirstPrediction,
     AcquisitionFunctionOption acquisitionFunctionOption, ExtrapolationMethodOption extrapolationMethodOption,
-    const std::string &outputSuffix = "", MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI,
-    AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
+    const std::string &ruleFileName = "", const std::string &outputSuffix = "",
+    MPIStrategyOption mpiStrategyOption = MPIStrategyOption::noMPI, AutoPas_MPI_Comm comm = AUTOPAS_MPI_COMM_WORLD);
 }  // namespace autopas::TuningStrategyFactory

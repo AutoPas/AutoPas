@@ -55,17 +55,37 @@ class Option {
 
   /**
    * Converts an Option object to its respective string representation.
+   * @param fixedLength Whether result should be filled up with spaces to the length of the longest option.
    * @return The string representation or "Unknown Option (<IntValue>)".
    */
-  std::string to_string() const {
+  [[nodiscard]] std::string to_string(bool fixedLength = false) const {
     auto &actualThis = *static_cast<const actualOption *>(this);
     auto mapOptNames = actualOption::getOptionNames();  // <- not copying the map destroys the strings
     auto match = mapOptNames.find(actualThis);
     if (match == mapOptNames.end()) {
       return "Unknown Option (" + std::to_string(actualThis) + ")";
     } else {
-      return match->second;
+      std::string result = match->second;
+      if (fixedLength) {
+        result.resize(maxStringLength(), ' ');
+      }
+      return result;
     }
+  }
+
+  /**
+   * Returns the number of characters in the string representation of the longest option. Useful for pretty output.
+   * @return the number of characters in the string representation of the longest option.
+   */
+  [[nodiscard]] static size_t maxStringLength() {
+    static size_t maxLength = 0;
+    if (maxLength == 0) {
+      for (const auto &pair : actualOption::getOptionNames()) {
+        auto &name = pair.second;
+        maxLength = std::max(maxLength, name.size());
+      }
+    }
+    return maxLength;
   }
 
   /**
@@ -141,6 +161,28 @@ class Option {
   friend std::ostream &operator<<(std::ostream &os, const Option &option) {
     os << option.to_string();
     return os;
+  }
+
+  /**
+   * Stream extraction operator.
+   * @param in
+   * @param option
+   * @return
+   */
+  friend std::istream &operator>>(std::istream &in, actualOption &option) {
+    char c = ' ';
+    while (std::iswspace(c)) {
+      in.get(c);
+    }
+    std::string str{c};
+    do {
+      in.get(c);
+      str.push_back(c);
+    } while (std::isalnum(c) || c == '_' || c == '-');  // This assumes that an option only contains alphanum, _, or -.
+    str.pop_back();
+
+    option = parseOptionExact(str);
+    return in;
   }
 };
 }  // namespace options
