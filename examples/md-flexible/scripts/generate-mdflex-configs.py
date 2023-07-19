@@ -1,10 +1,15 @@
 #!/usr/bin/python3
-import itertools
-
 import yaml
 from yaml.loader import SafeLoader
 
-# Script to generate a wide range of yaml input files intended to be used as benchmarks to judge the adaptability of tuning strategies. 
+# if available use tqdm for a progress bar otherwise fall back to itertools
+try:
+    from tqdm.contrib.itertools import product
+except ImportError:
+    from itertools import product
+
+# Script to generate a wide range of yaml input files intended to be used as benchmarks
+# to judge the adaptability of tuning strategies.
 
 template = """
 container                        :  [LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists Octree]
@@ -184,7 +189,7 @@ if __name__ == "__main__":
     numScenarios = 0
     # loop over cartesian product of all generator options
     for domainSize, numParticles, distribution, cutoff, verletSkinToCutoffFactor, functor, cellSizeFactor in \
-            itertools.product(domainSizes.items(), particleCounts.items(), distributions.items(), cutoffs.items(),
+            product(domainSizes.items(), particleCounts.items(), distributions.items(), cutoffs.items(),
                     verletSkinToCutoffFactors.items(), functors.items(), cellSizeFactors.items()):
         # check if this
         if isInteresting(domainSize[0], numParticles[0], distribution[0], cutoff[0], verletSkinToCutoffFactor[0],
