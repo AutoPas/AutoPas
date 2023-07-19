@@ -191,7 +191,7 @@ if __name__ == "__main__":
     for domainSize, numParticles, distribution, cutoff, verletSkinToCutoffFactor, functor, cellSizeFactor in \
             itertools.product(domainSizes.items(), particleCounts.items(), distributions.items(), cutoffs.items(),
                               verletSkinToCutoffFactors.items(), functors.items(), cellSizeFactors.items()):
-        # check if this
+        # check if this combination is actually interesting to include in the benchmark
         if isInteresting(domainSize[0], numParticles[0], distribution[0], cutoff[0], verletSkinToCutoffFactor[0],
                          rebuildFrequencySkinFactorFactor, functor[0], cellSizeFactor[0]):
             numScenarios += 1
