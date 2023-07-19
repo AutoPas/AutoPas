@@ -91,4 +91,9 @@ namespace options {}
  */
 namespace octree {}
 
+/**
+ * Contains some helpers to write and read the tuning log entries.
+ */
+namespace tuningLogEntry {}
+
 }  // namespace autopas

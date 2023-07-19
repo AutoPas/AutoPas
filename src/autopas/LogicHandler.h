@@ -347,6 +347,9 @@ class LogicHandler {
                               static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
     if (behavior & IteratorBehavior::owned) {
       for (auto &buffer : _particleBuffer) {
+        // Don't insert empty buffers. This also means that we won't pick up particles added during iterating if they
+        // go to the buffers. But since we wouldn't pick them up if they go into the container to a cell that the
+        // iterators already passed this is unsupported anyways.
         if (not buffer.isEmpty()) {
           additionalVectors.push_back(&(buffer._particles));
         }
@@ -428,13 +431,13 @@ class LogicHandler {
    * Get the number of owned particles.
    * @return
    */
-  [[nodiscard]] unsigned long getNumParticlesOwned() const { return _numParticlesOwned; }
+  [[nodiscard]] unsigned long getNumberOfParticlesOwned() const { return _numParticlesOwned; }
 
   /**
    * Get the number of halo particles.
    * @return
    */
-  [[nodiscard]] unsigned long getNumParticlesHalo() const { return _numParticlesHalo; }
+  [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
  private:
   void checkMinimalSize() {

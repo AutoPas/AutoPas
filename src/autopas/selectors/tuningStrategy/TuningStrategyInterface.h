@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "LiveInfo.h"
 #include "autopas/selectors/Configuration.h"
 
 namespace autopas {
@@ -55,6 +56,20 @@ class TuningStrategyInterface {
    * @param iteration Gives the current iteration to the tuning strategy.
    */
   virtual void reset(size_t iteration) = 0;
+
+  /**
+   * Returns whether this tuning strategy wants to get a LiveInfo object passed before a new tuning phase.
+   * @return True, if this tuning strategy wants a LiveInfo object passed before a new tuning phase via
+   * receiveLiveInfo().
+   */
+  [[nodiscard]] virtual bool needsLiveInfo() const { return false; }
+
+  /**
+   * Virtual method that subclasses can override to receive the LiveInfo object before a tuning phase if they return
+   * true in needsLiveInfo().
+   * @param info A new LiveInfo object that has already gathered its information.
+   */
+  virtual void receiveLiveInfo(const LiveInfo &info){};
 
   /**
    * Returns all container options the strategy might choose.
