@@ -16,29 +16,56 @@ WS
                 ;
 
 Container_opt
-                : 'VerletClusterLists'
-                | 'VerletListsCells'
+                : 'DirectSum'
                 | 'LinkedCells'
-                | 'DirectSum'
                 | 'LinkedCellsReferences'
-                | 'VarVerletListsAsBuild'
                 | 'VerletLists'
+                | 'VerletListsCells'
+                | 'VerletClusterLists'
+                | 'VarVerletListsAsBuild'
                 | 'PairwiseVerletLists'
+                | 'Octree'
                 ;
 
 Traversal_opt
-                : 'ds_sequential' | 'lc_c01' | 'lc_c01_combined_SoA' | 'lc_c01_cuda' | 'lc_c04' | 'lc_c04_HCP'
-                | 'lc_c04_combined_SoA' | 'lc_c08' | 'lc_c18' | 'lc_sliced' | 'lc_sliced_balanced' | 'lc_sliced_c02'
-                | 'vcc_cluster_iteration_cuda' | 'vcl_c01_balanced' | 'vcl_c06' | 'vcl_cluster_iteration' | 'vcl_sliced'
-                | 'vcl_sliced_balanced' | 'vcl_sliced_c02' | 'vl_list_iteration' | 'vlc_c01' | 'vlc_c18' | 'vlc_sliced'
-                | 'vlc_sliced_balanced' | 'vlc_sliced_c02' | 'vlp_c01' | 'vlp_c18' | 'vlp_sliced'
-                | 'vlp_sliced_balanced' | 'vlp_sliced_c02' | 'vvl_as_built'
+                : 'ds_sequential'
+                | 'lc_sliced'
+                | 'lc_sliced_balanced'
+                | 'lc_sliced_c02'
+                | 'lc_c01'
+                | 'lc_c01_combined_SoA'
+                | 'lc_c04'
+                | 'lc_c04_HCP'
+                | 'lc_c04_combined_SoA'
+                | 'lc_c08'
+                | 'lc_c18'
+                | 'vcl_cluster_iteration'
+                | 'vcl_c06'
+                | 'vcl_c01_balanced'
+                | 'vcl_sliced'
+                | 'vcl_sliced_c02'
+                | 'vcl_sliced_balanced'
+                | 'vl_list_iteration'
+                | 'vlc_sliced'
+                | 'vlc_sliced_c02'
+                | 'vlc_c18'
+                | 'vlc_c01'
+                | 'vlc_sliced_balanced'
+                | 'vvl_as_built'
+                | 'vlp_sliced'
+                | 'vlp_sliced_c02'
+                | 'vlp_c18'
+                | 'vlp_c01'
+                | 'vlp_sliced_balanced'
+                | 'vlp_c08'
+                | 'ot_c18'
+                | 'ot_c01'
                 ;
 
 Load_estimator_opt
                 : 'none'
-                | 'neighbor-list-length'
                 | 'squared-particles-per-cell'
+                | 'neighbor-list-length'
                 ;
 
 Data_layout_opt
@@ -47,8 +74,8 @@ Data_layout_opt
                 ;
 
 Newton3_opt
-                : 'enabled'
-                | 'disabled'
+                : 'disabled'
+                | 'enabled'
                 ;
 
 Bool_val
@@ -140,4 +167,3 @@ statement
 
 if_statement
                 : 'if' expression ':' statement+ 'endif' ;
-
