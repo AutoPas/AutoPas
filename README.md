@@ -191,7 +191,7 @@ The default parameter is `ownedOrHalo`, which is also used for range-based for l
 
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
 
-Iterators are not guaranteed to be valid after particle insertion. 
+Iterators are not guaranteed to be valid after particle insertion (see [Issue #766](https://github.com/AutoPas/AutoPas/issues/766) for details).
 However, particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`. 
 After deletion the `++` operator has to be called:
 ```cpp

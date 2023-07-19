@@ -20,8 +20,8 @@ extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Mo
 using ::testing::_;
 
 template <typename AutoPasT>
-auto ContainerIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption,
-                                        double cellSizeFactor) {
+auto ContainerIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
+                                            double cellSizeFactor) {
   using namespace autopas::utils::ArrayMath::literals;
   autoPas.setBoxMin({0., 0., 0.});
   autoPas.setBoxMax({10., 10., 10.});
@@ -42,8 +42,8 @@ auto ContainerIteratorTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOpt
 }
 
 template <bool constIter, class AutoPasT, class F>
-auto ContainerIteratorTest::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
-                                            const autopas::IteratorBehavior &behavior) {
+auto ContainerIteratorTestBase::deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
+                                                const autopas::IteratorBehavior &behavior) {
   if constexpr (not constIter) {
     IteratorTestHelper::provideIterator<false>(autopas, behavior, useRegionIterator, [&](auto &autopas, auto getIter) {
 #ifdef AUTOPAS_OPENMP
@@ -70,7 +70,8 @@ auto ContainerIteratorTest::deleteParticles(AutoPasT &autopas, F predicate, bool
  * - Apply an iterator and confirm that it finds no particles.
  */
 TEST_P(ContainerIteratorTest, emptyContainer) {
-  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
+  const auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] =
+      GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
@@ -96,7 +97,8 @@ TEST_P(ContainerIteratorTest, emptyContainer) {
  * - Find the particles with iterators and compare their IDs with expectations.
  */
 TEST_P(ContainerIteratorTest, findAllParticlesInsideDomain) {
-  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
+  const auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] =
+      GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
@@ -144,7 +146,8 @@ TEST_P(ContainerIteratorTest, findAllParticlesInsideDomain) {
  * - Find the particles with iterators and compare their IDs with expectations.
  */
 TEST_P(ContainerIteratorTest, findAllParticlesAroundBoundaries) {
-  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
+  const auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] =
+      GetParam();
 
   // init autopas and fill it with some particles
   autopas::AutoPas<Molecule> autoPas;
@@ -192,11 +195,12 @@ TEST_P(ContainerIteratorTest, findAllParticlesAroundBoundaries) {
  * Since deletion does not work through const iterators this test is skipped when instantiated with
  * useConstIterator==true.
  */
-TEST_P(ContainerIteratorTest, deleteParticles) {
-  auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] = GetParam();
+TEST_P(ContainerIteratorTestNonConst, deleteParticles) {
+  const auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] =
+      GetParam();
 
   if (useConstIterator) {
-    GTEST_SKIP_("Not applicable since deleting with a const iterator is not possible");
+    GTEST_FAIL() << "This test is not applicable for const iterators and should not be instantiated!";
   }
 
   // init autopas and fill it with some particles
@@ -247,6 +251,68 @@ TEST_P(ContainerIteratorTest, deleteParticles) {
       [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
+TEST_P(ContainerIteratorTestNonConstOwned, addParticlesWhileIterating) {
+  const auto [containerOption, cellSizeFactor, useRegionIterator, useConstIterator, priorForceCalc, behavior] =
+      GetParam();
+
+  if (useConstIterator or behavior != autopas::IteratorBehavior::owned) {
+    GTEST_FAIL() << "This test is not applicable for const iterators or iterator behaviors other than owned and should "
+                    "not be instantiated!";
+  }
+
+  // init autopas and fill it with some particles
+  autopas::AutoPas<Molecule> autoPas;
+  defaultInit(autoPas, containerOption, cellSizeFactor);
+  const auto expectedInitialIDs = IteratorTestHelper::fillContainerWithGrid(autoPas, 3);
+  const auto highestInitialId = *std::max_element(expectedInitialIDs.begin(), expectedInitialIDs.end());
+  // offset between initial and new IDs
+  const auto idOffset = static_cast<size_t>(std::pow(10, std::ceil(std::log10(highestInitialId)) + 1));
+  const auto expectedNewIDs = [&]() {
+    std::vector<size_t> newVec = expectedInitialIDs;
+    for (auto &v : newVec) {
+      v += idOffset;
+    }
+    return newVec;
+  }();
+
+  if (priorForceCalc) {
+    // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
+    EmptyFunctor<Molecule> eFunctor;
+    autoPas.iteratePairwise(&eFunctor);
+  }
+
+  const auto cellSize = (autoPas.getCutoff() + autoPas.getVerletSkin()) * cellSizeFactor;
+  const auto boxLength = autoPas.getBoxMax();
+
+  std::vector<size_t> foundInitialParticles{};
+  std::vector<size_t> foundNewParticles{};
+  foundInitialParticles.reserve(expectedInitialIDs.size());
+  foundNewParticles.reserve(expectedNewIDs.size());
+  // now use again an iterator to confirm only the expected ones are still there
+  IteratorTestHelper::provideIterator</* const iter */ false>(
+      autoPas, behavior, useRegionIterator, [&](auto &autopas, auto &getIter) {
+        for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
+          if (iterator->getID() > highestInitialId) {
+            foundNewParticles.push_back(iterator->getID());
+            continue;
+          }
+          foundInitialParticles.push_back(iterator->getID());
+          auto newPosition = iterator->getR();
+          newPosition[0] += cellSize;
+          if (newPosition[0] > boxLength[0]) {
+            newPosition[0] -= boxLength[0];
+          }
+          const Molecule newParticle{newPosition, {}, iterator->getID() + idOffset};
+          autopas.addParticle(newParticle);
+        }
+      });
+  // The octree might visit some particles multiple times
+  const std::set<size_t> foundInitialParticlesUnique{foundInitialParticles.begin(), foundInitialParticles.end()};
+  EXPECT_THAT(foundInitialParticlesUnique, ::testing::UnorderedElementsAreArray(expectedInitialIDs));
+  // We don't support finding all new particles while iterating.
+  //  EXPECT_THAT(foundNewParticles, ::testing::UnorderedElementsAreArray(expectedNewIDs));
+}
+
 using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
@@ -259,4 +325,18 @@ INSTANTIATE_TEST_SUITE_P(Generated, ContainerIteratorTest,
                                  /*use region iter*/ Values(true, false),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
-                         ContainerIteratorTest::PrintToStringParamName());
+                         ContainerIteratorTestBase::PrintToStringParamName());
+
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerIteratorTestNonConst,
+                         Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
+                                 /*use region iter*/ Values(true, false),
+                                 /*use const*/ Values(false), /*prior force calc*/ Values(true, false),
+                                 ValuesIn(autopas::IteratorBehavior::getMostOptions())),
+                         ContainerIteratorTestBase::PrintToStringParamName());
+
+INSTANTIATE_TEST_SUITE_P(Generated, ContainerIteratorTestNonConstOwned,
+                         Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
+                                 /*use region iter*/ Values(true, false),
+                                 /*use const*/ Values(false), /*prior force calc*/ Values(true, false),
+                                 Values(autopas::IteratorBehavior::owned)),
+                         ContainerIteratorTestBase::PrintToStringParamName());
