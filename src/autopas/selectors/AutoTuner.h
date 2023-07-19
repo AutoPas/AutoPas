@@ -948,7 +948,7 @@ bool AutoTuner<Particle>::tune(PairwiseFunctor &pairwiseFunctor) {
     // if necessary gather current live info and pass it to the actual strategy
     if (_tuningStrategy->needsLiveInfo()) {
       LiveInfo info{};
-      info.gather(*_containerSelector.getCurrentContainer(), pairwiseFunctor, _rebuildFrequency);
+      info.gather(_containerSelector.getCurrentContainer(), pairwiseFunctor, _rebuildFrequency);
       _tuningStrategy->receiveLiveInfo(info);
     }
     // call the appropriate version of reset
