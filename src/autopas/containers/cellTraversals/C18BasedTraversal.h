@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
+#include "ColorBasedTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
@@ -17,24 +17,24 @@ namespace autopas {
  * cell and all adjacent cells with greater ID are safe, even when using newton3 optimizations.
  *
  * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam Functor The functor that defines the interaction of two particles.
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
+class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the lc_c18 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                              const double interactionLength, const std::array<double, 3> &cellLength)
-      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, interactionLength,
+      : ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3>(dims, functor, interactionLength,
                                                                                cellLength) {}
 
  protected:
@@ -54,9 +54,9 @@ class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
   inline void c18Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <bool allCells, typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::c18Traversal(
+inline void C18BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3>::c18Traversal(
     LoopBody &&loopBody) {
   const std::array<unsigned long, 3> stride = {2ul * this->_overlap[0] + 1ul, 2ul * this->_overlap[1] + 1ul,
                                                this->_overlap[2] + 1ul};

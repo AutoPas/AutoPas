@@ -10,7 +10,7 @@
 #include <algorithm>
 
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/SlicedLockBasedTraversal.h"
+#include "autopas/containers/cellTraversals/SlicedLockBasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"

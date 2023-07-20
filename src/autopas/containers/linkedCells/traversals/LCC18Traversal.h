@@ -7,7 +7,7 @@
 #pragma once
 
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C18BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ArrayUtils.h"

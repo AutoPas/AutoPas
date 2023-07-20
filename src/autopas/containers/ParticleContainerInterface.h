@@ -245,6 +245,7 @@ class ParticleContainerInterface {
 
   /**
    * Iterates over all particle triplets in the container.
+   * @note iterateTriwise does not have to be implemented by the container if it is not used.
    * @param traversal The traversal to use for the iteration.
    */
   virtual void iterateTriwise(TriwiseTraversalInterface *traversal) {

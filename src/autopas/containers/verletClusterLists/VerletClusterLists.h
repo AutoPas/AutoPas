@@ -14,7 +14,7 @@
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"

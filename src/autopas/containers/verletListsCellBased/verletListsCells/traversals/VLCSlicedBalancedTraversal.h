@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "autopas/containers/cellPairTraversals/SlicedBalancedBasedTraversal.h"
+#include "autopas/containers/cellTraversals/SlicedBalancedBasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"

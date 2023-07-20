@@ -8,7 +8,7 @@
 
 #include "LCC04SoACellHandler.h"
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C04BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C04BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {

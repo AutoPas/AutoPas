@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 
 namespace autopas {
 

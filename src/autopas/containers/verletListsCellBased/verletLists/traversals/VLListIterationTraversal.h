@@ -8,7 +8,7 @@
 #pragma once
 
 #include "VLTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 

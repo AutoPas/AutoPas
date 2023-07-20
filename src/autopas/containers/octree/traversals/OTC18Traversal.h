@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
@@ -28,7 +28,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
+class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
                        public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
   /**
@@ -45,7 +45,7 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   explicit OTC18Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength)
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
-      : CellPairTraversal<ParticleCell>({2, 1, 1}),
+      : CellTraversal<ParticleCell>({2, 1, 1}),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"

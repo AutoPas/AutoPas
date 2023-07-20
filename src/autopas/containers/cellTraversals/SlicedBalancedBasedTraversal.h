@@ -10,8 +10,8 @@
 #include <array>
 #include <vector>
 
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
-#include "autopas/containers/cellPairTraversals/SlicedLockBasedTraversal.h"
+#include "BalancedTraversal.h"
+#include "SlicedLockBasedTraversal.h"
 #include "autopas/utils/Timer.h"
 
 namespace autopas {
@@ -24,24 +24,24 @@ namespace autopas {
  * roughly equal. Different heuristics can be chosen to estimate this load.
  *
  * @tparam ParticleCell The type of cells.
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam Functor The functor that defines the interaction between particles.
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           bool spaciallyForward>
 class SlicedBalancedBasedTraversal
-    : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>,
+    : public SlicedLockBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>,
       public BalancedTraversal {
  public:
   /**
    * Constructor of the balanced sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
-  explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                                         const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
-            dims, pairwiseFunctor, interactionLength, cellLength) {
+      : SlicedLockBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>(
+            dims, functor, interactionLength, cellLength) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
     this->_dynamic = false;
   }

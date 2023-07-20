@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/SlicedC02BasedTraversal.h"
+#include "autopas/containers/cellTraversals/SlicedC02BasedTraversal.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"

@@ -12,7 +12,7 @@
 #include "autopas/containers/CellBorderAndFlagManager.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/directSum/traversals/DSTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -104,7 +104,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   void iteratePairwise(PairwiseTraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    // todo should check dynamic cast from PairwiseTraversalInterface
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
@@ -114,6 +115,22 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
     traversal->initTraversal();
     traversal->traverseParticlePairs();
+    traversal->endTraversal();
+  }
+
+  void iterateTriwise(TriwiseTraversalInterface *traversal) override {
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    if (traversalInterface && cellPairTraversal) {
+      cellPairTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in DirectSum::iterateTriwise");
+    }
+
+    traversal->initTraversal();
+    traversal->traverseParticleTriplets();
     traversal->endTraversal();
   }
 

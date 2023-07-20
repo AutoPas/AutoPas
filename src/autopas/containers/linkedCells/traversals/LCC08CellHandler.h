@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 

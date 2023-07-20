@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
+#include "ColorBasedTraversal.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
@@ -19,26 +19,26 @@ namespace autopas {
  * cell and all adjacent cells with greater ID in each direction are safe, even when using newton3 optimizations.
  *
  * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam Functor The functor that defines the interaction between particles.
  * @tparam useSoA
  * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth> {
+class C04BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, collapseDepth> {
  public:
   /**
    * Constructor of the c04 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
    */
-  explicit C04BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit C04BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                              const double interactionLength, const std::array<double, 3> &cellLength)
-      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>(
-            dims, pairwiseFunctor, interactionLength, cellLength) {}
+      : ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, collapseDepth>(
+            dims, functor, interactionLength, cellLength) {}
 
  protected:
   /**
@@ -49,10 +49,10 @@ class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
   inline void c04Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth>
 template <typename LoopBody>
-inline void C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::c04Traversal(
+inline void C04BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, collapseDepth>::c04Traversal(
     LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 

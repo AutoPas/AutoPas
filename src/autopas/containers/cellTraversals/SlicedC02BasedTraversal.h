@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "autopas/containers/cellPairTraversals/SlicedBasedTraversal.h"
+#include "SlicedBasedTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -23,32 +23,32 @@ namespace autopas {
  * the domain into as many slices as possible along this dimension. Unlike the regular
  * sliced traversal, this version uses a 2-coloring to prevent race conditions, instead of
  * locking the starting layers. This could also be describes as a c02-traversal. This class
- * is however not derived from CBasedTraversal, as that would not allow varying slice thicknesses,
+ * is however not derived from ColorBasedTraversal, as that would not allow varying slice thicknesses,
  * and would prevent us from selecting the dimension in which we cut the slices.
  *
  * @tparam ParticleCell The type of cells.
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam Functor The functor that defines the interaction between particles.
  * @tparam dataLayout
  * @tparam useNewton3
  * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
  * c08)
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           bool spaciallyForward>
 class SlicedC02BasedTraversal
-    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward> {
+    : public SlicedBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward> {
  public:
   /**
    * Constructor of the colored sliced traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param pairwiseFunctor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *pairwiseFunctor,
                                    const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
+      : SlicedBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>(
             dims, pairwiseFunctor, interactionLength, cellLength) {}
 
   /**
@@ -80,10 +80,10 @@ class SlicedC02BasedTraversal
   }
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           bool spaciallyForward>
 template <typename LoopBody>
-void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
+void SlicedC02BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
     LoopBody &&loopBody) {
   using std::array;
 

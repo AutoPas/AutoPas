@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
+#include "autopas/containers/cellTraversals/ColorBasedTraversal.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
@@ -26,7 +26,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                         public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
@@ -58,7 +58,7 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, da
    * @param clusterSize Number of particles per cluster.
    */
   explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
-      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>({0, 0, 0}, pairwiseFunctor, 0, {}),
+      : ColorBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>({0, 0, 0}, pairwiseFunctor, 0, {}),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize) {}
 

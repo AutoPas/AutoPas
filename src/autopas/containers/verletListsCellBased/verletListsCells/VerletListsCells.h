@@ -9,7 +9,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"

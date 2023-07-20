@@ -1,12 +1,12 @@
 /**
- * @file CBasedTraversal.h
+ * @file ColorBasedTraversal.h
  * @author C. Menges
  * @date 26.04.2019
  */
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -17,38 +17,38 @@ namespace autopas {
  * This class provides the base for traversals using base steps based on cell coloring.
  *
  * @tparam ParticleCell the type of cells
- * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam Functor The functor that defines the interaction between particles.
  * @tparam dataLayout
  * @tparam useNewton3
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class CBasedTraversal : public CellPairTraversal<ParticleCell> {
+class ColorBasedTraversal : public CellTraversal<ParticleCell> {
  protected:
   /**
-   * Constructor of the CBasedTraversal.
+   * Constructor of the ColorBasedTraversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
+  explicit ColorBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                            const double interactionLength, const std::array<double, 3> &cellLength)
-      : CellPairTraversal<ParticleCell>(dims),
+      : CellTraversal<ParticleCell>(dims),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
-        _dataLayoutConverter(pairwiseFunctor) {
+        _dataLayoutConverter(functor) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     }
   }
 
   /**
-   * Destructor of CBasedTraversal.
+   * Destructor of ColorBasedTraversal.
    */
-  ~CBasedTraversal() override = default;
+  ~ColorBasedTraversal() override = default;
 
  public:
   /**
@@ -85,7 +85,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
 
  protected:
   /**
-   * The main traversal of the CTraversal.
+   * The main traversal of the ColorBasedTraversal.
    * @tparam LoopBody type of the loop body
    * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as as parameters
    * (x,y,z). If you need additional input from outside, please use captures (by reference).
@@ -94,7 +94,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param offset initial offset (in cells) in which cell to start the traversal.
    */
   template <typename LoopBody>
-  inline void cTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
+  inline void colorTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
                          const std::array<unsigned long, 3> &stride,
                          const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
 
@@ -124,13 +124,13 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Data Layout Converter to be used with this traversal
    */
-  utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+  utils::DataLayoutConverter<Functor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth>
 template <typename LoopBody>
-inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::cTraversal(
+inline void ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, collapseDepth>::colorTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;

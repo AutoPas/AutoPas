@@ -9,7 +9,7 @@
 #include "autopas/containers/CompatibleLoadEstimators.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/selectors/TraversalSelectorInfo.h"
 #include "testingHelpers/NumThreadGuard.h"

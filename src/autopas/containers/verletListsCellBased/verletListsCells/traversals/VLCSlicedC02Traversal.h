@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "autopas/containers/cellPairTraversals/SlicedC02BasedTraversal.h"
+#include "autopas/containers/cellTraversals/SlicedC02BasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairTraversalInterface.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"

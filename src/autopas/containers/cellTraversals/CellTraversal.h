@@ -1,5 +1,5 @@
 /**
- * @file CellPairTraversal.h
+ * @file CellTraversal.h
  *
  * @date 22 Jan 2018
  * @author tchipevn
@@ -17,22 +17,23 @@ namespace autopas {
 /**
  * A cell pair traversal.
  * This class handles traversals through the cell structures.
- * Derived classes handle the order through which the cells are traversed.
+ * Derived classes handle the order through which the cells are traversed and should additional inherit from PairwiseTraversalInterface
+ * or TriwiseTraversalInterface.
  * @tparam ParticleCell type of cells.
  */
 template <class ParticleCell>
-class CellPairTraversal : public PairwiseTraversalInterface {
+class CellTraversal : public TraversalInterface {
  public:
   /**
-   * Constructor of CellPairTraversal.
+   * Constructor of CellTraversal.
    * @param dims the dimensions of the cellblock.
    */
-  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims), _cells(nullptr) {}
+  explicit CellTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims), _cells(nullptr) {}
 
   /**
-   * Destructor of CellPairTraversal.
+   * Destructor of CellTraversal.
    */
-  ~CellPairTraversal() override = default;
+  ~CellTraversal() override = default;
 
   /**
    * Sets the cells to iterate over. Should always be called before initTraversal().
