@@ -13,8 +13,8 @@
 
 #include <array>
 
-#include "../pairwiseFunctors/Functor.h"
-#include "../utils/ExceptionHandler.h"
+#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "MultisiteMoleculeLJ.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/utils/AVXUtils.h"
@@ -259,9 +259,9 @@ class LJMultisiteFunctorAVX
 
     // calculate correctly rotated relative site positions (rotated correctly)
     const auto rotatedSitePositionsA =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQ(), unrotatedSitePositionsA);
+        autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
     const auto rotatedSitePositionsB =
-        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQ(), unrotatedSitePositionsB);
+        autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), unrotatedSitePositionsB);
 
     for (int i = 0; i < numSitesA; i++) {
       for (int j = 0; j < numSitesB; j++) {
@@ -1967,17 +1967,17 @@ class LJMultisiteFunctorAVX
  */
 template <bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals,
           bool relevantForTuning>
-class LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
-    : public autopas::Functor<autopas::MoleculeLJ,
-                              LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing, useNewton3,
+class LJMultisiteFunctorAVX<mdLib::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
+    : public autopas::Functor<mdLib::MoleculeLJ,
+                              LJMultisiteFunctorAVX<mdLib::MoleculeLJ, applyShift, useMixing, useNewton3,
                                                     calculateGlobals, relevantForTuning>> {
  public:
   /**
    * Structure of the SoAs defined by the particle.
    */
-  using SoAArraysType = typename autopas::MoleculeLJ::SoAArraysType;
+  using SoAArraysType = typename mdLib::MoleculeLJ::SoAArraysType;
 
-  using SoAFloatPrecision = typename autopas::MoleculeLJ::ParticleSoAFloatPrecision;
+  using SoAFloatPrecision = typename mdLib::MoleculeLJ::ParticleSoAFloatPrecision;
 
   /**
    * Delete Default constructor
@@ -1991,7 +1991,7 @@ class LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing, useNewto
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMultisiteFunctorAVX(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<autopas::MoleculeLJ, LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing,
+      : autopas::Functor<mdLib::MoleculeLJ, LJMultisiteFunctorAVX<mdLib::MoleculeLJ, applyShift, useMixing,
                                                                     useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
     autopas::utils::ExceptionHandler::exception(
@@ -2040,7 +2040,7 @@ class LJMultisiteFunctorAVX<autopas::MoleculeLJ, applyShift, useMixing, useNewto
    * @param particleB Particle j
    * @param newton3 Flag for if newton3 is used.
    */
-  void AoSFunctor(autopas::MoleculeLJ &particleA, autopas::MoleculeLJ &particleB, bool newton3) final {
+  void AoSFunctor(mdLib::MoleculeLJ &particleA, mdLib::MoleculeLJ &particleB, bool newton3) final {
     autopas::utils::ExceptionHandler::exception(
         "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
   }

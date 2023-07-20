@@ -21,7 +21,7 @@ void LJMultisiteFunctorAVXTest::generatePPL(ParticlePropertiesLibrary<double, si
   PPL->calculateMixingCoefficients();
 }
 
-void LJMultisiteFunctorAVXTest::generateMolecules(std::vector<autopas::MultisiteMoleculeLJ> *molecules,
+void LJMultisiteFunctorAVXTest::generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules,
                                                   std::array<double, 3> offset = {0, 0, 0}) {
   molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
@@ -34,7 +34,7 @@ void LJMultisiteFunctorAVXTest::generateMolecules(std::vector<autopas::Multisite
         // Generate quaternion deterministically but arbitrarily with fair variation
         const std::array<double, 4> qNonNormalized{1., (double)i + offset[0], (double)j + offset[1],
                                                    (double)k + offset[2]};
-        molecules->at(index).setQ(autopas::utils::ArrayMath::normalize(qNonNormalized));
+        molecules->at(index).setQuaternion(autopas::utils::ArrayMath::normalize(qNonNormalized));
         molecules->at(index).setF({0, 0, 0});
         molecules->at(index).setTorque({0, 0, 0});
         molecules->at(index).setV({0, 0, 0});
@@ -46,9 +46,9 @@ void LJMultisiteFunctorAVXTest::generateMolecules(std::vector<autopas::Multisite
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules,
+void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
                                                       ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
-  using autopas::MultisiteMoleculeLJ;
+  using mdLib::MultisiteMoleculeLJ;
 
   autopas::LJMultisiteFunctorAVX<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                                  true>
@@ -126,11 +126,11 @@ void LJMultisiteFunctorAVXTest::testSoACellAgainstAoS(std::vector<autopas::Multi
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorAVXTest::testSoACellPairAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> moleculesA,
-                                                          std::vector<autopas::MultisiteMoleculeLJ> moleculesB,
+void LJMultisiteFunctorAVXTest::testSoACellPairAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> moleculesA,
+                                                          std::vector<mdLib::MultisiteMoleculeLJ> moleculesB,
                                                           ParticlePropertiesLibrary<double, size_t> PPL,
                                                           double cutoff) {
-  using autopas::MultisiteMoleculeLJ;
+  using mdLib::MultisiteMoleculeLJ;
 
   autopas::LJMultisiteFunctorAVX<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                                  true>
@@ -236,8 +236,8 @@ void LJMultisiteFunctorAVXTest::testSoACellPairAgainstAoS(std::vector<autopas::M
   }
 }
 
-//void LJMultisiteFunctorAVXTest::testSuiteAoSForceCalculation(autopas::MultisiteMoleculeLJ molA,
-//                                                             autopas::MultisiteMoleculeLJ molB,
+//void LJMultisiteFunctorAVXTest::testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA,
+//                                                             mdLib::MultisiteMoleculeLJ molB,
 //                                                             ParticlePropertiesLibrary<double, size_t> PPL,
 //                                                             double cutoff) {
 //  // N3L Disabled, No Calculating Globals
@@ -260,8 +260,8 @@ void LJMultisiteFunctorAVXTest::testSoACellPairAgainstAoS(std::vector<autopas::M
 //}
 //
 //template <bool newton3, bool calculateGlobals, bool applyShift>
-//void LJMultisiteFunctorAVXTest::testAoSForceCalculation(autopas::MultisiteMoleculeLJ molA,
-//                                                        autopas::MultisiteMoleculeLJ molB,
+//void LJMultisiteFunctorAVXTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA,
+//                                                        mdLib::MultisiteMoleculeLJ molB,
 //                                                        ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
 //  using autopas::utils::ArrayMath::add;
 //  using autopas::utils::ArrayMath::cross;
@@ -353,7 +353,7 @@ void LJMultisiteFunctorAVXTest::testSoACellPairAgainstAoS(std::vector<autopas::M
 //  // calculate forces and torques using AoS functor
 //
 //  // create functor
-//  autopas::LJMultisiteFunctorAVX<autopas::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
+//  autopas::LJMultisiteFunctorAVX<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
 //                                 calculateGlobals, true>
 //      functor(cutoff, PPL);
 //
@@ -390,9 +390,9 @@ void LJMultisiteFunctorAVXTest::testSoACellPairAgainstAoS(std::vector<autopas::M
 //}
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorAVXTest::testSoAVerletAgainstAoS(std::vector<autopas::MultisiteMoleculeLJ> molecules,
+void LJMultisiteFunctorAVXTest::testSoAVerletAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
                                                         ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
-  using autopas::MultisiteMoleculeLJ;
+  using mdLib::MultisiteMoleculeLJ;
 
   autopas::LJMultisiteFunctorAVX<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                                  true>
@@ -494,7 +494,7 @@ void LJMultisiteFunctorAVXTest::testSoAVerletAgainstAoS(std::vector<autopas::Mul
 
 //// TODO GLOBAL CALCULATION LIKELY NOT CORRECT
 //TEST_F(LJMultisiteFunctorAVXTest, AoSTest) {
-//  using autopas::MultisiteMoleculeLJ;
+//  using mdLib::MultisiteMoleculeLJ;
 //
 //  ParticlePropertiesLibrary PPL(1.);
 //  PPL.addSiteType(0, 1., 1., 1.);
@@ -605,11 +605,11 @@ void LJMultisiteFunctorAVXTest::testSoAVerletAgainstAoS(std::vector<autopas::Mul
  * @note No newton3 disabled as SoACell always uses newton3 optimisation
  */
 TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACell) {
-  using autopas::MultisiteMoleculeLJ;
+  using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 1.5;
 
-  std::vector<autopas::MultisiteMoleculeLJ> molecules;
+  std::vector<mdLib::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
@@ -626,12 +626,12 @@ TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACell) {
 }
 
 TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACellPair) {
-  using autopas::MultisiteMoleculeLJ;
+  using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 1.5;
 
-  std::vector<autopas::MultisiteMoleculeLJ> moleculesA;
-  std::vector<autopas::MultisiteMoleculeLJ> moleculesB;
+  std::vector<mdLib::MultisiteMoleculeLJ> moleculesA;
+  std::vector<mdLib::MultisiteMoleculeLJ> moleculesB;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
@@ -658,11 +658,11 @@ TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoACellPair) {
 }
 
 TEST_F(LJMultisiteFunctorAVXTest, AoSVsSoAVerlet) {
-  using autopas::MultisiteMoleculeLJ;
+  using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 1.5;
 
-  std::vector<autopas::MultisiteMoleculeLJ> molecules;
+  std::vector<mdLib::MultisiteMoleculeLJ> molecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
