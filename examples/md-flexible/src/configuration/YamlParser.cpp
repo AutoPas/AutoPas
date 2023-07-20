@@ -5,6 +5,8 @@
  */
 #include "YamlParser.h"
 
+#include "autopas/options/TuningMetricOption.h"
+
 const std::string MDFlexParser::YamlParser::parseSequenceOneElementExpected(const YAML::Node node,
                                                                             const std::string &errMsg) {
   if (node.IsSequence()) {
@@ -31,17 +33,13 @@ const std::string MDFlexParser::YamlParser::makeErrorMsg(const YAML::Mark &mark,
 
 const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig &config, const YAML::Node node,
                                                              std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
+  const auto particleType =
+      parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto particlesPerDim =
       parseComplexTypeValueSequence<unsigned long, 3>(node, config.particlesPerDim.name, objectErrors);
-  const auto particleSpacing = parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+  const auto particleSpacing =
+      parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
@@ -51,15 +49,11 @@ const CubeGrid MDFlexParser::YamlParser::parseCubeGridObject(const MDFlexConfig 
 
 const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexConfig &config, const YAML::Node node,
                                                                    std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
-  const auto numParticles = parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
+  const auto particleType =
+      parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto numParticles =
+      parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
@@ -70,39 +64,33 @@ const CubeUniform MDFlexParser::YamlParser::parseCubeUniformObject(const MDFlexC
 
 const CubeGauss MDFlexParser::YamlParser::parseCubeGaussObject(const MDFlexConfig &config, const YAML::Node node,
                                                                std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
-  const auto numParticles = parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
+  const auto particleType =
+      parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto numParticles =
+      parseComplexTypeValueSingle<size_t>(node, MDFlexConfig::particlesPerObjectStr, objectErrors);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
-  const auto distributionMean = parseComplexTypeValueSequence<double, 3>(node, config.distributionMean.name, objectErrors);
+  const auto distributionMean =
+      parseComplexTypeValueSequence<double, 3>(node, config.distributionMean.name, objectErrors);
   const auto distributionStdDev =
       parseComplexTypeValueSequence<double, 3>(node, config.distributionStdDev.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
 
-  const CubeGauss cubeGauss(velocity, particleType, numParticles, boxLength, distributionMean, distributionStdDev, bottomLeftCorner);
+  const CubeGauss cubeGauss(velocity, particleType, numParticles, boxLength, distributionMean, distributionStdDev,
+                            bottomLeftCorner);
   return cubeGauss;
 }
 
 const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &config, const YAML::Node node,
                                                          std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
+  const auto particleType =
+      parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
   const auto sphereCenter = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::sphereCenterStr, objectErrors);
   const auto sphereRadius = parseComplexTypeValueSingle<double>(node, MDFlexConfig::sphereRadiusStr, objectErrors);
-  const auto particleSpacing = parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+  const auto particleSpacing =
+      parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
 
   const Sphere sphere(velocity, particleType, sphereCenter, sphereRadius, particleSpacing);
   return sphere;
@@ -111,15 +99,11 @@ const Sphere MDFlexParser::YamlParser::parseSphereObject(const MDFlexConfig &con
 const CubeClosestPacked MDFlexParser::YamlParser::parseCubeClosestPacked(const MDFlexConfig &config,
                                                                          const YAML::Node node,
                                                                          std::vector<std::string> &objectErrors) {
-  auto particleTypeStr =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-      MDFlexConfig::molTypeStr;
-#else
-      MDFlexConfig::siteTypeStr;
-#endif
   const auto velocity = parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::velocityStr, objectErrors);
-  const auto particleType = parseComplexTypeValueSingle<unsigned long>(node, particleTypeStr, objectErrors);
-  const auto particleSpacing = parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
+  const auto particleType =
+      parseComplexTypeValueSingle<unsigned long>(node, MDFlexConfig::particleTypeStr, objectErrors);
+  const auto particleSpacing =
+      parseComplexTypeValueSingle<double>(node, config.particleSpacing.name.c_str(), objectErrors);
   const auto boxLength = parseComplexTypeValueSequence<double, 3>(node, config.boxLength.name, objectErrors);
   const auto bottomLeftCorner =
       parseComplexTypeValueSequence<double, 3>(node, MDFlexConfig::bottomLeftBackCornerStr, objectErrors);
@@ -386,6 +370,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning strategy!"));
 
         config.tuningStrategyOption.value = *parsedOptions.begin();
+      } else if (key == config.tuningMetricOption.name) {
+        expected = "Exactly one tuning metric option out of the possible values.";
+        description = config.tuningMetricOption.description;
+
+        const auto parsedOptions = autopas::TuningMetricOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning metric!"));
+
+        config.tuningMetricOption.value = *parsedOptions.begin();
       } else if (key == config.mpiStrategyOption.name) {
         expected = "Exactly one MPI strategy option out of the possible values.";
         description = config.mpiStrategyOption.description;
@@ -501,6 +493,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.vtkFileName.value.empty()) {
           throw std::runtime_error("Parsed VTK filename is empty!");
         }
+      } else if (key == config.vtkOutputFolder.name) {
+        expected = "String";
+        description = config.vtkOutputFolder.description;
+
+        config.vtkOutputFolder.value = node[key].as<std::string>();
+        if (config.vtkOutputFolder.value.empty()) {
+          throw std::runtime_error("Parsed VTK output folder name is empty");
+        }
       } else if (key == config.vtkWriteFrequency.name) {
         expected = "Unsigned Integer >= 1";
         description = config.vtkWriteFrequency.description;
@@ -509,6 +509,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.vtkWriteFrequency.value < 1) {
           throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
         }
+      } else if (key == config.useTuningLogger.name) {
+        expected = "Boolean Value";
+        description = config.useTuningLogger.description;
+
+        config.useTuningLogger.value = node[config.useTuningLogger.name].as<bool>();
+      } else if (key == config.outputSuffix.name) {
+        expected = "String";
+        description = config.outputSuffix.description;
+
+        config.outputSuffix.value = node[config.outputSuffix.name].as<std::string>();
       } else if (key == config.globalForce.name) {
         expected = "YAML-sequence of three floats. Example: [0, 0, -9.81].";
         description = config.globalForce.description;
@@ -534,18 +544,23 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           errors.push_back(ss.str());
         };
 
-        for (auto siteIterator = node[MDFlexConfig::siteStr].begin(); siteIterator != node[MDFlexConfig::siteStr].end(); ++siteIterator) {
+        for (auto siteIterator = node[MDFlexConfig::siteStr].begin(); siteIterator != node[MDFlexConfig::siteStr].end();
+             ++siteIterator) {
           siteErrors.clear();
           siteID = std::distance(node[MDFlexConfig::siteStr].begin(), siteIterator);
 
-          const auto epsilon = parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(), siteErrors);
-          const auto sigma = parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
-          const auto mass = parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
+          const auto epsilon =
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(), siteErrors);
+          const auto sigma =
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
+          const auto mass =
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
 
           config.addSiteType(siteID, epsilon, sigma, mass);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
-        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion update)
+        // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion
+        // update)
         expected = "See AllOptions.yaml for examples.";
         description = "";
 
@@ -565,29 +580,36 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           errors.push_back(ss.str());
         };
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-        for (auto molIterator = node[MDFlexConfig::moleculesStr].begin(); molIterator != node[MDFlexConfig::moleculesStr].end(); ++molIterator) {
+#if MD_FLEXIBLE_MODE == MULTISITE
+        for (auto molIterator = node[MDFlexConfig::moleculesStr].begin();
+             molIterator != node[MDFlexConfig::moleculesStr].end(); ++molIterator) {
           molErrors.clear();
           molID = std::distance(node[MDFlexConfig::moleculesStr].begin(), molIterator);
 
-          const auto molToSiteId = parseComplexTypeValueSequence<unsigned long>(molIterator->second, MDFlexConfig::moleculeToSiteIdStr, molErrors);
-          const auto molToSitePos = parseComplexTypeValueSequence<std::array<double, 3>>(molIterator->second, MDFlexConfig::moleculeToSitePosStr, molErrors);
-          const auto momentOfInertia = parseComplexTypeValueSequence<double, 3>(molIterator->second, MDFlexConfig::momentOfInertiaStr, molErrors);
+          const auto molToSiteId = parseComplexTypeValueSequence<unsigned long>(
+              molIterator->second, MDFlexConfig::moleculeToSiteIdStr, molErrors);
+          const auto molToSitePos = parseComplexTypeValueSequence<std::array<double, 3>>(
+              molIterator->second, MDFlexConfig::moleculeToSitePosStr, molErrors);
+          const auto momentOfInertia = parseComplexTypeValueSequence<double, 3>(
+              molIterator->second, MDFlexConfig::momentOfInertiaStr, molErrors);
 
           if (molToSiteId.size() != molToSitePos.size()) {
             std::stringstream ss;
-            ss << "Lengths of " << MDFlexConfig::moleculeToSiteIdStr << " and " << MDFlexConfig::moleculeToSitePosStr << "do not match!";
+            ss << "Lengths of " << MDFlexConfig::moleculeToSiteIdStr << " and " << MDFlexConfig::moleculeToSitePosStr
+               << "do not match!";
             molErrors.push_back(ss.str());
           }
 
           config.addMolType(molID, molToSiteId, molToSitePos, momentOfInertia);
         }
 
-        for_each(molErrors.begin(), molErrors.end(), pushMolError);
+        std::for_each(molErrors.begin(), molErrors.end(), pushMolError);
 #else
-        AutoPasLog(WARN, "Multi-Site Molecule information has been provided, however md-flexible has been compiled without Multi-Site support.");
+        AutoPasLog(WARN,
+                   "Multi-Site Molecule information has been provided, however md-flexible has been compiled without "
+                   "Multi-Site support.");
 #endif
-      }else if (key == MDFlexConfig::objectsStr) {
+      } else if (key == MDFlexConfig::objectsStr) {
         expected = "See AllOptions.yaml for examples.";
         description = "";
 
@@ -620,7 +642,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto cubeGrid = parseCubeGridObject(config, it->second, objectErrors);
 
               config.cubeGridObjects.emplace_back(cubeGrid);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeGaussObjectsStr) {
             generatorName = MDFlexConfig::cubeGaussObjectsStr;
@@ -630,7 +652,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto cubeGauss = parseCubeGaussObject(config, it->second, objectErrors);
 
               config.cubeGaussObjects.emplace_back(cubeGauss);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeUniformObjectsStr) {
             generatorName = MDFlexConfig::cubeUniformObjectsStr;
@@ -640,7 +662,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto cubeUniform = parseCubeUniformObject(config, it->second, objectErrors);
 
               config.cubeUniformObjects.emplace_back(cubeUniform);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else if (objectIterator->first.as<std::string>() == MDFlexConfig::sphereObjectsStr) {
             generatorName = MDFlexConfig::sphereObjectsStr;
@@ -650,7 +672,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto sphere = parseSphereObject(config, it->second, objectErrors);
 
               config.sphereObjects.emplace_back(sphere);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else if (objectIterator->first.as<std::string>() == MDFlexConfig::cubeClosestPackedObjectsStr) {
             generatorName = MDFlexConfig::cubeClosestPackedObjectsStr;
@@ -660,7 +682,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               const auto cubeClosestPacked = parseCubeClosestPacked(config, it->second, objectErrors);
 
               config.cubeClosestPackedObjects.emplace_back(cubeClosestPacked);
-              for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
+              std::for_each(objectErrors.begin(), objectErrors.end(), pushObjectError);
             }
           } else {
             std::stringstream ss;

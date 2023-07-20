@@ -87,10 +87,18 @@ include(version.cmake)
 # libraries
 add_subdirectory(libs)
 
+include(antlr4cpp)
+
 # autopas
 add_subdirectory(src)
 # autopasTools
 add_subdirectory(tools)
+
+# ruleChecker
+add_subdirectory(ruleChecker)
+
+# tuningLogToSQL
+add_subdirectory(tuningLogToSQL)
 
 # modules needing targets:
 include(autopas_coloring)
@@ -100,6 +108,8 @@ include(autopas_vectorization)
 
 # tests and examples
 add_subdirectory(tests)
+# application libraries
+add_subdirectory(applicationLibrary)
 # might also include tests, hence might need flags from tests subdirectory
 add_subdirectory(examples)
 

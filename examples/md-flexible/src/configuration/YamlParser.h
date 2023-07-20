@@ -77,7 +77,8 @@ const std::string makeErrorMsg(const YAML::Mark &mark, const std::string &key, c
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T>
-const T parseComplexTypeValueSingle(const YAML::Node node, const std::string &key, std::vector<std::string> &complexTypeErrors) {
+const T parseComplexTypeValueSingle(const YAML::Node node, const std::string &key,
+                                    std::vector<std::string> &complexTypeErrors) {
   T value;
   try {
     value = node[key].as<T>();
@@ -99,7 +100,7 @@ const T parseComplexTypeValueSingle(const YAML::Node node, const std::string &ke
  */
 template <typename T, size_t S>
 const std::array<T, S> parseComplexTypeValueSequence(const YAML::Node node, const std::string &key,
-                                                std::vector<std::string> &complexTypeErrors) {
+                                                     std::vector<std::string> &complexTypeErrors) {
   std::array<T, S> value;
   try {
     YAML::Node n = node[key];
@@ -125,7 +126,7 @@ const std::array<T, S> parseComplexTypeValueSequence(const YAML::Node node, cons
  */
 template <typename T>
 const std::vector<T> parseComplexTypeValueSequence(const YAML::Node node, const std::string &key,
-                                                std::vector<std::string> &complexTypeErrors) {
+                                                   std::vector<std::string> &complexTypeErrors) {
   std::vector<T> value;
   try {
     YAML::Node n = node[key];

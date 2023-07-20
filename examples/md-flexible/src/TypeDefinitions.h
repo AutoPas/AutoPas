@@ -6,40 +6,33 @@
 
 #pragma once
 
-#define MD_FLEXIBLE_MULTI_SITE_AVX_FUNCTOR "autopas/molecularDynamics/LJMultisiteFunctorAVX.h"
+#if MD_FLEXIBLE_MODE == MULTISITE
 
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-
-#include "autopas/molecularDynamics/MultisiteMoleculeLJ.h"
+#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
-
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX)
-#include "autopas/molecularDynamics/LJMultisiteFunctorAVX.h"
-#endif
-
+#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #endif
 
 #else
 
-#include "autopas/molecularDynamics/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
+#include "molecularDynamicsLibrary/LJFunctorAVX.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
-#include "autopas/molecularDynamics/LJFunctorSVE.h"
+#include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
 #endif
 
-#include "autopas/molecularDynamics/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
  * Precision used for particle representations. If you want to test other precisions change it here.
@@ -51,22 +44,22 @@ using FloatPrecision = double;
  * Switches between autopas::MoleculeLJ and autopas::MultisiteMoleculeLJ as determined by CMake flag
  * MD_FLEXIBLE_USE_MULTI_SITE.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-using ParticleType = autopas::MultisiteMoleculeLJ;
+#if MD_FLEXIBLE_MODE == MULTISITE
+using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
-using ParticleType = autopas::MoleculeLJ;
+using ParticleType = mdLib::MoleculeLJ;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**
  * Type of LJFunctorTypeAutovec used in md-flexible.
- * Switches between autopas::LJFunctor and autopas::LJMultisiteFunctor as determined by CMake flag
+ * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
  * MD_FLEXIBLE_USE_MULTI_SITE.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-using LJFunctorTypeAutovec = autopas::LJMultisiteFunctor<ParticleType, true, true>;
+#if MD_FLEXIBLE_MODE == MULTISITE
+using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #else
-using LJFunctorTypeAutovec = autopas::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 #endif
 
 #endif
@@ -74,14 +67,14 @@ using LJFunctorTypeAutovec = autopas::LJFunctor<ParticleType, true, true>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 /**
  * Type of LJFunctorTypeAutovecGlobals used in md-flexible.
- * Switches between autopas::LJFunctor and autopas::LJMultisiteFunctor as determined by CMake flag
+ * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
  * MD_FLEXIBLE_USE_MULTI_SITE.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovecGlobals =
-    autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+    mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #else
-using LJFunctorTypeAutovecGlobals = autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #endif
@@ -89,16 +82,14 @@ using LJFunctorTypeAutovecGlobals = autopas::LJFunctor<ParticleType, true, true,
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
  * Type of LJFunctorTypeAVX used in md-flexible.
- * Switches between autopas::LJFunctorAVX and autopas::LJMultisiteFunctorAVX as determined by CMake flag
+ * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
  * MD_FLEXIBLE_USE_MULTI_SITE.
- * @note autopas::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
+ * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
-//#pragma message "Multi-Site Lennard-Jones Functor with AVX is currently WIP!"
-using LJFunctorTypeAVX = autopas::LJMultisiteFunctorAVX<ParticleType, true, true>;
-//using LJFunctorTypeAVX = autopas::LJMultisiteFunctorCTS<ParticleType, true, true>;
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
-using LJFunctorTypeAVX = autopas::LJFunctorAVX<ParticleType, true, true>;
+using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #endif
 
 #endif
@@ -106,14 +97,14 @@ using LJFunctorTypeAVX = autopas::LJFunctorAVX<ParticleType, true, true>;
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
 /**
  * Type of LJFunctorTypeSVE used in md-flexible.
- * Switches between autopas::LJFunctorSVE and autopas::LJMultisiteFunctorSVE as determined by CMake flag
+ * Switches between mdLib::LJFunctorSVE and mdLib::LJMultisiteFunctorSVE as determined by CMake flag
  * MD_FLEXIBLE_USE_MULTI_SITE.
- * @note autopas::LJMultisiteFunctorSVE is yet to be written, so a compiler pre-processing error is thrown.
+ * @note mdLib::LJMultisiteFunctorSVE is yet to be written, so a compiler pre-processing error is thrown.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
-using LJFunctorTypeSVE = autopas::LJFunctorSVE<ParticleType, true, true>;
+using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #endif
 
 #endif
@@ -127,32 +118,24 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
 /**
  * We require access to a version of the force functor for non-iteratePairwise purposes, e.g. calculating FLOPs or AoS
  * functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is chosen to
- * be used in the CMake. If no (valid) implementation is chosen, this is set to some arbitrary valid implementation,
- * e.g. AutoVec.
+ * be used in the CMake.
  */
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract =
-    autopas::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#else
-#include "autopas/molecularDynamics/LJMultisiteFunctor.h"
-using LJFunctorTypeAbstract = autopas::LJMultisiteFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
-using LJFunctorTypeAbstract = autopas::LJFunctorAVX<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
-using LJFunctorTypeAbstract = autopas::LJFunctorSVE<ParticleType, true, true>;
-#else
-#include "autopas/molecularDynamics/LJFunctor.h"
-using LJFunctorTypeAbstract = autopas::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #endif
 
 #endif

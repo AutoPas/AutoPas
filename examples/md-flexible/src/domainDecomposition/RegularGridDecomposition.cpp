@@ -13,10 +13,10 @@
 
 #include "DomainTools.h"
 #include "autopas/AutoPas.h"
-#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/Quaternion.h"
+#include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/Math.h"
+#include "autopas/utils/Quaternion.h"
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
 
@@ -295,23 +295,28 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         // For single-site molecules, we discard molecules further than sixthRootOfTwo * sigma, and are left only with
         // molecules who will experience repulsion from the boundary.
 
-        // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the largest sigma of any site of
-        // that molecule. Some molecules may experience attraction, and this is only stopped after calculation of force
-        // with mirror particle.
+        // For multi-site molecules, we discard molecules with center-of-mass further than sixthRootOfTwo * the largest
+        // sigma of any site of that molecule. Some molecules may still experience attraction in which case their force
+        // is reset to before the force interaction.
         //
         // Note, there is a scenario where a molecule has center-of-mass further than sixthRootOfTwo * sigma, but has a
-        // site closer than this distance, with a large enough epsilon, that repulsion would occur. For computational cost
-        // reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory, with an appropriate step-size
-        // and molecular model, not cause any problems.
+        // site closer than this distance, with a large enough epsilon, that repulsion would occur. For computational
+        // cost reasons, this scenario is neglected - no repulsion occurs. This *should*, in theory, with an appropriate
+        // step-size and molecular model, not cause any problems.
 
-        // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor would be very nasty.
-        // As such, we reimplement the kernel of the lennard-jones force here.
-        // We also use this for single-site molecules, primarily for consistency but it is also suspected to be cheaper than creating
-        // a mirror particle for use with the actual functor.
-
+        // To produce a "mirrored" multi-site molecule that could be used with the multi-site molecule functor requires
+        // adding 3 additional molecule types for every molecule type, as we would require relative site positions
+        // mirrored in all 3-dimensions. Then the reflected relative site positions can be rotated using the mirrored
+        // quaternion produced by quaternion::qMirror.
+        //
+        // As this is nasty, we reimplement the kernel of the lennard-jones force here. We also use this for
+        // single-site molecules, primarily for consistency but it is also suspected to be cheaper than creating a
+        // mirror particle for use with the actual functor.
 
         // Calculates force acting on site from another site
-        const auto LJKernel = [](const std::array<double, 3> sitePosition, const std::array<double, 3> mirrorSitePosition, const double sigmaSquared, const double epsilon24) {
+        const auto LJKernel = [](const std::array<double, 3> sitePosition,
+                                 const std::array<double, 3> mirrorSitePosition, const double sigmaSquared,
+                                 const double epsilon24) {
           const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
           const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
@@ -326,49 +331,53 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
         };
 
         const bool reflectMoleculeFlag =
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-            distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId()) / 2.;
+            distanceToBoundary < sixthRootOfTwo * 0.5 *
+#if MD_FLEXIBLE_MODE == MULTISITE
+                                     particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
 #else
-            distanceToBoundary < sixthRootOfTwo * particlePropertiesLib.getSigma(p->getTypeId()) / 2.;
+                                     particlePropertiesLib.getSigma(p->getTypeId());
 #endif
+
         if (reflectMoleculeFlag) {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE == MULTISITE
           // Keep track of current force and torque to see if molecule is repulsed, and, if not, reset the force.
           const auto currentForce = p->getF();
           const auto currentTorque = p->getTorque();
 
           // load site positions and types
           const auto unrotatedSitePositions = particlePropertiesLib.getSitePositions(p->getTypeId());
-          const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(p->getQ(), unrotatedSitePositions);
+          const auto rotatedSitePositions =
+              autopas::utils::quaternion::rotateVectorOfPositions(p->getQuaternion(), unrotatedSitePositions);
           const auto exactSitePositions = [rotatedSitePositions, position]() {
             std::vector<std::array<double, 3>> returnedPositions{};
             returnedPositions.reserve(rotatedSitePositions.size());
-            for (const auto & rotatedSitePosition : rotatedSitePositions) {
+            for (const auto &rotatedSitePosition : rotatedSitePositions) {
               returnedPositions.push_back(autopas::utils::ArrayMath::add(rotatedSitePosition, position));
             }
             return returnedPositions;
-          } ();
+          }();
           const auto siteTypes = particlePropertiesLib.getSiteTypes(p->getTypeId());
 
           // get positions of opposing mirror sites
           const auto exactMirrorSitePositions = [exactSitePositions, boundaryPosition, dimensionIndex]() {
             std::vector<std::array<double, 3>> returnedPositions{};
             returnedPositions.reserve(exactSitePositions.size());
-            for (const auto & exactSitePosition : exactSitePositions) {
+            for (const auto &exactSitePosition : exactSitePositions) {
               auto mirrorPosition = exactSitePosition;
               const auto displacementToBoundary = boundaryPosition - exactSitePosition[dimensionIndex];
               mirrorPosition[dimensionIndex] += 2 * displacementToBoundary;
               returnedPositions.push_back(mirrorPosition);
             }
             return returnedPositions;
-          } ();
+          }();
 
           // Add forces + torques for molecule-to-molecule interaction
           for (int site = 0; site < particlePropertiesLib.getNumSites(p->getTypeId()); site++) {
             for (int mirrorSite = 0; mirrorSite < particlePropertiesLib.getNumSites(p->getTypeId()); mirrorSite++) {
               const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteTypes[site], siteTypes[site]);
               const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteTypes[site], siteTypes[site]);
-              const auto force = LJKernel(exactSitePositions[site], exactMirrorSitePositions[mirrorSite], sigmaSquared, epsilon24);
+              const auto force =
+                  LJKernel(exactSitePositions[site], exactMirrorSitePositions[mirrorSite], sigmaSquared, epsilon24);
               p->addF(force);
               p->addTorque((autopas::utils::ArrayMath::cross(rotatedSitePositions[site], force)));
             }
@@ -376,20 +385,21 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 #else
           const auto siteType = p->getTypeId();
           const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
+            const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
             auto returnedPosition = position;
-            returnedPosition[dimensionIndex] += 2 * boundaryPosition;
+            returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
             return returnedPosition;
-          } ();
+          }();
           const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
           const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
           p->addF(force);
 #endif
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE == MULTISITE
           // test if attraction has occurred
-          const bool reflectionIsAttractive = isUpper ? p->getF()[dimensionIndex] - currentForce[dimensionIndex] > 0 :
-                                                      p->getF()[dimensionIndex] - currentForce[dimensionIndex] < 0;
+          const bool reflectionIsAttractive = isUpper ? p->getF()[dimensionIndex] - currentForce[dimensionIndex] > 0
+                                                      : p->getF()[dimensionIndex] - currentForce[dimensionIndex] < 0;
           // reset force if no attraction has occurred
           if (reflectionIsAttractive) {
             p->setF(currentForce);

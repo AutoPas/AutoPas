@@ -92,7 +92,7 @@ TEST(OptionTest, parseTuningStrategyOptionsTest) {
       {autopas::TuningStrategyOption::randomSearch, "random"},
       {autopas::TuningStrategyOption::activeHarmony, "harmony"},
       {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
-  };
+      {autopas::TuningStrategyOption::ruleBasedTuning, "rule-based"}};
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());
 

@@ -17,9 +17,6 @@ class CubeGauss : public Object {
    * Constructor.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    * @param numParticles
    * @param boxLength
    * @param distributionMean

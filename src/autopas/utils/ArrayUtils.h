@@ -66,6 +66,11 @@ struct is_container {
 
 /**
  * Creates a new array by performing an element-wise static_cast<>.
+ *
+ * @note This function returns a new copy of the array with the desired type!
+ *
+ * Even though this is implemented to copy the array, compilers optimize this away: https://gcc.godbolt.org/z/6dav1PEGP
+ *
  * @tparam output_t Output type.
  * @tparam input_t Input type.
  * @tparam SIZE Size of the array.
@@ -73,7 +78,7 @@ struct is_container {
  * @return Array of type std::array<output_t, SIZE>.
  */
 template <class output_t, class input_t, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<output_t, SIZE> static_cast_array(const std::array<input_t, SIZE> &a) {
+[[nodiscard]] constexpr std::array<output_t, SIZE> static_cast_copy_array(const std::array<input_t, SIZE> &a) {
   std::array<output_t, SIZE> result{};
   for (std::size_t d = 0; d < SIZE; ++d) {
     result[d] = static_cast<output_t>(a[d]);
@@ -123,52 +128,6 @@ template <class Container>
   to_string(strStream, container, delimiter, surround);
 
   return strStream.str();
-}
-
-/**
- * Tests if two vectors (of float-types) are (almost) equal.
- * @tparam T float type
- * @param A vector A
- * @param B vector B
- * @param tol tolerance for equality
- * @return
- */
-template <class T>
-bool equals(std::vector<T> A, std::vector<T> B, double tol = 1e-10) {
-  const auto size = A.size();
-  if (size != B.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < size; ++i) {
-    if (A[i] - B[i] > tol) {
-      return false;
-    }
-  }
-  return true;
-}
-
-/**
- * Tests if two vectors of arrays (of float-types) are (almost) equal.
- * @tparam T float type
- * @tparam SIZE size of array
- * @param A vector A
- * @param B vector B
- * @param tol tolerance for equality
- * @return
- */
-template <class T, std::size_t SIZE>
-bool equals(std::vector<std::array<T, SIZE>> A, std::vector<std::array<T, SIZE>> B, double tol = 1e-10) {
-  const auto vec_size = A.size();
-  if (vec_size != B.size()) {
-    return false;
-  }
-  for (size_t i = 0; i < vec_size; ++i) {
-    for (size_t j = 0; j < SIZE; ++j)
-    if (A[i][j] - B[i][j] > tol) {
-      return false;
-    }
-  }
-  return true;
 }
 
 /**

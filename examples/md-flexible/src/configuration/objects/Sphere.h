@@ -17,19 +17,13 @@ class Sphere : public Object {
    * Constructor.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    * @param center
    * @param radius
    * @param particleSpacing
    */
   Sphere(const std::array<double, 3> &velocity, unsigned long typeId, const std::array<double, 3> &center, int radius,
          double particleSpacing)
-      : Object(velocity, typeId),
-        _center(center),
-        _radius(radius),
-        _particleSpacing(particleSpacing) {}
+      : Object(velocity, typeId), _center(center), _radius(radius), _particleSpacing(particleSpacing) {}
 
   /**
    * Getter for center of Sphere

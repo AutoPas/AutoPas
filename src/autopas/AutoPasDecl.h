@@ -19,6 +19,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
@@ -904,6 +905,13 @@ class AutoPas {
   }
 
   /**
+   * Setter for the tuning metric option.
+   * For possible tuning metric choices see options::TuningMetricOption::Value.
+   * @param tuningMetricOption
+   */
+  void setTuningMetricOption(TuningMetricOption tuningMetricOption) { _tuningMetricOption = tuningMetricOption; }
+
+  /**
    * Setter for the mpi strategy option
    * @param mpiStrategyOption
    */
@@ -948,6 +956,18 @@ class AutoPas {
    * @param suffix
    */
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
+
+  /**
+   * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.
+   * @param useTuningLogger
+   */
+  void setUseTuningLogger(bool useTuningLogger) { _useTuningLogger = useTuningLogger; }
+
+  /**
+   * Set rule file name for the RuleBasedTuning.
+   * @param ruleFileName The name of the rule file to use during rule based tuning.
+   */
+  void setRuleFileName(const std::string &ruleFileName) { _ruleFileName = ruleFileName; }
 
  private:
   std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
@@ -1025,6 +1045,12 @@ class AutoPas {
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.
    */
   TuningStrategyOption _tuningStrategyOption{TuningStrategyOption::fullSearch};
+
+  /**
+   * Strategy option for the auto tuner.
+   * For possible tuning strategy choices see options::TuningStrategyOption::Value.
+   */
+  TuningMetricOption _tuningMetricOption{TuningMetricOption::time};
 
   /**
    * Strategy for the configuration selector.
@@ -1108,6 +1134,16 @@ class AutoPas {
    * This is useful when multiple instances of AutoPas exist, especially in an MPI context.
    */
   std::string _outputSuffix{""};
+
+  /**
+   * Stores whether to use the TuningStrategyLoggerProxy.
+   */
+  bool _useTuningLogger;
+
+  /**
+   * The filename of the .rule file for the RuleBasedTuning.
+   */
+  std::string _ruleFileName{"tuningRules.rule"};
 
   /**
    * Helper function to reduce code duplication for all forms of addParticle while minimizing overhead through loops.

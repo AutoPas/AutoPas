@@ -9,14 +9,16 @@
 #include "autopasTools/generators/GridGenerator.h"
 #include "src/Thermostat.h"
 
-void ThermostatTest::initContainer(AutoPasType &autopas, const ParticleType &dummy, std::array<size_t, 3> particlesPerDim) {
+void ThermostatTest::initContainer(AutoPasType &autopas, const ParticleType &dummy,
+                                   std::array<size_t, 3> particlesPerDim) {
   constexpr double particleSpacing = 1.;
   constexpr double cutoff = 1.;
 
   double minimalBoxLength = cutoff + autopas.getVerletSkin();
-  std::array<double, 3> boxMax = {std::max((double)particlesPerDim[0] * particleSpacing, minimalBoxLength),
-                                  std::max((double)particlesPerDim[1] * particleSpacing, minimalBoxLength),
-                                  std::max((double)particlesPerDim[2] * particleSpacing, minimalBoxLength)};
+  std::array<double, 3> boxMax = {
+      std::max(static_cast<double>(particlesPerDim[0]) * particleSpacing, minimalBoxLength),
+      std::max(static_cast<double>(particlesPerDim[1]) * particleSpacing, minimalBoxLength),
+      std::max(static_cast<double>(particlesPerDim[2]) * particleSpacing, minimalBoxLength)};
   autopas.setBoxMax(boxMax);
   autopas.setBoxMin({0., 0., 0.});
   autopas.setCutoff(cutoff);
@@ -54,7 +56,8 @@ TEST_F(ThermostatTest, BrownianMotionTest_ZeroInitialVel) {
 }
 
 /**
- * Tests the application of Brownian Motion for the case that the molecule being applied to has non-zero initial velocity.
+ * Tests the application of Brownian Motion for the case that the molecule being applied to has non-zero initial
+ * velocity.
  */
 TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialVel) {
   ParticleType dummyMolecule;
@@ -67,7 +70,7 @@ TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialVel) {
  * has non-zero initial angular velocity but zero translational velocity.
  */
 TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialAngVelWithZeroTransVel) {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   ParticleType dummyMolecule;
   dummyMolecule.setAngularVel({1, 1, 1});
   testBrownianMotion(dummyMolecule, 1.5);
@@ -79,7 +82,7 @@ TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialAngVelWithZeroTransVel) 
  * has non-zero initial angular velocity and non-zero translational velocity.
  */
 TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialAngVelWithNonZeroTransVel) {
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   ParticleType dummyMolecule;
   dummyMolecule.setV({1, 1, 1});
   dummyMolecule.setAngularVel({1, 1, 1});

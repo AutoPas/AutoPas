@@ -20,9 +20,6 @@ class CubeGrid : public Object {
    * Constructor.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    * @param particlesPerDim
    * @param particleSpacing
    * @param bottomLeftCorner
@@ -67,7 +64,7 @@ class CubeGrid : public Object {
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_array<double>(_particlesPerDim);
+    const auto particlesPerDimDouble = autopas::utils::ArrayUtils::static_cast_copy_array<double>(_particlesPerDim);
     // subtract one because the first particle is at bottomLeftCorner
     const auto particlesPerDimSubOne = particlesPerDimDouble - 1.;
     const auto lastParticleRelative = particlesPerDimSubOne * _particleSpacing;

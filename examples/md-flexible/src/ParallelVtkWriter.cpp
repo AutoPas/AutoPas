@@ -91,17 +91,19 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   }
   timestepFile << "        </DataArray>\n";
 
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE == MULTISITE
   // print quaternions
-  timestepFile << "        <DataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile
+      << "        <DataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto q = particle->getQ();
+    auto q = particle->getQuaternion();
     timestepFile << "        " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << "\n";
   }
   timestepFile << "        </DataArray>\n";
 
   // print angular velocities
-  timestepFile << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  timestepFile
+      << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     auto angVel = particle->getAngularVel();
     timestepFile << "        " << angVel[0] << " " << angVel[1] << " " << angVel[2] << "\n";
@@ -258,9 +260,11 @@ void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   timestepFile
       << "      <PDataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "      <PDataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-  timestepFile << "      <PDataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\"/>\n";
-  timestepFile << "      <PDataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
+#if MD_FLEXIBLE_MODE == MULTISITE
+  timestepFile
+      << "      <PDataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile
+      << "      <PDataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "      <PDataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\"/>\n";
 #endif
   timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";

@@ -21,7 +21,9 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
@@ -158,8 +160,8 @@ class MDFlexConfig {
    * @param relSitePos vector of relative site positions
    * @param momentOfInertia diagonalized moment of inertia as a length 3 array of double representing diagonal elements
    */
-  void addMolType(unsigned long molId, const std::vector<unsigned long>& siteIds, const std::vector<std::array<double, 3>>& relSitePos, std::array<double, 3> momentOfInertia);
-
+  void addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
+                  const std::vector<std::array<double, 3>> &relSitePos, std::array<double, 3> momentOfInertia);
 
   /**
    * Flushes the particles.
@@ -263,6 +265,13 @@ class MDFlexConfig {
       autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
       "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * tuningMetricOption
+   */
+  MDFlexOption<autopas::TuningMetricOption, __LINE__> tuningMetricOption{
+      autopas::TuningMetricOption::time, "tuning-metric", true,
+      "Metric to use for tuning. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * mpiStrategyOption
    */
@@ -523,24 +532,20 @@ class MDFlexConfig {
    */
   static inline const char *siteStr{"Sites"};
   /**
-   * siteTypeStr
-   */
-  static inline const char *const siteTypeStr{"site-id"};
-  /**
    * epsilonMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
-      {{0ul, 1.}}, "site-epsilon", true, "Mapping from site type to an epsilon value."};
+      {{0ul, 1.}}, "epsilon", true, "Mapping from site type to an epsilon value."};
   /**
    * sigmaMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
-      {{0ul, 1.}}, "site-sigma", true, "Mapping from site type to a sigma value."};
+      {{0ul, 1.}}, "sigma", true, "Mapping from site type to a sigma value."};
   /**
    * massMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
-      {{0ul, 1.}}, "site-mass", true, "Mapping from site type to a mass value."};
+      {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**
@@ -548,21 +553,17 @@ class MDFlexConfig {
    */
   static inline const char *moleculesStr{"Molecules"};
   /**
-   * molTypeStr
-   */
-  static inline const char *const molTypeStr{"molecule-id"};
-  /**
    * moleculeToSiteIdStr
    */
-  static inline const char *moleculeToSiteIdStr{"molecule-to-site-id"};
+  static inline const char *moleculeToSiteIdStr{"site-types"};
   /**
    * moleculeToSitePosStr
    */
-  static inline const char *moleculeToSitePosStr{"molecule-to-site-pos"};
+  static inline const char *moleculeToSitePosStr{"relative-site-positions"};
   /**
    * momentOfInertiaStr
    */
-  static inline const char *momentOfInertiaStr{"molecule-moment-of-inertia"};
+  static inline const char *momentOfInertiaStr{"moment-of-inertia"};
   // Maps where the molecule type information is actually stored
   /**
    * molToSiteIdMap
@@ -571,7 +572,7 @@ class MDFlexConfig {
   /**
    * molToSitePosMap
    */
-  std::map<unsigned long, std::vector<std::array<double, 3>>>molToSitePosMap{};
+  std::map<unsigned long, std::vector<std::array<double, 3>>> molToSitePosMap{};
   /**
    * momentOfInertiaMap
    */
@@ -581,6 +582,11 @@ class MDFlexConfig {
    * objectsStr
    */
   static inline const char *objectsStr{"Objects"};
+  /**
+   * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is
+   * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
+   */
+  static inline const char *particleTypeStr{"particle-type-id"};
   /**
    * bottomLeftBackCornerStr
    */
@@ -715,6 +721,22 @@ class MDFlexConfig {
       "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
       "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * Whether to use the tuning logger or not.
+   *
+   * @see TuningStrategyLoggerProxy
+   */
+  MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true,
+                                               "If tuning information should be logged"};
+
+  /**
+   * The suffix for files created by the tuning logger.
+   */
+  MDFlexOption<std::string, __LINE__> outputSuffix{"default", "output-suffix", true,
+                                                   "An identifier that is contained in the filename "
+                                                   "of the logged tuning information (e.g. if setting "
+                                                   "--use-tuning-logger=true"};
 
   /**
    * valueOffset used for cli-output alignment

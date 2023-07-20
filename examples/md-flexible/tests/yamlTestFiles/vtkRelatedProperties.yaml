@@ -1,0 +1,3 @@
+vtk-output-folder       : fancyFolderName
+vtk-filename            : fancyFileName
+vtk-write-frequency     : 42

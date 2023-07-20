@@ -27,7 +27,8 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeSVE *);
 #endif
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+    autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -122,6 +123,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
+  _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
   _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
@@ -129,9 +131,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
+  _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + "_");
+  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + "_" + _configuration.outputSuffix.value);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
   _autoPasContainer->init();
 
@@ -189,16 +192,15 @@ void Simulation::run() {
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0) {
       updatePositions();
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
-    }
 
-    _timers.updateContainer.start();
-    auto emigrants = _autoPasContainer->updateContainer();
-    _timers.updateContainer.stop();
+      _timers.updateContainer.start();
+      auto emigrants = _autoPasContainer->updateContainer();
+      _timers.updateContainer.stop();
 
-    const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
+      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
       // periodically resize box for MPI load balancing
       if (_iteration % _configuration.loadBalancingInterval.value == 0) {
@@ -220,29 +222,31 @@ void Simulation::run() {
 
         std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); });
 
-      emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-      _timers.loadBalancing.stop();
+        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+        _timers.loadBalancing.stop();
+      }
+
+      _timers.migratingParticleExchange.start();
+      _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
+      _timers.migratingParticleExchange.stop();
+
+      _timers.reflectParticlesAtBoundaries.start();
+      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
+                                                         *_configuration.getParticlePropertiesLibrary());
+      _timers.reflectParticlesAtBoundaries.stop();
+
+      _timers.haloParticleExchange.start();
+      _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
+      _timers.haloParticleExchange.stop();
+
+      _timers.computationalLoad.start();
     }
-
-    _timers.migratingParticleExchange.start();
-    _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
-    _timers.migratingParticleExchange.stop();
-
-    _timers.reflectParticlesAtBoundaries.start();
-    _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
-    _timers.reflectParticlesAtBoundaries.stop();
-
-    _timers.haloParticleExchange.start();
-    _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
-    _timers.haloParticleExchange.stop();
-
-    _timers.computationalLoad.start();
 
     updateForces();
 
     if (_configuration.deltaT.value != 0) {
       updateVelocities();
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE == MULTISITE
       updateAngularVelocities();
 #endif
       updateThermostat();
@@ -364,8 +368,9 @@ void Simulation::updatePositions() {
 
 void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.start();
-  TimeDiscretization::calculateQuaternionsAndResetTorques(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                           _configuration.deltaT.value, _configuration.globalForce.value);
+  TimeDiscretization::calculateQuaternionsAndResetTorques(
+      *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
+      _configuration.globalForce.value);
   _timers.quaternionUpdate.stop();
 }
 
@@ -416,7 +421,7 @@ void Simulation::updateAngularVelocities() {
 
   _timers.angularVelocityUpdate.start();
   TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                                                deltaT);
+                                                 deltaT);
   _timers.angularVelocityUpdate.stop();
 }
 
@@ -509,7 +514,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("    PositionUpdate                ", positionUpdate, maximumNumberOfDigits, simulate);
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
+#if MD_FLEXIBLE_MODE == MULTISITE
     std::cout << timerToString("    QuaternionUpdate              ", quaternionUpdate, maximumNumberOfDigits, simulate);
 #endif
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);
@@ -532,8 +537,9 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
-#ifdef MD_FLEXIBLE_USE_MULTI_SITE
-    std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits, simulate);
+#if MD_FLEXIBLE_MODE == MULTISITE
+    std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits,
+                               simulate);
 #endif
     std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
@@ -557,7 +563,8 @@ void Simulation::logMeasurements() {
 
     if (_configuration.dontMeasureFlops.value) {
       LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-      autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(ljFunctor, _autoPasContainer->getCutoff());
+      autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
+          ljFunctor, _autoPasContainer->getCutoff());
       _autoPasContainer->iteratePairwise(&flopCounterFunctor);
 
       const auto flops = flopCounterFunctor.getFlops();
@@ -639,7 +646,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(LJFunctorTypeSVE<ParticleType, true, true> functor{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "

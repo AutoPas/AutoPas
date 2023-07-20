@@ -1,3 +1,4 @@
+# This file contains all possible options that a yaml input file for md-flexible can have. For the meaning of individual options ./md-flexible --help can be called, or MDFlexConfig.h can be looked up.
 container                            :  [DirectSum, LinkedCells, LinkedCellsReferences, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 verlet-rebuild-frequency             :  20
 verlet-skin-radius-per-timestep      :  0.01
@@ -36,17 +37,19 @@ globalForce                          :  [0, 0, 0]
 load-balancer                        :  InvertedPressure
 Sites:
   0:
-    site-id                      :  0
-    site-epsilon                 :  1.
-    site-sigma                   :  1.
-    site-mass                    :  0.5
+    epsilon                          :  1.
+    sigma                            :  1.
+    mass                             :  0.5
 # Uncomment below to run a multi-site simulation.
 #Molecules:
 #  0:
-#    molecule-type: 0
-#    molecule-to-site-id: [ 0, 0, 0 ]
-#    molecule-to-site-pos: [ [ 0.74349607, 1.20300191, 0. ], [ 0.3249197, -1.37638192, 0. ], [-1.37638192, -0.3249197, 0. ] ]
-#    molecule-moment-of-inertia: [ 5.23606798, 0.76393202, 6. ]
+#    # Multi-site molecules have LJ sites, with site-types that correspond to specific site LJ information given above
+#    # and respective relative unrotated site positions. Moment-of-inertia is given as the 3 non-zero elements of a diagonal
+#    # 3x3 Moment-of-inertia matrix. It is the user's responsibility that the site masses, positions, and Moment of Inertia
+#    # match.
+#    site-types                       : [ 0, 0, 0 ]
+#    relative-site-positions          : [ [ 0.74349607, 1.20300191, 0. ], [ 0.3249197, -1.37638192, 0. ], [-1.37638192, -0.3249197, 0. ] ]
+#    moment-of-inertia                : [ 5.23606798, 0.76393202, 6. ]
 Objects:                         
   CubeGrid:
     0:
@@ -54,8 +57,11 @@ Objects:
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
+      # given for site-0. For multi-site simulations, this fills the object with multi-site molecules with the multi-site
+      # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
+      # information.
+      particle-type-id               :  0
   CubeGauss:
     0:
       distribution-mean              :  [2, 2, 2]
@@ -64,32 +70,28 @@ Objects:
       box-length                     :  [8, 8, 8]
       bottomLeftCorner               :  [15, 15, 15]
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particle-type-id               :  0
   CubeUniform:
     0:
       numberOfParticles              :  100
       box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [15, 0, 0]
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particle-type-id               :  0
   CubeClosestPacked:
     0:
       box-length                     :  [4, 4, 4]
       bottomLeftCorner               :  [0, 0, 15]
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particle-type-id               :  0
   Sphere:
     0:
       center                         :  [4, 16, 4]
       radius                         :  3
       particle-spacing               :  1.1225
       velocity                       :  [0, 0, 0]
-      site-id                        :  0
-#      molecule-id                :  0     # Replace the site-id line with this for multi-site md-flexible
+      particle-type-id               :  0
 thermostat:
   initialTemperature                 :  1
   targetTemperature                  :  4
@@ -101,6 +103,7 @@ no-flops                             :  false
 no-end-config                        :  false
 no-progress-bar                      :  false
 vtk-filename                         :  AllOptionsSim
+vtk-output-folder                    :  allOptionsOutput
 vtk-write-frequency                  :  1
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt

@@ -12,56 +12,56 @@ namespace {
 /**
  * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE == MULTISITE
 constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
-    autopas::MultisiteMoleculeLJ::AttributeNames::id,
-    autopas::MultisiteMoleculeLJ::AttributeNames::posX,
-    autopas::MultisiteMoleculeLJ::AttributeNames::posY,
-    autopas::MultisiteMoleculeLJ::AttributeNames::posZ,
-    autopas::MultisiteMoleculeLJ::AttributeNames::velocityX,
-    autopas::MultisiteMoleculeLJ::AttributeNames::velocityY,
-    autopas::MultisiteMoleculeLJ::AttributeNames::velocityZ,
-    autopas::MultisiteMoleculeLJ::AttributeNames::forceX,
-    autopas::MultisiteMoleculeLJ::AttributeNames::forceY,
-    autopas::MultisiteMoleculeLJ::AttributeNames::forceZ,
-    autopas::MultisiteMoleculeLJ::AttributeNames::oldForceX,
-    autopas::MultisiteMoleculeLJ::AttributeNames::oldForceY,
-    autopas::MultisiteMoleculeLJ::AttributeNames::oldForceZ,
-    autopas::MultisiteMoleculeLJ::AttributeNames::quaternion0,
-    autopas::MultisiteMoleculeLJ::AttributeNames::quaternion1,
-    autopas::MultisiteMoleculeLJ::AttributeNames::quaternion2,
-    autopas::MultisiteMoleculeLJ::AttributeNames::quaternion3,
-    autopas::MultisiteMoleculeLJ::AttributeNames::angularVelX,
-    autopas::MultisiteMoleculeLJ::AttributeNames::angularVelY,
-    autopas::MultisiteMoleculeLJ::AttributeNames::angularVelZ,
-    autopas::MultisiteMoleculeLJ::AttributeNames::torqueX,
-    autopas::MultisiteMoleculeLJ::AttributeNames::torqueY,
-    autopas::MultisiteMoleculeLJ::AttributeNames::torqueZ,
-    autopas::MultisiteMoleculeLJ::AttributeNames::typeId,
-    autopas::MultisiteMoleculeLJ::AttributeNames::ownershipState};
+    mdLib::MultisiteMoleculeLJ::AttributeNames::id,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::posX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::posY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::posZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::forceX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::forceY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::forceZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion0,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion1,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion2,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion3,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueX,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueY,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueZ,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::typeId,
+    mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
 #else
 constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
-    autopas::MoleculeLJ::AttributeNames::id,
-    autopas::MoleculeLJ::AttributeNames::posX,
-    autopas::MoleculeLJ::AttributeNames::posY,
-    autopas::MoleculeLJ::AttributeNames::posZ,
-    autopas::MoleculeLJ::AttributeNames::velocityX,
-    autopas::MoleculeLJ::AttributeNames::velocityY,
-    autopas::MoleculeLJ::AttributeNames::velocityZ,
-    autopas::MoleculeLJ::AttributeNames::forceX,
-    autopas::MoleculeLJ::AttributeNames::forceY,
-    autopas::MoleculeLJ::AttributeNames::forceZ,
-    autopas::MoleculeLJ::AttributeNames::oldForceX,
-    autopas::MoleculeLJ::AttributeNames::oldForceY,
-    autopas::MoleculeLJ::AttributeNames::oldForceZ,
-    autopas::MoleculeLJ::AttributeNames::typeId,
-    autopas::MoleculeLJ::AttributeNames::ownershipState};
+    mdLib::MoleculeLJ::AttributeNames::id,
+    mdLib::MoleculeLJ::AttributeNames::posX,
+    mdLib::MoleculeLJ::AttributeNames::posY,
+    mdLib::MoleculeLJ::AttributeNames::posZ,
+    mdLib::MoleculeLJ::AttributeNames::velocityX,
+    mdLib::MoleculeLJ::AttributeNames::velocityY,
+    mdLib::MoleculeLJ::AttributeNames::velocityZ,
+    mdLib::MoleculeLJ::AttributeNames::forceX,
+    mdLib::MoleculeLJ::AttributeNames::forceY,
+    mdLib::MoleculeLJ::AttributeNames::forceZ,
+    mdLib::MoleculeLJ::AttributeNames::oldForceX,
+    mdLib::MoleculeLJ::AttributeNames::oldForceY,
+    mdLib::MoleculeLJ::AttributeNames::oldForceZ,
+    mdLib::MoleculeLJ::AttributeNames::typeId,
+    mdLib::MoleculeLJ::AttributeNames::ownershipState};
 #endif
 
 /**
  * The combined size in byte of the simple attributes which need to be communicated using MPI.
  */
-#if defined(MD_FLEXIBLE_USE_MULTI_SITE)
+#if MD_FLEXIBLE_MODE == MULTISITE
 constexpr size_t AttributesSize = 200;
 #else
 constexpr size_t AttributesSize = 120;

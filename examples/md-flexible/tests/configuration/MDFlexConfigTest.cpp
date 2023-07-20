@@ -97,26 +97,6 @@ TEST_F(MDFlexConfigTest, calcAutoPasBox) {
   EXPECT_EQ(configuration.boxMax.value, expectedBoxMax);
 }
 
-// todo Check this for multi-site
-TEST_F(MDFlexConfigTest, addType) {
-  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
-
-  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
-
-  MDFlexConfig configuration(3, argv);
-
-  configuration.addSiteType(0, 1.0, 1.0, 1.0);
-  EXPECT_NO_THROW(configuration.addSiteType(0, 1.0, 1.0, 1.0));
-  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.0, 1.0));
-  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.5, 1.1, 1.0));
-  EXPECT_ANY_THROW(configuration.addSiteType(0, 1.1, 1.1, 1.1));
-  EXPECT_NO_THROW(configuration.addSiteType(1, 2.0, 2.0, 2.0));
-  EXPECT_EQ(configuration.massMap.value.at(0), 1.0);
-  EXPECT_EQ(configuration.massMap.value.at(1), 2.0);
-  EXPECT_EQ(configuration.epsilonMap.value.at(1), 2.0);
-}
-
 TEST_F(MDFlexConfigTest, wrongTypeParsingInput) {
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "incorrectParsingFile.yaml"};
@@ -143,7 +123,18 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
   ASSERT_EQ(configuration.cubeGridObjects.at(1).getTypeId(), 1);
 }
 
-// todo: add test for parsing site and molecule information
+TEST_F(MDFlexConfigTest, vtkRelatedProperties) {
+  std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
+                                        std::string(YAMLDIRECTORY) + "vtkRelatedProperties.yaml"};
+
+  char *argv[3] = {&arguments[0][0], &arguments[1][0], &arguments[2][0]};
+
+  MDFlexConfig configuration(3, argv);
+
+  EXPECT_THAT(configuration.vtkOutputFolder.value, "fancyFolderName");
+  EXPECT_THAT(configuration.vtkFileName.value, "fancyFileName");
+  EXPECT_THAT(configuration.vtkWriteFrequency.value, 42);
+}
 
 /**
  * Test for the correct parsing of site types from a .yaml file.
@@ -151,7 +142,7 @@ TEST_F(MDFlexConfigTest, multipleSameObjectParsing) {
 TEST_F(MDFlexConfigTest, correctSiteParsing) {
   // Configure md-flexible using correct yaml file and expect no throw in doing so.
   std::vector<std::string> argumentsTest = {"md-flexible", "--yaml-filename",
-                                        std::string(YAMLDIRECTORY) + "siteParsingTest.yaml"};
+                                            std::string(YAMLDIRECTORY) + "siteParsingTest.yaml"};
 
   char *argv[3] = {&argumentsTest[0][0], &argumentsTest[1][0], &argumentsTest[2][0]};
 
@@ -171,8 +162,8 @@ TEST_F(MDFlexConfigTest, correctSiteParsing) {
  */
 TEST_F(MDFlexConfigTest, correctMolParsing) {
   // Skip test if not compiled for multi-site molecules.
-#if not defined(MD_FLEXIBLE_USE_MULTI_SITE)
-  GTEST_SKIP();
+#if not MD_FLEXIBLE_MODE == MULTISITE
+  GTEST_SKIP() << "correctMolParsing: Skipping as multi-site not compiled";
 #endif
 
   // Configure md-flexible using correct yaml file and expect no throw in doing so.
@@ -188,7 +179,8 @@ TEST_F(MDFlexConfigTest, correctMolParsing) {
   const std::vector<std::array<double, 3>> expectedSitePositions0 = {{0., 0., 0.}};
   const std::array<double, 3> expectedMoI0 = {1., 1., 1.};
   const std::vector<int> expectedSiteIds1 = {0, 0, 1};
-  const std::vector<std::array<double, 3>> expectedSitePositions1 = {{0., -0.5, 0.}, {1., 0.1, 0.01}, {-0.2, -0.3, 0.4}};
+  const std::vector<std::array<double, 3>> expectedSitePositions1 = {
+      {0., -0.5, 0.}, {1., 0.1, 0.01}, {-0.2, -0.3, 0.4}};
   const std::array<double, 3> expectedMoI1 = {1., 0.5, 0.25};
 
   const auto siteIds0 = configuration.molToSiteIdMap.at(0);

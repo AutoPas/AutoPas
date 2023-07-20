@@ -60,6 +60,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
+      config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
       config.particlesTotal,
@@ -69,14 +70,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.traversalOptions,
       config.tuningInterval,
       config.tuningMaxEvidence,
+      config.tuningMetricOption,
       config.tuningPhases,
       config.tuningSamples,
       config.tuningStrategyOption,
       config.useThermostat,
+      config.useTuningLogger,
       config.verletClusterSize,
       config.verletRebuildFrequency,
       config.verletSkinRadiusPerTimestep,
       config.vtkFileName,
+      config.vtkOutputFolder,
       config.vtkWriteFrequency,
       config.yamlFilename,
       zshCompletionsOption,
@@ -507,6 +511,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.tuningStrategyOption.value = *parsedOptions.begin();
         break;
       }
+      case decltype(config.tuningMetricOption)::getoptChar: {
+        auto parsedOptions = autopas::TuningMetricOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one tuning metric option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.tuningMetricOption.value = *parsedOptions.begin();
+        break;
+      }
       case decltype(config.mpiStrategyOption)::getoptChar: {
         auto parsedOptions = autopas::MPIStrategyOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {
@@ -551,6 +566,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.vtkFileName)::getoptChar: {
         config.vtkFileName.value = strArg;
+        break;
+      }
+      case decltype(config.vtkOutputFolder)::getoptChar: {
+        config.vtkOutputFolder.value = strArg;
         break;
       }
       case decltype(config.vtkWriteFrequency)::getoptChar: {
@@ -604,6 +623,22 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.boundaryOption.value = {parsedOption, parsedOption, parsedOption};
         break;
       }
+      case decltype(config.useTuningLogger)::getoptChar: {
+        if (strArg == "true") {
+          config.useTuningLogger.value = true;
+        } else if (strArg == "false") {
+          config.useTuningLogger.value = false;
+        } else {
+          cerr << "Error parsing 'useTuningLogger': " << optarg << endl;
+          cerr << "Value should be true or false." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.outputSuffix)::getoptChar: {
+        config.outputSuffix.value = strArg;
+        break;
+      }
       case decltype(config.loadBalancer)::getoptChar: {
         auto parsedOptions = LoadBalancerOption::parseOptions(strArg);
 
@@ -640,8 +675,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
 
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
-        CubeGrid grid(velocity, typeID, {config.particlesPerDim.value, config.particlesPerDim.value,
-                                         config.particlesPerDim.value}, config.particleSpacing.value, bottomLeftCorner);
+        CubeGrid grid(velocity, typeID,
+                      {config.particlesPerDim.value, config.particlesPerDim.value, config.particlesPerDim.value},
+                      config.particleSpacing.value, bottomLeftCorner);
         config.cubeGridObjects.push_back(grid);
         break;
       }
@@ -661,8 +697,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim.value / 2.;
-        Sphere sphere(velocity, typeID, {(double)centerOfBox, (double)centerOfBox, (double)centerOfBox}, (int)centerOfBox,
-                      config.particleSpacing.value);
+        Sphere sphere(
+            velocity, typeID,
+            {static_cast<double>(centerOfBox), static_cast<double>(centerOfBox), static_cast<double>(centerOfBox)},
+            static_cast<int>(centerOfBox), config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
         break;
       }
@@ -692,7 +730,7 @@ namespace {
  * @return True iff the file exists.
  */
 bool checkFileExists(const std::string &filename) {
-  struct stat buffer{};
+  struct stat buffer {};
   return (stat(filename.c_str(), &buffer) == 0);
 }
 
