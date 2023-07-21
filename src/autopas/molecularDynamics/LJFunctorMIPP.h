@@ -390,44 +390,20 @@ class LJFunctorMIPP
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
                            Reg<double> &fxacc, Reg<double> &fyacc, Reg<double> &fzacc, Reg<double> *virialSumX, Reg<double> *virialSumY,
                            Reg<double> *virialSumZ, Reg<double> *upotSum, const unsigned int rest = 0) {
-        //TODO mask
-       const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtr(*typeID1ptr, 0) : nullptr;
-       Reg<double> epsilon24s_test = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr, _vindex3) : gather(mixingDataPtr, _vindex3);
-       Reg<double> sigmaSquares_test = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+1, _vindex3) : gather(mixingDataPtr + 1, _vindex3);
-       Reg<double> shift6s_test = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+2, _vindex3) : gather(mixingDataPtr + 2, _vindex3);
-
-         Reg<double> epsilon24s = 0.;
-         Reg<double> sigmaSquares = 0.;
-         Reg<double> shift6s = 0.;
-
-         if (useMixing) {
-             epsilon24s = {
-                     _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)),
-                     not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                     not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                     not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-             sigmaSquares = {
-                     _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)),
-                     not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                     not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                     not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-             if constexpr (applyShift) {
-                 shift6s = {
-                         _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)),
-                         (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                         (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                         (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-             }
-         } else {
-             epsilon24s = _epsilon24;
-             sigmaSquares = _sigmaSquare;
-             shift6s = _shift6;
-         }
-
-         assert(epsilon24s.cmpneq(epsilon24s_test).testz());
-         assert(sigmaSquares.cmpneq(sigmaSquares_test).testz());
-         assert(shift6s.cmpneq(shift6s_test).testz());
-
+       Reg<double> epsilon24s;
+       Reg<double> sigmaSquares;
+       Reg<double> shift6s;
+       if(useMixing) {
+           //gather the mixing data for the particles
+           const auto mixingDataPtr = _PPLibrary->getMixingDataPtr(*typeID1ptr, 0);
+           epsilon24s = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr, _vindex3) : gather(mixingDataPtr, _vindex3);
+           sigmaSquares = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+1, _vindex3) : gather(mixingDataPtr + 1, _vindex3);
+           shift6s = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+2, _vindex3) : gather(mixingDataPtr + 2, _vindex3);
+       } else {
+           epsilon24s = _epsilon24;
+           sigmaSquares = _sigmaSquare;
+           shift6s = _shift6;
+       }
 
        Reg<double> x2 = remainderIsMasked ? maskzld(_masks[rest - 1], &x2ptr[j]) : loadu(&x2ptr[j]);
        Reg<double> y2 = remainderIsMasked ? maskzld(_masks[rest - 1], &y2ptr[j]) : loadu(&y2ptr[j]);
