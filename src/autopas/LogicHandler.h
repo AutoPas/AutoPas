@@ -500,8 +500,10 @@ class LogicHandler {
 
   /**
    * Checks if the given configuration can be used with the given functor and the current state of the simulation.
-   * For the checks we need to switch to the container in the config. Also we need to build the traversal,
-   * hence, it is returned.
+   *
+   * @note For the checks we need to switch to the container in the config, hece this function can't be const.
+   * Also we need to build the traversal, hence, it is returned.
+   *
    * @tparam PairwiseFunctor
    * @param conf
    * @param pairwiseFunctor
@@ -511,7 +513,7 @@ class LogicHandler {
    */
   template <class PairwiseFunctor>
   [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
-      const Configuration &conf, PairwiseFunctor &pairwiseFunctor) const;
+      const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
 
   /**
    * Directly exchange the internal particle and halo buffers with the given vectors and update particle counters.
@@ -1190,7 +1192,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
 template <typename Particle>
 template <class PairwiseFunctor>
 std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
-    const Configuration &conf, PairwiseFunctor &pairwiseFunctor) const {
+    const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
   // Check if the container supports the traversal
   const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
