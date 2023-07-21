@@ -6,9 +6,7 @@
 
 #include "RemainderTraversalTest.h"
 
-#include "autopas/AutoPasDecl.h"
 #include "autopas/LogicHandler.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/Configuration.h"
