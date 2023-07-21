@@ -116,7 +116,7 @@ bool AutoTuner::tuneConfiguration() {
   if (_configQueue.empty()) {
     // if the queue is empty we are done tuning.
     _iterationsSinceTuning = 0;
-    const auto [optConf, optEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+    const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase);
     _configQueue.push_back(optConf);
     stillTuning = false;
     // fill up sample buffer to indicate we are not collecting samples anymore
