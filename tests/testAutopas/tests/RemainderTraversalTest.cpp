@@ -6,7 +6,6 @@
 
 #include "RemainderTraversalTest.h"
 
-#include "autopas/AutoPasDecl.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/tuning/AutoTuner.h"
