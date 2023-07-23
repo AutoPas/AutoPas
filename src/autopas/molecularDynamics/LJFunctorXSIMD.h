@@ -59,6 +59,7 @@ class LJFunctorXSIMD
        if (calculateGlobals) {
          _aosThreadData.resize(autopas_get_max_threads());
        }
+       initMask();
      }
 
     public:
@@ -402,57 +403,51 @@ class LJFunctorXSIMD
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
                            xsimd::batch<double> &fxacc, xsimd::batch<double> &fyacc, xsimd::batch<double> &fzacc, xsimd::batch<double> *virialSumX, xsimd::batch<double> *virialSumY,
                            xsimd::batch<double> *virialSumZ, xsimd::batch<double> *upotSum, const unsigned int rest = 0) {
-       xsimd::batch<double> epsilon24s = _epsilon24;
-       xsimd::batch<double> sigmaSquares = _sigmaSquare;
-       xsimd::batch<double> shift6s = _shift6;
-       if (useMixing) {
-         // the first argument for set lands in the last bits of the register
-           epsilon24s = {
-                   _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)),
-                   not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                   not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                   not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-           sigmaSquares = {
-                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)),
-                   not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                   not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                   not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-           if constexpr (applyShift) {
-               shift6s = {
-                       _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)),
-                       (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                       (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                       (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-           }
-       }
+       xsimd::batch<double> epsilon24s;
+       xsimd::batch<double> sigmaSquares;
+       xsimd::batch<double> shift6s;
+         if(useMixing) {
+             const auto mixingDataPtr = _PPLibrary->getMixingDataPtr(*typeID1ptr, 0);
+             double epsilon24s_a[vecLength] = {0};
+             double sigmaSquares_a[vecLength] = {0};
+             double shift6s_a[vecLength] = {0};
+
+             for (int i = 0; (remainderIsMasked ? _masks[rest-1].get(i) : i < vecLength); ++i) {
+                 epsilon24s_a[i] = mixingDataPtr[j + _vindex3.get(i)];
+                 sigmaSquares_a[i] = (mixingDataPtr + 1)[j + _vindex3.get(i)];
+                 shift6s_a[i] = (mixingDataPtr + 2)[j + _vindex3.get(i)];
+             }
+             epsilon24s = xsimd::load_unaligned(epsilon24s_a);
+             sigmaSquares = xsimd::load_unaligned(sigmaSquares_a);
+             shift6s = xsimd::load_unaligned(shift6s_a);
+
+         } else {
+             epsilon24s = _epsilon24;
+             sigmaSquares = _sigmaSquare;
+             shift6s = _shift6;
+         }
        xsimd::batch<double> x2;
        xsimd::batch<double> y2;
        xsimd::batch<double> z2;
        // load only masked values
-       //TODO: doesnt work with other sized batches than 4
        if(remainderIsMasked) {
-         x2 = {
-           _masks[rest-1].get(0) ? x2ptr[j] : 0,
-           _masks[rest-1].get(1) ? x2ptr[j + 1] : 0,
-           _masks[rest-1].get(2) ? x2ptr[j + 2] : 0,
-           _masks[rest-1].get(3) ? x2ptr[j + 3] : 0,
-         };
-         y2 = {
-             _masks[rest-1].get(0) ? y2ptr[j] : 0,
-             _masks[rest-1].get(1) ? y2ptr[j + 1] : 0,
-             _masks[rest-1].get(2) ? y2ptr[j + 2] : 0,
-             _masks[rest-1].get(3) ? y2ptr[j + 3] : 0,
-         };
-         z2 = {
-             _masks[rest-1].get(0) ? z2ptr[j] : 0,
-             _masks[rest-1].get(1) ? z2ptr[j + 1] : 0,
-             _masks[rest-1].get(2) ? z2ptr[j + 2] : 0,
-             _masks[rest-1].get(3) ? z2ptr[j + 3] : 0,
-         };
+           double x2_a[vecLength] = {0};
+           double y2_a[vecLength] = {0};
+           double z2_a[vecLength] = {0};
+
+           for (int i = 0; _masks[rest-1].get(i); ++i) {
+               x2_a[i] = x2ptr[j + i];
+               y2_a[i] = y2ptr[j + i];
+               z2_a[i] = z2ptr[j + i];
+           }
+           x2 = xsimd::load_unaligned(x2_a);
+           y2 = xsimd::load_unaligned(y2_a);
+           z2 = xsimd::load_unaligned(z2_a);
+
        } else {
-         x2 = xsimd::load_unaligned(&x2ptr[j]);
-         y2 = xsimd::load_unaligned(&y2ptr[j]);
-         z2 = xsimd::load_unaligned(&z2ptr[j]);
+           x2 = xsimd::load_unaligned(&x2ptr[j]);
+           y2 = xsimd::load_unaligned(&y2ptr[j]);
+           z2 = xsimd::load_unaligned(&z2ptr[j]);
        }
        const xsimd::batch<double> drx = xsimd::sub(x1,x2);
        const xsimd::batch<double> dry = xsimd::sub(y1,y2);
@@ -559,8 +554,6 @@ class LJFunctorXSIMD
          *virialSumY = wrapperFMA(energyFactor, virialY, *virialSumY);
          *virialSumZ = wrapperFMA(energyFactor, virialZ, *virialSumZ);
        }
-
-
      }
 
     public:
@@ -900,6 +893,22 @@ class LJFunctorXSIMD
        return xsimd::fma(factorA, factorB, summandC);
      }
 
+    inline xsimd::batch<int64_t> initVIndex3() {
+        int64_t indexes[vecLength];
+        for(int i = 0; i < vecLength; ++i) {
+            indexes[i] = i * 3;
+        }
+        return xsimd::load_unaligned(indexes);
+    }
+
+    inline void initMask() {
+        bool tmp[vecLength] = {false};
+        for(int i = 0; i < vecLength - 1; ++i) {
+            tmp[i] = true;
+            _masks[i] = xsimd::batch_bool<double>::load_unaligned(tmp);
+        }
+    }
+
      /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
       */
@@ -923,14 +932,12 @@ class LJFunctorXSIMD
      static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 
+    // number of double values that fit into a vector register.
+    constexpr static size_t vecLength = xsimd::batch<double>::size;
      const xsimd::batch<double> _zero{0};
      const xsimd::batch<double> _one{1.};
-     const xsimd::batch<int64_t> _vindex{0, 1, 3, 4};
-     const xsimd::batch_bool<double> _masks[3] {
-         xsimd::batch_bool<double>(true, false, false, false),
-         xsimd::batch_bool<double>(true, true, false, false),
-         xsimd::batch_bool<double>(true, true, true, false)
-     };
+     const xsimd::batch<int64_t> _vindex3 = initVIndex3();
+     xsimd::batch_bool<double> _masks[vecLength];
      const xsimd::batch<int64_t> _ownedStateDummyMM256i{0x0};
      const xsimd::batch<int64_t> _ownedStateOwnedMM256i{static_cast<int64_t>(OwnershipState::owned)};
      const xsimd::batch<double> _cutoffsquare{};
@@ -955,8 +962,5 @@ class LJFunctorXSIMD
      // defines whether or whether not the global values are already preprocessed
      bool _postProcessed;
 
-     // number of double values that fit into a vector register.
-     // MUST be power of 2 because some optimizations make this assumption
-     constexpr static size_t vecLength = xsimd::batch<double>::size;
 };
 }

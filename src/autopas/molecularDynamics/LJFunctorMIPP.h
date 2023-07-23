@@ -61,6 +61,7 @@ class LJFunctorMIPP
        if (calculateGlobals) {
          _aosThreadData.resize(autopas_get_max_threads());
        }
+       initMask();
      }
 
     public:
@@ -389,28 +390,15 @@ class LJFunctorMIPP
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
                            Reg<double> &fxacc, Reg<double> &fyacc, Reg<double> &fzacc, Reg<double> *virialSumX, Reg<double> *virialSumY,
                            Reg<double> *virialSumZ, Reg<double> *upotSum, const unsigned int rest = 0) {
-       Reg<double> epsilon24s = 0.;
-       Reg<double> sigmaSquares = 0.;
-       Reg<double> shift6s = 0.;
-
-       if (useMixing) {
-           epsilon24s = {
-                 _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)),
-                   not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                   not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                   not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-           sigmaSquares = {
-                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)),
-                   not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                   not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                   not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-           if constexpr (applyShift) {
-               shift6s = {
-                       _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)),
-                       (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                       (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                       (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0};
-           }
+       Reg<double> epsilon24s;
+       Reg<double> sigmaSquares;
+       Reg<double> shift6s;
+       if(useMixing) {
+           //gather the mixing data for the particles
+           const auto mixingDataPtr = _PPLibrary->getMixingDataPtr(*typeID1ptr, 0);
+           epsilon24s = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr, _vindex3) : gather(mixingDataPtr, _vindex3);
+           sigmaSquares = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+1, _vindex3) : gather(mixingDataPtr + 1, _vindex3);
+           shift6s = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+2, _vindex3) : gather(mixingDataPtr + 2, _vindex3);
        } else {
            epsilon24s = _epsilon24;
            sigmaSquares = _sigmaSquare;
@@ -525,7 +513,30 @@ class LJFunctorMIPP
 
      }
 
-    public:
+    inline Reg<int64_t> initVIndex3() {
+        int64_t indexes[N<double>()];
+        for(int i = 0; i < N<double>(); ++i) {
+            indexes[i] = i * 3;
+        }
+        return load(indexes);
+    }
+    inline Reg<int64_t> initVIndex1() {
+        int64_t indexes[N<double>()];
+        for(int i = 0; i < N<double>(); ++i) {
+            indexes[i] = i;
+        }
+        return load(indexes);
+    }
+
+    inline void initMask() {
+        bool tmp[N<double>()] = {false};
+        for(int i = 0; i < N<double>() - 1; ++i) {
+            tmp[i] = true;
+            _masks[i].set(tmp);
+        }
+    }
+
+public:
      // clang-format off
   /**
    * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
@@ -869,12 +880,9 @@ class LJFunctorMIPP
      const Reg<double> _zero = 0.;
      const Reg<int64_t> _zeroI = 0.;
      const Reg<double> _one = 1.;
-     const Reg<int64_t> _vindex{0, 1, 3, 4};
-     const Msk<N<double>()> _masks[3] {
-         Msk<N<double>()>{true, false, false, false},
-         Msk<N<double>()>{true, true, false, false},
-         Msk<N<double>()>{true, true, true, false}
-     };
+     Reg<int64_t> _vindex3 = initVIndex3();
+     Reg<int64_t> _vindex1 = initVIndex1();
+     Msk<N<double>()> _masks[N<double>() - 1];
      const Reg<int64_t> _ownedStateDummyMM256i = 0.;
      const Reg<int64_t> _ownedStateOwnedMM256i = static_cast<int64_t>(OwnershipState::owned);
      const Reg<double> _cutoffsquare;
