@@ -10,7 +10,7 @@
 #include "autopas/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/logging/Logger.h"
-#include "testingHelpers/commonTypedefs.h"
+#include "autopasTools/generators/RandomGenerator.h"
 
 using ::testing::_;
 using ::testing::Combine;
