@@ -311,7 +311,7 @@ class AutoTuner {
   std::vector<double> _homogeneitiesOfLastTenIterations{};
 
   /**
-   * Buffer for the homogeneities of the last ten Iterations
+   * Buffer for the maximum densities of the last ten Iterations
    */
   std::vector<double> _maxDensitiesOfLastTenIterations{};
 

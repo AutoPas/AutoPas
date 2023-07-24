@@ -502,7 +502,7 @@ class LogicHandler {
    * @param conf
    * @param pairwiseFunctor
    * @return tuple<optional<Traversal>, rejectIndefinitely> The optional is empty if the configuration is not applicable
-   * The bool indicates if the configuration can be completely removed from the search space because it will never be
+   * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because it will never be
    * applicable.
    */
   template <class PairwiseFunctor>
@@ -562,7 +562,7 @@ class LogicHandler {
   std::tuple<const std::vector<FullParticleCell<Particle>> &, const std::vector<FullParticleCell<Particle>> &>
   getParticleBuffers() {
     return {_particleBuffer, _haloParticleBuffer};
-  };
+  }
 
  private:
   /**
@@ -791,7 +791,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   autopas::utils::Timer timerIteratePairwise;
   autopas::utils::Timer timerRemainderTraversal;
 
-  const auto energyMeasurementsPossible = _autoTuner.resetEnergy();
+  const bool energyMeasurementsPossible = _autoTuner.resetEnergy();
   timerTotal.start();
 
   functor.initTraversal();
