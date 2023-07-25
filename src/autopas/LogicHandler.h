@@ -502,8 +502,8 @@ class LogicHandler {
    * @param conf
    * @param pairwiseFunctor
    * @return tuple<optional<Traversal>, rejectIndefinitely> The optional is empty if the configuration is not applicable
-   * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because it will never be
-   * applicable.
+   * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because
+   * it will never be applicable.
    */
   template <class PairwiseFunctor>
   [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
