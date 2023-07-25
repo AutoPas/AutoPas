@@ -612,7 +612,7 @@ class LogicHandler {
     long timeRemainderTraversal{};
     long timeRebuild{};
     long timeTotal{};
-    /// Energy
+    /// Energy. See RaplMeter.h for the meaning of each field.
     bool energyMeasurementsPossible{false};
     double energyPsys{};
     double energyPkg{};
@@ -620,6 +620,20 @@ class LogicHandler {
     long energyTotal{};
   };
 
+  /**
+   * Triggers the core steps of the pairwise iteration:
+   *    - functor init- / end traversal
+   *    - rebuilding of neighbor lists
+   *    - container.iteratePairwise()
+   *    - remainder traversal
+   *    - time and energy measurements.
+   *
+   * @tparam PairwiseFunctor
+   * @param functor
+   * @param traversal
+   * @return Struct containing time and energy measurements. If no energy measurements were possible the respective
+   * fields are filled with NaN.
+   */
   template <class PairwiseFunctor>
   IterationMeasurements iteratePairwise(PairwiseFunctor &functor, TraversalInterface &traversal);
 
