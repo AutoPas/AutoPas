@@ -539,7 +539,7 @@ class LJFunctorXSIMD
 
          const xsimd::batch<double> updot = wrapperFMA(epsilon24s, lj12m6, shift6s);
 
-         const __m256d upotMasked =
+         const xsimd::batch<double> upotMasked =
              remainderIsMasked ? xsimd::select(xsimd::bitwise_and(cutoffDummyMask, _masks[rest - 1]), updot, _zero)
                                : xsimd::select(cutoffDummyMask, updot, _zero);
          xsimd::batch_bool<double> ownedMaskI = xsimd::eq(to_float(ownedStateI), to_float(_ownedStateOwnedMM256i));

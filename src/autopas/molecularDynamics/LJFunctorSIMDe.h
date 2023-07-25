@@ -500,10 +500,10 @@ namespace autopas {
             const simde__m256d dr2PART = simde_mm256_add_pd(drx2, dry2);
             const simde__m256d dr2 = simde_mm256_add_pd(dr2PART, drz2);
 
-            // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
+            // SIMDE_CMP_LE_OS == Less-Equal-then (ordered, signaling)
             // signaling = throw error if NaN is encountered
             // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
-            const simde__m256d cutoffMask = simde_mm256_cmp_pd(dr2, _cutoffsquare, _CMP_LE_OS);
+            const simde__m256d cutoffMask = simde_mm256_cmp_pd(dr2, _cutoffsquare, SIMDE_CMP_LE_OS);
 
             // This requires that dummy is zero (otherwise when loading using a mask the owned state will not be zero)
             const simde__m256i ownedStateJ = remainderIsMasked
@@ -511,7 +511,7 @@ namespace autopas {
                             reinterpret_cast<double const *>(&ownedStatePtr2[j]), _masks[rest - 1]))
                                         : simde_mm256_loadu_si256(reinterpret_cast<const simde__m256i *>(&ownedStatePtr2[j]));
             // This requires that dummy is the first entry in OwnershipState!
-            const simde__m256d dummyMask = simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateJ), _zero, _CMP_NEQ_UQ);
+            const simde__m256d dummyMask = simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateJ), _zero, SIMDE_CMP_NEQ_UQ);
             const simde__m256d cutoffDummyMask = simde_mm256_and_pd(cutoffMask, dummyMask);
 
             // if everything is masked away return from this function.
@@ -576,11 +576,11 @@ namespace autopas {
                                           : simde_mm256_and_pd(upot, cutoffDummyMask);
 
                 simde__m256d ownedMaskI =
-                        simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateI), simde_mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+                        simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateI), simde_mm256_castsi256_pd(_ownedStateOwnedMM256i), SIMDE_CMP_EQ_UQ);
                 simde__m256d energyFactor = simde_mm256_blendv_pd(_zero, _one, ownedMaskI);
                 if constexpr (newton3) {
                     simde__m256d ownedMaskJ =
-                            simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateJ), simde_mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
+                            simde_mm256_cmp_pd(simde_mm256_castsi256_pd(ownedStateJ), simde_mm256_castsi256_pd(_ownedStateOwnedMM256i), SIMDE_CMP_EQ_UQ);
                     energyFactor = simde_mm256_add_pd(energyFactor, simde_mm256_blendv_pd(_zero, _one, ownedMaskJ));
                 }
                 *upotSum = wrapperFMA(energyFactor, upotMasked, *upotSum);
