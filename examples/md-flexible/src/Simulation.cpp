@@ -33,6 +33,15 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJ
 #include "autopas/molecularDynamics/LJFunctorSVE.h"
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::LJFunctorSVE<ParticleType, true, true> *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
+#include "autopas/molecularDynamics/LJFunctorMIPP.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
+#include "autopas/molecularDynamics/LJFunctorXSIMD.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
+#include "autopas/molecularDynamics/LJFunctorSIMDe.h"
+#endif
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::FlopCounterFunctor<ParticleType> *);
 //! @endcond
 
@@ -43,12 +52,11 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(autopas::Fl
 
 #include "Thermostat.h"
 #include "TimeDiscretization.h"
-#include "autopas/molecularDynamics/LJFunctorMIPP.h"
-#include "autopas/molecularDynamics/LJFunctorXSIMD.h"
+
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
-#include "autopas/molecularDynamics/LJFunctorSIMDe.h"
+
 
 namespace {
 /**
@@ -634,14 +642,32 @@ T Simulation::applyWithChosenFunctor(F f) {
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
-    } case MDFlexConfig::FunctorOption::lj12_6_XSIMD: {
-      return f(autopas::LJFunctorXSIMD<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_XSIMD: {
+#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
+        return f(autopas::LJFunctorXSIMD<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+#else
+        throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor XSIMD. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_XSIMD=ON`.");
+#endif
     } case MDFlexConfig::FunctorOption::lj12_6_MIPP: {
+#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
         return f(autopas::LJFunctorMIPP<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
-    } case MDFlexConfig::FunctorOption::lj12_6_SIMDe:
+#else
+            throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor MIPP. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_MIPP=ON`.");
+#endif
+    }  case MDFlexConfig::FunctorOption::lj12_6_SIMDe:
+#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
         return f(autopas::LJFunctorSIMDe<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
-
-  }
+#else
+        throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor SIMDe. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_SIMDE=ON`.");
+#endif
+    }
 
     throw std::runtime_error("Unknown functor choice" +
                            std::to_string(static_cast<int>(_configuration.functorOption.value)));
