@@ -125,15 +125,15 @@ class AutoTuner {
 
   /**
    * Tell the tuner that the given config is not applicable.
+   * Since this operation might change the suggestion what configuration to try next, this next suggestion is returned.
    *
    * @note The applicability checking logic was moved out of the tuner because it needed the container,
    * thus raising the compile complexity.
    *
-   * @tparam PairwiseFunctor
    * @param rejectedConfig
    * @param indefinitely Whether the given config should be completely removed from the search space (aka rejected
    * indefinitely).
-   * @return
+   * @return Tuple<Next configuration to use, still tuning>.
    */
   [[nodiscard]] std::tuple<Configuration, bool> rejectConfig(const Configuration &rejectedConfig, bool indefinitely);
 
