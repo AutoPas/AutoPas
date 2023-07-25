@@ -25,8 +25,8 @@ namespace autopas {
  * @tparam ParticleCell
  * @tparam FunctionType
  * @param container The container to be used.
- * @param function The function body to be executed. Has to take exactly one argument being a pointer to the container.
- * E.g: [&](auto *container){container->doSth();}  // The * is optional here. The auto is necessary!
+ * @param function The function body to be executed. Has to take exactly one argument: A reference to the container.
+ * E.g: [&](auto &container){container->doSth();}  // The & is optional here. The auto is necessary!
  * @return Returns whatever function returns.
  */
 template <typename Particle, typename FunctionType>
