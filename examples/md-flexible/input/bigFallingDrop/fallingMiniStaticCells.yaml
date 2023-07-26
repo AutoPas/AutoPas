@@ -14,7 +14,7 @@ newton3                          :  [enabled]
 cutoff                           :  3
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  12500
+iterations                       :  15000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
 Objects:
