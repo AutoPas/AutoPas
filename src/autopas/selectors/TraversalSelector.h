@@ -76,8 +76,8 @@ class TraversalSelector {
                                                                const TraversalSelectorInfo &info);
 
   /**
-   * Generates a given Traversal for the given properties. Requires less templates but only returns a TraversalInterface
-   * smart pointer.
+   * Generates a given Traversal for the given properties.
+   * Requires less templates but calls the templated version after a decision tree.
    * @tparam PairwiseFunctor
    * @param traversalType
    * @param pairwiseFunctor
@@ -261,7 +261,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
     }
   }
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
-  return std::unique_ptr<TraversalInterface>(nullptr);
+  return {nullptr};
 }
 template <class ParticleCell>
 template <class PairwiseFunctor>
@@ -294,6 +294,6 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
   }
 
   autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
-  return std::unique_ptr<TraversalInterface>(nullptr);
+  return {nullptr};
 }
 }  // namespace autopas
