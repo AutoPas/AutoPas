@@ -12,7 +12,6 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
