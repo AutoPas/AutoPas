@@ -413,9 +413,9 @@ class LJFunctorXSIMD
              double shift6s_a[vecLength] = {0};
 
              for (int i = 0; (remainderIsMasked ? _masks[rest-1].get(i) : i < vecLength); ++i) {
-                 epsilon24s_a[i] = mixingDataPtr[j + _vindex3.get(i)];
-                 sigmaSquares_a[i] = (mixingDataPtr + 1)[j + _vindex3.get(i)];
-                 shift6s_a[i] = (mixingDataPtr + 2)[j + _vindex3.get(i)];
+                 epsilon24s_a[i] = mixingDataPtr[_vindex3.get(i)];
+                 sigmaSquares_a[i] = (mixingDataPtr + 1)[_vindex3.get(i)];
+                 shift6s_a[i] = (mixingDataPtr + 2)[_vindex3.get(i)];
              }
              epsilon24s = xsimd::load_unaligned(epsilon24s_a);
              sigmaSquares = xsimd::load_unaligned(sigmaSquares_a);
@@ -467,11 +467,11 @@ class LJFunctorXSIMD
        const xsimd::batch_bool<double> cutoffMask = xsimd::le(dr2, _cutoffsquare);
        const xsimd::batch<int64_t> _zeroI = xsimd::to_int(_zero);
        const xsimd::batch<int64_t> ownedStateJ = remainderIsMasked
-                                                     ? xsimd::select(xsimd::batch_bool_cast<int64_t>(_masks[rest - 1]), 
+                                                     ? xsimd::select(xsimd::batch_bool_cast<int64_t>(_masks[rest - 1]),
                                                                xsimd::load_unaligned(&ownedStatePtr2[j]), _zeroI)
                                                      : xsimd::load_unaligned(&ownedStatePtr2[j]);
        const xsimd::batch_bool<double> dummyMask = xsimd::batch_bool_cast<double>(xsimd::neq(ownedStateJ, _zeroI));
-       
+
        const xsimd::batch_bool<double> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
 
        // if everything is masked away return from this function.
@@ -504,14 +504,30 @@ class LJFunctorXSIMD
        fzacc = xsimd::add(fzacc, fz);
 
        // if newton 3 is used subtract fD from particle j
+        if(newton3) {
+            xsimd::batch<double> fx2;
+            xsimd::batch<double> fy2;
+            xsimd::batch<double> fz2;
 
-       if constexpr (newton3) {
-         const xsimd::batch<double> fx2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fx2ptr[j]), _zero) : xsimd::load_unaligned(&fx2ptr[j]);
-         const xsimd::batch<double> fy2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fy2ptr[j]), _zero) : xsimd::load_unaligned(&fy2ptr[j]);
-         const xsimd::batch<double> fz2 =
-             remainderIsMasked ? xsimd::select(_masks[rest - 1], xsimd::load_unaligned(&fz2ptr[j]), _zero) : xsimd::load_unaligned(&fz2ptr[j]);
+            if(remainderIsMasked) {
+                double fx2_a[vecLength] = {0};
+                double fy2_a[vecLength] = {0};
+                double fz2_a[vecLength] = {0};
+
+                for (int i = 0; _masks[rest-1].get(i); ++i) {
+                    fx2_a[i] = fx2ptr[j + i];
+                    fy2_a[i] = fy2ptr[j + i];
+                    fz2_a[i] = fz2ptr[j + i];
+                }
+                fx2 = xsimd::load_unaligned(fx2_a);
+                fy2 = xsimd::load_unaligned(fy2_a);
+                fz2 = xsimd::load_unaligned(fz2_a);
+
+            } else {
+                fx2 = xsimd::load_unaligned(&fx2ptr[j]);
+                fy2 = xsimd::load_unaligned(&fy2ptr[j]);
+                fz2 = xsimd::load_unaligned(&fz2ptr[j]);
+            }
 
          const xsimd::batch<double> fx2new = xsimd::sub(fx2, fx);
          const xsimd::batch<double> fy2new = xsimd::sub(fy2, fy);
