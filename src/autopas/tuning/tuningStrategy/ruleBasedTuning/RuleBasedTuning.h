@@ -117,6 +117,16 @@ class RuleBasedTuning : public TuningStrategyInterface {
 
  private:
   /**
+   * Creates a multi-line string representation of all rules contained in the given rule file.
+   *
+   * Works by printing all non-empty, non-comment lines in the file.
+   *
+   * @param filePath Path to the file whose rules should be printed.
+   * @return String representation of all rules.
+   */
+  std::string rulesToString(const std::string &filePath) const;
+
+  /**
    * Goes through all applicable configuration orders and checks if the result of the current configuration contradicts
    * any rules when comparing with previously tested configurations in this tuning phase. If yes, calls
    * tuningErrorPrinter.

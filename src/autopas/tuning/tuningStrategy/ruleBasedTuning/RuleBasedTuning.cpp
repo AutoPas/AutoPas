@@ -14,7 +14,10 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
       _originalSearchSpace(searchSpace.begin(), searchSpace.end()),
       _verifyModeEnabled(verifyModeEnabled),
       _ruleFileName(std::move(ruleFileName)),
-      _tuningErrorPrinter(std::move(tuningErrorPrinter)) {}
+      _tuningErrorPrinter(std::move(tuningErrorPrinter)) {
+  // By default, dump the rules for reproducibility reasons.
+  AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
+}
 
 bool RuleBasedTuning::needsLiveInfo() const { return true; }
 
@@ -148,5 +151,21 @@ std::vector<rule_syntax::ConfigurationOrder> RuleBasedTuning::applyRules(
   }
 
   return applicableConfigurationOrders;
+}
+
+std::string RuleBasedTuning::rulesToString(const std::string &filePath) const {
+  std::ifstream ruleFile(filePath);
+  std::string line;
+  std::stringstream ruleFileStringStream;
+  while (std::getline(ruleFile, line)) {
+    // any string that has a '#' only preceded by space characters.
+    const std::regex rgxContainsComment("^[ \t]*#.*");
+
+    if (line.empty() or std::regex_match(line, rgxContainsComment)) {
+      continue;
+    }
+    ruleFileStringStream << line << "\n";
+  }
+  return ruleFileStringStream.str();
 }
 }  // namespace autopas
