@@ -15,9 +15,9 @@ ExternalProject_ADD(
         BUILD_BYPRODUCTS ${staticLibInstallLocation}
         CMAKE_ARGS  -DCMAKE_INSTALL_PREFIX=${prefix}/install -DCMAKE_CXX_FLAGS=-w
         # Patch away the shared library target
-        PATCH_COMMAND sed --in-place -e /install.*shared/,+2d runtime/CMakeLists.txt                &&
+        PATCH_COMMAND sed --in-place -e /install.*shared/,+2d               runtime/CMakeLists.txt  &&
                       sed --in-place -e /set_target_properties.*shared/,+9d runtime/CMakeLists.txt  &&
-                      sed --in-place -e /shared/d runtime/CMakeLists.txt
+                      sed --in-place -e /shared/d                           runtime/CMakeLists.txt
 )
 
 # create dummy target that contains all information to easily link against
