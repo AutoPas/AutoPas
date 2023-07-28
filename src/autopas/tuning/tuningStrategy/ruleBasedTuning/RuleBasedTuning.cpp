@@ -6,6 +6,8 @@
 
 #include "RuleBasedTuning.h"
 
+#include <sys/stat.h>
+
 namespace autopas {
 
 RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, bool verifyModeEnabled,
@@ -15,6 +17,11 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
       _verifyModeEnabled(verifyModeEnabled),
       _ruleFileName(std::move(ruleFileName)),
       _tuningErrorPrinter(std::move(tuningErrorPrinter)) {
+  // Check if the given rule file exists and throw of not
+  struct stat buffer;
+  if (stat (_ruleFileName.c_str(), &buffer) != 0) {
+    utils::ExceptionHandler::exception("Rule file {} does not exist!", _ruleFileName);
+  }
   // By default, dump the rules for reproducibility reasons.
   AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
 }
