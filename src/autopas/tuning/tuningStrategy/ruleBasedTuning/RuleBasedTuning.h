@@ -90,60 +90,30 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   explicit RuleBasedTuning(const std::set<Configuration> &searchSpace, bool verifyModeEnabled = false,
                            std::string ruleFileName = "tuningRules.rule",
-                           PrintTuningErrorFunType tuningErrorPrinter = {})
-      : _searchSpace(searchSpace),
-        _originalSearchSpace(searchSpace.begin(), searchSpace.end()),
-        _verifyModeEnabled(verifyModeEnabled),
-        _ruleFileName(std::move(ruleFileName)),
-        _tuningErrorPrinter(std::move(tuningErrorPrinter)) {}
+                           PrintTuningErrorFunType tuningErrorPrinter = {});
 
-  bool needsLiveInfo() const override { return true; }
+  bool needsLiveInfo() const override;
 
-  void receiveLiveInfo(const LiveInfo &info) override { _currentLiveInfo = info; }
+  void receiveLiveInfo(const LiveInfo &info) override;
 
-  void addEvidence(const Configuration &configuration, const Evidence &evidence) override {
-    _tuningTime += evidence.value;
-    _tuningTimeLifetime += evidence.value;
-    _traversalTimes[configuration] = evidence.value;
-    if (_verifyModeEnabled) {
-      verifyCurrentConfigTime(configuration);
-      if (_removedConfigurations.find(configuration) != _removedConfigurations.end()) {
-        _wouldHaveSkippedTuningTime += evidence.value;
-        _wouldHaveSkippedTuningTimeLifetime += evidence.value;
-      }
-    }
-  }
+  void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-             const autopas::EvidenceCollection &evidenceCollection) override {
-    if (_verifyModeEnabled and _tuningTime > 0) {
-      AutoPasLog(INFO, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
-                 _wouldHaveSkippedTuningTime, _removedConfigurations.size(), _originalSearchSpace.size(),
-                 // TODO: This lambda could probably be replaced by some formatting parameters in the fmt string.
-                 [&]() {
-                   const auto percent =
-                       ((static_cast<double>(_wouldHaveSkippedTuningTime) / static_cast<double>(_tuningTime)) * 100);
-                   const auto percentRounded = std::round(percent * 100) / 100;
-                   return percentRounded;
-                 }());
-    }
-
-    _tuningTime = 0;
-    _wouldHaveSkippedTuningTime = 0;
-    _removedConfigurations.clear();
-    optimizeSuggestions(configQueue, evidenceCollection);
-  }
+             const autopas::EvidenceCollection &evidenceCollection) override;
 
   /**
    * @returns in verify mode the summed up time that would have been skipped if verify mode was disabled and
    * configurations would have been skipped due to the rules in the last tuning phase.
    */
-  [[nodiscard]] auto getLifetimeWouldHaveSkippedTuningTime() const { return _wouldHaveSkippedTuningTimeLifetime; }
+  [[nodiscard]] long getLifetimeWouldHaveSkippedTuningTime() const;
 
   /**
    * @returns the summed up time of all configurations that have been tested by this tuning strategy.
    */
-  [[nodiscard]] auto getLifetimeTuningTime() const { return _tuningTimeLifetime; }
+  [[nodiscard]] long getLifetimeTuningTime() const;
+
+  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+                           const EvidenceCollection &evidenceCollection) override;
 
  private:
   /**
@@ -153,105 +123,16 @@ class RuleBasedTuning : public TuningStrategyInterface {
    *
    * @param configuration
    */
-  void verifyCurrentConfigTime(const Configuration &configuration) const {
-    for (const auto &order : _lastApplicableConfigurationOrders) {
-      bool shouldBeBetter{};
-      if (order.smaller.matches(configuration)) {
-        shouldBeBetter = true;
-      } else if (order.greater.matches(configuration)) {
-        shouldBeBetter = false;
-      } else {
-        continue;
-      }
+  void verifyCurrentConfigTime(const Configuration &configuration) const;
 
-      const auto currentConfigTime = _traversalTimes.at(configuration);
-      const auto &comparePattern = shouldBeBetter ? order.greater : order.smaller;
-      for (const auto &[otherConfig, time] : _traversalTimes) {
-        bool error = false;
-        if (comparePattern.matches(otherConfig) and order.haveEqualSameProperties(configuration, otherConfig)) {
-          if ((shouldBeBetter and time > currentConfigTime) or (not shouldBeBetter and time < currentConfigTime)) {
-            error = true;
-          }
-        }
-        if (error) {
-          if (shouldBeBetter) {
-            _tuningErrorPrinter(order, configuration, currentConfigTime, otherConfig, time, _currentLiveInfo);
-          } else {
-            _tuningErrorPrinter(order, otherConfig, time, configuration, currentConfigTime, _currentLiveInfo);
-          }
-        }
-      }
-    }
-  }
-
- public:
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
-                           const EvidenceCollection &evidenceCollection) override {
-    _lastApplicableConfigurationOrders = applyRules(configQueue);
-    if (not _verifyModeEnabled) {
-      configQueue.clear();
-      std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
-    }
-  }
-
- private:
   /**
    * Executes the rule file for the current simulation state. Puts all known live info as defines in front of the
    * program.
    */
-  std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace) {
-    AutoPasLog(DEBUG, _currentLiveInfo.toString());
-
-    std::vector<RuleVM::MemoryCell> initialStack;
-    std::vector<std::pair<std::string, rule_syntax::Define>> defines{};
-    for (const auto &[name, value] : _currentLiveInfo.get()) {
-      initialStack.emplace_back(value);
-      defines.push_back({name, {name, std::make_shared<rule_syntax::Literal>(value)}});
-    }
-
-    std::ifstream ifs{_ruleFileName};
-    const std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
-
-    rule_syntax::RuleBasedProgramParser parser{defines};
-    auto [programTree, context] = parser.parse(content);
-
-    const auto generatedProgram = programTree.generateCode(context);
-
-    RuleVM vm{};
-    const auto removePatterns = vm.execute(generatedProgram, initialStack);
-
-    AutoPasLog(DEBUG, "Remove patterns (Count {}):", removePatterns.size());
-    std::vector<ConfigurationPattern> toRemovePatterns{};
-    std::vector<rule_syntax::ConfigurationOrder> applicableConfigurationOrders{};
-    for (const auto &patternIdx : removePatterns) {
-      const auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
-      toRemovePatterns.push_back(pattern);
-      AutoPasLog(DEBUG, "Remove {}", pattern.toString());
-
-      applicableConfigurationOrders.push_back(context.getConfigurationOrders().at(patternIdx));
-    }
-
-    std::list<Configuration> newSearchSpace{searchSpace.begin(), searchSpace.end()};
-    newSearchSpace.remove_if([&](const Configuration &configuration) {
-      const bool remove = std::any_of(toRemovePatterns.begin(), toRemovePatterns.end(),
-                                      [&configuration](const auto &pattern) { return pattern.matches(configuration); });
-      if (remove) {
-        _removedConfigurations.insert(configuration);
-      }
-      return remove;
-    });
-    AutoPasLog(DEBUG, "Rules remove {} out of {} configurations", _originalSearchSpace.size() - newSearchSpace.size(),
-               _originalSearchSpace.size());
-    if (not _verifyModeEnabled) {
-      _searchSpace.clear();
-      _searchSpace.insert(newSearchSpace.begin(), newSearchSpace.end());
-    }
-
-    return applicableConfigurationOrders;
-  }
+  std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
 
   std::set<Configuration> _searchSpace;
-  const std::list<Configuration> _originalSearchSpace{};
+  const std::list<Configuration> _originalSearchSpace;
   std::set<Configuration> _removedConfigurations;
   std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
   bool _verifyModeEnabled;
