@@ -174,10 +174,11 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
 
   // let all configurations apply their optimizations in the order they are defined.
   // If any is still tuning consider the tuning phase still ongoing.
-  std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(),
-                [&](auto &tuningStrategy) { tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection); });
-  AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): {}", tuningStrategy->getOptionType(),
-             utils::ArrayUtils::to_string(_configQueue));
+  std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
+    tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
+    AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): {}", tuningStrategy->getOptionType(),
+               utils::ArrayUtils::to_string(_configQueue));
+  });
   const auto stillTuning = not _configQueue.empty();
   return {getCurrentConfig(), stillTuning};
 }
