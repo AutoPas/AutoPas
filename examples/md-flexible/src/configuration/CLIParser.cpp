@@ -11,6 +11,21 @@
 #include <any>
 #include <fstream>
 
+// anonymous namespace to hide helper function
+namespace {
+
+/**
+ * Utility function to check if a file behind a given path exists.
+ * @param filename
+ * @return True iff the file exists.
+ */
+bool checkFileExists(const std::string &filename) {
+  struct stat buffer {};
+  return (stat(filename.c_str(), &buffer) == 0);
+}
+
+}  // namespace
+
 MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
 
@@ -65,6 +80,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.particlesTotal,
       config.relativeBlacklistRange,
       config.relativeOptimumRange,
+      config.ruleFilename,
       config.selectorStrategy,
       config.traversalOptions,
       config.tuningInterval,
@@ -515,6 +531,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.tuningMetricOption.value = *parsedOptions.begin();
         break;
       }
+      case decltype(config.ruleFilename)::getoptChar: {
+        config.ruleFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): rule-File " + config.ruleFilename.value + " not found!");
+        }
+        break;
+      }
       case decltype(config.MPITuningMaxDifferenceForBucket)::getoptChar: {
         try {
           config.MPITuningMaxDifferenceForBucket.value = stod(strArg);
@@ -702,21 +725,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   }
   return MDFlexParser::exitCodes::success;
 }
-
-// anonymous namespace to hide helper function
-namespace {
-
-/**
- * Checks if a file with the given path exists.
- * @param filename
- * @return True iff the file exists.
- */
-bool checkFileExists(const std::string &filename) {
-  struct stat buffer {};
-  return (stat(filename.c_str(), &buffer) == 0);
-}
-
-}  // namespace
 
 void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   // suppress error messages since we only want to look if the yaml option is there
