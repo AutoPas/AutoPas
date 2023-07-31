@@ -48,6 +48,10 @@ PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
           return newtonPolynomial(iteration, tuningPhase, configuration, *evidenceVec);
         }
       }
+      // should never be reached.
+      utils::ExceptionHandler::exception("Encountered unknown extrapolation method {}",
+                                         _extrapolationMethod.to_string());
+      return _predictionErrorValue;
     }();
     if (predictionValue != _predictionErrorValue) {
       predictions[configuration] = predictionValue;
