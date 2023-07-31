@@ -101,14 +101,21 @@ bool AutoTuner::tuneConfiguration() {
     _configQueue.clear();
     _configQueue.reserve(_searchSpace.size());
     std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(_configQueue));
+    AutoPasLog(DEBUG, "ConfigQueue at tuneConfiguration before reset: {}", utils::ArrayUtils::to_string(_configQueue));
     // then let the strategies filter and sort it
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
+      AutoPasLog(DEBUG, "ConfigQueue after applying {}::reset(): {}", tuningStrategy->getOptionType(),
+                 utils::ArrayUtils::to_string(_configQueue));
     });
   } else {
     // CASE: somewhere in a tuning phase
+    AutoPasLog(DEBUG, "ConfigQueue at tuneConfiguration before optimizeSuggestions: {}",
+               utils::ArrayUtils::to_string(_configQueue));
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
+      AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): {}", tuningStrategy->getOptionType(),
+                 utils::ArrayUtils::to_string(_configQueue));
     });
   }
 
@@ -159,13 +166,18 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
     // delete rejected config from the search space and notify tuning strategies.
     _searchSpace.erase(rejectedConfig);
   }
-  std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(),
-                [&](auto &tuningStrategy) { tuningStrategy->rejectConfiguration(rejectedConfig, indefinitely); });
+  std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
+    tuningStrategy->rejectConfiguration(rejectedConfig, indefinitely);
+    AutoPasLog(DEBUG, "ConfigQueue after applying {}::rejectConfiguration(): {}", tuningStrategy->getOptionType(),
+               utils::ArrayUtils::to_string(_configQueue));
+  });
 
   // let all configurations apply their optimizations in the order they are defined.
   // If any is still tuning consider the tuning phase still ongoing.
   std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(),
                 [&](auto &tuningStrategy) { tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection); });
+  AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): {}", tuningStrategy->getOptionType(),
+             utils::ArrayUtils::to_string(_configQueue));
   const auto stillTuning = not _configQueue.empty();
   return {getCurrentConfig(), stillTuning};
 }
