@@ -22,6 +22,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
    */
   enum Value {
     /**
+     * Logger for Tuning Strategy activity.
+     */
+    tuningStrategyLogger,
+
+    /**
      *  Random test configurations and select the best.
      **/
     randomSearch,
@@ -91,7 +96,14 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<TuningStrategyOption> getDiscouragedOptions() { return {}; }
+  static std::set<TuningStrategyOption> getDiscouragedOptions() {
+    return {
+        // Not an actual tuning strategy, just a logger.
+        TuningStrategyOption::tuningStrategyLogger,
+        // Only used to test against randomness, not a truly viable strategy.
+        TuningStrategyOption::randomSearch,
+    };
+  }
 
   /**
    * Provides a way to iterate over the possible choices of TuningStrategy.
@@ -106,7 +118,10 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
         {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
-        {TuningStrategyOption::ruleBasedTuning, "slow-config-filter"},
+        {TuningStrategyOption::slowConfigFilter, "slow-config-filter"},
+        {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
+        {TuningStrategyOption::sortByName, "sort-by-name"},
+        {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
     };
   }
 
