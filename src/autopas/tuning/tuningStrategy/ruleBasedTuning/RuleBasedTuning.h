@@ -92,6 +92,8 @@ class RuleBasedTuning : public TuningStrategyInterface {
                            std::string ruleFileName = "tuningRules.rule",
                            PrintTuningErrorFunType tuningErrorPrinter = {});
 
+  TuningStrategyOption getOptionType() override;
+
   bool needsLiveInfo() const override;
 
   void receiveLiveInfo(const LiveInfo &info) override;
