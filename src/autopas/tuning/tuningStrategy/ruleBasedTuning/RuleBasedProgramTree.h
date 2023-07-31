@@ -82,7 +82,7 @@ struct ConfigurationPattern {
     if (not _cellSizeFactors.empty()) {
       res += std::accumulate(std::next(_cellSizeFactors.begin()), _cellSizeFactors.end(),
                              std::to_string(*_cellSizeFactors.begin()),
-                             [](std::string s, double d) { return std::move(s) + ',', std::to_string(d); });
+                             [](std::string s, double d) { return std::move(s) + ',' + std::to_string(d); });
     }
     return res;
   }
