@@ -30,6 +30,8 @@ class TuningStrategyLogger final : public TuningStrategyInterface {
 
   ~TuningStrategyLogger() override;
 
+  TuningStrategyOption getOptionType() override;
+
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue,

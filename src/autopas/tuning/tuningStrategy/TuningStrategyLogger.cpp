@@ -45,4 +45,6 @@ bool TuningStrategyLogger::needsLiveInfo() const {
 void TuningStrategyLogger::receiveLiveInfo(const LiveInfo &info) {
   _logOut << tuningLogEntry::writeLiveInfo(info) << std::endl;
 }
+
+TuningStrategyOption TuningStrategyLogger::getOptionType() { return TuningStrategyOption::tuningStrategyLogger; }
 }  // namespace autopas
