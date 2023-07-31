@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
@@ -19,6 +20,12 @@ namespace autopas {
 class TuningStrategyInterface {
  public:
   virtual ~TuningStrategyInterface() = default;
+
+  /**
+   * Get this object's associated TuningStrategyOption type.
+   * @return TuningStrategyOption
+   */
+  virtual TuningStrategyOption getOptionType() = 0;
 
   /**
    * Store empirically collected information for the current configuration.

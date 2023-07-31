@@ -198,3 +198,6 @@ void autopas::BayesianClusterSearch::rejectConfiguration(const autopas::Configur
                                                          bool indefinitely) {
   _invalidConfigs.insert(configuration);
 }
+autopas::TuningStrategyOption autopas::BayesianClusterSearch::getOptionType() {
+  return TuningStrategyOption::bayesianClusterSearch;
+}

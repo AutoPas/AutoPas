@@ -161,3 +161,7 @@ void autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::v
 }
 
 bool autopas::BayesianSearch::needsSmoothedHomogeneityAndMaxDensity() const { return false; }
+
+autopas::TuningStrategyOption autopas::BayesianSearch::getOptionType() {
+  return autopas::TuningStrategyOption::bayesianSearch;
+}

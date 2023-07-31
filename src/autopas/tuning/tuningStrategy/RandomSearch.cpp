@@ -32,3 +32,5 @@ void autopas::RandomSearch::reset(size_t, size_t tuningPhase, std::vector<Config
                                   const autopas::EvidenceCollection &evidenceCollection) {
   _numEvidenceCollected = 0;
 }
+
+autopas::TuningStrategyOption autopas::RandomSearch::getOptionType() { return TuningStrategyOption::randomSearch; }

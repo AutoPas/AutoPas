@@ -28,6 +28,8 @@ class RandomSearch final : public TuningStrategyInterface {
    */
   explicit RandomSearch(size_t maxEvidence, unsigned long seed);
 
+  TuningStrategyOption getOptionType() override;
+
   void reset(size_t, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 

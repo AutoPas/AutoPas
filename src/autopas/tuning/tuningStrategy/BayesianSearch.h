@@ -61,6 +61,8 @@ class BayesianSearch final : public TuningStrategyInterface {
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()());
 
+  TuningStrategyOption getOptionType() override;
+
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,

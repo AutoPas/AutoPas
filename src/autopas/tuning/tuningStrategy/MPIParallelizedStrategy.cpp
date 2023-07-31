@@ -136,4 +136,6 @@ void MPIParallelizedStrategy::receiveSmoothedHomogeneityAndMaxDensity(double hom
 }
 
 const AutoPas_MPI_Comm &MPIParallelizedStrategy::getBucket() const { return _bucket; }
+
+TuningStrategyOption MPIParallelizedStrategy::getOptionType() { return TuningStrategyOption::mpiDivideAndConquer; }
 }  // namespace autopas

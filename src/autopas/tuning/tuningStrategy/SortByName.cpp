@@ -14,3 +14,5 @@ void autopas::SortByName::reset(size_t iteration, size_t tuningPhase, std::vecto
                                 const autopas::EvidenceCollection &evidenceCollection) {
   optimizeSuggestions(configQueue, evidenceCollection);
 }
+
+autopas::TuningStrategyOption autopas::SortByName::getOptionType() { return TuningStrategyOption::sortByName; }

@@ -53,6 +53,8 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   ~ActiveHarmony() override;
 
+  TuningStrategyOption getOptionType() override;
+
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;

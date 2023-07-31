@@ -361,4 +361,6 @@ void PredictiveTuning::rejectConfiguration(const Configuration &configuration, b
     _tooLongNotTestedSearchSpace.erase(configuration);
   }
 }
+
+TuningStrategyOption PredictiveTuning::getOptionType() { return TuningStrategyOption::predictiveTuning; }
 }  // namespace autopas

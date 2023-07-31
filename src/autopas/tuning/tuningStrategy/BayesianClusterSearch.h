@@ -83,6 +83,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   ~BayesianClusterSearch() override;
 
+  TuningStrategyOption getOptionType() override;
+
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
