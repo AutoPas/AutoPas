@@ -43,7 +43,18 @@ struct ConfigurationPattern {
   /**
    * Constructs a pattern that matches all configurations.
    */
-  ConfigurationPattern() = default;
+  ConfigurationPattern();
+
+  /**
+   * Copy Constructor
+   * @param configurationPattern
+   */
+  ConfigurationPattern(const ConfigurationPattern &configurationPattern);
+
+  /**
+   * Destructor
+   */
+  ~ConfigurationPattern() noexcept;
 
   /**
    * Adds a value to the allowed values of this configuration pattern. The component that is modified depends on the
@@ -206,26 +217,23 @@ struct ConfigurationOrder : public Statement {
   ConfigurationOrder() = default;
 
   /**
+   * Destructor
+   */
+  ~ConfigurationOrder() override = default;
+  /**
    * Construct a configuration order.
    * @param greater The pattern of better configuration orders.
    * @param smaller The pattern of worse configuration orders.
    * @param same The same properties of the order.
    */
-  ConfigurationOrder(ConfigurationPattern greater, ConfigurationPattern smaller, std::vector<SameProperty> same = {})
-      : greater(std::move(greater)), smaller(std::move(smaller)), sameProperties(std::move(same)) {}
+  ConfigurationOrder(ConfigurationPattern greater, ConfigurationPattern smaller, std::vector<SameProperty> same = {});
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 
   /**
    * @returns A string describing this order.
    */
-  [[nodiscard]] std::string toString() const {
-    std::string sameString = sameProperties.empty() ? "" : "with same ";
-    for (auto same : sameProperties) {
-      sameString += samePropertyToString(same) + ", ";
-    }
-    return greater.toString() + " >= " + smaller.toString() + sameString;
-  }
+  [[nodiscard]] std::string toString() const;
 
   /**
    * Checks if two configurations have the equal same properties as required by this configuration order.
@@ -233,50 +241,10 @@ struct ConfigurationOrder : public Statement {
    * @param conf2 Another configuration.
    * @return True, if both configurations have equal required same properties.
    */
-  [[nodiscard]] bool haveEqualSameProperties(const Configuration &conf1, const Configuration &conf2) const {
-    for (auto same : sameProperties) {
-      switch (same) {
-        case SameProperty::container:
-          if (conf1.container != conf2.container) return false;
-          break;
-        case SameProperty::traversal:
-          if (conf1.traversal != conf2.traversal) return false;
-          break;
-        case SameProperty::dataLayout:
-          if (conf1.dataLayout != conf2.dataLayout) return false;
-          break;
-        case SameProperty::newton3:
-          if (conf1.newton3 != conf2.newton3) return false;
-          break;
-        case SameProperty::loadEstimator:
-          if (conf1.loadEstimator != conf2.loadEstimator) return false;
-          break;
-        case SameProperty::cellSizeFactor:
-          if (conf1.cellSizeFactor != conf2.cellSizeFactor) return false;
-          break;
-      }
-    }
-    return true;
-  }
+  [[nodiscard]] bool haveEqualSameProperties(const Configuration &conf1, const Configuration &conf2) const;
 
  private:
-  static std::string samePropertyToString(SameProperty same) {
-    switch (same) {
-      case SameProperty::container:
-        return "container";
-      case SameProperty::traversal:
-        return "traversal";
-      case SameProperty::dataLayout:
-        return "dataLayout";
-      case SameProperty::newton3:
-        return "newton3";
-      case SameProperty::loadEstimator:
-        return "loadEstimator";
-      case SameProperty::cellSizeFactor:
-        return "cellSizeFactor";
-    }
-    return {};
-  }
+  static std::string samePropertyToString(SameProperty same);
 };
 
 /**
@@ -290,26 +258,24 @@ class CodeGenerationContext {
    * Constructs a CodeGenerationContext.
    * @param initialAddressEnvironment The predefined variables with their definition and stack address.
    */
-  explicit CodeGenerationContext(std::map<std::string, std::pair<const Define *, size_t>> initialAddressEnvironment)
-      : currentNeededStack(0),
-        maxNeededStack(0),
-        addressEnvironment(std::move(initialAddressEnvironment)),
-        initialNumVariables(addressEnvironment.size()) {}
+  explicit CodeGenerationContext(std::map<std::string, std::pair<const Define *, size_t>> initialAddressEnvironment);
+
+  /**
+   * Destructor
+   */
+  ~CodeGenerationContext();
 
   /**
    * Allocates the given number of MemoryCells on the stack.
    * @param num The number of cells to allocate.
    */
-  void allocateStack(size_t num) {
-    currentNeededStack += num;
-    maxNeededStack = std::max(maxNeededStack, currentNeededStack);
-  }
+  void allocateStack(size_t num);
 
   /**
    * Frees the given number of MemoryCells on the stack.
    * @param num The number of cells to free.
    */
-  void freeStack(size_t num) { currentNeededStack -= num; }
+  void freeStack(size_t num);
 
   /**
    * Adds a local variable definition that can be used in the program later.
@@ -345,41 +311,36 @@ class CodeGenerationContext {
    * @param name The name of the list.
    * @param list The list definition.
    */
-  void addList(const std::string &name, const DefineList *list) { lists.insert({name, list}); }
+  void addList(const std::string &name, const DefineList *list);
 
   /**
    * @param name The name of a defined list.
    * @returns the definition of the list with the given name.
    */
-  auto getList(const std::string &name) { return lists.at(name); }
+  const DefineList *getList(const std::string &name);
 
   /**
    * Adds a configuration order and assigns it an index that can be used to refer to it later.
    * @param configurationOrder The new configuration order.
    * @return The index of the new configuration order.
    */
-  auto addConfigurationOrder(const ConfigurationOrder &configurationOrder) {
-    configurationOrders.emplace_back(configurationOrder);
-    return configurationOrders.size() - 1;
-  }
+  size_t addConfigurationOrder(const ConfigurationOrder &configurationOrder);
 
   /**
    * @returns All configuration orders.
    */
-  [[nodiscard]] const auto &getConfigurationOrders() const { return configurationOrders; }
+  [[nodiscard]] const std::vector<ConfigurationOrder> &getConfigurationOrders() const;
 
   /**
    * @param idx An index of a configuration order.
    * @returns The smaller pattern of the configuration order with the given index.
    */
-  [[nodiscard]] auto smallerConfigurationPatternByIndex(size_t idx) const {
-    return configurationOrders.at(idx).smaller;
-  }
+  [[nodiscard]] ConfigurationPattern smallerConfigurationPatternByIndex(size_t idx) const;
 
   /**
    * @returns The number of local variables.
    */
-  [[nodiscard]] auto getNumLocalVariables() const { return addressEnvironment.size() - initialNumVariables; }
+  [[nodiscard]] size_t getNumLocalVariables() const;
 
  private:
   size_t currentNeededStack;
@@ -408,17 +369,14 @@ struct Literal : public Expression {
    * Constructs a literal from a MemoryCell.
    * @param value The memory cell to construct from.
    */
-  explicit Literal(RuleVM::MemoryCell value) : value(value), type(typeOf(value)) {}
+  explicit Literal(RuleVM::MemoryCell value);
 
   /**
    * @returns the type of the literal.
    */
-  [[nodiscard]] Type getType() const override { return type; }
+  [[nodiscard]] Type getType() const override;
 
-  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    program.instructions.emplace_back(RuleVM::LOADC, value);
-    context.allocateStack(1);
-  }
+  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
 
 /**
@@ -439,12 +397,9 @@ struct DefineList : public Statement {
    * @param listName The list name.
    * @param values The values in the list.
    */
-  DefineList(std::string listName, std::vector<Literal> values)
-      : listName(std::move(listName)), values(std::move(values)) {}
+  DefineList(std::string listName, std::vector<Literal> values);
 
-  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    context.addList(listName, this);
-  }
+  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
 
 /**
@@ -490,9 +445,9 @@ struct UnaryOperator : public Expression {
    * @param op
    * @param child
    */
-  UnaryOperator(Operator op, std::shared_ptr<Expression> child) : child(std::move(child)), op(op) {}
+  UnaryOperator(Operator op, std::shared_ptr<Expression> child);
 
-  [[nodiscard]] Type getType() const override { return Type::BOOL; }
+  [[nodiscard]] Type getType() const override;
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
@@ -525,14 +480,9 @@ struct BinaryOperator : public Expression {
    * @param left
    * @param right
    */
-  BinaryOperator(Operator op, std::shared_ptr<Expression> left, std::shared_ptr<Expression> right)
-      : left(std::move(left)), op(op), right(std::move(right)) {}
+  BinaryOperator(Operator op, std::shared_ptr<Expression> left, std::shared_ptr<Expression> right);
 
-  [[nodiscard]] Type getType() const override {
-    return op == LESS or op == GREATER or op == AND or op == OR
-               ? Type::BOOL
-               : (left->getType() == Type::SIZE_T and right->getType() == Type::SIZE_T ? Type::SIZE_T : Type::DOUBLE);
-  }
+  [[nodiscard]] Type getType() const override;
 
   void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
@@ -555,16 +505,14 @@ struct Define : public Statement {
    * @param variable
    * @param value
    */
-  Define(std::string variable, std::shared_ptr<Expression> value)
-      : variable(std::move(variable)), value(std::move(value)) {}
+  Define(std::string variable, std::shared_ptr<Expression> value);
 
-  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    value->generateCode(context, program);
+  /**
+   * Destructor
+   */
+  ~Define() override;
 
-    context.addLocalVariable(*this);
-    program.instructions.emplace_back(RuleVM::STOREA, context.addressOf(variable));
-    context.freeStack(1);
-  }
+  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
 
 /**
@@ -585,21 +533,9 @@ struct If : public Statement {
    * @param condition
    * @param consequences
    */
-  If(std::shared_ptr<Expression> condition, std::vector<std::shared_ptr<Statement>> consequences)
-      : condition(std::move(condition)), consequences(std::move(consequences)) {}
+  If(std::shared_ptr<Expression> condition, std::vector<std::shared_ptr<Statement>> consequences);
 
-  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override {
-    condition->generateCode(context, program);
-    program.instructions.emplace_back(RuleVM::JUMPZERO);
-    context.freeStack(1);
-    auto jumpInstrIdx = program.instructions.size() - 1;
-
-    for (const auto &statement : consequences) {
-      statement->generateCode(context, program);
-    }
-
-    program.instructions[jumpInstrIdx].payload = program.instructions.size();
-  }
+  void generateCode(CodeGenerationContext &context, RuleVM::Program &program) const override;
 };
 
 /**
@@ -616,18 +552,7 @@ struct RuleBasedProgramTree {
    * @param context The context to generate in the code in.
    * @returns The program for this AST.
    */
-  [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext &context) const {
-    RuleVM::Program program;
-    program.instructions.emplace_back(RuleVM::RESERVE, 0ul);
-    auto reserveInstructionIdx = program.instructions.size() - 1;
-    for (const auto &statement : statements) {
-      statement->generateCode(context, program);
-    }
-    program.instructions[reserveInstructionIdx].payload = context.getNumLocalVariables();
-    program.neededStackSize = context.getNumLocalVariables() + context.getMaxStackSize();
-    program.instructions.emplace_back(RuleVM::HALT);
-    return program;
-  }
+  [[nodiscard]] RuleVM::Program generateCode(CodeGenerationContext &context) const;
 };
 
 }  // namespace rule_syntax

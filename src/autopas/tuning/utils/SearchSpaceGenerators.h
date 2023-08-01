@@ -21,6 +21,16 @@ namespace autopas::SearchSpaceGenerators {
  */
 struct OptionSpace {
   /**
+   * Constructor to suppress warnings about failed inlining.
+   */
+  OptionSpace();
+
+  /**
+   * Destructor to suppress warnings about failed inlining.
+   */
+  ~OptionSpace();
+
+  /**
    * Available container options.
    */
   std::set<ContainerOption> containerOptions;

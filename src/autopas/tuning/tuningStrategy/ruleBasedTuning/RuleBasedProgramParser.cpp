@@ -13,6 +13,16 @@ using namespace autopas_generated_rule_syntax;
  */
 class TranslationVisitor : public RuleLanguageBaseVisitor {
   struct ParserContext {
+    /**
+     * Constructor
+     */
+    ParserContext();
+
+    /**
+     * Destructor
+     */
+    ~ParserContext() noexcept;
+
     std::map<std::string, const Define *> definitions;
     std::map<std::string, const DefineList *> lists;
   };
@@ -187,7 +197,7 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
    * @param name The name of the list.
    * @return The list with the name if defined.
    */
-  [[nodiscard]] auto resolveList(const std::string &name) const {
+  [[nodiscard]] const DefineList *resolveList(const std::string &name) const {
     auto it = parserContext.lists.find(name);
     if (it != parserContext.lists.end()) {
       return it->second;
@@ -290,6 +300,9 @@ class TranslationVisitor : public RuleLanguageBaseVisitor {
   CodeGenerationContext &context;
   ParserContext parserContext;
 };
+TranslationVisitor::ParserContext::ParserContext() = default;
+
+TranslationVisitor::ParserContext::~ParserContext() noexcept = default;
 
 std::pair<RuleBasedProgramTree, CodeGenerationContext> RuleBasedProgramParser::parse(const std::string &programCode) {
   CodeGenerationContext context{{}};

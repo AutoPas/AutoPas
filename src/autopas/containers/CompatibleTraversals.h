@@ -162,8 +162,7 @@ namespace autopas::compatibleTraversals {
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
  */
-[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(
-    ContainerOption containerOption) {
+[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption) {
   switch (containerOption) {
     case ContainerOption::linkedCells: {
       return allLCCompatibleTraversals();

@@ -97,4 +97,8 @@ std::set<double> SearchSpaceGenerators::calculateRelevantCsfs(const NumberInterv
 
   return relevantCsfs;
 }
+
+SearchSpaceGenerators::OptionSpace::OptionSpace() = default;
+
+SearchSpaceGenerators::OptionSpace::~OptionSpace() noexcept = default;
 }  // namespace autopas
