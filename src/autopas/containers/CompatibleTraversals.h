@@ -162,7 +162,7 @@ namespace autopas::compatibleTraversals {
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
  */
-[[maybe_unused]] static inline const std::set<TraversalOption> &allCompatibleTraversals(
+[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(
     ContainerOption containerOption) {
   switch (containerOption) {
     case ContainerOption::linkedCells: {
@@ -206,7 +206,7 @@ namespace autopas::compatibleTraversals {
  * @param traversalOption TraversalOption
  * @return set of all compatible container options.
  */
-[[maybe_unused]] static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption traversalOption) {
+[[maybe_unused]] static std::set<ContainerOption> allCompatibleContainers(TraversalOption traversalOption) {
   std::set<ContainerOption> result{};
 
   for (const auto &container : ContainerOption::getAllOptions()) {
