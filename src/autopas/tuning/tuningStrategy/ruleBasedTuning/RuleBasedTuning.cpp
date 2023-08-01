@@ -111,6 +111,7 @@ void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueu
 std::vector<rule_syntax::ConfigurationOrder> RuleBasedTuning::applyRules(
     const std::vector<Configuration> &searchSpace) {
   AutoPasLog(DEBUG, _currentLiveInfo.toString());
+  const size_t searchSpaceSizeBefore = searchSpace.size();
 
   std::vector<RuleVM::MemoryCell> initialStack;
   std::vector<std::pair<std::string, rule_syntax::Define>> defines{};
@@ -150,8 +151,9 @@ std::vector<rule_syntax::ConfigurationOrder> RuleBasedTuning::applyRules(
     }
     return remove;
   });
-  AutoPasLog(DEBUG, "Rules remove {} out of {} configurations", _originalSearchSpace.size() - newSearchSpace.size(),
-             _originalSearchSpace.size());
+  // log number of removed configurations in this call to applyRules.
+  AutoPasLog(DEBUG, "Rules remove {} out of {} configurations", searchSpaceSizeBefore - newSearchSpace.size(),
+             searchSpaceSizeBefore);
   if (not _verifyModeEnabled) {
     _searchSpace.clear();
     _searchSpace.insert(newSearchSpace.begin(), newSearchSpace.end());
