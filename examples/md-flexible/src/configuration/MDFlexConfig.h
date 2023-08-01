@@ -275,6 +275,9 @@ class MDFlexConfig {
       "Metric to use for tuning. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
+  /**
+   * ruleFilename
+   */
   MDFlexOption<std::string, __LINE__> ruleFilename{
       "", "rule-filename", true, "Path to a .rule file containing rules for the rule-based tuning method."};
 
