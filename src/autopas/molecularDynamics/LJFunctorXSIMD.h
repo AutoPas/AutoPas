@@ -678,10 +678,17 @@ class LJFunctorXSIMD
 
         // store only masked values
          if(remainderIsMasked) {
+             double fx2tmp[vecLength] = {0};
+             double fy2tmp[vecLength] = {0};
+             double fz2tmp[vecLength] = {0};
+             xsimd::store_unaligned(fx2tmp, fx2new);
+             xsimd::store_unaligned(fy2tmp, fy2new);
+             xsimd::store_unaligned(fz2tmp, fz2new);
+
            for(int i = 0; _masks[rest - 1].get(i); ++i) {
-             fx2ptr[j + i] = fx2new.get(i);
-             fy2ptr[j + i] = fy2new.get(i);
-             fz2ptr[j + i] = fz2new.get(i);
+             fx2ptr[j + i] = fx2tmp[i];
+             fy2ptr[j + i] = fy2tmp[i];
+             fz2ptr[j + i] = fz2tmp[i];
            }
          } else {
            xsimd::store_unaligned(&fx2ptr[j], fx2new);
