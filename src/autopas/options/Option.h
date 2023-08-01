@@ -58,10 +58,10 @@ class Option {
 
   /**
    * Converts an Option object to its respective string representation.
-   * @param fixedLength Whether result should be filled up with spaces to the length of the longest option.
+   * @param fixedWidth Whether result should be filled up with spaces to the length of the longest option.
    * @return The string representation or "Unknown Option (<IntValue>)".
    */
-  [[nodiscard]] std::string to_string(bool fixedLength = false) const {
+  [[nodiscard]] std::string to_string(bool fixedWidth = false) const {
     auto &actualThis = *static_cast<const actualOption *>(this);
     auto mapOptNames = actualOption::getOptionNames();  // <- not copying the map destroys the strings
     auto match = mapOptNames.find(actualThis);
@@ -69,7 +69,7 @@ class Option {
       return "Unknown Option (" + std::to_string(actualThis) + ")";
     } else {
       std::string result = match->second;
-      if (fixedLength) {
+      if (fixedWidth) {
         result.resize(maxStringLength(), ' ');
       }
       return result;

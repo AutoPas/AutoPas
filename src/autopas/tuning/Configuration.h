@@ -57,12 +57,13 @@ class Configuration {
 
   /**
    * Returns a short string representation of the configuration object, suitable for tabular output.
+   * @param fixedWidth See Option::to_string().
    * @return A short string representation.
    */
-  [[nodiscard]] std::string toShortString() const {
-    return "{" + container.to_string(true) + " , " + std::to_string(cellSizeFactor) + " , " +
-           traversal.to_string(true) + " , " + loadEstimator.to_string(true) + " , " + dataLayout.to_string(true) +
-           " , " + newton3.to_string(true) + "}";
+  [[nodiscard]] std::string toShortString(bool fixedWidth = true) const {
+    return "{" + container.to_string(fixedWidth) + " , " + std::to_string(cellSizeFactor) + " , " +
+           traversal.to_string(fixedWidth) + " , " + loadEstimator.to_string(fixedWidth) + " , " +
+           dataLayout.to_string(fixedWidth) + " , " + newton3.to_string(fixedWidth) + "}";
   }
 
   /**
