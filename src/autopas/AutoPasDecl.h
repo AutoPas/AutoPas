@@ -971,6 +971,12 @@ class AutoPas {
    */
   void setRuleFileName(const std::string &ruleFileName) { _tuningStrategyFactoryInfo.ruleFileName = ruleFileName; }
 
+  /**
+   * Get the name / path of the rule file for the RuleBasedTuning.
+   * @return
+   */
+  const std::string &getRuleFileName() const { return _tuningStrategyFactoryInfo.ruleFileName; }
+
  private:
   autopas::ParticleContainerInterface<Particle> &getContainer();
 
