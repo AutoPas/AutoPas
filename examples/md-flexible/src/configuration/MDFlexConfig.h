@@ -328,10 +328,9 @@ class MDFlexConfig {
    * relativeBlacklistRange
    */
   MDFlexOption<double, __LINE__> relativeBlacklistRange{
-      0, "relative-blacklist-range", true,
-      "For predictive based tuning strategies: When the first evidence of a configuration is further away from the "
-      "optimum than this relative range, the configuration is ignored for the rest of the simulation. Set to zero to "
-      "disable blacklisting."};
+      3., "relative-blacklist-range", true,
+      "For Slow Config Filter: When the first evidence of a configuration is further away from the "
+      "optimum than this relative range, the configuration is ignored for the rest of the simulation."};
   /**
    * evidenceFirstPrediction
    */
