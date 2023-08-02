@@ -395,7 +395,7 @@ class LJFunctorMIPP
        Reg<double> shift6s;
        if(useMixing) {
            //gather the mixing data for the particles
-           const auto mixingDataPtr = _PPLibrary->getMixingDataPtr(*typeID1ptr, *typeID2ptr);
+           const auto mixingDataPtr = _PPLibrary->getMixingDataPtr(*typeID1ptr, 0);
            epsilon24s = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr, _vindex3) : gather(mixingDataPtr, _vindex3);
            sigmaSquares = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+1, _vindex3) : gather(mixingDataPtr + 1, _vindex3);
            shift6s = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+2, _vindex3) : gather(mixingDataPtr + 2, _vindex3);
