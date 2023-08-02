@@ -28,7 +28,7 @@ struct OptionSpace {
   /**
    * Destructor to suppress warnings about failed inlining.
    */
-  ~OptionSpace();
+  ~OptionSpace() noexcept;
 
   /**
    * Available container options.
