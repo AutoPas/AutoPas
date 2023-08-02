@@ -99,14 +99,10 @@ class Object {
    */
   [[nodiscard]] virtual std::string to_string() const {
     std::ostringstream output;
-#if MD_FLEXIBLE_MODE == MULTISITE
-    const auto typeName = "molecule-id";
-#else
-    const auto typeName = "site-id";
-#endif
     output << std::setw(_valueOffset) << std::left << "velocity"
            << ":  " << autopas::utils::ArrayUtils::to_string(_velocity) << std::endl;
-    output << std::setw(_valueOffset) << std::left << typeName << ":  " << _typeId << std::endl;
+    output << std::setw(_valueOffset) << std::left << "particle-type-id"
+           << ":  " << _typeId << std::endl;
     return output.str();
   };
 
