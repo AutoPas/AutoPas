@@ -62,6 +62,8 @@ class LJFunctorMIPP
          _aosThreadData.resize(autopas_get_max_threads());
        }
        initMask();
+       _vindex3 = initVIndex3();
+       _vindex1 = initVIndex1();
      }
 
     public:
@@ -390,20 +392,64 @@ class LJFunctorMIPP
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
                            Reg<double> &fxacc, Reg<double> &fyacc, Reg<double> &fzacc, Reg<double> *virialSumX, Reg<double> *virialSumY,
                            Reg<double> *virialSumZ, Reg<double> *upotSum, const unsigned int rest = 0) {
-       Reg<double> epsilon24s;
-       Reg<double> sigmaSquares;
-       Reg<double> shift6s;
-       if(useMixing) {
-           //gather the mixing data for the particles
-           const auto mixingDataPtr = _PPLibrary->getMixingDataPtr(*typeID1ptr, 0);
-           epsilon24s = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr, _vindex3) : gather(mixingDataPtr, _vindex3);
-           sigmaSquares = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+1, _vindex3) : gather(mixingDataPtr + 1, _vindex3);
-           shift6s = remainderIsMasked ? maskzgat(_masks[rest - 1], mixingDataPtr+2, _vindex3) : gather(mixingDataPtr + 2, _vindex3);
-       } else {
-           epsilon24s = _epsilon24;
-           sigmaSquares = _sigmaSquare;
-           shift6s = _shift6;
-       }
+
+         Reg<double> epsilon24s = _epsilon24;
+         Reg<double> sigmaSquares = _sigmaSquare;
+         Reg<double> shift6s = _shift6;
+         if(useMixing) {
+#if defined(__AVX__)
+                epsilon24s = {
+                     _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)),
+                     not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                     not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                     not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+                sigmaSquares = {
+                     _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)),
+                     not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                     not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                     not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+             if constexpr (applyShift) {
+                 shift6s = {
+                         _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)),
+                         (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                         (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                         (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0};
+             }
+             // compile with 512bit registers available
+#elif defined(__ARM_FEATURE_SVE) || defined(XSIMD_WITH_AVX512BW)
+             epsilon24s = {
+                   _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)),
+                   not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                   not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                   not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                   not remainderIsMasked or rest > 4 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 4)) : 0,
+                   not remainderIsMasked or rest > 5 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 5)) : 0,
+                   not remainderIsMasked or rest > 6 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 6)) : 0,
+                   not remainderIsMasked or rest > 7 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 7)) : 0};
+           sigmaSquares = {
+                   _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)),
+                   not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                   not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                   not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                   not remainderIsMasked or rest > 4 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 4)) : 0,
+                   not remainderIsMasked or rest > 5 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 5)) : 0,
+                   not remainderIsMasked or rest > 6 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 6)) : 0,
+                   not remainderIsMasked or rest > 7 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 7)) : 0};
+           if constexpr (applyShift) {
+               shift6s = {
+                       _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)),
+                       (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                       (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                       (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                       (not remainderIsMasked or rest > 4) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 4)) : 0,
+                       (not remainderIsMasked or rest > 5) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 5)) : 0,
+                       (not remainderIsMasked or rest > 6) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 6)) : 0,
+                       (not remainderIsMasked or rest > 7) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 7)) : 0};
+           }
+
+#endif
+
+         }
 
        Reg<double> x2 = remainderIsMasked ? maskzld(_masks[rest - 1], &x2ptr[j]) : loadu(&x2ptr[j]);
        Reg<double> y2 = remainderIsMasked ? maskzld(_masks[rest - 1], &y2ptr[j]) : loadu(&y2ptr[j]);
@@ -880,8 +926,8 @@ public:
      const Reg<double> _zero = 0.;
      const Reg<int64_t> _zeroI = 0.;
      const Reg<double> _one = 1.;
-     Reg<int64_t> _vindex3 = initVIndex3();
-     Reg<int64_t> _vindex1 = initVIndex1();
+     Reg<int64_t> _vindex3;
+     Reg<int64_t> _vindex1;
      Msk<N<double>()> _masks[N<double>() - 1];
      const Reg<int64_t> _ownedStateDummyMM256i = 0.;
      const Reg<int64_t> _ownedStateOwnedMM256i = static_cast<int64_t>(OwnershipState::owned);
