@@ -235,8 +235,9 @@ class RuleVM {
         break;
       }
       case DIV: {
-        auto res =
-            computeBinary(_stack.at(_stackPointer - 1), _stack.at(_stackPointer), [](auto l, auto r) { return l / r; });
+        auto res = computeBinary(_stack.at(_stackPointer - 1), _stack.at(_stackPointer), [](auto l, auto r) {
+          return r == 0 ? std::numeric_limits<decltype(r)>::max() : l / r;
+        });
         _stack.at(--_stackPointer) = res;
         break;
       }
