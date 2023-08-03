@@ -451,9 +451,9 @@ class LJFunctorMIPP
 
          }
 
-       Reg<double> x2 = remainderIsMasked ? maskzld(_masks[rest - 1], &x2ptr[j]) : loadu(&x2ptr[j]);
-       Reg<double> y2 = remainderIsMasked ? maskzld(_masks[rest - 1], &y2ptr[j]) : loadu(&y2ptr[j]);
-       Reg<double> z2 = remainderIsMasked ? maskzld(_masks[rest - 1], &z2ptr[j]) : loadu(&z2ptr[j]);
+       Reg<double> x2 = remainderIsMasked ? maskzlds(_masks[rest - 1], &x2ptr[j]) : loadu(&x2ptr[j]);
+       Reg<double> y2 = remainderIsMasked ? maskzlds(_masks[rest - 1], &y2ptr[j]) : loadu(&y2ptr[j]);
+       Reg<double> z2 = remainderIsMasked ? maskzlds(_masks[rest - 1], &z2ptr[j]) : loadu(&z2ptr[j]);
 
        const Reg<double> drx = sub(x1,x2);
        const Reg<double> dry = sub(y1,y2);
@@ -473,7 +473,7 @@ class LJFunctorMIPP
        Msk<mipp::N<double>()> cutoffMask = cmple(dr2, _cutoffsquare);
 
        const Reg<int64_t> ownedStateJ = remainderIsMasked
-                                            ? maskzld(_masks[rest - 1], &ownedStatePtr2[j])
+                                            ? maskzlds(_masks[rest - 1], &ownedStatePtr2[j])
                                             : loadu(&ownedStatePtr2[j]);
 
        const Msk<mipp::N<double>()> dummyMask = cmpneq(ownedStateJ, _zeroI);
@@ -513,22 +513,22 @@ class LJFunctorMIPP
 
        if constexpr (newton3) {
          const Reg<double> fx2 =
-             remainderIsMasked ? maskzld(_masks[rest - 1], &fx2ptr[j]) : loadu(&fx2ptr[j]);
+             remainderIsMasked ? maskzlds(_masks[rest - 1], &fx2ptr[j]) : loadu(&fx2ptr[j]);
          const Reg<double> fy2 =
-             remainderIsMasked ? maskzld(_masks[rest - 1], &fy2ptr[j]) : loadu(&fy2ptr[j]);
+             remainderIsMasked ? maskzlds(_masks[rest - 1], &fy2ptr[j]) : loadu(&fy2ptr[j]);
          const Reg<double> fz2 =
-             remainderIsMasked ? maskzld(_masks[rest - 1], &fz2ptr[j]) : loadu(&fz2ptr[j]);
+             remainderIsMasked ? maskzlds(_masks[rest - 1], &fz2ptr[j]) : loadu(&fz2ptr[j]);
 
          const Reg<double> fx2new = sub(fx2, fx);
          const Reg<double> fy2new = sub(fy2, fy);
          const Reg<double> fz2new = sub(fz2, fz);
 
 
-         remainderIsMasked ? maskst(_masks[rest - 1], &fx2ptr[j], fx2new)
+         remainderIsMasked ? masksts(_masks[rest - 1], &fx2ptr[j], fx2new)
                            : storeu(&fx2ptr[j], fx2new);
-         remainderIsMasked ? maskst(_masks[rest - 1], &fy2ptr[j], fy2new)
+         remainderIsMasked ? masksts(_masks[rest - 1], &fy2ptr[j], fy2new)
                            : storeu(&fy2ptr[j], fy2new);
-         remainderIsMasked ? maskst(_masks[rest - 1], &fz2ptr[j], fz2new)
+         remainderIsMasked ? masksts(_masks[rest - 1], &fz2ptr[j], fz2new)
                            : storeu(&fz2ptr[j], fz2new);
        }
 
