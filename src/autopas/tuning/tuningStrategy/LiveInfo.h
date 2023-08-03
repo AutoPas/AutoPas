@@ -88,8 +88,9 @@ class LiveInfo {
     const auto &boxMax = container.getBoxMax();
     const auto cutoff = container.getCutoff();
     const auto cutoffInv = 1.0 / cutoff;
+    const auto numParticles = container.getNumberOfParticles();
 
-    infos["numParticles"] = container.getNumberOfParticles();
+    infos["numParticles"] = numParticles;
     infos["cutoff"] = cutoff;
     infos["skin"] = container.getVerletSkin();
     infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
@@ -135,11 +136,14 @@ class LiveInfo {
     infos["numHaloParticles"] = particleBins.back();
 
     // calculate statistics about particle distributions per cell
-    const auto avgParticlesPerCell =
-        static_cast<double>(container.getNumberOfParticles() - particleBins.back()) / static_cast<double>(numCells);
+    const auto avgParticlesPerCell = numParticles == 0
+                                         ? 0.
+                                         : static_cast<double>(container.getNumberOfParticles() - particleBins.back()) /
+                                               static_cast<double>(numCells);
     const auto avgParticlesPerBlurredCell =
-        static_cast<double>(container.getNumberOfParticles() - particleBins.back()) /
-        static_cast<double>(particleBinsBlurred.size());
+        numParticles == 0 ? 0.
+                          : static_cast<double>(container.getNumberOfParticles() - particleBins.back()) /
+                                static_cast<double>(particleBinsBlurred.size());
 
     const auto [estimatedNumNeighborInteractions, maxDiff, sumStddev, numEmptyCells, maxParticlesPerCell,
                 minParticlesPerCell] = [&]() {
@@ -179,7 +183,8 @@ class LiveInfo {
     infos["maxParticlesPerCell"] = maxParticlesPerCell;
     infos["minParticlesPerCell"] = minParticlesPerCell;
     infos["particlesPerCellStdDev"] =
-        std::sqrt(sumStddev) / static_cast<double>(particleBins.size() - 1) / avgParticlesPerCell;
+        numParticles == 0 ? 0.
+                          : std::sqrt(sumStddev) / static_cast<double>(particleBins.size() - 1) / avgParticlesPerCell;
     infos["avgParticlesPerCell"] = avgParticlesPerCell;
     infos["estimatedNumNeighborInteractions"] = static_cast<unsigned long>(estimatedNumNeighborInteractions);
 
@@ -191,8 +196,10 @@ class LiveInfo {
       }
       return res;
     }();
-    infos["particlesPerBlurredCellStdDev"] =
-        std::sqrt(sumStddevBlurred) / static_cast<double>(particleBinsBlurred.size()) / avgParticlesPerBlurredCell;
+    infos["particlesPerBlurredCellStdDev"] = numParticles == 0 ? 0.
+                                                               : std::sqrt(sumStddevBlurred) /
+                                                                     static_cast<double>(particleBinsBlurred.size()) /
+                                                                     avgParticlesPerBlurredCell;
 
     infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
 
