@@ -18,6 +18,6 @@ TEST_F(ContainerSelectorTest, testSelectAndGetCurrentContainer) {
   for (auto containerOp : autopas::ContainerOption::getAllOptions()) {
     containerSelector.selectContainer(containerOp, containerInfo);
 
-    EXPECT_EQ(containerOp, containerSelector.getCurrentContainer()->getContainerType());
+    EXPECT_EQ(containerOp, containerSelector.getCurrentContainer().getContainerType());
   }
 }

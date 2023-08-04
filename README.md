@@ -17,6 +17,8 @@ Alternatively you can build the documentation on your own:
 * CMake 3.14 or newer
 * make (build-essentials) or ninja
 * a C++17 compiler (gcc11, clang13, and ~~icpc 2019~~ are tested.)
+* For rule based tuning: `pkg-config`, `uuid`
+* For `tuningLogToSQL`: `libsqlite3`
 
 ## Building AutoPas
 build instructions for make:

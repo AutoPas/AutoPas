@@ -46,7 +46,7 @@ class ParticleContainerInterface {
    * Get the ParticleCell type as an Enum
    * @return The Cell type as an Enum
    */
-  virtual CellType getParticleCellTypeEnum() = 0;
+  virtual CellType getParticleCellTypeEnum() const = 0;
 
   /**
    * Default constructor

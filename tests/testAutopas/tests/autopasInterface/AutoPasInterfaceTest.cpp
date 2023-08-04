@@ -431,7 +431,7 @@ TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
     testSimulationLoop(options);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
-    if (str.find("Trying to execute a traversal that is not applicable") != std::string::npos) {
+    if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
       GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
     } else {
       // rethrow
@@ -450,7 +450,7 @@ TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
     testHaloCalculation(options);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
-    if (str.find("Trying to execute a traversal that is not applicable") != std::string::npos) {
+    if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
       GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
     } else {
       // rethrow
