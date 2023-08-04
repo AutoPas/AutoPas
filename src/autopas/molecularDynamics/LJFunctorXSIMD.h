@@ -404,27 +404,31 @@ class LJFunctorXSIMD
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
                            xsimd::batch<double> &fxacc, xsimd::batch<double> &fyacc, xsimd::batch<double> &fzacc, xsimd::batch<double> *virialSumX, xsimd::batch<double> *virialSumY,
                            xsimd::batch<double> *virialSumZ, xsimd::batch<double> *upotSum, const unsigned int rest = 0) {
-       xsimd::batch<double> epsilon24s = _epsilon24;
-       xsimd::batch<double> sigmaSquares = _sigmaSquare;
-       xsimd::batch<double> shift6s = _shift6;
+       xsimd::batch<double> epsilon24s;
+       xsimd::batch<double> sigmaSquares;
+       xsimd::batch<double> shift6s;
 
-         if(useMixing) {
-             double epsilon_buf[vecLength] = {0};
-             double sigma_buf[vecLength] = {0};
-             double shift_buf[vecLength] = {0};
+       if(useMixing) {
+           double epsilon_buf[vecLength] = {0};
+           double sigma_buf[vecLength] = {0};
+           double shift_buf[vecLength] = {0};
 
-             for(int i=0; (remainderIsMasked ? _masks[rest - 1].get(i) : i < vecLength); ++i) {
-                 epsilon_buf[i] = _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + i));
-                 sigma_buf[i] = _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + i));
-                 if constexpr (applyShift) {
-                     shift_buf[i] = _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + i));
-                 }
-             }
+           for(int i=0; (remainderIsMasked ? _masks[rest - 1].get(i) : i < vecLength); ++i) {
+               epsilon_buf[i] = _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + i));
+               sigma_buf[i] = _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + i));
+               if constexpr (applyShift) {
+                   shift_buf[i] = _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + i));
+               }
+           }
 
-             epsilon24s = load(epsilon_buf);
-             sigmaSquares = load(sigma_buf);
-             shift6s = load(shift_buf);
-         }
+           epsilon24s = xsimd::load_aligned(epsilon_buf);
+           sigmaSquares = xsimd::load_aligned(sigma_buf);
+           shift6s = xsimd::load_aligned(shift_buf);
+       } else {
+           epsilon24s = _epsilon24;
+           sigmaSquares = _sigmaSquare;
+           shift6s = _shift6;
+       }
        xsimd::batch<double> x2;
        xsimd::batch<double> y2;
        xsimd::batch<double> z2;
@@ -442,40 +446,6 @@ class LJFunctorXSIMD
              x2 = xsimd::load_unaligned(x2_a);
              y2 = xsimd::load_unaligned(y2_a);
              z2 = xsimd::load_unaligned(z2_a);
-            /* hard-coded section in case of NaN-error
-             #elif defined(__ARM_FEATURE_SVE)
-             x2 = {
-                     _masks[rest-1].get(0) ? x2ptr[j] : 0,
-                     _masks[rest-1].get(1) ? x2ptr[j + 1] : 0,
-                     _masks[rest-1].get(2) ? x2ptr[j + 2] : 0,
-                     _masks[rest-1].get(3) ? x2ptr[j + 3] : 0,
-                     _masks[rest-1].get(4) ? x2ptr[j + 4] : 0,
-                     _masks[rest-1].get(5) ? x2ptr[j + 5] : 0,
-                     _masks[rest-1].get(6) ? x2ptr[j + 6] : 0,
-                     _masks[rest-1].get(7) ? x2ptr[j + 7] : 0,
-             };
-             y2 = {
-                     _masks[rest-1].get(0) ? y2ptr[j] : 0,
-                     _masks[rest-1].get(1) ? y2ptr[j + 1] : 0,
-                     _masks[rest-1].get(2) ? y2ptr[j + 2] : 0,
-                     _masks[rest-1].get(3) ? y2ptr[j + 3] : 0,
-                     _masks[rest-1].get(4) ? y2ptr[j + 4] : 0,
-                     _masks[rest-1].get(5) ? y2ptr[j + 5] : 0,
-                     _masks[rest-1].get(6) ? y2ptr[j + 6] : 0,
-                     _masks[rest-1].get(7) ? y2ptr[j + 7] : 0,
-             };
-             z2 = {
-                     _masks[rest-1].get(0) ? z2ptr[j] : 0,
-                     _masks[rest-1].get(1) ? z2ptr[j + 1] : 0,
-                     _masks[rest-1].get(2) ? z2ptr[j + 2] : 0,
-                     _masks[rest-1].get(3) ? z2ptr[j + 3] : 0,
-                     _masks[rest-1].get(4) ? z2ptr[j + 4] : 0,
-                     _masks[rest-1].get(5) ? z2ptr[j + 5] : 0,
-                     _masks[rest-1].get(6) ? z2ptr[j + 6] : 0,
-                     _masks[rest-1].get(7) ? z2ptr[j + 7] : 0,
-             };
-
-            #endif*/
          } else {
              x2 = xsimd::load_unaligned(&x2ptr[j]);
              y2 = xsimd::load_unaligned(&y2ptr[j]);
@@ -557,58 +527,6 @@ class LJFunctorXSIMD
                 fx2 = xsimd::load_unaligned(fx2_a);
                 fy2 = xsimd::load_unaligned(fy2_a);
                 fz2 = xsimd::load_unaligned(fz2_a);
-/* hard-coded section in case of NaN-error:
- #if defined(__AVX__)
-                fx2 = {
-                        _masks[rest-1].get(0) ? fx2ptr[j] : 0,
-                        _masks[rest-1].get(1) ? fx2ptr[j + 1] : 0,
-                        _masks[rest-1].get(2) ? fx2ptr[j + 2] : 0,
-                        _masks[rest-1].get(3) ? fx2ptr[j + 3] : 0,
-                };
-                fy2 = {
-                        _masks[rest-1].get(0) ? fy2ptr[j] : 0,
-                        _masks[rest-1].get(1) ? fy2ptr[j + 1] : 0,
-                        _masks[rest-1].get(2) ? fy2ptr[j + 2] : 0,
-                        _masks[rest-1].get(3) ? fy2ptr[j + 3] : 0,
-                };
-                fz2 = {
-                        _masks[rest-1].get(0) ? fz2ptr[j] : 0,
-                        _masks[rest-1].get(1) ? fz2ptr[j + 1] : 0,
-                        _masks[rest-1].get(2) ? fz2ptr[j + 2] : 0,
-                        _masks[rest-1].get(3) ? fz2ptr[j + 3] : 0,
-                };
-#elif defined(__ARM_FEATURE_SVE)
-                fx2 = {
-                     _masks[rest-1].get(0) ? fx2ptr[j] : 0,
-                     _masks[rest-1].get(1) ? fx2ptr[j + 1] : 0,
-                     _masks[rest-1].get(2) ? fx2ptr[j + 2] : 0,
-                     _masks[rest-1].get(3) ? fx2ptr[j + 3] : 0,
-                     _masks[rest-1].get(4) ? fx2ptr[j + 4] : 0,
-                     _masks[rest-1].get(5) ? fx2ptr[j + 5] : 0,
-                     _masks[rest-1].get(6) ? fx2ptr[j + 6] : 0,
-                     _masks[rest-1].get(7) ? fx2ptr[j + 7] : 0,
-             };
-             fy2 = {
-                     _masks[rest-1].get(0) ? fy2ptr[j] : 0,
-                     _masks[rest-1].get(1) ? fy2ptr[j + 1] : 0,
-                     _masks[rest-1].get(2) ? fy2ptr[j + 2] : 0,
-                     _masks[rest-1].get(3) ? fy2ptr[j + 3] : 0,
-                     _masks[rest-1].get(4) ? fy2ptr[j + 4] : 0,
-                     _masks[rest-1].get(5) ? fy2ptr[j + 5] : 0,
-                     _masks[rest-1].get(6) ? fy2ptr[j + 6] : 0,
-                     _masks[rest-1].get(7) ? fy2ptr[j + 7] : 0,
-             };
-             fz2 = {
-                     _masks[rest-1].get(0) ? fz2ptr[j] : 0,
-                     _masks[rest-1].get(1) ? fz2ptr[j + 1] : 0,
-                     _masks[rest-1].get(2) ? fz2ptr[j + 2] : 0,
-                     _masks[rest-1].get(3) ? fz2ptr[j + 3] : 0,
-                     _masks[rest-1].get(4) ? fz2ptr[j + 4] : 0,
-                     _masks[rest-1].get(5) ? fz2ptr[j + 5] : 0,
-                     _masks[rest-1].get(6) ? fz2ptr[j + 6] : 0,
-                     _masks[rest-1].get(7) ? fz2ptr[j + 7] : 0,
-             };
-#endif*/
             } else {
                 fx2 = xsimd::load_unaligned(&fx2ptr[j]);
                 fy2 = xsimd::load_unaligned(&fy2ptr[j]);
