@@ -214,8 +214,25 @@ class AxilrodTellerFunctor
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
+    // TODO: should always calculate forces for all particles in soa1, even when newton3 == false
     autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not yet implemented.");
 
+  }
+
+  /**
+   * Functor for structure of arrays (SoA)
+   *
+   * This functor calculates the forces
+   * between all particles of soa1 and soa2 and soa3.
+   *
+   * @param soa1 First structure of arrays.
+   * @param soa2 Second structure of arrays.
+   * @param soa3 Third structure of arrays.
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, autopas::SoAView<SoAArraysType> soa3,
+                      const bool newton3) {
+    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not yet implemented.");
   }
 
  private:
