@@ -238,7 +238,7 @@ class RuleVM {
         auto res = computeBinary(_stack.at(_stackPointer - 1), _stack.at(_stackPointer), [](auto l, auto r) {
           // even though this is mathematically not correct it usually yields the intended result in boolean
           // expressions, e.g.: define isDomainExtremelyEmpty = numEmptyCells / numParticles > threshold;
-          return r == 0 ? std::numeric_limits<decltype(r)>::max() : l / r;
+          return r == 0 ? std::numeric_limits<decltype(l / r)>::max() : l / r;
         });
         _stack.at(--_stackPointer) = res;
         break;
