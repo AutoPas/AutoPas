@@ -93,6 +93,9 @@ elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SSE")
     # If vectorization is set to SSE: don't enable the example
     message(STATUS "Only SSE specified, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
+elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SVE")
+    message(STATUS "SVE vectorization level, not adding md-flexible-avx.test-unaligned to ctest.")
+    set(HAS_AVX false)
 elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
     # If Vectorization is set to native: we try to figure out the vectorization level.
     message(STATUS "Native vectorization level, trying to detect AVX capability.")
