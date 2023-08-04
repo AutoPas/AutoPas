@@ -185,6 +185,11 @@ class AutoTuner {
   bool searchSpaceIsTrivial();
 
   /**
+   * Increments iteration counters. Specifically _iteration and _iterationsSinceTuning.
+   */
+  void incrementIterationCounters();
+
+  /**
    * Log the collected data and if we are at the end of a tuning phase the result to files.
    * @param conf
    * @param tuningIteration

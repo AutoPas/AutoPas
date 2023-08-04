@@ -494,6 +494,10 @@ class LogicHandler {
    */
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
+  void incrementNumStepsSinceLastRebuild() {
+    _stepsSinceLastListRebuild++;
+  }
+
   /**
    * Checks if the given configuration can be used with the given functor and the current state of the simulation.
    * For the checks we need to switch to the container in the config. Also we need to build the traversal,
@@ -1130,7 +1134,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
                measurements.energyPkg, measurements.energyRam);
   }
-  _iterationLogger.logIteration(configuration, _iteration, stillTuning, measurements.timeIteratePairwise,
+  _iterationLogger.logIteration(configuration, _iteration, functor->name, stillTuning, measurements.timeIteratePairwise,
                                 measurements.timeRemainderTraversal, measurements.timeRebuild, measurements.timeTotal,
                                 tuningTimer.getTotalTime(), measurements.energyPsys, measurements.energyPkg,
                                 measurements.energyRam);

@@ -81,6 +81,11 @@ void AutoTuner::logIteration(const Configuration &conf, bool tuningIteration, lo
 
 bool AutoTuner::searchSpaceIsTrivial() { return _tuningStrategy->searchSpaceIsTrivial(); }
 
+void AutoTuner::incrementIterationCounters() {
+  ++_iterationsSinceTuning;
+  ++_iteration;
+}
+
 void AutoTuner::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
