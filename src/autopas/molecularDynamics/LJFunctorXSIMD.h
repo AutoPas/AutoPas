@@ -60,11 +60,7 @@ class LJFunctorXSIMD
          _aosThreadData.resize(autopas_get_max_threads());
        }
        initMask();
-       AutoPasLog(INFO, "XSIMD Wrapper initialized with a register size of ({}).", xsimd::batch<double, xsimd::detail::sve<512>>::size);
-
-#if __ARM_FEATURE_SVE
-         xsimd::batch<double, xsimd::detail::sve<512>, xsimd::detail::sve<512>> test;
-#endif
+       AutoPasLog(INFO, "XSIMD Wrapper initialized with a register size of ({}).", xsimd::batch<double>::size);
 
      }
 
@@ -207,10 +203,10 @@ class LJFunctorXSIMD
 
        const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumX{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumY{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumZ{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> upotSum{0};
+       xsimd::batch<double> virialSumX{0};
+       xsimd::batch<double> virialSumY{0};
+       xsimd::batch<double> virialSumZ{0};
+       xsimd::batch<double> upotSum{0};
 
        for (size_t i = soa.getNumberOfParticles() - 1; (long)i >= 0; --i) {
          if (ownedStatePtr[i] == OwnershipState::dummy) {
@@ -220,15 +216,15 @@ class LJFunctorXSIMD
          static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
                        "OwnershipStates underlying type should be int64_t!");
 
-         xsimd::batch<int64_t, xsimd::detail::sve<512>> ownedStateI{static_cast<int64_t>(ownedStatePtr[i])};
+         xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr[i])};
 
-         xsimd::batch<double, xsimd::detail::sve<512>> fxacc{0};
-         xsimd::batch<double, xsimd::detail::sve<512>> fyacc{0};
-         xsimd::batch<double, xsimd::detail::sve<512>> fzacc{0};
+         xsimd::batch<double> fxacc{0};
+         xsimd::batch<double> fyacc{0};
+         xsimd::batch<double> fzacc{0};
 
-         xsimd::batch<double, xsimd::detail::sve<512>> x1 = xsimd::broadcast(xptr[i]);
-         xsimd::batch<double, xsimd::detail::sve<512>> y1 = xsimd::broadcast(yptr[i]);
-         xsimd::batch<double, xsimd::detail::sve<512>> z1 = xsimd::broadcast(zptr[i]);
+         xsimd::batch<double> x1 = xsimd::broadcast(xptr[i]);
+         xsimd::batch<double> y1 = xsimd::broadcast(yptr[i]);
+         xsimd::batch<double> z1 = xsimd::broadcast(zptr[i]);
 
          size_t j = 0;
 
@@ -307,10 +303,10 @@ class LJFunctorXSIMD
        const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
        const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumX{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumY{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumZ{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> upotSum{0};
+       xsimd::batch<double> virialSumX{0};
+       xsimd::batch<double> virialSumY{0};
+       xsimd::batch<double> virialSumZ{0};
+       xsimd::batch<double> upotSum{0};
 
        for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
          if (ownedStatePtr1[i] == OwnershipState::dummy) {
@@ -318,19 +314,19 @@ class LJFunctorXSIMD
            continue;
          }
 
-         xsimd::batch<double, xsimd::detail::sve<512>> fxacc{0};
-         xsimd::batch<double, xsimd::detail::sve<512>> fyacc{0};
-         xsimd::batch<double, xsimd::detail::sve<512>> fzacc{0};
+         xsimd::batch<double> fxacc{0};
+         xsimd::batch<double> fyacc{0};
+         xsimd::batch<double> fzacc{0};
 
          static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
                        "OwnershipStates underlying type should be int64_t!");
          // ownedStatePtr1 contains int64_t, so we broadcast these to make an __m256i.
          // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-         xsimd::batch<int64_t, xsimd::detail::sve<512>> ownedStateI{static_cast<int64_t>(ownedStatePtr1[i])};
+         xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr1[i])};
 
-         const xsimd::batch<double, xsimd::detail::sve<512>> x1 = xsimd::broadcast(x1ptr[i]);
-         const xsimd::batch<double, xsimd::detail::sve<512>> y1 = xsimd::broadcast(y1ptr[i]);
-         const xsimd::batch<double, xsimd::detail::sve<512>> z1 = xsimd::broadcast(z1ptr[i]);
+         const xsimd::batch<double> x1 = xsimd::broadcast(x1ptr[i]);
+         const xsimd::batch<double> y1 = xsimd::broadcast(y1ptr[i]);
+         const xsimd::batch<double> z1 = xsimd::broadcast(z1ptr[i]);
 
          // floor soa2 numParticles to multiple of vecLength
          unsigned int j = 0;
@@ -403,16 +399,16 @@ class LJFunctorXSIMD
    * @param rest
       */
      template <bool newton3, bool remainderIsMasked>
-     inline void SoAKernel(const size_t j, const xsimd::batch<int64_t, xsimd::detail::sve<512>> &ownedStateI, const int64_t *const __restrict ownedStatePtr2,
-                           const xsimd::batch<double, xsimd::detail::sve<512>> &x1, const xsimd::batch<double, xsimd::detail::sve<512>> &y1, const xsimd::batch<double, xsimd::detail::sve<512>> &z1, const double *const __restrict x2ptr,
+     inline void SoAKernel(const size_t j, const xsimd::batch<int64_t> &ownedStateI, const int64_t *const __restrict ownedStatePtr2,
+                           const xsimd::batch<double> &x1, const xsimd::batch<double> &y1, const xsimd::batch<double> &z1, const double *const __restrict x2ptr,
                            const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                            double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                            double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
-                           xsimd::batch<double, xsimd::detail::sve<512>> &fxacc, xsimd::batch<double, xsimd::detail::sve<512>> &fyacc, xsimd::batch<double, xsimd::detail::sve<512>> &fzacc, xsimd::batch<double, xsimd::detail::sve<512>> *virialSumX, xsimd::batch<double, xsimd::detail::sve<512>> *virialSumY,
-                           xsimd::batch<double, xsimd::detail::sve<512>> *virialSumZ, xsimd::batch<double, xsimd::detail::sve<512>> *upotSum, const unsigned int rest = 0) {
-       xsimd::batch<double, xsimd::detail::sve<512>> epsilon24s;
-       xsimd::batch<double, xsimd::detail::sve<512>> sigmaSquares;
-       xsimd::batch<double, xsimd::detail::sve<512>> shift6s;
+                           xsimd::batch<double> &fxacc, xsimd::batch<double> &fyacc, xsimd::batch<double> &fzacc, xsimd::batch<double> *virialSumX, xsimd::batch<double> *virialSumY,
+                           xsimd::batch<double> *virialSumZ, xsimd::batch<double> *upotSum, const unsigned int rest = 0) {
+       xsimd::batch<double> epsilon24s;
+       xsimd::batch<double> sigmaSquares;
+       xsimd::batch<double> shift6s;
 
        if(useMixing) {
            double epsilon_buf[vecLength] = {0};
@@ -434,9 +430,9 @@ class LJFunctorXSIMD
            sigmaSquares = _sigmaSquare;
            shift6s = _shift6;
        }
-       xsimd::batch<double, xsimd::detail::sve<512>> x2;
-       xsimd::batch<double, xsimd::detail::sve<512>> y2;
-       xsimd::batch<double, xsimd::detail::sve<512>> z2;
+       xsimd::batch<double> x2;
+       xsimd::batch<double> y2;
+       xsimd::batch<double> z2;
        // load only masked values
          if(remainderIsMasked) {
              double x2_a[vecLength] = {0};
@@ -456,54 +452,54 @@ class LJFunctorXSIMD
              y2 = xsimd::load_unaligned(&y2ptr[j]);
              z2 = xsimd::load_unaligned(&z2ptr[j]);
          }
-       const xsimd::batch<double, xsimd::detail::sve<512>> drx = xsimd::sub(x1,x2);
-       const xsimd::batch<double, xsimd::detail::sve<512>> dry = xsimd::sub(y1,y2);
-       const xsimd::batch<double, xsimd::detail::sve<512>> drz = xsimd::sub(z1,z2);
+       const xsimd::batch<double> drx = xsimd::sub(x1,x2);
+       const xsimd::batch<double> dry = xsimd::sub(y1,y2);
+       const xsimd::batch<double> drz = xsimd::sub(z1,z2);
 
-       const xsimd::batch<double, xsimd::detail::sve<512>> drx2 = xsimd::mul(drx, drx);
-       const xsimd::batch<double, xsimd::detail::sve<512>> dry2 = xsimd::mul(dry, dry);
-       const xsimd::batch<double, xsimd::detail::sve<512>> drz2 = xsimd::mul(drz, drz);
+       const xsimd::batch<double> drx2 = xsimd::mul(drx, drx);
+       const xsimd::batch<double> dry2 = xsimd::mul(dry, dry);
+       const xsimd::batch<double> drz2 = xsimd::mul(drz, drz);
 
-       const xsimd::batch<double, xsimd::detail::sve<512>> dr2PART = xsimd::add(drx2, dry2);
-       const xsimd::batch<double, xsimd::detail::sve<512>> dr2 = xsimd::add(dr2PART, drz2);
+       const xsimd::batch<double> dr2PART = xsimd::add(drx2, dry2);
+       const xsimd::batch<double> dr2 = xsimd::add(dr2PART, drz2);
 
        // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
        // signaling = throw error if NaN is encountered
        // dr2 <= _cutoffsquare ? 0xFFFFFFFFFFFFFFFF : 0
 
-       const xsimd::batch_bool<double, xsimd::detail::sve<512>> cutoffMask = xsimd::le(dr2, _cutoffsquare);
-       const xsimd::batch<int64_t, xsimd::detail::sve<512>> _zeroI = xsimd::to_int(_zero);
-       const xsimd::batch<int64_t, xsimd::detail::sve<512>> ownedStateJ = remainderIsMasked
+       const xsimd::batch_bool<double> cutoffMask = xsimd::le(dr2, _cutoffsquare);
+       const xsimd::batch<int64_t> _zeroI = xsimd::to_int(_zero);
+       const xsimd::batch<int64_t> ownedStateJ = remainderIsMasked
                                                      ? xsimd::select(xsimd::batch_bool_cast<int64_t>(_masks[rest - 1]),
                                                                xsimd::load_unaligned(&ownedStatePtr2[j]), _zeroI)
                                                      : xsimd::load_unaligned(&ownedStatePtr2[j]);
-       const xsimd::batch_bool<double, xsimd::detail::sve<512>> dummyMask = xsimd::batch_bool_cast<double>(xsimd::neq(ownedStateJ, _zeroI));
+       const xsimd::batch_bool<double> dummyMask = xsimd::batch_bool_cast<double>(xsimd::neq(ownedStateJ, _zeroI));
 
-       const xsimd::batch_bool<double, xsimd::detail::sve<512>> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
+       const xsimd::batch_bool<double> cutoffDummyMask = xsimd::bitwise_and(cutoffMask, dummyMask);
 
        // if everything is masked away return from this function.
        if (none(cutoffDummyMask)) {
          return;
        }
 
-       const xsimd::batch<double, xsimd::detail::sve<512>> invdr2 = xsimd::div(_one, dr2);
-       const xsimd::batch<double, xsimd::detail::sve<512>> lj2 = xsimd::mul(sigmaSquares, invdr2);
-       const xsimd::batch<double, xsimd::detail::sve<512>> lj4 = xsimd::mul(lj2, lj2);
-       const xsimd::batch<double, xsimd::detail::sve<512>> lj6 = xsimd::mul(lj2, lj4);
-       const xsimd::batch<double, xsimd::detail::sve<512>> lj12 = xsimd::mul(lj6, lj6);
-       const xsimd::batch<double, xsimd::detail::sve<512>> lj12m6 = xsimd::sub(lj12, lj6);
-       const xsimd::batch<double, xsimd::detail::sve<512>> lj12m6alj12 = xsimd::add(lj12m6, lj12);
-       const xsimd::batch<double, xsimd::detail::sve<512>> lj12m6alj12e = xsimd::mul(lj12m6alj12, epsilon24s);
-       const xsimd::batch<double, xsimd::detail::sve<512>> fac = xsimd::mul(lj12m6alj12e, invdr2);
+       const xsimd::batch<double> invdr2 = xsimd::div(_one, dr2);
+       const xsimd::batch<double> lj2 = xsimd::mul(sigmaSquares, invdr2);
+       const xsimd::batch<double> lj4 = xsimd::mul(lj2, lj2);
+       const xsimd::batch<double> lj6 = xsimd::mul(lj2, lj4);
+       const xsimd::batch<double> lj12 = xsimd::mul(lj6, lj6);
+       const xsimd::batch<double> lj12m6 = xsimd::sub(lj12, lj6);
+       const xsimd::batch<double> lj12m6alj12 = xsimd::add(lj12m6, lj12);
+       const xsimd::batch<double> lj12m6alj12e = xsimd::mul(lj12m6alj12, epsilon24s);
+       const xsimd::batch<double> fac = xsimd::mul(lj12m6alj12e, invdr2);
 
 
-       const xsimd::batch<double, xsimd::detail::sve<512>> facMasked =
+       const xsimd::batch<double> facMasked =
            remainderIsMasked ? xsimd::select(xsimd::bitwise_and(cutoffDummyMask, _masks[rest - 1]), fac, _zero)
                              : xsimd::select(cutoffDummyMask, fac, _zero);
 
-       const xsimd::batch<double, xsimd::detail::sve<512>> fx = xsimd::mul(drx, facMasked);
-       const xsimd::batch<double, xsimd::detail::sve<512>> fy = xsimd::mul(dry, facMasked);
-       const xsimd::batch<double, xsimd::detail::sve<512>> fz = xsimd::mul(drz, facMasked);
+       const xsimd::batch<double> fx = xsimd::mul(drx, facMasked);
+       const xsimd::batch<double> fy = xsimd::mul(dry, facMasked);
+       const xsimd::batch<double> fz = xsimd::mul(drz, facMasked);
 
 
        fxacc = xsimd::add(fxacc, fx);
@@ -515,9 +511,9 @@ class LJFunctorXSIMD
 
        // if newton 3 is used subtract fD from particle j
         if(newton3) {
-            xsimd::batch<double, xsimd::detail::sve<512>> fx2;
-            xsimd::batch<double, xsimd::detail::sve<512>> fy2;
-            xsimd::batch<double, xsimd::detail::sve<512>> fz2;
+            xsimd::batch<double> fx2;
+            xsimd::batch<double> fy2;
+            xsimd::batch<double> fz2;
 
             if(remainderIsMasked) {
                 double fx2_a[vecLength] = {0};
@@ -538,9 +534,9 @@ class LJFunctorXSIMD
                 fz2 = xsimd::load_unaligned(&fz2ptr[j]);
             }
 
-         const xsimd::batch<double, xsimd::detail::sve<512>> fx2new = xsimd::sub(fx2, fx);
-         const xsimd::batch<double, xsimd::detail::sve<512>> fy2new = xsimd::sub(fy2, fy);
-         const xsimd::batch<double, xsimd::detail::sve<512>> fz2new = xsimd::sub(fz2, fz);
+         const xsimd::batch<double> fx2new = xsimd::sub(fx2, fx);
+         const xsimd::batch<double> fy2new = xsimd::sub(fy2, fy);
+         const xsimd::batch<double> fz2new = xsimd::sub(fz2, fz);
 
 
         // store only masked values
@@ -565,19 +561,19 @@ class LJFunctorXSIMD
        }
 
        if constexpr (calculateGlobals) {
-         const xsimd::batch<double, xsimd::detail::sve<512>> virialX = xsimd::mul(fx, drx);
-         const xsimd::batch<double, xsimd::detail::sve<512>> virialY = xsimd::mul(fy, dry);
-         const xsimd::batch<double, xsimd::detail::sve<512>> virialZ = xsimd::mul(fz, drz);
+         const xsimd::batch<double> virialX = xsimd::mul(fx, drx);
+         const xsimd::batch<double> virialY = xsimd::mul(fy, dry);
+         const xsimd::batch<double> virialZ = xsimd::mul(fz, drz);
 
-         const xsimd::batch<double, xsimd::detail::sve<512>> updot = wrapperFMA(epsilon24s, lj12m6, shift6s);
+         const xsimd::batch<double> updot = wrapperFMA(epsilon24s, lj12m6, shift6s);
 
-         const xsimd::batch<double, xsimd::detail::sve<512>> upotMasked =
+         const xsimd::batch<double> upotMasked =
              remainderIsMasked ? xsimd::select(xsimd::bitwise_and(cutoffDummyMask, _masks[rest - 1]), updot, _zero)
                                : xsimd::select(cutoffDummyMask, updot, _zero);
-         xsimd::batch_bool<double, xsimd::detail::sve<512>> ownedMaskI = xsimd::eq(to_float(ownedStateI), to_float(_ownedStateOwnedMM256i));
-         xsimd::batch<double, xsimd::detail::sve<512>> energyFactor = xsimd::select(ownedMaskI, _one, _zero);
+         xsimd::batch_bool<double> ownedMaskI = xsimd::eq(to_float(ownedStateI), to_float(_ownedStateOwnedMM256i));
+         xsimd::batch<double> energyFactor = xsimd::select(ownedMaskI, _one, _zero);
          if constexpr (newton3) {
-           xsimd::batch_bool<double, xsimd::detail::sve<512>> ownedMaskJ =
+           xsimd::batch_bool<double> ownedMaskJ =
                xsimd::eq(to_float(ownedStateJ), to_float(_ownedStateOwnedMM256i));
            energyFactor = xsimd::add(energyFactor, xsimd::select(ownedMaskJ, _one, _zero));
          }
@@ -627,21 +623,21 @@ class LJFunctorXSIMD
        const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
        // accumulators
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumX{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumY{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> virialSumZ{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> upotSum{0};
-       xsimd::batch<double, xsimd::detail::sve<512>> fxacc{0};
-        xsimd::batch<double, xsimd::detail::sve<512>> fyacc{0};
-         xsimd::batch<double, xsimd::detail::sve<512>> fzacc{0};
+       xsimd::batch<double> virialSumX{0};
+       xsimd::batch<double> virialSumY{0};
+       xsimd::batch<double> virialSumZ{0};
+       xsimd::batch<double> upotSum{0};
+       xsimd::batch<double> fxacc{0};
+        xsimd::batch<double> fyacc{0};
+         xsimd::batch<double> fzacc{0};
 
        // broadcast particle 1
-       const xsimd::batch<double, xsimd::detail::sve<512>> x1 = xsimd::broadcast(xptr[indexFirst]);
-       const xsimd::batch<double, xsimd::detail::sve<512>> y1 = xsimd::broadcast(yptr[indexFirst]);
-       const xsimd::batch<double, xsimd::detail::sve<512>> z1 = xsimd::broadcast(zptr[indexFirst]);
+       const xsimd::batch<double> x1 = xsimd::broadcast(xptr[indexFirst]);
+       const xsimd::batch<double> y1 = xsimd::broadcast(yptr[indexFirst]);
+       const xsimd::batch<double> z1 = xsimd::broadcast(zptr[indexFirst]);
        // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
        // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-       xsimd::batch<int64_t, xsimd::detail::sve<512>> ownedStateI{static_cast<int64_t>(ownedStatePtr[indexFirst])};
+       xsimd::batch<int64_t> ownedStateI{static_cast<int64_t>(ownedStatePtr[indexFirst])};
 
        alignas(64) std::array<double, vecLength> x2tmp{};
        alignas(64) std::array<double, vecLength> y2tmp{};
@@ -920,11 +916,11 @@ class LJFunctorXSIMD
    * @param summandC
    * @return A * B + C
       */
-     inline xsimd::batch<double, xsimd::detail::sve<512>> wrapperFMA(const xsimd::batch<double, xsimd::detail::sve<512>> &factorA, const xsimd::batch<double, xsimd::detail::sve<512>> &factorB, const xsimd::batch<double, xsimd::detail::sve<512>> &summandC) {
+     inline xsimd::batch<double> wrapperFMA(const xsimd::batch<double> &factorA, const xsimd::batch<double> &factorB, const xsimd::batch<double> &summandC) {
        return xsimd::fma(factorA, factorB, summandC);
      }
 
-    inline xsimd::batch<int64_t, xsimd::detail::sve<512>> initVIndex3() {
+    inline xsimd::batch<int64_t> initVIndex3() {
         int64_t indexes[vecLength];
         for(int i = 0; i < vecLength; ++i) {
             indexes[i] = i * 3;
@@ -936,7 +932,7 @@ class LJFunctorXSIMD
         bool tmp[vecLength] = {false};
         for(int i = 0; i < vecLength - 1; ++i) {
             tmp[i] = true;
-            _masks[i] = xsimd::batch_bool<double, xsimd::detail::sve<512>>::load_unaligned(tmp);
+            _masks[i] = xsimd::batch_bool<double>::load_unaligned(tmp);
         }
     }
 
@@ -964,19 +960,19 @@ class LJFunctorXSIMD
 
 
     // number of double values that fit into a vector register.
-    constexpr static size_t vecLength = xsimd::batch<double, xsimd::detail::sve<512>>::size;
+    constexpr static size_t vecLength = xsimd::batch<double>::size;
 
 
-     const xsimd::batch<double, xsimd::detail::sve<512>> _zero{0};
-     const xsimd::batch<double, xsimd::detail::sve<512>> _one{1.};
-     const xsimd::batch<int64_t, xsimd::detail::sve<512>> _vindex3 = initVIndex3();
-     xsimd::batch_bool<double, xsimd::detail::sve<512>> _masks[vecLength];
-     const xsimd::batch<int64_t, xsimd::detail::sve<512>> _ownedStateDummyMM256i{0x0};
-     const xsimd::batch<int64_t, xsimd::detail::sve<512>> _ownedStateOwnedMM256i{static_cast<int64_t>(OwnershipState::owned)};
-     const xsimd::batch<double, xsimd::detail::sve<512>> _cutoffsquare{};
-     xsimd::batch<double, xsimd::detail::sve<512>> _shift6{0};
-     xsimd::batch<double, xsimd::detail::sve<512>> _epsilon24{};
-     xsimd::batch<double, xsimd::detail::sve<512>> _sigmaSquare{};
+     const xsimd::batch<double> _zero{0};
+     const xsimd::batch<double> _one{1.};
+     const xsimd::batch<int64_t> _vindex3 = initVIndex3();
+     xsimd::batch_bool<double> _masks[vecLength];
+     const xsimd::batch<int64_t> _ownedStateDummyMM256i{0x0};
+     const xsimd::batch<int64_t> _ownedStateOwnedMM256i{static_cast<int64_t>(OwnershipState::owned)};
+     const xsimd::batch<double> _cutoffsquare{};
+     xsimd::batch<double> _shift6{0};
+     xsimd::batch<double> _epsilon24{};
+     xsimd::batch<double> _sigmaSquare{};
 
      const double _cutoffsquareAoS = 0;
      double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0;
