@@ -26,7 +26,7 @@ if (AUTOPAS_USE_VECTORIZATION)
             $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX>:-mavx>
             $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX2>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>>>:-mavx2
             -mfma>
-            $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},SVE>:-march=armv8-a+sve>
+            $<$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},SVE>:-march=armv8.2-a+sve>
             $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},AVX2>,$<OR:$<CXX_COMPILER_ID:Intel>,$<CXX_COMPILER_ID:IntelLLVM>>>:-march=core-avx2
             -fma>
             $<$<AND:$<STREQUAL:${AUTOPAS_VECTOR_INSTRUCTIONS},KNL>,$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:IntelLLVM>>>:-march=knl>
