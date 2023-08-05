@@ -60,7 +60,12 @@ class LJFunctorXSIMD
          _aosThreadData.resize(autopas_get_max_threads());
        }
        initMask();
-       AutoPasLog(INFO, "XSIMD Wrapper initialized with a register size of ({}).", xsimd::batch<double>::size);
+       AutoPasLog(INFO, "XSIMD Wrapper initialized with a register size of ({}).", xsimd::batch<double, xsimd::all_sve_architectures::best>::size);
+
+#if __ARM_FEATURE_SVE
+         xsimd::batch<double, xsimd::all_sve_architectures::best> test;
+#endif
+
      }
 
     public:
@@ -917,7 +922,6 @@ class LJFunctorXSIMD
    * @return A * B + C
       */
      inline xsimd::batch<double> wrapperFMA(const xsimd::batch<double> &factorA, const xsimd::batch<double> &factorB, const xsimd::batch<double> &summandC) {
-       //TODO: if fma not supported, is it still working with xsimd?
        return xsimd::fma(factorA, factorB, summandC);
      }
 
@@ -962,6 +966,8 @@ class LJFunctorXSIMD
 
     // number of double values that fit into a vector register.
     constexpr static size_t vecLength = xsimd::batch<double>::size;
+
+
      const xsimd::batch<double> _zero{0};
      const xsimd::batch<double> _one{1.};
      const xsimd::batch<int64_t> _vindex3 = initVIndex3();
