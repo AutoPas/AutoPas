@@ -64,6 +64,7 @@ class LJFunctorMIPP
        initMask();
        _vindex3 = initVIndex3();
        _vindex1 = initVIndex1();
+       AutoPasLog(INFO, "MIPP Wrapper initialized with a register size of ({}).", N<double>());
      }
 
     public:
