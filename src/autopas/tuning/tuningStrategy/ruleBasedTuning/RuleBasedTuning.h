@@ -151,10 +151,18 @@ class RuleBasedTuning : public TuningStrategyInterface {
   std::string _ruleFileName;
 
   std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
+  /**
+   * Sum of all evidence since last reset. This times the number of samples, is approximately the time spent
+   * trying out configurations.
+   */
   long _tuningTime{0};
   long _wouldHaveSkippedTuningTime{0};
   long _tuningTimeLifetime{0};
   long _wouldHaveSkippedTuningTimeLifetime{0};
+  /**
+   * If the rules would immediately remove all options deactivate the whole strategy until the next reset.
+   */
+  bool _rulesTooHarsh{false};
 
   PrintTuningErrorFunType _tuningErrorPrinter;
 

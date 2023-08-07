@@ -61,6 +61,7 @@ void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Co
   _tuningTime = 0;
   _wouldHaveSkippedTuningTime = 0;
   _removedConfigurations.clear();
+  _rulesTooHarsh = false;
   optimizeSuggestions(configQueue, evidenceCollection);
 }
 
@@ -102,6 +103,14 @@ void RuleBasedTuning::verifyCurrentConfigTime(const Configuration &configuration
 void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                           const EvidenceCollection &evidenceCollection) {
   _lastApplicableConfigurationOrders = applyRules(configQueue);
+
+  // Don't apply rules if they would wipe the queue and nothing has been tested yet.
+  if (_rulesTooHarsh or (_searchSpace.empty() and _tuningTime == 0)) {
+    _rulesTooHarsh = true;
+    AutoPasLog(WARN, "Rules would remove all available options! Not applying them until next reset.");
+    return;
+  }
+
   if (not _verifyModeEnabled) {
     configQueue.clear();
     std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
