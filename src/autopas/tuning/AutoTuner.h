@@ -207,6 +207,12 @@ class AutoTuner {
    */
   const std::vector<std::unique_ptr<TuningStrategyInterface>> &getTuningStrategies() const;
 
+  /**
+   * Indicate if the tuner considers itself currently in a tuning phase according to its internal counters.
+   * @return
+   */
+  bool inTuningPhase() const;
+
  private:
   /**
    * Measures consumed energy for tuning

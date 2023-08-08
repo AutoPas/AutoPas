@@ -145,7 +145,7 @@ const Configuration &AutoTuner::getCurrentConfig() const { return _configQueue.b
 
 std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
   // If we are not (yet) tuning or there is nothing to tune return immediately.
-  if (_iterationsSinceTuning < _tuningInterval or searchSpaceIsTrivial()) {
+  if (not inTuningPhase()) {
     return {getCurrentConfig(), false};
   } else if (getCurrentNumSamples() < _maxSamples) {
     // If we are still collecting samples from one config return immediately.
@@ -405,4 +405,8 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 }
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
+
+bool AutoTuner::inTuningPhase() const {
+  return (_iterationsSinceTuning >= _tuningInterval) and not searchSpaceIsTrivial();
+}
 }  // namespace autopas
