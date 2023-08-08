@@ -1136,10 +1136,6 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
   tuningTimer.stop();
-  if (not stillTuning) {
-    AutoPasLog(DEBUG, "Selected optimal configuration {}", configuration.toString());
-    AutoPasLog(DEBUG, "Selecting a configuration took {} ns.", tuningTimer.getTotalTime());
-  }
   _autoTuner.logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 
   /// Pairwise iteration
