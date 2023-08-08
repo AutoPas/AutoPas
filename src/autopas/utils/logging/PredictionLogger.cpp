@@ -27,6 +27,8 @@ autopas::PredictionLogger::PredictionLogger(const std::string &outputSuffix)
 
   // create and register the actual logger
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_loggerName, outputFileName);
+  // since this logger only writes rarely flush instantly in order to not lose any information if autopas is killed
+  logger->flush_on(spdlog::level::trace);
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
 #endif
