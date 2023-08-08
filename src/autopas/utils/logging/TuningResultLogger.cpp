@@ -21,7 +21,7 @@ autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix)
   // set the pattern to the message only
   logger->set_pattern("%v");
   // print csv header
-  logger->info("Date,Iteration,{},tuning[ns]", Configuration().getCSVHeader());
+  logger->info("Date,Iteration,{},tuning[ns],optimumPerformance[ns]", Configuration().getCSVHeader());
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
 #endif
@@ -34,8 +34,8 @@ autopas::TuningResultLogger::~TuningResultLogger() {
 }
 
 void autopas::TuningResultLogger::logTuningResult(const autopas::Configuration &configuration, size_t iteration,
-                                                  long timeTuning) {
+                                                  long timeTuning, long optimumPerformance) {
 #ifdef AUTOPAS_LOG_TUNINGRESULTS
-  spdlog::get(_loggerName)->info("{},{},{}", iteration, configuration.getCSVLine(), timeTuning);
+  spdlog::get(_loggerName)->info("{},{},{},{}", iteration, configuration.getCSVLine(), timeTuning, optimumPerformance);
 #endif
 }

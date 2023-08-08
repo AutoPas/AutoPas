@@ -66,8 +66,8 @@ void AutoTuner::logIteration(const Configuration &conf, bool tuningIteration, lo
   if (not tuningIteration and _iterationsSinceTuning == 0) {
     // This string is part of several older scripts, hence it is not recommended to change it.
     AutoPasLog(DEBUG, "Selected Configuration {}", getCurrentConfig().toString());
-    // TODO: When AutoTuner manages the search space also log smoothed time of the optimum.
-    _tuningResultLogger.logTuningResult(conf, _iteration, tuningTime);
+    const auto [_, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
+    _tuningResultLogger.logTuningResult(conf, _iteration, tuningTime, optimalEvidence.value);
   }
 }
 
