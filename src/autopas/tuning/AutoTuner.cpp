@@ -62,8 +62,9 @@ void AutoTuner::addHomogeneityAndMaxDensity(double homogeneity, double maxDensit
 }
 
 void AutoTuner::logIteration(const Configuration &conf, bool tuningIteration, long tuningTime) {
-  // when a tuning result is found log it
-  if (not tuningIteration) {
+  // only log if we are at the end of a tuning phase
+  if (not tuningIteration and _iterationsSinceTuning == 0) {
+    // This string is part of several older scripts, hence it is not recommended to change it.
     AutoPasLog(DEBUG, "Selected Configuration {}", getCurrentConfig().toString());
     // TODO: When AutoTuner manages the search space also log smoothed time of the optimum.
     _tuningResultLogger.logTuningResult(conf, _iteration, tuningTime);
