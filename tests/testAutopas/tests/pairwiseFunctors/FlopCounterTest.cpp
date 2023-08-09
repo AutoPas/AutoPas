@@ -40,7 +40,7 @@ void FlopCounterTest::test(autopas::DataLayoutOption dataLayoutOption) {
   mdLib::LJFunctor<Molecule> ljFunctor(autoPas.getCutoff());
   autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> flopCounterFunctor(ljFunctor, autoPas.getCutoff());
 
-  autoPas.iteratePairwise(&flopCounterFunctor);
+  autoPas.computeInteractions(&flopCounterFunctor);
 
   // every particle checks the distance to all others. Only half of the calculations are made due to Newton 3.
   auto expectedDistanceCalculations = molVec.size() * (molVec.size() - 1) / 2;

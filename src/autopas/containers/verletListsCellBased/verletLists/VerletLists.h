@@ -79,7 +79,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                                          _soaNeighborLists);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in VerletLists::iteratePairwise");
+          "trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
 
     traversal->initTraversal();

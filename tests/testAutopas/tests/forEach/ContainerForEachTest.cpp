@@ -84,7 +84,7 @@ TEST_P(ContainerForEachTest, testForEachInRegionSequential) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   if (behavior & autopas::IteratorBehavior::dummy) {
@@ -132,7 +132,7 @@ TEST_P(ContainerForEachTest, testForEachSequential) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   if (behavior & autopas::IteratorBehavior::dummy) {
@@ -178,7 +178,7 @@ TEST_P(ContainerForEachTest, testForEachInRegionParallel) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   if (behavior & autopas::IteratorBehavior::dummy) {
@@ -226,7 +226,7 @@ TEST_P(ContainerForEachTest, testForEachParallel) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   if (behavior & autopas::IteratorBehavior::dummy) {

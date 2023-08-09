@@ -21,7 +21,7 @@ namespace autopas {
  * This class handles traversals through the cell structures with neighbor lists.
  * Derived classes handle the order through which the cells are traversed.
  *
- * The container only accepts traversals in its iteratePairwise() method that implement this interface.
+ * The container only accepts traversals in its computeInteractions() method that implement this interface.
  */
 template <class Particle, class NeighborList>
 class VLCTraversalInterface {

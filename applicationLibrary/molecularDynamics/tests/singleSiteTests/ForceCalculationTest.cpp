@@ -39,7 +39,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   mdLib::LJFunctor<Molecule> functor(cutoff);
   functor.setParticleProperties(24, 1);
 
-  autoPas.iteratePairwise(&functor);
+  autoPas.computeInteractions(&functor);
 
   for (auto p = autoPas.begin(); p.isValid(); ++p) {
     auto id = p->getID();

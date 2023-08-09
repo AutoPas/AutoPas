@@ -26,7 +26,7 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VCLSlicedTraversal
     : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
-      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+      public VCLTraversalInterface<typename ParticleCell::ParticleType>, public PairwiseTraversalInterface {
  private:
   using Particle = typename ParticleCell::ParticleType;
 

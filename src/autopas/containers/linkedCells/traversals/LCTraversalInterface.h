@@ -15,7 +15,7 @@ namespace autopas {
 /**
  * Interface for traversals used by the LinkedCell class.
  *
- * The container only accepts traversals in its iteratePairwise() method that implement this interface.
+ * The container only accepts traversals in its computeInteractions() method that implement this interface.
  * @tparam ParticleCell
  */
 template <class ParticleCell>

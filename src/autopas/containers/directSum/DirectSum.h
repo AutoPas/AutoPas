@@ -110,7 +110,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::iteratePairwise");
+          "trying to use a traversal of wrong type in DirectSum::computeInteractions");
     }
 
     traversal->initTraversal();

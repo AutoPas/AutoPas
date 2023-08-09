@@ -13,7 +13,7 @@
 namespace autopas {
 
 /**
- * Helper to log performance data of AutoPas::iteratePairwise() to a csv file for easier analysis.
+ * Helper to log performance data of AutoPas::computeInteractions() to a csv file for easier analysis.
  *
  * It uses an asynchronous spd logger to write a csv file named "AutoPas_iterationPerformance_<dateStamp>.csv".
  *
@@ -39,10 +39,10 @@ class IterationLogger {
    * @param iteration
    * @param functorName
    * @param inTuningPhase True if the logged iteration is in a tuning phase.
-   * @param timeIteratePairwise Time for Container::iteratePairwise().
+   * @param timeIteratePairwise Time for Container::computeInteractions().
    * @param timeRemainderTraversal Time for LogicHandler::doRemainderTraversal().
    * @param timeRebuildNeighborLists Time for Container::rebuildNeighborLists().
-   * @param timeIteratePairwiseTotal Time for LogicHandler::iteratePairwise(). This is slightly more than the sum of the
+   * @param timeIteratePairwiseTotal Time for LogicHandler::computeInteractions(). This is slightly more than the sum of the
    * above. Additional steps, only included in this timer are e.g. Functor::initTraversal() and Functor::endTraversal().
    * @param timeTuning Time for finding the next configuration.
    * @param energyPsys Energy in Joules for the entire measured system since the last measurement.

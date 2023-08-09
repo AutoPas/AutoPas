@@ -33,7 +33,7 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class LCSlicedC02Traversal
     : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>,
-      public LCTraversalInterface<ParticleCell> {
+      public LCTraversalInterface<ParticleCell>, public PairwiseTraversalInterface {
  public:
   /**
    * Constructor of the colored sliced traversal.

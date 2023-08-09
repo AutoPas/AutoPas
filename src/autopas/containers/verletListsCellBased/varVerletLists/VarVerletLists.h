@@ -48,7 +48,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
       traversalInterface->setNeighborListToTraverse(_neighborList);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in VarVerletLists::iteratePairwise");
+          "trying to use a traversal of wrong type in VarVerletLists::computeInteractions");
     }
 
     traversal->initTraversal();

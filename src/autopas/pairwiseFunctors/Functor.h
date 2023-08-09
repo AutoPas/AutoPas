@@ -215,7 +215,7 @@ class Functor {
   virtual bool isRelevantForTuning() = 0;
 
   /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to iteratePairwise
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
    * using different functors in the logs.
    * @return name of functor.
    */
@@ -226,6 +226,12 @@ class Functor {
    * @return
    */
   double getCutoff() const { return _cutoff; }
+
+  /**
+   * Return number of interacting bodies. Required to determine the relevant traversals.
+   * @return number of interacting bodies of the functor
+   */
+  virtual unsigned int getNBody() const { return 2; }
 
  private:
   /**

@@ -108,6 +108,12 @@ class AxilrodTellerFunctor
    */
   virtual std::string getName() { return "AxilrodTellerFunctorAutoVec"; }
 
+  /**
+   * Return number of interacting bodies. Required to determine the relevant traversals.
+   * @return number of interacting bodies of the functor
+   */
+  unsigned int getNBody() const { return 3; }
+
   bool isRelevantForTuning() final { return relevantForTuning; }
 
   bool allowsNewton3() final {

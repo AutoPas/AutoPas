@@ -131,7 +131,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 template <class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container &container, Traversal traversal) {
   container.rebuildNeighborLists(traversal.get());
-  container.iteratePairwise(traversal.get());
+  container.computeInteractions(traversal.get());
 }
 
 template <bool useNewton3, class Container, class Traversal>

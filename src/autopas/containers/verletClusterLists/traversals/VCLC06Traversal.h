@@ -27,7 +27,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                        public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+                        public VCLTraversalInterface<typename ParticleCell::ParticleType>, public PairwiseTraversalInterface {
  private:
   using Particle = typename ParticleCell::ParticleType;
 

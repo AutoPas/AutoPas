@@ -23,7 +23,7 @@
 namespace autopas {
 
 /**
- * Calls to the iteratePairwise() method are passed through this class for two reasons:
+ * Calls to the computeInteractions() method are passed through this class for two reasons:
  * 1. Measuring time of the iteration.
  * 2. Selecting an appropriate configuration for the pairwise iteration.
  *
@@ -137,7 +137,7 @@ class AutoTuner {
   void bumpIterationCounters();
 
   /**
-   * Returns whether rebuildNeighborLists() will be triggered in the next call to iteratePairwise().
+   * Returns whether rebuildNeighborLists() will be triggered in the next call to computeInteractions().
    * This might also indicate a container change.
    *
    * @return True if the the current iteration counters indicate a rebuild in the next iteration.

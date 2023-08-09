@@ -85,33 +85,26 @@ void AutoPas<Particle>::init() {
 
 template <class Particle>
 template <class Functor>
-bool AutoPas<Particle>::iteratePairwise(Functor *f) {
+bool AutoPas<Particle>::computeInteractions(Functor *f) {
   static_assert(not std::is_same<Functor, autopas::Functor<Particle, Functor>>::value,
-                "The static type of Functor in iteratePairwise is not allowed to be autopas::Functor. Please use the "
+                "The static type of Functor in computeInteractions is not allowed to be autopas::Functor. Please use the "
                 "derived type instead, e.g. by using a dynamic_cast.");
   if (f->getCutoff() > this->getCutoff()) {
     utils::ExceptionHandler::exception("Functor cutoff ({}) must not be larger than container cutoff ({})",
                                        f->getCutoff(), this->getCutoff());
   }
-  return _logicHandler->iteratePairwisePipeline(f);
-}
 
-template <class Particle>
-template <class Functor>
-bool AutoPas<Particle>::iterateTriwise(Functor *f) {
-#ifdef AUTOPAS_ENABLE_3_BODY_INTERACTIONS
-  static_assert(not std::is_same<Functor, autopas::Functor<Particle, Functor>>::value,
-                "The static type of Functor in iterateTriwise is not allowed to be autopas::Functor. Please use the "
-                "derived type instead, e.g. by using a dynamic_cast.");
-  if (f->getCutoff() > this->getCutoff()) {
-    utils::ExceptionHandler::exception("Functor cutoff ({}) must not be larger than container cutoff ({})",
-                                       f->getCutoff(), this->getCutoff());
+  switch (f->getNBody()) {
+    case 2 : {
+      return _logicHandler->iteratePairwisePipeline(f);
+    }
+    case 3 : {
+      return _logicHandler->iterateTriwisePipeline(f);
+    }
+    default : {
+      utils::ExceptionHandler::exception("Functor NBody({}) is not valid. Only 2-body and 3-body functors are supported.", f->getNBody());
+    }
   }
-  return _logicHandler->iterateTriwise(f);
-#else
-  utils::ExceptionHandler::exception("autopas::iterateTriwise called when AutoPas has not been compiled for 3-body interactions."
-      "Please set AUTOPAS_ENABLE_3_BODY_INTERACTIONS to ON");
-#endif
 }
 
 template <class Particle>

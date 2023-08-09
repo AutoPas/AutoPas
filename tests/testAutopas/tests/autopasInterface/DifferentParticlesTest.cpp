@@ -25,5 +25,5 @@ TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   // We also check if iteratePairwise can be instantiated.
   MockFunctor<NonConstructibleParticle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
-  autoPas.iteratePairwise(&functor);
+  autoPas.computeInteractions(&functor);
 }

@@ -49,7 +49,7 @@ decltype(auto) withStaticCellType(autopas::CellType cellType, F &&func) {
       return func(autopas::ReferenceParticleCell<ParticleType>());
   }
   autopas::utils::ExceptionHandler::exception(
-      "Trying to use a traversal of of a Celltype not specified in TravelComparison::calculateForces. "
+      "Trying to use a traversal of of a Celltype not specified in TravelComparison::computeInteractions. "
       "CelltypeEnum: {}",
       cellType);
   return decltype(func(autopas::FullParticleCell<ParticleType>()))();

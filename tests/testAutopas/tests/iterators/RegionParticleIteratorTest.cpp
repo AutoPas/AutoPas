@@ -64,7 +64,7 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   // set up expectations

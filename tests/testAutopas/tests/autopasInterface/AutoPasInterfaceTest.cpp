@@ -173,7 +173,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
   addHaloParticles(autoPas, recvHaloParticles);
 
   // 4. iteratePairwise
-  autoPas.iteratePairwise(functor);
+  autoPas.computeInteractions(functor);
 }
 
 template <typename Functor>
@@ -211,8 +211,8 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
   addHaloParticles(autoPas2, recvHaloParticles2);
 
   // 4. iteratePairwise
-  autoPas1.iteratePairwise(functor1);
-  autoPas2.iteratePairwise(functor2);
+  autoPas1.computeInteractions(functor1);
+  autoPas2.computeInteractions(functor2);
 }
 
 template <typename Functor>
@@ -419,7 +419,7 @@ void testHaloCalculation(testingTuple options) {
       functor(cutoff);
   functor.setParticleProperties(24, 1);
 
-  autoPas.iteratePairwise(&functor);
+  autoPas.computeInteractions(&functor);
 
   doAssertions(autoPas, &functor, 26, __LINE__);
 }

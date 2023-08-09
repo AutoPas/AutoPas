@@ -138,7 +138,7 @@ Important parts to implement:
 #### Usage
 Each functor is applied to AutoPas via:
 ```bash
-autoPas.iteratePairwise(&myFunctor);
+autoPas.computeInteractions(&myFunctor);
 ```
 
 ### Particle Ownership
@@ -212,7 +212,7 @@ This is the main, general purpose logger. It supports all spdlog-levels. These l
 time via the `CMake` variable `AUTOPAS_MIN_LOG_LVL`. At run time, this logger's compiled levels can be set e.g. via: 
 `autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);`
 
-At debug level, this logger will print the full configuration of every call to `autopas::AutoPas::iteratePairwise()`.
+At debug level, this logger will print the full configuration of every call to `autopas::AutoPas::computeInteractions()`.
 
 #### GaussianClusterLogger
 Creates a graph representation of the Gaussian cluster model that was created during the simulation.
@@ -266,9 +266,9 @@ One simulation loop should always consist of the following phases:
       autoPas.addHaloParticle(haloParticle)
       ```
 
-4. Perform an iteratePairwise step.
+4. Perform an computeInteractions step.
    ```cpp
-   autoPas.iteratePairwise(functor);
+   autoPas.computeInteractions(functor);
    ```
 
 ### Inserting additional particles

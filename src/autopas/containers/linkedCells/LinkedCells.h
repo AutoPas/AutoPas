@@ -139,7 +139,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
+          "Trying to use a traversal of wrong type in LinkedCells::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
 

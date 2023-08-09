@@ -15,7 +15,7 @@ namespace autopas {
 /**
  * This class provides the Traversal Interface for the verlet lists container.
  *
- * The container only accepts traversals in its iteratePairwise() method that implement this interface.
+ * The container only accepts traversals in its computeInteractions() method that implement this interface.
  * @tparam LinkedParticleCell the type of cells
  */
 template <class LinkedParticleCell>

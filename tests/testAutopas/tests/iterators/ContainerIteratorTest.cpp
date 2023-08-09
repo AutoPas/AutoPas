@@ -80,7 +80,7 @@ TEST_P(ContainerIteratorTest, emptyContainer) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   // actual test
@@ -108,7 +108,7 @@ TEST_P(ContainerIteratorTest, findAllParticlesInsideDomain) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   // set up expectations
@@ -157,7 +157,7 @@ TEST_P(ContainerIteratorTest, findAllParticlesAroundBoundaries) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   // set up expectations
@@ -211,7 +211,7 @@ TEST_P(ContainerIteratorTestNonConst, deleteParticles) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   auto isOdd = [](auto id) -> bool { return id % 2 != 0; };
@@ -278,7 +278,7 @@ TEST_P(ContainerIteratorTestNonConstOwned, addParticlesWhileIterating) {
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
     EmptyFunctor<Molecule> eFunctor;
-    autoPas.iteratePairwise(&eFunctor);
+    autoPas.computeInteractions(&eFunctor);
   }
 
   const auto cellSize = (autoPas.getCutoff() + autoPas.getVerletSkin()) * cellSizeFactor;
