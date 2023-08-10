@@ -68,7 +68,9 @@ class Logger {
    */
   static void create(std::string &filename) {
     // drop an already registered Logger if it exists
-    if (spdlog::get(loggerName())) spdlog::drop(loggerName());
+    if (spdlog::get(loggerName())) {
+      unregister();
+    }
     spdlog::basic_logger_mt(loggerName(), filename);
   }
 
@@ -79,20 +81,22 @@ class Logger {
    */
   static void create(std::ostream &oss = std::cout) {
     // drop an already registered Logger if it exists
-    if (spdlog::get(loggerName())) spdlog::drop(loggerName());
-    std::shared_ptr<spdlog::sinks::sink> ostream_sink;
+    if (spdlog::get(loggerName())) {
+      unregister();
+    }
+    std::shared_ptr<spdlog::sinks::sink> ostreamSink;
 #ifdef AUTOPAS_COLORED_CONSOLE_LOGGING
     if (oss.rdbuf() == std::cout.rdbuf()) {
-      ostream_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+      ostreamSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     } else if (oss.rdbuf() == std::cerr.rdbuf()) {
-      ostream_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
+      ostreamSink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
     } else {  // no color for streams other than cout / cerr
-      ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+      ostreamSink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
     }
 #else
-    ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+    ostreamSink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
 #endif
-    auto logger = std::make_shared<spdlog::logger>(loggerName(), ostream_sink);
+    auto logger = std::make_shared<spdlog::logger>(loggerName(), ostreamSink);
     spdlog::register_logger(logger);
   }
 

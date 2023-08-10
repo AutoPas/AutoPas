@@ -8,7 +8,7 @@
 
 #include <spdlog/async.h>
 
-#include "autopas/selectors/Configuration.h"
+#include "autopas/tuning/Configuration.h"
 
 namespace autopas {
 

@@ -18,8 +18,6 @@ namespace autopas {
  */
 template <class Particle, class NeighborList>
 class VarVerletLists : public VerletListsLinkedBase<Particle> {
-  using LinkedParticleCell = FullParticleCell<Particle>;
-
  public:
   /**
    * Constructor of the Variable VerletLists class.

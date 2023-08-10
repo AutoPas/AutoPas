@@ -15,9 +15,7 @@ std::function<void()> autopas::utils::ExceptionHandler::_customAbortFunction = a
 template <>
 void autopas::utils::ExceptionHandler::exception(const std::string e) {  // NOLINT
   // no lock here, as a different public function is called!!!
-  int myRank{};
-  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
-  AutoPasException autoPasException("Rank " + std::to_string(myRank) + " : " + e);
+  AutoPasException autoPasException(e);
   exception(autoPasException);
 }
 
@@ -73,7 +71,15 @@ void autopas::utils::ExceptionHandler::nonThrowException(const std::exception &e
 }
 
 autopas::utils::ExceptionHandler::AutoPasException::AutoPasException(std::string description)
-    : _description(std::move(description)) {}
+    : _description(std::move(description)) {
+  int myRank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  _description = "Rank " + std::to_string(myRank) + " : " + _description;
+  // if there is an AutoPas logger active, flush it
+  if (autopas::Logger::get()) {
+    autopas::Logger::get()->flush();
+  }
+}
 
 autopas::utils::ExceptionHandler::AutoPasException::AutoPasException(
     const autopas::utils::ExceptionHandler::AutoPasException &exception) = default;

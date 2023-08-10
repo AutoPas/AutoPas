@@ -387,16 +387,17 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   // compute cell length and number of cells
   index_t numCells = 1;
   for (int d = 0; d < 3; ++d) {
-    const double diff = _boxMax[d] - _boxMin[d];
-    auto cellsPerDim = static_cast<index_t>(std::floor(diff / (_interactionLength * cellSizeFactor)));
-    // at least one central cell
-    cellsPerDim = std::max(cellsPerDim, 1ul);
+    const double boxLength = _boxMax[d] - _boxMin[d];
+    // The number of cells is rounded down because the cells will be stretched to fit.
+    // std::max to ensure there is at least one cell.
+    const auto cellsPerDim =
+        std::max(static_cast<index_t>(std::floor(boxLength / (_interactionLength * cellSizeFactor))), 1ul);
 
     _cellsPerDimensionWithHalo[d] = cellsPerDim + 2 * _cellsPerInteractionLength;
 
-    _cellLength[d] = diff / cellsPerDim;
+    _cellLength[d] = boxLength / static_cast<double>(cellsPerDim);
 
-    _cellLengthReciprocal[d] = cellsPerDim / diff;  // compute with least rounding possible
+    _cellLengthReciprocal[d] = static_cast<double>(cellsPerDim) / boxLength;  // compute with least rounding possible
 
     _haloBoxMin[d] = _boxMin[d] - _cellsPerInteractionLength * _cellLength[d];
     _haloBoxMax[d] = _boxMax[d] + _cellsPerInteractionLength * _cellLength[d];

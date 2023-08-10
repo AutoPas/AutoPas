@@ -17,7 +17,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 
 namespace autopas {
 
