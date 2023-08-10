@@ -284,21 +284,32 @@ void Simulation::run() {
 
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   if (_configuration.tuningPhases.value > 0) {
-    // @TODO: this can be improved by considering the tuning strategy
-    // This is just a randomly guessed number but seems to fit roughly for default settings.
-    size_t configsTestedPerTuningPhase = 90;
+    const size_t configsTestedPerTuningPhase = [&]() {
+      if (std::any_of(_configuration.tuningStrategyOptions.value.begin(),
+                      _configuration.tuningStrategyOptions.value.end(), [](const auto &stratOpt) {
+                        return stratOpt == autopas::TuningStrategyOption::bayesianSearch or
+                               stratOpt == autopas::TuningStrategyOption::bayesianClusterSearch or
+                               stratOpt == autopas::TuningStrategyOption::randomSearch;
+                      })) {
+        return static_cast<size_t>(_configuration.tuningMaxEvidence.value);
+      } else {
+        // @TODO: this can be improved by considering the tuning strategy
+        //  or averaging number of iterations per tuning phase and dynamically adapt prediction
 
-    if (std::any_of(_configuration.tuningStrategyOptions.value.begin(),
-                    _configuration.tuningStrategyOptions.value.end(), [](const auto &stratOpt) {
-                      return stratOpt == autopas::TuningStrategyOption::bayesianSearch or
-                             stratOpt == autopas::TuningStrategyOption::bayesianClusterSearch or
-                             stratOpt == autopas::TuningStrategyOption::randomSearch;
-                    })) {
-      configsTestedPerTuningPhase = _configuration.tuningMaxEvidence.value;
-    }
+        // This estimate is only valid for full search and no restrictions on the cartesian product.
+        // add static to only evaluate this once
+        static const auto ret = autopas::SearchSpaceGenerators::cartesianProduct(
+                                    _configuration.containerOptions.value, _configuration.traversalOptions.value,
+                                    _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
+                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get())
+                                    .size();
+        return ret;
+      }
+    }();
+    // non-tuning iterations + tuning iterations + one iteration after last phase
     auto estimate =
         (_configuration.tuningPhases.value - 1) * _configuration.tuningInterval.value +
-        (_configuration.tuningPhases.value * _configuration.tuningSamples.value * configsTestedPerTuningPhase);
+        (_configuration.tuningPhases.value * _configuration.tuningSamples.value * configsTestedPerTuningPhase) + 1;
     return {estimate, false};
   } else {
     return {_configuration.iterations.value, true};
