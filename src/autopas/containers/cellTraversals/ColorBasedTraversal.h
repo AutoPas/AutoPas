@@ -24,7 +24,7 @@ namespace autopas {
  */
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class ColorBasedTraversal : public CellTraversal<ParticleCell> {
+class ColorBasedTraversal : public CellTraversal<ParticleCell>, public PairwiseTraversalInterface {
  protected:
   /**
    * Constructor of the ColorBasedTraversal.

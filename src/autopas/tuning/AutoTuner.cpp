@@ -71,6 +71,11 @@ void AutoTuner::logIteration(const Configuration &conf, bool tuningIteration, lo
   }
 }
 
+void AutoTuner::incrementIterationCounters() {
+  ++_iterationsSinceTuning;
+  ++_iteration;
+}
+
 bool AutoTuner::searchSpaceIsTrivial() const { return _searchSpace.size() == 1; }
 
 bool AutoTuner::searchSpaceIsEmpty() const { return _searchSpace.empty(); }

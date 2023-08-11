@@ -27,7 +27,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                        public VCLTraversalInterface<typename ParticleCell::ParticleType>, public PairwiseTraversalInterface {
+                        public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
 
@@ -98,9 +98,9 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
       processColorCell(x, y, z, towersPerColoringCell);
     };
 
-    // localStride is necessary because stride is constexpr and cTraversal() wants a const &
+    // localStride is necessary because stride is constexpr and colorTraversal() wants a const &
     auto localStride = _stride;
-    this->cTraversal(std::forward<decltype(loopBody)>(loopBody), {coloringCellsPerDim[0], coloringCellsPerDim[1], 1},
+    this->colorTraversal(std::forward<decltype(loopBody)>(loopBody), {coloringCellsPerDim[0], coloringCellsPerDim[1], 1},
                      localStride);
   }
 

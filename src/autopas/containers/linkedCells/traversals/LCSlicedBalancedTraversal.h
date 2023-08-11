@@ -36,7 +36,7 @@ namespace autopas {
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class LCSlicedBalancedTraversal
     : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>,
-      public LCTraversalInterface<ParticleCell>, public PairwiseTraversalInterface {
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the balanced sliced traversal.

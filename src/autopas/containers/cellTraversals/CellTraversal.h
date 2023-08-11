@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam ParticleCell type of cells.
  */
 template <class ParticleCell>
-class CellTraversal : public TraversalInterface {
+class CellTraversal {
  public:
   /**
    * Constructor of CellTraversal.
@@ -33,7 +33,7 @@ class CellTraversal : public TraversalInterface {
   /**
    * Destructor of CellTraversal.
    */
-  ~CellTraversal() override = default;
+  virtual ~CellTraversal() = default;
 
   /**
    * Sets the cells to iterate over. Should always be called before initTraversal().

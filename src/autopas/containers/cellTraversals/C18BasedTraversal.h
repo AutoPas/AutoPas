@@ -64,7 +64,7 @@ inline void C18BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3>::c1
   if (not allCells) {
     end[2] -= this->_overlap[2];
   }
-  this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
+  this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride);
 }
 
 }  // namespace autopas

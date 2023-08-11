@@ -59,6 +59,6 @@ inline void C04BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, col
   const auto end = this->_cellsPerDimension - this->_overlap;
   auto stride = this->_overlap + 1ul;
   stride[0] = 1;
-  this->cTraversal(std::forward<LoopBody>(loopBody), end, stride);
+  this->colorTraversal(std::forward<LoopBody>(loopBody), end, stride);
 }
 }  // namespace autopas

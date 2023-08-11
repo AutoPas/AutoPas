@@ -71,7 +71,7 @@ class TraversalSelector {
    * @return Smartpointer to the traversal.
    */
   template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-  static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
+  static std::unique_ptr<PairwiseTraversalInterface> generateTraversal(TraversalOption traversalType,
                                                                PairwiseFunctor &pairwiseFunctor,
                                                                const TraversalSelectorInfo &info);
 
@@ -87,7 +87,7 @@ class TraversalSelector {
    * @return Smartpointer to the traversal.
    */
   template <class PairwiseFunctor>
-  static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
+  static std::unique_ptr<PairwiseTraversalInterface> generateTraversal(TraversalOption traversalType,
                                                                PairwiseFunctor &pairwiseFunctor,
                                                                const TraversalSelectorInfo &info,
                                                                DataLayoutOption dataLayout, Newton3Option useNewton3);
@@ -95,7 +95,7 @@ class TraversalSelector {
 
 template <class ParticleCell>
 template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
+std::unique_ptr<PairwiseTraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info) {
   switch (traversalType) {
     // Direct sum
@@ -265,7 +265,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
 }
 template <class ParticleCell>
 template <class PairwiseFunctor>
-std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
+std::unique_ptr<PairwiseTraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &traversalInfo,
     DataLayoutOption dataLayout, Newton3Option newton3) {
   switch (dataLayout) {

@@ -30,7 +30,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
-                       public LCTraversalInterface<ParticleCell>, public PairwiseTraversalInterface {
+                       public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c04 traversal.

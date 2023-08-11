@@ -635,7 +635,7 @@ class LogicHandler {
    * fields are filled with NaN.
    */
   template <class PairwiseFunctor>
-  IterationMeasurements iteratePairwise(PairwiseFunctor &functor, TraversalInterface &traversal);
+  IterationMeasurements iteratePairwise(PairwiseFunctor &functor, PairwiseTraversalInterface &traversal);
 
   /**
    * Performs the interactions ParticleContainer::computeInteractions() did not cover.
@@ -732,9 +732,14 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
-   * Reference to the AutoTuner that owns the container, ...
+   * Reference to the AutoTuner for pairwise interactions that owns the container, ...
    */
   autopas::AutoTuner &_autoTuner;
+
+  /**
+   * Reference to the AutoTuner for 3-Body interactions that owns the container, ...
+   */
+  // autopas::AutoTuner &_autoTuner3B;
 
   /**
    * Specifies if the neighbor list is valid.
@@ -854,7 +859,7 @@ LogicHandler<Particle>::getParticleBuffers() const {
 template <typename Particle>
 template <class PairwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
-    PairwiseFunctor &functor, TraversalInterface &traversal) {
+    PairwiseFunctor &functor, PairwiseTraversalInterface &traversal) {
   const bool doListRebuild = not neighborListsAreValid();
   const auto configuration = _autoTuner.getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
@@ -874,7 +879,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
     timerRebuild.stop();
   }
   timerIteratePairwise.start();
-  container.computeInteractions(&traversal);
+  container.iteratePairwise(&traversal);
   timerIteratePairwise.stop();
 
   timerRemainderTraversal.start();
@@ -1166,7 +1171,9 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
 
   /// Pairwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  const IterationMeasurements measurements = iteratePairwise(*functor, *traversalPtr);
+  PairwiseTraversalInterface *pairwiseTraversalPtr = dynamic_cast<PairwiseTraversalInterface*>(traversalPtr.get());
+  // TODO: error check
+  const IterationMeasurements measurements = iteratePairwise(*functor, *pairwiseTraversalPtr);
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {
@@ -1237,7 +1244,9 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
 
   /// Pairwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  const IterationMeasurements measurements = iteratePairwise(*functor, *traversalPtr);
+  PairwiseTraversalInterface *pairwiseTraversalPtr = dynamic_cast<PairwiseTraversalInterface*>(traversalPtr.get());
+  // TODO: change to triwise
+  const IterationMeasurements measurements = iteratePairwise(*functor, *pairwiseTraversalPtr);
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {

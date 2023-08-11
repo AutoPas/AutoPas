@@ -31,7 +31,7 @@ namespace autopas {
  */
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
           bool spaciallyForward>
-class SlicedBasedTraversal : public CellTraversal<ParticleCell> {
+class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public PairwiseTraversalInterface {
  public:
   /**
    * Constructor of the sliced traversal.

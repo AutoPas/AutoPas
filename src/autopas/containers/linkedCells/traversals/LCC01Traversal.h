@@ -80,7 +80,7 @@ template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dat
           bool combineSoA = false>
 class LCC01Traversal
     : public C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, (combineSoA ? 2 : 3)>,
-      public LCTraversalInterface<ParticleCell>, public PairwiseTraversalInterface {
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.

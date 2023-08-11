@@ -158,6 +158,11 @@ class AutoTuner {
   void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
 
   /**
+   * Increments iteration counters. Specifically _iteration and _iterationsSinceTuning.
+   */
+  void incrementIterationCounters();
+
+  /**
    * Initialize rapl meter.
    * @return True if energy measurements are possible on this system.
    */

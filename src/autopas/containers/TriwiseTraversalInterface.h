@@ -13,7 +13,7 @@ namespace autopas {
 /**
  * This interface serves as a common parent class for all triwise traversals
  */
-class TriwiseTraversalInterface : public TraversalInterface {
+class TriwiseTraversalInterface : public TraversalInterface  {
  public:
   /**
    * Traverses all particle triplets.
