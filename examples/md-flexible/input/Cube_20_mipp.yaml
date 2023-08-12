@@ -6,7 +6,7 @@ boundary-type                    :  [periodic, periodic, periodic]
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension    :  [5, 5, 5]
+      particles-per-dimension    :  [20, 20, 20]
       particle-spacing           :  1.5
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
