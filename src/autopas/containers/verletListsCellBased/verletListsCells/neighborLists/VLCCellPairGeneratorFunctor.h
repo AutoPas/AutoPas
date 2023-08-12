@@ -6,6 +6,7 @@
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
 
 #pragma once
 
@@ -16,7 +17,7 @@ namespace autopas {
  */
 template <class Particle>
 
-class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
+class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
   using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -31,7 +32,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
   VLCCellPairGeneratorFunctor(PairwiseNeighborListsType &neighborLists,
                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                               std::vector<std::unordered_map<size_t, size_t>> &globalToLocalIndex, double cutoffskin)
-      : Functor<Particle, VLCCellPairGeneratorFunctor<Particle>>(0.),
+      : PairwiseFunctor<Particle, VLCCellPairGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _globalToLocalIndex(globalToLocalIndex),

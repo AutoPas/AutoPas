@@ -19,6 +19,8 @@
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/CompileInfo.h"
+#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
+#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
 
 // These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
 #include "autopas/LogicHandler.h"
@@ -124,17 +126,16 @@ bool AutoPas<Particle>::computeInteractions(Functor *f) {
                                        f->getCutoff(), this->getCutoff());
   }
 
-  switch (f->getNBody()) {
-    case 2 : {
-      return _logicHandler->iteratePairwisePipeline(f);
-    }
-    case 3 : {
-      return _logicHandler->iterateTriwisePipeline(f);
-    }
-    default : {
-      utils::ExceptionHandler::exception("Functor NBody({}) is not valid. Only 2-body and 3-body functors are supported.", f->getNBody());
-    }
+  if constexpr (Functor::getNBody() == 2) { //static_cast<PairwiseFunctor<Particle, Functor> *>(f) != NULL) {
+    return _logicHandler->iteratePairwisePipeline(f);
   }
+  else if constexpr (Functor::getNBody() == 3) { //dynamic_cast<TriwiseFunctor<Particle, Functor> *>(f) != NULL) {
+      return _logicHandler->iterateTriwisePipeline(f);
+  }
+  else{
+      utils::ExceptionHandler::exception("Functor is not valid. Only 2-body and 3-body functors are supported. Please use a functor derived from PairwiseFunctor or TriwiseFunctor.");
+  }
+  return false;
 }
 
 template <class Particle>

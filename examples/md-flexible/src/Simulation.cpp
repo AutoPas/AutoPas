@@ -18,19 +18,22 @@
 //! @cond Doxygen_Suppress
 extern template class autopas::AutoPas<ParticleType>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovec *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovec *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovecGlobals *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovecGlobals *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAVX *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeSVE *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
-    autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
+    autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> *);
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -574,20 +577,21 @@ void Simulation::logMeasurements() {
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
     std::cout << "MFUPs/sec                          : " << mfups << std::endl;
 
-    if (_configuration.dontMeasureFlops.value) {
-      LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-      autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
-          ljFunctor, _autoPasContainer->getCutoff());
-      _autoPasContainer->computeInteractions(&flopCounterFunctor);
-
-      const auto flops = flopCounterFunctor.getFlops();
-
-      std::cout << "Statistics for Force Calculation at end of simulation:" << std::endl;
-      std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-      std::cout << "  GFLOPs/sec                         : "
-                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
-    }
+    //TODO: adjust flop calculation for 3-body
+//    if (_configuration.dontMeasureFlops.value) {
+//      ForceFunctorAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+//      autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> flopCounterFunctor(
+//          ljFunctor, _autoPasContainer->getCutoff());
+//      _autoPasContainer->computeInteractions(&flopCounterFunctor);
+//
+//      const auto flops = flopCounterFunctor.getFlops();
+//
+//      std::cout << "Statistics for Force Calculation at end of simulation:" << std::endl;
+//      std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+//      std::cout << "  GFLOPs/sec                         : "
+//                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
+//      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+//    }
   }
 }
 
@@ -664,6 +668,15 @@ T Simulation::applyWithChosenFunctor(F f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::at: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+      return f(ATFunctor{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
 #endif
     }
   }

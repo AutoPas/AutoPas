@@ -54,8 +54,9 @@ class ParticlePropertiesLibrary {
    * @param epsilon
    * @param sigma
    * @param mass
+   * @param nu
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass, const floatType nu = 0.0);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
@@ -116,6 +117,13 @@ class ParticlePropertiesLibrary {
    * @return sigma_i
    */
   floatType getSigma(intType i) const;
+
+  /**
+   * Getter for the site's nu.
+   * @param i Type Id of the site or single-site molecule.
+   * @return nu_i
+   */
+  floatType getNu(intType i) const;
 
   /**
    * Getter for the site's mass.
@@ -198,6 +206,16 @@ class ParticlePropertiesLibrary {
   }
 
   /**
+   * Returns the precomputed mixed epsilon * 24.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
+   * @return 24*epsilon_ij
+   */
+  inline floatType getMixingNu(intType i, intType j) const {
+    return _computedMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
+  }
+
+  /**
    * Get complete mixing data for one pair of site types.
    * @param i Id of site one.
    * @param j Id of site two.
@@ -253,6 +271,7 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
+  std::vector<floatType> _nus; // Factor for AxilrodTeller potential
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;
@@ -267,6 +286,7 @@ class ParticlePropertiesLibrary {
     floatType epsilon24;
     floatType sigmaSquared;
     floatType shift6;
+    floatType nu;
   };
 
   std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
@@ -274,7 +294,7 @@ class ParticlePropertiesLibrary {
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
-                                                                floatType mass) {
+                                                                floatType mass, floatType nu) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
@@ -284,6 +304,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
   ++_numRegisteredSiteTypes;
   _epsilons.emplace_back(epsilon);
   _sigmas.emplace_back(sigma);
+  _nus.emplace_back(nu);
   _siteMasses.emplace_back(mass);
 }
 
@@ -420,6 +441,11 @@ floatType ParticlePropertiesLibrary<floatType, intType>::getEpsilon(intType i) c
 template <typename floatType, typename intType>
 floatType ParticlePropertiesLibrary<floatType, intType>::getSigma(intType i) const {
   return _sigmas[i];
+}
+
+template <typename floatType, typename intType>
+floatType ParticlePropertiesLibrary<floatType, intType>::getNu(intType i) const {
+  return _nus[i];
 }
 
 template <typename floatType, typename intType>

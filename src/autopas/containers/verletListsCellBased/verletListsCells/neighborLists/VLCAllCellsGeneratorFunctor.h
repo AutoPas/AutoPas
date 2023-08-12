@@ -5,6 +5,7 @@
  */
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
 
 #pragma once
 
@@ -14,7 +15,7 @@ namespace autopas {
  * This functor can generate verlet lists using the typical pairwise traversal.
  */
 template <class Particle>
-class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>> {
+class VLCAllCellsGeneratorFunctor : public PairwiseFunctor<Particle, VLCAllCellsGeneratorFunctor<Particle>> {
   using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -28,7 +29,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
   VLCAllCellsGeneratorFunctor(NeighborListsType &neighborLists,
                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                               double cutoffskin)
-      : Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>>(0.),
+      : PairwiseFunctor<Particle, VLCAllCellsGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}

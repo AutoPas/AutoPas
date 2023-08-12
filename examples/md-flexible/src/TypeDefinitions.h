@@ -30,6 +30,10 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -109,6 +113,18 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+/**
+ * Type of LJFunctorTypeAT used in md-flexible.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "The Axilrod Teller functor does not have support for multisite molecules!"
+#else
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+#endif
+
+#endif
+
 /**
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
@@ -122,20 +138,22 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
+using ForceFunctorAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using ForceFunctorAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
+using ForceFunctorAbstract = mdLib::LJFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using ForceFunctorAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
-using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
+using ForceFunctorAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
-using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
+using ForceFunctorAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AT
+using ForceFunctorAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 #endif
 
 #endif

@@ -301,6 +301,10 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;
     }
+    case FunctorOption::at: {
+      os << "Axilrod-Teller" << endl;
+      break;
+    }
   }
   printOption(newton3Options);
   printOption(cutoff);

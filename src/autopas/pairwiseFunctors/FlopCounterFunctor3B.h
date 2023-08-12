@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
+#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {
@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam ForceFunctorType
  */
 template <class Particle, class ForceFunctorType>
-class FlopCounterFunctor : public PairwiseFunctor<Particle, FlopCounterFunctor<Particle, ForceFunctorType>> {
+class FlopCounterFunctor : public TriwiseFunctor<Particle, FlopCounterFunctor<Particle, ForceFunctorType>> {
  public:
   /**
    * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
@@ -46,16 +46,16 @@ class FlopCounterFunctor : public PairwiseFunctor<Particle, FlopCounterFunctor<P
    * @param cutoffRadius the cutoff radius
    */
   explicit FlopCounterFunctor<Particle, ForceFunctorType>(ForceFunctorType forceFunctor, double cutoffRadius)
-      : autopas::PairwiseFunctor<Particle, FlopCounterFunctor<Particle, ForceFunctorType>>(cutoffRadius),
+      : autopas::TriwiseFunctor<Particle, FlopCounterFunctor<Particle, ForceFunctorType>>(cutoffRadius),
         _forceFunctor(forceFunctor),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
         _kernelCalls(0ul),
         _kernelFlops(0ul) {}
 
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
-    if (i.isDummy() or j.isDummy()) {
+    if (i.isDummy() or j.isDummy() or k.isDummy()) {
       return;
     }
     const auto displacement = i.getR() - j.getR();
@@ -237,7 +237,7 @@ class FlopCounterFunctor : public PairwiseFunctor<Particle, FlopCounterFunctor<P
   }
 
   /**
-   * get the hit rate of the pair-wise interaction, i.e. the ratio of the number
+   * get the hit rate of the tri-wise interaction, i.e. the ratio of the number
    * of kernel calls compared to the number of distance calculations
    * @return the hit rate
    */

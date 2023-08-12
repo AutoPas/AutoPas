@@ -8,6 +8,7 @@
 
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -34,7 +35,7 @@ template <class Particle, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class AxilrodTellerFunctor
-    : public autopas::Functor<
+    : public autopas::TriwiseFunctor<
           Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -59,7 +60,7 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle,
+      : autopas::TriwiseFunctor<Particle,
                          AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
@@ -108,12 +109,6 @@ class AxilrodTellerFunctor
    */
   virtual std::string getName() { return "AxilrodTellerFunctorAutoVec"; }
 
-  /**
-   * Return number of interacting bodies. Required to determine the relevant traversals.
-   * @return number of interacting bodies of the functor
-   */
-  unsigned int getNBody() const { return 3; }
-
   bool isRelevantForTuning() final { return relevantForTuning; }
 
   bool allowsNewton3() final {
@@ -124,7 +119,7 @@ class AxilrodTellerFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) final {
+  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
@@ -132,7 +127,7 @@ class AxilrodTellerFunctor
     }
     auto nu = _nu;
     if constexpr (useMixing) {
-      nu = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId(), k.getTypeId);
+      nu = _PPLibrary->getNu(i.getTypeId());
     }
     auto drij = j.getR() - i.getR();
     auto drjk = k.getR() - j.getR();
@@ -143,7 +138,7 @@ class AxilrodTellerFunctor
     double dr2ki = autopas::utils::ArrayMath::dot(drki, drki);
 
     // Check cutoff
-    if (dr2ij > _cutoffSquared or dr2jk > _cutoffSquared or drki > _cutoffSquared) {
+    if (dr2ij > _cutoffSquared or dr2jk > _cutoffSquared or dr2ki > _cutoffSquared) {
       return;
     }
 
@@ -158,24 +153,24 @@ class AxilrodTellerFunctor
     double dr5 = dr2 * dr2 * std::sqrt(dr2);
     double invdr5 = _nu / dr5;
 
-    auto fi = dr2i * (dr2j - dr2k) * drjk
-              + (dr2j * dr2k - dr2jk * dr2ki + 5.0 * dr2ijk / dr2ij) * drij
-              + (- dr2j * dr2k + dr2ij * dr2jk - 5.0 * dr2ijk / dr2ki) * drki;
+    auto fi =  drjk * dr2i * (dr2j - dr2k)
+              + drij * (dr2j * dr2k - dr2jk * dr2ki + 5.0 * dr2ijk / dr2ij)
+              + drki * (- dr2j * dr2k + dr2ij * dr2jk - 5.0 * dr2ijk / dr2ki);
     fi *= 3.0 * invdr5;
     i.addF(fi);
 
     auto fj = fi;
     auto fk = fi;
     if (newton3) {
-      fj = dr2j * (dr2k - dr2i) * drki
-                + (- dr2i * dr2k + dr2jk * dr2ki - 5.0 * dr2ijk / dr2ij) * drij
-                + (dr2i * dr2k - dr2ij * dr2ki + 5.0 * dr2ijk / dr2jk) * drjk;
+      fj = drki * dr2j * (dr2k - dr2i)
+                + drij * (- dr2i * dr2k + dr2jk * dr2ki - 5.0 * dr2ijk / dr2ij)
+                + drjk * (dr2i * dr2k - dr2ij * dr2ki + 5.0 * dr2ijk / dr2jk);
       fj *= 3.0 * invdr5;
       j.addF(fj);
 
-      /* auto fk = dr2k * (dr2i - dr2j) * drij
-                + (- dr2i * dr2j + dr2ij * dr2ki - 5.0 * dr2ijk / dr2jk) * drjk
-                + (dr2i * dr2j - dr2ij * dr2jk + 5.0 * dr2ijk / dr2ki) * drki;
+      /* auto fk = drij * dr2k * (dr2i - dr2j)
+                + drjk * (- dr2i * dr2j + dr2ij * dr2ki - 5.0 * dr2ijk / dr2jk)
+                + drki * (dr2i * dr2j - dr2ij * dr2jk + 5.0 * dr2ijk / dr2ki);
       fk *= 3.0 * invdr5; */
       fk = fi + fj;
       k.subF(fk);
@@ -432,14 +427,15 @@ class AxilrodTellerFunctor
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
   const double _cutoffSquared;
+
   // not const because they might be reset through PPL
-  double _nu = 0;
+  double _nu = 0.0;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 

@@ -16,16 +16,13 @@
 namespace autopas {
 
 /**
- * Newton 3 modes for the LJFunctor.
+ * Newton 3 modes for the Functor.
  */
 enum class FunctorN3Modes {
   Newton3Only,
   Newton3Off,
   Both,
 };
-
-template <class Particle>
-class VerletListHelpers;
 
 /**
  * Functor class. This class describes the pairwise interactions between
@@ -37,7 +34,7 @@ class VerletListHelpers;
  * overriding allowsNonNewton3 resp. allowsNewton3
  *
  * @tparam Particle the type of Particle
- * @tparam ParticleCell_t the type of ParticleCell
+ * @tparam CRTP_T the type of the functor
  */
 template <class Particle, class CRTP_T>
 class Functor {
@@ -73,20 +70,6 @@ class Functor {
   virtual void endTraversal(bool newton3){};
 
   /**
-   * Functor for arrays of structures (AoS).
-   *
-   * This functor should calculate the forces or any other pair-wise interaction
-   * between two particles.
-   * This should include a cutoff check if needed!
-   * @param i Particle i
-   * @param j Particle j
-   * @param newton3 defines whether or whether not to use newton 3
-   */
-  virtual void AoSFunctor(Particle &i, Particle &j, bool newton3) {
-    utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
-  }
-
-  /**
    * Get attributes needed for computation.
    * @return Attributes needed for computation.
    * @todo C++20: make this function virtual
@@ -111,52 +94,6 @@ class Functor {
    */
   constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 0>{};
-  }
-
-  /**
-   * Functor for structure of arrays (SoA)
-   *
-   * This functor should calculate the forces or any other pair-wise interaction
-   * between all particles in an soa.
-   * This should include a cutoff check if needed!
-   *
-   * @param soa Structure of arrays
-   * @param newton3 defines whether or whether not to use newton 3
-   */
-  virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) {
-    utils::ExceptionHandler::exception("Functor::SoAFunctorSingle: not yet implemented");
-  }
-
-  /**
-   * Functor for structure of arrays (SoA) for neighbor lists
-   *
-   * This functor should calculate the forces or any other pair-wise interaction
-   * between the particle in the SoA with index indexFirst and all particles with indices in the neighborList.
-   * This should include a cutoff check if needed!
-   *
-   * @param soa Structure of arrays
-   * @param indexFirst The index of the first particle for each interaction
-   * @param neighborList The list of neighbors
-   * @param newton3 defines whether or whether not to use newton 3
-   */
-  virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
-    utils::ExceptionHandler::exception("Functor::SoAFunctorVerlet: not yet implemented");
-  }
-
-  /**
-   * Functor for structure of arrays (SoA)
-   *
-   * This functor should calculate the forces or any other pair-wise interaction
-   * between all particles of soa1 and soa2.
-   * This should include a cutoff check if needed!
-   *
-   * @param soa1 First structure of arrays.
-   * @param soa2 Second structure of arrays.
-   * @param newton3 defines whether or whether not to use newton 3
-   */
-  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
-    utils::ExceptionHandler::exception("Functor::SoAFunctorPair: not yet implemented");
   }
 
   /**
@@ -226,12 +163,6 @@ class Functor {
    * @return
    */
   double getCutoff() const { return _cutoff; }
-
-  /**
-   * Return number of interacting bodies. Required to determine the relevant traversals.
-   * @return number of interacting bodies of the functor
-   */
-  virtual unsigned int getNBody() const { return 2; }
 
  private:
   /**

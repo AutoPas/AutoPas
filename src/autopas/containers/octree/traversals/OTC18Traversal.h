@@ -29,7 +29,7 @@ namespace autopas {
  */
 template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
-                       public OTTraversalInterface<OctreeNodeWrapper<Particle>>, public PairwiseTraversalInterface {
+                       public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
   /**
    * A shortcut to specify the type of the actual iterated cell
