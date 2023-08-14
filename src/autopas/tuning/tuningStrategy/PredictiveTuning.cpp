@@ -23,7 +23,14 @@ PredictiveTuning::PredictiveTuning(double relativeOptimum, unsigned int maxTunin
       _extrapolationMethod(extrapolationMethodOption),
       _minNumberOfEvidence(
           extrapolationMethodOption == ExtrapolationMethodOption::linePrediction ? 2 : testsUntilFirstPrediction),
-      _predictionLogger(outputSuffix) {}
+      _predictionLogger(outputSuffix) {
+  if (_relativeOptimumRange < 1.) {
+    utils::ExceptionHandler::exception(
+        "PredictiveTuning::_relativeOptimumRange has to be > 1 but is {}."
+        " Otherwise no configuration can ever be good enough, because we would require them to be "
+        "better than the best prediction.");
+  }
+}
 
 PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
     size_t iteration, size_t tuningPhase, const std::vector<Configuration> &configurations,
@@ -341,7 +348,7 @@ void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<C
     // over-reserving is probably cheaper than even one resize
     worthyConfs.reserve(predictions.size());
     for (const auto &[conf, prediction] : predictions) {
-      if (prediction < bestAcceptablePredictionValue) {
+      if (prediction <= bestAcceptablePredictionValue) {
         worthyConfs.push_back(conf);
       }
     }
