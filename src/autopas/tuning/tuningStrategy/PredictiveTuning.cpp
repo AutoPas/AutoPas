@@ -61,7 +61,8 @@ PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
       return _predictionErrorValue;
     }();
     if (predictionValue != _predictionErrorValue) {
-      predictions[configuration] = predictionValue;
+      // make sure each prediction is at lease zero
+      predictions[configuration] = std::max(0l, predictionValue);
     }
   }
   // if AutoPas is compiled without -DAUTOPAS_LOG_PREDICTIONS this does nothing
