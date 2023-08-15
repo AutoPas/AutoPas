@@ -15,7 +15,7 @@ inline namespace options {
 /**
  * Class representing the traversal choices for 3-body interactions.
  */
-class TriwiseTraversalOption : public Option<TriwiseTraversalOption> {
+class TraversalOption3B : public Option<TraversalOption3B> {
  public:
   /**
    * Possible choices for 3-body traversals. Try to maintain lexicographic ordering.
@@ -25,19 +25,19 @@ class TriwiseTraversalOption : public Option<TriwiseTraversalOption> {
     /**
      * DSSequentialTripletTraversal : Sequential triple loop over all particles.
      */
-    ds_sequential_triplet
+    ds_sequential_3b
   };
 
   /**
    * Constructor.
    */
-  TriwiseTraversalOption() = default;
+  TraversalOption3B() = default;
 
   /**
    * Constructor from value.
    * @param option
    */
-  constexpr TriwiseTraversalOption(Value option) : _value(option) {}
+  constexpr TraversalOption3B(Value option) : _value(option) {}
 
   /**
    * Cast to value.
@@ -49,7 +49,7 @@ class TriwiseTraversalOption : public Option<TriwiseTraversalOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<TriwiseTraversalOption> getDiscouragedOptions() {
+  static std::set<TraversalOption3B> getDiscouragedOptions() {
     return {};
   }
 
@@ -57,10 +57,10 @@ class TriwiseTraversalOption : public Option<TriwiseTraversalOption> {
    * Provides a way to iterate over the possible choices of TraversalOption.
    * @return map option -> string representation
    */
-  static std::map<TriwiseTraversalOption, std::string> getOptionNames() {
+  static std::map<TraversalOption3B, std::string> getOptionNames() {
     return {
         // DirectSum Traversals:
-        {TriwiseTraversalOption::ds_sequential_triplet, "ds_sequential_triplet"},
+        {TraversalOption3B::ds_sequential_3b, "ds_sequential_3b"},
     };
   };
 

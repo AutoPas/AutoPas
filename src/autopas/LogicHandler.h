@@ -1235,11 +1235,12 @@ template <typename Particle>
 template <class Functor>
 bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
   /// Selection of configuration (tuning if necessary)
-//  utils::Timer tuningTimer;
-//  tuningTimer.start();
+  utils::Timer tuningTimer;
+  tuningTimer.start();
+  bool stillTuning = true;
 //  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
-//  tuningTimer.stop();
-//  AutoPasLog(DEBUG, "Selecting a configuration took {} ns.", tuningTimer.getTotalTime());
+  tuningTimer.stop();
+  AutoPasLog(DEBUG, "Selecting a configuration took {} ns.", tuningTimer.getTotalTime());
 //  _autoTuner.logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 //
 //  /// Pairwise iteration
@@ -1302,7 +1303,6 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
 //    _autoTuner.bumpIterationCounters();
 //    ++_iteration;
 //  }
-  bool stillTuning = true;
   return stillTuning;
 }
 
@@ -1311,7 +1311,7 @@ template <class PairwiseFunctor>
 std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
     const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
   // Check if the container supports the traversal
-  const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
+  const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container, conf.interactionType);
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
     AutoPasLog(DEBUG, "Configuration rejected: Container {} does not support the traversal {}.", conf.container,
                conf.traversal);

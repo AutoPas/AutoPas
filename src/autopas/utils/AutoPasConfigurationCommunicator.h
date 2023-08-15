@@ -21,6 +21,7 @@
  * Provides several functions for handling configurations among mpi ranks.
  * This includes functionality for (de)serialization of configurations, splitting up search spaces based on ranks,
  * and finding the globally optimal configuration given time measurements.
+ *  * TODO: Check logic for 3-body interactions
  */
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
@@ -28,7 +29,7 @@ namespace autopas::utils::AutoPasConfigurationCommunicator {
 /**
  * type definition for the serialization of configurations. A serialized config is an array of 12 bytes.
  * */
-using SerializedConfiguration = std::array<std::byte, 13>;
+using SerializedConfiguration = std::array<std::byte, 14>;
 
 /**
  * Simply a shorter way of static_casting from Option to std::byte.
@@ -56,7 +57,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
                           const std::set<TraversalOption> &traversalOptions,
                           const std::set<LoadEstimatorOption> &loadEstimatorOptions,
                           const std::set<DataLayoutOption> &dataLayoutOptions,
-                          const std::set<Newton3Option> &newton3Options);
+                          const std::set<Newton3Option> &newton3Options,
+                          const InteractionTypeOption &interactionTypeOption);
 
 /**
  * Distributes the provided configurations globally for equal work loads.
@@ -74,7 +76,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
 void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                              std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
+                              std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options, InteractionTypeOption interactionTypeOption,
                               int rank, int commSize);
 
 /**

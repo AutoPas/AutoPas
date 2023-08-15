@@ -57,6 +57,7 @@ AutoPas<Particle>::~AutoPas() {
 template <class Particle>
 AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
   _autoTuner = std::move(other._autoTuner);
+  _autoTuner3B = std::move(other._autoTuner3B);
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }
@@ -97,7 +98,7 @@ void AutoPas<Particle>::init() {
   }();
   const auto searchSpace =
       SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals, _allowedLoadEstimators,
-                                              _allowedDataLayouts, _allowedNewton3Options, &cellSizeFactors);
+                                              _allowedDataLayouts, _allowedNewton3Options, &cellSizeFactors, InteractionTypeOption::pairwise);
 
   AutoTuner::TuningStrategiesListType tuningStrategies;
   tuningStrategies.reserve(_tuningStrategyOptions.size());
@@ -111,6 +112,13 @@ void AutoPas<Particle>::init() {
   _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
                                                     _verletRebuildFrequency, _outputSuffix);
 
+  // Set up 3-body autotuner
+  const auto searchSpace3B =
+      SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals3B, _allowedLoadEstimators,
+                                              _allowedDataLayouts3B, _allowedNewton3Options3B, &cellSizeFactors, InteractionTypeOption::threeBody);
+
+  _autoTuner3B = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+                                                      _verletRebuildFrequency, _outputSuffix);
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
       *_autoTuner, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
@@ -118,7 +126,7 @@ void AutoPas<Particle>::init() {
 template <class Particle>
 template <class Functor>
 bool AutoPas<Particle>::computeInteractions(Functor *f) {
-  static_assert(not std::is_same<Functor, autopas::Functor<Particle, Functor>>::value,
+  static_assert(not std::is_same_v<Functor, autopas::Functor<Particle, Functor>>,
                 "The static type of Functor in computeInteractions is not allowed to be autopas::Functor. Please use the "
                 "derived type instead, e.g. by using a dynamic_cast.");
   if (f->getCutoff() > this->getCutoff()) {
@@ -126,10 +134,10 @@ bool AutoPas<Particle>::computeInteractions(Functor *f) {
                                        f->getCutoff(), this->getCutoff());
   }
 
-  if constexpr (Functor::getNBody() == 2) { //static_cast<PairwiseFunctor<Particle, Functor> *>(f) != NULL) {
+  if constexpr (std::is_base_of_v<PairwiseFunctor<Particle, Functor>, Functor>) {
     return _logicHandler->iteratePairwisePipeline(f);
   }
-  else if constexpr (Functor::getNBody() == 3) { //dynamic_cast<TriwiseFunctor<Particle, Functor> *>(f) != NULL) {
+  else if constexpr (std::is_base_of_v<TriwiseFunctor<Particle, Functor>, Functor>) {
       return _logicHandler->iterateTriwisePipeline(f);
   }
   else{

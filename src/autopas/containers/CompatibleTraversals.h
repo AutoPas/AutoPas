@@ -10,6 +10,7 @@
 
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 
@@ -21,6 +22,15 @@ namespace autopas::compatibleTraversals {
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allDSCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::ds_sequential};
+  return s;
+}
+
+/**
+ * Lists all 3-body traversal options applicable for the Direct Sum container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allDSCompatibleTraversals3B() {
+  static const std::set<TraversalOption> s{TraversalOption::ds_sequential_3b};
   return s;
 }
 
@@ -145,7 +155,11 @@ namespace autopas::compatibleTraversals {
  * Provides a set of all traversals that only support DataLayout AoS.
  * @return
  */
-[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
+    return {
+        TraversalOption::ds_sequential_3b,
+    };
+};
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
  * @return
@@ -162,39 +176,56 @@ namespace autopas::compatibleTraversals {
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
  */
-[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption) {
-  switch (containerOption) {
-    case ContainerOption::linkedCells: {
-      return allLCCompatibleTraversals();
+[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption, InteractionTypeOption interactionTypeOption) {
+  switch (interactionTypeOption) {
+    // Check compatible pairwise traversals
+    case InteractionTypeOption::pairwise: {
+      switch (containerOption) {
+        case ContainerOption::linkedCells: {
+          return allLCCompatibleTraversals();
+        }
+        case ContainerOption::directSum: {
+          return allDSCompatibleTraversals();
+        }
+        case ContainerOption::verletClusterLists: {
+          return allVCLCompatibleTraversals();
+        }
+        case ContainerOption::verletLists: {
+          return allVLCompatibleTraversals();
+        }
+        case ContainerOption::verletListsCells: {
+          return allVLCCompatibleTraversals();
+        }
+        case ContainerOption::varVerletListsAsBuild: {
+          return allVarVLAsBuildCompatibleTraversals();
+        }
+        case ContainerOption::linkedCellsReferences: {
+          return allRLCCompatibleTraversals();
+        }
+        case ContainerOption::pairwiseVerletLists: {
+          return allVLPCompatibleTraversals();
+        }
+        case ContainerOption::octree: {
+          return allOTCompatibleTraversals();
+        }
+      }
     }
-    case ContainerOption::directSum: {
-      return allDSCompatibleTraversals();
-    }
-    case ContainerOption::verletClusterLists: {
-      return allVCLCompatibleTraversals();
-    }
-    case ContainerOption::verletLists: {
-      return allVLCompatibleTraversals();
-    }
-    case ContainerOption::verletListsCells: {
-      return allVLCCompatibleTraversals();
-    }
-    case ContainerOption::varVerletListsAsBuild: {
-      return allVarVLAsBuildCompatibleTraversals();
-    }
-    case ContainerOption::linkedCellsReferences: {
-      return allRLCCompatibleTraversals();
-    }
-    case ContainerOption::pairwiseVerletLists: {
-      return allVLPCompatibleTraversals();
-    }
-    case ContainerOption::octree: {
-      return allOTCompatibleTraversals();
+    // Check compatible 3-body traversals
+    case InteractionTypeOption::threeBody: {
+      switch (containerOption) {
+        case ContainerOption::directSum: {
+          return allDSCompatibleTraversals3B();
+        }
+        default: {
+          static const std::set<TraversalOption> s{};
+          return s;
+        }
+      }
     }
   }
 
-  autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {}!",
-                                              containerOption.to_string());
+  autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {} or unsupported interaction type {}!",
+                                              containerOption.to_string(), interactionTypeOption.to_string());
 
   static const std::set<TraversalOption> s{};
   return s;
@@ -209,9 +240,11 @@ namespace autopas::compatibleTraversals {
   std::set<ContainerOption> result{};
 
   for (const auto &container : ContainerOption::getAllOptions()) {
-    auto allCompatible = compatibleTraversals::allCompatibleTraversals(container);
-    if (allCompatible.find(traversalOption) != allCompatible.end()) {
-      result.insert(container);
+    for (const auto &interactionType : InteractionTypeOption::getAllOptions()) {
+      auto allCompatible = compatibleTraversals::allCompatibleTraversals(container, interactionType);
+      if (allCompatible.find(traversalOption) != allCompatible.end()) {
+        result.insert(container);
+      }
     }
   }
 

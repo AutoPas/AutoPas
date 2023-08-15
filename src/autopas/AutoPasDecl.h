@@ -19,7 +19,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/options/TriwiseTraversalOption.h"
+#include "autopas/options/TraversalOption3B.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/AutoTuner.h"
@@ -897,9 +897,11 @@ class AutoPas {
   }
   /**
    * Getter for the currently selected configuration.
-   * @return Configuration object currently used.
+   * @return Configuration object currently used for <pairwise interactions, 3-body interactions>.
    */
-  [[nodiscard]] const Configuration &getCurrentConfig() const { return _autoTuner->getCurrentConfig(); }
+  [[nodiscard]] std::tuple<const Configuration &, const Configuration &> getCurrentConfig() const {
+    return std::forward_as_tuple(_autoTuner->getCurrentConfig(), _autoTuner->getCurrentConfig());
+  }
 
   /**
    * Getter for the tuning strategy option.
@@ -1026,19 +1028,27 @@ class AutoPas {
   std::set<TraversalOption> _allowedTraversals{TraversalOption::getMostOptions()};
   /**
    * List of 3-body traversals AutoPas can choose from.
-   * For possible traversal choices see options::TriwiseTraversalOption::Value.
+   * For possible traversal choices see options::TraversalOption3B::Value.
    */
-  std::set<TriwiseTraversalOption> _allowedTriwiseTraversals{TriwiseTraversalOption::getMostOptions()};
-
+  std::set<TraversalOption> _allowedTraversals3B{TraversalOption::getMostOptions()};
   /**
-   * List of data layouts AutoPas can choose from.
+   * List of data layouts AutoPas can choose from for pairwise interactions.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
   std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getMostOptions()};
   /**
-   * Whether AutoPas is allowed to exploit Newton's third law of motion.
+   * List of data layouts AutoPas can choose from for 3-body interactions.
+   * For possible data layout choices see options::DataLayoutOption::Value.
+   */
+  std::set<DataLayoutOption> _allowedDataLayouts3B{DataLayoutOption::getMostOptions()};
+  /**
+   * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */
   std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
+  /**
+   * Whether AutoPas is allowed to exploit Newton's third law of motion for 3-body interactions.
+   */
+  std::set<Newton3Option> _allowedNewton3Options3B{Newton3Option::getMostOptions()};
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
@@ -1054,9 +1064,13 @@ class AutoPas {
    */
   std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
   /**
-   * This is the AutoTuner that owns the container, ...
+   * This is the AutoTuner for pairwise interactions.
    */
   std::unique_ptr<autopas::AutoTuner> _autoTuner;
+  /**
+   * This is the AutoTuner for 3-Body interactions.
+   */
+  std::unique_ptr<autopas::AutoTuner> _autoTuner3B;
   /**
    * Stores whether the mpi communicator was provided externally or not
    */

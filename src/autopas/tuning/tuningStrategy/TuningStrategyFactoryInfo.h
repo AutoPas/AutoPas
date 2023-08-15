@@ -11,6 +11,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/options/InteractionTypeOption.h"
 
 namespace autopas {
 
@@ -24,7 +25,10 @@ struct TuningStrategyFactoryInfo {
    * If the strategy doesn't converge (or not quickly enough) limit the number of evidence to this number.
    */
   unsigned int maxEvidence{10};
-
+  /**
+   * Interaction type for which tuning strategies should be created.
+   */
+   InteractionTypeOption interactionType;
   // Predictive Tuning Options
   /**
    * Function option used for extrapolating performance from observed evidence.

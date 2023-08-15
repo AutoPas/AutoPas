@@ -26,6 +26,10 @@ class TraversalOption : public Option<TraversalOption> {
      * DSSequentialTraversal : Sequential double loop over all particles.
      */
     ds_sequential,
+    /**
+     * DSSequentialTraversal3B : Sequential triple loop over all particles.
+     */
+    ds_sequential_3b,
 
     // LinkedCell Traversals:
     /**
@@ -224,6 +228,7 @@ class TraversalOption : public Option<TraversalOption> {
     return {
         // DirectSum Traversals:
         {TraversalOption::ds_sequential, "ds_sequential"},
+        {TraversalOption::ds_sequential_3b, "ds_sequential_3b"},
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},

@@ -4,7 +4,7 @@ verlet-rebuild-frequency             :  20
 verlet-skin-radius-per-timestep      :  0.01
 selector-strategy                    :  Fastest-Absolute-Value
 data-layout                          :  [AoS]
-traversal                            :  [ds_sequential3b]
+traversal                            :  [ds_sequential_3b]
 tuning-strategies                    :  []
 tuning-interval                      :  5000
 tuning-samples                       :  3
@@ -45,5 +45,4 @@ no-end-config                        :  false
 vtk-filename                         :  3BodyTestSim
 vtk-output-folder                    :  3BodyTestOutput
 vtk-write-frequency                  :  1
-#checkpoint                          : 3BodyTest_10.vtk
 #log-file                            : log.txt
