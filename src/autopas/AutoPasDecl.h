@@ -895,12 +895,27 @@ class AutoPas {
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
     _allowedNewton3Options = allowedNewton3Options;
   }
+
+  /**
+   * Set the list of allowed newton 3 options.
+   * For possible newton 3 choices see options::Newton3Option::Value.
+   * @param allowedNewton3Options
+   */
+  void setAllowedInteractionTypeOptions(const std::set<InteractionTypeOption> &allowedInteractionTypeOptions) {
+    _allowedInteractionTypeOptions = allowedInteractionTypeOptions;
+  }
+
   /**
    * Getter for the currently selected configuration.
    * @return Configuration object currently used for <pairwise interactions, 3-body interactions>.
    */
-  [[nodiscard]] std::tuple<const Configuration &, const Configuration &> getCurrentConfig() const {
-    return std::forward_as_tuple(_autoTuner->getCurrentConfig(), _autoTuner->getCurrentConfig());
+  [[nodiscard]] std::set<Configuration> getCurrentConfig() const {
+    // TODO: Avoid copying
+    std::set<Configuration> currentConfigs;
+    for (auto &[type, tuner] : _autoTuners) {
+      currentConfigs.insert(tuner.getCurrentConfig());
+    }
+    return currentConfigs;
   }
 
   /**
@@ -1050,6 +1065,10 @@ class AutoPas {
    */
   std::set<Newton3Option> _allowedNewton3Options3B{Newton3Option::getMostOptions()};
   /**
+   * What kind of interactions AutoPas should expect. Default is only pairwise interactions.
+   */
+  std::set<InteractionTypeOption> _allowedInteractionTypeOptions{InteractionTypeOption::pairwise};
+  /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors{
@@ -1063,6 +1082,9 @@ class AutoPas {
    * LogicHandler of autopas.
    */
   std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
+
+  std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner&> _autoTuners;
+
   /**
    * This is the AutoTuner for pairwise interactions.
    */

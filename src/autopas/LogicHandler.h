@@ -45,15 +45,15 @@ class LogicHandler {
  public:
   /**
    * Constructor of the LogicHandler.
-   * @param autoTuner
+   * @param autoTuners
    * @param logicHandlerInfo
    * @param rebuildFrequency
    * @param outputSuffix
    */
-  LogicHandler(autopas::AutoTuner &autoTuner, const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency,
+  LogicHandler(std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner &> &autoTuners, const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency,
                const std::string &outputSuffix)
       : _neighborListRebuildFrequency{rebuildFrequency},
-        _autoTuner(autoTuner),
+        _autoTuners(autoTuners),
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
@@ -61,8 +61,18 @@ class LogicHandler {
         _iterationLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
+    // Assign pointers to individual autotuners
+    for (auto &[interactionType, tuner] : _autoTuners) {
+      if (interactionType == InteractionTypeOption::pairwise) {
+        _autoTuner = &tuner;
+      }
+      else if (interactionType == InteractionTypeOption::threeBody) {
+        _autoTuner3B = &tuner;
+      }
+    }
+    // Get configuration from first autotuner entry
+    const auto configuration = _autoTuners.begin()->second.getCurrentConfig();
     // initialize the container and make sure it is valid
-    const auto configuration = _autoTuner.getCurrentConfig();
     const ContainerSelectorInfo containerSelectorInfo{
         configuration.cellSizeFactor, logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
         _verletClusterSize, configuration.loadEstimator};
@@ -734,12 +744,17 @@ class LogicHandler {
   /**
    * Reference to the AutoTuner for pairwise interactions that owns the container, ...
    */
-  autopas::AutoTuner &_autoTuner;
+  autopas::AutoTuner *_autoTuner;
 
   /**
    * Reference to the AutoTuner for 3-Body interactions that owns the container, ...
    */
-  // autopas::AutoTuner &_autoTuner3B;
+   autopas::AutoTuner *_autoTuner3B;
+
+   /**
+   * Reference to the AutoTuner for 3-Body interactions that owns the container, ...
+    */
+   std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner &> _autoTuners;
 
   /**
    * Specifies if the neighbor list is valid.
@@ -810,7 +825,7 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists()) {
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner->willRebuildNeighborLists()) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -861,7 +876,7 @@ template <class PairwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
     PairwiseFunctor &functor, PairwiseTraversalInterface &traversal) {
   const bool doListRebuild = not neighborListsAreValid();
-  const auto configuration = _autoTuner.getCurrentConfig();
+  const auto configuration = _autoTuner->getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;
@@ -869,7 +884,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   autopas::utils::Timer timerIteratePairwise;
   autopas::utils::Timer timerRemainderTraversal;
 
-  const bool energyMeasurementsPossible = _autoTuner.resetEnergy();
+  const bool energyMeasurementsPossible = _autoTuner->resetEnergy();
   timerTotal.start();
 
   functor.initTraversal();
@@ -893,7 +908,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   timerRemainderTraversal.stop();
   functor.endTraversal(configuration.newton3);
 
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = _autoTuner.sampleEnergy();
+  const auto [energyPsys, energyPkg, energyRam, energyTotal] = _autoTuner->sampleEnergy();
 
   timerTotal.stop();
 
@@ -1107,7 +1122,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
-    configuration = _autoTuner.getCurrentConfig();
+    configuration = _autoTuner->getCurrentConfig();
     const auto &container = _containerSelector.getCurrentContainer();
     traversalPtrOpt = autopas::utils::withStaticCellType<Particle>(
         container.getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
@@ -1123,25 +1138,25 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    if (_autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
+    if (_autoTuner->needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
       const auto [homogeneity, maxDensity] =
           autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
       timerCalculateHomogeneity.stop();
-      _autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
+      _autoTuner->addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
 
-    const auto needsLiveInfo = _autoTuner.prepareIteration();
+    const auto needsLiveInfo = _autoTuner->prepareIteration();
 
     if (needsLiveInfo) {
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-      _autoTuner.receiveLiveInfo(info);
+      _autoTuner->receiveLiveInfo(info);
     }
 
-    std::tie(configuration, stillTuning) = _autoTuner.getNextConfig();
+    std::tie(configuration, stillTuning) = _autoTuner->getNextConfig();
 
     // loop as long as we don't get a valid configuration
     bool rejectIndefinitely = false;
@@ -1152,7 +1167,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
         break;
       }
       // if no config is left after rejecting this one an exception is thrown here.
-      std::tie(configuration, stillTuning) = _autoTuner.rejectConfig(configuration, rejectIndefinitely);
+      std::tie(configuration, stillTuning) = _autoTuner->rejectConfig(configuration, rejectIndefinitely);
     }
   }
 
@@ -1167,7 +1182,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
   tuningTimer.stop();
-  _autoTuner.logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
+  _autoTuner->logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 
   /// Pairwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
@@ -1205,12 +1220,12 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   // if this was a major iteration add measurements and bump counters
   if (functor->isRelevantForTuning()) {
     if (stillTuning) {
-      switch (_autoTuner.getTuningMetric()) {
+      switch (_autoTuner->getTuningMetric()) {
         case TuningMetricOption::time:
-          _autoTuner.addMeasurement(measurements.timeTotal, not neighborListsAreValid());
+          _autoTuner->addMeasurement(measurements.timeTotal, not neighborListsAreValid());
           break;
         case TuningMetricOption::energy:
-          _autoTuner.addMeasurement(measurements.energyTotal, not neighborListsAreValid());
+          _autoTuner->addMeasurement(measurements.energyTotal, not neighborListsAreValid());
           break;
       }
     } else {
@@ -1226,7 +1241,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     }
     ++_stepsSinceLastListRebuild;
 
-    _autoTuner.bumpIterationCounters();
+    _autoTuner->bumpIterationCounters();
   }
   return stillTuning;
 }
@@ -1237,8 +1252,8 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
-  bool stillTuning = true;
-//  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
+//  bool stillTuning = true;
+  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
   tuningTimer.stop();
   AutoPasLog(DEBUG, "Selecting a configuration took {} ns.", tuningTimer.getTotalTime());
 //  _autoTuner.logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
