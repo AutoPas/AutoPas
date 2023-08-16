@@ -137,6 +137,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
+
+  // TODO: apply logic
+  _autoPasContainer->setAllowedInteractionTypeOptions({autopas::InteractionTypeOption::threeBody});
+
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
   const auto *fillerBeforeSuffix =
