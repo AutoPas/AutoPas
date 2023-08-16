@@ -117,7 +117,7 @@ void AutoPas<Particle>::init() {
       SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals3B, _allowedLoadEstimators,
                                               _allowedDataLayouts3B, _allowedNewton3Options3B, &cellSizeFactors, InteractionTypeOption::threeBody);
 
-  _autoTuner3B = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+  _autoTuner3B = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace3B, _autoTunerInfo,
                                                       _verletRebuildFrequency, _outputSuffix);
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
       *_autoTuner, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);

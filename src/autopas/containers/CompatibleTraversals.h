@@ -155,11 +155,7 @@ namespace autopas::compatibleTraversals {
  * Provides a set of all traversals that only support DataLayout AoS.
  * @return
  */
-[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {
-    return {
-        TraversalOption::ds_sequential_3b,
-    };
-};
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {return {};};
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
  * @return

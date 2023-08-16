@@ -38,7 +38,7 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>, public DSTra
         _cellFunctor(triwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(triwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential_3b; }
 
   [[nodiscard]] bool isApplicable() const override { return true; }
 
