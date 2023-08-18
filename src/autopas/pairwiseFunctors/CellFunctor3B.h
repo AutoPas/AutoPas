@@ -295,19 +295,19 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
 
     auto outerOuter = cell1Sorted._particles.begin();
     for (; outerOuter != cell1Sorted._particles.end(); ++outerOuter) {
-      Particle &p1 = *outerOuter.second;
+      Particle &p1 = *outerOuter->second;
 
       // Particle 1 and 2 in cell 1, particle 3 in cell 2
       auto outer = outerOuter;
       ++outer;
       for (; outer != cell1Sorted._particles.end(); ++outer) {
-        if (std::abs(outerOuter.first - outer.first) > _sortingCutoff) {
+        if (std::abs(outerOuter->first - outer->first) > _sortingCutoff) {
           break;
         }
-        Particle &p2 = *outer.second;
+        Particle &p2 = *outer->second;
         for (auto &inner : cell2Sorted._particles) {
-          if (std::abs(outer.first - inner.first) > _sortingCutoff ||
-              std::abs(outerOuter.first - inner.first) > _sortingCutoff) {
+          if (std::abs(outer->first - inner.first) > _sortingCutoff ||
+              std::abs(outerOuter->first - inner.first) > _sortingCutoff) {
             break;
           }
           Particle &p3 = *inner.second;
@@ -318,19 +318,19 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       // Particle 1 in cell 1, particle 2 and 3 in cell 2
       outer = cell2Sorted._particles.begin();
       for (; outer != cell2Sorted._particles.end(); ++outer) {
-        if (std::abs(outerOuter.first - outer.first) > _sortingCutoff) {
+        if (std::abs(outerOuter->first - outer->first) > _sortingCutoff) {
           break;
         }
-        Particle &p2 = *outer.second;
+        Particle &p2 = *outer->second;
         auto inner = outer;
         ++inner;
 
         for (; inner != cell2Sorted._particles.end(); ++inner) {
-          if (std::abs(outer.first - inner.first) > _sortingCutoff ||
-              std::abs(outerOuter.first - inner.first) > _sortingCutoff) {
+          if (std::abs(outer->first - inner->first) > _sortingCutoff ||
+              std::abs(outerOuter->first - inner->first) > _sortingCutoff) {
             break;
           }
-          Particle &p3 = *inner.second;
+          Particle &p3 = *inner->second;
           _functor->AoSFunctor(p1, p2, p3, true);
         }
       }
@@ -382,20 +382,20 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
 
-    for (auto outerOuter = cell1Sorted._particles.begin(); outerOuter != cell1._particles.end(); ++outerOuter) {
-      Particle &p1 = *outerOuter.second;
+    for (auto outerOuter = cell1Sorted._particles.begin(); outerOuter != cell1Sorted._particles.end(); ++outerOuter) {
+      Particle &p1 = *outerOuter->second;
 
       // Particles 1 and 2 in cell 1, particle 3 in cell 2
       auto outer = outerOuter;
       ++outer;
       for (; outer != cell1Sorted._particles.end(); ++outer) {
-        if (std::abs(outerOuter.first - outer.first) > _sortingCutoff) {
+        if (std::abs(outerOuter->first - outer->first) > _sortingCutoff) {
           break;
         }
-        Particle &p2 = *outer.second;
+        Particle &p2 = *outer->second;
 
         for (auto &inner : cell2Sorted._particles) {
-          if (std::abs(outer.first - inner.first) > _sortingCutoff || std::abs(outerOuter.first - inner.first) > _sortingCutoff) {
+          if (std::abs(outer->first - inner.first) > _sortingCutoff || std::abs(outerOuter->first - inner.first) > _sortingCutoff) {
             break;
           }
           Particle &p3 = *inner.second;
@@ -410,18 +410,18 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       // Particle 1 in cell 1, particles 2 and 3 in cell 2
       outer = cell2Sorted._particles.begin();
       for (; outer != cell2Sorted._particles.end(); ++outer) {
-        if (std::abs(outerOuter.first - outer.first) > _sortingCutoff) {
+        if (std::abs(outerOuter->first - outer->first) > _sortingCutoff) {
           break;
         }
-        Particle &p2 = *outer.second;
+        Particle &p2 = *outer->second;
         auto inner = outer;
         ++inner;
 
         for (; inner != cell2Sorted._particles.end(); ++inner) {
-          if (std::abs(outer.first - inner.first) > _sortingCutoff || std::abs(outerOuter.first - inner.first) > _sortingCutoff) {
+          if (std::abs(outer->first - inner->first) > _sortingCutoff || std::abs(outerOuter->first - inner->first) > _sortingCutoff) {
             break;
           }
-          Particle &p3 = *inner.second;
+          Particle &p3 = *inner->second;
           _functor->AoSFunctor(p1, p2, p3, false);
           if (bidirectional) {
             _functor->AoSFunctor(p2, p1, p3, false);
