@@ -732,6 +732,31 @@ class LogicHandler {
   IterationMeasurements iterateTriwise(TriwiseFunctor &functor, TriwiseTraversalInterface &traversal);
 
   /**
+   * Performs the interactions ParticleContainer::iterateTriwise() did not cover.
+   *
+   * These interactions are:
+   *  - particleBuffer    <-> container
+   *  - haloParticleBuffer -> container
+   *  - particleBuffer    <-> particleBuffer
+   *  - haloParticleBuffer -> particleBuffer
+   *
+   * @note Buffers need to have at least one (empty) cell. They must not be empty.
+   *
+   * @tparam newton3
+   * @tparam ContainerType Type of the particle container.
+   * @tparam TriwiseFunctor
+   * @param f
+   * @param container Reference the container. Preferably pass the container with the actual static type.
+   * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
+   * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
+   * updated.
+   */
+  template <bool newton3, class ContainerType, class TriwiseFunctor>
+  void doRemainderTraversal3B(TriwiseFunctor *f, ContainerType &container,
+                              std::vector<FullParticleCell<Particle>> &particleBuffers,
+                              std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+
+  /**
    * Check that the simulation box is at least of interaction length in each direction.
    *
    * Throws an exception if minimal size requirements are violated.
@@ -1156,15 +1181,14 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   container.iterateTriwise(&traversal);
   timerIterateTriwise.stop();
 
-  // TODO: Remainder traversal for 3-body
   timerRemainderTraversal.start();
-  //  withStaticContainerType(container, [&](auto &actualContainerType) {
-  //    if (configuration.newton3) {
-  //      doRemainderTraversal3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-  //    } else {
-  //      doRemainderTraversal3B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-  //    }
-  //  });
+    withStaticContainerType(container, [&](auto &actualContainerType) {
+      if (configuration.newton3) {
+        doRemainderTraversal3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      } else {
+        doRemainderTraversal3B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      }
+    });
   timerRemainderTraversal.stop();
   functor.endTraversal(configuration.newton3);
 
@@ -1185,6 +1209,161 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
           energyMeasurementsPossible ? energyRam : nanD,
           energyMeasurementsPossible ? energyTotal : nanL};
 }
+
+template <class Particle>
+template <bool newton3, class ContainerType, class TriwiseFunctor>
+void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, ContainerType &container,
+                                                    std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                                    std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+  using autopas::utils::ArrayUtils::static_cast_copy_array;
+  using namespace autopas::utils::ArrayMath::literals;
+
+  // Vector to collect pointers to all buffer particles
+  std::vector<Particle *> bufferParticles;
+
+  auto cellToVec = [](auto &cell) -> std::vector<Particle> & { return cell._particles; };
+
+  const size_t numOwnedBufferParticles = std::transform_reduce(particleBuffers.begin(), particleBuffers.end(), 0, std::plus<>(),
+                                                              [&](auto &vec) { return cellToVec(vec).size(); });
+  const size_t numHaloBufferParticles = std::transform_reduce(haloParticleBuffers.begin(), haloParticleBuffers.end(), 0, std::plus<>(),
+                                                              [&](auto &vec) { return cellToVec(vec).size(); });
+  const size_t numTotal = numOwnedBufferParticles + numHaloBufferParticles;
+
+  // Place pointers to all owned and halo particles from the buffers in one vector
+  bufferParticles.reserve(numTotal);
+  for (auto &buffer : particleBuffers) {
+    for (auto &particle : buffer._particles) {
+      bufferParticles.push_back(&particle);
+    }
+  }
+  for (auto &buffer : haloParticleBuffers) {
+    for (auto &particle : buffer._particles) {
+      bufferParticles.push_back(&particle);
+    }
+  }
+
+  // The following part performs the main remainder traversal.
+
+  // only activate time measurements if it will actually be logged
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  autopas::utils::Timer timerBufferBufferBuffer;
+  autopas::utils::Timer timerBufferBufferContainer;
+  autopas::utils::Timer timerBufferContainerContainer;
+
+  timerBufferBufferBuffer.start();
+#endif
+  // Step 1: 3-body interactions of all particles in the buffers (owned and halo)
+  for (auto i = 0; i < numOwnedBufferParticles; ++i) {
+    Particle &p1 = *bufferParticles[i];
+
+    for (auto j = i + 1; j < numTotal; ++j) {
+      Particle &p2 = *bufferParticles[j];
+
+      for (auto k = j + 1; k < numTotal; ++k) {
+        Particle &p3 = *bufferParticles[k];
+
+        if constexpr (newton3) {
+          f->AoSFunctor(p1, p2, p3, true);
+        } else {
+          f->AoSFunctor(p1, p2, p3, false);
+          if (j < numOwnedBufferParticles) f->AoSFunctor(p2, p1, p3, false);
+          if (k < numOwnedBufferParticles) f->AoSFunctor(p3, p1, p2, false);
+        }
+      }
+    }
+  }
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferBufferBuffer.stop();
+  timerBufferBufferContainer.start();
+#endif
+
+  // Step 2: 3-body interactions of 2 buffer particles with 1 container particle
+  const auto haloBoxMin = container.getBoxMin() - container.getInteractionLength();
+  const auto interactionLengthInv = 1. / container.getInteractionLength();
+
+  const double cutoff = container.getCutoff();
+
+  for (auto i = 0; i < numTotal; ++i) {
+    Particle &p1 = *bufferParticles[i];
+    const auto pos = p1.getR();
+    const auto min = pos - cutoff;
+    const auto max = pos + cutoff;
+
+    for (auto j = i + 1; j < numTotal; ++j) {
+      Particle &p2 = *bufferParticles[j];
+
+      container.forEachInRegion(
+        [&](auto &p3) {
+          const auto lockCoords = static_cast_copy_array<size_t>((p3.getR() - haloBoxMin) * interactionLengthInv);
+          if constexpr (newton3) {
+            const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+            f->AoSFunctor(p1, p2, p3, true);
+          } else {
+            if (i < numOwnedBufferParticles) f->AoSFunctor(p1, p2, p3, false);
+            if (j < numOwnedBufferParticles) f->AoSFunctor(p2, p1, p3, false);
+            // no need to calculate force enacted on a halo
+            if (not p3.isHalo()) {
+              const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+              f->AoSFunctor(p3, p1, p2, false);
+            }
+          }
+        },
+        min, max, IteratorBehavior::ownedOrHalo);
+    }
+  }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferBufferContainer.stop();
+  timerBufferContainerContainer.start();
+#endif
+
+  // Step 3: 3-body interactions of 1 buffer particle and 2 container particles
+  for (auto i = 0; i < numTotal; ++i) {
+    Particle &p1 = *bufferParticles[i];
+    const auto pos = p1.getR();
+    const auto boxmin = pos - cutoff;
+    const auto boxmax = pos + cutoff;
+
+    auto p2Iter = container.getRegionIterator(boxmin, boxmax, IteratorBehavior::ownedOrHalo, nullptr);
+    for (; p2Iter.isValid(); ++p2Iter) {
+      Particle &p2 = *p2Iter;
+      const auto lockCoordsP2 = static_cast_copy_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
+
+      auto p3Iter = p2Iter;
+      ++p3Iter;
+      for (; p3Iter.isValid(); ++p3Iter) {
+        Particle &p3 = *p3Iter;
+        const auto lockCoordsP3 = static_cast_copy_array<size_t>((p3.getR() - haloBoxMin) * interactionLengthInv);
+
+        if constexpr (newton3) {
+        const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
+        const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
+          f->AoSFunctor(p1, p2, p3, true);
+        } else {
+          if (i < numOwnedBufferParticles) f->AoSFunctor(p1, p2, p3, false);
+          // no need to calculate force enacted on a halo
+          if (p2.isHalo()) {
+            const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
+            f->AoSFunctor(p2, p1, p3, false);
+          }
+          if (not p3.isHalo()) {
+            const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
+            f->AoSFunctor(p3, p1, p2, false);
+          }
+        }
+      }
+    }
+  }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferContainerContainer.stop();
+#endif
+
+  AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Buffer       : {}", timerBufferBufferBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Container    : {}", timerBufferBufferContainer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Buffer <-> Container <-> Container : {}", timerBufferContainerContainer.getTotalTime());
+}
+
 
 template <typename Particle>
 template <class Functor>
