@@ -119,9 +119,10 @@ void AutoPas<Particle>::init() {
         break;
       }
       case InteractionTypeOption::threeBody : {
+        // TODO: Seperate 3-body options
         const auto searchSpace3B =
-            SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals3B, _allowedLoadEstimators,
-                                                    _allowedDataLayouts3B, _allowedNewton3Options3B, &cellSizeFactors, InteractionTypeOption::threeBody);
+            SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals, _allowedLoadEstimators,
+                                                    _allowedDataLayouts, _allowedNewton3Options, &cellSizeFactors, InteractionTypeOption::threeBody);
         AutoTuner::TuningStrategiesListType tuningStrategies3B;
         tuningStrategies3B.reserve(_tuningStrategyOptions.size());
         for (const auto &strategy : _tuningStrategyOptions) {

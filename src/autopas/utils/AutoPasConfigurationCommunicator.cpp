@@ -150,7 +150,7 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
              containerOptions.size(), /*cellSizeFactorsSize*/ (cellSizeFactors.isFinite() ? cellSizeFactors.size() : 1),
              traversalOptions.size(), dataLayoutOptions.size(), newton3Options.size(),
              getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
-                                dataLayoutOptions, newton3Options));
+                                dataLayoutOptions, newton3Options, interactionType));
 }
 
 Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
