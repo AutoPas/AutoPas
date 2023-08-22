@@ -111,10 +111,18 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
+  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
+
+  // Pairwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
+  // 3-body specific options
+  _autoPasContainer->setAllowedDataLayouts3B(_configuration.dataLayoutOptions3B.value);
+  _autoPasContainer->setAllowedNewton3Options3B(_configuration.newton3Options3B.value);
+  _autoPasContainer->setAllowedTraversals3B(_configuration.traversalOptions3B.value);
+
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);
@@ -137,9 +145,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
-
-  // TODO: apply logic
-  _autoPasContainer->setAllowedInteractionTypeOptions({autopas::InteractionTypeOption::threeBody});
 
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);

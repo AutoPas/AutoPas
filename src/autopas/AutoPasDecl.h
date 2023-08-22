@@ -897,6 +897,51 @@ class AutoPas {
   }
 
   /**
+   * Get the list of allowed traversals.
+   * @return
+   */
+  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals3B() const { return _allowedTraversals3B; }
+
+  /**
+   * Set the list of allowed traversals.
+   * For possible traversals choices see options::TraversalOption::Value.
+   * @param allowedTraversals
+   */
+  void setAllowedTraversals3B(const std::set<TraversalOption> &allowedTraversals) {
+    _allowedTraversals3B = allowedTraversals;
+  }
+
+  /**
+   * Get the list of allowed data layouts.
+   * @return
+   */
+  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts3B() const { return _allowedDataLayouts3B; }
+
+  /**
+   * Set the list of allowed data layouts.
+   * For possible data layout choices see options::DataLayoutOption::Value.
+   * @param allowedDataLayouts
+   */
+  void setAllowedDataLayouts3B(const std::set<DataLayoutOption> &allowedDataLayouts) {
+    _allowedDataLayouts3B = allowedDataLayouts;
+  }
+
+  /**
+   * Get the list of allowed newton 3 options.
+   * @return
+   */
+  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options3B() const { return _allowedNewton3Options3B; }
+
+  /**
+   * Set the list of allowed newton 3 options.
+   * For possible newton 3 choices see options::Newton3Option::Value.
+   * @param allowedNewton3Options
+   */
+  void setAllowedNewton3Options3B(const std::set<Newton3Option> &allowedNewton3Options) {
+    _allowedNewton3Options3B = allowedNewton3Options;
+  }
+
+  /**
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
