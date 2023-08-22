@@ -307,13 +307,13 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Sends and also receives particles to and from the left and right neighbours.
    * @param particlesToLeft: Particles which get send to the left neighbour.
    * @param particlesToRight: Particles which get send to the right neighbor.
+   * @param receivedParticlesBuffer In-out parameter where the received particles will be placed in.
    * @param leftNeighbor: The left neighbor's index / rank.
    * @param rightNeighbor: The right neighbor's index / rank.
-   * @return receivedParticles: Container for the particles received from either neighbor.
    */
   void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
                                            const std::vector<ParticleType> &particlesToRight,
-                                           std::vector<ParticleType> &receivedParticles, int leftNeighbor,
+                                           std::vector<ParticleType> &receivedParticlesBuffer, int leftNeighbor,
                                            int rightNeighbor);
 
   /**
@@ -325,18 +325,18 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param boxMax upper right rear  corner of the region that is collected.
    * @param atGlobalBoundary Indicator if we are at a global boundary and periodics are necessary.
    * @param wrapAroundDistance Distance (incl sign for direction) that the particle needs to be relocated.
-   * @return
+   * @param haloParticlesBuffer in-out buffer for haloParticles#
    */
   void collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
                                const std::array<double, _dimensionCount> &boxMin,
                                const std::array<double, _dimensionCount> &boxMax, bool atGlobalBoundary,
-                               double wrapAroundDistance, std::vector<ParticleType> &haloParticles);
+                               double wrapAroundDistance, std::vector<ParticleType> &haloParticlesBuffer);
   /**
    * Collects the halo particles for the left neighbour.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
-   * @return haloParticles: A vector of particles
+   * @param particlesForLeftNeighborBuffer in-out buffer for haloParticles.
    */
   void collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, size_t direction,
                                            std::vector<ParticleType> &particlesForLeftNeighborBuffer);
@@ -346,7 +346,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
    * @param direction: The direction along which the neighbor is located.
-   * @return haloParticles: The container the identified halo particles are gathered in to.
+   * @param particlesForRightNeighborBuffer in-out buffer for haloParticles.
    */
   void collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, size_t direction,
                                             std::vector<ParticleType> &particlesForRightNeighborBuffer);
