@@ -78,15 +78,20 @@ const std::string makeErrorMsg(const YAML::Mark &mark, const std::string &key, c
  */
 template <typename T>
 const T parseComplexTypeValueSingle(const YAML::Node node, const std::string &key,
-                                    std::vector<std::string> &complexTypeErrors) {
+                                    std::vector<std::string> &complexTypeErrors, bool required = true) {
   T value;
   try {
     value = node[key].as<T>();
   } catch (const std::exception &e) {
-    std::stringstream ss;
-    ss << "Error parsing " << key << ". Make sure that key \"" << key
-       << "\" exists and has the expected value: " << typeToStr<T>();
-    complexTypeErrors.push_back(ss.str());
+    if (required) {
+      std::stringstream ss;
+      ss << "Error parsing " << key << ". Make sure that key \"" << key
+         << "\" exists and has the expected value: " << typeToStr<T>();
+      complexTypeErrors.push_back(ss.str());
+    } else {
+      return T{};
+    }
+
   }
   return value;
 }

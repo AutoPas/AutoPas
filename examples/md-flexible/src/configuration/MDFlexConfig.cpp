@@ -362,6 +362,7 @@ std::string MDFlexConfig::to_string() const {
     os << "  " << siteId << ":" << endl;
     os << "    " << setw(valueOffset - 4) << left << epsilonMap.name << ":  " << epsilon << endl;
     os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
+    os << "    " << setw(valueOffset - 4) << left << nuMap.name << ":  " << nuMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
   }
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -483,12 +484,13 @@ void MDFlexConfig::calcSimulationBox() {
   }
 }
 
-void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double mass) {
+void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass) {
   // check if siteId is already existing and if there is no error in input
   if (epsilonMap.value.count(siteId) == 1) {
     // check if type is already added
     if (autopas::utils::Math::isNear(epsilonMap.value.at(siteId), epsilon) and
         autopas::utils::Math::isNear(sigmaMap.value.at(siteId), sigma) and
+        autopas::utils::Math::isNear(nuMap.value.at(siteId), nu) and
         autopas::utils::Math::isNear(massMap.value.at(siteId), mass)) {
       return;
     } else {  // wrong initialization:
@@ -497,6 +499,7 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
   } else {
     epsilonMap.value.emplace(siteId, epsilon);
     sigmaMap.value.emplace(siteId, sigma);
+    nuMap.value.emplace(siteId, nu);
     massMap.value.emplace(siteId, mass);
   }
 }
@@ -539,6 +542,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   // initialize at site level
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
     _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
+                                            nuMap.value.at(siteTypeId),
                                             massMap.value.at(siteTypeId));
   }
 

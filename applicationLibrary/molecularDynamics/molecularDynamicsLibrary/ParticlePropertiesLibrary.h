@@ -294,7 +294,7 @@ class ParticlePropertiesLibrary {
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
-                                                                floatType mass, floatType nu) {
+                                                                floatType nu, floatType mass) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "

@@ -572,6 +572,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         // remove default objects
         config.epsilonMap.value.clear();
         config.sigmaMap.value.clear();
+        config.nuMap.value.clear();
         config.massMap.value.clear();
 
         int siteID = 0;
@@ -594,10 +595,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
               parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(), siteErrors);
           const auto sigma =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
+          const auto nu =
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
           const auto mass =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.massMap.name.c_str(), siteErrors);
 
-          config.addSiteType(siteID, epsilon, sigma, mass);
+          config.addSiteType(siteID, epsilon, sigma, nu, mass);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion

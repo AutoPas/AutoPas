@@ -149,16 +149,17 @@ class MDFlexConfig {
   void addInteractionType(autopas::InteractionTypeOption interactionType) { _interactionTypes.insert(interactionType); }
 
   /**
-   * Adds parameters of a LJ site and checks if the siteId already exists.
+   * Adds parameters of a LJ and AT site and checks if the siteId already exists.
    *
    * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
    *
    * @param siteId unique site type id
    * @param epsilon
    * @param sigma
+   * @param nu
    * @param mass
    */
-  void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass);
+  void addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
@@ -579,6 +580,11 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
       {{0ul, 1.}}, "sigma", true, "Mapping from site type to a sigma value."};
+  /**
+   * nuMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> nuMap{
+      {{0ul, 0.}}, "nu", true, "Mapping from site type to a nu value."};
   /**
    * massMap
    */
