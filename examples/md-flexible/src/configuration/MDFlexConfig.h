@@ -138,6 +138,17 @@ class MDFlexConfig {
   std::shared_ptr<ParticlePropertiesLibraryType> getParticlePropertiesLibrary() { return _particlePropertiesLibrary; }
 
   /**
+   * Returns the used interaction types as deducted from the used functor(s).
+   * @return set of used interaction types.
+   */
+  std::set<autopas::InteractionTypeOption> getInteractionTypes() const { return _interactionTypes; }
+
+  /**
+   * Add interaction type after recognizing a certain functor.
+   */
+  void addInteractionType(autopas::InteractionTypeOption interactionType) { _interactionTypes.insert(interactionType); }
+
+  /**
    * Adds parameters of a LJ site and checks if the siteId already exists.
    *
    * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
@@ -179,9 +190,14 @@ class MDFlexConfig {
   void loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize);
 
   /**
-   * Choice of the functor
+   * Choice of the pairwise functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, at };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
+
+  /**
+   * Choice of the 3-body functor
+   */
+  enum class FunctorOption3B { none, at };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -209,7 +225,14 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> dataLayoutOptions{
       autopas::DataLayoutOption::getMostOptions(), "data-layout", true,
-      "List of data layout options to use. Possible Values: " +
+      "List of data layout options to use for the pairwise interaction. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * dataLayoutOptions3B
+   */
+  MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> dataLayoutOptions3B{
+      autopas::DataLayoutOption::getMostOptions(), "data-layout-3b", true,
+      "List of data layout options to use for the 3-body interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * selectorStrategy
@@ -223,8 +246,15 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::TraversalOption>, __LINE__> traversalOptions{
       autopas::TraversalOption::getMostOptions(), "traversal", true,
-      "List of traversal options to use. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
+      "List of pairwise traversal options to use. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getPairwiseOptions(), " ", {"(", ")"})};
+  /**
+   * traversalOptions3B
+   */
+  MDFlexOption<std::set<autopas::TraversalOption>, __LINE__> traversalOptions3B{
+      autopas::TraversalOption::getMostOptions(), "traversal-3b", true,
+      "List of triwise traversal options to use. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getThreeBodyOptions(), " ", {"(", ")"})};
   /**
    * loadEstimatorOptions
    */
@@ -237,7 +267,14 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::Newton3Option>, __LINE__> newton3Options{
       autopas::Newton3Option::getMostOptions(), "newton3", true,
-      "List of newton3 options to use. Possible Values: " +
+      "List of newton3 options to use for the pairwise interaction. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
+  /**
+   * newton3Options3B
+   */
+  MDFlexOption<std::set<autopas::Newton3Option>, __LINE__> newton3Options3B{
+      autopas::Newton3Option::getMostOptions(), "newton3-3b", true,
+      "List of newton3 options to use for the 3-body interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
   /**
    * cellSizeFactors
@@ -432,17 +469,18 @@ class MDFlexConfig {
    * functorOption
    */
   MDFlexOption<FunctorOption, __LINE__> functorOption {
-    // choose a reasonable default depending on what is available at compile time
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-    FunctorOption::lj12_6_AVX,
-#elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-    FunctorOption::lj12_6_SVE,
-#else
-    FunctorOption::lj12_6,
-#endif
-        "functor", true,
-        "Force functor to use. Possible Values: (lennard-jones "
+    // Default is a dummy option
+        FunctorOption::none, "functor", true,
+        "Pairwise force functor to use. Possible Values: (lennard-jones "
         "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
+  };
+  /**
+   * functorOption3B
+   */
+  MDFlexOption<FunctorOption3B, __LINE__> functorOption3B {
+      // Default is a dummy option
+    FunctorOption3B::none, "functor-3b", true,
+        "3-Body force functor to use. Possible Values: (axilrod-teller)"
   };
   /**
    * iterations
@@ -741,6 +779,7 @@ class MDFlexConfig {
    */
   static constexpr int valueOffset{33};
 
+
  private:
   /**
    * Stores the particles generated based on the provided configuration file
@@ -753,6 +792,11 @@ class MDFlexConfig {
    * Stores the physical properties of the particles used in the an MDFlexSimulation
    */
   std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
+
+  /**
+   * Stores the physical properties of the particles used in the an MDFlexSimulation
+   */
+  std::set<autopas::InteractionTypeOption> _interactionTypes = {};
 
   /**
    * Initializes the ParticlePropertiesLibrary

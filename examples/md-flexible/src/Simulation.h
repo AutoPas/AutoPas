@@ -131,6 +131,11 @@ class Simulation {
     autopas::utils::Timer forceUpdatePairwise;
 
     /**
+     * Records the time used for the triwise force update of all particles.
+     */
+    autopas::utils::Timer forceUpdateTriwise;
+
+    /**
      * Records the time used for the update of the global forces of all particles.
      */
     autopas::utils::Timer forceUpdateGlobal;
@@ -316,6 +321,12 @@ class Simulation {
   bool calculatePairwiseForces();
 
   /**
+   * Calculates the 3-body forces between particles in the autopas container.
+   * @return Tells the user if the current iteration of force calculations was a tuning iteration.
+   */
+  bool calculateTriwiseForces();
+
+  /**
    * Adds global forces to the particles in the container.
    * @param globalForce The global force which will be applied to each particle in the container.
    */
@@ -352,4 +363,17 @@ class Simulation {
    */
   template <class T, class F>
   T applyWithChosenFunctor(F f);
+
+  /**
+   *
+   * Apply the functor chosen and configured via _configuration to the given lambda function f(auto functor).
+   * @note This templated function is private and hence implemented in the .cpp
+   *
+   * @tparam T Return type of f.
+   * @tparam F Function type T f(auto functor).
+   * @param f lambda function.
+   * @return Return value of f.
+   */
+  template <class T, class F>
+  T applyWithChosenFunctor3B(F f);
 };

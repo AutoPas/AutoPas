@@ -241,8 +241,6 @@ std::string MDFlexConfig::to_string() const {
     printOption(selectorStrategy);
   }
 
-  printOption(dataLayoutOptions);
-  printOption(traversalOptions);
   printOption(tuningStrategyOptions);
 
   // helper function to check if any options of a given list is in the tuningStrategyOptions.
@@ -283,30 +281,69 @@ std::string MDFlexConfig::to_string() const {
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::ruleBasedTuning})) {
     printOption(ruleFilename);
   }
-  os << setw(valueOffset) << left << functorOption.name << ":  ";
-  switch (functorOption.value) {
-    case FunctorOption::lj12_6: {
-      os << "Lennard-Jones (12-6)" << endl;
-      break;
+
+  if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise))
+  {
+    os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;
+    constexpr int indentWidth = 2;
+    const auto indent = std::string(indentWidth, ' ');
+    os << indent;
+    os << setw(valueOffset - indentWidth) << left << functorOption.name << ":  ";
+    switch (functorOption.value) {
+      case FunctorOption::none: {
+        os << "None selected" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6: {
+        os << "Lennard-Jones (12-6)" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_AVX: {
+        os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_SVE: {
+        os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
+        break;
+      }
+      case FunctorOption::lj12_6_Globals: {
+        os << "Lennard-Jones (12-6) with globals" << endl;
+        break;
+      }
     }
-    case FunctorOption::lj12_6_AVX: {
-      os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
-      break;
-    }
-    case FunctorOption::lj12_6_SVE: {
-      os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
-      break;
-    }
-    case FunctorOption::lj12_6_Globals: {
-      os << "Lennard-Jones (12-6) with globals" << endl;
-      break;
-    }
-    case FunctorOption::at: {
-      os << "Axilrod-Teller" << endl;
-      break;
-    }
+    os << indent;
+    printOption(traversalOptions, -indentWidth);
+    os << indent;
+    printOption(dataLayoutOptions, -indentWidth);
+    os << indent;
+    printOption(newton3Options, -indentWidth);
   }
-  printOption(newton3Options);
+
+  if (getInteractionTypes().count(autopas::InteractionTypeOption::threeBody))
+  {
+    os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
+    constexpr int indentWidth = 2;
+    const auto indent = std::string(indentWidth, ' ');
+    os << indent;
+    os << setw(valueOffset - indentWidth) << left << functorOption3B.name << ":  ";
+    switch (functorOption3B.value) {
+      case FunctorOption3B::none: {
+        os << "None selected" << endl;
+        break;
+      }
+      case FunctorOption3B::at: {
+        os << "Axilrod-Teller" << endl;
+        break;
+      }
+    }
+    os << indent;
+    printOption(traversalOptions3B, -indentWidth);
+    os << indent;
+    printOption(dataLayoutOptions3B, -indentWidth);
+    os << indent;
+    printOption(newton3Options3B, -indentWidth);
+  }
+
   printOption(cutoff);
   printOption(boxMin);
   printOption(boxMax);

@@ -221,6 +221,27 @@ class TraversalOption : public Option<TraversalOption> {
   }
 
   /**
+   * Set of options that apply for pairwise interactions.
+   * @return
+   */
+  static std::set<TraversalOption> getPairwiseOptions() {
+    std::set<TraversalOption> pairwiseOptions;
+    auto allOptions = getAllOptions();
+    auto threebodyOptions = getThreeBodyOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), threebodyOptions.begin(), threebodyOptions.end(),
+                        std::inserter(pairwiseOptions, pairwiseOptions.begin()));
+    return pairwiseOptions;
+  }
+
+  /**
+   * Set of options that apply for 3-body interactions.
+   * @return
+   */
+  static std::set<TraversalOption> getThreeBodyOptions() {
+    return {Value::ds_sequential_3b};
+  }
+
+  /**
    * Provides a way to iterate over the possible choices of TraversalOption.
    * @return map option -> string representation
    */

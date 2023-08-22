@@ -397,10 +397,24 @@ void Simulation::updateQuaternions() {
 void Simulation::updateForces() {
   _timers.forceUpdateTotal.start();
 
-  _timers.forceUpdatePairwise.start();
-  const bool isTuningIteration = calculatePairwiseForces();
+  bool isTuningIteration = false;
+  long timeIteration = 0;
 
-  const auto timeIteration = _timers.forceUpdatePairwise.stop();
+  // Calculate pairwise forces
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise))
+  {
+    _timers.forceUpdatePairwise.start();
+    isTuningIteration = (isTuningIteration | calculatePairwiseForces());
+    timeIteration += _timers.forceUpdatePairwise.stop();
+  }
+
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody))
+  {
+    _timers.forceUpdateTriwise.start();
+    isTuningIteration = (isTuningIteration | calculateTriwiseForces());
+    timeIteration += _timers.forceUpdateTriwise.stop();
+  }
+
 
   // count time spent for tuning
   if (isTuningIteration) {
@@ -464,6 +478,12 @@ long Simulation::accumulateTime(const long &time) {
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->template computeInteractions(&functor); });
+  return wasTuningIteration;
+}
+
+bool Simulation::calculateTriwiseForces() {
+  const auto wasTuningIteration =
+      applyWithChosenFunctor3B<bool>([&](auto functor) { return _autoPasContainer->template computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
@@ -674,7 +694,19 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
-    case MDFlexConfig::FunctorOption::at: {
+    default: {
+      throw std::runtime_error("Unknown pairwise functor choice" +
+                               std::to_string(static_cast<int>(_configuration.functorOption.value)));
+    }
+  }
+}
+
+template <class T, class F>
+T Simulation::applyWithChosenFunctor3B(F f) {
+  const double cutoff = _configuration.cutoff.value;
+  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+  switch (_configuration.functorOption3B.value) {
+    case MDFlexConfig::FunctorOption3B::at: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
       return f(ATFunctor{cutoff, particlePropertiesLibrary});
 #else
@@ -683,7 +715,9 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
 #endif
     }
+    default : {
+      throw std::runtime_error("Unknown 3-body functor choice" +
+                               std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
+    }
   }
-  throw std::runtime_error("Unknown functor choice" +
-                           std::to_string(static_cast<int>(_configuration.functorOption.value)));
 }
