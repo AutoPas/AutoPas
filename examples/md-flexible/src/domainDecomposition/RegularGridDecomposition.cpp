@@ -478,9 +478,6 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
   using autopas::utils::Math::isNear;
   using namespace autopas::utils::ArrayMath::literals;
 
-  // Calculate left halo box of right neighbor
-  const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-
   const auto getBoxLength = [](const auto &bMin, const auto &bMax) {
     const auto bLength = bMax - bMin;
     return std::reduce(bLength.begin(), bLength.end(), 1., std::multiplies());
@@ -488,7 +485,7 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
   const auto boxVolume = getBoxLength(boxMin, boxMax);
   const auto localBoxVolume = getBoxLength(_localBoxMin, _localBoxMax);
 
-  const auto globalBoxLenghtDir = _globalBoxMax[direction] - _globalBoxMin[direction];
+  const auto globalBoxLengthDir = _globalBoxMax[direction] - _globalBoxMin[direction];
 
   // estimate the number of halo particles by calculating the fraction of the search box and scale it up by 10%
   haloParticlesBuffer.reserve(boxVolume / localBoxVolume * autoPasContainer.getNumberOfParticles() * 1.1);
