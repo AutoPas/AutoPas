@@ -299,6 +299,21 @@ class RegularGridDecomposition final : public DomainDecomposition {
                                                                 int leftNeighbor, int rightNeighbor);
 
   /**
+   * Helper function to reduce code duplication between collectHaloParticlesForLeftNeighbor() and
+   * collectHaloParticlesForRightNeighbor().
+   * @param autoPasContainer
+   * @param direction Along which dimension should we collect.
+   * @param boxMin lower left front corner of the region that is collected.
+   * @param boxMax upper right rear  corner of the region that is collected.
+   * @param atGlobalBoundary Indicator if we are at a global boundary and periodics are necessary.
+   * @param wrapAroundDistance Distance (incl sign for direction) that the particle needs to be relocated.
+   * @return
+   */
+  std::vector<ParticleType> collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
+                                                    const std::array<double, _dimensionCount> &boxMin,
+                                                    const std::array<double, _dimensionCount> &boxMax,
+                                                    bool atGlobalBoundary, double wrapAroundDistance);
+  /**
    * Collects the halo particles for the left neighbour.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
    * @param autoPasContainer: The autopas container which owns the potential halo particles.
