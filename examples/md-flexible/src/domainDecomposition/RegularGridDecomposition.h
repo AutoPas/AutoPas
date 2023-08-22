@@ -253,6 +253,17 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::array<double, _dimensionCount> _localBoxMax{};
 
+  /**
+   * Buffer for particles to be sent to the left neighbor.
+   * @note This buffer exists solely to avoid reallocations.
+   */
+  std::vector<ParticleType> _particlesForLeftNeighbor{};
+  /**
+   * Buffer for particles to be sent to the right neighbor.
+   * @note This buffer exists solely to avoid reallocations.
+   */
+  std::vector<ParticleType> _particlesForRightNeighbor{};
+
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * The ALL load balancer used for diffuse load balancing
@@ -309,10 +320,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param wrapAroundDistance Distance (incl sign for direction) that the particle needs to be relocated.
    * @return
    */
-  std::vector<ParticleType> collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
-                                                    const std::array<double, _dimensionCount> &boxMin,
-                                                    const std::array<double, _dimensionCount> &boxMax,
-                                                    bool atGlobalBoundary, double wrapAroundDistance);
+  void collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,
+                               const std::array<double, _dimensionCount> &boxMin,
+                               const std::array<double, _dimensionCount> &boxMax, bool atGlobalBoundary,
+                               double wrapAroundDistance, std::vector<ParticleType> &haloParticles);
   /**
    * Collects the halo particles for the left neighbour.
    * Halo particle positions will be wrapped around the global domain boundary if necessary.
@@ -320,7 +331,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param direction: The direction along which the neighbor is located.
    * @return haloParticles: A vector of particles
    */
-  std::vector<ParticleType> collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, size_t direction);
+  void collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer, size_t direction,
+                                           std::vector<ParticleType> &particlesForLeftNeighborBuffer);
 
   /**
    * Collects the halo particles for the right neighbor.
@@ -329,7 +341,8 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param direction: The direction along which the neighbor is located.
    * @return haloParticles: The container the identified halo particles are gathered in to.
    */
-  std::vector<ParticleType> collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, size_t direction);
+  void collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer, size_t direction,
+                                            std::vector<ParticleType> &particlesForRightNeighborBuffer);
 
   /**
    * Categorizes the provided particles as particles for the left or the right neighbor and adds them to the respective
