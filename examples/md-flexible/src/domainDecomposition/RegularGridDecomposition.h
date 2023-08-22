@@ -270,6 +270,11 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::vector<ParticleType> _receivedParticlesBuffer{};
 
+  /**
+   * Buffer for halo particles that have to be inserted locally.
+   */
+  std::vector<ParticleType> _haloParticles{};
+
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * The ALL load balancer used for diffuse load balancing

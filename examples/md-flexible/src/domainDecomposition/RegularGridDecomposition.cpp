@@ -162,7 +162,19 @@ std::array<int, 6> RegularGridDecomposition::getExtentOfSubdomain(const int subd
 
 void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContainer) {
   using autopas::utils::Math::isNear;
-  std::vector<ParticleType> haloParticles{};
+  using namespace autopas::utils::ArrayMath::literals;
+
+  _haloParticles.clear();
+  const double skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
+  const double haloWidth = _cutoffWidth + skinWidth;
+
+  // since we currently don't have any halo particles, estimate the number by comparing box and halo volume and add 10%
+  const auto localBoxLength = _localBoxMax - _localBoxMin;
+  const auto localBoxVolume = std::reduce(localBoxLength.begin(), localBoxLength.end(), 1., std::multiplies());
+  const auto haloBoxLength = localBoxLength + 2 * haloWidth;
+  const auto haloBoxVolume = std::reduce(haloBoxLength.begin(), haloBoxLength.end(), 1., std::multiplies());
+  const auto haloActualVolume = haloBoxVolume - localBoxVolume;
+  _haloParticles.reserve(autoPasContainer.getNumberOfParticles() * (haloActualVolume / localBoxVolume) * 1.1);
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // completely bypass Halo particle exchange in this dimension if boundaries in this direction are not periodic
@@ -178,12 +190,12 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     _particlesForRightNeighbor.clear();
     collectHaloParticlesForRightNeighbor(autoPasContainer, dimensionIndex, _particlesForRightNeighbor);
 
-    const double leftHaloMin = _localBoxMin[dimensionIndex] - _skinWidthPerTimestep * _rebuildFrequency;
-    const double leftHaloMax = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency;
-    const double rightHaloMin = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidthPerTimestep * _rebuildFrequency;
-    const double rightHaloMax = _localBoxMax[dimensionIndex] + _skinWidthPerTimestep * _rebuildFrequency;
+    const double leftHaloMin = _localBoxMin[dimensionIndex] - skinWidth;
+    const double leftHaloMax = _localBoxMin[dimensionIndex] + _cutoffWidth + skinWidth;
+    const double rightHaloMin = _localBoxMax[dimensionIndex] - _cutoffWidth - skinWidth;
+    const double rightHaloMax = _localBoxMax[dimensionIndex] + skinWidth;
 
-    for (const auto &particle : haloParticles) {
+    for (const auto &particle : _haloParticles) {
       std::array<double, _dimensionCount> position = particle.getR();
       if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
         _particlesForLeftNeighbor.push_back(particle);
@@ -212,9 +224,9 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     _receivedParticlesBuffer.clear();
     sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor, _receivedParticlesBuffer,
                                         leftNeighbor, rightNeighbor);
-    haloParticles.insert(haloParticles.end(), _receivedParticlesBuffer.begin(), _receivedParticlesBuffer.end());
+    _haloParticles.insert(_haloParticles.end(), _receivedParticlesBuffer.begin(), _receivedParticlesBuffer.end());
   }
-  autoPasContainer.addHaloParticles(haloParticles);
+  autoPasContainer.addHaloParticles(_haloParticles);
 }
 
 void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasContainer,
