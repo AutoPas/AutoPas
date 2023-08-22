@@ -208,9 +208,11 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     // See documentation for _neighborDomainIndices to explain the indexing
     const int leftNeighbor = _neighborDomainIndices[(dimensionIndex * 2) % _neighborCount];
     const int rightNeighbor = _neighborDomainIndices[(dimensionIndex * 2 + 1) % _neighborCount];
-    const auto receivedHaloParticles = sendAndReceiveParticlesLeftAndRight(
-        _particlesForLeftNeighbor, _particlesForRightNeighbor, leftNeighbor, rightNeighbor);
-    haloParticles.insert(haloParticles.end(), receivedHaloParticles.begin(), receivedHaloParticles.end());
+    // clear the buffer as it will hold the newly received halo particles.
+    _receivedParticlesBuffer.clear();
+    sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor, _receivedParticlesBuffer,
+                                        leftNeighbor, rightNeighbor);
+    haloParticles.insert(haloParticles.end(), _receivedParticlesBuffer.begin(), _receivedParticlesBuffer.end());
   }
   autoPasContainer.addHaloParticles(haloParticles);
 }
@@ -240,18 +242,20 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
           categorizeParticlesIntoLeftAndRightNeighbor(emigrants, dimensionIndex);
       emigrants = remainingEmigrants;
 
-      const auto immigrants = sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor,
-                                                                  leftNeighbor, rightNeighbor);
+      // clear the buffer as it will hold the newly received immigrants
+      _receivedParticlesBuffer.clear();
+      sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor,
+                                          _receivedParticlesBuffer, leftNeighbor, rightNeighbor);
 #ifdef AUTOPAS_OPENMP
 #pragma omp declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 // make sure each buffer gets filled equally while not inducing scheduling overhead
 #pragma omp parallel for reduction(vecMergeParticle \
                                    : emigrants),    \
-    schedule(static, std::max(1ul, immigrants.size() / omp_get_max_threads()))
+    schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / omp_get_max_threads()))
 #endif
       // we can't use range based for loops here because clang accepts this only starting with version 11
-      for (size_t i = 0; i < immigrants.size(); ++i) {
-        const auto &particle = immigrants[i];
+      for (size_t i = 0; i < _receivedParticlesBuffer.size(); ++i) {
+        const auto &particle = _receivedParticlesBuffer[i];
         if (isInsideLocalDomain(particle.getR())) {
           autoPasContainer.addParticle(particle);
         } else {
@@ -433,10 +437,10 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
   }
 }
 
-std::vector<ParticleType> RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(
-    const std::vector<ParticleType> &particlesToLeft, const std::vector<ParticleType> &particlesToRight,
-    int leftNeighbor, int rightNeighbor) {
-  std::vector<ParticleType> receivedParticles{};
+void RegularGridDecomposition::sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
+                                                                   const std::vector<ParticleType> &particlesToRight,
+                                                                   std::vector<ParticleType> &receivedParticles,
+                                                                   int leftNeighbor, int rightNeighbor) {
   // only actually send / receive if we are not sending / receiving to ourselves
   if (_mpiCommunicationNeeded and leftNeighbor != _domainIndex) {
     ParticleCommunicator particleCommunicator(_communicator);
@@ -452,7 +456,6 @@ std::vector<ParticleType> RegularGridDecomposition::sendAndReceiveParticlesLeftA
     receivedParticles.insert(receivedParticles.end(), particlesToLeft.begin(), particlesToLeft.end());
     receivedParticles.insert(receivedParticles.end(), particlesToRight.begin(), particlesToRight.end());
   }
-  return receivedParticles;
 }
 
 void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasContainer, size_t direction,

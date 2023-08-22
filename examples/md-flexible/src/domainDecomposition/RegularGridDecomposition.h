@@ -264,6 +264,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   std::vector<ParticleType> _particlesForRightNeighbor{};
 
+  /**
+   * Buffer for communicating particles.
+   * @note This buffer exists solely to avoid reallocations.
+   */
+  std::vector<ParticleType> _receivedParticlesBuffer{};
+
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   /**
    * The ALL load balancer used for diffuse load balancing
@@ -305,9 +311,10 @@ class RegularGridDecomposition final : public DomainDecomposition {
    * @param rightNeighbor: The right neighbor's index / rank.
    * @return receivedParticles: Container for the particles received from either neighbor.
    */
-  std::vector<ParticleType> sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
-                                                                const std::vector<ParticleType> &particlesToRight,
-                                                                int leftNeighbor, int rightNeighbor);
+  void sendAndReceiveParticlesLeftAndRight(const std::vector<ParticleType> &particlesToLeft,
+                                           const std::vector<ParticleType> &particlesToRight,
+                                           std::vector<ParticleType> &receivedParticles, int leftNeighbor,
+                                           int rightNeighbor);
 
   /**
    * Helper function to reduce code duplication between collectHaloParticlesForLeftNeighbor() and
