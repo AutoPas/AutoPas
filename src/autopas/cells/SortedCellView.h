@@ -88,7 +88,11 @@ class SortedCellView : public ParticleCell<Particle> {
 
   bool isEmpty() const override { return numParticles() == 0; }
 
-  void clear() override { _particles.clear(); }
+  void clear() override {
+    _particles.clear();
+    this->_numOwnedParticles = 0;
+    this->_numHaloParticles = 0;
+  }
 
   void deleteDummyParticles() override {
     _particles.erase(std::remove_if(_particles.begin(), _particles.end(),
@@ -100,6 +104,12 @@ class SortedCellView : public ParticleCell<Particle> {
     if (index >= numParticles()) {
       AutoPasLog(ERROR, "Index out of range");
       utils::ExceptionHandler::exception("Error: Index out of range");
+    }
+
+    if (std::get<1>(_particles[index])->getOwnershipState() == OwnershipState::owned) {
+      this->_numOwnedParticles--;
+    } else if (std::get<1>(_particles[index])->getOwnershipState() == OwnershipState::halo) {
+      this->_numHaloParticles--;
     }
 
     if (index < numParticles() - 1) {

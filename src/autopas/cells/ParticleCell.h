@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -128,9 +129,31 @@ class ParticleCell {
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
 
   /**
+   * Get the type of particles contained in this cell. Possible values:
+   * dummy: this cell is empty
+   * owned: this cell can ONLY contain owned particles
+   * halo: this cell can ONLY contain halo particles
+   * ownedOrHalo: this cell can contain owned or halo particles
+   * @return type of particles inside this cell
+   */
+  const OwnershipState getPossibleParticleOwnerships() {
+    if (_numOwnedParticles > 0 and _numHaloParticles == 0) {
+      return OwnershipState::owned;
+    } else if (_numHaloParticles > 0 and _numOwnedParticles == 0) {
+      return OwnershipState::halo;
+    } else {
+      return OwnershipState::ownedOrHalo;
+    }
+  }
+
+  /**
    * Lock object for exclusive access to this cell.
    */
   AutoPasLock _cellLock{};
+
+ protected:
+  int _numOwnedParticles{0};
+  int _numHaloParticles{0};
 };
 
 }  // namespace autopas

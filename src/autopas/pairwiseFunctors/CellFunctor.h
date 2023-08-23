@@ -113,6 +113,12 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     return;
   }
 
+  // avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
+  if (not(cell.getPossibleParticleOwnerships() & OwnershipState::owned)) {
+
+    return;
+  }
+
   switch (DataLayout) {
     case DataLayoutOption::aos:
       processCellAoS<useNewton3>(cell);
@@ -135,6 +141,13 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   if ((DataLayout == DataLayoutOption::soa && (cell1._particleSoABuffer.getNumberOfParticles() == 0 ||
                                                cell2._particleSoABuffer.getNumberOfParticles() == 0)) ||
       (DataLayout == DataLayoutOption::aos && (cell1.numParticles() == 0 || cell2.numParticles() == 0))) {
+    return;
+  }
+
+  // avoid force calculations if both cells can not contain owned particles
+  if ((not(cell1.getPossibleParticleOwnerships() & OwnershipState::owned)) and
+      (not(cell2.getPossibleParticleOwnerships() & OwnershipState::owned))) {
+
     return;
   }
 

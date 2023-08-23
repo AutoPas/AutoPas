@@ -50,6 +50,11 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void addParticle(const Particle &p) override {
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
+    if (p.isOwned()) {
+      this->_numOwnedParticles++;
+    } else if (p.isHalo()) {
+      this->_numHaloParticles++;
+    }
     _particles.push_back(p);
   }
 
@@ -199,7 +204,11 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   [[nodiscard]] bool isEmpty() const override { return numParticles() == 0; }
 
-  void clear() override { _particles.clear(); }
+  void clear() override {
+    _particles.clear();
+    this->_numOwnedParticles = 0;
+    this->_numHaloParticles = 0;
+  }
 
   void deleteDummyParticles() override {
     _particles.erase(
@@ -211,6 +220,12 @@ class FullParticleCell : public ParticleCell<Particle> {
     std::lock_guard<AutoPasLock> lock(this->_cellLock);
     if (index >= numParticles()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    }
+
+    if (_particles[index].isOwned()) {
+      this->_numOwnedParticles--;
+    } else if (_particles[index].isHalo()) {
+      this->_numHaloParticles--;
     }
 
     if (index < numParticles() - 1) {

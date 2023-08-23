@@ -55,6 +55,11 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   void addParticleReference(Particle *p) {
     _particlesLock.lock();
     _particles.push_back(p);
+    if (p->isOwned()) {
+      this->_numOwnedParticles++;
+    } else if (p->isHalo()) {
+      this->_numHaloParticles++;
+    }
     _particlesLock.unlock();
   }
 
@@ -176,7 +181,11 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
   [[nodiscard]] bool isEmpty() const override { return numParticles() == 0; }
 
-  void clear() override { _particles.clear(); }
+  void clear() override {
+    _particles.clear();
+    this->_numOwnedParticles = 0;
+    this->_numHaloParticles = 0;
+  }
 
   void deleteDummyParticles() override {
     _particles.erase(
@@ -188,6 +197,12 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     std::lock_guard<AutoPasLock> lock(_particlesLock);
     if (index >= numParticles()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    }
+
+    if (_particles[index]->isOwned()) {
+      this->_numOwnedParticles--;
+    } else if (_particles[index]->isHalo()) {
+      this->_numHaloParticles--;
     }
 
     _particles[index]->setOwnershipState(OwnershipState::dummy);
