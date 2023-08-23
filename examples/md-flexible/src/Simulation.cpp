@@ -10,6 +10,7 @@
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "autopas/pairwiseFunctors/FlopCounterFunctor3B.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 
@@ -537,6 +538,7 @@ void Simulation::logMeasurements() {
   const long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
   const long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   const long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
+  const long forceUpdateTriwise = accumulateTime(_timers.forceUpdateTriwise.getTotalTime());
   const long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
   const long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
   const long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
@@ -607,20 +609,36 @@ void Simulation::logMeasurements() {
     std::cout << "MFUPs/sec                          : " << mfups << std::endl;
 
     //TODO: adjust flop calculation for 3-body
-//    if (_configuration.dontMeasureFlops.value) {
-//      ForceFunctorAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-//      autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> flopCounterFunctor(
-//          ljFunctor, _autoPasContainer->getCutoff());
-//      _autoPasContainer->computeInteractions(&flopCounterFunctor);
-//
-//      const auto flops = flopCounterFunctor.getFlops();
-//
-//      std::cout << "Statistics for Force Calculation at end of simulation:" << std::endl;
-//      std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-//      std::cout << "  GFLOPs/sec                         : "
-//                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-//      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
-//    }
+    if (_configuration.dontMeasureFlops.value) {
+      if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+              ForceFunctorAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+              autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> flopCounterFunctor(
+                  ljFunctor, _autoPasContainer->getCutoff());
+              _autoPasContainer->computeInteractions(&flopCounterFunctor);
+
+              const auto flops = flopCounterFunctor.getFlops();
+
+              std::cout << "Statistics for the Pairwise Force Calculation at end of simulation:" << std::endl;
+              std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+              std::cout << "  GFLOPs/sec                         : "
+                        << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdatePairwise) * 1e-9) << std::endl;
+              std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+      }
+      if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
+              ForceFunctorAbstract3B atFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+              autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> flopCounterFunctor(
+                  atFunctor, _autoPasContainer->getCutoff());
+              _autoPasContainer->computeInteractions(&flopCounterFunctor);
+
+              const auto flops = flopCounterFunctor.getFlops();
+
+              std::cout << "Statistics for the 3-Body Force Calculation at end of simulation:" << std::endl;
+              std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+              std::cout << "  GFLOPs/sec                         : "
+                        << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdateTriwise) * 1e-9) << std::endl;
+              std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+      }
+    }
   }
 }
 

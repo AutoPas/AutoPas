@@ -314,17 +314,19 @@ class AxilrodTellerFunctor
    * distance.
    * @param molAType molecule A's type id
    * @param molBType molecule B's type id
+   * @param molCType molecule C's type id
    * @param newton3 is newton3 applied.
-   * @note molAType and molBType make no difference for AxilrodTellerFunctor, but are kept to have a consistent interface for other
+   * @note The molecule types make no difference for AxilrodTellerFunctor, but are kept to have a consistent interface for other
    * functors where they may.
    * @return the number of floating point operations
    */
-  static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
+  static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, size_t molCType, bool newton3) {
     //
-    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale) sum
-    // Adding to particle forces: 6 or 3 depending newton3
-    // Total = 12 + (6 or 3) = 18 or 15
-    return newton3 ? 18ul : 15ul;
+    // Kernel: 56 = 18 (three dot products) + 9 (coefficients) + 29 (force calculation) sum
+    // Adding to particle forces: 3
+    // For Newton3: 29 (second force calculation) + 3 (adding force) + 6 (adding force to third p)
+    // Total = 56 + 3 + ( 29 + 3 + 6 ) = 59 or 97
+    return newton3 ? 97ul : 59ul;
   }
 
   /**

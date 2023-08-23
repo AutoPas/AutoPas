@@ -1,8 +1,8 @@
 /**
- * @file FlopCounterFunctor.h
+ * @file FlopCounterFunctor3B.h
  *
- * @date 22 Jan 2018
- * @author tchipevn
+ * @author muehlhaeusser
+ * @date 23.08.2023
  */
 
 #pragma once
@@ -25,14 +25,14 @@ namespace autopas {
  * @tparam ForceFunctorType
  */
 template <class Particle, class ForceFunctorType>
-class FlopCounterFunctor : public TriwiseFunctor<Particle, FlopCounterFunctor<Particle, ForceFunctorType>> {
+class FlopCounterFunctor3B : public TriwiseFunctor<Particle, FlopCounterFunctor3B<Particle, ForceFunctorType>> {
  public:
   /**
    * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
    * using different functors in the logs.
    * @return name of functor.
    */
-  std::string getName() override { return "FlopCounterFunctor"; }
+  std::string getName() override { return "FlopCounterFunctor3B"; }
 
   bool isRelevantForTuning() override { return false; }
 
@@ -41,12 +41,12 @@ class FlopCounterFunctor : public TriwiseFunctor<Particle, FlopCounterFunctor<Pa
   bool allowsNonNewton3() override { return true; }
 
   /**
-   * constructor of FlopCounterFunctor
-   * @param forceFunctor force functor whose flops are counted
+   * constructor of FlopCounterFunctor3B
+   * @param forceFunctor 3-body force functor whose flops are counted
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle, ForceFunctorType>(ForceFunctorType forceFunctor, double cutoffRadius)
-      : autopas::TriwiseFunctor<Particle, FlopCounterFunctor<Particle, ForceFunctorType>>(cutoffRadius),
+  explicit FlopCounterFunctor3B<Particle, ForceFunctorType>(ForceFunctorType forceFunctor, double cutoffRadius)
+      : autopas::TriwiseFunctor<Particle, FlopCounterFunctor3B<Particle, ForceFunctorType>>(cutoffRadius),
         _forceFunctor(forceFunctor),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
@@ -58,13 +58,19 @@ class FlopCounterFunctor : public TriwiseFunctor<Particle, FlopCounterFunctor<Pa
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
       return;
     }
-    const auto displacement = i.getR() - j.getR();
-    const auto distanceSquared = utils::ArrayMath::dot(displacement, displacement);
-    _distanceCalculations.fetch_add(1, std::memory_order_relaxed);
+    auto drij = j.getR() - i.getR();
+    auto drjk = k.getR() - j.getR();
+    auto drki = i.getR() - k.getR();
 
-    if (distanceSquared <= _cutoffSquare) {
+    double dr2ij = autopas::utils::ArrayMath::dot(drij, drij);
+    double dr2jk = autopas::utils::ArrayMath::dot(drjk, drjk);
+    double dr2ki = autopas::utils::ArrayMath::dot(drki, drki);
+
+    _distanceCalculations.fetch_add(3, std::memory_order_relaxed);
+
+    if (dr2ij <= _cutoffSquare or dr2jk <= _cutoffSquare or dr2ki <= _cutoffSquare) {
       _kernelCalls.fetch_add(1, std::memory_order_relaxed);
-      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), newton3),
+      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), k.getTypeId(), newton3),
                              std::memory_order_relaxed);
     }
   }
@@ -74,44 +80,7 @@ class FlopCounterFunctor : public TriwiseFunctor<Particle, FlopCounterFunctor<Pa
    * This SoA Functor does not use any vectorization.
    */
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
-    if (soa.getNumberOfParticles() == 0) return;
-
-    double *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
-
-    // Use accumulators per SoA Functor Single call i.e. per thread to avoid potentially waiting at atomic fetch_add
-    // for every particle pair
-    size_t distanceCalulationsAcc = 0;
-    size_t kernelCallsAcc = 0;
-    size_t kernelFlopsAcc = 0;
-
-    for (size_t i = 0; i < soa.getNumberOfParticles(); ++i) {
-      for (size_t j = i + 1; j < soa.getNumberOfParticles(); ++j) {
-        ++distanceCalulationsAcc;
-
-        const double drx = xPtr[i] - xPtr[j];
-        const double dry = yPtr[i] - yPtr[j];
-        const double drz = zPtr[i] - zPtr[j];
-
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
-
-        const double dr2 = drx2 + dry2 + drz2;
-
-        if (dr2 <= _cutoffSquare) {
-          ++kernelCallsAcc;
-          kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(typePtr[i], typePtr[j],
-                                                                   true);  // SoAFunctorSingle always uses newton3.
-        }
-      }
-    }
-    _distanceCalculations.fetch_add(distanceCalulationsAcc);
-    _kernelCalls.fetch_add(kernelCallsAcc);
-    _kernelFlops.fetch_add(kernelFlopsAcc);
+    autopas::utils::ExceptionHandler::exception("FlopCounterFunctor3B::SoAFunctorSingle() is not yet implemented.");
   }
 
   /**
@@ -119,45 +88,7 @@ class FlopCounterFunctor : public TriwiseFunctor<Particle, FlopCounterFunctor<Pa
    */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
                       bool newton3) override {
-    double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
-
-    unsigned long *const __restrict type1Ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    unsigned long *const __restrict type2Ptr = soa2.template begin<Particle::AttributeNames::typeId>();
-
-    // Use accumulators per SoA Functor Pair call i.e. per thread to avoid potentially waiting at atomic fetch_add
-    // for every particle pair
-    size_t distanceCalulationsAcc = 0;
-    size_t kernelCallsAcc = 0;
-    size_t kernelFlopsAcc = 0;
-
-    for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
-      for (size_t j = 0; j < soa2.getNumberOfParticles(); ++j) {
-        ++distanceCalulationsAcc;
-
-        const double drx = x1ptr[i] - x2ptr[j];
-        const double dry = y1ptr[i] - y2ptr[j];
-        const double drz = z1ptr[i] - z2ptr[j];
-
-        const double drx2 = drx * drx;
-        const double dry2 = dry * dry;
-        const double drz2 = drz * drz;
-
-        const double dr2 = drx2 + dry2 + drz2;
-
-        if (dr2 <= _cutoffSquare) {
-          ++kernelCallsAcc;
-          kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(type1Ptr[i], type2Ptr[j], newton3);
-        }
-      }
-    }
-    _distanceCalculations.fetch_add(distanceCalulationsAcc);
-    _kernelCalls.fetch_add(kernelCallsAcc);
-    _kernelFlops.fetch_add(kernelFlopsAcc);
+    autopas::utils::ExceptionHandler::exception("FlopCounterFunctor3B::SoAFunctorPair() is not yet implemented.");
   }
 
   // clang-format off
@@ -169,49 +100,7 @@ class FlopCounterFunctor : public TriwiseFunctor<Particle, FlopCounterFunctor<Pa
   // clang-format on
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) override {
-    const auto numParticles = soa.getNumberOfParticles();
-
-    if (numParticles == 0) return;
-
-    double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-    unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
-
-    const size_t neighborListSize = neighborList.size();
-    const size_t *const __restrict currentList = neighborList.data();
-
-    // Use accumulators per SoA Functor Verlet call i.e. per thread to avoid potentially waiting at atomic fetch_add
-    // for every particle pair
-    size_t distanceCalulationsAcc = 0;
-    size_t kernelCallsAcc = 0;
-    size_t kernelFlopsAcc = 0;
-
-    for (size_t jNeighIndex = 0; jNeighIndex < neighborListSize; ++jNeighIndex) {
-      size_t j = neighborList[jNeighIndex];
-      if (indexFirst == j) continue;
-
-      ++distanceCalulationsAcc;
-
-      const double drx = xptr[indexFirst] - xptr[j];
-      const double dry = yptr[indexFirst] - yptr[j];
-      const double drz = zptr[indexFirst] - zptr[j];
-
-      const double drx2 = drx * drx;
-      const double dry2 = dry * dry;
-      const double drz2 = drz * drz;
-
-      const double dr2 = drx2 + dry2 + drz2;
-
-      if (dr2 <= _cutoffSquare) {
-        ++kernelCallsAcc;
-        kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(typePtr[indexFirst], typePtr[j], newton3);
-      }
-    }
-    _distanceCalculations.fetch_add(distanceCalulationsAcc);
-    _kernelCalls.fetch_add(kernelCallsAcc);
-    _kernelFlops.fetch_add(kernelFlopsAcc);
+    autopas::utils::ExceptionHandler::exception("FlopCounterFunctor3B::SoAFunctorVerlet() is not yet implemented.");
   }
 
   /**
@@ -238,10 +127,10 @@ class FlopCounterFunctor : public TriwiseFunctor<Particle, FlopCounterFunctor<Pa
 
   /**
    * get the hit rate of the tri-wise interaction, i.e. the ratio of the number
-   * of kernel calls compared to the number of distance calculations
+   * of kernel calls compared to the number of distance checks (Checking all 3 distances)
    * @return the hit rate
    */
-  double getHitRate() { return static_cast<double>(_kernelCalls) / static_cast<double>(_distanceCalculations); }
+  double getHitRate() { return static_cast<double>(_kernelCalls) / static_cast<double>(_distanceCalculations / 3.0); }
 
   /**
    * get the total number of flops
