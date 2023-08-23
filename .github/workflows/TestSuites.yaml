@@ -122,7 +122,7 @@ jobs:
       - name: Run tests ${{ matrix.part }}/2
         run: |
           # If single-site & No MPI, run every other AutoPas and example test
-          if [ "${{ matrix.md-flex-mode }}" = 'singlesite'] && ["${{ matrix.config[1] }}" != 'mpicc' ]
+          if [ "${{ matrix.md-flex-mode }}" = 'singlesite' ] && ["${{ matrix.config[1] }}" != 'mpicc' ]
           then
             cd build
             # Start with test 0 or 1 and do every second test
@@ -134,7 +134,7 @@ jobs:
           fi
           
           # If single-site & MPI, run MPI tests for AutoPas and example tests
-          if [ "${{ matrix.md-flex-mode }}" = 'singlesite'] && ["${{ matrix.config[1] }}" = 'mpicc' ]
+          if [ "${{ matrix.md-flex-mode }}" = 'singlesite' ] && [ "${{ matrix.config[1] }}" = 'mpicc' ]
           then
             cd build
             # Only run MPI tests.
