@@ -10,13 +10,13 @@ pkg_check_modules(UUID QUIET uuid)
 if (NOT UUID_FOUND)
     message(STATUS "UUID not found - using bundled version")
 
-    set(LIBUUID_INSTALL_DIR "${CMAKE_BINARY_DIR}/uuid/install")
+    set(LIBUUID_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/uuid/install")
     set(LIBUUID_PKGCONFIG_DIR ${LIBUUID_INSTALL_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
     set(LIBUUID_LIBRARY_DIR ${LIBUUID_INSTALL_DIR}/lib:$ENV{LIBRARY_PATH})
     set(UUID_CONFIG_PARAMS "--prefix=${LIBUUID_INSTALL_DIR}")
     ExternalProject_Add(
         uuid_bundled
-        PREFIX uuid
+        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/uuid
         URL ${PROJECT_SOURCE_DIR}/libs/libuuid-1.0.3.zip
         URL_HASH MD5=9fd1e87682d24d6ca22941e0af339c8a
         BUILD_IN_SOURCE TRUE
@@ -33,13 +33,13 @@ endif ()
 
 ExternalProject_ADD(
         antlr4cpp_bundled
-        PREFIX           antlr4cppPrefix
+        PREFIX           ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp
         URL              ${PROJECT_SOURCE_DIR}/libs/antlr4-cpp-runtime-4.9.3-source.zip
         URL_HASH         MD5=eafa4fef583e12e963062882773461be
         # pass PKG_CONFIG_PATH as a environment variable to cmake so find_package() in antlr4cpp's CMakeLists.txt can find uuid-dev if using the bundled version
         CMAKE_COMMAND    ${CMAKE_COMMAND} -E env PKG_CONFIG_PATH=${LIBUUID_PKGCONFIG_DIR} ${CMAKE_COMMAND}
-        BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/antlr4cppPrefix/install/lib/libantlr4-runtime.a
-        CMAKE_ARGS       -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/antlr4cppPrefix/install -DCMAKE_CXX_FLAGS=-w
+        BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp/install/lib/libantlr4-runtime.a
+        CMAKE_ARGS       -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp/install -DCMAKE_CXX_FLAGS=-w
         # pass LIBRARY_PATH as a environment variable to make so the linker finds uuid-dev if using the bundled version
         BUILD_COMMAND    ${CMAKE_COMMAND} -E env LIBRARY_PATH=${LIBUUID_LIBRARY_DIR} ${CMAKE_MAKE_PROGRAM}
         LOG_BUILD        ON
