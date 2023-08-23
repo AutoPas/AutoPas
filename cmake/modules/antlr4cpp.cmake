@@ -26,9 +26,6 @@ if (NOT UUID_FOUND)
     )
     
 else()
-    set(LIBUUID_INSTALL_DIR "")
-    set(LIBUUID_PKGCONFIG_DIR "")
-    set(LIBUUID_LIBRARY_DIR "")
     message(STATUS "UUID found - using system version")
     # add a dummy target so the dependency in antlr4cpp_bundled is fulfilled if uuid-dev was found on the system
     add_custom_target(uuid_bundled)
