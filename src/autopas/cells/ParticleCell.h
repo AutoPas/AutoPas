@@ -142,7 +142,7 @@ class ParticleCell {
     } else if (_numHaloParticles > 0 and _numOwnedParticles == 0) {
       return OwnershipState::halo;
     } else {
-      return OwnershipState::ownedOrHalo;
+      return (OwnershipState::owned | OwnershipState::halo);
     }
   }
 

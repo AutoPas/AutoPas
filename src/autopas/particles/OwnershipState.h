@@ -8,6 +8,7 @@
 #pragma once
 
 #include <iostream>
+#include <bitset>
 
 namespace autopas {
 /**
@@ -24,9 +25,6 @@ enum class OwnershipState : int64_t {
   owned = 0b0001,  // 1
   /// Halo state, a particle with this state is an actual particle, but not owned by the current AutoPas object!
   halo = 0b0010,  // 2
-  /// Owned or halo state, a particle with this state can be owned or halo. This state is especially used for
-  /// ParticleCells if a cell can have both typed of particles
-  ownedOrHalo = 0b0011,  // 3
 };
 
 /**
@@ -47,8 +45,8 @@ enum class OwnershipState : int64_t {
     case OwnershipState::halo:
       os << "halo";
       break;
-    case OwnershipState::ownedOrHalo:
-      os << "ownedOrHalo";
+    default:
+      os << "unknown state: 0b" << std::bitset<4>(static_cast<int64_t>(ownershipState));
       break;
   }
   return os;
@@ -60,8 +58,8 @@ enum class OwnershipState : int64_t {
  * @param b second operand
  * @return a & b
  */
-const inline bool operator&(const OwnershipState a, const OwnershipState b) {
-  return static_cast<bool>(static_cast<int64_t>(a) & static_cast<int64_t>(b));
+const inline OwnershipState operator&(const OwnershipState a, const OwnershipState b) {
+  return static_cast<OwnershipState>(static_cast<int64_t>(a) & static_cast<int64_t>(b));
 }
 
 /**
@@ -70,8 +68,8 @@ const inline bool operator&(const OwnershipState a, const OwnershipState b) {
  * @param b second operand
  * @return a | b
  */
-const inline bool operator|(const OwnershipState a, const OwnershipState b) {
-  return static_cast<bool>(static_cast<int64_t>(a) | static_cast<int64_t>(b));
+const inline OwnershipState operator|(const OwnershipState a, const OwnershipState b) {
+  return static_cast<OwnershipState>(static_cast<int64_t>(a) | static_cast<int64_t>(b));
 }
 
 }  // namespace autopas
