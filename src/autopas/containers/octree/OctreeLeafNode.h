@@ -52,6 +52,13 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
         _id(other.getID()) {
     this->_particles.reserve(other._particles.size());
     for (auto &p : other._particles) {
+      // adjust particle counters for this cell
+      if (p.isOwned()) {
+        this->_numOwnedParticles++;
+      } else if (p.isHalo()) {
+        this->_numHaloParticles++;
+      }
+
       this->_particles.push_back(p);
     }
   }
@@ -80,6 +87,13 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
 
     if ((this->_particles.size() < this->_treeSplitThreshold) or anyNewDimSmallerThanMinSize) {
       this->_particles.push_back(p);
+      // adjust particle counters for this cell
+      if (p.isOwned()) {
+        this->_numOwnedParticles++;
+      } else if (p.isHalo()) {
+        this->_numHaloParticles++;
+      }
+
       return nullptr;
     } else {
       std::unique_ptr<OctreeNodeInterface<Particle>> newInner = std::make_unique<OctreeInnerNode<Particle>>(
@@ -100,6 +114,14 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     const bool isRearParticle = &particle == &this->_particles.back();
     // WARNING no runtime check that this particle is actually within the node!
     particle = this->_particles.back();
+
+    // adjust particle counters for this cell
+    if (particle.isOwned()) {
+      this->_numOwnedParticles--;
+    } else if (particle.isHalo()) {
+      this->_numHaloParticles--;
+    }
+
     this->_particles.pop_back();
     return not isRearParticle;
   }
@@ -127,7 +149,13 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::clearChildren()
    */
-  void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) override { this->_particles.clear(); }
+  void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) override {
+    this->_particles.clear();
+
+    // reset particle counters for this cell
+    this->_numOwnedParticles = 0;
+    this->_numHaloParticles = 0;
+  }
 
   /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()

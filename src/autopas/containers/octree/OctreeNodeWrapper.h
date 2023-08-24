@@ -86,6 +86,14 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {
     std::lock_guard<AutoPasLock> lock(_lock);
+
+    // adjust particle counters for this cell
+    if (p.isOwned()) {
+      this->_numOwnedParticles--;
+    } else if (p.isHalo()) {
+      this->_numHaloParticles--;
+    }
+
     auto ret = _pointer->insert(p);
     if (ret) _pointer = std::move(ret);
 
@@ -151,6 +159,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     std::lock_guard<AutoPasLock> lock(_lock);
     _pointer->clearChildren(_pointer);
     _enclosedParticleCount = 0;
+
+    // reset particle counters for this cell
+    this->_numOwnedParticles = 0;
+    this->_numHaloParticles = 0;
   }
 
   /**
@@ -172,6 +184,14 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   bool deleteParticle(Particle &particle) {
     --_enclosedParticleCount;
+
+    // adjust particle counters for this cell
+    if (particle.isOwned()) {
+      this->_numOwnedParticles--;
+    } else if (particle.isHalo()) {
+      this->_numHaloParticles--;
+    }
+
     return _pointer->deleteParticle(particle);
   };
 
