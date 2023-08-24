@@ -50,11 +50,14 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void addParticle(const Particle &p) override {
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
+
+    // adjust particle counters for this cell
     if (p.isOwned()) {
       this->_numOwnedParticles++;
     } else if (p.isHalo()) {
       this->_numHaloParticles++;
     }
+    
     _particles.push_back(p);
   }
 
@@ -206,6 +209,8 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void clear() override {
     _particles.clear();
+
+    // reset particle counters for this cell
     this->_numOwnedParticles = 0;
     this->_numHaloParticles = 0;
   }
@@ -222,6 +227,7 @@ class FullParticleCell : public ParticleCell<Particle> {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
     }
 
+    // adjust particle counters for this cell
     if (_particles[index].isOwned()) {
       this->_numOwnedParticles--;
     } else if (_particles[index].isHalo()) {
