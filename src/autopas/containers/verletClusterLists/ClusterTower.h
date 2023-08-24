@@ -61,7 +61,16 @@ class ClusterTower : public ParticleCell<Particle> {
    *
    * @param particle The particle to add.
    */
-  void addParticle(const Particle &particle) override { _particlesStorage.addParticle(particle); }
+  void addParticle(const Particle &particle) override {
+    // adjust particle counters for this cell
+    if (particle.isOwned()) {
+      this->_numOwnedParticles++;
+    } else if (particle.isHalo()) {
+      this->_numHaloParticles++;
+    }
+
+    _particlesStorage.addParticle(particle);
+  }
 
   CellType getParticleCellTypeAsEnum() override { return CellType::ClusterTower; }
 
@@ -72,6 +81,9 @@ class ClusterTower : public ParticleCell<Particle> {
     _clusters.clear();
     _particlesStorage.clear();
     _numDummyParticles = 0;
+    // reset particle counters for this cell
+    this->_numOwnedParticles = 0;
+    this->_numHaloParticles = 0;
   }
 
   /**
@@ -339,6 +351,14 @@ class ClusterTower : public ParticleCell<Particle> {
       std::swap(_particlesStorage._particles[getNumActualParticles() - 1],
                 _particlesStorage._particles[_particlesStorage._particles.size() - 1]);
     }
+
+    // adjust particle counters for this cell
+    if (_particlesStorage._particles.back().isOwned()) {
+      this->_numOwnedParticles--;
+    } else if (_particlesStorage._particles.back().isHalo()) {
+      this->_numHaloParticles--;
+    }
+
     _particlesStorage._particles.pop_back();
 
     if (_particleDeletionObserver) {
