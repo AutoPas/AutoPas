@@ -26,8 +26,14 @@ namespace internal {
  */
 template <class Particle>
 class VerletClusterListsRebuilder {
+ public:
+  using NeighborListsBuffer_T =
+      NeighborListsBuffer<const internal::Cluster<Particle> *, internal::Cluster<Particle> *>;
+
  private:
   size_t _clusterSize;
+
+  NeighborListsBuffer_T &_neighborListsBuffer;
 
   std::vector<Particle> &_particlesToAdd;
   std::vector<ClusterTower<Particle>> &_towers;
@@ -49,12 +55,14 @@ class VerletClusterListsRebuilder {
    * @param clusterList The cluster list to rebuild the neighbor lists for.
    * @param towers The towers from the cluster list to rebuild.
    * @param particlesToAdd New particles to add.
+   * @param neighborListsBuffer Buffer structure to hold all neighbor lists.
    * @param clusterSize Size of the clusters in particles.
    */
   VerletClusterListsRebuilder(const VerletClusterLists<Particle> &clusterList,
                               std::vector<ClusterTower<Particle>> &towers, std::vector<Particle> &particlesToAdd,
-                              size_t clusterSize)
+                              NeighborListsBuffer_T &neighborListsBuffer, size_t clusterSize)
       : _clusterSize(clusterSize),
+        _neighborListsBuffer(neighborListsBuffer),
         _particlesToAdd(particlesToAdd),
         _towers(towers),
         _towerSideLength(clusterList.getTowerSideLength()),
@@ -87,17 +95,17 @@ class VerletClusterListsRebuilder {
     _particlesToAdd.clear();
 
     // count particles by accumulating tower sizes
-    size_t numParticles = std::accumulate(std::begin(invalidParticles), std::end(invalidParticles), 0,
+    const size_t numParticles = std::accumulate(std::begin(invalidParticles), std::end(invalidParticles), 0,
                                           [](auto acc, auto &v) { return acc + v.size(); });
 
-    auto boxSizeWithHalo = _haloBoxMax - _haloBoxMin;
+    const auto boxSizeWithHalo = _haloBoxMax - _haloBoxMin;
 
     _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSizeWithHalo, _clusterSize);
     _towerSideLengthReciprocal = 1 / _towerSideLength;
     _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength * _towerSideLengthReciprocal));
 
     _towersPerDim = calculateTowersPerDim(boxSizeWithHalo, _towerSideLengthReciprocal);
-    size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
+    const size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
 
     // resize to number of towers. Cannot use resize since towers are not default constructable.
     _towers.clear();
@@ -114,10 +122,18 @@ class VerletClusterListsRebuilder {
 
     sortParticlesIntoTowers(invalidParticles);
 
+    // estimate the number of clusters by particles divided by cluster size + one extra per tower.
+    _neighborListsBuffer.reserveNeighborLists(numParticles / _clusterSize + numTowers);
     // generate clusters and count them
     size_t numClusters = 0;
     for (auto &tower : _towers) {
       numClusters += tower.generateClusters();
+      for (auto &cluster : tower.getClusters()) {
+        // VCL stores the references to the lists in the clusters, therefore there is no need to create a
+        // cluster -> list lookup structure in the buffer structure
+        const auto listID = _neighborListsBuffer.addNeighborList();
+        cluster.setNeighborList(&(_neighborListsBuffer.template getNeighborListRef<false>(listID)));
+      }
     }
 
     return std::make_tuple(_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters);
@@ -186,9 +202,10 @@ class VerletClusterListsRebuilder {
   void clearNeighborListsAndResetDummies() {
     for (auto &tower : _towers) {
       tower.setDummyParticlesToLastActualParticle();
-      for (auto &cluster : tower.getClusters()) {
-        cluster.clearNeighbors();
-      }
+//      for (auto &cluster : tower.getClusters()) {
+//        cluster.setNeighborList(nullptr);
+//      }
+//      _neighborListsBuffer.clear();
     }
   }
 
@@ -377,11 +394,18 @@ class VerletClusterListsRebuilder {
     const bool isSameTower = (&towerA == &towerB);
     for (size_t clusterIndexInTowerA = 0; clusterIndexInTowerA < towerA.getNumClusters(); clusterIndexInTowerA++) {
       // if we are within one tower depending on newton3 only look at forward neighbors
-      auto startClusterIndexInTowerB = isSameTower and useNewton3 ? clusterIndexInTowerA + 1 : 0;
+      const auto startClusterIndexInTowerB = isSameTower and useNewton3 ? clusterIndexInTowerA + 1ul : 0ul;
       auto &clusterA = towerA.getCluster(clusterIndexInTowerA);
-      auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
+      const auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
 
       if (clusterAContainsParticles) {
+        // sanity check. TODO Remove as soon as we know the algorithm works
+        if (not clusterA.getNeighbors()) {
+          utils::ExceptionHandler::exception("Found a cluster without a list");
+        }
+        clusterA.clearNeighbors();
+        // Pretty random heuristic. Need to find something better.
+        clusterA.getNeighbors()->reserve(towerA.numParticles() / _clusterSize * 1.1);
         for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
              clusterIndexInTowerB++) {
           // a cluster cannot be a neighbor to itself
@@ -389,6 +413,7 @@ class VerletClusterListsRebuilder {
           if (not useNewton3 and isSameTower and clusterIndexInTowerA == clusterIndexInTowerB) {
             continue;
           }
+          // can't be const because it will potentially be added as a non-const neighbor
           auto &clusterB = towerB.getCluster(clusterIndexInTowerB);
           auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterB.getZMinMax();
           if (clusterBcontainsParticles) {

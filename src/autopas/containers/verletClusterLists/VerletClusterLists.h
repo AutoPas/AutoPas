@@ -12,9 +12,11 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
+#include "autopas/containers/NeighborListsBuffer.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/verletClusterLists/Cluster.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
@@ -121,7 +123,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
               unsigned long cellLoad = 0;
               auto &tower = getTowerByIndex(x, y);
               for (auto &cluster : tower.getClusters()) {
-                cellLoad += cluster.getNeighbors().size();
+                cellLoad += cluster.getNeighbors()->size();
               }
               sum += cellLoad;
             }
@@ -1051,6 +1053,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
 
+  const typename internal::VerletClusterListsRebuilder<Particle>::NeighborListsBuffer_T &getNeighborLists() const {
+    return _neighborLists;
+  }
+
  protected:
   /**
    * Rebuild the towers and the clusters.
@@ -1067,8 +1073,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       particlesBuffer.clear();
     });
 
-    _builder =
-        std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, particlesToAdd, _clusterSize);
+    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, particlesToAdd,
+                                                                                 _neighborLists, _clusterSize);
 
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
@@ -1132,7 +1138,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void calculateClusterThreadPartition() {
     size_t numClusterPairs = 0;
     this->template traverseClusters<false>(
-        [&numClusterPairs](auto &cluster) { numClusterPairs += cluster.getNeighbors().size(); });
+        [&numClusterPairs](auto &cluster) { numClusterPairs += cluster.getNeighbors()->size(); });
 
     constexpr int minNumClusterPairsPerThread = 1000;
     auto numThreads =
@@ -1184,7 +1190,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         }
 
         currentNumClustersToAdd++;
-        numClusterPairsTotal += currentCluster.getNeighbors().size();
+        numClusterPairsTotal += currentCluster.getNeighbors()->size();
 
         // If the thread is finished, write number of clusters and start new thread.
         if (numClusterPairsTotal >= numClusterPairsPerThread * (currentThread + 1)) {
@@ -1433,6 +1439,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * The builder for the verlet cluster lists.
    */
   std::unique_ptr<internal::VerletClusterListsRebuilder<Particle>> _builder;
+
+  /**
+   * Structure to provided persistent memory for neighbor lists. Will be filled by the builder.
+   */
+  typename internal::VerletClusterListsRebuilder<Particle>::NeighborListsBuffer_T _neighborLists{};
 };
 
 }  // namespace autopas

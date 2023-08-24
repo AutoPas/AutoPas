@@ -26,67 +26,79 @@ class NeighborListsBuffer {
   template <bool throwOnError>
   std::vector<Value> &getNeighborListRef(size_t index) {
     if constexpr (throwOnError) {
-      if (index > lastValidListIndex) {
+      if (index > _lastValidListIndex) {
         autopas::utils::ExceptionHandler::exception(
-            "NeighborListsBuffer::getNeighborListRef() index out of bounds: {} > {}", index, lastValidListIndex);
+            "NeighborListsBuffer::getNeighborListRef() index out of bounds: {} > {}", index, _lastValidListIndex);
       }
     }
-    return neighborLists[index];
+    return _neighborLists[index];
   }
 
   template <bool throwOnError>
   //  std::vector<Value> &getNeighborListRef(const std::conditional<std::is_pointer_v<Key>, Key, Key &> key) {
   std::vector<Value> &getNeighborListRef(const Key &key) {
     if constexpr (throwOnError) {
-      if (keyMap.find(key) == keyMap.end()) {
+      if (_keyMap.find(key) == _keyMap.end()) {
         autopas::utils::ExceptionHandler::exception("NeighborListsBuffer::getNeighborListRef() unknown key: {}", key);
       }
     }
-    return neighborLists[keyMap[key]];
+    return _neighborLists[_keyMap[key]];
   }
 
   size_t addNeighborList() {
-    // if the buffer is saturated...
-    if (lastValidListIndex == neighborLists.size()) {
-      // grow it and initialize all new lists
-      neighborLists.resize(neighborLists.size() * growthFactor, std::vector<Value>(defaultListLength));
-    }
-    return ++lastValidListIndex;
+    // TODO: find a better solution than critical. Maybe id pool per thread?
+//#pragma omp critical
+//    {
+      // if the buffer is saturated...
+      if (_lastValidListIndex == _neighborLists.size()) {
+        // grow it and initialize all new lists
+        _neighborLists.resize(_neighborLists.size() * _growthFactor, std::vector<Value>(_defaultListLength));
+      }
+      return ++_lastValidListIndex;
+//    }
   }
 
   //  size_t addNeighborList(const std::conditional<std::is_pointer_v<Key>, Key, Key &> key) {
   size_t addNeighborList(const Key &key) {
     const auto newIndex = addNeighborList();
-    keyMap.emplace(key, newIndex);
+    _keyMap.emplace(key, newIndex);
     return newIndex;
   }
 
   void clear() {
-    keyMap.clear();
-    lastValidListIndex = 0;
+    _keyMap.clear();
+    _lastValidListIndex = 0;
   }
+
+  void reserveNeighborLists(size_t n) {
+    _neighborLists.reserve(n);
+  }
+
+  void setDefaultListLength(size_t defaultListLength) { NeighborListsBuffer::_defaultListLength = defaultListLength; }
+
+  void setGrowthFactor(double growthFactor) { NeighborListsBuffer::_growthFactor = growthFactor; }
 
  private:
   /**
-   * Map to associate keys with indexes of neighborLists
+   * Map to associate keys with indexes of _neighborLists
    */
-  std::unordered_map<Key, size_t, Hash, KeyEqual> keyMap{};
+  std::unordered_map<Key, size_t, Hash, KeyEqual> _keyMap{};
   /**
    * Continuous but unordered collection of neighbor lists that is never supposed to be deallocated during the
    * lifetime of this object.
    */
-  std::vector<std::vector<Value>> neighborLists{};
+  std::vector<std::vector<Value>> _neighborLists{};
   /**
-   * Anything beyond this index in neighborLists is considered deleted.
+   * Anything beyond this index in _neighborLists is considered deleted.
    */
-  size_t lastValidListIndex{0ul};
+  size_t _lastValidListIndex{0ul};
   /**
    * Number of elements allocated by default in every new neighbor list.
    */
-  size_t defaultListLength;
+  size_t _defaultListLength{10};
   /**
-   * Growth factor for the neighborLists collection if more memory is necessary.
+   * Growth factor for the _neighborLists collection if more memory is necessary.
    */
-  int growthFactor;
+  double _growthFactor{2};
 };
 }  // namespace autopas

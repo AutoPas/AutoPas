@@ -83,24 +83,30 @@ class Cluster {
    * Set the SoAView for this cluster.
    * @param view the new SoAView for this cluster.
    */
-  void setSoAView(SoAView<typename Particle::SoAArraysType> view) { _soaView = view; }
+  void setSoAView(const SoAView<typename Particle::SoAArraysType> &view) { _soaView = view; }
 
   /**
-   * Returns the neighbor list for this cluster.
-   * @return the neighbor list for this cluster.
+   * Set the internal neighbor list pointer to an allocated, but not necessarily complete, existing list.
+   * @param neighborList Allocated neighbor list.
    */
-  const auto &getNeighbors() const { return _neighborClusters; }
+  void setNeighborList(std::vector<Cluster<Particle> *> *neighborList) { _neighborClusters = neighborList; }
+
+  /**
+   * Returns the reference to the neighbor list for this cluster.
+   * @return reference to the neighbor list.
+   */
+  std::vector<Cluster<Particle> *> *getNeighbors() { return _neighborClusters; }
 
   /**
    * Adds the given cluster to the neighbor list of this cluster.
    * @param neighbor The cluster to add as neighbor.
    */
-  void addNeighbor(Cluster<Particle> &neighbor) { _neighborClusters.push_back(&neighbor); }
+  void addNeighbor(Cluster<Particle> &neighbor) { _neighborClusters->push_back(&neighbor); }
 
   /**
    * Remove all neighbors.
    */
-  void clearNeighbors() { _neighborClusters.clear(); }
+  void clearNeighbors() { _neighborClusters->clear(); }
 
  private:
   /**
@@ -119,7 +125,8 @@ class Cluster {
   /**
    * The list of neighbor clusters of this cluster.
    */
-  std::vector<Cluster *> _neighborClusters;
+  //  std::vector<Cluster *> &_neighborClusters;
+  std::vector<Cluster *> *_neighborClusters;
 };
 
 }  // namespace autopas::internal
