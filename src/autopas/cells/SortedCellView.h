@@ -39,6 +39,13 @@ class SortedCellView : public ParticleCell<Particle> {
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.numParticles());
     for (auto &p : cell) {
+      // adjust particle counters for this cell
+      if (p.isOwned()) {
+        this->_numOwnedParticles--;
+      } else if (p.isHalo()) {
+        this->_numHaloParticles--;
+      }
+
       _particles.push_back(std::make_pair(utils::ArrayMath::dot(p.getR(), r), &p));
     }
     std::sort(_particles.begin(), _particles.end(),
@@ -90,6 +97,8 @@ class SortedCellView : public ParticleCell<Particle> {
 
   void clear() override {
     _particles.clear();
+
+    // reset particle counters for this cell
     this->_numOwnedParticles = 0;
     this->_numHaloParticles = 0;
   }
@@ -106,9 +115,10 @@ class SortedCellView : public ParticleCell<Particle> {
       utils::ExceptionHandler::exception("Error: Index out of range");
     }
 
-    if (std::get<1>(_particles[index])->getOwnershipState() == OwnershipState::owned) {
+    // adjust particle counters for this cell
+    if (std::get<1>(_particles[index])->isOwned()) {
       this->_numOwnedParticles--;
-    } else if (std::get<1>(_particles[index])->getOwnershipState() == OwnershipState::halo) {
+    } else if (std::get<1>(_particles[index])->isHalo()) {
       this->_numHaloParticles--;
     }
 

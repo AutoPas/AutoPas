@@ -55,11 +55,14 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   void addParticleReference(Particle *p) {
     _particlesLock.lock();
     _particles.push_back(p);
+
+    // adjust particle counters for this cell
     if (p->isOwned()) {
       this->_numOwnedParticles++;
     } else if (p->isHalo()) {
       this->_numHaloParticles++;
     }
+
     _particlesLock.unlock();
   }
 
@@ -183,6 +186,8 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
   void clear() override {
     _particles.clear();
+
+    // reset particle counters for this cell
     this->_numOwnedParticles = 0;
     this->_numHaloParticles = 0;
   }
@@ -199,6 +204,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
     }
 
+    // adjust particle counters for this cell
     if (_particles[index]->isOwned()) {
       this->_numOwnedParticles--;
     } else if (_particles[index]->isHalo()) {
