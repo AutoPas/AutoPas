@@ -114,9 +114,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 
   // avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
-  const bool cell1HasOwnedParticles =
-      static_cast<int64_t>(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
-  if (not cell1HasOwnedParticles) {
+  const bool cellHasOwnedParticles = static_cast<int64_t>(cell.getPossibleParticleOwnerships() & OwnershipState::owned);
+  if (not cellHasOwnedParticles) {
     return;
   }
 
@@ -153,7 +152,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       static_cast<int64_t>(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
 
   if (((not cell1HasOwnedParticles) and (not useNewton3)) or
-      ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles)) {
+      ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
     return;
   }
 
