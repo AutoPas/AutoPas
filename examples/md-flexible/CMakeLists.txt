@@ -18,20 +18,20 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsL
 
 # Set CMake option for md-flexible mode
 set(MD_FLEXIBLE_MODE
-        "SINGLE-SITE"
+        "SINGLESITE"
         CACHE
         STRING "Choose the mode of md-flexible to be compiled."
         )
-set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLE-SITE;MULTI-SITE")
+set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLESITE;MULTISITE")
 
 # Define numerical values for different md-flexible modes
 target_compile_definitions(md-flexible PUBLIC SINGLESITE=0 )
 target_compile_definitions(md-flexible PUBLIC MULTISITE=1)
 
 # Define numerical value for actually compiled md-flexible mode, as per above.
-if (MD_FLEXIBLE_MODE MATCHES "SINGLE-SITE")
+if (MD_FLEXIBLE_MODE MATCHES "SINGLESITE")
     target_compile_definitions(md-flexible PUBLIC MD_FLEXIBLE_MODE=0)
-elseif(MD_FLEXIBLE_MODE MATCHES "MULTI-SITE")
+elseif(MD_FLEXIBLE_MODE MATCHES "MULTISITE")
     target_compile_definitions(md-flexible PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
@@ -50,7 +50,7 @@ target_compile_definitions(
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
-if (MD_FLEXIBLE_MODE MATCHES "MULTI-SITE")
+if (MD_FLEXIBLE_MODE MATCHES "MULTISITE")
     if (MD_FLEXIBLE_FUNCTOR_AVX)
         message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()

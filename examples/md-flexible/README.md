@@ -28,14 +28,14 @@ make md-flexible
 ```
 
 ### Compiling with different md-flexible modes
-To compile md-flexible in single-site MD mode, set `MD_FLEXIBLE_MODE` to `SINGLE-SITE` via `cmake`:
+To compile md-flexible in single-site MD mode, set `MD_FLEXIBLE_MODE` to `SINGLESITE` via `cmake`:
 ```bash
-cmake -DMD_FLEXIBLE_MODE=SINGLE-SITE ..
+cmake -DMD_FLEXIBLE_MODE=SINGLESITE ..
 ```
 Alternatively, md-flexible can be compiled in multi-site MD mode, by setting `MD_FLEXIBLE_MODE` to
-`MULTI-SITE` via `cmake`:
+`MULTISITE` via `cmake`:
 ```bash
-cmake -DMD_FLEXIBLE_MODE=MULTI-SITE ..
+cmake -DMD_FLEXIBLE_MODE=MULTISITE ..
 ```
 
 By default, md-flexible is compiled in single-site MD mode.
