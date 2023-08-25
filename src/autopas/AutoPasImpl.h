@@ -83,6 +83,9 @@ void AutoPas<Particle>::init() {
     _tuningStrategyFactoryInfo.mpiDivideAndConquer = true;
   }
 
+  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
+      _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
+
   // If an interval was given for the cell size factor, change it to the relevant values.
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
   const auto cellSizeFactors = [&]() -> NumberSetFinite<double> {
@@ -115,6 +118,7 @@ void AutoPas<Particle>::init() {
         }
         _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
                                                           _verletRebuildFrequency, _outputSuffix);
+        _logicHandler->initPairwise(_autoTuner.get());
         _autoTuners.insert({InteractionTypeOption::pairwise, *_autoTuner});
         break;
       }
@@ -133,6 +137,7 @@ void AutoPas<Particle>::init() {
         }
         _autoTuner3B = std::make_unique<autopas::AutoTuner>(tuningStrategies3B, searchSpace3B, _autoTunerInfo,
                                                             _verletRebuildFrequency, _outputSuffix);
+        _logicHandler->initTriwise(_autoTuner3B.get());
         _autoTuners.insert({InteractionTypeOption::threeBody, *_autoTuner3B});
         break;
       }
@@ -142,8 +147,8 @@ void AutoPas<Particle>::init() {
     }
   }
 
-  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
-      _autoTuners, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
+
+
 }
 
 template <class Particle>

@@ -608,7 +608,6 @@ void Simulation::logMeasurements() {
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
     std::cout << "MFUPs/sec                          : " << mfups << std::endl;
 
-    //TODO: adjust flop calculation for 3-body
     if (_configuration.dontMeasureFlops.value) {
       if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
               ForceFunctorAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());

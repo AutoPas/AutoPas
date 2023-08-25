@@ -45,15 +45,14 @@ class LogicHandler {
  public:
   /**
    * Constructor of the LogicHandler.
-   * @param autoTuners
    * @param logicHandlerInfo
    * @param rebuildFrequency
    * @param outputSuffix
    */
-  LogicHandler(std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner &> &autoTuners, const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency,
+  LogicHandler(const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency,
                const std::string &outputSuffix)
-      : _neighborListRebuildFrequency{rebuildFrequency},
-        _autoTuners(autoTuners),
+      : _logicHandlerInfo(logicHandlerInfo),
+        _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
@@ -61,23 +60,6 @@ class LogicHandler {
         _iterationLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
-    // Assign pointers to individual autotuners
-    for (auto &[interactionType, tuner] : _autoTuners) {
-      if (interactionType == InteractionTypeOption::pairwise) {
-        _autoTuner = &tuner;
-      }
-      else if (interactionType == InteractionTypeOption::threeBody) {
-        _autoTuner3B = &tuner;
-      }
-    }
-    // Get configuration from first autotuner entry
-    const auto configuration = _autoTuners.begin()->second.getCurrentConfig();
-    // initialize the container and make sure it is valid
-    const ContainerSelectorInfo containerSelectorInfo{
-        configuration.cellSizeFactor, logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
-        _verletClusterSize, configuration.loadEstimator};
-    _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
-    checkMinimalSize();
 
     // initialize locks needed for remainder traversal
     const auto boxLength = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin;
@@ -87,6 +69,40 @@ class LogicHandler {
     for (auto &lockPtr : _bufferLocks) {
       lockPtr = std::make_unique<std::mutex>();
     }
+  }
+
+  /**
+   * Returns a non-const reference to the currently selected particle container.
+   * @return Non-const reference to the container.
+   */
+  void initPairwise(autopas::AutoTuner *autotuner) {
+    _autoTuner = autotuner;
+    _interactionTypes.insert(InteractionTypeOption::pairwise);
+
+    const auto configuration = _autoTuner->getCurrentConfig();
+    // initialize the container and make sure it is valid
+    const ContainerSelectorInfo containerSelectorInfo{
+        configuration.cellSizeFactor, _logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
+        _verletClusterSize, configuration.loadEstimator};
+    _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
+    checkMinimalSize();
+  }
+
+  /**
+   * Returns a non-const reference to the currently selected particle container.
+   * @return Non-const reference to the container.
+   */
+  void initTriwise(autopas::AutoTuner *autotuner3B) {
+    _autoTuner3B = autotuner3B;
+    _interactionTypes.insert(InteractionTypeOption::threeBody);
+
+    const auto configuration = _autoTuner3B->getCurrentConfig();
+    // initialize the container and make sure it is valid
+    const ContainerSelectorInfo containerSelectorInfo{
+        configuration.cellSizeFactor, _logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
+        _verletClusterSize, configuration.loadEstimator};
+    _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
+    checkMinimalSize();
   }
 
   /**
@@ -540,16 +556,16 @@ class LogicHandler {
    * @note For the checks we need to switch to the container in the config, hece this function can't be const.
    * Also we need to build the traversal, hence, it is returned.
    *
-   * @tparam PairwiseFunctor
+   * @tparam Functor
    * @param conf
-   * @param pairwiseFunctor
+   * @param functor
    * @return tuple<optional<Traversal>, rejectIndefinitely> The optional is empty if the configuration is not applicable
    * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because
    * it will never be applicable.
    */
-  template <class PairwiseFunctor>
+  template <class Functor>
   [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
-      const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
+      const Configuration &conf, Functor &functor);
 
   /**
    * Directly exchange the internal particle and halo buffers with the given vectors and update particle counters.
@@ -773,6 +789,7 @@ class LogicHandler {
    */
   bool neighborListsAreValid();
 
+  const LogicHandlerInfo &_logicHandlerInfo;
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
    */
@@ -793,10 +810,7 @@ class LogicHandler {
    */
    autopas::AutoTuner *_autoTuner3B;
 
-   /**
-   * Reference to the AutoTuner for 3-Body interactions that owns the container, ...
-    */
-   std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner &> _autoTuners;
+   std::set<InteractionTypeOption> _interactionTypes{};
 
   /**
    * Specifies if the neighbor list is valid.
@@ -867,6 +881,7 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
+  // TODO: might need to be separated for 3-body - maybe move logic to AutoTuner
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner->willRebuildNeighborLists()) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
@@ -1442,6 +1457,10 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 template <typename Particle>
 template <class Functor>
 bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
+  if (not _interactionTypes.count(InteractionTypeOption::pairwise)) {
+    autopas::utils::ExceptionHandler::exception(
+        "LogicHandler::iteratePairwisePipeline(): LogicHandler was not initialized for pairwise interactions. Call LogicHandler::initPairwise() before.");
+  }
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
@@ -1514,6 +1533,10 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
 template <typename Particle>
 template <class Functor>
 bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
+  if (not _interactionTypes.count(InteractionTypeOption::threeBody)) {
+    autopas::utils::ExceptionHandler::exception(
+        "LogicHandler::iterateTriwisePipeline(): LogicHandler was not initialized for 3-body interactions. Call LogicHandler::initTriwise() before.");
+  }
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
@@ -1587,9 +1610,9 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
 }
 
 template <typename Particle>
-template <class PairwiseFunctor>
+template <class Functor>
 std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
-    const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
+    const Configuration &conf, Functor &functor) {
   // Check if the container supports the traversal
   const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container, conf.interactionType);
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
@@ -1599,8 +1622,8 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
   }
 
   // Check if the required Newton 3 mode is supported by the functor
-  if ((conf.newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
-      (conf.newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
+  if ((conf.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
+      (conf.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", conf.newton3);
     return {std::nullopt, true};
   }
@@ -1619,8 +1642,8 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
       [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface>> {
         // Can't make this unique_ptr const otherwise we can't move it later.
         auto traversalPtr =
-            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<PairwiseFunctor>(
-                conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3);
+            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
+                conf.traversal, functor, traversalInfo, conf.dataLayout, conf.newton3);
         if (traversalPtr->isApplicable()) {
           return std::optional{std::move(traversalPtr)};
         } else {
