@@ -16,7 +16,7 @@
  * It returns that it is applicable for everything.
  */
 template <class Particle>
-class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
+class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle, EmptyPairwiseFunctor<Particle>> {
  private:
  public:
   /**
@@ -27,7 +27,7 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
   /**
    * Default constructor.
    */
-  EmptyFunctor() : autopas::Functor<Particle, EmptyFunctor<Particle>>(0.){};
+  EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle, EmptyPairwiseFunctor<Particle>>(0.){};
 
   /**
    * @copydoc autopas::Functor::AoSFunctor()

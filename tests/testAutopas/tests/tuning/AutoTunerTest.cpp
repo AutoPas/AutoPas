@@ -21,6 +21,8 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
+#include "autopas/utils/checkFunctorType.h"
+
 
 /**
  * NOTICE: This class uses always the MockFunctor, even when the mock functionalities are not needed,
@@ -46,7 +48,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   };
 
   // the NiceMock wrapper suppresses warnings from uninteresting function calls
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -62,10 +64,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
-      autopas::Newton3Option::getAllOptions(), &cellSizeFactors);
+      autopas::Newton3Option::getAllOptions(), &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&autoTuner);
   autopas::Logger::get()->set_level(autopas::Logger::LogLevel::off);
   //  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   bool stillTuning = true;
@@ -183,19 +186,20 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
       {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
+       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
       {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled},
+       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise},
       {autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
+       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
   };
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&autoTuner);
 
   EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
 
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -239,19 +243,20 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
       {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled},
+       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise},
       {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
+       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
       {autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled},
+       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise},
   };
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&autoTuner);
 
   EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
 
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
@@ -286,17 +291,18 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   const autopas::AutoTuner::SearchSpaceType searchSpace{
       {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
+       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
       {autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
+       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise},
   };
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&autoTuner);
 
   EXPECT_EQ(*(searchSpace.rbegin()), autoTuner.getCurrentConfig());
 
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -335,10 +341,11 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
 
-  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&autoTuner);
 
   const size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -382,10 +389,11 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   const auto searchSpace = {_confLc_c01, _confLc_c18, _confLc_c08};
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&autoTuner);
 
   size_t numExpectedTuningIterations = searchSpace.size() * autoTunerInfo.maxSamples;
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -454,11 +462,12 @@ TEST_F(AutoTunerTest, testOneConfig) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   const auto searchSpace = {_confLc_c08};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&tuner);
 
   EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
 
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -491,17 +500,19 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::enabled);
+                                autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                   autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
+                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise);
   const auto searchSpace = {confNoN3, confN3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&tuner);
 
   EXPECT_EQ(*(std::rbegin(searchSpace)), tuner.getCurrentConfig());
 
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
+
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
@@ -531,18 +542,19 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
                                 autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::enabled);
+                                autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
   autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                   autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
+                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
 
   const auto searchSpace = {confN3, confNoN3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&tuner);
 
   EXPECT_EQ(*std::rbegin(searchSpace), tuner.getCurrentConfig());
 
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
@@ -570,16 +582,17 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   const autopas::Configuration confA(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                      autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
   const autopas::Configuration confB(autopas::ContainerOption::linkedCells, cellSizeFactor,
                                      autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
-                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
+                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise);
   const auto searchSpace = {confA, confB};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
+  logicHandler.initPairwise(&tuner);
 
   using ::testing::_;
-  testing::NiceMock<MockFunctor<Molecule>> functor;
+  testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))

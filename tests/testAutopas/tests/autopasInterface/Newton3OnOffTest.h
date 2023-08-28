@@ -12,7 +12,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "mocks/MockFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -45,7 +45,7 @@ class Newton3OnOffTest
   template <class Container, class Traversal>
   void iterate(Container &container, Traversal traversal);
 
-  MockFunctor<Particle> mockFunctor;
+  MockPairwiseFunctor<Particle> mockFunctor;
 
   /**
    * Determines how often the functor is called for single cells and pairs of cells und run additional checks.

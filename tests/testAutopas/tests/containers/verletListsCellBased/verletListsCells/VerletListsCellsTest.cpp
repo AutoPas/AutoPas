@@ -12,14 +12,14 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
-#include "mocks/MockFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
 
-void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
+void applyFunctor(MockPairwiseFunctor<Particle> &functor, const double cellSizefactor,
                   autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
@@ -116,22 +116,22 @@ void soaTest(const double cellSizeFactor,
 }
 
 TEST_F(VerletListsCellsTest, testVerletListBuild) {
-  MockFunctor<Particle> emptyFunctorAoSBuild;
+  MockPairwiseFunctor<Particle> emptyFunctorAoSBuild;
   EXPECT_CALL(emptyFunctorAoSBuild, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctorAoSBuild, 1.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild);
 
-  MockFunctor<Particle> emptyFunctorSoABuild;
+  MockPairwiseFunctor<Particle> emptyFunctorSoABuild;
   EXPECT_CALL(emptyFunctorSoABuild, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctorSoABuild, 1.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild);
 
-  MockFunctor<Particle> emptyFunctorAoSBuild_cs2;
+  MockPairwiseFunctor<Particle> emptyFunctorAoSBuild_cs2;
   EXPECT_CALL(emptyFunctorAoSBuild_cs2, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctorAoSBuild_cs2, 2.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild);
 
-  MockFunctor<Particle> emptyFunctorSoABuild_cs2;
+  MockPairwiseFunctor<Particle> emptyFunctorSoABuild_cs2;
   EXPECT_CALL(emptyFunctorSoABuild_cs2, AoSFunctor(_, _, true)).Times(1);
 
   applyFunctor(emptyFunctorSoABuild_cs2, 2.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild);

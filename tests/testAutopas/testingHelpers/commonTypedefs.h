@@ -8,7 +8,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
-#include "mocks/MockFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 // a place for usings that are commonly used in tests
@@ -35,4 +35,4 @@ using FMCell = autopas::FullParticleCell<Molecule>;
 /**
  * Short for Mock Functor
  */
-using MFunctor = MockFunctor<autopas::Particle>;
+using MFunctor = MockPairwiseFunctor<autopas::Particle>;

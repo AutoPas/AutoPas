@@ -14,19 +14,19 @@
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/RandomGenerator.h"
-#include "mocks/MockFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class VerletClusterListsTest : public AutoPasTestBase {};
 
-class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, CollectParticlePairsFunctor> {
+class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Particle, CollectParticlePairsFunctor> {
  public:
   std::vector<std::pair<Particle *, Particle *>> _pairs{};
   std::array<double, 3> _min;
   std::array<double, 3> _max;
 
   CollectParticlePairsFunctor(double cutoff, std::array<double, 3> min, std::array<double, 3> max)
-      : Functor(cutoff), _min(min), _max(max) {}
+      : PairwiseFunctor(cutoff), _min(min), _max(max) {}
 
   void initTraversal() override { _pairs.clear(); }
 
@@ -56,14 +56,14 @@ class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, C
 };
 
 #if defined(AUTOPAS_OPENMP)
-class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::Particle, CollectParticlesPerThreadFunctor> {
+class CollectParticlesPerThreadFunctor : public autopas::PairwiseFunctor<autopas::Particle, CollectParticlesPerThreadFunctor> {
  public:
   int _currentColor{};
 
   std::array<std::vector<std::set<Particle *>>, 8> _particlesPerThreadPerColor;
 
  public:
-  CollectParticlesPerThreadFunctor() : Functor(0) {}
+  CollectParticlesPerThreadFunctor() : PairwiseFunctor(0) {}
 
   void initTraversal() override {
     for (int i = 0; i < 8; i++) {

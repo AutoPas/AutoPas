@@ -125,6 +125,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
             traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
       });
 
+  auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }
@@ -133,7 +134,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 19);
   }
 
-  container.rebuildNeighborLists(traversal.get());
+  container.rebuildNeighborLists(pairwiseTraversal);
 
   if (doSlightShift) {
     executeShift(container, skinPerTimestep * rebuildFrequency / 2, numMolecules + numHaloMolecules);
@@ -144,7 +145,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
-  container.iteratePairwise(traversal.get());
+  container.iteratePairwise(pairwiseTraversal);
   functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numMolecules);
@@ -268,7 +269,7 @@ static auto toString = [](const auto &info) {
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> params{};
   for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption)) {
+    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption, autopas::InteractionTypeOption::pairwise)) {
       for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
         for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
           for (auto numParticles : {100ul, 2000ul}) {

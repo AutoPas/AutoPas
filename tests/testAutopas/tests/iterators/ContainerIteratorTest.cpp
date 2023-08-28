@@ -11,11 +11,11 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopasTools/generators/RandomGenerator.h"
-#include "testingHelpers/EmptyFunctor.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 
 using ::testing::_;
 
@@ -30,7 +30,7 @@ auto ContainerIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::Co
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption, autopas::InteractionTypeOption::pairwise));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
   autoPas.init();
@@ -79,7 +79,7 @@ TEST_P(ContainerIteratorTest, emptyContainer) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
+    EmptyPairwiseFunctor<Molecule> eFunctor;
     autoPas.computeInteractions(&eFunctor);
   }
 
@@ -107,7 +107,7 @@ TEST_P(ContainerIteratorTest, findAllParticlesInsideDomain) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
+    EmptyPairwiseFunctor<Molecule> eFunctor;
     autoPas.computeInteractions(&eFunctor);
   }
 
@@ -156,7 +156,7 @@ TEST_P(ContainerIteratorTest, findAllParticlesAroundBoundaries) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
+    EmptyPairwiseFunctor<Molecule> eFunctor;
     autoPas.computeInteractions(&eFunctor);
   }
 
@@ -210,7 +210,7 @@ TEST_P(ContainerIteratorTestNonConst, deleteParticles) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
+    EmptyPairwiseFunctor<Molecule> eFunctor;
     autoPas.computeInteractions(&eFunctor);
   }
 
@@ -277,7 +277,7 @@ TEST_P(ContainerIteratorTestNonConstOwned, addParticlesWhileIterating) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
+    EmptyPairwiseFunctor<Molecule> eFunctor;
     autoPas.computeInteractions(&eFunctor);
   }
 

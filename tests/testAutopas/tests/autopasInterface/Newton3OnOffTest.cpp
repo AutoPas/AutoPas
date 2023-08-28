@@ -47,10 +47,10 @@ INSTANTIATE_TEST_SUITE_P(
             containerSelector.selectContainer(containerOption, containerInfo);
             autopas::ParticleContainerInterface<Particle> &container = containerSelector.getCurrentContainer();
 
-            for (auto traversalOption : container.getAllTraversals()) {
+            for (auto traversalOption : container.getAllTraversals(autopas::InteractionTypeOption::pairwise)) {
               for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
                 // this is the functor that will be used in the test.
-                MockFunctor<Particle> f;
+                MockPairwiseFunctor<Particle> f;
                 // generate both newton3 versions of the same traversal and check that both are applicable
                 bool configOk = autopas::utils::withStaticCellType<Particle>(
                     container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
@@ -130,8 +130,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
 template <class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container &container, Traversal traversal) {
-  container.rebuildNeighborLists(traversal.get());
-  container.computeInteractions(traversal.get());
+  auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
+  container.rebuildNeighborLists(pairwiseTraversal);
+  container.iteratePairwise(pairwiseTraversal);
 }
 
 template <bool useNewton3, class Container, class Traversal>
@@ -195,7 +196,8 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   // simulate iteration
   autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
     iterate(container,
-            autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<MockFunctor<Particle>>(
+            autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<
+                           MockPairwiseFunctor<Particle>>(
                 traversalOption, mockFunctor, traversalSelectorInfo, dataLayout, n3Option));
   });
 

@@ -12,7 +12,7 @@
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(
     autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> *);
 
 /**

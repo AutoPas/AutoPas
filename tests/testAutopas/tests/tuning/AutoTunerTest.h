@@ -20,11 +20,11 @@ class AutoTunerTest : public AutoPasTestBase {
 
   const autopas::Configuration _confLc_c01{autopas::ContainerOption::linkedCells, _cellSizeFactor,
                                            autopas::TraversalOption::lc_c01,      autopas::LoadEstimatorOption::none,
-                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled};
+                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c18{autopas::ContainerOption::linkedCells, _cellSizeFactor,
                                            autopas::TraversalOption::lc_c18,      autopas::LoadEstimatorOption::none,
-                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled};
+                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c08{autopas::ContainerOption::linkedCells, _cellSizeFactor,
                                            autopas::TraversalOption::lc_c08,      autopas::LoadEstimatorOption::none,
-                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled};
+                                           autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
 };

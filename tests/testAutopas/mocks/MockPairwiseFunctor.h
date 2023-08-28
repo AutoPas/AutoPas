@@ -14,9 +14,9 @@
 #include "autopas/options/DataLayoutOption.h"
 
 template <class Particle>
-class MockFunctor : public autopas::Functor<Particle, MockFunctor<Particle>> {
+class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle, MockPairwiseFunctor<Particle>> {
  public:
-  MockFunctor() : autopas::Functor<Particle, MockFunctor<Particle>>(0.){};
+  MockPairwiseFunctor() : autopas::PairwiseFunctor<Particle, MockPairwiseFunctor<Particle>>(0.){};
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
   MOCK_METHOD(void, AoSFunctor, (Particle & i, Particle &j, bool newton3), (override));
 

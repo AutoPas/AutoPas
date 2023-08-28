@@ -7,11 +7,11 @@
 
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
-#include "testingHelpers/EmptyFunctor.h"
+#include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 
 template <typename AutoPasT>
 auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
@@ -25,7 +25,7 @@ auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::C
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption));
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption, autopas::InteractionTypeOption::pairwise));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
   autoPas.init();
@@ -63,7 +63,7 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
 
   if (priorForceCalc) {
     // the prior force calculation is partially wanted as this sometimes changes the state of the internal containers.
-    EmptyFunctor<Molecule> eFunctor;
+    EmptyPairwiseFunctor<Molecule> eFunctor;
     autoPas.computeInteractions(&eFunctor);
   }
 
