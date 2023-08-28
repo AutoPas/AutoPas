@@ -1389,10 +1389,10 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
   AutoTuner * tuner;
 
-  if constexpr (std::is_base_of_v<PairwiseFunctor<Particle, Functor>, Functor>) {
+  if constexpr (utils::isPairwiseFunctor<Functor>()) {
     tuner = _autoTuner;
   }
-  else if constexpr (std::is_base_of_v<TriwiseFunctor<Particle, Functor>, Functor>) {
+  else if constexpr (utils::isTriwiseFunctor<Functor>()) {
     tuner = _autoTuner3B;
   }
   else {

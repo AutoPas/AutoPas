@@ -162,10 +162,10 @@ bool AutoPas<Particle>::computeInteractions(Functor *f) {
                                        f->getCutoff(), this->getCutoff());
   }
 
-  if constexpr (std::is_base_of_v<PairwiseFunctor<Particle, Functor>, Functor>) {
+  if constexpr (utils::isPairwiseFunctor<Functor>()) {
     return _logicHandler->iteratePairwisePipeline(f);
   }
-  else if constexpr (std::is_base_of_v<TriwiseFunctor<Particle, Functor>, Functor>) {
+  else if constexpr (utils::isTriwiseFunctor<Functor>()) {
       return _logicHandler->iterateTriwisePipeline(f);
   }
   else{

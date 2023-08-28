@@ -172,7 +172,7 @@ namespace autopas::compatibleTraversals {
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
  */
-[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption, InteractionTypeOption interactionTypeOption) {
+[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption, const InteractionTypeOption interactionTypeOption) {
   switch (interactionTypeOption) {
     // Check compatible pairwise traversals
     case InteractionTypeOption::pairwise: {

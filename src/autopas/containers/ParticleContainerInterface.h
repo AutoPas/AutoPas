@@ -322,8 +322,8 @@ class ParticleContainerInterface {
    *
    * @return Vector of traversal options.
    */
-  [[nodiscard]] std::set<TraversalOption> getAllTraversals() const {
-    return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
+  [[nodiscard]] std::set<TraversalOption> getAllTraversals(const InteractionTypeOption interactionType) const {
+    return compatibleTraversals::allCompatibleTraversals(this->getContainerType(), interactionType);
   }
 
   /**

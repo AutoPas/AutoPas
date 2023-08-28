@@ -224,10 +224,10 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for pairwise interactions.
    * @return
    */
-  static std::set<TraversalOption> getPairwiseOptions() {
+  static std::set<TraversalOption> getAllPairwiseOptions() {
     std::set<TraversalOption> pairwiseOptions;
     auto allOptions = getAllOptions();
-    auto threebodyOptions = getThreeBodyOptions();
+    auto threebodyOptions = getAllThreeBodyOptions();
     std::set_difference(allOptions.begin(), allOptions.end(), threebodyOptions.begin(), threebodyOptions.end(),
                         std::inserter(pairwiseOptions, pairwiseOptions.begin()));
     return pairwiseOptions;
@@ -237,7 +237,7 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for 3-body interactions.
    * @return
    */
-  static std::set<TraversalOption> getThreeBodyOptions() {
+  static std::set<TraversalOption> getAllThreeBodyOptions() {
     return {Value::ds_sequential_3b};
   }
 
