@@ -151,8 +151,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   const bool cell2HasOwnedParticles =
       static_cast<int64_t>(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
 
-  if (((not cell1HasOwnedParticles) and (not useNewton3)) or
-      ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
+  if ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles)) {
     return;
   }
 
