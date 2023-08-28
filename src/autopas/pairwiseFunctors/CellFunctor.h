@@ -151,7 +151,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   const bool cell2HasOwnedParticles =
       static_cast<int64_t>(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
 
-  if ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles)) {
+  if (((not cell1HasOwnedParticles) and (not useNewton3) and (not bidirectional)) or
+      ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
     return;
   }
 
@@ -281,7 +282,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
         }
         Particle &p2 = *inner.second;
         _functor->AoSFunctor(p1, p2, false);
-        if (bidirectional and cell2HasOwnedParticles) _functor->AoSFunctor(p2, p1, false);
+        if (bidirectional) _functor->AoSFunctor(p2, p1, false);
       }
     }
   } else {
@@ -312,12 +313,8 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
   // if cell2 has no owned particles we can skip the bidirectional part
-  const bool cell2HasOwnedParticles =
-      static_cast<int64_t>(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
-
   _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
-  if (bidirectional and cell2HasOwnedParticles)
-    _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
+  if (bidirectional) _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
