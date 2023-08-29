@@ -31,6 +31,28 @@ else()
     add_custom_target(uuid_bundled)
 endif ()
 
+find_package(utf8cpp QUIET)
+
+# if utf8cpp was not found on system we install it locally
+if (NOT utf8cpp_FOUND)
+    message(STATUS "utf8cpp not found - using bundled version")
+
+    set(UTFCPP_DIR "${CMAKE_CURRENT_BINARY_DIR}/utf8cpp")
+    ExternalProject_Add(
+        utf8cpp_bundled
+        PREFIX ${CMAKE_CURRENT_BINARY_DIR}/utf8cpp
+        URL ${PROJECT_SOURCE_DIR}/libs/utfcpp-3.1.1.zip
+        URL_HASH MD5=a2cf6db2ee03ccdcf5308793400acfe1
+        BUILD_IN_SOURCE TRUE
+        INSTALL_DIR "install"
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${UTFCPP_DIR}/install -DUTF8_TESTS=off -DUTF8_SAMPLES=off
+    )
+else()
+    message(STATUS "utf8cpp found - using system version")
+    # add a dummy target so the dependency in antlr4cpp_bundled is fulfilled if utf8cpp was found on the system
+    add_custom_target(utf8cpp_bundled)
+endif ()
+
 ExternalProject_ADD(
         antlr4cpp_bundled
         PREFIX           ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp
@@ -39,12 +61,13 @@ ExternalProject_ADD(
         # pass PKG_CONFIG_PATH as a environment variable to cmake so find_package() in antlr4cpp's CMakeLists.txt can find uuid-dev if using the bundled version
         CMAKE_COMMAND    ${CMAKE_COMMAND} -E env PKG_CONFIG_PATH=${LIBUUID_PKGCONFIG_DIR} ${CMAKE_COMMAND}
         BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp/install/lib/libantlr4-runtime.a
-        CMAKE_ARGS       -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp/install -DCMAKE_CXX_FLAGS=-w
+        # point antlr4cpp to utf8cpp install dir
+        CMAKE_ARGS       -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp/install -DCMAKE_CXX_FLAGS=-w -DCMAKE_PREFIX_PATH=${UTFCPP_DIR}/install
         # pass LIBRARY_PATH as a environment variable to make so the linker finds uuid-dev if using the bundled version
         BUILD_COMMAND    ${CMAKE_COMMAND} -E env LIBRARY_PATH=${LIBUUID_LIBRARY_DIR} ${CMAKE_MAKE_PROGRAM}
         LOG_BUILD        ON
         LOG_INSTALL      ON
-        DEPENDS          uuid_bundled
+        DEPENDS          uuid_bundled utf8cpp_bundled
 )
 
 # create dummy target that contains all information to easily link against
