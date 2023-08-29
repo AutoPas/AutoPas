@@ -28,10 +28,12 @@ set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLESITE;MULTISITE")
 target_compile_definitions(md-flexible PUBLIC SINGLESITE=0 )
 target_compile_definitions(md-flexible PUBLIC MULTISITE=1)
 
+string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
+
 # Define numerical value for actually compiled md-flexible mode, as per above.
-if (MD_FLEXIBLE_MODE MATCHES "SINGLESITE|singlesite")
+if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
     target_compile_definitions(md-flexible PUBLIC MD_FLEXIBLE_MODE=0)
-elseif(MD_FLEXIBLE_MODE MATCHES "MULTISITE|multisite")
+elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(md-flexible PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
@@ -50,7 +52,7 @@ target_compile_definitions(
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
-if (MD_FLEXIBLE_MODE MATCHES "MULTISITE|multisite")
+if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     if (MD_FLEXIBLE_FUNCTOR_AVX)
         message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()

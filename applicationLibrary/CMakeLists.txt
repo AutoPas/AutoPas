@@ -11,9 +11,11 @@ file(
 
 add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
 
-if (MD_FLEXIBLE_MODE MATCHES  "SINGLESITE|singlesite")
+string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
+
+if (MD_FLEXIBLE_MODE_lower MATCHES  "singlesite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=0 SINGLESITE=0 MULTISITE=1)
-elseif(MD_FLEXIBLE_MODE MATCHES "MULTISITE|multisite")
+elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1 SINGLESITE=0 MULTISITE=1)
 endif()
 
