@@ -11,6 +11,26 @@ file(
 
 add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
 
+# Set CMake option for md-flexible mode
+set(MD_FLEXIBLE_MODE
+        "SINGLESITE"
+        CACHE
+        STRING "Choose the mode of md-flexible to be compiled."
+        )
+set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLESITE;MULTISITE")
+
+# Define numerical values for different md-flexible modes
+target_compile_definitions(molecularDynamicsLibrary PUBLIC SINGLESITE=0)
+target_compile_definitions(molecularDynamicsLibrary PUBLIC MULTISITE=1)
+
+string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
+
+if (MD_FLEXIBLE_MODE_lower MATCHES  "singlesite")
+    target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=0)
+elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
+    target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
+endif()
+
 target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
