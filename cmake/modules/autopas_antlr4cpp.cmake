@@ -3,7 +3,7 @@ message(STATUS "antlr4cpp - using bundled version")
 include(ExternalProject)
 
 # install prefix for antlr
-set(prefix ${CMAKE_CURRENT_BINARY_DIR}/antlr4cppPrefix)
+set(prefix ${CMAKE_CURRENT_BINARY_DIR}/_deps/antlr4cppPrefix)
 # location where antlr will install its static library
 set(staticLibInstallLocation ${prefix}/install/lib/libantlr4-runtime.a)
 
