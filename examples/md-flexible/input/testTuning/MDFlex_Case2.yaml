@@ -1,5 +1,5 @@
 selector-strategy                :  Fastest-Absolute-Value
-tuning-strategy                  :  full-Search
+tuning-strategies                :  [full-Search]
 tuning-acquisition-function      :  upper-confidence-bound
 tuning-interval                  :  100
 tuning-samples                   :  3
