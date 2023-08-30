@@ -41,9 +41,9 @@ class SortedCellView : public ParticleCell<Particle> {
     for (auto &p : cell) {
       // adjust particle counters for this cell
       if (p.isOwned()) {
-        this->_numOwnedParticles--;
+        this->_numOwnedParticles++;
       } else if (p.isHalo()) {
-        this->_numHaloParticles--;
+        this->_numHaloParticles++;
       }
 
       _particles.push_back(std::make_pair(utils::ArrayMath::dot(p.getR(), r), &p));
