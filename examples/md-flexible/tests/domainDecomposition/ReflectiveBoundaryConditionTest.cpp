@@ -496,26 +496,54 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   // Add molecules
 
   // Molecule 0: All sites experience repulsion.
-  particlePropertiesLibrary->addMolType(0, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  mdLib::MultisiteMoleculeLJ mol0({0.05, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  autoPasContainer->addParticle(mol0);
+  const std::array<double, 3> &particlePosition0 = {0.05, 2.5, 2.5};
+  if (domainDecomposition.isInsideLocalDomain(particlePosition0)) {
+    particlePropertiesLibrary->addMolType(0, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
+    mdLib::MultisiteMoleculeLJ mol0(particlePosition0, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 0, 0);
+    autoPasContainer->addParticle(mol0);
+#if not defined(AUTOPAS_INCLUDE_MPI)
+  } else {
+    GTEST_FAIL() << "Test Particle 0 is not in the box -> setup is wrong!";
+#endif
+  }
 
   // Molecule 1: One site experiences attraction, one site experiences repulsion, overall molecule experiences
   // repulsion.
-  particlePropertiesLibrary->addMolType(1, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  mdLib::MultisiteMoleculeLJ mol1({0.2, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 1, 1);
-  autoPasContainer->addParticle(mol1);
+  const std::array<double, 3> &particlePosition1 = {0.2, 2.5, 2.5};
+  if (domainDecomposition.isInsideLocalDomain(particlePosition1)) {
+    particlePropertiesLibrary->addMolType(1, {0, 1}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
+    mdLib::MultisiteMoleculeLJ mol1(particlePosition1, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 1, 1);
+    autoPasContainer->addParticle(mol1);
+#if not defined(AUTOPAS_INCLUDE_MPI)
+  } else {
+    GTEST_FAIL() << "Test Particle 1 is not in the box -> setup is wrong!";
+#endif
+  }
 
   // Molecule 2: Both sites experience attraction.
-  particlePropertiesLibrary->addMolType(2, {2, 0}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  mdLib::MultisiteMoleculeLJ mol2({0.22, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 2, 2);
-  autoPasContainer->addParticle(mol2);
+  const std::array<double, 3> &particlePosition2 = {0.22, 2.5, 2.5};
+  if (domainDecomposition.isInsideLocalDomain(particlePosition2)) {
+    particlePropertiesLibrary->addMolType(2, {2, 0}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
+    mdLib::MultisiteMoleculeLJ mol2(particlePosition2, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 2, 2);
+    autoPasContainer->addParticle(mol2);
+#if not defined(AUTOPAS_INCLUDE_MPI)
+  } else {
+    GTEST_FAIL() << "Test Particle 2 is not in the box -> setup is wrong!";
+#endif
+  }
 
   // Molecule 3: One site experiences attraction, one site experiences repulsion, overall molecule experiences
   // attraction.
-  particlePropertiesLibrary->addMolType(3, {0, 01}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
-  mdLib::MultisiteMoleculeLJ mol3({0.3, 2.5, 2.5}, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 3, 3);
-  autoPasContainer->addParticle(mol3);
+  const std::array<double, 3> &particlePosition3 = {0.3, 2.5, 2.5};
+  if (domainDecomposition.isInsideLocalDomain(particlePosition3)) {
+    particlePropertiesLibrary->addMolType(3, {0, 01}, {{-0.01, 0., 0.}, {0.01, 0., 0.}}, {1., 1., 1.});
+    mdLib::MultisiteMoleculeLJ mol3(particlePosition3, {0., 0., 0.}, {1., 0., 0., 0.}, {0., 0., 0.}, 3, 3);
+    autoPasContainer->addParticle(mol3);
+#if not defined(AUTOPAS_INCLUDE_MPI)
+  } else {
+    GTEST_FAIL() << "Test Particle 3 is not in the box -> setup is wrong!";
+#endif
+  }
 
   // Reflect
 
