@@ -147,6 +147,18 @@ class ParticleCell {
   }
 
   /**
+   * Get number owned particles in this cell
+   * @return number of owned particles in this cell
+   */
+  const int64_t getNumOwnedParticles() { return _numOwnedParticles; }
+
+  /**
+   * Get number halo particles in this cell
+   * @return number of halo particles in this cell
+   */
+  const int64_t getNumHaloParticles() { return _numHaloParticles; }
+
+  /**
    * Lock object for exclusive access to this cell.
    */
   AutoPasLock _cellLock{};
