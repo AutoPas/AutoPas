@@ -35,7 +35,7 @@ class SlowConfigFilter : public TuningStrategyInterface {
   /**
    * Any configuration that is slower than the fastest times this factor will be blacklisted.
    */
-  double _relativeBlacklistRange{3};
+  double _relativeBlacklistRange;
 };
 
 }  // namespace autopas
