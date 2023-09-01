@@ -264,10 +264,6 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
                                                         const std::array<double, 3> &sortingDirection) {
-  // if cell2 has no owned particles we can skip the bidirectional part
-  const bool cell2HasOwnedParticles =
-      static_cast<int64_t>(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
-
   if (cell1.numParticles() + cell2.numParticles() > _startSorting and
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> baseSorted(cell1, sortingDirection);
@@ -293,7 +289,6 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
 
       for (auto inner = innerStart; inner != cell2.end(); ++inner) {
         Particle &p2 = *inner;
-
         _functor->AoSFunctor(p1, p2, false);
         if (bidirectional) _functor->AoSFunctor(p2, p1, false);
       }
@@ -312,7 +307,6 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
-  // if cell2 has no owned particles we can skip the bidirectional part
   _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
   if (bidirectional) _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
 }
