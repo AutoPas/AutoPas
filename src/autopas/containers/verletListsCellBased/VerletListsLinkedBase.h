@@ -82,6 +82,11 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   unsigned long getNumberOfParticles() const override { return _linkedCells.getNumberOfParticles(); }
 
   /**
+   * @copydoc autopas::ParticleContainerInterface::size()
+   */
+  unsigned long size() const override { return _linkedCells.size(); }
+
+  /**
    * @copydoc autopas::ParticleContainerInterface::deleteHaloParticles
    * @note This function invalidates the neighbor lists.
    */

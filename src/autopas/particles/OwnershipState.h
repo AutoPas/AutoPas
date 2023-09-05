@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <iostream>
 #include <bitset>
+#include <iostream>
 
 namespace autopas {
 /**

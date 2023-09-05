@@ -362,12 +362,21 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   /**
-   * Get the number of particles that belong to this octree. (Owned and and halo.)
-   *
-   * @return The integer # of particles in the container
+   * Get the number of real particles saved in the container (owned + halo).
+   * @return Number of real particles saved in the container (owned + halo).
    */
   [[nodiscard]] unsigned long getNumberOfParticles() const override {
-    return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
+    // return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
+    return this->_cells[CellTypes::OWNED].getNumberOfParticles() + this->_cells[CellTypes::HALO].getNumberOfParticles();
+  }
+
+  /**
+   * Get the total number of particles saved in the container (owned + halo + dummy).
+   * @return Number of particles saved in the container (owned + halo + dummy).
+   */
+  [[nodiscard]] unsigned long size() const override {
+    // return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
+    return this->_cells[CellTypes::OWNED].size() + this->_cells[CellTypes::HALO].size();
   }
 
   void deleteHaloParticles() override { this->_cells[CellTypes::HALO].clear(); }

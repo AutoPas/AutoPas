@@ -146,7 +146,7 @@ size_t getNumberOfParticlesInBox(autopas::internal::CellBlock3D<FMCell> &cellBlo
   autopasTools::generators::GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(),
                                                              cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
   cellBlock.clearHaloCells();
-  return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.numParticles(); });
+  return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.size(); });
 }
 
 TEST_F(CellBlock3DTest, testClearHaloParticles) {

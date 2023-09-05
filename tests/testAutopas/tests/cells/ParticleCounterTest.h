@@ -7,9 +7,9 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "testingHelpers/commonTypedefs.h"
 #include "autopas/cells/SortedCellView.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
+#include "testingHelpers/commonTypedefs.h"
 
 class ParticleCounterTest : public AutoPasTestBase {
  public:

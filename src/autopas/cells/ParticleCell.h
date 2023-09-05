@@ -83,10 +83,10 @@ class ParticleCell {
   virtual void addParticle(const Particle &p) = 0;
 
   /**
-   * Get the number of particles stored in this cell.
-   * @return number of particles stored in this cell
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
    */
-  [[nodiscard]] virtual unsigned long numParticles() const = 0;
+  [[nodiscard]] virtual unsigned long size() const = 0;
 
   /**
    * Check if the cell is empty.
@@ -147,16 +147,34 @@ class ParticleCell {
   }
 
   /**
-   * Get number owned particles in this cell
-   * @return number of owned particles in this cell
+   * Get number owned particles in this cell.
+   * @return number of owned particles in this cell.
    */
-  const int64_t getNumOwnedParticles() { return _numOwnedParticles; }
+  [[nodiscard]] unsigned long getNumberOfOwnedParticles() const { return _numOwnedParticles; }
 
   /**
-   * Get number halo particles in this cell
-   * @return number of halo particles in this cell
+   * Get number halo particles in this cell.
+   * @return number of halo particles in this cell.
    */
-  const int64_t getNumHaloParticles() { return _numHaloParticles; }
+  [[nodiscard]] unsigned long getNumberOfHaloParticles() const { return _numHaloParticles; }
+
+  /**
+   * Set the number of owned particles in this cell.
+   * @param numOwnedParticles The number of owned particles to be set.
+   */
+  void setNumberOfOwnedParticles(unsigned long numOwnedParticles) { _numOwnedParticles = numOwnedParticles; }
+
+  /**
+   * Set the number of halo particles in this cell.
+   * @param numHaloParticles The number of halo particles to be set.
+   */
+  void setNumberOfHaloParticles(unsigned long numHaloParticles) { _numHaloParticles = numHaloParticles; }
+
+  /**
+   * Get the number of owned + halo particles stored in this cell.
+   * @return number of owned + halo particles stored in this cell.
+   */
+  [[nodiscard]] unsigned long getNumberOfParticles() const { return _numOwnedParticles + _numHaloParticles; }
 
   /**
    * Lock object for exclusive access to this cell.

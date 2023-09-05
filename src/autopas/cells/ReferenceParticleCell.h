@@ -147,7 +147,11 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     reduceImpl<true, true>(reduceLambda, result, lowerCorner, higherCorner, behavior);
   }
 
-  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
+  /**
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
+   */
+  [[nodiscard]] unsigned long size() const override { return _particles.size(); }
 
   /**
    * Returns a reference to the element at position n in the cell.
@@ -182,7 +186,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    */
   [[nodiscard]] const Particle &at(size_t index) const { return *(_particles.at(index)); }
 
-  [[nodiscard]] bool isEmpty() const override { return numParticles() == 0; }
+  [[nodiscard]] bool isEmpty() const override { return size() == 0; }
 
   void clear() override {
     _particles.clear();
@@ -200,8 +204,8 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
   void deleteByIndex(size_t index) override {
     std::lock_guard<AutoPasLock> lock(_particlesLock);
-    if (index >= numParticles()) {
-      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    if (index >= size()) {
+      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", size(), index);
     }
 
     // adjust particle counters for this cell
@@ -213,8 +217,8 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
     _particles[index]->setOwnershipState(OwnershipState::dummy);
 
-    if (index < numParticles() - 1) {
-      std::swap(_particles[index], _particles[numParticles() - 1]);
+    if (index < size() - 1) {
+      std::swap(_particles[index], _particles[size() - 1]);
     }
     _particles.pop_back();
   }

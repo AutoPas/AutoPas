@@ -115,8 +115,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   }
 
   /**
-   * Get the number of particles saved in the container.
-   * @return Number of particles in the container.
+   * Get the number of real particles saved in the container (owned + halo).
+   * @return Number of real particles saved in the container (owned + halo).
    */
   [[nodiscard]] unsigned long getNumberOfParticles() const override {
     size_t numParticles = 0ul;
@@ -128,7 +128,27 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
 #pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
 #endif
     for (size_t index = 0; index < _cells.size(); ++index) {
-      numParticles += _cells[index].numParticles();
+      // numParticles += _cells[index].numParticles();
+      numParticles += _cells[index].getNumberOfParticles();
+    }
+    return numParticles;
+  }
+
+  /**
+   * Get the total number of particles saved in the container (owned + halo + dummy).
+   * @return Number of particles saved in the container (owned + halo + dummy).
+   */
+  [[nodiscard]] unsigned long size() const override {
+    size_t numParticles = 0ul;
+#ifdef AUTOPAS_OPENMP
+    // parallelizing this loop is only worth it if we have LOTS of cells.
+    // numThreads should be at least 1 and maximal max_threads
+    const int numThreads = std::clamp(static_cast<int>(this->_cells.size() / 100000), 1, omp_get_max_threads());
+    AutoPasLog(TRACE, "CellBasedParticleContainer::getNumberOfParticles uses {} threads", numThreads);
+#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
+#endif
+    for (size_t index = 0; index < _cells.size(); ++index) {
+      numParticles += _cells[index].size();
     }
     return numParticles;
   }

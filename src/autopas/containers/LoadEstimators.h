@@ -36,8 +36,9 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
   for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
     for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
       for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
-        auto load =
-            cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension)].numParticles();
+        // we can use the number of real particles without dummies for load estimation?
+        auto load = cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension)]
+                        .getNumberOfParticles();
         sum += load * load;
       }
     }

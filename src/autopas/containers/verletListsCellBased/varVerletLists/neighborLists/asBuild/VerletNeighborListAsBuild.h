@@ -206,7 +206,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     size_t offset = 0;
     for (auto &cell : _baseLinkedCells->getCells()) {
       f->SoALoader(cell, _soa, offset);
-      offset += cell.numParticles();
+      offset += cell.size();
     }
 
     return &_soa;
@@ -221,7 +221,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     size_t offset = 0;
     for (auto &cell : _baseLinkedCells->getCells()) {
       f->SoAExtractor(cell, _soa, offset);
-      offset += cell.numParticles();
+      offset += cell.size();
     }
   }
 

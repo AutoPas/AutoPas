@@ -57,7 +57,7 @@ class FullParticleCell : public ParticleCell<Particle> {
     } else if (p.isHalo()) {
       this->_numHaloParticles++;
     }
-    
+
     _particles.push_back(p);
   }
 
@@ -173,7 +173,11 @@ class FullParticleCell : public ParticleCell<Particle> {
     reduceImpl<true, true>(reduceLambda, result, lowerCorner, higherCorner, behavior);
   }
 
-  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
+  /**
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
+   */
+  [[nodiscard]] unsigned long size() const override { return _particles.size(); }
 
   /**
    * Returns a reference to the element at position n in the cell.
@@ -205,7 +209,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    */
   const Particle &at(size_t index) const { return _particles.at(index); }
 
-  [[nodiscard]] bool isEmpty() const override { return numParticles() == 0; }
+  [[nodiscard]] bool isEmpty() const override { return size() == 0; }
 
   void clear() override {
     _particles.clear();
@@ -223,8 +227,8 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void deleteByIndex(size_t index) override {
     std::lock_guard<AutoPasLock> lock(this->_cellLock);
-    if (index >= numParticles()) {
-      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    if (index >= size()) {
+      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", size(), index);
     }
 
     // adjust particle counters for this cell
@@ -234,8 +238,8 @@ class FullParticleCell : public ParticleCell<Particle> {
       this->_numHaloParticles--;
     }
 
-    if (index < numParticles() - 1) {
-      std::swap(_particles[index], _particles[numParticles() - 1]);
+    if (index < size() - 1) {
+      std::swap(_particles[index], _particles[size() - 1]);
     }
     _particles.pop_back();
   }

@@ -225,7 +225,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     for (size_t i = 0; i < _towers.size(); ++i) {
       auto &tower = _towers[i];
-      const auto towerSize = tower.getNumAllParticles();
+      const auto towerSize = tower.size();
       auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies.
       for (size_t j = 0; j < towerSize - numTailDummies;) {
@@ -309,7 +309,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_towers[cellIndex].numParticles() or
+    if (particleIndex >= this->_towers[cellIndex].getNumberOfParticles() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -772,9 +772,25 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
+  /**
+   * Get the number of real particles saved in the container (owned + halo).
+   * @return Number of real particles saved in the container (owned + halo).
+   */
   [[nodiscard]] unsigned long getNumberOfParticles() const override {
     size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
-                                 [](size_t acc, const auto &tower) { return acc + tower.getNumActualParticles(); });
+                                 [](size_t acc, const auto &tower) { return acc + tower.getNumberOfParticles(); });
+    sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
+                          [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
+    return sum;
+  }
+
+  /**
+   * Get the number of all particles stored in this container (owned + halo + dummy).
+   * @return number of particles stored in this container (owned + halo + dummy).
+   */
+  [[nodiscard]] unsigned long size() const override {
+    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
+                                 [](size_t acc, const auto &tower) { return acc + tower.size(); });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
                           [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
     return sum;
@@ -1273,7 +1289,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].numParticles()) {
+      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].getNumberOfParticles()) {
         cellIndex += stride;
         particleIndex = 0;
 

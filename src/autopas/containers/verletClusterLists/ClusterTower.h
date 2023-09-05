@@ -61,16 +61,7 @@ class ClusterTower : public ParticleCell<Particle> {
    *
    * @param particle The particle to add.
    */
-  void addParticle(const Particle &particle) override {
-    // adjust particle counters for this cell
-    if (particle.isOwned()) {
-      this->_numOwnedParticles++;
-    } else if (particle.isHalo()) {
-      this->_numHaloParticles++;
-    }
-
-    _particlesStorage.addParticle(particle);
-  }
+  void addParticle(const Particle &particle) override { _particlesStorage.addParticle(particle); }
 
   CellType getParticleCellTypeAsEnum() override { return CellType::ClusterTower; }
 
@@ -81,9 +72,6 @@ class ClusterTower : public ParticleCell<Particle> {
     _clusters.clear();
     _particlesStorage.clear();
     _numDummyParticles = 0;
-    // reset particle counters for this cell
-    this->_numOwnedParticles = 0;
-    this->_numHaloParticles = 0;
   }
 
   /**
@@ -96,22 +84,22 @@ class ClusterTower : public ParticleCell<Particle> {
    * @return Returns the number of clusters in the tower.
    */
   size_t generateClusters() {
-    if (getNumActualParticles() > 0) {
+    if (getNumberOfParticles() > 0) {
       _particlesStorage.sortByDim(2);
 
       // if the number of particles is divisible by the cluster size this is 0
-      const auto sizeLastCluster = _particlesStorage.numParticles() % _clusterSize;
+      const auto sizeLastCluster = _particlesStorage.size() % _clusterSize;
       _numDummyParticles = sizeLastCluster == 0 ? 0 : _clusterSize - sizeLastCluster;
 
       // fill the last cluster with dummy copies of the last particle
-      auto lastParticle = _particlesStorage[_particlesStorage.numParticles() - 1];
+      auto lastParticle = _particlesStorage[_particlesStorage.size() - 1];
       markParticleAsDeleted(lastParticle);
       for (size_t i = 0; i < _numDummyParticles; i++) {
         _particlesStorage.addParticle(lastParticle);
       }
 
       // Mark start of the different clusters by adding pointers to _particlesStorage
-      size_t numClusters = _particlesStorage.numParticles() / _clusterSize;
+      size_t numClusters = _particlesStorage.size() / _clusterSize;
       _clusters.reserve(numClusters);
       for (size_t index = 0; index < numClusters; index++) {
         _clusters.emplace_back(&(_particlesStorage[_clusterSize * index]), _clusterSize);
@@ -187,7 +175,7 @@ class ClusterTower : public ParticleCell<Particle> {
     if (not _particlesStorage._particles.empty()) {
       // Workaround to remove requirement of default constructible particles.
       // This function will always only shrink the array, particles are not actually inserted.
-      _particlesStorage._particles.resize(getNumActualParticles(), _particlesStorage._particles[0]);
+      _particlesStorage._particles.resize(getNumberOfParticles(), _particlesStorage._particles[0]);
     }
     return std::move(_particlesStorage._particles);
   }
@@ -199,22 +187,16 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] size_t getNumTailDummyParticles() const { return _numDummyParticles; }
 
   /**
-   * @copydoc getNumActualParticles()
+   * Get the number of all particles stored in this tower (owned, halo and dummy).
+   * @return number of particles stored in this tower (owned, halo and dummy).
    */
-  [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
+  [[nodiscard]] unsigned long size() const override { return _particlesStorage.size(); }
 
   /**
-   * Returns the number of particles in the tower before the filler dummies.
-   * There might still be particles that were marked as dummies due to deletion.
-   * @return
+   * Get the number of real particles saved in the tower (owned + halo).
+   * @return Number of real particles saved in the tower (owned + halo).
    */
-  [[nodiscard]] size_t getNumActualParticles() const { return getNumAllParticles() - getNumTailDummyParticles(); }
-
-  /**
-   * Returns the size of the internal particle storage aka. the total number of particles incl. dummies.
-   * @return
-   */
-  [[nodiscard]] size_t getNumAllParticles() const { return _particlesStorage.numParticles(); }
+  [[nodiscard]] unsigned long getNumberOfParticles() const { return _particlesStorage.size() - getNumTailDummyParticles();/*_particlesStorage.getNumberOfParticles();*/ }
 
   /**
    * Returns the number of clusters in the tower.
@@ -332,7 +314,7 @@ class ClusterTower : public ParticleCell<Particle> {
   // while those methods would not be needed, still complying to the whole interface should be helpful, if
   // maybe someday new necessary pure virtual methods are introduced there.
 
-  [[nodiscard]] bool isEmpty() const override { return getNumActualParticles() == 0; }
+  [[nodiscard]] bool isEmpty() const override { return getNumberOfParticles() == 0; }
 
   void deleteDummyParticles() override {
     _particlesStorage.deleteDummyParticles();
@@ -345,18 +327,18 @@ class ClusterTower : public ParticleCell<Particle> {
     /// particles. See also https://github.com/AutoPas/AutoPas/issues/435
 
     // swap particle that should be deleted to end of actual particles.
-    std::swap(_particlesStorage._particles[index], _particlesStorage._particles[getNumActualParticles() - 1]);
+    std::swap(_particlesStorage._particles[index], _particlesStorage._particles[getNumberOfParticles() - 1]);
     if (getNumTailDummyParticles() != 0) {
       // swap particle that should be deleted (now at end of actual particles) with last dummy particle.
-      std::swap(_particlesStorage._particles[getNumActualParticles() - 1],
+      std::swap(_particlesStorage._particles[getNumberOfParticles() - 1],
                 _particlesStorage._particles[_particlesStorage._particles.size() - 1]);
     }
 
-    // adjust particle counters for this cell
+    // adjust particle counters for this cell. A lock is not needed, since a tower is handled by one thread at a time
     if (_particlesStorage._particles.back().isOwned()) {
-      this->_numOwnedParticles--;
+      _particlesStorage.setNumberOfOwnedParticles(_particlesStorage.getNumberOfOwnedParticles() - 1);
     } else if (_particlesStorage._particles.back().isHalo()) {
-      this->_numHaloParticles--;
+      _particlesStorage.setNumberOfHaloParticles(_particlesStorage.getNumberOfHaloParticles() - 1);
     }
 
     _particlesStorage._particles.pop_back();

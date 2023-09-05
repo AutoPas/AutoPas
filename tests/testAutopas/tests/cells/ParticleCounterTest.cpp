@@ -34,13 +34,13 @@ TEST_F(ParticleCounterTest, testParticleCountersFullParticleCell) {
     cell.addParticle(p);
   }
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 16);
-  EXPECT_EQ(cell.getNumHaloParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 16);
 
   cell.deleteDummyParticles();
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 16);
-  EXPECT_EQ(cell.getNumHaloParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 16);
 
   // expect ownershipstate ownedOrHalo
   EXPECT_TRUE(cell.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
@@ -64,13 +64,13 @@ TEST_F(ParticleCounterTest, testParticleCountersFullParticleCell) {
     cell.deleteByIndex(i);
   }
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 0);
-  EXPECT_EQ(cell.getNumHaloParticles(), 8);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 8);
 
   cell.clear();
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 0);
-  EXPECT_EQ(cell.getNumHaloParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 0);
 
   // expect ownershipstate ownedOrHalo
   EXPECT_TRUE(cell.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
@@ -106,13 +106,13 @@ TEST_F(ParticleCounterTest, testParticleCountersSortedCellView) {
 
   auto scv = autopas::SortedCellView<Particle, autopas::FullParticleCell<Particle>>(cell, {1., 0., 0.});
 
-  EXPECT_EQ(scv.getNumOwnedParticles(), 16);
-  EXPECT_EQ(scv.getNumHaloParticles(), 16);
+  EXPECT_EQ(scv.getNumberOfOwnedParticles(), 16);
+  EXPECT_EQ(scv.getNumberOfHaloParticles(), 16);
 
   scv.deleteDummyParticles();
 
-  EXPECT_EQ(scv.getNumOwnedParticles(), 16);
-  EXPECT_EQ(scv.getNumHaloParticles(), 16);
+  EXPECT_EQ(scv.getNumberOfOwnedParticles(), 16);
+  EXPECT_EQ(scv.getNumberOfHaloParticles(), 16);
 
   // expect ownershipstate ownedOrHalo
   EXPECT_TRUE(scv.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
@@ -130,13 +130,13 @@ TEST_F(ParticleCounterTest, testParticleCountersSortedCellView) {
     scv.deleteByIndex(i);
   }
 
-  EXPECT_EQ(scv.getNumOwnedParticles(), 0);
-  EXPECT_EQ(scv.getNumHaloParticles(), 8);
+  EXPECT_EQ(scv.getNumberOfOwnedParticles(), 0);
+  EXPECT_EQ(scv.getNumberOfHaloParticles(), 8);
 
   scv.clear();
 
-  EXPECT_EQ(scv.getNumOwnedParticles(), 0);
-  EXPECT_EQ(scv.getNumHaloParticles(), 0);
+  EXPECT_EQ(scv.getNumberOfOwnedParticles(), 0);
+  EXPECT_EQ(scv.getNumberOfHaloParticles(), 0);
 
   // expect ownershipstate ownedOrHalo
   EXPECT_TRUE(scv.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
@@ -175,13 +175,13 @@ TEST_F(ParticleCounterTest, testParticleCountersReferenceParticleCell) {
     cell.addParticleReference(&particles[i]);
   }
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 16);
-  EXPECT_EQ(cell.getNumHaloParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 16);
 
   cell.deleteDummyParticles();
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 16);
-  EXPECT_EQ(cell.getNumHaloParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 16);
 
   // expect ownershipstate ownedOrHalo
   EXPECT_TRUE(cell.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
@@ -199,13 +199,13 @@ TEST_F(ParticleCounterTest, testParticleCountersReferenceParticleCell) {
     cell.deleteByIndex(i);
   }
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 0);
-  EXPECT_EQ(cell.getNumHaloParticles(), 8);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 8);
 
   cell.clear();
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 0);
-  EXPECT_EQ(cell.getNumHaloParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 0);
 
   // expect ownershipstate ownedOrHalo
   EXPECT_TRUE(cell.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
@@ -233,13 +233,13 @@ TEST_F(ParticleCounterTest, testParticleCountersClusterTower) {
     cell.addParticle(p);
   }
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 16);
-  EXPECT_EQ(cell.getNumHaloParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 16);
 
   cell.deleteDummyParticles();
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 16);
-  EXPECT_EQ(cell.getNumHaloParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 16);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 16);
 
   // expect ownershipstate ownedOrHalo
   EXPECT_TRUE(cell.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
@@ -257,13 +257,13 @@ TEST_F(ParticleCounterTest, testParticleCountersClusterTower) {
     cell.deleteByIndex(i);
   }
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 0);
-  EXPECT_EQ(cell.getNumHaloParticles(), 8);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 8);
 
   cell.clear();
 
-  EXPECT_EQ(cell.getNumOwnedParticles(), 0);
-  EXPECT_EQ(cell.getNumHaloParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfOwnedParticles(), 0);
+  EXPECT_EQ(cell.getNumberOfHaloParticles(), 0);
 
   // expect ownershipstate ownedOrHalo
   EXPECT_TRUE(cell.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));

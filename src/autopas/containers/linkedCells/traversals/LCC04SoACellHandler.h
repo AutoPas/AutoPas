@@ -202,7 +202,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
       // special cases (cell1 one is also stored in a combination slice)
       // base cell
       if (offset1 == 0ul) {
-        const auto numParticlesBaseCell = cells[baseIndex].numParticles();
+        const auto numParticlesBaseCell = cells[baseIndex].size();
         if (numParticlesBaseCell == 0) {
           continue;
         }
@@ -283,7 +283,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
     const unsigned long otherIndex = baseIndex + offset;
     const ParticleCell &otherCell = cells[otherIndex];
     combinationSlice[bufferSlice]._particleSoABuffer.append(otherCell._particleSoABuffer);
-    sum += otherCell.numParticles();
+    sum += otherCell.size();
     combinationSlicesOffsets[bufferSlice].push_back(sum);
   }
 }
@@ -308,11 +308,11 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
     // clear old cell buffer
     cells[currentOffset]._particleSoABuffer.clear();
     // make sure everything is correct
-    if (bufferView.getNumberOfParticles() != cells[currentOffset].numParticles()) {
+    if (bufferView.getNumberOfParticles() != cells[currentOffset].size()) {
       const auto pos = utils::ThreeDimensionalMapping::oneToThreeD(currentOffset, _cellsPerDimension);
       AutoPasLog(ERROR,
                  "Particle number in SoA buffer and cell doesn't match. current position: [{} {} {}] is: {} should: {}",
-                 pos[0], pos[1], pos[2], buffer.getNumberOfParticles(), cells[currentOffset].numParticles());
+                 pos[0], pos[1], pos[2], buffer.getNumberOfParticles(), cells[currentOffset].size());
     }
     // append new cell buffer
     cells[currentOffset]._particleSoABuffer.append(bufferView);

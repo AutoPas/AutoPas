@@ -70,11 +70,11 @@ bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
 }
 
 bool LJFunctorAVXTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
-  EXPECT_GT(cell1.numParticles(), 0);
-  EXPECT_EQ(cell1.numParticles(), cell2.numParticles());
+  EXPECT_GT(cell1.size(), 0);
+  EXPECT_EQ(cell1.size(), cell2.size());
 
   bool ret = true;
-  for (size_t i = 0; i < cell1.numParticles(); ++i) {
+  for (size_t i = 0; i < cell1.size(); ++i) {
     ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
   }
 
@@ -131,10 +131,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
       << "Cells 2 not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer.constructView(1, cell1NoAVX.numParticles()),
-                                  cell2NoAVX._particleSoABuffer.constructView(1, cell2NoAVX.numParticles()), newton3);
-    ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer.constructView(1, cell1AVX.numParticles()),
-                                cell2AVX._particleSoABuffer.constructView(1, cell2AVX.numParticles()), newton3);
+    ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer.constructView(1, cell1NoAVX.size()),
+                                  cell2NoAVX._particleSoABuffer.constructView(1, cell2NoAVX.size()), newton3);
+    ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer.constructView(1, cell1AVX.size()),
+                                cell2AVX._particleSoABuffer.constructView(1, cell2AVX.size()), newton3);
   } else {
     ljFunctorNoAVX.SoAFunctorPair(cell1NoAVX._particleSoABuffer, cell2NoAVX._particleSoABuffer, newton3);
     ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer, cell2AVX._particleSoABuffer, newton3);
@@ -197,8 +197,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
       << "Cells not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer.constructView(1, cellNoAVX.numParticles()), newton3);
-    ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer.constructView(1, cellAVX.numParticles()), newton3);
+    ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer.constructView(1, cellNoAVX.size()), newton3);
+    ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer.constructView(1, cellAVX.size()), newton3);
   } else {
     ljFunctorNoAVX.SoAFunctorSingle(cellNoAVX._particleSoABuffer, newton3);
     ljFunctorAVX.SoAFunctorSingle(cellAVX._particleSoABuffer, newton3);

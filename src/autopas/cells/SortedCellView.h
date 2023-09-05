@@ -37,7 +37,7 @@ class SortedCellView : public ParticleCell<Particle> {
    * @param r Normalized vector along particles are sorted.
    */
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
-    _particles.reserve(cell.numParticles());
+    _particles.reserve(cell.size());
     for (auto &p : cell) {
       // adjust particle counters for this cell
       if (p.isOwned()) {
@@ -91,9 +91,13 @@ class SortedCellView : public ParticleCell<Particle> {
     return CellIterator<typename ParticleCellType::StorageType, false>(_cell->end());
   }
 
-  unsigned long numParticles() const override { return _particles.size(); }
+  /**
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
+   */
+  unsigned long size() const override { return _particles.size(); }
 
-  bool isEmpty() const override { return numParticles() == 0; }
+  bool isEmpty() const override { return size() == 0; }
 
   void clear() override {
     _particles.clear();
@@ -110,7 +114,7 @@ class SortedCellView : public ParticleCell<Particle> {
   }
 
   void deleteByIndex(size_t index) override {
-    if (index >= numParticles()) {
+    if (index >= size()) {
       AutoPasLog(ERROR, "Index out of range");
       utils::ExceptionHandler::exception("Error: Index out of range");
     }
@@ -122,8 +126,8 @@ class SortedCellView : public ParticleCell<Particle> {
       this->_numHaloParticles--;
     }
 
-    if (index < numParticles() - 1) {
-      std::swap(_particles[index], _particles[numParticles() - 1]);
+    if (index < size() - 1) {
+      std::swap(_particles[index], _particles[size() - 1]);
     }
     _particles.pop_back();
   }

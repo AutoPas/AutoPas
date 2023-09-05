@@ -89,9 +89,9 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
     // adjust particle counters for this cell
     if (p.isOwned()) {
-      this->_numOwnedParticles--;
+      this->_numOwnedParticles++;
     } else if (p.isHalo()) {
-      this->_numHaloParticles--;
+      this->_numHaloParticles++;
     }
 
     auto ret = _pointer->insert(p);
@@ -135,10 +135,10 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   CellIterator<StorageType, false> end() const { return CellIterator<StorageType, false>(_ps.end()); }
 
   /**
-   * Get the number of particles stored in this cell.
-   * @return number of particles stored in this cell
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
    */
-  [[nodiscard]] unsigned long numParticles() const override {
+  [[nodiscard]] unsigned long size() const override {
     std::lock_guard<AutoPasLock> lock(_lock);
     return _enclosedParticleCount;
   }
@@ -366,7 +366,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
   /**
    * To prevent unnecessary tree-traversals of the octree, this field stores the number of enclosed particles within
-   * this node.
+   * this node. Note this filed is in addition to _numOwnedParticles and _numHalo particles necessary to count also
+   * dummies.
    */
   long _enclosedParticleCount{0L};
 };

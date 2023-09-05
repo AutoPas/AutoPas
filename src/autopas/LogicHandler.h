@@ -532,7 +532,7 @@ class LogicHandler {
       // we will clear the old buffers so subtract the particles from the counters.
       const auto numParticlesInOldBuffers =
           std::transform_reduce(oldBuffers.begin(), std::next(oldBuffers.begin(), newBuffers.size()), 0, std::plus<>(),
-                                [](const auto &cell) { return cell.numParticles(); });
+                                [](const auto &cell) { return cell.size(); });
       particleCounter.fetch_sub(numParticlesInOldBuffers, std::memory_order_relaxed);
 
       // clear the old buffers and copy the content of the new buffers over.
@@ -1114,8 +1114,9 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     std::stringstream ss;
     size_t sum = 0;
     for (const auto &buffer : buffers) {
-      ss << buffer.numParticles() << ", ";
-      sum += buffer.numParticles();
+      // we use number of real particles without dummies
+      ss << buffer.getNumberOfParticles() << ", ";
+      sum += buffer.getNumberOfParticles();
     }
     ss << " Total: " << sum;
     return ss.str();

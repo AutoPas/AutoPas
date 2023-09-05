@@ -32,16 +32,15 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
                               std::vector<autopas::FullParticleCell<Molecule>> &particlesHaloBuffers,
                               autopas::Newton3Option n3) {
   // sanity check that there are exactly two particles in the test
-  const auto numParticlesInBuffers =
-      std::transform_reduce(particlesBuffers.begin(), particlesBuffers.end(), 0, std::plus<>(),
-                            [](const auto &cell) { return cell.numParticles(); });
+  const auto numParticlesInBuffers = std::transform_reduce(particlesBuffers.begin(), particlesBuffers.end(), 0,
+                                                           std::plus<>(), [](const auto &cell) { return cell.size(); });
   const auto numParticlesHaloBuffers =
       std::transform_reduce(particlesHaloBuffers.begin(), particlesHaloBuffers.end(), 0, std::plus<>(), [](auto &cell) {
         // guarantee that all halo particles are actually tagged as such
         for (auto &p : cell) {
           p.setOwnershipState(autopas::OwnershipState::halo);
         }
-        return cell.numParticles();
+        return cell.size();
       });
   ASSERT_EQ(
       particlesContainerOwned.size() + particlesContainerHalo.size() + numParticlesInBuffers + numParticlesHaloBuffers,
