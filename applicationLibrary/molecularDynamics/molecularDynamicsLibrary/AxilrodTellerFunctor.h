@@ -151,7 +151,7 @@ class AxilrodTellerFunctor
 
     double dr2 = dr2ij * dr2jk * dr2ki;
     double dr5 = dr2 * dr2 * std::sqrt(dr2);
-    double invdr5 = _nu / dr5;
+    double invdr5 = nu / dr5;
 
     auto fi =  drjk * dr2i * (dr2j - dr2k)
               + drij * (dr2j * dr2k - dr2jk * dr2ki + 5.0 * dr2ijk / dr2ij)

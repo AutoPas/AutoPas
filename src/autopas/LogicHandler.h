@@ -882,9 +882,15 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
   // TODO: might need to be separated for 3-body - maybe move logic to AutoTuner
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner->willRebuildNeighborLists()) {
+  auto needPairRebuild =
+      _interactionTypes.count(InteractionTypeOption::pairwise) != 0 && _autoTuner->willRebuildNeighborLists();
+  auto needTriRebuild =
+      _interactionTypes.count(InteractionTypeOption::threeBody) != 0 && _autoTuner3B->willRebuildNeighborLists();
+
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
+
   return _neighborListsAreValid.load(std::memory_order_relaxed);
 }
 
