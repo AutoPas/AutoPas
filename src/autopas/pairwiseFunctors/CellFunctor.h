@@ -108,7 +108,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCell(
     ParticleCell &cell) {
-  if ((DataLayout == DataLayoutOption::soa && cell._particleSoABuffer.getNumberOfParticles() == 0) ||
+  if ((DataLayout == DataLayoutOption::soa && cell._particleSoABuffer.size() == 0) ||
       (DataLayout == DataLayoutOption::aos && cell.getNumberOfParticles() == 0)) {
     return;
   }
@@ -138,8 +138,8 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
 
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  if ((DataLayout == DataLayoutOption::soa && (cell1._particleSoABuffer.getNumberOfParticles() == 0 ||
-                                               cell2._particleSoABuffer.getNumberOfParticles() == 0)) ||
+  if ((DataLayout == DataLayoutOption::soa && (cell1._particleSoABuffer.size() == 0 ||
+                                               cell2._particleSoABuffer.size() == 0)) ||
       (DataLayout == DataLayoutOption::aos &&
        (cell1.getNumberOfParticles() == 0 || cell2.getNumberOfParticles() == 0))) {
     return;

@@ -301,7 +301,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
         // slice contains base cell -> skip particles of base cell. This is not supported by CellFunctor, so call
         // pairwise functor directly.
         auto startIndex = baseCell.size();
-        auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumberOfParticles();
+        auto endIndex = combinationSlice[slice]._particleSoABuffer.size();
         _pairwiseFunctor->SoAFunctorPair(baseCell._particleSoABuffer,
                                          {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell

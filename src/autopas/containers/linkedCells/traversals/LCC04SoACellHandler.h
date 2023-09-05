@@ -214,12 +214,12 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
           _pairwiseFunctor->SoAFunctorSingle(stripeView, useNewton3);
 
           auto restView = cell1->_particleSoABuffer.constructView(numParticlesBaseCell,
-                                                                  cell1->_particleSoABuffer.getNumberOfParticles());
+                                                                  cell1->_particleSoABuffer.size());
           _pairwiseFunctor->SoAFunctorPair(stripeView, restView, useNewton3);
           if (not useNewton3) {
             _pairwiseFunctor->SoAFunctorPair(restView, stripeView, useNewton3);
           }
-          cell1ViewEnd = cell1->_particleSoABuffer.getNumberOfParticles();
+          cell1ViewEnd = cell1->_particleSoABuffer.size();
           continue;
         } else {
           // interval in other stripe
@@ -228,7 +228,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
       } else if (offset1 == _baseOffsets.front().back()) {
         cell1 = &combinationSlice[currentSlice];
         cell1ViewStart = combinationSlicesOffsets[currentSlice][combinationSlicesOffsets[currentSlice].size() - 2];
-        cell1ViewEnd = cell1->_particleSoABuffer.getNumberOfParticles();
+        cell1ViewEnd = cell1->_particleSoABuffer.size();
       } else if (offset1 == _baseOffsets.back().front()) {
         const auto index = (currentSlice + numSlices - 1) % numSlices;
         if (combinationSlicesOffsets[index][1] == 0) {
@@ -239,7 +239,7 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
       } else {
         const unsigned long cellIndex1 = baseIndex + offset1;
         cell1 = &cells[cellIndex1];
-        cell1ViewEnd = cell1->_particleSoABuffer.getNumberOfParticles();
+        cell1ViewEnd = cell1->_particleSoABuffer.size();
       }
 
       auto &currentCS = combinationSlice[slice];
@@ -302,17 +302,17 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
       continue;
     }
     buffer.resizeArrays(end);
-    auto bufferView = buffer.constructView(start, buffer.getNumberOfParticles());
+    auto bufferView = buffer.constructView(start, buffer.size());
 
     const unsigned long currentOffset = baseIndex + _baseOffsets[cellSlice][i];
     // clear old cell buffer
     cells[currentOffset]._particleSoABuffer.clear();
     // make sure everything is correct
-    if (bufferView.getNumberOfParticles() != cells[currentOffset].size()) {
+    if (bufferView.size() != cells[currentOffset].size()) {
       const auto pos = utils::ThreeDimensionalMapping::oneToThreeD(currentOffset, _cellsPerDimension);
       AutoPasLog(ERROR,
                  "Particle number in SoA buffer and cell doesn't match. current position: [{} {} {}] is: {} should: {}",
-                 pos[0], pos[1], pos[2], buffer.getNumberOfParticles(), cells[currentOffset].size());
+                 pos[0], pos[1], pos[2], buffer.size(), cells[currentOffset].size());
     }
     // append new cell buffer
     cells[currentOffset]._particleSoABuffer.append(bufferView);
