@@ -776,9 +776,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * Get the number of real particles saved in the container (owned + halo).
    * @return Number of real particles saved in the container (owned + halo).
    */
-  [[nodiscard]] unsigned long getNumberOfParticles() const override {
-    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
-                                 [](size_t acc, const auto &tower) { return acc + tower.getNumberOfParticles(); });
+  [[nodiscard]] unsigned long getNumberOfParticles(
+      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const override {
+    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0, [&iteratorBehavior](size_t acc, const auto &tower) {
+      return acc + tower.getNumberOfParticles(iteratorBehavior);
+    });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
                           [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
     return sum;

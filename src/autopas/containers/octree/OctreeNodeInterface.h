@@ -96,7 +96,8 @@ class OctreeNodeInterface {
   /**
    * @copydoc CellBasedParticleContainer::getNumberOfParticles()
    */
-  virtual unsigned int getNumberOfParticles() const = 0;
+  virtual unsigned int getNumberOfParticles(
+      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const = 0;
 
   /**
    * Get a child node of this node (if there are children) given a specific octant using the spacial structure of the

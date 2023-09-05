@@ -139,8 +139,7 @@ class SoA {
     std::array<double, sizeof...(attributes)> retArray;
     if (particleId >= size()) {
       autopas::utils::ExceptionHandler::exception(
-          "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId,
-          size());
+          "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId, size());
       return retArray;
     }
     read_impl<attributes...>(particleId, retArray);
@@ -259,8 +258,7 @@ class SoA {
   void appendSingleArray(const SoAView<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     auto otherVectorIterator = valArrays.template begin<attribute>();
-    currentVector.insert(currentVector.end(), otherVectorIterator,
-                         otherVectorIterator + valArrays.size());
+    currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + valArrays.size());
   }
 
   // actual implementation of append

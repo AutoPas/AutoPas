@@ -196,7 +196,8 @@ class ClusterTower : public ParticleCell<Particle> {
    * Get the number of real particles saved in the tower (owned + halo).
    * @return Number of real particles saved in the tower (owned + halo).
    */
-  [[nodiscard]] unsigned long getNumberOfParticles() const {
+  [[nodiscard]] unsigned long getNumberOfParticles(
+      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const {
     return _particlesStorage.size() - getNumTailDummyParticles();
   }
 

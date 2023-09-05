@@ -365,9 +365,25 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * Get the number of real particles saved in the container (owned + halo).
    * @return Number of real particles saved in the container (owned + halo).
    */
-  [[nodiscard]] unsigned long getNumberOfParticles() const override {
-    // return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
-    return this->_cells[CellTypes::OWNED].getNumberOfParticles() + this->_cells[CellTypes::HALO].getNumberOfParticles();
+  [[nodiscard]] unsigned long getNumberOfParticles(
+      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const override {
+    switch (iteratorBehavior) {
+      case IteratorBehavior::owned:
+        return this->_cells[CellTypes::OWNED].getNumberOfParticles();
+        break;
+      case IteratorBehavior::halo:
+        return this->_cells[CellTypes::HALO].getNumberOfParticles();
+        break;
+      case IteratorBehavior::ownedOrHalo:
+        return this->_cells[CellTypes::OWNED].getNumberOfParticles() +
+               this->_cells[CellTypes::HALO].getNumberOfParticles();
+        break;
+      default:
+        autopas::utils::ExceptionHandler::exception("IteratorBehavior {} is not supported by getNumberOfParticles()",
+                                                    iteratorBehavior);
+        return 0;
+        break;
+    }
   }
 
   /**
@@ -375,7 +391,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @return Number of particles saved in the container (owned + halo + dummy).
    */
   [[nodiscard]] unsigned long size() const override {
-    // return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
     return this->_cells[CellTypes::OWNED].size() + this->_cells[CellTypes::HALO].size();
   }
 

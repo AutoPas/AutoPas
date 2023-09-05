@@ -118,7 +118,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Get the number of real particles saved in the container (owned + halo).
    * @return Number of real particles saved in the container (owned + halo).
    */
-  [[nodiscard]] unsigned long getNumberOfParticles() const override {
+  [[nodiscard]] unsigned long getNumberOfParticles(
+      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     // parallelizing this loop is only worth it if we have LOTS of cells.
@@ -129,7 +130,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
 #endif
     for (size_t index = 0; index < _cells.size(); ++index) {
       // numParticles += _cells[index].numParticles();
-      numParticles += _cells[index].getNumberOfParticles();
+      numParticles += _cells[index].getNumberOfParticles(iteratorBehavior);
     }
     return numParticles;
   }

@@ -175,7 +175,8 @@ class ParticleContainerInterface {
    * Get the number of real particles saved in the container (owned + halo).
    * @return Number of real particles saved in the container (owned + halo).
    */
-  [[nodiscard]] virtual unsigned long getNumberOfParticles() const = 0;
+  [[nodiscard]] virtual unsigned long getNumberOfParticles(
+      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const = 0;
 
   /**
    * Get the total number of particles saved in the container (owned + halo + dummy).

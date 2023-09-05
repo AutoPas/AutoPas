@@ -213,8 +213,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
           // Process stripe with itself
           _pairwiseFunctor->SoAFunctorSingle(stripeView, useNewton3);
 
-          auto restView = cell1->_particleSoABuffer.constructView(numParticlesBaseCell,
-                                                                  cell1->_particleSoABuffer.size());
+          auto restView =
+              cell1->_particleSoABuffer.constructView(numParticlesBaseCell, cell1->_particleSoABuffer.size());
           _pairwiseFunctor->SoAFunctorPair(stripeView, restView, useNewton3);
           if (not useNewton3) {
             _pairwiseFunctor->SoAFunctorPair(restView, stripeView, useNewton3);

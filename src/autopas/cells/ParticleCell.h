@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/options/IteratorBehavior.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
@@ -174,7 +175,25 @@ class ParticleCell {
    * Get the number of owned + halo particles stored in this cell.
    * @return number of owned + halo particles stored in this cell.
    */
-  [[nodiscard]] unsigned long getNumberOfParticles() const { return _numOwnedParticles + _numHaloParticles; }
+  [[nodiscard]] unsigned long getNumberOfParticles(
+      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const {
+    switch (iteratorBehavior) {
+      case IteratorBehavior::owned:
+        return _numOwnedParticles;
+        break;
+      case IteratorBehavior::halo:
+        return _numHaloParticles;
+        break;
+      case IteratorBehavior::ownedOrHalo:
+        return _numOwnedParticles + _numHaloParticles;
+        break;
+      default:
+        autopas::utils::ExceptionHandler::exception("IteratorBehavior {} is not supported by getNumberOfParticles()",
+                                                    iteratorBehavior);
+        return 0;
+        break;
+    }
+  }
 
   /**
    * Lock object for exclusive access to this cell.
