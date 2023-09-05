@@ -201,6 +201,30 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
+   * Get number owned particles in this cell.
+   * @return number of owned particles in this cell.
+   */
+  [[nodiscard]] unsigned long getNumberOfOwnedParticles() const {
+    return _particlesStorage.getNumberOfOwnedParticles();
+  }
+
+  /**
+   * Get number halo particles in this cell.
+   * @return number of halo particles in this cell.
+   */
+  [[nodiscard]] unsigned long getNumberOfHaloParticles() const { return _particlesStorage.getNumberOfHaloParticles(); }
+
+  /**
+   * Get the type of particles contained in this cell. Possible values:
+   * dummy: this cell is empty
+   * owned: this cell can ONLY contain owned particles
+   * halo: this cell can ONLY contain halo particles
+   * ownedOrHalo: this cell can contain owned or halo particles
+   * @return type of particles inside this cell
+   */
+  const OwnershipState getPossibleParticleOwnerships() { return _particlesStorage.getPossibleParticleOwnerships(); }
+
+  /**
    * Returns the number of clusters in the tower.
    * @return the number of clusters in the tower.
    */
