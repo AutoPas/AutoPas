@@ -67,16 +67,13 @@ class NeighborListsBuffer {
    * @return
    */
   size_t addNeighborList() {
-    // TODO: find a better solution than critical. Maybe id pool per thread?
-//#pragma omp critical
-//    {
-      // if the buffer is saturated...
-      if (_lastValidListIndex == _neighborLists.size()) {
-        // grow it and initialize all new lists
-        _neighborLists.resize(_neighborLists.size() * _growthFactor, std::vector<Value>(_defaultListLength));
-      }
-      return ++_lastValidListIndex;
-//    }
+    // if the buffer is saturated...
+    if (_lastValidListIndex >= _neighborLists.size()) {
+      // ...grow it and initialize all new lists. Make sure to grow to at least 10 lists.
+      _neighborLists.resize(std::max(10ul, static_cast<size_t>(_neighborLists.size() * _growthFactor)),
+                            std::vector<Value>(_defaultListLength));
+    }
+    return ++_lastValidListIndex;
   }
 
   /**
