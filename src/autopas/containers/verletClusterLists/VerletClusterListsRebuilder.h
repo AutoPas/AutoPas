@@ -201,10 +201,9 @@ class VerletClusterListsRebuilder {
   void clearNeighborListsAndmoveDummiesIntoClusters() {
     for (auto &tower : _towers) {
       tower.setDummyParticlesToLastActualParticle();
-//      for (auto &cluster : tower.getClusters()) {
-//        cluster.setNeighborList(nullptr);
-//      }
-//      _neighborListsBuffer.clear();
+      for (auto &cluster : tower.getClusters()) {
+        cluster.clearNeighbors();
+      }
     }
   }
 
@@ -402,7 +401,6 @@ class VerletClusterListsRebuilder {
         if (not clusterA.getNeighbors()) {
           utils::ExceptionHandler::exception("Found a cluster without a list");
         }
-        clusterA.clearNeighbors();
         // Pretty random heuristic. Need to find something better.
         clusterA.getNeighbors()->reserve(towerA.numParticles() / _clusterSize * 1.1);
         for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();

@@ -742,6 +742,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::invalid) {
+      // clear the lists buffer because clusters will be recreated
+      _neighborLists.clear();
       rebuildTowersAndClusters();
     }
     _builder->rebuildNeighborListsAndFillClusters(traversal->getUseNewton3());
