@@ -21,27 +21,27 @@
 
 namespace autopas {
 AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace,
-                     const AutoTunerInfo &info, unsigned int rebuildFrequency, const std::string &outputSuffix)
-    : _selectorStrategy(info.selectorStrategy),
+                     const AutoTunerInfo &autoTunerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
+    : _selectorStrategy(autoTunerInfo.selectorStrategy),
       _tuningStrategies(std::move(tuningStrategies)),
       _iteration(0),
-      _tuningInterval(info.tuningInterval),
-      _iterationsSinceTuning(info.tuningInterval),  // init to max so that tuning happens in first iteration
-      _tuningMetric(info.tuningMetric),
+      _tuningInterval(autoTunerInfo.tuningInterval),
+      _iterationsSinceTuning(autoTunerInfo.tuningInterval),  // init to max so that tuning happens in first iteration
+      _tuningMetric(autoTunerInfo.tuningMetric),
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
-      _maxSamples(info.maxSamples),
+      _maxSamples(autoTunerInfo.maxSamples),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
       _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
-      _samplesNotRebuildingNeighborLists(info.maxSamples),
+      _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
-      _tuningDataLogger(info.maxSamples, outputSuffix) {
-  _samplesRebuildingNeighborLists.reserve(info.maxSamples);
+      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix) {
+  _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
   if (_searchSpace.empty()) {
