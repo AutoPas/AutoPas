@@ -100,8 +100,8 @@ class Configuration {
   bool equalsDiscreteOptions(const Configuration &rhs) const;
 
   /**
-   * Check if all continuous options of the given configuration are equal to this'.
-   * @param rhs
+   * Check if all continuous options of the given configuration are equal to this configuration.
+   * @param rhs configuration compared against.
    * @param epsilon Maximal allowed absolute difference between two continuous values to be considered equal.
    * @return
    */
