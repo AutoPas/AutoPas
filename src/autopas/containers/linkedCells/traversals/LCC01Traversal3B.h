@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/TriwiseTraversalInterface.h"
 #include "LCTraversalInterface.h"
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -78,8 +77,8 @@ the initialized buffer must show the same behavior as a buffer which was updated
  */
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class LCC01Traversal3B
-    : public C01BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, 3>,
-      public LCTraversalInterface<ParticleCell>, public TriwiseTraversalInterface {
+    : public C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, dataLayout, useNewton3, 3>,
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -93,7 +92,7 @@ class LCC01Traversal3B
    */
   explicit LCC01Traversal3B(const std::array<unsigned long, 3> &dims, Functor *functor,
                           const double interactionLength, const std::array<double, 3> &cellLength)
-      : C01BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, 3>(
+      : C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, dataLayout, useNewton3, 3>(
             dims, functor, interactionLength, cellLength),
         _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
         _functor(functor),
@@ -205,7 +204,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
             std::max(0l, (std::abs(z1) - 1l)) * this->_cellLength[2],
         };
         const double distSquare = utils::ArrayMath::dot(dist01, dist01);
-        if (distSquare <= interactionLengthSquare) break;
+        if (distSquare > interactionLengthSquare) break;
 
         // offsets for the second cell
         for (long x2 = x1; x2 <= static_cast<long>(this->_overlap[0]); ++x2) {
@@ -218,7 +217,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
                   std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2],
               };
               const double dist12Squared = utils::ArrayMath::dot(dist12, dist12);
-              if (dist12Squared <= interactionLengthSquare) break;
+              if (dist12Squared > interactionLengthSquare) break;
 
               // check distance between base cell and cell 2
               const std::array<double, 3> dist02 = {
@@ -227,7 +226,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
                   std::max(0l, (std::abs(z2) - 1l)) * this->_cellLength[2],
               };
               const double dist02Squared = utils::ArrayMath::dot(dist02, dist02);
-              if (dist02Squared <= interactionLengthSquare) break;
+              if (dist02Squared > interactionLengthSquare) break;
 
               const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
                   x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
@@ -265,7 +264,9 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::pro
     } else if (baseIndex == otherIndex1 && baseIndex != otherIndex2) {
       this->_cellFunctor.processCellPair(baseCell, otherCell2);
     } else if (baseIndex != otherIndex1 && baseIndex == otherIndex2) {
-      this->_cellFunctor.processCellPair(baseCell, otherIndex1);
+      this->_cellFunctor.processCellPair(baseCell, otherCell1);
+    } else if (baseIndex != otherIndex1 && otherIndex1 == otherIndex2) {
+      this->_cellFunctor.processCellPair(baseCell, otherCell1);
     } else {
       this->_cellFunctor.processCellTriple(baseCell, otherCell1, otherCell2);
     }

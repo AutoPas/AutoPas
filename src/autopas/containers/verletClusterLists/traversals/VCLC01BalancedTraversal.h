@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "autopas/containers/PairwiseTraversalInterface.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
 
@@ -22,7 +21,7 @@ namespace autopas {
  * @tparam useNewton3 If newton 3 should be used. Only false is supported.
  */
 template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLC01BalancedTraversal : public PairwiseTraversalInterface, public VCLTraversalInterface<Particle> {
+class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption::pairwise>, public VCLTraversalInterface<Particle> {
  public:
   /**
    * Constructor of the VCLC01BalancedTraversal.

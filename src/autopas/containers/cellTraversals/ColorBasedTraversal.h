@@ -22,9 +22,9 @@ namespace autopas {
  * @tparam useNewton3
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class ColorBasedTraversal : public CellTraversal<ParticleCell>, public PairwiseTraversalInterface {
+class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface<interactionType> {
  protected:
   /**
    * Constructor of the ColorBasedTraversal.
@@ -127,10 +127,10 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public PairwiseT
   utils::DataLayoutConverter<Functor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth>
 template <typename LoopBody>
-inline void ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, collapseDepth>::colorTraversal(
+inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth>::colorTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -185,5 +185,3 @@ inline void ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, c
 }
 
 }  // namespace autopas
-
-#pragma clang diagnostic pop

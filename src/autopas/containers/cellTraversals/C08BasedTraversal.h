@@ -22,8 +22,8 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3> {
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3>
+class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -35,7 +35,7 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, data
    */
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                              const double interactionLength, const std::array<double, 3> &cellLength)
-      : ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3>(dims, functor, interactionLength,
+      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(dims, functor, interactionLength,
                                                                                cellLength) {}
 
  protected:
@@ -47,9 +47,9 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, data
   inline void c08Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <typename LoopBody>
-inline void C08BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3>::c08Traversal(
+inline void C08BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>::c08Traversal(
     LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 

@@ -26,7 +26,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
                         public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
@@ -58,7 +58,7 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
    * @param clusterSize Number of particles per cluster.
    */
   explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
-      : ColorBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>({0, 0, 0}, pairwiseFunctor, 0, {}),
+      : ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>({0, 0, 0}, pairwiseFunctor, 0, {}),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize) {}
 

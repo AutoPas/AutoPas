@@ -73,7 +73,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
     }
   }
 
-  auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
+  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<InteractionTypeOption::pairwise> *>(traversal.get());
   linkedCells.iteratePairwise(pairwiseTraversal);
 }
 

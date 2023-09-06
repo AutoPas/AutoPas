@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class DSSequentialTraversal : public CellTraversal<ParticleCell>, public DSTraversalInterface<ParticleCell>, public PairwiseTraversalInterface {
+class DSSequentialTraversal : public CellTraversal<ParticleCell>, public DSTraversalInterface<ParticleCell>, public TraversalInterface<InteractionTypeOption::pairwise> {
  public:
   /**
    * Constructor for the DirectSum traversal.

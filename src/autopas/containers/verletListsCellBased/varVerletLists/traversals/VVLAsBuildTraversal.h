@@ -25,7 +25,7 @@ namespace autopas {
 template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3>
 class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<Particle>>,
-                            public PairwiseTraversalInterface {
+                            public TraversalInterface<InteractionTypeOption::pairwise> {
  private:
   /**
    * Internal iterate method for AoS.

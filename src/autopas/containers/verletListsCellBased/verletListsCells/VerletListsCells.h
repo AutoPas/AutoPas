@@ -97,7 +97,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     }
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     _neighborList.setUpTraversal(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
@@ -116,7 +116,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    */
   size_t getNumberOfPartners(const Particle *particle) const { return _neighborList.getNumberOfPartners(particle); }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),

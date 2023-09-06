@@ -563,8 +563,8 @@ class LogicHandler {
    * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because
    * it will never be applicable.
    */
-  template <class Functor>
-  [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
+  template <InteractionTypeOption::Value interactionType, class Functor>
+  [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface<interactionType>>>, bool> isConfigurationApplicable(
       const Configuration &conf, Functor &functor);
 
   /**
@@ -626,8 +626,8 @@ class LogicHandler {
    * @param functor
    * @return
    */
-  template <class Functor>
-  std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(Functor &functor);
+  template <InteractionTypeOption::Value interactionType, class Functor>
+  std::tuple<Configuration, std::unique_ptr<TraversalInterface<interactionType>>, bool> selectConfiguration(Functor &functor);
 
   /**
    * Helper struct collecting all sorts of measurements taken during the pairwise iteration.
@@ -661,7 +661,7 @@ class LogicHandler {
    * fields are filled with NaN.
    */
   template <class PairwiseFunctor>
-  IterationMeasurements iteratePairwise(PairwiseFunctor &functor, PairwiseTraversalInterface &traversal);
+  IterationMeasurements iteratePairwise(PairwiseFunctor &functor, TraversalInterface<InteractionTypeOption::pairwise> &traversal);
 
   /**
    * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
@@ -745,7 +745,7 @@ class LogicHandler {
    * fields are filled with NaN.
    */
   template <class TriwiseFunctor>
-  IterationMeasurements iterateTriwise(TriwiseFunctor &functor, TriwiseTraversalInterface &traversal);
+  IterationMeasurements iterateTriwise(TriwiseFunctor &functor, TraversalInterface<InteractionTypeOption::threeBody> &traversal);
 
   /**
    * Performs the interactions ParticleContainer::iterateTriwise() did not cover.
@@ -937,7 +937,7 @@ LogicHandler<Particle>::getParticleBuffers() const {
 template <typename Particle>
 template <class PairwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
-    PairwiseFunctor &functor, PairwiseTraversalInterface &traversal) {
+    PairwiseFunctor &functor, TraversalInterface<InteractionTypeOption::pairwise> &traversal) {
   const bool doListRebuild = not neighborListsAreValid();
   const auto configuration = _autoTuner->getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
@@ -1178,7 +1178,7 @@ void LogicHandler<Particle>::remainderHelperBufferHaloBuffer(
 template <typename Particle>
 template <class TriwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iterateTriwise(
-    TriwiseFunctor &functor, TriwiseTraversalInterface &traversal) {
+    TriwiseFunctor &functor, TraversalInterface<InteractionTypeOption::threeBody> &traversal) {
   const bool doListRebuild = not neighborListsAreValid();
   const auto configuration = _autoTuner3B->getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
@@ -1391,12 +1391,12 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
 
 
 template <typename Particle>
-template <class Functor>
-std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle>::selectConfiguration(
+template <InteractionTypeOption::Value interactionType, class Functor>
+std::tuple<Configuration, std::unique_ptr<TraversalInterface<interactionType>>, bool> LogicHandler<Particle>::selectConfiguration(
     Functor &functor) {
   bool stillTuning = false;
   Configuration configuration{};
-  std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
+  std::optional<std::unique_ptr<TraversalInterface<interactionType>>> traversalPtrOpt{};
   AutoTuner * tuner;
 
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
@@ -1418,7 +1418,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
         container.getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
           // Can't make this unique_ptr const otherwise we can't move it later.
           auto traversalPtr =
-              TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
+              TraversalSelector<std::decay_t<decltype(particleCellDummy)>, interactionType>::template generateTraversal<Functor>(
                   configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
                   configuration.newton3);
           if (traversalPtr->isApplicable()) {
@@ -1452,7 +1452,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     bool rejectIndefinitely = false;
     while (true) {
       // applicability check also sets the container
-      std::tie(traversalPtrOpt, rejectIndefinitely) = isConfigurationApplicable(configuration, functor);
+      std::tie(traversalPtrOpt, rejectIndefinitely) = isConfigurationApplicable<interactionType>(configuration, functor);
       if (traversalPtrOpt.has_value()) {
         break;
       }
@@ -1474,13 +1474,13 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
-  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
+  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration<InteractionTypeOption::pairwise>(*functor);
   tuningTimer.stop();
   _autoTuner->logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 
   /// Pairwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  PairwiseTraversalInterface *pairwiseTraversalPtr = dynamic_cast<PairwiseTraversalInterface*>(traversalPtr.get());
+  auto *pairwiseTraversalPtr = dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise>*>(traversalPtr.get());
   // TODO: error check
   const IterationMeasurements measurements = iteratePairwise(*functor, *pairwiseTraversalPtr);
 
@@ -1551,14 +1551,14 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
   utils::Timer tuningTimer;
   tuningTimer.start();
 //  bool stillTuning = true;
-  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
+  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration<InteractionTypeOption::threeBody>(*functor);
   tuningTimer.stop();
   AutoPasLog(DEBUG, "Selecting a configuration took {} ns.", tuningTimer.getTotalTime());
   _autoTuner3B->logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 
   /// Triwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  auto *triwiseTraversalPtr = dynamic_cast<TriwiseTraversalInterface*>(traversalPtr.get());
+  auto *triwiseTraversalPtr = dynamic_cast<TraversalInterface<InteractionTypeOption::threeBody>*>(traversalPtr.get());
 
   const IterationMeasurements measurements = iterateTriwise(*functor, *triwiseTraversalPtr);
 
@@ -1620,8 +1620,8 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
 }
 
 template <typename Particle>
-template <class Functor>
-std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
+template <InteractionTypeOption::Value interactionType, class Functor>
+std::tuple<std::optional<std::unique_ptr<TraversalInterface<interactionType>>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
     const Configuration &conf, Functor &functor) {
   // Check if the container supports the traversal
   const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container, conf.interactionType);
@@ -1649,10 +1649,10 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
 
   auto traversalPtrOpt = autopas::utils::withStaticCellType<Particle>(
       container.getParticleCellTypeEnum(),
-      [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface>> {
+      [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface<interactionType>>> {
         // Can't make this unique_ptr const otherwise we can't move it later.
         auto traversalPtr =
-            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
+            TraversalSelector<std::decay_t<decltype(particleCellDummy)>, interactionType>::template generateTraversal<Functor>(
                 conf.traversal, functor, traversalInfo, conf.dataLayout, conf.newton3);
         if (traversalPtr->isApplicable()) {
           return std::optional{std::move(traversalPtr)};

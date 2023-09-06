@@ -71,7 +71,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
@@ -98,7 +98,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
    * @param traversal
    */
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid

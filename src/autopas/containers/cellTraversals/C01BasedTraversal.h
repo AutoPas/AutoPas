@@ -21,9 +21,9 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction of particles.
  * @tparam dataLayout indicates usage of SoA
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth = 3>
-class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, collapseDepth> {
+class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -35,7 +35,7 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, data
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                              double interactionLength, const std::array<double, 3> &cellLength)
-      : ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, collapseDepth>(
+      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth>(
             dims, functor, interactionLength, cellLength) {}
 
  protected:
@@ -50,10 +50,10 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, data
   inline void c01Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3,
           int collapseDepth>
 template <typename LoopBody>
-inline void C01BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, collapseDepth>::c01Traversal(
+inline void C01BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth>::c01Traversal(
     LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 

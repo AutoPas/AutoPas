@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
 
@@ -59,14 +60,18 @@ class TraversalInterface {
   /**
    * Traverses all particle pairs.
    */
-  template <InteractionTypeOption::Value type = interactionType , std::enable_if<type == InteractionTypeOption::pairwise>> void traverseParticlePairs();
+  virtual void traverseParticlePairs() {
+    utils::ExceptionHandler::exception("Error: TraversalInterface::traverseParticlePairs() is "
+        "not implemented for this traversal: {}!", typeid(*this).name());
+  };
 
-  template <std::size_t r = nrows, std::size_t c = ncols>
-  typename std::enable_if<r == c>::type setIdentity ()
   /**
    * Traverses all particle triplets.
    */
-  virtual void traverseParticleTriplets() = 0;
+  virtual void traverseParticleTriplets() {
+    utils::ExceptionHandler::exception("Error: TraversalInterface::traverseParticleTriplets() is "
+        "not implemented for this traversal: {}!", typeid(*this).name());
+  };
 };
 
 }  // namespace autopas

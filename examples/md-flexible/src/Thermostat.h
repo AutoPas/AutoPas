@@ -200,11 +200,13 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
-    std::normal_distribution<double> normalDistribution{0, 1};
+//    std::normal_distribution<double> normalDistribution{0, 1};
+    std::uniform_real_distribution<double> uniformDistribution{0.0, 1.0};
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
       const std::array<double, 3> normal3DVecTranslational = {
-          normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
-      iter->addV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
+          uniformDistribution(randomEngine)-0.5, uniformDistribution(randomEngine)-0.5, uniformDistribution(randomEngine)-0.5};
+//      iter->setV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
+      iter->setV(normal3DVecTranslational);
 #if MD_FLEXIBLE_MODE == MULTISITE
       const std::array<double, 3> normal3DVecRotational = {
           normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
@@ -260,5 +262,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
   }
+  const auto currentTemperatures = calcTemperatureComponent(autopas, particlePropertiesLibrary);
+
 }
 }  // namespace Thermostat

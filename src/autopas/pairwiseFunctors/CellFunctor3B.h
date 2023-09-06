@@ -535,7 +535,7 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell3Sorted(cell3, sortingDirection);
 
-    for (auto &outerOuter : cell1._particles) {
+    for (auto &outerOuter : cell1Sorted._particles) {
       Particle &p1 = *outerOuter.second;
 
       for (auto &outer : cell2Sorted._particles) {

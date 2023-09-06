@@ -21,8 +21,8 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3> {
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3>
+class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -34,7 +34,7 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, data
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                              const double interactionLength, const std::array<double, 3> &cellLength)
-      : ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3>(dims, functor, interactionLength,
+      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(dims, functor, interactionLength,
                                                                                cellLength) {}
 
  protected:
@@ -54,9 +54,9 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, data
   inline void c18Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3>
 template <bool allCells, typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3>::c18Traversal(
+inline void C18BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>::c18Traversal(
     LoopBody &&loopBody) {
   const std::array<unsigned long, 3> stride = {2ul * this->_overlap[0] + 1ul, 2ul * this->_overlap[1] + 1ul,
                                                this->_overlap[2] + 1ul};

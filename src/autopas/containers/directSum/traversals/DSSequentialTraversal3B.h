@@ -13,7 +13,6 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor3B.h"
 #include "autopas/utils/DataLayoutConverter.h"
-#include "autopas/containers/TriwiseTraversalInterface.h"
 
 namespace autopas {
 
@@ -26,7 +25,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class DSSequentialTraversal3B : public CellTraversal<ParticleCell>, public DSTraversalInterface<ParticleCell>, public TriwiseTraversalInterface {
+class DSSequentialTraversal3B : public CellTraversal<ParticleCell>, public DSTraversalInterface<ParticleCell>, public TraversalInterface<InteractionTypeOption::threeBody> {
  public:
   /**
    * Constructor for the DirectSum traversal.

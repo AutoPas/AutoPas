@@ -139,7 +139,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::computeInteractions(): Trying to do a pairwise iteration, even though verlet lists are not "
@@ -738,7 +738,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     if (_isValid == ValidityState::invalid) {
       rebuildTowersAndClusters();
     }

@@ -125,7 +125,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
             traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
       });
 
-  auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
+  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<InteractionTypeOption::pairwise> *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }

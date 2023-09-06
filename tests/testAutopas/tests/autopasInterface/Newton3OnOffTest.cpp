@@ -130,7 +130,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
 template <class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container &container, Traversal traversal) {
-  auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
+  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<InteractionTypeOption::pairwise> *>(traversal.get());
   container.rebuildNeighborLists(pairwiseTraversal);
   container.iteratePairwise(pairwiseTraversal);
 }
