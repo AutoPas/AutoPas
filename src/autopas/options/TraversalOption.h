@@ -38,6 +38,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01,
     /**
+     * LCC01Traversal3B : 3-body version of lc_c01. Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
+     * parallel. Good load balancing and no overhead.
+     */
+    lc_c01_3b,
+    /**
      * LCC01Traversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain is traversed
      * line-wise.
      */
@@ -238,7 +243,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getAllThreeBodyOptions() {
-    return {Value::ds_sequential_3b};
+    return {Value::ds_sequential_3b, Value::lc_c01_3b};
   }
 
   /**
@@ -256,6 +261,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
+        {TraversalOption::lc_c01_3b, "lc_c01_3b"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},

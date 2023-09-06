@@ -139,12 +139,32 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::computeInteractions. TraversalID: {}",
+          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
           traversal->getTraversalType());
     }
 
     traversal->initTraversal();
     traversal->traverseParticlePairs();
+    traversal->endTraversal();
+  }
+
+  void iterateTriwise(TriwiseTraversalInterface *traversal) override {
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
+    }
+    if (traversalInterface && cellTraversal) {
+      cellTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in LinkedCells::iterateTriwise. TraversalID: {}",
+          traversal->getTraversalType());
+    }
+
+    traversal->initTraversal();
+    traversal->traverseParticleTriplets();
     traversal->endTraversal();
   }
 
@@ -555,3 +575,5 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 };
 
 }  // namespace autopas
+
+#pragma clang diagnostic pop

@@ -1357,8 +1357,12 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
         const auto lockCoordsP3 = static_cast_copy_array<size_t>((p3.getR() - haloBoxMin) * interactionLengthInv);
 
         if constexpr (newton3) {
-        const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
-        const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
+          const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
+          // Todo: How to avoid race condition here ...
+          // Locking 2 locks might lead to thread one locking lock1 first while thread two locks lock2. Thread one wants
+          // to take lock2 next and thread two lock1 --> deadlock
+          // const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
+
           f->AoSFunctor(p1, p2, p3, true);
         } else {
           if (i < numOwnedBufferParticles) f->AoSFunctor(p1, p2, p3, false);

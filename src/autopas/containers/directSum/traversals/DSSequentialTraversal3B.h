@@ -21,7 +21,7 @@ namespace autopas {
  * This sum defines the traversal typically used by the DirectSum container.
  *
  * @tparam ParticleCell the type of cells
- * @tparam TriwiseFunctor The functor that defines the interaction of two particles.
+ * @tparam TriwiseFunctor The functor that defines the interaction of three particles.
  * @tparam dataLayout
  * @tparam useNewton3
  */

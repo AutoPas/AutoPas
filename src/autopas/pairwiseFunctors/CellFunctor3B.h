@@ -258,6 +258,7 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       }
     }
   } else {
+    size_t i = 0;
     for (auto outerOuter = cell.begin(); outerOuter != cell.end(); ++outerOuter) {
       Particle &p1 = *outerOuter;
       auto outer = outerOuter;

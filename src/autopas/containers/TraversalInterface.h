@@ -14,6 +14,7 @@ namespace autopas {
 /**
  * This interface serves as a common parent class for all traversals.
  */
+ template <InteractionTypeOption::Value interactionType>
 class TraversalInterface {
  public:
   /**
@@ -54,6 +55,18 @@ class TraversalInterface {
    * Finalizes the traversal. Should be called after traverse().
    */
   virtual void endTraversal() = 0;
+
+  /**
+   * Traverses all particle pairs.
+   */
+  template <InteractionTypeOption::Value type = interactionType , std::enable_if<type == InteractionTypeOption::pairwise>> void traverseParticlePairs();
+
+  template <std::size_t r = nrows, std::size_t c = ncols>
+  typename std::enable_if<r == c>::type setIdentity ()
+  /**
+   * Traverses all particle triplets.
+   */
+  virtual void traverseParticleTriplets() = 0;
 };
 
 }  // namespace autopas

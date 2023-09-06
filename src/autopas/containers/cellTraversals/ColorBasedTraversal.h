@@ -87,7 +87,7 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public PairwiseT
   /**
    * The main traversal of the ColorBasedTraversal.
    * @tparam LoopBody type of the loop body
-   * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as as parameters
+   * @param loopBody The body of the loop as a function. Normally a lambda function, that takes as parameters
    * (x,y,z). If you need additional input from outside, please use captures (by reference).
    * @param end 3D index until interactions are processed (exclusive).
    * @param stride Distance (in cells) to the next cell of the same color.
@@ -185,3 +185,5 @@ inline void ColorBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, c
 }
 
 }  // namespace autopas
+
+#pragma clang diagnostic pop

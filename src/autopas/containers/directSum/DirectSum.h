@@ -105,12 +105,11 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    // todo should check dynamic cast from PairwiseTraversalInterface
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::computeInteractions");
+          "trying to use a traversal of wrong type in DirectSum::iteratePairwise");
     }
 
     traversal->initTraversal();
