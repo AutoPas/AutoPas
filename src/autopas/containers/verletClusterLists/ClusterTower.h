@@ -99,7 +99,7 @@ class ClusterTower : public ParticleCell<Particle> {
       }
 
       // Mark start of the different clusters by adding pointers to _particlesStorage
-      size_t numClusters = _particlesStorage.numParticles() / _clusterSize;
+      const size_t numClusters = _particlesStorage.numParticles() / _clusterSize;
       _clusters.reserve(numClusters);
       for (size_t index = 0; index < numClusters; index++) {
         _clusters.emplace_back(&(_particlesStorage[_clusterSize * index]), _clusterSize);

@@ -195,8 +195,8 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Removes previously saved neighbors from clusters and sets the positions of the dummy particles to inside of the
-   * cluster. The latter reduces the amount of calculated interaction partners.
+   * Clears previously saved neighbors from clusters and sets the 3D positions of the dummy particles to inside of the
+   * cluster to avoid all dummies being in one place and potentially trigger cluster-cluster distance evaluations.
    */
   void clearNeighborListsAndResetDummies() {
     for (auto &tower : _towers) {
@@ -414,9 +414,9 @@ class VerletClusterListsRebuilder {
           }
           // can't be const because it will potentially be added as a non-const neighbor
           auto &clusterB = towerB.getCluster(clusterIndexInTowerB);
-          auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterB.getZMinMax();
+          const auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterB.getZMinMax();
           if (clusterBcontainsParticles) {
-            double distZ = bboxDistance(clusterABoxBottom, clusterABoxTop, clusterBBoxBottom, clusterBBoxTop);
+            const double distZ = bboxDistance(clusterABoxBottom, clusterABoxTop, clusterBBoxBottom, clusterBBoxTop);
             if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
               clusterA.addNeighbor(clusterB);
             }

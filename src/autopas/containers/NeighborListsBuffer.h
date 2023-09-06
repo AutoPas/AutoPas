@@ -14,6 +14,8 @@
 
 namespace autopas {
 /**
+ * Class for manual memory management of neighbor lists.
+ * A internal buffer of lists is kept in memory, never deleted, and only its content cleared and reassigned.
  *
  * @tparam Key Preferably something that is cheap to destroy.
  * @tparam Value Has to be default constructable.
@@ -23,6 +25,12 @@ namespace autopas {
 template <class Key, class Value, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 class NeighborListsBuffer {
  public:
+  /**
+   * Getter for a reference to a neighbor list by index.
+   * @tparam throwIfIndexOutOfBounds
+   * @param index
+   * @return
+   */
   template <bool throwIfIndexOutOfBounds = false>
   std::vector<Value> &getNeighborListRef(size_t index) {
     if constexpr (throwIfIndexOutOfBounds) {
@@ -34,6 +42,12 @@ class NeighborListsBuffer {
     return _neighborLists[index];
   }
 
+  /**
+   * Getter for a reference to a neighbor list by key.
+   * @tparam throwIfKeyIsUnknown
+   * @param key
+   * @return
+   */
   template <bool throwIfKeyIsUnknown = false>
   std::vector<Value> &getNeighborListRef(const Key &key) {
     if constexpr (throwIfKeyIsUnknown) {
@@ -44,6 +58,14 @@ class NeighborListsBuffer {
     return _neighborLists[_keyMap[key]];
   }
 
+  /**
+   * Reserves a neighbor list for use.
+   * Grows the internal buffer if there are no spare lists left.
+   *
+   * @note This function is NOT thread safe.
+   *
+   * @return
+   */
   size_t addNeighborList() {
     // TODO: find a better solution than critical. Maybe id pool per thread?
 //#pragma omp critical
@@ -57,22 +79,48 @@ class NeighborListsBuffer {
 //    }
   }
 
-  //  size_t addNeighborList(const std::conditional<std::is_pointer_v<Key>, Key, Key &> key) {
+  /**
+   * Assigns a neighbor list to the given key.
+   *
+   * @note This function is NOT thread safe.
+   *
+   * @param key
+   * @return Index of the neighbor list in the internal data structure.
+   */
   size_t addNeighborList(const Key &key) {
+    //  size_t addNeighborList(const std::conditional<std::is_pointer_v<Key>, Key, Key &> key) {
     const auto newIndex = addNeighborList();
     _keyMap.emplace(key, newIndex);
     return newIndex;
   }
 
+  /**
+   * Clears the internal key map and moves _lastValidListIndex to indicate an empty buffer.
+   * This function does not touch the buffer itself.
+   */
   void clear() {
     _keyMap.clear();
     _lastValidListIndex = 0;
   }
 
   void reserveNeighborLists(size_t n) { _neighborLists.reserve(n); }
+  /**
+   * Resize the internal buffer so that there are new spare lists.
+   * If n is not larger than the current capacity nothing happens.
+   *
+   * @param n
+   */
 
+  /**
+   * Set the initial length of new neighbor lists.
+   * @param defaultListLength
+   */
   void setDefaultListLength(size_t defaultListLength) { NeighborListsBuffer::_defaultListLength = defaultListLength; }
 
+  /**
+   * Set the growth factor for the internal buffer.
+   * @param growthFactor
+   */
   void setGrowthFactor(double growthFactor) { NeighborListsBuffer::_growthFactor = growthFactor; }
 
  private:
@@ -81,12 +129,14 @@ class NeighborListsBuffer {
    */
   std::unordered_map<Key, size_t, Hash, KeyEqual> _keyMap{};
   /**
-   * Continuous but unordered collection of neighbor lists that is never supposed to be deallocated during the
+   * Continuous but unordered collection buffer of neighbor lists that is never supposed to be deallocated during the
    * lifetime of this object.
+   * The idea is to always have capacity == size to have spare vectors to assign. The actual size is controlled via
+   * _lastValidListIndex.
    */
   std::vector<std::vector<Value>> _neighborLists{};
   /**
-   * Anything beyond this index in _neighborLists is considered deleted.
+   * Anything beyond this index in _neighborLists is considered deleted or unassigned.
    */
   size_t _lastValidListIndex{0ul};
   /**
