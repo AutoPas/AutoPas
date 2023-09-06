@@ -1055,6 +1055,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
 
+  /**
+   * Get the neighbor lists buffer object.
+   * @return
+   */
   const typename internal::VerletClusterListsRebuilder<Particle>::NeighborListsBuffer_T &getNeighborLists() const {
     return _neighborLists;
   }

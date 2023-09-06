@@ -27,6 +27,9 @@ namespace internal {
 template <class Particle>
 class VerletClusterListsRebuilder {
  public:
+  /**
+   * Type alias for the neighbor list buffer.
+   */
   using NeighborListsBuffer_T = NeighborListsBuffer<const internal::Cluster<Particle> *, internal::Cluster<Particle> *>;
 
  private:
