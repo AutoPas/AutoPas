@@ -23,9 +23,9 @@ namespace autopas {
 template <class Key, class Value, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
 class NeighborListsBuffer {
  public:
-  template <bool throwOnError>
+  template <bool throwIfIndexOutOfBounds = false>
   std::vector<Value> &getNeighborListRef(size_t index) {
-    if constexpr (throwOnError) {
+    if constexpr (throwIfIndexOutOfBounds) {
       if (index > _lastValidListIndex) {
         autopas::utils::ExceptionHandler::exception(
             "NeighborListsBuffer::getNeighborListRef() index out of bounds: {} > {}", index, _lastValidListIndex);
@@ -34,10 +34,9 @@ class NeighborListsBuffer {
     return _neighborLists[index];
   }
 
-  template <bool throwOnError>
-  //  std::vector<Value> &getNeighborListRef(const std::conditional<std::is_pointer_v<Key>, Key, Key &> key) {
+  template <bool throwIfKeyIsUnknown = false>
   std::vector<Value> &getNeighborListRef(const Key &key) {
-    if constexpr (throwOnError) {
+    if constexpr (throwIfKeyIsUnknown) {
       if (_keyMap.find(key) == _keyMap.end()) {
         autopas::utils::ExceptionHandler::exception("NeighborListsBuffer::getNeighborListRef() unknown key: {}", key);
       }
@@ -70,9 +69,7 @@ class NeighborListsBuffer {
     _lastValidListIndex = 0;
   }
 
-  void reserveNeighborLists(size_t n) {
-    _neighborLists.reserve(n);
-  }
+  void reserveNeighborLists(size_t n) { _neighborLists.reserve(n); }
 
   void setDefaultListLength(size_t defaultListLength) { NeighborListsBuffer::_defaultListLength = defaultListLength; }
 
@@ -80,7 +77,7 @@ class NeighborListsBuffer {
 
  private:
   /**
-   * Map to associate keys with indexes of _neighborLists
+   * Map to associate keys with indexes of _neighborLists.
    */
   std::unordered_map<Key, size_t, Hash, KeyEqual> _keyMap{};
   /**

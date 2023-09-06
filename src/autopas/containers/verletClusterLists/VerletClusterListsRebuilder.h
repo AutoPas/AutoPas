@@ -27,8 +27,7 @@ namespace internal {
 template <class Particle>
 class VerletClusterListsRebuilder {
  public:
-  using NeighborListsBuffer_T =
-      NeighborListsBuffer<const internal::Cluster<Particle> *, internal::Cluster<Particle> *>;
+  using NeighborListsBuffer_T = NeighborListsBuffer<const internal::Cluster<Particle> *, internal::Cluster<Particle> *>;
 
  private:
   size_t _clusterSize;
@@ -96,7 +95,7 @@ class VerletClusterListsRebuilder {
 
     // count particles by accumulating tower sizes
     const size_t numParticles = std::accumulate(std::begin(invalidParticles), std::end(invalidParticles), 0,
-                                          [](auto acc, auto &v) { return acc + v.size(); });
+                                                [](auto acc, auto &v) { return acc + v.size(); });
 
     const auto boxSizeWithHalo = _haloBoxMax - _haloBoxMin;
 

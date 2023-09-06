@@ -1065,8 +1065,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void rebuildTowersAndClusters() {
     // collect all particles to add from across the thread buffers
     typename decltype(_particlesToAdd)::value_type particlesToAdd;
-    size_t numParticlesToAdd = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), 0,
-                                               [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
+    const size_t numParticlesToAdd =
+        std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), 0,
+                        [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
     particlesToAdd.reserve(numParticlesToAdd);
     std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [&](auto &particlesBuffer) {
       particlesToAdd.insert(particlesToAdd.end(), particlesBuffer.begin(), particlesBuffer.end());
