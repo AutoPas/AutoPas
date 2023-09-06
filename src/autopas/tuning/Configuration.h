@@ -88,9 +88,9 @@ class Configuration {
 
   /**
    * Checks if any of the configuration values are incompatible with each other.
-   * @return
+   * @return True if all options are compatible to each other.
    */
-  [[nodiscard]] bool isValid() const;
+  [[nodiscard]] bool hasCompatibleValues() const;
 
   /**
    * Check if all discrete options of the given configuration are equal to this'.

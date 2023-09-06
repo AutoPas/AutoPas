@@ -46,7 +46,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
             for (const auto &newton3Option : allowedNewton3Options) {
               const Configuration configuration{containerOption,  csf,          traversalOption, loadEstimatorOption,
                                                 dataLayoutOption, newton3Option};
-              if (configuration.isValid()) {
+              if (configuration.hasCompatibleValues()) {
                 searchSet.insert(configuration);
               }
             }
