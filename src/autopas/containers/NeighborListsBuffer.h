@@ -100,7 +100,7 @@ class NeighborListsBuffer {
    */
   void clear() {
     _keyMap.clear();
-    _lastValidListIndex = 0;
+    _lastValidListIndex = std::numeric_limits<size_t>::max();
   }
 
   /**
@@ -138,7 +138,7 @@ class NeighborListsBuffer {
   /**
    * Anything beyond this index in _neighborLists is considered deleted or unassigned.
    */
-  size_t _lastValidListIndex{0ul};
+  size_t _lastValidListIndex{std::numeric_limits<size_t>::max()};
   /**
    * Number of elements allocated by default in every new neighbor list.
    */
