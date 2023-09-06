@@ -58,8 +58,8 @@ class AutoTuner {
    * @param rebuildFrequency The number of iterations after which the neighbor lists are rebuilt.
    * @param outputSuffix Suffix for all output files produced by this object.
    */
-  AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace, const AutoTunerInfo &autoTunerInfo,
-            unsigned int rebuildFrequency, const std::string &outputSuffix);
+  AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace,
+            const AutoTunerInfo &autoTunerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix);
 
   /**
    * Move assignment operator
