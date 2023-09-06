@@ -103,13 +103,13 @@ class NeighborListsBuffer {
     _lastValidListIndex = 0;
   }
 
-  void reserveNeighborLists(size_t n) { _neighborLists.reserve(n); }
   /**
    * Resize the internal buffer so that there are new spare lists.
    * If n is not larger than the current capacity nothing happens.
    *
    * @param n
    */
+  void reserveNeighborLists(size_t n) { _neighborLists.resize(n, std::vector<Value>(_defaultListLength)); }
 
   /**
    * Set the initial length of new neighbor lists.
