@@ -68,7 +68,7 @@ class FlopCounterFunctor3B : public TriwiseFunctor<Particle, FlopCounterFunctor3
 
     _distanceCalculations.fetch_add(3, std::memory_order_relaxed);
 
-    if (dr2ij <= _cutoffSquare or dr2jk <= _cutoffSquare or dr2ki <= _cutoffSquare) {
+    if (dr2ij <= _cutoffSquare and dr2jk <= _cutoffSquare and dr2ki <= _cutoffSquare) {
       _kernelCalls.fetch_add(1, std::memory_order_relaxed);
       _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), k.getTypeId(), newton3),
                              std::memory_order_relaxed);
