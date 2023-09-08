@@ -1,5 +1,5 @@
 /**
- * @file RandomSearch.h
+ * @file RandomSearch.cpp
  * @author F. Gratl
  * @date 17.11.2022
  */
