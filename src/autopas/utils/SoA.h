@@ -171,8 +171,7 @@ class SoA {
   /**
    * Returns the number of particles.
    *
-   * This function only checks the size of the first array since it is assumed
-   * that the user manages the arrays responsibly.
+   * Since not necessarily all arrays are filled the length of the longest array is returned.
    *
    * @return Number of particles.
    */
