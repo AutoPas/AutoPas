@@ -75,7 +75,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   }
   logicHandler.setParticleBuffers(particlesBuffers, particlesHaloBuffers);
 
-  ASSERT_EQ(container.getNumberOfParticles(), 2 - numParticlesInBuffers - numParticlesHaloBuffers)
+  ASSERT_EQ(container.size(), 2 - numParticlesInBuffers - numParticlesHaloBuffers)
       << "Not all particles were added to the container! ParticlesBuffers(" << numParticlesInBuffers << ") HaloBuffer("
       << numParticlesHaloBuffers << ")";
 
@@ -344,12 +344,12 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   for (const auto &p : particles) {
     logicHandler.addParticle(p);
   }
-  ASSERT_EQ(logicHandler.getContainer().getNumberOfParticles(), particles.size())
+  ASSERT_EQ(logicHandler.getContainer().size(), particles.size())
       << "Container contains incorrect number of particles!";
   for (const auto &p : haloParticles) {
     logicHandler.addHaloParticle(p);
   }
-  ASSERT_EQ(logicHandler.getContainer().getNumberOfParticles(), particles.size() + haloParticles.size())
+  ASSERT_EQ(logicHandler.getContainer().size(), particles.size() + haloParticles.size())
       << "Container contains incorrect number of halo particles!";
 
   logicHandler.setParticleBuffers(particlesBuffer, haloParticlesBuffer);

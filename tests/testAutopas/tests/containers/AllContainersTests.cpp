@@ -22,17 +22,17 @@ INSTANTIATE_TEST_SUITE_P(Generated, AllContainersTestsBothUpdates,
  */
 TEST_P(AllContainersTests, testGetNumberOfParticles) {
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
-  EXPECT_EQ(container.getNumberOfParticles(), 0);
+  EXPECT_EQ(container.size(), 0);
 
   const std::array<double, 3> r = {2, 2, 2};
   const Particle p(r, {0., 0., 0.}, 0);
   container.addParticle(p);
-  EXPECT_EQ(container.getNumberOfParticles(), 1);
+  EXPECT_EQ(container.size(), 1);
 
   const std::array<double, 3> r2 = {1.5, 2, 2};
   const Particle p2(r2, {0., 0., 0.}, 1);
   container.addParticle(p2);
-  EXPECT_EQ(container.getNumberOfParticles(), 2);
+  EXPECT_EQ(container.size(), 2);
 }
 
 /**
@@ -40,7 +40,7 @@ TEST_P(AllContainersTests, testGetNumberOfParticles) {
  */
 TEST_P(AllContainersTests, testDeleteAllParticles) {
   auto &container = this->getInitializedContainer(std::get<0>(GetParam()));
-  EXPECT_EQ(container.getNumberOfParticles(), 0);
+  EXPECT_EQ(container.size(), 0);
 
   const std::array<double, 3> r = {2, 2, 2};
   const Particle p(r, {0., 0., 0.}, 0);
@@ -49,10 +49,10 @@ TEST_P(AllContainersTests, testDeleteAllParticles) {
   const std::array<double, 3> r2 = {1.5, 2, 2};
   const Particle p2(r2, {0., 0., 0.}, 1);
   container.addParticle(p2);
-  EXPECT_EQ(container.getNumberOfParticles(), 2);
+  EXPECT_EQ(container.size(), 2);
 
   container.deleteAllParticles();
-  EXPECT_EQ(container.getNumberOfParticles(), 0);
+  EXPECT_EQ(container.size(), 0);
 }
 
 /**
@@ -125,11 +125,11 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
   }
   // sanity checks
   ASSERT_GT(numParticles, 0);
-  ASSERT_EQ(container.getNumberOfParticles(), numParticles);
+  ASSERT_EQ(container.size(), numParticles);
 
   // actual test:
   container.deleteHaloParticles();
-  ASSERT_EQ(container.getNumberOfParticles(), 0);
+  ASSERT_EQ(container.size(), 0);
 }
 
 /**
@@ -140,7 +140,7 @@ TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
   const autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
   container.addHaloParticle(p);
 
-  EXPECT_EQ(container.getNumberOfParticles(), 1);
+  EXPECT_EQ(container.size(), 1);
   EXPECT_EQ(container.begin()->getID(), 42);
 
   auto invalidParticles = container.updateContainer(std::get<1>(GetParam()));

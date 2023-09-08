@@ -87,13 +87,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   void addParticle(const Particle &p) override {
     std::lock_guard<AutoPasLock> lock(_lock);
 
-    // adjust particle counters for this cell
-    if (p.isOwned()) {
-      this->_numOwnedParticles++;
-    } else if (p.isHalo()) {
-      this->_numHaloParticles++;
-    }
-
     auto ret = _pointer->insert(p);
     if (ret) _pointer = std::move(ret);
 
@@ -144,6 +137,14 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   }
 
   /**
+   * @copydoc autopas::ParticleCell::getNumberOfParticles()
+   */
+  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return _pointer->getNumberOfParticles(behavior);
+  }
+
+  /**
    * Check if the cell is not empty.
    * @return true if at least one particle is stored in this cell
    */
@@ -159,10 +160,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
     std::lock_guard<AutoPasLock> lock(_lock);
     _pointer->clearChildren(_pointer);
     _enclosedParticleCount = 0;
-
-    // reset particle counters for this cell
-    this->_numOwnedParticles = 0;
-    this->_numHaloParticles = 0;
   }
 
   /**
@@ -184,13 +181,6 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   bool deleteParticle(Particle &particle) {
     --_enclosedParticleCount;
-
-    // adjust particle counters for this cell
-    if (particle.isOwned()) {
-      this->_numOwnedParticles--;
-    } else if (particle.isHalo()) {
-      this->_numHaloParticles--;
-    }
 
     return _pointer->deleteParticle(particle);
   };
@@ -366,8 +356,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
 
   /**
    * To prevent unnecessary tree-traversals of the octree, this field stores the number of enclosed particles within
-   * this node. Note this filed is in addition to _numOwnedParticles and _numHalo particles necessary to count also
-   * dummies.
+   * this node.
    */
   long _enclosedParticleCount{0L};
 };

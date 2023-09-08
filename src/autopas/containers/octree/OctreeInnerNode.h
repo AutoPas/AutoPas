@@ -157,12 +157,23 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   }
 
   /**
-   * @copydoc OctreeNodeInterface::getNumberOfParticles()
+   * @copydoc OctreeNodeInterface::size()
    */
-  unsigned int getNumberOfParticles(IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const override {
+  unsigned long size() const override {
     unsigned int result = 0;
     for (const auto &child : _children) {
-      result += child->getNumberOfParticles(iteratorBehavior);
+      result += child->size();
+    }
+    return result;
+  }
+
+    /**
+   * @copydoc OctreeNodeInterface::getNumberOfParticles()
+   */
+  unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+    unsigned int result = 0;
+    for (const auto &child : _children) {
+      result += child->getNumberOfParticles(behavior);
     }
     return result;
   }

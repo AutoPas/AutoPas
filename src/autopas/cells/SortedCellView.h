@@ -39,13 +39,6 @@ class SortedCellView : public ParticleCell<Particle> {
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
     _particles.reserve(cell.size());
     for (auto &p : cell) {
-      // adjust particle counters for this cell
-      if (p.isOwned()) {
-        this->_numOwnedParticles++;
-      } else if (p.isHalo()) {
-        this->_numHaloParticles++;
-      }
-
       _particles.push_back(std::make_pair(utils::ArrayMath::dot(p.getR(), r), &p));
     }
     std::sort(_particles.begin(), _particles.end(),
@@ -97,15 +90,36 @@ class SortedCellView : public ParticleCell<Particle> {
    */
   unsigned long size() const override { return _particles.size(); }
 
+  /**
+   * @copydoc autopas::ParticleCell::getNumberOfParticles()
+   */
+  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+    // size_t numParticles{0};
+    // if (behavior & IteratorBehavior::owned) {
+    //   numParticles += std::count_if(_particles.begin(), _particles.end(),
+    //                                 [](auto p) { return std::get<1>(p)->getOwnershipState() == OwnershipState::owned;
+    //                                 });
+    // }
+    // if (behavior & IteratorBehavior::halo) {
+    //   numParticles += std::count_if(_particles.begin(), _particles.end(),
+    //                                 [](auto p) { return std::get<1>(p)->getOwnershipState() == OwnershipState::halo;
+    //                                 });
+    // }
+    // // non fatal sanity check whether the behavior contained anything else
+    // if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
+    //   utils::ExceptionHandler::exception(
+    //       "ReferenceParticleCell::getNumberOfParticles() does not support iterator behaviors other than owned or "
+    //       "halo.");
+    // }
+
+    // return numParticles;
+    return std::count_if(_particles.begin(), _particles.end(),
+                         [&behavior](auto pair) { return behavior.contains(*(std::get<1>(pair))); });
+  }
+
   bool isEmpty() const override { return size() == 0; }
 
-  void clear() override {
-    _particles.clear();
-
-    // reset particle counters for this cell
-    this->_numOwnedParticles = 0;
-    this->_numHaloParticles = 0;
-  }
+  void clear() override { _particles.clear(); }
 
   void deleteDummyParticles() override {
     _particles.erase(std::remove_if(_particles.begin(), _particles.end(),
@@ -117,13 +131,6 @@ class SortedCellView : public ParticleCell<Particle> {
     if (index >= size()) {
       AutoPasLog(ERROR, "Index out of range");
       utils::ExceptionHandler::exception("Error: Index out of range");
-    }
-
-    // adjust particle counters for this cell
-    if (std::get<1>(_particles[index])->isOwned()) {
-      this->_numOwnedParticles--;
-    } else if (std::get<1>(_particles[index])->isHalo()) {
-      this->_numHaloParticles--;
     }
 
     if (index < size() - 1) {

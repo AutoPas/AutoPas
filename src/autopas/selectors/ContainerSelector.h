@@ -166,7 +166,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
   // copy particles so they do not get lost when container is switched
   if (_currentContainer != nullptr) {
     // with these assumptions slightly more space is reserved as numParticlesTotal already includes halos
-    const auto numParticlesTotal = _currentContainer->getNumberOfParticles();
+    const auto numParticlesTotal = _currentContainer->size();
     const auto numParticlesHalo = autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(
         numParticlesTotal, _currentContainer->getBoxMin(), _currentContainer->getBoxMax(),
         _currentContainer->getInteractionLength());

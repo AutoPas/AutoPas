@@ -89,7 +89,7 @@ class LiveInfo {
     const auto cutoff = container.getCutoff();
     const auto cutoffInv = 1.0 / cutoff;
 
-    infos["numParticles"] = container.getNumberOfParticles();
+    infos["numParticles"] = container.size();
     infos["cutoff"] = cutoff;
     infos["skin"] = container.getVerletSkin();
     infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
@@ -136,9 +136,9 @@ class LiveInfo {
 
     // calculate statistics about particle distributions per cell
     const auto avgParticlesPerCell =
-        static_cast<double>(container.getNumberOfParticles() - particleBins.back()) / static_cast<double>(numCells);
+        static_cast<double>(container.size() - particleBins.back()) / static_cast<double>(numCells);
     const auto avgParticlesPerBlurredCell =
-        static_cast<double>(container.getNumberOfParticles() - particleBins.back()) /
+        static_cast<double>(container.size() - particleBins.back()) /
         static_cast<double>(particleBinsBlurred.size());
 
     const auto [estimatedNumNeighborInteractions, maxDiff, sumStddev, numEmptyCells, maxParticlesPerCell,

@@ -20,7 +20,7 @@ TEST_F(VerletClusterTowerTest, testAddParticle) {
   tower.addParticle(p1);
   tower.addParticle(p2);
 
-  EXPECT_EQ(tower.getNumberOfParticles(), 2);
+  EXPECT_EQ(tower.getNumActualParticles(), 2);
 }
 
 static void testClusterGenerationAndDummies(size_t clusterSize) {
@@ -31,11 +31,11 @@ static void testClusterGenerationAndDummies(size_t clusterSize) {
     for (size_t i = 0; i < numParticles; i++) {
       tower.addParticle(Particle{{0.0, 0.0, (double)i}, {0, 0, 0}, i});
     }
-    EXPECT_EQ(tower.getNumberOfParticles(), numParticles);
+    EXPECT_EQ(tower.getNumActualParticles(), numParticles);
 
     tower.generateClusters();
     // Check if number of actual particles is still the same, so dummies are not counted as real particles
-    EXPECT_EQ(tower.getNumberOfParticles(), numParticles);
+    EXPECT_EQ(tower.getNumActualParticles(), numParticles);
 
     auto numParticlesLastCluster = numParticles % clusterSize;
     if (numParticlesLastCluster == 0) numParticlesLastCluster = clusterSize;

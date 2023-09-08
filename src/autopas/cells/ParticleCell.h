@@ -89,6 +89,17 @@ class ParticleCell {
    */
   [[nodiscard]] virtual unsigned long size() const = 0;
 
+      /**
+   * Get the number of particles with respect to the specified IteratorBehavior.
+   * Note: Since this function counts the number of the respective particles in the internal particle storage, this is
+   * in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
+   * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
+   * the function size() can be used.
+   * @return The number of particles with respect to the specified IteratorBehavior.
+   */
+  [[nodiscard]] virtual unsigned long getNumberOfParticles(
+      IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
+
   /**
    * Check if the cell is empty.
    * @return true if no particles are stored in this cell.
@@ -131,78 +142,17 @@ class ParticleCell {
 
   /**
    * Get the type of particles contained in this cell. Possible values:
-   * dummy: this cell is empty
-   * owned: this cell can ONLY contain owned particles
-   * halo: this cell can ONLY contain halo particles
    * ownedOrHalo: this cell can contain owned or halo particles
    * @return type of particles inside this cell
    */
-  const OwnershipState getPossibleParticleOwnerships() {
-    if (_numOwnedParticles > 0 and _numHaloParticles == 0) {
-      return OwnershipState::owned;
-    } else if (_numHaloParticles > 0 and _numOwnedParticles == 0) {
-      return OwnershipState::halo;
-    } else {
-      return (OwnershipState::owned | OwnershipState::halo);
-    }
-  }
-
-  /**
-   * Get number owned particles in this cell.
-   * @return number of owned particles in this cell.
-   */
-  [[nodiscard]] unsigned long getNumberOfOwnedParticles() const { return _numOwnedParticles; }
-
-  /**
-   * Get number halo particles in this cell.
-   * @return number of halo particles in this cell.
-   */
-  [[nodiscard]] unsigned long getNumberOfHaloParticles() const { return _numHaloParticles; }
-
-  /**
-   * Set the number of owned particles in this cell.
-   * @param numOwnedParticles The number of owned particles to be set.
-   */
-  void setNumberOfOwnedParticles(unsigned long numOwnedParticles) { _numOwnedParticles = numOwnedParticles; }
-
-  /**
-   * Set the number of halo particles in this cell.
-   * @param numHaloParticles The number of halo particles to be set.
-   */
-  void setNumberOfHaloParticles(unsigned long numHaloParticles) { _numHaloParticles = numHaloParticles; }
-
-  /**
-   * Get the number of owned + halo particles stored in this cell.
-   * @return number of owned + halo particles stored in this cell.
-   */
-  [[nodiscard]] unsigned long getNumberOfParticles(
-      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const {
-    switch (iteratorBehavior) {
-      case IteratorBehavior::owned:
-        return _numOwnedParticles;
-        break;
-      case IteratorBehavior::halo:
-        return _numHaloParticles;
-        break;
-      case IteratorBehavior::ownedOrHalo:
-        return _numOwnedParticles + _numHaloParticles;
-        break;
-      default:
-        autopas::utils::ExceptionHandler::exception("IteratorBehavior {} is not supported by getNumberOfParticles()",
-                                                    iteratorBehavior);
-        return 0;
-        break;
-    }
-  }
+  const OwnershipState getPossibleParticleOwnerships() { return (OwnershipState::owned | OwnershipState::halo); }
 
   /**
    * Lock object for exclusive access to this cell.
    */
-  AutoPasLock _cellLock{};
+  mutable AutoPasLock _cellLock{};
 
  protected:
-  int _numOwnedParticles{0};
-  int _numHaloParticles{0};
 };
 
 }  // namespace autopas

@@ -94,10 +94,14 @@ class OctreeNodeInterface {
   virtual void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) = 0;
 
   /**
+   * @copydoc CellBasedParticleContainer::size()
+   */
+  virtual unsigned long size() const = 0;
+
+  /**
    * @copydoc CellBasedParticleContainer::getNumberOfParticles()
    */
-  virtual unsigned int getNumberOfParticles(
-      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const = 0;
+  virtual unsigned long getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
 
   /**
    * Get a child node of this node (if there are children) given a specific octant using the spacial structure of the

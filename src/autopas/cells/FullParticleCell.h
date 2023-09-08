@@ -50,14 +50,6 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   void addParticle(const Particle &p) override {
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
-
-    // adjust particle counters for this cell
-    if (p.isOwned()) {
-      this->_numOwnedParticles++;
-    } else if (p.isHalo()) {
-      this->_numHaloParticles++;
-    }
-
     _particles.push_back(p);
   }
 
@@ -180,6 +172,30 @@ class FullParticleCell : public ParticleCell<Particle> {
   [[nodiscard]] unsigned long size() const override { return _particles.size(); }
 
   /**
+   * @copydoc autopas::ParticleCell::getNumberOfParticles()
+   */
+  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+    std::lock_guard<AutoPasLock> guard(this->_cellLock);
+    // size_t numParticles{0};
+    // if (behavior & IteratorBehavior::owned) {
+    //   numParticles += std::count_if(_particles.begin(), _particles.end(),
+    //                                 [](auto p) { return p.getOwnershipState() == OwnershipState::owned; });
+    // }
+    // if (behavior & IteratorBehavior::halo) {
+    //   numParticles += std::count_if(_particles.begin(), _particles.end(),
+    //                                 [](auto p) { return p.getOwnershipState() == OwnershipState::halo; });
+    // }
+    // // non fatal sanity check whether the behavior contained anything else
+    // if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
+    //   utils::ExceptionHandler::exception(
+    //       "FullParticleCell::getNumberOfParticles() does not support iterator behaviors other than owned or halo.");
+    // }
+
+    // return numParticles;
+    return std::count_if(_particles.begin(), _particles.end(), [&behavior](auto p) { return behavior.contains(p); });
+  }
+
+  /**
    * Returns a reference to the element at position n in the cell.
    * @param n Position of an element in the container
    * @return Reference to the element
@@ -211,13 +227,7 @@ class FullParticleCell : public ParticleCell<Particle> {
 
   [[nodiscard]] bool isEmpty() const override { return size() == 0; }
 
-  void clear() override {
-    _particles.clear();
-
-    // reset particle counters for this cell
-    this->_numOwnedParticles = 0;
-    this->_numHaloParticles = 0;
-  }
+  void clear() override { _particles.clear(); }
 
   void deleteDummyParticles() override {
     _particles.erase(
@@ -229,13 +239,6 @@ class FullParticleCell : public ParticleCell<Particle> {
     std::lock_guard<AutoPasLock> lock(this->_cellLock);
     if (index >= size()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", size(), index);
-    }
-
-    // adjust particle counters for this cell
-    if (_particles[index].isOwned()) {
-      this->_numOwnedParticles--;
-    } else if (_particles[index].isHalo()) {
-      this->_numHaloParticles--;
     }
 
     if (index < size() - 1) {

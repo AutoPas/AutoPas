@@ -84,7 +84,7 @@ class ClusterTower : public ParticleCell<Particle> {
    * @return Returns the number of clusters in the tower.
    */
   size_t generateClusters() {
-    if (getNumberOfParticles() > 0) {
+    if (getNumActualParticles() > 0) {
       _particlesStorage.sortByDim(2);
 
       // if the number of particles is divisible by the cluster size this is 0
@@ -175,7 +175,7 @@ class ClusterTower : public ParticleCell<Particle> {
     if (not _particlesStorage._particles.empty()) {
       // Workaround to remove requirement of default constructible particles.
       // This function will always only shrink the array, particles are not actually inserted.
-      _particlesStorage._particles.resize(getNumberOfParticles(), _particlesStorage._particles[0]);
+      _particlesStorage._particles.resize(getNumActualParticles(), _particlesStorage._particles[0]);
     }
     return std::move(_particlesStorage._particles);
   }
@@ -190,14 +190,23 @@ class ClusterTower : public ParticleCell<Particle> {
    * Get the number of all particles stored in this tower (owned, halo and dummy).
    * @return number of particles stored in this tower (owned, halo and dummy).
    */
-  [[nodiscard]] unsigned long size() const override { return _particlesStorage.size(); }
+  [[nodiscard]] unsigned long size() const override { return getNumActualParticles(); }
+
+  /**
+   * @copydoc autopas::ParticleCell::getNumberOfParticles()
+   */
+  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+    return _particlesStorage.getNumberOfParticles(behavior);
+
+    // return std::count_if(_particlesStorage._particles.begin(), _particlesStorage._particles.end(),
+    //                      [&iteratorBehavior](auto p) { return p.getOwnershipState() & iteratorBehavior; });
+  }
 
   /**
    * Get the number of real particles saved in the tower (owned + halo).
    * @return Number of real particles saved in the tower (owned + halo).
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(
-      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const {
+  [[nodiscard]] unsigned long getNumActualParticles() const {
     return _particlesStorage.size() - getNumTailDummyParticles();
   }
 
@@ -341,7 +350,7 @@ class ClusterTower : public ParticleCell<Particle> {
   // while those methods would not be needed, still complying to the whole interface should be helpful, if
   // maybe someday new necessary pure virtual methods are introduced there.
 
-  [[nodiscard]] bool isEmpty() const override { return getNumberOfParticles() == 0; }
+  [[nodiscard]] bool isEmpty() const override { return getNumActualParticles() == 0; }
 
   void deleteDummyParticles() override {
     _particlesStorage.deleteDummyParticles();
@@ -354,18 +363,11 @@ class ClusterTower : public ParticleCell<Particle> {
     /// particles. See also https://github.com/AutoPas/AutoPas/issues/435
 
     // swap particle that should be deleted to end of actual particles.
-    std::swap(_particlesStorage._particles[index], _particlesStorage._particles[getNumberOfParticles() - 1]);
+    std::swap(_particlesStorage._particles[index], _particlesStorage._particles[getNumActualParticles() - 1]);
     if (getNumTailDummyParticles() != 0) {
       // swap particle that should be deleted (now at end of actual particles) with last dummy particle.
-      std::swap(_particlesStorage._particles[getNumberOfParticles() - 1],
+      std::swap(_particlesStorage._particles[getNumActualParticles() - 1],
                 _particlesStorage._particles[_particlesStorage._particles.size() - 1]);
-    }
-
-    // adjust particle counters for this cell. A lock is not needed, since a tower is handled by one thread at a time
-    if (_particlesStorage._particles.back().isOwned()) {
-      _particlesStorage.setNumberOfOwnedParticles(_particlesStorage.getNumberOfOwnedParticles() - 1);
-    } else if (_particlesStorage._particles.back().isHalo()) {
-      _particlesStorage.setNumberOfHaloParticles(_particlesStorage.getNumberOfHaloParticles() - 1);
     }
 
     _particlesStorage._particles.pop_back();

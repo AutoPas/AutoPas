@@ -309,7 +309,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_towers[cellIndex].getNumberOfParticles() or
+    if (particleIndex >= this->_towers[cellIndex].size() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -376,7 +376,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     auto boxSizeWithHalo = this->getHaloBoxMax() - this->getHaloBoxMin();
     auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
-        this->getNumberOfParticles(), boxSizeWithHalo, _clusterSize);
+        this->size(), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =
         internal::VerletClusterListsRebuilder<Particle>::calculateTowersPerDim(boxSizeWithHalo, 1.0 / towerSideLength);
     const std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
@@ -773,20 +773,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Get the number of real particles saved in the container (owned + halo).
-   * @return Number of real particles saved in the container (owned + halo).
-   */
-  [[nodiscard]] unsigned long getNumberOfParticles(
-      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const override {
-    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0, [&iteratorBehavior](size_t acc, const auto &tower) {
-      return acc + tower.getNumberOfParticles(iteratorBehavior);
-    });
-    sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
-                          [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
-    return sum;
-  }
-
-  /**
    * Get the number of all particles stored in this container (owned + halo + dummy).
    * @return number of particles stored in this container (owned + halo + dummy).
    */
@@ -795,6 +781,25 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                  [](size_t acc, const auto &tower) { return acc + tower.size(); });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
                           [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
+    return sum;
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
+   */
+  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+    // sum up all particles in towers that fulfill behavior
+    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0, [&behavior](size_t acc, const auto &tower) {
+      return acc + tower.getNumberOfParticles(behavior);
+    });
+
+    // sum up all particles in that are inserted into towers in the next rebuild
+    sum = std::accumulate(
+        _particlesToAdd.begin(), _particlesToAdd.end(), sum, [&behavior](size_t acc, const auto &buffer) {
+          return acc +
+                 (std::count_if(buffer.begin(), buffer.end(), [&behavior](auto p) { return behavior.contains(p); }));
+        });
+
     return sum;
   }
 
@@ -1291,7 +1296,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].getNumberOfParticles()) {
+      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].size()) {
         cellIndex += stride;
         particleIndex = 0;
 

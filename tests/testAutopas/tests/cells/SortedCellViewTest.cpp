@@ -36,7 +36,7 @@ TEST_F(SortedCellViewTest, testParticleSorting) {
 
   {
     auto fspc = autopas::SortedCellView<Particle, autopas::FullParticleCell<Particle>>(fpc, {1., 0., 0.});
-    EXPECT_EQ(fspc.getNumberOfParticles(), 4);
+    EXPECT_EQ(fspc.size(), 4);
 
     for (auto &p : fspc._particles) {
       EXPECT_DOUBLE_EQ(p.first, static_cast<double>(id));
@@ -46,7 +46,7 @@ TEST_F(SortedCellViewTest, testParticleSorting) {
   }
   {
     auto fspc = autopas::SortedCellView<Particle, autopas::FullParticleCell<Particle>>(fpc, {0., 1., 0.});
-    EXPECT_EQ(fspc.getNumberOfParticles(), 4);
+    EXPECT_EQ(fspc.size(), 4);
 
     for (auto &p : fspc._particles) {
       id--;

@@ -1114,9 +1114,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     std::stringstream ss;
     size_t sum = 0;
     for (const auto &buffer : buffers) {
-      // we use number of real particles without dummies
-      ss << buffer.getNumberOfParticles() << ", ";
-      sum += buffer.getNumberOfParticles();
+      ss << buffer.size() << ", ";
+      sum += buffer.size();
     }
     ss << " Total: " << sum;
     return ss.str();

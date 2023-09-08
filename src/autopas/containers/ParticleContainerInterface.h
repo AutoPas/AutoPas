@@ -172,11 +172,15 @@ class ParticleContainerInterface {
   virtual void deleteAllParticles() = 0;
 
   /**
-   * Get the number of real particles saved in the container (owned + halo).
-   * @return Number of real particles saved in the container (owned + halo).
+   * Get the number of particles with respect to the specified IteratorBehavior.
+   * Note: Since this function counts the number of the respective particles in the internal particle storage, this is
+   * in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
+   * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
+   * the function size() can be used.
+   * @return The number of particles with respect to the specified IteratorBehavior.
    */
   [[nodiscard]] virtual unsigned long getNumberOfParticles(
-      IteratorBehavior iteratorBehavior = IteratorBehavior::ownedOrHalo) const = 0;
+      IteratorBehavior iteratorBehavior = IteratorBehavior::owned) const = 0;
 
   /**
    * Get the total number of particles saved in the container (owned + halo + dummy).
