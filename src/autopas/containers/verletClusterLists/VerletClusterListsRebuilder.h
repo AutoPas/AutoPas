@@ -244,16 +244,22 @@ class VerletClusterListsRebuilder {
     return invalidParticles;
   }
 
+  /**
+   * Collect all particles that are stored in the wrong towers.
+   * The particles are deleted from their towers.
+   *
+   * @return
+   */
   std::vector<std::vector<Particle>> collectOutOfBoundsParticlesFromTowers() {
-    std::vector<std::vector<Particle>> invalidParticles;
-    invalidParticles.resize(_towers.size());
+    std::vector<std::vector<Particle>> outOfBoundsParticles;
+    outOfBoundsParticles.resize(_towers.size());
     for (size_t towerIndex = 0; towerIndex < _towers.size(); towerIndex++) {
       const auto towerIndex2D = towerIndex1DTo2D(towerIndex);
       const auto &[towerBoxMin, towerBoxMax] = VerletClusterLists<Particle>::getTowerBoundingBox(
           towerIndex2D, _towersPerDim, _towerSideLength, _boxMin, _boxMax, _haloBoxMin, _haloBoxMax);
-      invalidParticles[towerIndex] = _towers[towerIndex].collectOutOfBoundsParticles(towerBoxMin, towerBoxMax);
+      outOfBoundsParticles[towerIndex] = _towers[towerIndex].collectOutOfBoundsParticles(towerBoxMin, towerBoxMax);
     }
-    return invalidParticles;
+    return outOfBoundsParticles;
   }
 
   /**
@@ -531,6 +537,12 @@ class VerletClusterListsRebuilder {
     return VerletClusterLists<Particle>::towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
+  /**
+   * Returns the 2D index for the given 1D index of a tower. Static version.
+   *
+   * @param index
+   * @return the 2D index for the given 1D index of a tower.
+   */
   [[nodiscard]] std::array<size_t, 2> towerIndex1DTo2D(const size_t index) const {
     // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
     // _towersPerDim does not have the new value yet in the container.

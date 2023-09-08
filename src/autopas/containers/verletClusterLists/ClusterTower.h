@@ -185,6 +185,16 @@ class ClusterTower : public ParticleCell<Particle> {
     return std::move(_particlesStorage._particles);
   }
 
+  /**
+   * Collect all particles that should not be in this tower based on their current position.
+   * The particles are deleted from the tower.
+   *
+   * @note also deletes dummies.
+   *
+   * @param boxMin
+   * @param boxMax
+   * @return Vector of particles that should be stored somewhere else.
+   */
   std::vector<Particle> collectOutOfBoundsParticles(const std::array<double, 3> &boxMin,
                                                     const std::array<double, 3> &boxMax) {
     // make sure to get rid of all dummies

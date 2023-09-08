@@ -986,7 +986,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Returns the 1D index for the given tower grid coordinates of a tower.
+   * Returns the 1D index for the given tower grid coordinates of a tower. Static version.
    *
    * @param x The x-coordinate of the tower.
    * @param y The y-coordinate of the tower.
@@ -1008,6 +1008,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
+  /**
+   * Returns the 2D index for the given 1D index of a tower. Static version.
+   *
+   * @param index
+   * @param towersPerDim0
+   * @return the 2D index for the given 1D index of a tower.
+   */
   static std::array<size_t, 2> towerIndex1DTo2D(size_t index, size_t towersPerDim0) {
     if (towersPerDim0 == 0) {
       return {0, 0};
