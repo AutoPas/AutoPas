@@ -48,6 +48,11 @@ class ClusterTower : public ParticleCell<Particle> {
   using StorageType = typename FullParticleCell<Particle>::StorageType;
 
   /**
+   * Dummy constructor.
+   */
+  ClusterTower() : _clusterSize(0) {}
+
+  /**
    * Constructor
    * @param clusterSize of all clusters in this tower.
    */
@@ -178,6 +183,24 @@ class ClusterTower : public ParticleCell<Particle> {
       _particlesStorage._particles.resize(getNumActualParticles(), _particlesStorage._particles[0]);
     }
     return std::move(_particlesStorage._particles);
+  }
+
+  std::vector<Particle> collectOutOfBoundsParticles(const std::array<double, 3> &boxMin,
+                                                    const std::array<double, 3> &boxMax) {
+    // make sure to get rid of all dummies
+    deleteDummyParticles();
+    // move all particles that are not in the tower to the back of the storage
+    const auto firstOutOfBoundsParticleIter =
+        std::partition(_particlesStorage.begin(), _particlesStorage.end(),
+                       [&](const auto &p) { return utils::inBox(p.getR(), boxMin, boxMax); });
+
+    // copy out of bounds particles
+    std::vector<Particle> outOfBoundsParticles(firstOutOfBoundsParticleIter, _particlesStorage.end());
+    // shrink the particle storage so all out of bounds particles are cut away
+    //    _particlesStorage.resize(std::distance(_particlesStorage.begin(), firstOutOfBoundsParticleIter), Particle());
+    _particlesStorage.resize(std::distance(_particlesStorage.begin(), firstOutOfBoundsParticleIter),
+                             *_particlesStorage.begin());
+    return outOfBoundsParticles;
   }
 
   /**
@@ -354,6 +377,18 @@ class ClusterTower : public ParticleCell<Particle> {
     autopas::utils::ExceptionHandler::exception("ClusterTower::getCellLength(): Not supported!");
     return {0, 0, 0};
   }
+
+  /**
+   * Set cluster size.
+   * @param clusterSize
+   */
+  void setClusterSize(size_t clusterSize) { _clusterSize = clusterSize; }
+
+  /**
+   * Get cluster size
+   * @return
+   */
+  [[nodiscard]] size_t getClusterSize() const { return _clusterSize; }
 
   /**
    * Set the ParticleDeletionObserver, which is called, when a particle is deleted.

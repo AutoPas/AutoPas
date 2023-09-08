@@ -91,41 +91,61 @@ class VerletClusterListsRebuilder {
    */
   auto rebuildTowersAndClusters() {
     using namespace autopas::utils::ArrayMath::literals;
-
-    auto invalidParticles = collectAllParticlesFromTowers();
-    invalidParticles.push_back(std::move(_particlesToAdd));
-    _particlesToAdd.clear();
+    // get rid of dummies
+    for (auto &tower : _towers) {
+      tower.deleteDummyParticles();
+    }
 
     // count particles by accumulating tower sizes
-    const size_t numParticles = std::accumulate(std::begin(invalidParticles), std::end(invalidParticles), 0,
-                                                [](auto acc, auto &v) { return acc + v.size(); });
+    const size_t numParticles =
+        std::accumulate(_towers.begin(), _towers.end(), _particlesToAdd.size(), [](auto acc, const auto &tower) {
+          // actually we want only the number of real particles but dummies were just deleted.
+          return acc + tower.getNumAllParticles();
+        });
 
+    // calculate new number of towers and their size
     const auto boxSizeWithHalo = _haloBoxMax - _haloBoxMin;
-
     _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSizeWithHalo, _clusterSize);
     _towerSideLengthReciprocal = 1 / _towerSideLength;
     _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength * _towerSideLengthReciprocal));
-
     _towersPerDim = calculateTowersPerDim(boxSizeWithHalo, _towerSideLengthReciprocal);
-    const size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
+    const size_t numTowersNew = _towersPerDim[0] * _towersPerDim[1];
 
-    // resize to number of towers. Cannot use resize since towers are not default constructable.
-    _towers.clear();
-    _towers.reserve(numTowers);
+    // collect all particles that are now not in the right tower anymore
+    auto invalidParticles = collectOutOfBoundsParticlesFromTowers();
+    // collect all remaining particles that are not yet assigned to towers
+    invalidParticles.push_back(std::move(_particlesToAdd));
+    _particlesToAdd.clear();
+    const auto numTowersOld = _towers.size();
+    // flush all old clusters
+    for (int i = 0; i < numTowersOld; ++i) {
+      _towers[i].getClusters().clear();
+    }
+    // if we have less towers than before, collect all particles from the unused towers.
+    for (size_t i = numTowersNew; i < numTowersOld; ++i) {
+      invalidParticles.push_back(std::move(_towers[i].particleVector()));
+      _towers[i].clear();
+    }
 
-    // create towers and make an estimate for how many particles memory needs to be allocated
-    // 2.7 seems high but gave the best performance when testing
+    // resize to number of towers.
+    // Attention! This uses the dummy constructor so we still need to set the desired cluster size.
+    _towers.resize(numTowersNew);
+
+    // create more towers if needed and make an estimate for how many particles memory needs to be allocated
+    // Factor is more or less a random guess.
+    // Historically 2.7 used to be good but in other tests there was no significant difference to lower values.
     const auto sizeEstimation =
-        static_cast<size_t>((static_cast<double>(numParticles) / static_cast<double>(numTowers)) * 2.7);
-    for (int i = 0; i < numTowers; ++i) {
-      _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
-      _towers[i].reserve(sizeEstimation);
+        static_cast<size_t>((static_cast<double>(numParticles) / static_cast<double>(numTowersNew)) * 1.2);
+    for (auto &tower : _towers) {
+      // Set potentially new towers to the desired cluster size
+      tower.setClusterSize(_clusterSize);
+      tower.reserve(sizeEstimation);
     }
 
     sortParticlesIntoTowers(invalidParticles);
 
     // estimate the number of clusters by particles divided by cluster size + one extra per tower.
-    _neighborListsBuffer.reserveNeighborLists(numParticles / _clusterSize + numTowers);
+    _neighborListsBuffer.reserveNeighborLists(numParticles / _clusterSize + numTowersNew);
     // generate clusters and count them
     size_t numClusters = 0;
     for (auto &tower : _towers) {
@@ -220,6 +240,18 @@ class VerletClusterListsRebuilder {
     for (size_t towerIndex = 0; towerIndex < _towers.size(); towerIndex++) {
       invalidParticles[towerIndex] = _towers[towerIndex].collectAllActualParticles();
       _towers[towerIndex].clear();
+    }
+    return invalidParticles;
+  }
+
+  std::vector<std::vector<Particle>> collectOutOfBoundsParticlesFromTowers() {
+    std::vector<std::vector<Particle>> invalidParticles;
+    invalidParticles.resize(_towers.size());
+    for (size_t towerIndex = 0; towerIndex < _towers.size(); towerIndex++) {
+      const auto towerIndex2D = towerIndex1DTo2D(towerIndex);
+      const auto &[towerBoxMin, towerBoxMax] = VerletClusterLists<Particle>::getTowerBoundingBox(
+          towerIndex2D, _towersPerDim, _towerSideLength, _boxMin, _boxMax, _haloBoxMin, _haloBoxMax);
+      invalidParticles[towerIndex] = _towers[towerIndex].collectOutOfBoundsParticles(towerBoxMin, towerBoxMax);
     }
     return invalidParticles;
   }
