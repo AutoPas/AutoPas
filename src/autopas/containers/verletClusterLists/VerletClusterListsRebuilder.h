@@ -432,10 +432,6 @@ class VerletClusterListsRebuilder {
       const auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
 
       if (clusterAContainsParticles) {
-        // sanity check. TODO Remove as soon as we know the algorithm works
-        if (not clusterA.getNeighbors()) {
-          utils::ExceptionHandler::exception("Found a cluster without a list");
-        }
         // Pretty random heuristic. Need to find something better.
         clusterA.getNeighbors()->reserve(towerA.numParticles() / _clusterSize * 1.1);
         for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
