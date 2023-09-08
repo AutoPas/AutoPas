@@ -459,11 +459,11 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Returns the coordinates of the tower in the tower grid the given 3D coordinates are in.
+   * Returns the 2D index of the tower in the tower grid the given 3D coordinates are in.
    * If the location is outside of the domain, the tower nearest tower is returned.
    *
    * @param location The 3D coordinates.
-   * @return Tower reference.
+   * @return 2D tower index.
    */
   [[nodiscard]] std::array<size_t, 2> getTowerCoordinates(const std::array<double, 3> &location) const {
     std::array<size_t, 2> towerIndex2D{};
@@ -497,6 +497,12 @@ class VerletClusterListsRebuilder {
     // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
     // _towersPerDim does not have the new value yet in the container.
     return VerletClusterLists<Particle>::towerIndex2DTo1D(x, y, _towersPerDim);
+  }
+
+  [[nodiscard]] std::array<size_t, 2> towerIndex1DTo2D(const size_t index) const {
+    // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
+    // _towersPerDim does not have the new value yet in the container.
+    return VerletClusterLists<Particle>::towerIndex1DTo2D(index, _towersPerDim[0]);
   }
 
   /**
