@@ -424,6 +424,10 @@ class VerletClusterListsRebuilder {
   void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
                                        internal::ClusterTower<Particle> &towerB, double distBetweenTowersXYsqr,
                                        bool useNewton3) {
+    const auto interactionLengthFracOfDomainZ = _interactionLength / (_haloBoxMax[0] - _haloBoxMin[0]);
+    // Seems to find a good middle ground between not too much memory allocated and no additional allocations
+    // when calling clusterA.addNeighbor(clusterB)
+    const auto neighborListReserveHeuristicFactor = (interactionLengthFracOfDomainZ * 2.1) / _clusterSize;
     const bool isSameTower = (&towerA == &towerB);
     for (size_t clusterIndexInTowerA = 0; clusterIndexInTowerA < towerA.getNumClusters(); clusterIndexInTowerA++) {
       // if we are within one tower depending on newton3 only look at forward neighbors
@@ -432,8 +436,8 @@ class VerletClusterListsRebuilder {
       const auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
 
       if (clusterAContainsParticles) {
-        // Pretty random heuristic. Need to find something better.
-        clusterA.getNeighbors()->reserve(towerA.numParticles() / _clusterSize * 1.1);
+        clusterA.getNeighbors()->reserve((towerA.numParticles() + 8 * towerB.numParticles()) *
+                                         neighborListReserveHeuristicFactor);
         for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
              clusterIndexInTowerB++) {
           // a cluster cannot be a neighbor to itself
