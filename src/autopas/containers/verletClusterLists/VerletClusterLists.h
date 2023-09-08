@@ -879,6 +879,39 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * Calculates the low and high corner of a tower given by its 2D grid index.
    *
+   * @param index2D
+   * @param towersPerDim
+   * @param towerSideLength
+   * @param boxMin
+   * @param boxMax
+   * @param haloBoxMin
+   * @param haloBoxMax
+   * @return
+   */
+  static std::tuple<std::array<double, 3>, std::array<double, 3>> getTowerBoundingBox(
+      const std::array<size_t, 2> &index2D, const std::array<size_t, 2> &towersPerDim, double towerSideLength,
+      const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const std::array<double, 3> &haloBoxMin,
+      const std::array<double, 3> &haloBoxMax) {
+    // case: towers are not built yet.
+    if (towersPerDim[0] == 0) {
+      return {boxMin, boxMax};
+    }
+    const std::array<double, 3> towerBoxMin{
+        haloBoxMin[0] + towerSideLength * static_cast<double>(index2D[0]),
+        haloBoxMin[1] + towerSideLength * static_cast<double>(index2D[1]),
+        haloBoxMin[2],
+    };
+    const std::array<double, 3> towerBoxMax{
+        boxMin[0] + towerSideLength,
+        boxMin[1] + towerSideLength,
+        haloBoxMax[2],
+    };
+    return {towerBoxMin, towerBoxMax};
+  }
+
+  /**
+   * Calculates the low and high corner of a tower given by its 2D grid index.
+   *
    * @note If towers are not built yet the corners of the full container are returned.
    *
    * @param index2D The tower's 2D index in the grid.
@@ -886,21 +919,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getTowerBoundingBox(
       const std::array<size_t, 2> &index2D) const {
-    // case: towers are not built yet.
-    if (_towersPerDim[0] == 0) {
-      return {_boxMin, _boxMax};
-    }
-    const std::array<double, 3> boxMin{
-        _haloBoxMin[0] + _towerSideLength * static_cast<double>(index2D[0]),
-        _haloBoxMin[1] + _towerSideLength * static_cast<double>(index2D[1]),
-        _haloBoxMin[2],
-    };
-    const std::array<double, 3> boxMax{
-        boxMin[0] + _towerSideLength,
-        boxMin[1] + _towerSideLength,
-        _haloBoxMax[2],
-    };
-    return {boxMin, boxMax};
+    return getTowerBoundingBox(index2D, _towersPerDim, _towerSideLength, _boxMin, _boxMax, _haloBoxMin, _haloBoxMax);
   }
 
   /**
@@ -989,6 +1008,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return towerIndex2DTo1D(x, y, _towersPerDim);
   }
 
+  static std::array<size_t, 2> towerIndex1DTo2D(size_t index, size_t towersPerDim0) {
+    if (towersPerDim0 == 0) {
+      return {0, 0};
+    } else {
+      return {index % towersPerDim0, index / towersPerDim0};
+    }
+  }
+
   /**
    * Returns the 2D index for the given 1D index of a tower.
    *
@@ -996,11 +1023,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @return the 2D index for the given 1D index of a tower.
    */
   [[nodiscard]] std::array<size_t, 2> towerIndex1DTo2D(size_t index) const {
-    if (_towersPerDim[0] == 0) {
-      return {0, 0};
-    } else {
-      return {index % _towersPerDim[0], index / _towersPerDim[0]};
-    }
+    return towerIndex1DTo2D(index, _towersPerDim[0]);
   }
 
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
