@@ -43,6 +43,8 @@ class SortedCellView : public ParticleCell<Particle> {
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
+
+    setPossibleParticleOwnerships(cell.getPossibleParticleOwnerships());
   }
 
   CellType getParticleCellTypeAsEnum() override { return CellType::SortedCellView; }

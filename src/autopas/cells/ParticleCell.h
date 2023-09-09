@@ -89,7 +89,7 @@ class ParticleCell {
    */
   [[nodiscard]] virtual unsigned long size() const = 0;
 
-      /**
+  /**
    * Get the number of particles with respect to the specified IteratorBehavior.
    * Note: Since this function counts the number of the respective particles in the internal particle storage, this is
    * in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
@@ -142,17 +142,43 @@ class ParticleCell {
 
   /**
    * Get the type of particles contained in this cell. Possible values:
+   * dummy: this cell is empty
+   * owned: this cell can ONLY contain owned particles
+   * halo: this cell can ONLY contain halo particles
    * ownedOrHalo: this cell can contain owned or halo particles
    * @return type of particles inside this cell
    */
-  const OwnershipState getPossibleParticleOwnerships() { return (OwnershipState::owned | OwnershipState::halo); }
+  const OwnershipState getPossibleParticleOwnerships() { return _ownershipState; }
 
   /**
-   * Lock object for exclusive access to this cell.
+   * Set the type of particles contained in this cell. Possible values:
+   * dummy: this cell is empty
+   * owned: this cell can ONLY contain owned particles
+   * halo: this cell can ONLY contain halo particles
+   * ownedOrHalo: this cell can contain owned or halo particles
+   * @note: At the moment an ownership of a cell can only be set once.
+   * @param state type of particles inside this cell
+   */
+  void setPossibleParticleOwnerships(OwnershipState state) {
+    std::lock_guard<AutoPasLock> guard(this->_cellLock);
+    if (_ownershipStateSet) {
+      autopas::utils::ExceptionHandler::exception(
+          "ParticleCell::setPossibleParticleOwnerships() can not set OwnershipState of a cell after "
+          "it has been set");
+    }
+    _ownershipState = state;
+    _ownershipStateSet = true;
+  }
+
+  /**
+   * Lock object for exclusive access to this cell. This lock has to be mutable since it is set in
+   * getNumberOfParticles() const.
    */
   mutable AutoPasLock _cellLock{};
 
  protected:
+  OwnershipState _ownershipState{autopas::OwnershipState::owned | autopas::OwnershipState::halo};
+  bool _ownershipStateSet{false};
 };
 
 }  // namespace autopas

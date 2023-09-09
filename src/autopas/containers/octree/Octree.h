@@ -91,6 +91,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     // Create the octree for the halo particles
     this->_cells.push_back(
         OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
+
+    // set type of particles in the two cells
+    this->_cells[CellTypes::OWNED].setPossibleParticleOwnerships(OwnershipState::owned);
+    this->_cells[CellTypes::HALO].setPossibleParticleOwnerships(OwnershipState::halo);
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListValid) override {
