@@ -57,7 +57,8 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
 
     // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: is a cell is a
     // dummy-cell, only dummies can be added, otherwise dummies can always be added
-    if ((not(p->getOwnershipState() & this->_ownershipState)) and p->getOwnershipState() != OwnershipState::dummy) {
+    if ((not static_cast<int64_t>(p->getOwnershipState() & this->_ownershipState)) and
+        p->getOwnershipState() != OwnershipState::dummy) {
       autopas::utils::ExceptionHandler::exception(
           "ReferenceParticleCell::addParticleReference() can not add a particle with OwnershipState {} to a cell with "
           "OwnershipState {}",
@@ -160,29 +161,14 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
   [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
-    _particlesLock.lock();
     size_t numParticles{0};
-    // if (behavior & IteratorBehavior::owned) {
-    //   numParticles += std::count_if(_particles.begin(), _particles.end(),
-    //                                 [](auto p) { return p->getOwnershipState() == OwnershipState::owned; });
-    // }
-    // if (behavior & IteratorBehavior::halo) {
-    //   numParticles += std::count_if(_particles.begin(), _particles.end(),
-    //                                 [](auto p) { return p->getOwnershipState() == OwnershipState::halo; });
-    // }
-    // // non fatal sanity check whether the behavior contained anything else
-    // if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
-    //   utils::ExceptionHandler::exception(
-    //       "ReferenceParticleCell::getNumberOfParticles() does not support iterator behaviors other than owned or "
-    //       "halo.");
-    // }
+
+    _particlesLock.lock();
     numParticles =
         std::count_if(_particles.begin(), _particles.end(), [&behavior](auto p) { return behavior.contains(*p); });
     _particlesLock.unlock();
 
     return numParticles;
-    // return std::count_if(_particles.begin(), _particles.end(),
-    //                      [&iteratorBehavior](auto p) { return p.getOwnershipState() & iteratorBehavior; });
   }
 
   /**

@@ -53,7 +53,7 @@ enum class OwnershipState : int64_t {
 }
 
 /**
- * Logical AND operator for OwnershipState
+ * Bitwise AND operator for OwnershipState
  * @param a first operand
  * @param b second operand
  * @return a & b
@@ -63,7 +63,7 @@ const inline OwnershipState operator&(const OwnershipState a, const OwnershipSta
 }
 
 /**
- * Logical OR operator for OwnershipState
+ * Bitwise OR operator for OwnershipState
  * @param a first operand
  * @param b second operand
  * @return a | b

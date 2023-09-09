@@ -81,7 +81,8 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     if ((this->_particles.size() < this->_treeSplitThreshold) or anyNewDimSmallerThanMinSize) {
       // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: is a cell is a
       // dummy-cell, only dummies can be added, otherwise dummies can always be added
-      if ((not(p.getOwnershipState() & this->_ownershipState)) and p.getOwnershipState() != OwnershipState::dummy) {
+      if ((not static_cast<int64_t>(p.getOwnershipState() & this->_ownershipState)) and
+          p.getOwnershipState() != OwnershipState::dummy) {
         autopas::utils::ExceptionHandler::exception(
             "OctreeLeafNode::insert() can not add a particle with OwnershipState {} to a cell with "
             "OwnershipState {}",
@@ -149,22 +150,6 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
   [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
-    // size_t numParticles{0};
-    // if (behavior & IteratorBehavior::owned) {
-    //   numParticles += std::count_if(this->_particles.begin(), this->_particles.end(),
-    //                                 [](auto p) { return p.getOwnershipState() == OwnershipState::owned; });
-    // }
-    // if (behavior & IteratorBehavior::halo) {
-    //   numParticles += std::count_if(this->_particles.begin(), this->_particles.end(),
-    //                                 [](auto p) { return p.getOwnershipState() == OwnershipState::halo; });
-    // }
-    // // non fatal sanity check whether the behavior contained anything else
-    // if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
-    //   utils::ExceptionHandler::exception(
-    //       "FullParticleCell::getNumberOfParticles() does not support iterator behaviors other than owned or halo.");
-    // }
-
-    // return numParticles;
     return std::count_if(this->_particles.begin(), this->_particles.end(),
                          [&behavior](auto p) { return behavior.contains(p); });
   }

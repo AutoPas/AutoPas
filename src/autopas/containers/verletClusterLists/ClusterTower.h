@@ -197,42 +197,27 @@ class ClusterTower : public ParticleCell<Particle> {
    */
   [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
     return _particlesStorage.getNumberOfParticles(behavior);
-
-    // return std::count_if(_particlesStorage._particles.begin(), _particlesStorage._particles.end(),
-    //                      [&iteratorBehavior](auto p) { return p.getOwnershipState() & iteratorBehavior; });
   }
 
   /**
-   * Get the number of real particles saved in the tower (owned + halo).
-   * @return Number of real particles saved in the tower (owned + halo).
+   * Get the number of all particles saved in the tower without dummies for data structure reasons (owned + halo +
+   * dummies for non-datastructure purposes).
+   * @return Number of all particles saved in the tower without dummies for data structure reasons (owned + halo +
+   * dummies for non-datastructure purposes).
    */
   [[nodiscard]] unsigned long getNumActualParticles() const {
     return _particlesStorage.size() - getNumTailDummyParticles();
   }
 
   /**
-   * Get number owned particles in this cell.
-   * @return number of owned particles in this cell.
-   */
-  [[nodiscard]] unsigned long getNumberOfOwnedParticles() const {
-    return _particlesStorage.getNumberOfOwnedParticles();
-  }
-
-  /**
-   * Get number halo particles in this cell.
-   * @return number of halo particles in this cell.
-   */
-  [[nodiscard]] unsigned long getNumberOfHaloParticles() const { return _particlesStorage.getNumberOfHaloParticles(); }
-
-  /**
-   * Get the type of particles contained in this cell. Possible values:
-   * dummy: this cell is empty
-   * owned: this cell can ONLY contain owned particles
-   * halo: this cell can ONLY contain halo particles
-   * ownedOrHalo: this cell can contain owned or halo particles
-   * @return type of particles inside this cell
+   * @copydoc autopas::ParticleCell::getPossibleParticleOwnerships()
    */
   const OwnershipState getPossibleParticleOwnerships() { return _particlesStorage.getPossibleParticleOwnerships(); }
+
+  /**
+   * @copydoc autopas::ParticleCell::setPossibleParticleOwnerships()
+   */
+  void setPossibleParticleOwnerships(OwnershipState state) { _particlesStorage.setPossibleParticleOwnerships(state); }
 
   /**
    * Returns the number of clusters in the tower.

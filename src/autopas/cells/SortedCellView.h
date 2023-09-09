@@ -44,7 +44,7 @@ class SortedCellView : public ParticleCell<Particle> {
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
 
-    setPossibleParticleOwnerships(cell.getPossibleParticleOwnerships());
+    this->setPossibleParticleOwnerships(cell.getPossibleParticleOwnerships());
   }
 
   CellType getParticleCellTypeAsEnum() override { return CellType::SortedCellView; }
@@ -96,25 +96,6 @@ class SortedCellView : public ParticleCell<Particle> {
    * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
   [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
-    // size_t numParticles{0};
-    // if (behavior & IteratorBehavior::owned) {
-    //   numParticles += std::count_if(_particles.begin(), _particles.end(),
-    //                                 [](auto p) { return std::get<1>(p)->getOwnershipState() == OwnershipState::owned;
-    //                                 });
-    // }
-    // if (behavior & IteratorBehavior::halo) {
-    //   numParticles += std::count_if(_particles.begin(), _particles.end(),
-    //                                 [](auto p) { return std::get<1>(p)->getOwnershipState() == OwnershipState::halo;
-    //                                 });
-    // }
-    // // non fatal sanity check whether the behavior contained anything else
-    // if (behavior & ~(IteratorBehavior::ownedOrHalo)) {
-    //   utils::ExceptionHandler::exception(
-    //       "ReferenceParticleCell::getNumberOfParticles() does not support iterator behaviors other than owned or "
-    //       "halo.");
-    // }
-
-    // return numParticles;
     return std::count_if(_particles.begin(), _particles.end(),
                          [&behavior](auto pair) { return behavior.contains(*(std::get<1>(pair))); });
   }
