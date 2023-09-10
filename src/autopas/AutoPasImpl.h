@@ -146,13 +146,6 @@ void AutoPas<Particle>::init() {
       }
     }
   }
-//  if (_allowedInteractionTypeOptions.size() > 1) {
-//    for (auto &[interactionT, tuner] : _autoTuners) {
-//      tuner.addSynchronizationStrategy();
-//    }
-//  }
-
-
 }
 
 template <class Particle>

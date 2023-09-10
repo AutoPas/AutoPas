@@ -1427,6 +1427,12 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface<interactionType>>, 
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
     configuration = tuner->getCurrentConfig();
+    if (_containerSelector.getCurrentContainer().getContainerType() != configuration.container) {
+      _containerSelector.selectContainer(configuration.container,
+                                 ContainerSelectorInfo(configuration.cellSizeFactor,
+                                  _containerSelector.getCurrentContainer().getVerletSkin() / _neighborListRebuildFrequency,
+                                  _neighborListRebuildFrequency, _verletClusterSize, configuration.loadEstimator));
+    }
     const auto &container = _containerSelector.getCurrentContainer();
     traversalPtrOpt = autopas::utils::withStaticCellType<Particle>(
         container.getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
@@ -1552,7 +1558,6 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     }
     ++_stepsSinceLastListRebuild;
 
-//    _autoTuner->bumpIterationCounters();
   }
   return stillTuning;
 }
@@ -1630,8 +1635,6 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
     }
     ++_stepsSinceLastListRebuild;
 
-//    _autoTuner3B->bumpIterationCounters();
-//    ++_iteration;
   }
   return stillTuning;
 }
