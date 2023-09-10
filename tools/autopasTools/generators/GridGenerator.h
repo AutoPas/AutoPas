@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ParticleTypeTrait.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
