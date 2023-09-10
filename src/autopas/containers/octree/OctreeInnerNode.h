@@ -167,7 +167,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
     return result;
   }
 
-    /**
+  /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
   unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {

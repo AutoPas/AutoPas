@@ -138,8 +138,7 @@ class LiveInfo {
     const auto avgParticlesPerCell =
         static_cast<double>(container.size() - particleBins.back()) / static_cast<double>(numCells);
     const auto avgParticlesPerBlurredCell =
-        static_cast<double>(container.size() - particleBins.back()) /
-        static_cast<double>(particleBinsBlurred.size());
+        static_cast<double>(container.size() - particleBins.back()) / static_cast<double>(particleBinsBlurred.size());
 
     const auto [estimatedNumNeighborInteractions, maxDiff, sumStddev, numEmptyCells, maxParticlesPerCell,
                 minParticlesPerCell] = [&]() {
