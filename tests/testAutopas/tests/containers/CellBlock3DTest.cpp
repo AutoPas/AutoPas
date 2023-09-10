@@ -158,3 +158,18 @@ TEST_F(CellBlock3DTest, testClearHaloParticles) {
   EXPECT_EQ(getNumberOfParticlesInBox(_cells_11x4x4_nonZeroBoxMin, _vec4), 11 * 4 * 4);
   EXPECT_EQ(getNumberOfParticlesInBox(_cells_19x19x19, _vec19), 19 * 19 * 19);
 }
+
+TEST_F(CellBlock3DTest, testCellOwnership) {
+  std::size_t numCells = _cells_1x1x1.getNumCells();
+  for (int i = 0; i < numCells; i++) {
+    if (_cells_1x1x1.cellCanContainHaloParticles(i)) {
+      EXPECT_TRUE(static_cast<int64_t>(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() &
+                                       autopas::OwnershipState::halo));
+    } else if (_cells_1x1x1.cellCanContainOwnedParticles(i)) {
+      EXPECT_TRUE(static_cast<int64_t>(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() &
+                                       autopas::OwnershipState::owned));
+    } else {
+      EXPECT_TRUE(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() == autopas::OwnershipState::dummy);
+    }
+  }
+}
