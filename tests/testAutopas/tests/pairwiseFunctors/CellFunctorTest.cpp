@@ -6,7 +6,7 @@
 
 #include "CellFunctorTest.h"
 
-typedef ::testing::Types<
+using CellFTestingTypes = ::testing::Types<
     std::pair<autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
                                              autopas::DataLayoutOption::aos, false, false>,
               CellFunctorWrapper<autopas::DataLayoutOption::aos, false, false>>,
@@ -30,8 +30,7 @@ typedef ::testing::Types<
               CellFunctorWrapper<autopas::DataLayoutOption::soa, true, false>>,
     std::pair<autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
                                              autopas::DataLayoutOption::soa, true, true>,
-              CellFunctorWrapper<autopas::DataLayoutOption::soa, true, true>>>
-    CellFTestingTypes;
+              CellFunctorWrapper<autopas::DataLayoutOption::soa, true, true>>>;
 
 template <class T>
 std::tuple<double, double> ownedHaloInteractionHelper(T &cellFunctor, const autopas::OwnershipState osp1,

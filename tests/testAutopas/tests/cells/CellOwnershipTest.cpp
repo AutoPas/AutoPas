@@ -6,8 +6,8 @@
 
 #include "CellOwnershipTest.h"
 
-typedef ::testing::Types<autopas::FullParticleCell<Molecule>, autopas::ReferenceParticleCell<Molecule>>
-    CellOwnershipTestingTypes;
+using CellOwnershipTestingTypes =
+    ::testing::Types<autopas::FullParticleCell<Molecule>, autopas::ReferenceParticleCell<Molecule>>;
 
 TYPED_TEST_CASE_P(CellOwnershipTestTyped);
 

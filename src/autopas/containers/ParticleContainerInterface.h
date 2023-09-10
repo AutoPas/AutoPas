@@ -177,6 +177,7 @@ class ParticleContainerInterface {
    * in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
    * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
    * the function size() can be used.
+   * @param behavior Behavior of the iterator, see IteratorBehavior.
    * @return The number of particles with respect to the specified IteratorBehavior.
    */
   [[nodiscard]] virtual unsigned long getNumberOfParticles(

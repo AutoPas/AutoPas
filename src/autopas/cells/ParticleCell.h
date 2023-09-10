@@ -95,6 +95,7 @@ class ParticleCell {
    * in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
    * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
    * the function size() can be used.
+   * @param behavior Behavior of the iterator, see IteratorBehavior.
    * @return The number of particles with respect to the specified IteratorBehavior.
    */
   [[nodiscard]] virtual unsigned long getNumberOfParticles(
@@ -177,7 +178,13 @@ class ParticleCell {
   mutable AutoPasLock _cellLock{};
 
  protected:
+  /**
+   * The particles which can be contained in this cell are determined by the OwnershipState
+   */
   OwnershipState _ownershipState{autopas::OwnershipState::owned | autopas::OwnershipState::halo};
+  /**
+   * Flag that is set to true once OwnershipState has been set to avoid resetting the OwnershipState
+   */
   bool _ownershipStateSet{false};
 };
 
