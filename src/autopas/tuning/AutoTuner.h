@@ -21,6 +21,7 @@
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
+#include "autopas/tuning/utils/TunerSynchronizer.h"
 
 namespace autopas {
 
@@ -99,8 +100,9 @@ class AutoTuner {
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
+   * @param needToWait If tuner should wait for other tuners.
    */
-  void bumpIterationCounters();
+  void bumpIterationCounters(bool needToWait = false);
 
   /**
    * Returns whether rebuildNeighborLists() will be triggered in the next call to iteratePairwise().
@@ -158,11 +160,6 @@ class AutoTuner {
   void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
 
   /**
-   * Increments iteration counters. Specifically _iteration and _iterationsSinceTuning.
-   */
-  void incrementIterationCounters();
-
-  /**
    * Initialize rapl meter.
    * @return True if energy measurements are possible on this system.
    */
@@ -217,6 +214,8 @@ class AutoTuner {
    * @return
    */
   bool inTuningPhase() const;
+
+  void stallCounters();
 
  private:
   /**

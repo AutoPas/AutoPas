@@ -146,7 +146,11 @@ void AutoPas<Particle>::init() {
       }
     }
   }
-
+//  if (_allowedInteractionTypeOptions.size() > 1) {
+//    for (auto &[interactionT, tuner] : _autoTuners) {
+//      tuner.addSynchronizationStrategy();
+//    }
+//  }
 
 
 }
@@ -397,9 +401,11 @@ bool AutoPas<Particle>::searchSpaceIsTrivial() {
 
 template <class Particle>
 void AutoPas<Particle>::incrementIterationCounters() {
-  _logicHandler->incrementNumStepsSinceLastRebuild();
+  _logicHandler->bumpIterationCounters();
   for (auto [interaction, tuner] : _autoTuners) {
-    tuner.incrementIterationCounters();
+    // Check if we need to synchronize multiple tuners
+    bool needToWait = _logicHandler->checkTuningStates(interaction);
+    tuner.bumpIterationCounters(needToWait);
   }}
 
 }  // namespace autopas

@@ -78,6 +78,7 @@ class LogicHandler {
   void initPairwise(autopas::AutoTuner *autotuner) {
     _autoTuner = autotuner;
     _interactionTypes.insert(InteractionTypeOption::pairwise);
+    _synchronizer.addInteractionType(InteractionTypeOption::pairwise);
 
     const auto configuration = _autoTuner->getCurrentConfig();
     // initialize the container and make sure it is valid
@@ -95,6 +96,7 @@ class LogicHandler {
   void initTriwise(autopas::AutoTuner *autotuner3B) {
     _autoTuner3B = autotuner3B;
     _interactionTypes.insert(InteractionTypeOption::threeBody);
+    _synchronizer.addInteractionType(InteractionTypeOption::threeBody);
 
     const auto configuration = _autoTuner3B->getCurrentConfig();
     // initialize the container and make sure it is valid
@@ -167,6 +169,10 @@ class LogicHandler {
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
     bool doDataStructureUpdate = not neighborListsAreValid();
+
+    if (_interactionTypes.size() > 1) {
+
+    }
 
     if (doDataStructureUpdate) {
       _neighborListsAreValid.store(false, std::memory_order_relaxed);
@@ -546,8 +552,14 @@ class LogicHandler {
    */
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
-  void incrementNumStepsSinceLastRebuild() {
+
+  bool checkTuningStates(InteractionTypeOption::Value interactionType) {
+    return _synchronizer.checkState(interactionType);
+  }
+
+  void bumpIterationCounters() {
     _stepsSinceLastListRebuild++;
+    _iteration++;
   }
 
   /**
@@ -811,6 +823,8 @@ class LogicHandler {
    autopas::AutoTuner *_autoTuner3B;
 
    std::set<InteractionTypeOption> _interactionTypes{};
+
+   autopas::TunerSynchronizer _synchronizer{};
 
   /**
    * Specifies if the neighbor list is valid.
@@ -1192,12 +1206,12 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   timerTotal.start();
 
   functor.initTraversal();
-  // TODO: Add list rebuilds for 3-Body
-  //  if (doListRebuild) {
-  //    timerRebuild.start();
-  //    container.rebuildNeighborLists(&traversal);
-  //    timerRebuild.stop();
-  //  }
+//   TODO: Add list rebuilds for 3-Body
+//    if (doListRebuild) {
+//      timerRebuild.start();
+//      container.rebuildNeighborLists(&traversal);
+//      timerRebuild.stop();
+//    }
   timerIterateTriwise.start();
   container.iterateTriwise(&traversal);
   timerIterateTriwise.stop();
@@ -1461,6 +1475,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface<interactionType>>, 
     }
   }
 
+  // log tuning status for current tuner
+  _synchronizer.recordTuningState(interactionType, stillTuning);
+
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }
 
@@ -1535,7 +1552,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     }
     ++_stepsSinceLastListRebuild;
 
-    _autoTuner->bumpIterationCounters();
+//    _autoTuner->bumpIterationCounters();
   }
   return stillTuning;
 }
@@ -1613,8 +1630,8 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
     }
     ++_stepsSinceLastListRebuild;
 
-    _autoTuner3B->bumpIterationCounters();
-    ++_iteration;
+//    _autoTuner3B->bumpIterationCounters();
+//    ++_iteration;
   }
   return stillTuning;
 }

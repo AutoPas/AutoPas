@@ -24,6 +24,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
   headerLogger->info(
       "Date,"
       "Iteration,"
+      "Functor,"
       "inTuningPhase,"
       "{},"
       "iteratePairwise[ns],"
