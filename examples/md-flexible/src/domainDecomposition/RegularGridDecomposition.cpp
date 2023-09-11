@@ -489,7 +489,7 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
 
   // estimate the number of halo particles by calculating the fraction of the search box and scale it up by 10%
   haloParticlesBuffer.reserve(boxVolume / localBoxVolume * autoPasContainer.getNumberOfParticles() * 1.1);
-  // Collect the halo particles for the right neighbor
+  // Collect the halo particles for the neighbor
   for (auto particleIter = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
        particleIter.isValid(); ++particleIter) {
     haloParticlesBuffer.push_back(*particleIter);
