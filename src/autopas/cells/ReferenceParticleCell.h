@@ -53,8 +53,6 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * @copydoc ParticleCell::addParticle()
    */
   void addParticleReference(Particle *p) {
-    _particlesLock.lock();
-
     // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: is a cell is a
     // dummy-cell, only dummies can be added, otherwise dummies can always be added
     if ((not static_cast<int64_t>(p->getOwnershipState() & this->_ownershipState)) and
@@ -65,8 +63,8 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
           p->getOwnershipState(), this->_ownershipState);
     }
 
+    _particlesLock.lock();
     _particles.push_back(p);
-
     _particlesLock.unlock();
   }
 
