@@ -26,5 +26,18 @@ class Evidence {
    * Value of the measurement (time, energy, ...).
    */
   long value;
+
+  /**
+   * Equality operator.
+   * @param rhs
+   * @return
+   */
+  bool operator==(const Evidence &rhs) const;
+  /**
+   * Inequality operator.
+   * @param rhs
+   * @return
+   */
+  bool operator!=(const Evidence &rhs) const;
 };
 }  // namespace autopas
