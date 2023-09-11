@@ -108,6 +108,12 @@ class Cluster {
    */
   void clearNeighbors() { _neighborClusters->clear(); }
 
+  /**
+   *
+   * @param firstParticle
+   */
+  void reset(Particle *firstParticle) { _firstParticle = firstParticle; }
+
  private:
   /**
    * The number of particles in a full cluster.
@@ -125,7 +131,6 @@ class Cluster {
   /**
    * The list of neighbor clusters of this cluster.
    */
-  //  std::vector<Cluster *> &_neighborClusters;
   std::vector<Cluster *> *_neighborClusters;
 };
 

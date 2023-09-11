@@ -117,14 +117,9 @@ class VerletClusterListsRebuilder {
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
     const auto numTowersOld = _towers.size();
-    // flush all old clusters
-    for (int i = 0; i < numTowersOld; ++i) {
-      _towers[i].getClusters().clear();
-    }
     // if we have less towers than before, collect all particles from the unused towers.
     for (size_t i = numTowersNew; i < numTowersOld; ++i) {
       invalidParticles.push_back(std::move(_towers[i].particleVector()));
-      _towers[i].clear();
     }
 
     // resize to number of towers.

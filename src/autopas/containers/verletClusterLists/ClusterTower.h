@@ -89,28 +89,29 @@ class ClusterTower : public ParticleCell<Particle> {
    * @return Returns the number of clusters in the tower.
    */
   size_t generateClusters() {
-    if (getNumActualParticles() > 0) {
-      _particlesStorage.sortByDim(2);
+    if (getNumActualParticles() == 0) {
+      _clusters.resize(0, Cluster<Particle>(nullptr, _clusterSize));
+      return 0;
+    }
+    _particlesStorage.sortByDim(2);
 
-      // if the number of particles is divisible by the cluster size this is 0
-      const auto sizeLastCluster = _particlesStorage.numParticles() % _clusterSize;
-      _numDummyParticles = sizeLastCluster == 0 ? 0 : _clusterSize - sizeLastCluster;
+    // if the number of particles is divisible by the cluster size this is 0
+    const auto sizeLastCluster = _particlesStorage.numParticles() % _clusterSize;
+    _numDummyParticles = sizeLastCluster == 0 ? 0 : _clusterSize - sizeLastCluster;
 
-      // fill the last cluster with dummy copies of the last particle
-      auto lastParticle = _particlesStorage[_particlesStorage.numParticles() - 1];
-      markParticleAsDeleted(lastParticle);
-      for (size_t i = 0; i < _numDummyParticles; i++) {
-        _particlesStorage.addParticle(lastParticle);
-      }
-
-      // Mark start of the different clusters by adding pointers to _particlesStorage
-      const size_t numClusters = _particlesStorage.numParticles() / _clusterSize;
-      _clusters.reserve(numClusters);
-      for (size_t index = 0; index < numClusters; index++) {
-        _clusters.emplace_back(&(_particlesStorage[_clusterSize * index]), _clusterSize);
-      }
+    // fill the last cluster with dummy copies of the last particle
+    auto lastParticle = _particlesStorage[_particlesStorage.numParticles() - 1];
+    markParticleAsDeleted(lastParticle);
+    for (size_t i = 0; i < _numDummyParticles; i++) {
+      _particlesStorage.addParticle(lastParticle);
     }
 
+    // Mark start of the different clusters by adding pointers to _particlesStorage
+    const size_t numClusters = _particlesStorage.numParticles() / _clusterSize;
+    _clusters.resize(numClusters, Cluster<Particle>(nullptr, _clusterSize));
+    for (size_t index = 0; index < numClusters; index++) {
+      _clusters[index].reset(&(_particlesStorage[_clusterSize * index]));
+    }
     return getNumClusters();
   }
 
@@ -441,6 +442,6 @@ class ClusterTower : public ParticleCell<Particle> {
   size_t _numDummyParticles{};
 
   internal::ParticleDeletedObserver *_particleDeletionObserver{nullptr};
-};
+};  // namespace autopas::internal
 
 }  // namespace autopas::internal
