@@ -58,6 +58,7 @@ struct OptionSpace {
 
 /**
  * Fills the search space with the cartesian product of the given options (minus invalid combinations).
+ * In other words, generate every valid combination of the given options.
  * @param allowedContainerOptions
  * @param allowedTraversalOptions
  * @param allowedLoadEstimatorOptions

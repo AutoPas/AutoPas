@@ -141,8 +141,8 @@ INSTANTIATE_TEST_SUITE_P(Generated, PredictiveTuningTest,
 /**
  * Tests the selection of the right optimumSearchSpace in the regard of the number of iterations without a test and
  * tuning. Two different configurations:
- *      - first is constant out of the optimum range (20).
- *      - second is constant the optimum (10).
+ *      - first is constantly outside of the optimum range (20).
+ *      - second is constantly the optimum (10).
  * Tuning phases 1 and 2 should cover the whole search space bc we need at least two samples to make predictions
  * In tuning phase 3-8 only the second configuration should be in _optimalSearchSpace.
  * In tuning phase 9  both configuration should be tested because the slow should be reinserted via the
