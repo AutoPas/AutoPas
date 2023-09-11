@@ -41,8 +41,8 @@ namespace autopas {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJMultisiteFunctorAVX
-    : public autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3,
+class LJMultisiteFunctorAVX_STS
+    : public autopas::Functor<Particle, LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3,
                                                               calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -101,39 +101,8 @@ class LJMultisiteFunctorAVX
 
   // number of double values that fit into a vector register.
   // MUST be power of 2 because some optimizations make this assumption
-  // todo vary this
+  // todo vary this for AVX512
   constexpr static size_t vecLength = 4;
-
-  /**
-   * Whether to build vectors for exact site position locally in each function call or once globally.
-   * @note Currently only implemented for Verlet functor
-   */
-  constexpr static bool useLocalVectors = true;
-
-  /**
-   * @brief Whether to use site masks or site indices
-   *
-   * @details If set to true, the sitemask contains either 0 or 1 for all relevant sites to indicate if a site meets the
-   * cutoff and ownership condition. All sites are load contiguously, their respective force is calculated, and a
-   * bitwise AND-operation is applied in the end. This method may include lots of unnecessary force calculations, but
-   * most memory operations are contiguous. It may lead to better cache performance due to improved spatial locality.
-   *
-   * @details If set to false, the sitemask contains the indices of all sites that meet the necessary criteria. Since
-   * these indices are not necessarily sequential, the force calculation requires gather intrinsics instead of regular
-   * load operations. This method only calculates forces for owned sites within the cutoff radius but uses less
-   * efficient memory operations. It may result in poorer cache performance due to potentially scattered memory access
-   * patterns.
-   */
-  constexpr static bool useRegularSiteMasks = true;
-
-  /**
-   * @brief How to evaluate the cutoff condition
-   *
-   *  @details If set to true, the cutoff condition is evaluated between the centers of masses between the particles
-   * If set to false, the cutoff conditions is evaluated between the center of mass of the first particle and the site
-   * positions of the second particle
-   */
-  constexpr static bool useCTC = false;
 
 #ifdef __AVX__
   const __m256d _cutoffSquared{};
@@ -162,7 +131,7 @@ class LJMultisiteFunctorAVX
   /**
    * Deleted default constructor
    */
-  LJMultisiteFunctorAVX() = delete;
+  LJMultisiteFunctorAVX_STS() = delete;
 
  private:
   /**
@@ -170,9 +139,9 @@ class LJMultisiteFunctorAVX
    * @param cutoff
    * @note param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJMultisiteFunctorAVX(double cutoff, void * /*dummy*/)
+  explicit LJMultisiteFunctorAVX_STS(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+      : Functor<Particle, LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                 relevantForTuning>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
@@ -197,7 +166,7 @@ class LJMultisiteFunctorAVX
    * @note Only to be used with mixing == false
    * @param cutoff
    */
-  explicit LJMultisiteFunctorAVX(double cutoff) : LJMultisiteFunctorAVX(cutoff, nullptr) {
+  explicit LJMultisiteFunctorAVX_STS(double cutoff) : LJMultisiteFunctorAVX_STS(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -210,8 +179,8 @@ class LJMultisiteFunctorAVX
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift.
    */
-  explicit LJMultisiteFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJMultisiteFunctorAVX(cutoff, nullptr) {
+  explicit LJMultisiteFunctorAVX_STS(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJMultisiteFunctorAVX_STS(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -359,18 +328,11 @@ class LJMultisiteFunctorAVX
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
     if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
-    if constexpr (useLocalVectors) {
-      if (newton3) {
-        SoAFunctorVerletImpl_local<true>(soa, indexFirst, neighborList);
-      } else {
-        SoAFunctorVerletImpl_local<false>(soa, indexFirst, neighborList);
-      }
+
+    if (newton3) {
+      SoAFunctorVerletImpl_local<true>(soa, indexFirst, neighborList);
     } else {
-      if (newton3) {
-        SoAFunctorVerletImpl_global<true>(soa, indexFirst, neighborList);
-      } else {
-        SoAFunctorVerletImpl_global<false>(soa, indexFirst, neighborList);
-      }
+      SoAFunctorVerletImpl_local<false>(soa, indexFirst, neighborList);
     }
   }
 
@@ -502,7 +464,7 @@ class LJMultisiteFunctorAVX
 
         std::array<double, 3> forceAccumulator = {0., 0., 0.};
 
-        SoAKernel<true, false, useRegularSiteMasks>(
+        SoAKernel<true, false>(
             siteMask, siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ, siteForceX, siteForceY,
             siteForceZ, isSiteOwned, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA, forceAccumulator,
             torqueAccumulator, potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
@@ -1197,20 +1159,8 @@ class LJMultisiteFunctorAVX
 
     // ------------------- Build site mask -------------------
 
-    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
     std::array<double, 3> centerOfMass{xptr[indexFirst], yptr[indexFirst], zptr[indexFirst]};
 
-    if constexpr (useCTC) {
-      siteMask =
-          buildSiteMask<true>(useRegularSiteMasks, neighborList, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass);
-    } else {
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(siteCountNeighbors);
-      std::iota(indices.begin(), indices.end(), 0);
-      siteMask = buildSiteMask<false>(useRegularSiteMasks, indices, exactNeighborSitePositionsX.data(),
-                                      exactNeighborSitePositionsY.data(), exactNeighborSitePositionsZ.data(), typeptr,
-                                      reinterpret_cast<const autopas::OwnershipState *>(isNeighborSiteOwnedArr.data()),
-                                      centerOfMass);
-    }
 
     // ------------------- Calculate Forces -------------------
 
@@ -1223,8 +1173,7 @@ class LJMultisiteFunctorAVX
       const std::array<double, 3> exactSitePositionPrime =
           autopas::utils::ArrayMath::add(rotatedSitePositionPrime, centerOfMass);
 
-      SoAKernel<newton3, true, useRegularSiteMasks>(
-          siteMask, siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
+      SoAKernel<newton3, true>(siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
           exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ, isNeighborSiteOwnedArr, ownedStatePrime,
           siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator,
           potentialEnergyAccumulator, virialAccumulator);
@@ -1763,120 +1712,5 @@ class LJMultisiteFunctorAVX
   std::vector<AoSThreadData> _aosThreadData;
 };  // namespace autopas
 
-/**
- * Prevent usage of non-multisite molecule
- * @tparam applyShift
- * @tparam useMixing
- * @tparam useNewton3
- * @tparam calculateGlobals
- * @tparam relevantForTuning
- */
-template <bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals,
-          bool relevantForTuning>
-class LJMultisiteFunctorAVX<mdLib::MoleculeLJ, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>
-    : public autopas::Functor<mdLib::MoleculeLJ,
-                              LJMultisiteFunctorAVX<mdLib::MoleculeLJ, applyShift, useMixing, useNewton3,
-                                                    calculateGlobals, relevantForTuning>> {
- public:
-  /**
-   * Structure of the SoAs defined by the particle.
-   */
-  using SoAArraysType = typename mdLib::MoleculeLJ::SoAArraysType;
 
-  using SoAFloatPrecision = typename mdLib::MoleculeLJ::ParticleSoAFloatPrecision;
-
-  /**
-   * Delete Default constructor
-   */
-  LJMultisiteFunctorAVX() = delete;
-
- private:
-  /**
-   * Internal (actually used) constructor
-   * @param cutoff
-   * @note param dummy is unused, only there to make the signature different from the public constructor.
-   */
-  explicit LJMultisiteFunctorAVX(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<mdLib::MoleculeLJ, LJMultisiteFunctorAVX<mdLib::MoleculeLJ, applyShift, useMixing,
-                                                                    useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff) {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-
- public:
-  /**
-   * Constructor for Functor with particle mixing disabled. setParticleProperties() must be called.
-   * @param cutoff
-   */
-  explicit LJMultisiteFunctorAVX(double cutoff) : LJMultisiteFunctorAVX(cutoff, nullptr) {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-
-  /**
-   * Constructor for Functor with particle mixing enabled.
-   * @param cutoff
-   * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
-   * epsilon, shift.
-   */
-  explicit LJMultisiteFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJMultisiteFunctorAVX(cutoff, nullptr) {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctor can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-
-  bool isRelevantForTuning() final { return relevantForTuning; }
-
-  bool allowsNewton3() final {
-    return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
-  }
-
-  bool allowsNonNewton3() final {
-    return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
-  }
-
-  constexpr static bool getMixing() { return useMixing; }
-
-  double getVirial() { return 0; }
-
-  /**
-   * Functor for AoS. Simply loops over the sites of two particles/molecules to calculate force.
-   * @param particleA Particle i
-   * @param particleB Particle j
-   * @param newton3 Flag for if newton3 is used.
-   */
-  void AoSFunctor(mdLib::MoleculeLJ &particleA, mdLib::MoleculeLJ &particleB, bool newton3) final {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-
-  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                      const bool newton3) final {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-
-  static unsigned long getNumFlopsPerKernelCall(bool newton3, size_t numA, size_t numB) { return 0ul; }
-
-  void initTraversal() final {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-
-  void endTraversal(bool newton3) final {
-    autopas::utils::ExceptionHandler::exception(
-        "LJMultisiteFunctorAVX can not be used with MoleculeLJ. Use a MultisiteMoleculeLJ instead.");
-  }
-};
 }  // namespace autopas
