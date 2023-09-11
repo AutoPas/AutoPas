@@ -136,8 +136,8 @@ class RuleBasedTuning : public TuningStrategyInterface {
   void verifyCurrentConfigTime(const Configuration &configuration) const;
 
   /**
-   * Executes the rule file for the current simulation state. Puts all known live info as defines in front of the
-   * program.
+   * Executes the rule file for the current simulation state.
+   * Puts all known live info as "defines" (=definition of variables) in front of the program.
    */
   std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
 
