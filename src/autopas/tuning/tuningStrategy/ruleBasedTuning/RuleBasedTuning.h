@@ -129,7 +129,9 @@ class RuleBasedTuning : public TuningStrategyInterface {
   std::string rulesToString(const std::string &filePath) const;
 
   /**
-   * Determines if the result of this configuration, compared with the results of other configurations tested previously during this tuning phase, contradicts any of the applicable configuration orders and, if so, calls tuningErrorPrinter.
+   * Determines if the result of this configuration, compared with the results of other configurations tested previously
+   * during this tuning phase, contradicts any of the applicable configuration orders and, if so, calls
+   * tuningErrorPrinter.
    *
    * @param configuration
    */
