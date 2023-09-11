@@ -221,9 +221,9 @@ std::string MDFlexConfig::to_string() const {
   };
 
 #if MD_FLEXIBLE_MODE == MULTISITE
-  os << "Running multi-site MD simulation.\n" << endl;
+  os << "# Running multi-site MD simulation.\n" << endl;
 #else
-  os << "Running single-site MD simulation.\n" << endl;
+  os << "# Running single-site MD simulation.\n" << endl;
 #endif
 
   printOption(containerOptions);

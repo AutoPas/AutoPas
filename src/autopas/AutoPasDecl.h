@@ -21,6 +21,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/selectors/AutoTuner.h"
 #include "autopas/selectors/Configuration.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
@@ -28,11 +29,8 @@
 
 namespace autopas {
 
-// Forward declare AutoTuner and LogicHandler so that including this header does not include the whole library with all
+// Forward declare Handler so that including this header does not include the whole library with all
 // containers and traversals.
-template <class Particle>
-class AutoTuner;
-
 template <class Particle>
 class LogicHandler;
 
@@ -287,7 +285,7 @@ class AutoPas {
   template <typename Lambda>
   void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) { containerPtr->forEach(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -297,7 +295,7 @@ class AutoPas {
   template <typename Lambda>
   void forEachParallel(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) { containerPtr->forEach(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -308,7 +306,7 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) { containerPtr->forEach(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -317,7 +315,7 @@ class AutoPas {
    */
   template <typename Lambda>
   void forEach(Lambda forEachLambda, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) { containerPtr->forEach(forEachLambda, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.forEach(forEachLambda, behavior); });
   }
 
   /**
@@ -332,8 +330,7 @@ class AutoPas {
   template <typename Lambda, typename A>
   void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(),
-                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -343,8 +340,7 @@ class AutoPas {
   template <typename Lambda, typename A>
   void reduceParallel(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(),
-                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -357,8 +353,7 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(),
-                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -367,8 +362,7 @@ class AutoPas {
    */
   template <typename Lambda, typename A>
   void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(getContainer(),
-                            [&](auto containerPtr) { containerPtr->reduce(reduceLambda, result, behavior); });
+    withStaticContainerType(getContainer(), [&](auto &container) { container.reduce(reduceLambda, result, behavior); });
   }
 
   /**
@@ -419,8 +413,8 @@ class AutoPas {
                                const std::array<double, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO (lgaertner): parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -433,8 +427,8 @@ class AutoPas {
                                const std::array<double, 3> &higherCorner,
                                IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO (lgaertner): parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -450,8 +444,8 @@ class AutoPas {
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -463,8 +457,8 @@ class AutoPas {
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -484,8 +478,8 @@ class AutoPas {
                               const std::array<double, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -498,8 +492,8 @@ class AutoPas {
                               const std::array<double, 3> &higherCorner,
                               IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
     // TODO lgaertner: parallelize with kokkos integration
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -517,8 +511,8 @@ class AutoPas {
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
 
@@ -530,8 +524,8 @@ class AutoPas {
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner,
                       IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const {
-    withStaticContainerType(getContainer(), [&](auto containerPtr) {
-      containerPtr->reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+    withStaticContainerType(getContainer(), [&](auto &container) {
+      container.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     });
   }
   /**
@@ -970,9 +964,9 @@ class AutoPas {
   void setRuleFileName(const std::string &ruleFileName) { _ruleFileName = ruleFileName; }
 
  private:
-  std::shared_ptr<autopas::ParticleContainerInterface<Particle>> getContainer();
+  autopas::ParticleContainerInterface<Particle> &getContainer();
 
-  std::shared_ptr<const autopas::ParticleContainerInterface<Particle>> getContainer() const;
+  const autopas::ParticleContainerInterface<Particle> &getContainer() const;
 
   /**
    * Lower corner of the container.
@@ -1117,7 +1111,7 @@ class AutoPas {
   /**
    * This is the AutoTuner that owns the container, ...
    */
-  std::unique_ptr<autopas::AutoTuner<Particle>> _autoTuner;
+  std::unique_ptr<autopas::AutoTuner> _autoTuner;
 
   /**
    * Communicator that should be used for MPI calls inside of AutoPas

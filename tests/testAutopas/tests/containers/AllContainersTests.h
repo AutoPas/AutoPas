@@ -14,17 +14,17 @@ class AllContainersTestsBase : public AutoPasTestBase {
  protected:
   std::array<double, 3> boxMin = {0, 0, 0};
   std::array<double, 3> boxMax = {10, 10, 10};
+  double cutoff = 1;
+  autopas::ContainerSelector<Particle> selector{boxMin, boxMax, cutoff};
 
   template <class ParticleType = autopas::Particle>
-  auto getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
-    double cutoff = 1;
-    double skinPerTimestep = 0.01;
-    unsigned int rebuildFrequency = 20;
-    double cellSizeFactor = 1;
+  auto &getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
+    const double skinPerTimestep = 0.01;
+    const unsigned int rebuildFrequency = 20;
+    const double cellSizeFactor = 1;
 
-    autopas::ContainerSelector<Particle> selector{boxMin, boxMax, cutoff};
-    autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
-                                                autopas::LoadEstimatorOption::none};
+    const autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
+                                                      autopas::LoadEstimatorOption::none};
     selector.selectContainer(containerOptionToTest, selectorInfo);
     return selector.getCurrentContainer();
   }

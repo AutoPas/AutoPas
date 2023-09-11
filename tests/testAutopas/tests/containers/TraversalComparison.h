@@ -57,8 +57,8 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static auto getTestParams();
 
  protected:
-  template <class ContainerPtrType>
-  static void executeShift(ContainerPtrType containerPtr, double magnitude, size_t totalNumParticles);
+  template <class ContainerType>
+  static void executeShift(ContainerType &containerPtr, double magnitude, size_t totalNumParticles);
 
   template <bool globals>
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForces(
