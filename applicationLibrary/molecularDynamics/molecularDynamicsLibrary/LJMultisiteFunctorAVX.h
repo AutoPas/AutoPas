@@ -35,13 +35,18 @@ namespace autopas {
  * values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam useMasks if true, use a 0/1 mask (i.e. calculate all forces for all molecules considered then multiply by
+ * 0 if molecules are beyond the cutoff and 1 if molecules are within cutoff). If false, use a Gather/Scatter approach
+ * i.e. calculate forces only for
+ * @tparam vecLength number of doubles that fit into a vector register. Todo Handle this automatically.
+ * MUST be power of 2 because some optimizations make this assumption.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+          bool relevantForTuning = true, bool useMasks = true, size_t vecLength = 4>
 class LJMultisiteFunctorAVX
     : public autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3,
-                                                              calculateGlobals, relevantForTuning>> {
+                                                              calculateGlobals, relevantForTuning, useMasks, vecLength>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -97,16 +102,6 @@ class LJMultisiteFunctorAVX
    */
   const std::vector<std::array<double, 3>> _sitePositionsLJ{};
 
-  // number of double values that fit into a vector register.
-  // MUST be power of 2 because some optimizations make this assumption
-  constexpr static size_t vecLength = 4;
-
-  /**
-   * Whether to build vectors for exact site position locally in each function call or once globally.
-   * @note Currently only implemented for Verlet functor
-   */
-  constexpr static bool useLocalVectors = true;
-
   /**
    * @brief Whether to use site masks or site indices
    *
@@ -121,7 +116,7 @@ class LJMultisiteFunctorAVX
    * efficient memory operations. It may result in poorer cache performance due to potentially scattered memory access
    * patterns.
    */
-  constexpr static bool useRegularSiteMasks = false;
+//  constexpr static bool useRegularSiteMasks = false;
 
   /**
    * @brief How to evaluate the cutoff condition
@@ -130,7 +125,7 @@ class LJMultisiteFunctorAVX
    * If set to false, the cutoff conditions is evaluated between the center of mass of the first particle and the site
    * positions of the second particle
    */
-  constexpr static bool useCTC = true;
+//  constexpr static bool useCTC = true;
 
 #ifdef __AVX__
   const __m256d _cutoffSquared{};
@@ -170,7 +165,7 @@ class LJMultisiteFunctorAVX
   explicit LJMultisiteFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
       : Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                relevantForTuning>>(cutoff),
+                                                relevantForTuning, vecLength>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -356,18 +351,10 @@ class LJMultisiteFunctorAVX
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
     if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
-    if constexpr (useLocalVectors) {
-      if (newton3) {
-        SoAFunctorVerletImpl_local<true>(soa, indexFirst, neighborList);
-      } else {
-        SoAFunctorVerletImpl_local<false>(soa, indexFirst, neighborList);
-      }
+    if (newton3) {
+      SoAFunctorVerletImpl_local<true>(soa, indexFirst, neighborList);
     } else {
-      if (newton3) {
-        SoAFunctorVerletImpl_global<true>(soa, indexFirst, neighborList);
-      } else {
-        SoAFunctorVerletImpl_global<false>(soa, indexFirst, neighborList);
-      }
+      SoAFunctorVerletImpl_local<false>(soa, indexFirst, neighborList);
     }
   }
 
@@ -486,20 +473,12 @@ class LJMultisiteFunctorAVX
       std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
       std::array<double, 3> centerOfMass{xptr[molA], yptr[molA], zptr[molA]};
 
-      if constexpr (useCTC) {
+
         std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soa.getNumberOfParticles() - molA - 1);
         std::iota(indices.begin(), indices.end(), molA + 1);
 
-        siteMask = buildSiteMask<true>(useRegularSiteMasks, indices, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass);
-      } else {
-        std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(noSitesB);
-        std::iota(indices.begin(), indices.end(), 0);
+        siteMask = buildSiteMask<true>(useMasks, indices, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass);
 
-        siteMask = buildSiteMask<false>(useRegularSiteMasks, indices, exactSitePositionX.data(), exactSitePositionY.data(),
-                                        exactSitePositionZ.data(), typeptr,
-                                        reinterpret_cast<const autopas::OwnershipState *>(isSiteOwned.data()),
-                                        centerOfMass, siteIndexMolB);
-      }
 
       // ------------------- Calculate Forces -------------------
 
@@ -514,7 +493,7 @@ class LJMultisiteFunctorAVX
 
         std::array<double, 3> forceAccumulator = {0., 0., 0.};
 
-        SoAKernel<true, false, useRegularSiteMasks>(
+        SoAKernel<true, false, useMasks>(
             siteMask, siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ, siteForceX, siteForceY,
             siteForceZ, isSiteOwned, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA, forceAccumulator,
             torqueAccumulator, potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
@@ -708,19 +687,12 @@ class LJMultisiteFunctorAVX
       std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
       std::array<double, 3> centerOfMass{xAptr[molA], yAptr[molA], zAptr[molA]};
 
-      if constexpr (useCTC) {
-        std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soaB.getNumberOfParticles());
-        std::iota(indices.begin(), indices.end(), 0);
+      std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soaB.getNumberOfParticles());
+      std::iota(indices.begin(), indices.end(), 0);
 
-        siteMask =
-            buildSiteMask<true>(useRegularSiteMasks, indices, xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass);
-      } else {
-        std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(siteCountB);
-        std::iota(indices.begin(), indices.end(), 0);
+      siteMask =
+          buildSiteMask<true>(useMasks, indices, xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass);
 
-        siteMask = buildSiteMask<false>(useRegularSiteMasks, indices, exactSitePositionBx.data(), exactSitePositionBy.data(), exactSitePositionBz.data(),
-            typeptrB, reinterpret_cast<const autopas::OwnershipState *>(isSiteOwnedBArr.data()), centerOfMass);
-      }
 
       // ------------------- Calculate Forces -------------------
 
@@ -733,7 +705,7 @@ class LJMultisiteFunctorAVX
         const std::array<double, 3> exactSitePositionA =
             autopas::utils::ArrayMath::add(rotatedSitePositionA, centerOfMass);
 
-        SoAKernel<newton3, true, useRegularSiteMasks>(
+        SoAKernel<newton3, true, useMasks>(
             siteMask, siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz, siteForceBx,
             siteForceBy, siteForceBz, isSiteOwnedBArr, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA,
             forceAccumulator, torqueAccumulator, potentialEnergyAccumulator, virialAccumulator);
@@ -1226,17 +1198,10 @@ class LJMultisiteFunctorAVX
     std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
     std::array<double, 3> centerOfMass{xptr[indexFirst], yptr[indexFirst], zptr[indexFirst]};
 
-    if constexpr (useCTC) {
-      siteMask =
-          buildSiteMask<true>(useRegularSiteMasks, neighborList, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass);
-    } else {
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(siteCountNeighbors);
-      std::iota(indices.begin(), indices.end(), 0);
-      siteMask = buildSiteMask<false>(useRegularSiteMasks, indices, exactNeighborSitePositionsX.data(),
-                                      exactNeighborSitePositionsY.data(), exactNeighborSitePositionsZ.data(), typeptr,
-                                      reinterpret_cast<const autopas::OwnershipState *>(isNeighborSiteOwnedArr.data()),
-                                      centerOfMass);
-    }
+
+    siteMask =
+        buildSiteMask<true>(useMasks, neighborList, xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass);
+
 
     // ------------------- Calculate Forces -------------------
 
@@ -1249,7 +1214,7 @@ class LJMultisiteFunctorAVX
       const std::array<double, 3> exactSitePositionPrime =
           autopas::utils::ArrayMath::add(rotatedSitePositionPrime, centerOfMass);
 
-      SoAKernel<newton3, true, useRegularSiteMasks>(
+      SoAKernel<newton3, true, useMasks>(
           siteMask, siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
           exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ, isNeighborSiteOwnedArr, ownedStatePrime,
           siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator,

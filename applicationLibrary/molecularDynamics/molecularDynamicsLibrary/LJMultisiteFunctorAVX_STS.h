@@ -37,13 +37,18 @@ namespace autopas {
  * values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam useMasks if true, use a 0/1 mask (i.e. calculate all forces for all molecules considered then multiply by
+ * 0 if molecules are beyond the cutoff and 1 if molecules are within cutoff). If false, use a Gather/Scatter approach
+ * i.e. calculate forces only for. This currently does nothing. Todo Do not merge to master like this.
+ * @tparam vecLength number of doubles that fit into a vector register. Todo Handle this automatically.
+ * MUST be power of 2 because some optimizations make this assumption.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+          bool relevantForTuning = true, bool useMasks = true, size_t vecLength = 4>
 class LJMultisiteFunctorAVX_STS
     : public autopas::Functor<Particle, LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3,
-                                                              calculateGlobals, relevantForTuning>> {
+                                                              calculateGlobals, relevantForTuning, useMasks, vecLength>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -98,11 +103,6 @@ class LJMultisiteFunctorAVX_STS
    * List of relative unrotated LJ Site Positions. This is to be used when there is no mixing of molecules.
    */
   const std::vector<std::array<double, 3>> _sitePositionsLJ{};
-
-  // number of double values that fit into a vector register.
-  // MUST be power of 2 because some optimizations make this assumption
-  // todo vary this for AVX512
-  constexpr static size_t vecLength = 4;
 
 #ifdef __AVX__
   const __m256d _cutoffSquared{};
@@ -199,6 +199,8 @@ class LJMultisiteFunctorAVX_STS
 
   /**
    * @copydoc Functor::AoSFunctor(Particle&, Particle&, bool)
+   *
+   * @ note the AoSFunctor still uses a CoM-CoM cutoff. Todo change this
    */
   void AoSFunctor(Particle &particleA, Particle &particleB, bool newton3) final {
     if (particleA.isDummy() or particleB.isDummy()) {
