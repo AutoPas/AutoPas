@@ -420,8 +420,7 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
     cell.setCellLength(_cellLength);
   }
 
-  // determine the particle types, this cell can contain. This is later used in the CellFunctor to skip calculations
-  // between pure halo-halo interactions
+  // determine the OwnershipStates, each cell can contain. This is later used in the CellFunctor to skip calculations
   for (int i = 0; i < numCells; i++) {
     const bool canHaveHalos = cellCanContainHaloParticles(i);
     const bool canHaveOwned = cellCanContainOwnedParticles(i);

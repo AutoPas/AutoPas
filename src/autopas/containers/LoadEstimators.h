@@ -36,7 +36,8 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
   for (unsigned long x = lowerCorner[0]; x <= upperCorner[0]; x++) {
     for (unsigned long y = lowerCorner[1]; y <= upperCorner[1]; y++) {
       for (unsigned long z = lowerCorner[2]; z <= upperCorner[2]; z++) {
-        auto load = cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension)].size();
+        const auto load =
+            cells[autopas::utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension)].size();
         sum += load * load;
       }
     }

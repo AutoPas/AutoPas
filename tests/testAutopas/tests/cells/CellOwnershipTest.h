@@ -18,6 +18,4 @@ class CellOwnershipTestTyped : public AutoPasTestBase {
   CellOwnershipTestTyped() = default;
 
   ~CellOwnershipTestTyped() override = default;
-
- private:
 };

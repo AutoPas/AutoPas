@@ -32,6 +32,4 @@ class CellFunctorTest : public AutoPasTestBase {
   CellFunctorTest() = default;
 
   ~CellFunctorTest() override = default;
-
- private:
 };

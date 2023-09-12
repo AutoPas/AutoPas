@@ -162,13 +162,13 @@ class ParticleCell {
    */
   void setPossibleParticleOwnerships(OwnershipState state) {
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
-    if (_ownershipStateSet) {
+    if (_ownershipStateDefined) {
       autopas::utils::ExceptionHandler::exception(
           "ParticleCell::setPossibleParticleOwnerships() can not set OwnershipState of a cell after "
           "it has been set");
     }
     _ownershipState = state;
-    _ownershipStateSet = true;
+    _ownershipStateDefined = true;
   }
 
   /**
@@ -185,7 +185,7 @@ class ParticleCell {
   /**
    * Flag that is set to true once OwnershipState has been set to avoid resetting the OwnershipState
    */
-  bool _ownershipStateSet{false};
+  bool _ownershipStateDefined{false};
 };
 
 }  // namespace autopas

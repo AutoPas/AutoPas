@@ -17,6 +17,11 @@ static auto toString = [](const auto &info) {
   return res;
 };
 
+/**
+ * Tests for all containers if the method getNumberOfParticles(IteratorBehavior behavior) returns the correct number of
+ * particles internally stored in cells with respect to different IteratorBehaviors.
+ *
+ */
 TEST_P(ParticleCounterTest, testGetNumberOfParticles) {
   auto containerOption = GetParam();
 

@@ -6,6 +6,11 @@
 
 #include "CellFunctorTest.h"
 
+/**
+ * All relevant CellFunctor configurations which are used to instantiate the typed test cases
+ * testOwnedAndHaloCellInteractionPair and testOwnedAndHaloCellInteractionSingle
+ *
+ */
 using CellFTestingTypes = ::testing::Types<
     std::pair<autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
                                              autopas::DataLayoutOption::aos, false, false>,
@@ -32,6 +37,23 @@ using CellFTestingTypes = ::testing::Types<
                                              autopas::DataLayoutOption::soa, true, true>,
               CellFunctorWrapper<autopas::DataLayoutOption::soa, true, true>>>;
 
+/**
+ * Helper for testOwnedAndHaloCellInteractionPair andtestOwnedAndHaloCellInteractionSingle that creates particles and
+ * cells with given OwnershipStates, executes CellFunctor::processCellPair or CellFunctor::processCell and returnes the
+ * calculated forces on particles.
+ *
+ * @tparam T The type of CellFunctor
+ * @param cellFunctor
+ * @param osp1 OwnershipState for particle 1 (for testOwnedAndHaloCellInteractionPair this partile is in cell 1)
+ * @param osp2 OwnershipState for particle 2 (for testOwnedAndHaloCellInteractionPair this partile is in cell 2)
+ * @param osc1 OwnershipState for cell 1 (for testOwnedAndHaloCellInteractionSingle both particles are in this cell)
+ * @param osc2 OwnershipState for cell 2 (only used in testOwnedAndHaloCellInteractionPair)
+ * @param dataLayout AoS or SoA
+ * @param ljFunctor The functor to evaluate forces
+ * @param singleCell boolean if called from testOwnedAndHaloCellInteractionPair (false) or from
+ * testOwnedAndHaloCellInteractionSingle (true)
+ * @return std::tuple<double, double>
+ */
 template <class T>
 std::tuple<double, double> ownedHaloInteractionHelper(T &cellFunctor, const autopas::OwnershipState osp1,
                                                       const autopas::OwnershipState osp2,
@@ -89,6 +111,12 @@ std::tuple<double, double> ownedHaloInteractionHelper(T &cellFunctor, const auto
 
 TYPED_TEST_CASE_P(CellFunctorTest);
 
+/**
+ * Tests if pure halo-halo cell interactions or interactions between a halo cell and any other cell with newton3==false
+ * and bidirection==false are skipped in the CellFunctor (no forces are calculated). Tests if all other interactions
+ * result in force calculations.
+ *
+ */
 TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
   const double cutoff = 1.;
   const double sigma = 1.;
@@ -164,6 +192,11 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
   }
 }
 
+/**
+ * Tests if force calculation is skipped in the CellFunctor with a pure halo cell. Checks if force calculations are done
+ * for a cell that can contain owned particles.
+ *
+ */
 TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
   const double cutoff = 1.;
   const double sigma = 1.;

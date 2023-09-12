@@ -6,81 +6,102 @@
 
 #include "CellOwnershipTest.h"
 
+/**
+ * The CellOwnershipTests are only executed for FullParticleCell, ReferenceParticleCell, SortedCellView and
+ * OctreeLeafNode. Note: For OctreeNodeWrapper (which also inherits from ParticleCell) these tests are not executed,
+ * since it only manages internal nodes that store the particles. Only the OctreeLeafNodes store the particles in an
+ * internal storage.
+ * The ClusterTowers (which also inherits from ParticleCell) internally use a FullParticleCell to store particles.
+ */
+
 using CellOwnershipTestingTypes =
     ::testing::Types<autopas::FullParticleCell<Molecule>, autopas::ReferenceParticleCell<Molecule>>;
 
 TYPED_TEST_CASE_P(CellOwnershipTestTyped);
 
+/**
+ * Tries to add owned and halo particles to cells with different ownership states and checks the expected exception
+ * behavior.
+ */
 TEST(CellOwnershipTest, testOwnershipFullParticleCell) {
   for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
     autopas::FullParticleCell<Molecule> cell({1., 1., 1.});
 
     cell.setPossibleParticleOwnerships(ownershipState);
 
-    Molecule po({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
-    po.setOwnershipState(autopas::OwnershipState::owned);
+    Molecule pOwned({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
+    pOwned.setOwnershipState(autopas::OwnershipState::owned);
 
-    Molecule ph({0.2, 0.2, 0.2}, {0., 0., 0.}, 0);
-    ph.setOwnershipState(autopas::OwnershipState::halo);
+    Molecule pHalo({0.2, 0.2, 0.2}, {0., 0., 0.}, 0);
+    pHalo.setOwnershipState(autopas::OwnershipState::halo);
 
-    Molecule pd({0.3, 0.3, 0.3}, {0., 0., 0.}, 0);
-    pd.setOwnershipState(autopas::OwnershipState::dummy);
+    Molecule pDummy({0.3, 0.3, 0.3}, {0., 0., 0.}, 0);
+    pDummy.setOwnershipState(autopas::OwnershipState::dummy);
 
-    Molecule p1, p2;
+    Molecule pGood, pBad;
 
     if (ownershipState == autopas::OwnershipState::owned) {
-      p1 = po;
-      p2 = ph;
+      pGood = pOwned;
+      pBad = pHalo;
     } else {
-      p1 = ph;
-      p2 = po;
+      pGood = pHalo;
+      pBad = pOwned;
     }
 
-    EXPECT_NO_THROW(cell.addParticle(p1));
+    EXPECT_NO_THROW(cell.addParticle(pGood));
 
     // A dummy can be added always
-    EXPECT_NO_THROW(cell.addParticle(pd));
+    EXPECT_NO_THROW(cell.addParticle(pDummy));
 
     // A halo particle can not be added to a pure owned cell and vice versa
-    EXPECT_ANY_THROW(cell.addParticle(p2));
+    EXPECT_ANY_THROW(cell.addParticle(pBad));
   }
 }
 
+/**
+ * Tries to add owned and halo particles to cells with different ownership states and checks the expected exception
+ * behavior.
+ */
 TEST(CellOwnershipTest, testOwnershipReferenceParticleCell) {
   for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
     autopas::ReferenceParticleCell<Molecule> cell({1., 1., 1.});
 
     cell.setPossibleParticleOwnerships(ownershipState);
 
-    Molecule po({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
-    po.setOwnershipState(autopas::OwnershipState::owned);
+    Molecule pOwned({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
+    pOwned.setOwnershipState(autopas::OwnershipState::owned);
 
-    Molecule ph({0.2, 0.2, 0.2}, {0., 0., 0.}, 0);
-    ph.setOwnershipState(autopas::OwnershipState::halo);
+    Molecule pHalo({0.2, 0.2, 0.2}, {0., 0., 0.}, 0);
+    pHalo.setOwnershipState(autopas::OwnershipState::halo);
 
-    Molecule pd({0.3, 0.3, 0.3}, {0., 0., 0.}, 0);
-    pd.setOwnershipState(autopas::OwnershipState::dummy);
+    Molecule pDummy({0.3, 0.3, 0.3}, {0., 0., 0.}, 0);
+    pDummy.setOwnershipState(autopas::OwnershipState::dummy);
 
-    Molecule p1, p2;
+    Molecule pGood, pBad;
 
     if (ownershipState == autopas::OwnershipState::owned) {
-      p1 = po;
-      p2 = ph;
+      pGood = pOwned;
+      pBad = pHalo;
     } else {
-      p1 = ph;
-      p2 = po;
+      pGood = pHalo;
+      pBad = pOwned;
     }
 
-    EXPECT_NO_THROW(cell.addParticleReference(&p1));
+    EXPECT_NO_THROW(cell.addParticleReference(&pGood));
 
     // A dummy can be added always
-    EXPECT_NO_THROW(cell.addParticleReference(&pd));
+    EXPECT_NO_THROW(cell.addParticleReference(&pDummy));
 
     // A halo particle can not be added to a pure owned cell and vice versa
-    EXPECT_ANY_THROW(cell.addParticleReference(&p2));
+    EXPECT_ANY_THROW(cell.addParticleReference(&pBad));
   }
 }
 
+/**
+ * Tries to create a SortedCellView from a FullParticleCell and checks if the OwnershipState is transfered correctly
+ * Note: Since a SortedCellView does not allow to add particles we do not check the exception behavior for adding
+ * particles here.
+ */
 TEST(CellOwnershipTest, testOwnershipSortedCellView) {
   for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
     autopas::FullParticleCell<Molecule> cell({1., 1., 1.});
@@ -95,41 +116,48 @@ TEST(CellOwnershipTest, testOwnershipSortedCellView) {
   }
 }
 
+/**
+ * Tries to add owned and halo particles to cells with different ownership states and checks the expected exception
+ * behavior.
+ */
 TEST(CellOwnershipTest, testOwnershipOctreeLeafNode) {
   for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
     autopas::OctreeLeafNode<Molecule> cell({0, 0, 0}, {1., 1., 1.}, nullptr, 5, 1., 1.);
 
     cell.setPossibleParticleOwnerships(ownershipState);
 
-    Molecule po({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
-    po.setOwnershipState(autopas::OwnershipState::owned);
+    Molecule pOwned({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
+    pOwned.setOwnershipState(autopas::OwnershipState::owned);
 
-    Molecule ph({0.2, 0.2, 0.2}, {0., 0., 0.}, 0);
-    ph.setOwnershipState(autopas::OwnershipState::halo);
+    Molecule pHalo({0.2, 0.2, 0.2}, {0., 0., 0.}, 0);
+    pHalo.setOwnershipState(autopas::OwnershipState::halo);
 
-    Molecule pd({0.3, 0.3, 0.3}, {0., 0., 0.}, 0);
-    pd.setOwnershipState(autopas::OwnershipState::dummy);
+    Molecule pDummy({0.3, 0.3, 0.3}, {0., 0., 0.}, 0);
+    pDummy.setOwnershipState(autopas::OwnershipState::dummy);
 
-    Molecule p1, p2;
+    Molecule pGood, pBad;
 
     if (ownershipState == autopas::OwnershipState::owned) {
-      p1 = po;
-      p2 = ph;
+      pGood = pOwned;
+      pBad = pHalo;
     } else {
-      p1 = ph;
-      p2 = po;
+      pGood = pHalo;
+      pBad = pOwned;
     }
 
-    EXPECT_NO_THROW(cell.insert(p1));
+    EXPECT_NO_THROW(cell.insert(pGood));
 
     // A dummy can be added always
-    EXPECT_NO_THROW(cell.insert(pd));
+    EXPECT_NO_THROW(cell.insert(pDummy));
 
     // A halo particle can not be added to a pure owned cell and vice versa
-    EXPECT_ANY_THROW(cell.insert(p2));
+    EXPECT_ANY_THROW(cell.insert(pBad));
   }
 }
 
+/**
+ * Checks the default OwnershipState of particle cells and expected exception behavior if OwnershipState is reset.
+ */
 TYPED_TEST_P(CellOwnershipTestTyped, testSetOwnershipState) {
   TypeParam cell({1., 1., 1.});
 
