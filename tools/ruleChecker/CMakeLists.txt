@@ -7,6 +7,6 @@ file(
 
 add_executable(ruleChecker ${ruleChecker_SRC})
 
-target_include_directories(ruleChecker PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(ruleChecker PUBLIC .)
 
 target_link_libraries(ruleChecker PUBLIC autopas autopasTools)

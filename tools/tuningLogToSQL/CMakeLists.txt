@@ -8,7 +8,7 @@ if(SQLite3_FOUND)
             "*.h"
     )
     add_executable(tuningLogToSQL ${tuningLogToSQL_SRC})
-    target_include_directories(tuningLogToSQL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${SQLite3_INCLUDE_DIRS})
+    target_include_directories(tuningLogToSQL PUBLIC . ${SQLite3_INCLUDE_DIRS})
     target_link_libraries(tuningLogToSQL PUBLIC autopas autopasTools ${SQLite3_LIBRARIES})
 
 else()
