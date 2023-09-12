@@ -199,19 +199,10 @@ class LJMultisiteFunctorAVX_STS
 
   /**
    * @copydoc Functor::AoSFunctor(Particle&, Particle&, bool)
-   *
-   * @ note the AoSFunctor still uses a CoM-CoM cutoff. Todo change this
    */
   void AoSFunctor(Particle &particleA, Particle &particleB, bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
     if (particleA.isDummy() or particleB.isDummy()) {
-      return;
-    }
-
-    // Don't calculate force if particleB outside cutoff of particleA
-    const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
-    const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
-
-    if (distanceSquaredCoM > _cutoffSquaredAoS) {
       return;
     }
 
@@ -231,7 +222,7 @@ class LJMultisiteFunctorAVX_STS
     const std::vector<std::array<double, 3>> unrotatedSitePositionsB =
         useMixing ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositionsLJ;
 
-    // calculate correctly rotated relative site positions (rotated correctly)
+    // calculate correctly rotated relative site positions
     const auto rotatedSitePositionsA =
         autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
     const auto rotatedSitePositionsB =
@@ -239,9 +230,14 @@ class LJMultisiteFunctorAVX_STS
 
     for (int i = 0; i < numSitesA; i++) {
       for (int j = 0; j < numSitesB; j++) {
-        const auto displacement = autopas::utils::ArrayMath::add(
-            autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
+        const auto exactSitePositionA = particleA.getR() + rotatedSitePositionsA[i];
+        const auto exactSitePositionB = particleB.getR() + rotatedSitePositionsB[i];
+        const auto displacement = exactSitePositionA - exactSitePositionB;
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
+
+        if (distanceSquared < _cutoffSquaredAoS) {
+          continue;
+        }
 
         const auto sigmaSquared =
             useMixing ? _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]) : _sigmaSquaredAoS;
