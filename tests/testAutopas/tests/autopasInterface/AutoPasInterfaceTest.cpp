@@ -459,7 +459,7 @@ TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
   }
 }
 
-TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
+TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::ArrayMath::ceil;
   using autopas::utils::ArrayUtils::static_cast_copy_array;
@@ -493,9 +493,9 @@ TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
             conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
       });
 
-  EXPECT_EQ(conf.isValid(), traversalPtr->isApplicable())
-      << "Either the domain is chosen badly (fix this!) or isValid and isApplicable don't follow the same logic "
-         "anymore.";
+  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr->isApplicable())
+      << "Either the domain is chosen badly (fix this!) or hasCompatibleValues and isApplicable don't follow the same"
+         "logic anymore.";
 }
 
 using ::testing::Combine;
