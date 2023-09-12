@@ -28,22 +28,25 @@ class TuningStrategyInterface {
   virtual TuningStrategyOption getOptionType() = 0;
 
   /**
-   * Store empirically collected information for the current configuration.
+   * Notifies the strategy about empirically collected information for the given configuration.
+   *
+   * All evidence is stored centrally in the AutoTuner and its EvidenceCollection is passed to the tuning strategies
+   * during optimization.
    *
    * Implementing this function is only necessary if the tuning strategy processes evidence differently
    * than EvidenceCollection.
    *
-   * @param configuration Measured traversal time.
-   * @param evidence Number of the las iteration of this evidence as counted by AutoTuner.
+   * @param configuration Configuration used to obtain the evidence.
+   * @param evidence Measurement and when it was taken.
    */
   virtual void addEvidence(const Configuration &configuration, const Evidence &evidence){};
 
   /**
-   * Selects the next configuration to test or the optimum.
+   * Optimizes the queue of configurations to process.
    *
-   * A bool is returned indicating whether more tuning steps are required (=true) or the optimum was found (=false).
-   * The new configuration can be obtained by getCurrentConfiguration. It is the configuration which is either the next
-   * configuration to test (=true) or the optimum (=false).
+   * This function is called once before each iteration in a tuning phase so all tuning strategies can give their
+   * input on which configuration to try next. This is done by reordering configQueue so that the next configuration
+   * to try is at the end (FIFO).
    *
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
@@ -53,6 +56,9 @@ class TuningStrategyInterface {
 
   /**
    * Reset all internal parameters to the beginning of a new tuning phase.
+   *
+   * This can also mean to reorder the configQueue to some initially expected state.
+   *
    * @param iteration Gives the current iteration to the tuning strategy.
    * @param tuningPhase Gives the current tuning phase to the tuning strategy.
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.

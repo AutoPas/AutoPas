@@ -616,7 +616,7 @@ class AutoPas {
    */
   void setAllowedCellSizeFactors(const NumberSet<double> &allowedCellSizeFactors) {
     if (allowedCellSizeFactors.getMin() <= 0.0) {
-      utils::ExceptionHandler::exception("Error: minimum cell size factor has to be positive <= 0.0!",
+      utils::ExceptionHandler::exception("Error: minimum cell size factor has to be positive {} <= 0.0!",
                                          allowedCellSizeFactors.getMin());
     }
     _allowedCellSizeFactors = std::move(allowedCellSizeFactors.clone());

@@ -78,16 +78,17 @@ SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
 
 std::set<double> SearchSpaceGenerators::calculateRelevantCsfs(const NumberInterval<double> &numberInterval,
                                                               double interactionLength, double domainLengthX) {
-  // helper functions for readability
-  auto calcNumCells = [](double domainLength, double interactionLength, double csf) {
-    return static_cast<unsigned int>(std::floor(domainLength / (interactionLength * csf)));
-  };
+  // helper function for readability
   auto calcCsf = [](double domainLength, double interactionLength, unsigned int numberOfCells) {
     return domainLength / (static_cast<double>(numberOfCells) * interactionLength);
   };
 
-  const auto numCellsMin = calcNumCells(domainLengthX, interactionLength, numberInterval.getMax());
-  const auto numCellsMax = calcNumCells(domainLengthX, interactionLength, numberInterval.getMin());
+  // ceil to stay within the given interval
+  const auto numCellsMin =
+      static_cast<unsigned int>(std::ceil(domainLengthX / (interactionLength * numberInterval.getMax())));
+  // floor to stay within the given interval
+  const auto numCellsMax =
+      static_cast<unsigned int>(std::floor(domainLengthX / (interactionLength * numberInterval.getMin())));
 
   // find the CSFs for all possible amounts of cells in the interval
   std::set<double> relevantCsfs{};

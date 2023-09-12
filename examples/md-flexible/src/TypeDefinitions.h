@@ -46,7 +46,7 @@ using FloatPrecision = double;
 /**
  * Type of the Particles used in md-flexible.
  * Switches between autopas::MoleculeLJ and autopas::MultisiteMoleculeLJ as determined by CMake flag
- * MD_FLEXIBLE_USE_MULTI_SITE.
+ * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
@@ -58,7 +58,7 @@ using ParticleType = mdLib::MoleculeLJ;
 /**
  * Type of LJFunctorTypeAutovec used in md-flexible.
  * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
- * MD_FLEXIBLE_USE_MULTI_SITE.
+ * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
@@ -72,7 +72,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 /**
  * Type of LJFunctorTypeAutovecGlobals used in md-flexible.
  * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
- * MD_FLEXIBLE_USE_MULTI_SITE.
+ * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovecGlobals =
@@ -87,7 +87,7 @@ using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, a
 /**
  * Type of LJFunctorTypeAVX used in md-flexible.
  * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
- * MD_FLEXIBLE_USE_MULTI_SITE.
+ * MD_FLEXIBLE_MODE.
  * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -102,7 +102,7 @@ using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
 /**
  * Type of LJFunctorTypeSVE used in md-flexible.
  * Switches between mdLib::LJFunctorSVE and mdLib::LJMultisiteFunctorSVE as determined by CMake flag
- * MD_FLEXIBLE_USE_MULTI_SITE.
+ * MD_FLEXIBLE_MODE.
  * @note mdLib::LJMultisiteFunctorSVE is yet to be written, so a compiler pre-processing error is thrown.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE

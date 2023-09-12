@@ -234,7 +234,8 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
               case TuningMetricOption::energy:
                 return "energy consumption";
             }
-            return "unknown tuning metric";
+            autopas::utils::ExceptionHandler::exception("AutoTuner::addMeasurement(): Unknown tuning metric.");
+            return "Unknown tuning metric";
           }(),
           [&]() {
             std::ostringstream ss;

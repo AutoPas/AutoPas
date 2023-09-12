@@ -86,17 +86,18 @@ TEST(OptionTest, parseSelectorOptionsTest) {
 
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
-      {autopas::TuningStrategyOption::bayesianSearch, "bayesian-Search"},
-      {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster-Search"},
-      {autopas::TuningStrategyOption::fullSearch, "full-Search"},
-      {autopas::TuningStrategyOption::randomSearch, "random-Search"},
-      {autopas::TuningStrategyOption::activeHarmony, "active-harmony"},
-      {autopas::TuningStrategyOption::predictiveTuning, "predictive-tuning"},
-      {autopas::TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
-      {autopas::TuningStrategyOption::slowConfigFilter, "slow-config-filter"},
-      {autopas::TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
-      {autopas::TuningStrategyOption::sortByName, "sort-by-name"},
-      {autopas::TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"}};
+      {autopas::TuningStrategyOption::activeHarmony, "harmony"},
+      {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
+      {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
+      {autopas::TuningStrategyOption::fullSearch, "full"},
+      {autopas::TuningStrategyOption::mpiDivideAndConquer, "divide&conquer"},
+      {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
+      {autopas::TuningStrategyOption::randomSearch, "random"},
+      {autopas::TuningStrategyOption::ruleBasedTuning, "rule-based"},
+      {autopas::TuningStrategyOption::slowConfigFilter, "slow-filter"},
+      {autopas::TuningStrategyOption::sortByName, "sortbyname"},
+      {autopas::TuningStrategyOption::tuningStrategyLogger, "tuningstratLogger"},
+  };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());
 

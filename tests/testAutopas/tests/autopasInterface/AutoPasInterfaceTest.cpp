@@ -280,7 +280,7 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecul
                                                                            << "Called from line: " << line;
 }
 
-void setFromOptions(const autopas::Configuration &conf, autopas::AutoPas<Molecule> &autoPas) {
+void setFromConfig(const autopas::Configuration &conf, autopas::AutoPas<Molecule> &autoPas) {
   autoPas.setAllowedContainers({conf.container});
   autoPas.setAllowedTraversals({conf.traversal});
   autoPas.setAllowedLoadEstimators({conf.loadEstimator});
@@ -293,7 +293,7 @@ void testSimulationLoop(const autopas::Configuration &conf) {
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
-  setFromOptions(conf, autoPas);
+  setFromConfig(conf, autoPas);
 
   defaultInit(autoPas);
 
@@ -383,7 +383,7 @@ void testHaloCalculation(const autopas::Configuration &conf) {
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
-  setFromOptions(conf, autoPas);
+  setFromConfig(conf, autoPas);
 
   defaultInit(autoPas);
 

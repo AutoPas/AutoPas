@@ -23,7 +23,14 @@ PredictiveTuning::PredictiveTuning(double relativeOptimum, unsigned int maxTunin
       _extrapolationMethod(extrapolationMethodOption),
       _minNumberOfEvidence(
           extrapolationMethodOption == ExtrapolationMethodOption::linePrediction ? 2 : testsUntilFirstPrediction),
-      _predictionLogger(outputSuffix) {}
+      _predictionLogger(outputSuffix) {
+  if (_relativeOptimumRange < 1.) {
+    utils::ExceptionHandler::exception(
+        "PredictiveTuning::_relativeOptimumRange has to be > 1 but is {}."
+        " Otherwise no configuration can ever be good enough, because we would require them to be "
+        "better than the best prediction.");
+  }
+}
 
 PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
     size_t iteration, size_t tuningPhase, const std::vector<Configuration> &configurations,
@@ -54,7 +61,8 @@ PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
       return _predictionErrorValue;
     }();
     if (predictionValue != _predictionErrorValue) {
-      predictions[configuration] = predictionValue;
+      // make sure each prediction is at lease zero
+      predictions[configuration] = std::max(0l, predictionValue);
     }
   }
   // if AutoPas is compiled without -DAUTOPAS_LOG_PREDICTIONS this does nothing
@@ -334,22 +342,33 @@ void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<C
   // Flush configurations and only re-insert those with good predictions.
   configQueue.clear();
   configQueue.reserve(predictions.size() + _tooLongNotTestedSearchSpace.size());
-  // Insert configurations that were not tested for too long and we want to check again.
-  // Insert them first so they are tested last.
+
+  // collect and sort configurations whose predictions are promising
+  const std::vector<Configuration> worthyConfigurations = [&]() {
+    std::vector<Configuration> worthyConfs;
+    // over-reserving is probably cheaper than even one resize
+    worthyConfs.reserve(predictions.size());
+    for (const auto &[conf, prediction] : predictions) {
+      if (prediction <= bestAcceptablePredictionValue) {
+        worthyConfs.push_back(conf);
+      }
+    }
+    // sort by prediction value. Best (=lowest) should be at the back.
+    std::sort(worthyConfs.begin(), worthyConfs.end(),
+              [&](const auto &confA, const auto &confB) { return predictions.at(confA) > predictions.at(confB); });
+    return worthyConfs;
+  }();
+
+  // First insert all long untested configurations except those that are also promising, they will be inserted later.
+  // Since configQueue is FIFO those are now tested last.
   for (const auto &conf : _tooLongNotTestedSearchSpace) {
-    configQueue.push_back(conf);
-  }
-  for (const auto &[conf, prediction] : predictions) {
-    // add the config if it has a promising prediction and is not already in the queue
-    if (prediction < bestAcceptablePredictionValue and
-        std::find(configQueue.begin(), configQueue.end(), conf) == configQueue.end()) {
+    if (std::find(worthyConfigurations.begin(), worthyConfigurations.end(), conf) == worthyConfigurations.end()) {
       configQueue.push_back(conf);
     }
   }
 
-  // sort by prediction value. Best (=lowest) should be at the back.
-  std::sort(configQueue.begin(), configQueue.end(),
-            [&](const auto &confA, const auto &confB) { return predictions.at(confA) > predictions.at(confB); });
+  // Then, insert all worthy configurations so that the most promising is now at the back of the fifo queue.
+  configQueue.insert(configQueue.end(), worthyConfigurations.begin(), worthyConfigurations.end());
 }
 
 void PredictiveTuning::addEvidence(const Configuration &configuration, const Evidence & /*evidence*/) {
