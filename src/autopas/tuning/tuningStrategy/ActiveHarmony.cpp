@@ -112,7 +112,7 @@ void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
   do {
     skipConfig = false;
     if (ah_fetch(htask) < 0) {
-      utils::ExceptionHandler::exception("ActiveHarmony::tuneConfiguration: Error fetching values from server");
+      utils::ExceptionHandler::exception("ActiveHarmony::optimizeSuggestions: Error fetching values from server");
     }
     const auto potentialConf = fetchConfiguration();
     // If we already know the performance for this config in this tuning phase skip it.

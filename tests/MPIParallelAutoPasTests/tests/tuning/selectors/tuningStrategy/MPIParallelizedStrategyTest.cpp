@@ -54,7 +54,7 @@ void MPIParallelizedStrategyTest::testBucketDistribution(
   // Check that all queues have the right size and the queues of each bucket add up to the search space
   EXPECT_EQ(configQueue.size(), expectedNumLocalConfigs[rank])
       << "The local rank was not assigned the expected number of configurations.";
-  // For every bucket check that the union of all configQueses adds up to the full search space
+  // For every bucket check that the union of all configQueues adds up to the full search space
   const auto bucketCommunicator =
       dynamic_cast<autopas::MPIParallelizedStrategy *>(autoTuner.getTuningStrategies().front().get())->getBucket();
   const auto globalConfs =

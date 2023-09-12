@@ -102,11 +102,13 @@ class PredictiveTuningTest : public AutoPasTestBase,
 
   /**
    * TODO: Update doc
-   * Simulates multiple tuning phases. The number of phases depends on the length of the provided vector of evidence.
+   * Simulates multiple tuning phases and checks if the predictions, inferred from the given evidence matches the
+   * expectations.
+   * The number of phases depends on the length of the provided vector of evidence.
    *
-   * A predictive tuning object is generated that contains a fixed set of configurations (see _allConfigs).
+   * A predictive tuning object is generated and a configQueue, which is filled with all configurations from the
+   * expectations map.
    * The provided evidence is fed to the tuning strategy as if it was tuning for several phases.
-   * In the end it is checked whether the tuner decides on the configuration behind the optimalPredictionIndex.
    *
    * @param extrapolationMethodOption
    * @param evidencePerPhase
@@ -128,10 +130,6 @@ class PredictiveTuningTest : public AutoPasTestBase,
   static constexpr autopas::Configuration _configurationLC_Sliced = autopas::Configuration(
       autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced,
       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa, autopas::Newton3Option::disabled);
-
-  ///@todo c++20: this can be made constexpr, as std::vector will get to be constexpr.
-  inline static std::vector<autopas::Configuration> _allConfigs{_configurationLC_C01, _configurationLC_C08,
-                                                                _configurationLC_Sliced};
 
   static constexpr double _relativeOptimumRange{1.2};
   static constexpr unsigned int _maxTuningIterationsWithoutTest{5};

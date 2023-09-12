@@ -111,7 +111,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Add a new enum in `TraversalOption::Value`.
   * Add a new string representation in the `map` of `TraversalOption::getOptionNames()`.
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
-  * If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals.
+  * If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals (E.g. `CompatibleTraversals::allTraversalsSupportingOnlySoA()`).
 * Add a case for the new traversal in `src/autopas/tuning/selectors/TraversalSelector.h::generateTraversal()`.
 * Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/tuning/AutoTunerTest.cpp::testAllConfigurations()` and `OptionTest::parseTraversalOptionsTest`).

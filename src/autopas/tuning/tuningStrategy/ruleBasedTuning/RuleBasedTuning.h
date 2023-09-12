@@ -104,13 +104,13 @@ class RuleBasedTuning : public TuningStrategyInterface {
              const autopas::EvidenceCollection &evidenceCollection) override;
 
   /**
-   * @returns in verify mode the summed up time that would have been skipped if verify mode was disabled and
-   * configurations would have been skipped due to the rules in the last tuning phase.
+   * @returns the total time that would have been skipped if verify mode was disabled and thus
+   * some configurations would have been skipped due to the rules.
    */
   [[nodiscard]] long getLifetimeWouldHaveSkippedTuningTime() const;
 
   /**
-   * @returns the summed up time of all configurations that have been tested by this tuning strategy.
+   * @returns the total time spent trialling configurations suggested by this tuning strategy.
    */
   [[nodiscard]] long getLifetimeTuningTime() const;
 
@@ -129,8 +129,8 @@ class RuleBasedTuning : public TuningStrategyInterface {
   std::string rulesToString(const std::string &filePath) const;
 
   /**
-   * Goes through all applicable configuration orders and checks if the result of the current configuration contradicts
-   * any rules when comparing with previously tested configurations in this tuning phase. If yes, calls
+   * Determines if the result of this configuration, compared with the results of other configurations tested previously
+   * during this tuning phase, contradicts any of the applicable configuration orders and, if so, calls
    * tuningErrorPrinter.
    *
    * @param configuration
@@ -138,8 +138,8 @@ class RuleBasedTuning : public TuningStrategyInterface {
   void verifyCurrentConfigTime(const Configuration &configuration) const;
 
   /**
-   * Executes the rule file for the current simulation state. Puts all known live info as defines in front of the
-   * program.
+   * Executes the rule file for the current simulation state.
+   * Puts all known live info as "defines" (=definition of variables) in front of the program.
    */
   std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
 
@@ -152,7 +152,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
 
   std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
   /**
-   * Sum of all evidence since last reset. This times the number of samples, is approximately the time spent
+   * Sum of all evidence since the last reset. This, times the number of samples, is approximately the time spent
    * trying out configurations.
    */
   long _tuningTime{0};

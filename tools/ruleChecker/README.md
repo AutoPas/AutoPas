@@ -1,5 +1,5 @@
 # Rule-based Tuning Rule Checker
-The rule checker for rule based tuning can be used to verify that the partial order of configurations defined in a rule file does not contradict the actual runtime behavior of a simulation. Here is how it fits into the larger of process of writing good rule files:
+The rule checker for rule-based tuning can be used to verify that the partial order of configurations defined in a rule file does not contradict the actual runtime behavior of a simulation. Here is how it fits into the larger process of writing good rule files:
 
 1. Run a suite of benchmark scenarios using full-search tuning with enabled data collection (`md-flexible --use-tuning-log true`) and one tuning phase.  
 Each simulation gives you a `tuningLog.txt` file.
