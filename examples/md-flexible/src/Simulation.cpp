@@ -312,10 +312,12 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
 
         // This estimate is only valid for full search and no restrictions on the cartesian product.
         // add static to only evaluate this once
+        // @TODO: estimate with 3-body
         static const auto ret = autopas::SearchSpaceGenerators::cartesianProduct(
                                     _configuration.containerOptions.value, _configuration.traversalOptions.value,
                                     _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get())
+                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
+                                    autopas::InteractionTypeOption::pairwise)
                                     .size();
         return ret;
       }
