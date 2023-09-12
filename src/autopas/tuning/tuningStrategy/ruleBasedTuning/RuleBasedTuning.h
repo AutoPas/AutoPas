@@ -27,13 +27,15 @@ namespace autopas {
 /**
  * A tuning strategy that uses information collected live from the domain to exclude configurations that knowingly
  * perform worse than other configurations in the current simulation state. The remaining configurations are tested
- * using FullSearch.
+ * consecutively.
  *
- * This "knowledge" is encoded as rules in a rule file. The rules are expected to be in their own little language,
- * formally described in RuleLanguage.g4. The rules are dynamically loaded and executed in the beginning of each tuning
- * phase.
+ * This "knowledge" is encoded as rules in a rule file. The rules are defined by the user in a domain specific language,
+ * formally described in RuleLanguage.g4, which is parsed by the RuleBasedProgramParser with the help of antlr4.
+ * The rules are dynamically loaded and executed as a program for the RuleVM in the beginning of each tuning phase.
  *
- * Here is a quick summary of this language:
+ *
+ * <b>Summary of the Rule Language:</b>
+ *
  * The heart of this language are so called configuration orders. Here is one example:
  * ```
  * [container="LinkedCells", dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS",
