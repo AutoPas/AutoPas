@@ -12,10 +12,4 @@
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "testingHelpers/commonTypedefs.h"
 
-template <typename T>
-class CellOwnershipTestTyped : public AutoPasTestBase {
- public:
-  CellOwnershipTestTyped() = default;
-
-  ~CellOwnershipTestTyped() override = default;
-};
+class CellOwnershipTestTyped : public AutoPasTestBase {};

@@ -7,19 +7,16 @@
 #include "CellOwnershipTest.h"
 
 /**
- * The CellOwnershipTests are only executed for FullParticleCell, ReferenceParticleCell, SortedCellView and
- * OctreeLeafNode. Note: For OctreeNodeWrapper (which also inherits from ParticleCell) these tests are not executed,
- * since it only manages internal nodes that store the particles. Only the OctreeLeafNodes store the particles in an
- * internal storage.
- * The ClusterTowers (which also inherits from ParticleCell) internally use a FullParticleCell to store particles.
+ * Note: For OctreeNodeWrapper and ClusterTowers (which also inherit from ParticleCell) the tests in this file are not
+ * executed.
+ * The OctreeNodeWrapper only manages internal nodes. Only the OctreeLeafNodes store the particles in an internal
+ * storage.
+ * The ClusterTowers internally use a FullParticleCell to store particles, therefore these tests are not executed for
+ * ClusterTowers, since it is covered by the tests for FullParticleCell.
  */
 
-using CellOwnershipTestingTypes =
-    ::testing::Types<autopas::FullParticleCell<Molecule>, autopas::ReferenceParticleCell<Molecule>>;
-
-TYPED_TEST_CASE_P(CellOwnershipTestTyped);
-
 /**
+ * Checks the default OwnershipState of FullParticleCell and expected exception behavior if OwnershipState is reset.
  * Tries to add owned and halo particles to cells with different ownership states and checks the expected exception
  * behavior.
  */
@@ -27,7 +24,14 @@ TEST(CellOwnershipTest, testOwnershipFullParticleCell) {
   for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
     autopas::FullParticleCell<Molecule> cell({1., 1., 1.});
 
+    // expect OwnershipState ownedOrHalo
+    EXPECT_TRUE(cell.getPossibleParticleOwnerships() ==
+                (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
+
     cell.setPossibleParticleOwnerships(ownershipState);
+
+    // cell ownership can not be changed once set
+    EXPECT_ANY_THROW(cell.setPossibleParticleOwnerships(ownershipState));
 
     Molecule pOwned({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
     pOwned.setOwnershipState(autopas::OwnershipState::owned);
@@ -59,14 +63,23 @@ TEST(CellOwnershipTest, testOwnershipFullParticleCell) {
 }
 
 /**
- * Tries to add owned and halo particles to cells with different ownership states and checks the expected exception
- * behavior.
+ * Checks the default OwnershipState of ReferenceParticleCell and expected exception behavior if OwnershipState is
+ * reset.
+ * Tries to add owned and halo particles to cells with different ownership states and checks the expected
+ * exception behavior.
  */
 TEST(CellOwnershipTest, testOwnershipReferenceParticleCell) {
   for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
     autopas::ReferenceParticleCell<Molecule> cell({1., 1., 1.});
 
+    // expect OwnershipState ownedOrHalo
+    EXPECT_TRUE(cell.getPossibleParticleOwnerships() ==
+                (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
+
     cell.setPossibleParticleOwnerships(ownershipState);
+
+    // cell ownership can not be changed once set
+    EXPECT_ANY_THROW(cell.setPossibleParticleOwnerships(ownershipState));
 
     Molecule pOwned({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
     pOwned.setOwnershipState(autopas::OwnershipState::owned);
@@ -98,25 +111,7 @@ TEST(CellOwnershipTest, testOwnershipReferenceParticleCell) {
 }
 
 /**
- * Tries to create a SortedCellView from a FullParticleCell and checks if the OwnershipState is transfered correctly
- * Note: Since a SortedCellView does not allow to add particles we do not check the exception behavior for adding
- * particles here.
- */
-TEST(CellOwnershipTest, testOwnershipSortedCellView) {
-  for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
-    autopas::FullParticleCell<Molecule> cell({1., 1., 1.});
-
-    cell.setPossibleParticleOwnerships(ownershipState);
-
-    auto scv = autopas::SortedCellView<Molecule, autopas::FullParticleCell<Molecule>>(cell, {0., 0., 0.});
-
-    EXPECT_TRUE(scv.getPossibleParticleOwnerships() == ownershipState);
-
-    EXPECT_ANY_THROW(scv.setPossibleParticleOwnerships(ownershipState));
-  }
-}
-
-/**
+ * Checks the default OwnershipState of OctreeLeafNode and expected exception behavior if OwnershipState is reset.
  * Tries to add owned and halo particles to cells with different ownership states and checks the expected exception
  * behavior.
  */
@@ -124,7 +119,15 @@ TEST(CellOwnershipTest, testOwnershipOctreeLeafNode) {
   for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
     autopas::OctreeLeafNode<Molecule> cell({0, 0, 0}, {1., 1., 1.}, nullptr, 5, 1., 1.);
 
+    // expect OwnershipState ownedOrHalo
+    EXPECT_TRUE(cell.getPossibleParticleOwnerships() ==
+                (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
+
     cell.setPossibleParticleOwnerships(ownershipState);
+
+    EXPECT_TRUE(cell.getPossibleParticleOwnerships() == ownershipState);
+
+    EXPECT_ANY_THROW(cell.setPossibleParticleOwnerships(ownershipState));
 
     Molecule pOwned({0.1, 0.1, 0.1}, {0., 0., 0.}, 0);
     pOwned.setOwnershipState(autopas::OwnershipState::owned);
@@ -156,19 +159,20 @@ TEST(CellOwnershipTest, testOwnershipOctreeLeafNode) {
 }
 
 /**
- * Checks the default OwnershipState of particle cells and expected exception behavior if OwnershipState is reset.
+ * Tries to create a SortedCellView from a FullParticleCell and checks if the OwnershipState is transfered correctly
+ * Note: Since a SortedCellView does not allow to add particles we do not check the exception behavior for adding
+ * particles here.
  */
-TYPED_TEST_P(CellOwnershipTestTyped, testSetOwnershipState) {
-  TypeParam cell({1., 1., 1.});
+TEST(CellOwnershipTest, testOwnershipSortedCellView) {
+  for (auto ownershipState : {autopas::OwnershipState::owned, autopas::OwnershipState::halo}) {
+    autopas::FullParticleCell<Molecule> cell({1., 1., 1.});
 
-  // expect OwnershipState ownedOrHalo
-  EXPECT_TRUE(cell.getPossibleParticleOwnerships() == (autopas::OwnershipState::owned | autopas::OwnershipState::halo));
+    cell.setPossibleParticleOwnerships(ownershipState);
 
-  cell.setPossibleParticleOwnerships(autopas::OwnershipState::owned);
+    auto scv = autopas::SortedCellView<Molecule, autopas::FullParticleCell<Molecule>>(cell, {0., 0., 0.});
 
-  // cell ownership can not be changed once set
-  EXPECT_ANY_THROW(cell.setPossibleParticleOwnerships(autopas::OwnershipState::halo));
+    EXPECT_TRUE(scv.getPossibleParticleOwnerships() == ownershipState);
+
+    EXPECT_ANY_THROW(scv.setPossibleParticleOwnerships(ownershipState));
+  }
 }
-
-REGISTER_TYPED_TEST_CASE_P(CellOwnershipTestTyped, testSetOwnershipState);
-INSTANTIATE_TYPED_TEST_CASE_P(TypedTest, CellOwnershipTestTyped, CellOwnershipTestingTypes);
