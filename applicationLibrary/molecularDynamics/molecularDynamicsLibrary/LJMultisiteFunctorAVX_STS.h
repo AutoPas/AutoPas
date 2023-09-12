@@ -21,7 +21,7 @@
 #include "autopas/utils/Quaternion.h"
 #include "autopas/utils/WrapOpenMP.h"
 
-namespace autopas {
+namespace mdlib {
 
 /**
  * A functor to handle Lennard-Jones interactions between two Multisite Molecules.
@@ -113,7 +113,7 @@ class LJMultisiteFunctorAVX_STS
       _mm256_set_epi64x(0, 0, -1, -1),
       _mm256_set_epi64x(0, -1, -1, -1),
   };
-  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
+  const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(autopas::OwnershipState::owned))};
 #endif
 
   // Vectors used to speed up the global verlet functor
@@ -141,7 +141,7 @@ class LJMultisiteFunctorAVX_STS
    */
   explicit LJMultisiteFunctorAVX_STS(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : Functor<Particle, LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                 relevantForTuning>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
@@ -150,7 +150,7 @@ class LJMultisiteFunctorAVX_STS
         _aosThreadData(),
         _postProcessed{false} {
     if (calculateGlobals) {
-      _aosThreadData.resize(autopas_get_max_threads());
+      _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
   }
 #else
@@ -277,18 +277,18 @@ class LJMultisiteFunctorAVX_STS
           // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
           // There is a similar handling of the virial, but without the mutliplication/division by 6.
           const auto potentialEnergy6 = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
-          const auto virial = newton3 ? utils::ArrayMath::mulScalar(utils::ArrayMath::mul(displacement, force), 0.5)
-                                      : utils::ArrayMath::mul(displacement, force);
+          const auto virial = newton3 ? autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force), 0.5)
+                                      : autopas::utils::ArrayMath::mul(displacement, force);
 
-          const auto threadNum = autopas_get_thread_num();
+          const auto threadNum = autopas::autopas_get_thread_num();
 
           if (particleA.isOwned()) {
             _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
+            _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
           }
           if (newton3 and particleB.isOwned()) {
             _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
+            _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
           }
         }
       }
@@ -299,7 +299,7 @@ class LJMultisiteFunctorAVX_STS
    * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
    * @note This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
       SoAFunctorSingleImpl<true>(soa);
     } else {
@@ -310,7 +310,7 @@ class LJMultisiteFunctorAVX_STS
   /**
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -339,7 +339,7 @@ class LJMultisiteFunctorAVX_STS
    * SoAFunctorSingle Implementation.
    */
   template <bool newton3>
-  void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
+  void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 #ifndef __AVX__
 #pragma message "SoAFunctorCTS called without AVX support!"
 #endif
@@ -421,7 +421,7 @@ class LJMultisiteFunctorAVX_STS
         exactSitePositionX.push_back(rotatedSitePositions[site][0] + xptr[mol]);
         exactSitePositionY.push_back(rotatedSitePositions[site][1] + yptr[mol]);
         exactSitePositionZ.push_back(rotatedSitePositions[site][2] + zptr[mol]);
-        isSiteOwned.push_back(ownedStatePtr[mol] == OwnershipState::owned);
+        isSiteOwned.push_back(ownedStatePtr[mol] == autopas::OwnershipState::owned);
         if constexpr (useMixing) {
           siteTypes.push_back(_PPLibrary->getSiteTypes(typeptr[mol])[site]);
         }
@@ -516,7 +516,7 @@ class LJMultisiteFunctorAVX_STS
     }
 
     if constexpr (calculateGlobals) {
-      const auto threadNum = autopas_get_thread_num();
+      const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
@@ -532,7 +532,7 @@ class LJMultisiteFunctorAVX_STS
    * Implementation of SoAFunctorPair(soa1, soa2, newton3)
    */
   template <bool newton3>
-  void SoAFunctorPairImpl(SoAView<SoAArraysType> soaA, SoAView<SoAArraysType> soaB) {
+  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
 #ifndef __AVX__
 #pragma message "SoAFunctorPair functor called without AVX support!"
 #endif
@@ -629,7 +629,7 @@ class LJMultisiteFunctorAVX_STS
         exactSitePositionBy.push_back(rotatedSitePositions[site][1] + yBptr[mol]);
         exactSitePositionBz.push_back(rotatedSitePositions[site][2] + zBptr[mol]);
 
-        isSiteOwnedBArr.push_back(ownedStatePtrB[mol] == OwnershipState::owned);
+        isSiteOwnedBArr.push_back(ownedStatePtrB[mol] == autopas::OwnershipState::owned);
 
         if constexpr (useMixing) {
           siteTypesB.push_back(_PPLibrary->getSiteTypes(typeptrB[mol])[site]);
@@ -721,7 +721,7 @@ class LJMultisiteFunctorAVX_STS
       }
     }
     if constexpr (calculateGlobals) {
-      const auto threadNum = autopas_get_thread_num();
+      const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
@@ -738,7 +738,7 @@ class LJMultisiteFunctorAVX_STS
    * @note This implementation is a bit experimental and is not recommended to use
    */
   template <bool newton3>
-  void SoAFunctorVerletImpl_global(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerletImpl_global(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                    const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifndef __AVX__
 #pragma message "SoAFunctorVerlet functor called without AVX support!"
@@ -747,7 +747,7 @@ class LJMultisiteFunctorAVX_STS
 
     // Skip if primary particle is dummy
     const auto ownedStatePrime = ownedStatePtr[indexFirst];
-    if (ownedStatePrime == OwnershipState::dummy) {
+    if (ownedStatePrime == autopas::OwnershipState::dummy) {
       return;
     }
 
@@ -1025,7 +1025,7 @@ class LJMultisiteFunctorAVX_STS
     tzptr[indexFirst] += autopas::utils::avx::horizontalSum(torqueSumZ);
 
     if constexpr (calculateGlobals) {
-      const auto threadNum = autopas_get_thread_num();
+      const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       const auto newton3Factor = newton3 ? .5 : 1.;
@@ -1042,7 +1042,7 @@ class LJMultisiteFunctorAVX_STS
    * @details Builds exact site position vectors locally in each functor call
    */
   template <bool newton3>
-  void SoAFunctorVerletImpl_local(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerletImpl_local(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                   const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifndef __AVX__
 #pragma message "SoAFunctorVerlet functor called without AVX support!"
@@ -1051,7 +1051,7 @@ class LJMultisiteFunctorAVX_STS
 
     // Skip if primary particle is dummy
     const auto ownedStatePrime = ownedStatePtr[indexFirst];
-    if (ownedStatePrime == OwnershipState::dummy) {
+    if (ownedStatePrime == autopas::OwnershipState::dummy) {
       return;
     }
 
@@ -1146,7 +1146,7 @@ class LJMultisiteFunctorAVX_STS
         exactNeighborSitePositionsX.push_back(rotatedSitePositions[site][0] + xptr[neighborMolIndex]);
         exactNeighborSitePositionsY.push_back(rotatedSitePositions[site][1] + yptr[neighborMolIndex]);
         exactNeighborSitePositionsZ.push_back(rotatedSitePositions[site][2] + zptr[neighborMolIndex]);
-        isNeighborSiteOwnedArr.push_back(ownedStatePtr[neighborMolIndex] == OwnershipState::owned);
+        isNeighborSiteOwnedArr.push_back(ownedStatePtr[neighborMolIndex] == autopas::OwnershipState::owned);
         if constexpr (useMixing) {
           siteTypesNeighbors.push_back(_PPLibrary->getSiteTypes(typeptr[neighborMolIndex])[site]);
         }
@@ -1230,7 +1230,7 @@ class LJMultisiteFunctorAVX_STS
     }
 
     if constexpr (calculateGlobals) {
-      const auto threadNum = autopas_get_thread_num();
+      const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2here.
       const auto newton3Factor = newton3 ? .5 : 1.;
@@ -1247,7 +1247,7 @@ class LJMultisiteFunctorAVX_STS
    * @note This function should be called exactly once per timestep
    * @warning This function should only be called by SoAFunctorVerlet_global
    */
-  inline void buildGlobalSiteVectors(SoAView<SoAArraysType> soa) {
+  inline void buildGlobalSiteVectors(autopas::SoAView<SoAArraysType> soa) {
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
@@ -1283,7 +1283,7 @@ class LJMultisiteFunctorAVX_STS
         _exactSitePositionsZ.push_back(rotatedSitePositions[site][2] + zptr[mol]);
         _siteToMolMap.push_back(mol);
         if constexpr (calculateGlobals) {
-          _siteOwnershipVector.push_back(ownedStatePtr[mol] == OwnershipState::owned);
+          _siteOwnershipVector.push_back(ownedStatePtr[mol] == autopas::OwnershipState::owned);
         }
         if constexpr (useMixing) {
           _siteTypesVector.push_back(_PPLibrary->getSiteTypes(typeptr[mol])[site]);
@@ -1499,21 +1499,21 @@ class LJMultisiteFunctorAVX_STS
 
     // Add up the forces, torques and globals
 
-    forceAccumulator[0] += utils::avx::horizontalSum(forceSumX);
-    forceAccumulator[1] += utils::avx::horizontalSum(forceSumY);
-    forceAccumulator[2] += utils::avx::horizontalSum(forceSumZ);
+    forceAccumulator[0] += autopas::utils::avx::horizontalSum(forceSumX);
+    forceAccumulator[1] += autopas::utils::avx::horizontalSum(forceSumY);
+    forceAccumulator[2] += autopas::utils::avx::horizontalSum(forceSumZ);
 
     if constexpr (calculateTorque) {
-      torqueAccumulator[0] += utils::avx::horizontalSum(torqueSumX);
-      torqueAccumulator[1] += utils::avx::horizontalSum(torqueSumY);
-      torqueAccumulator[2] += utils::avx::horizontalSum(torqueSumZ);
+      torqueAccumulator[0] += autopas::utils::avx::horizontalSum(torqueSumX);
+      torqueAccumulator[1] += autopas::utils::avx::horizontalSum(torqueSumY);
+      torqueAccumulator[2] += autopas::utils::avx::horizontalSum(torqueSumZ);
     }
 
     if constexpr (calculateGlobals) {
-      potentialEnergyAccumulator += utils::avx::horizontalSum(potentialEnergySum);
-      virialAccumulator[0] += utils::avx::horizontalSum(virialSumX);
-      virialAccumulator[1] += utils::avx::horizontalSum(virialSumY);
-      virialAccumulator[2] += utils::avx::horizontalSum(virialSumZ);
+      potentialEnergyAccumulator += autopas::utils::avx::horizontalSum(potentialEnergySum);
+      virialAccumulator[0] += autopas::utils::avx::horizontalSum(virialSumX);
+      virialAccumulator[1] += autopas::utils::avx::horizontalSum(virialSumY);
+      virialAccumulator[2] += autopas::utils::avx::horizontalSum(virialSumZ);
     }
   }
 
