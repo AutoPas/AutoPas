@@ -12,11 +12,14 @@
 #include "autopas/AutoPasDecl.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX.h"
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
+// todo there is a lot of code duplication for trying out multiple functors. We should condense into suites.
+
 /**
- * Test class for LJMultisiteFunctor
+ * Test class for LJMultisiteFunctor and LJMultisiteFunctorAVX
  */
 class LJMultisiteFunctorTest : public AutoPasTestBase {
  public:
@@ -42,6 +45,8 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
 
   /**
    * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.
+   * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
+   * Lennard-Jones forces using a cutoff criterion based on Center-of-Mass to Center-of-Mass cutoffs.
    * @tparam newton3 Applies N3L optimization to the AoS Functor.
    * @tparam calculateGlobals The AoS Functor calculates the potential energy and virial of the system of two molecules
    * and the results are tested against expected values.
@@ -52,7 +57,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param PPL
    * @param cutoff
    */
-  template <bool newton3, bool calculateGlobals, bool applyShift>
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
   void testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
                                ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
@@ -62,21 +67,26 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * * with and without Newton's 3rd law optimization.
    * * with and without the calculation of global attributes i.e. potential energy and virial
    * * if calculating global attributes, with and without applying a shift to the potential energy.
+   * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
+   * Lennard-Jones forces using a cutoff criterion based on Center-of-Mass to Center-of-Mass cutoffs.
    * @param molA
    * @param molB
    * @param PPL
    * @param cutoff
    */
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
   void testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
                                     ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
-   * Compares the forces produced by the single-site functor and the multi-site functor applied to single-site
+   * Compares the forces produced by the single-site functor (LJFunctor) and a multi-site functor applied to single-site
    * molecules.
    *
    * Inputted molecules are objects of multi-site molecule class, but are expected to have molecule types which consist
    * of a single site at the center-of-mass with site type ID equal to molecule type ID.
    *
+   * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
+   * Lennard-Jones forces.
    * @tparam newton3 applies Newton's 3rd Law optimization to both functors.
    * @tparam calculateGlobals both functors calculate global attributes such as potential energy and virial.
    * @tparam applyShift both functors add a shift to the potential energy.
@@ -85,12 +95,14 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param PPL
    * @param cutoff
    */
-  template <bool newton3, bool calculateGobals, bool applyShift>
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
   void singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
                              ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoACellFunctor against that of the AoSFunctor.
+   * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
+   * Lennard-Jones forces.
    * @tparam newton3 enables N3L optimizations for both functors.
    * @tparam calculateGlobals Both functors calculate global attributes such as potential energy and virial which are
    * compared in addition to force and torque.
@@ -99,12 +111,14 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param PPL Particle Properties Library
    * @param cutoff
    */
-  template <bool newton3, bool calculateGlobals, bool applyShift>
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
   void testSoACellAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
                              ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoACellPairFunctor against that of the AoSFunctor.
+   * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
+   * Lennard-Jones forces using a cutoff criterion based on Center-of-Mass to Center-of-Mass cutoffs.
    * @tparam newton3 enables N3L optimizations for both functors.
    * @tparam calculateGlobals Both functors calculate global attributes such as potential energy and virial which are
    * compared in addition to force and torque.
@@ -114,13 +128,15 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param PPL
    * @param cutoff
    */
-  template <bool newton3, bool calculateGlobals, bool applyShift>
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
   void testSoACellPairAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> moleculesA,
                                  std::vector<mdLib::MultisiteMoleculeLJ> moleculesB,
                                  ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the correctness of the SoAVerletFunctor against that of the AoSFunctor.
+   * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
+   * Lennard-Jones forces using a cutoff criterion based on Center-of-Mass to Center-of-Mass cutoffs.
    * @tparam newton3 enables N3L optimizations for both functors.
    * @tparam calculateGlobals Both functors calculate global attributes such as potential energy and virial which are
    * compared in addition to force and torque.
@@ -129,7 +145,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param PPL
    * @param cutoff
    */
-  template <bool newton3, bool calculateGlobals, bool applyShift>
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
   void testSoAVerletAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
                                ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 };
