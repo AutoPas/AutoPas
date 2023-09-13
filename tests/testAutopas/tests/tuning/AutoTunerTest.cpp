@@ -235,8 +235,8 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_N3,
       _confDs_seq_noN3,
+      _confDs_seq_N3,
       _confLc_c08_N3,
   };
 
@@ -536,7 +536,6 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
  * Expect to choose the first because the second one is worse on average.
  */
 TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
-  const double cellSizeFactor = 1.;
   const unsigned int verletRebuildFrequency = 20;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
@@ -547,7 +546,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
       .maxSamples = 2,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08_N3, _confLc_c18_noN3};
+  // Use configurations with N3, otherwise there are more calls to AoSFunctor
+  const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
