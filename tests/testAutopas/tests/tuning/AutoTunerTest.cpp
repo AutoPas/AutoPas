@@ -504,7 +504,6 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
  * All generated configurations are thrown out at runtime.
  */
 TEST_F(AutoTunerTest, testLastConfigThrownOut) {
-  const double cellSizeFactor = 1.;
   const unsigned int verletRebuildFrequency = 20;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
@@ -516,7 +515,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const auto searchSpace = {_confLc_c08_N3, _confLc_c08_noN3};
+  const auto searchSpace = {_confLc_c08_noN3, _confLc_c18_noN3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
@@ -524,8 +523,8 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
   EXPECT_THROW(logicHandler.iteratePairwisePipeline(&functor), autopas::utils::ExceptionHandler::AutoPasException);
 }
