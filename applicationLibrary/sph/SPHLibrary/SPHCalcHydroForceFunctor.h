@@ -17,21 +17,21 @@ namespace sphLib {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroForceFunctor<Particle>> {
+class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcHydroForceFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
 
   SPHCalcHydroForceFunctor()
       // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
-      : autopas::Functor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
+      : autopas::PairwiseFunctor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
 
   /**
    * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
    * using different functors in the logs.
    * @return name of functor.
    */
-  virtual std::string getName() { return "SPHHydroForceFunctor"; }
+  virtual std::string getName() override { return "SPHHydroForceFunctor"; }
 
   bool isRelevantForTuning() override { return true; }
 

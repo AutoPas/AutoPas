@@ -7,7 +7,7 @@
 #pragma once
 
 #include "SPHKernels.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 
 namespace sphLib {
@@ -18,19 +18,19 @@ namespace sphLib {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFunctor<Particle>> {
+class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcDensityFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
 
-  SPHCalcDensityFunctor() : autopas::Functor<Particle, SPHCalcDensityFunctor<Particle>>(0.){};
+  SPHCalcDensityFunctor() : autopas::PairwiseFunctor<Particle, SPHCalcDensityFunctor<Particle>>(0.){};
 
   /**
    * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
    * using different functors in the logs.
    * @return name of functor.
    */
-  virtual std::string getName() { return "SPHDensityFunctor"; }
+  virtual std::string getName() override { return "SPHDensityFunctor"; }
 
   bool isRelevantForTuning() override { return true; }
 
