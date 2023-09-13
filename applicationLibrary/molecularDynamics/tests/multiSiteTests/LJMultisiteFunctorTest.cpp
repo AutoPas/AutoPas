@@ -57,8 +57,8 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
   }
 }
 
-template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift, bool useMasks>
+void LJMultisiteFunctorTest::testAoSForceCalculation_CTC(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
                                                      ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::cross;
@@ -198,27 +198,27 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
 }
 
 template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
-void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA,
+void LJMultisiteFunctorTest::testSuiteAoSForceCalculation_CTC(mdLib::MultisiteMoleculeLJ molA,
                                                           mdLib::MultisiteMoleculeLJ molB,
                                                           ParticlePropertiesLibrary<double, size_t> PPL,
                                                           double cutoff) {
   // N3L Disabled, No Calculating Globals
-  testAoSForceCalculation<functorType, false, false, false>(molA, molB, PPL, cutoff);
+  testAoSForceCalculation_CTC<functorType, false, false, false>(molA, molB, PPL, cutoff);
 
   // N3L Enabled, No Calculating Globals
-  testAoSForceCalculation<functorType, true, false, false>(molA, molB, PPL, cutoff);
+  testAoSForceCalculation_CTC<functorType, true, false, false, useMasks>(molA, molB, PPL, cutoff);
 
   // N3L Disabled, Calculating Globals, no shift applied
-  testAoSForceCalculation<functorType, false, true, false>(molA, molB, PPL, cutoff);
+  testAoSForceCalculation_CTC<functorType, false, true, false, useMasks>(molA, molB, PPL, cutoff);
 
   // N3L Disabled, Calculating Globals, shift applied
-  testAoSForceCalculation<functorType, false, true, true>(molA, molB, PPL, cutoff);
+  testAoSForceCalculation_CTC<functorType, false, true, true, useMasks>(molA, molB, PPL, cutoff);
 
   // N3L Enabled, Calculating Globals, no shift applied
-  testAoSForceCalculation<functorType, true, true, false>(molA, molB, PPL, cutoff);
+  testAoSForceCalculation_CTC<functorType, true, true, false, useMasks>(molA, molB, PPL, cutoff);
 
   // N3L Enabled, Calculating Globals, shift applied
-  testAoSForceCalculation<functorType, true, true, true>(molA, molB, PPL, cutoff);
+  testAoSForceCalculation_CTC<functorType, true, true, true, useMasks>(molA, molB, PPL, cutoff);
 }
 
 template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
@@ -676,54 +676,54 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   // LJMultisiteFunctor
 
   // tests: 1 site <-> 2 site interaction
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctor>(mol0, mol1, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctor>(mol0, mol1, PPL, cutoff);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctor>(mol0, mol2, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctor>(mol0, mol2, PPL, cutoff);
 
   // tests: 2 site <-> 3 site interaction
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctor>(mol1, mol3, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctor>(mol1, mol3, PPL, cutoff);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctor>(mol3, mol4, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctor>(mol3, mol4, PPL, cutoff);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctor>(mol1, mol5, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctor>(mol1, mol5, PPL, cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctor>(mol0, mol6, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctor>(mol0, mol6, PPL, cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctor>(mol0, mol7, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctor>(mol0, mol7, PPL, cutoff);
 
   // tests: 3 site <-> 3 site, with some different site types
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctor>(mol4, mol8, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctor>(mol4, mol8, PPL, cutoff);
 
 
   // LJMultisiteFunctorAVX
   // tests: 1 site <-> 2 site interaction
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctorAVX>(mol0, mol1, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX>(mol0, mol1, PPL, cutoff);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctorAVX>(mol0, mol2, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX>(mol0, mol2, PPL, cutoff);
 
   // tests: 2 site <-> 3 site interaction
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctorAVX>(mol1, mol3, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX>(mol1, mol3, PPL, cutoff);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctorAVX>(mol3, mol4, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX>(mol3, mol4, PPL, cutoff);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctorAVX>(mol1, mol5, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX>(mol1, mol5, PPL, cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctorAVX>(mol0, mol6, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX>(mol0, mol6, PPL, cutoff);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctorAVX>(mol0, mol7, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX>(mol0, mol7, PPL, cutoff);
 
   // tests: 3 site <-> 3 site, with some different site types
-  testSuiteAoSForceCalculation<mdLib::LJMultisiteFunctorAVX>(mol4, mol8, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX>(mol4, mol8, PPL, cutoff);
 }
 
 /**

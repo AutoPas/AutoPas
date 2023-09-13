@@ -18,6 +18,15 @@
 
 // todo there is a lot of code duplication for trying out multiple functors. We should condense into suites.
 
+namespace {
+// Some template aliases to make the tests cleaner
+template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals>
+using LJMultisiteFunctorAVX_Masks = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, true>;
+
+template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals>
+using LJMultisiteFunctorAVX_GatherScatter = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, false>;
+}
+
 /**
  * Test class for LJMultisiteFunctor and LJMultisiteFunctorAVX
  */
@@ -44,9 +53,48 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
                          bool allOwned);
 
   /**
-   * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.
+   * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff. Only suitable for the CTC functors.
    * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
    * Lennard-Jones forces using a cutoff criterion based on Center-of-Mass to Center-of-Mass cutoffs.
+   * @tparam newton3 Applies N3L optimization to the AoS Functor.
+   * @tparam calculateGlobals The AoS Functor calculates the potential energy and virial of the system of two molecules
+   * and the results are tested against expected values.
+   * @tparam applyShift The AoS Functor applies a shift to the potential energy such that it becomes continuous (and the
+   * expected value is adjusted accordingly).
+   * @tparam useMasks if true, functorType uses 0/1-masks instead of gather/scatter approach. Returns an error if functorType
+   * @param molA
+   * @param molB
+   * @param PPL
+   * @param cutoff
+   */
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift, useMasks>
+  void testAoSForceCalculation_CTC(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+                               ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+
+  /**
+   * Runs a suite of testAoSForceCalculation functions such that the AoS Functor is tested for the given arguments with
+   * all combinations of
+   * * with and without Newton's 3rd law optimization.
+   * * with and without the calculation of global attributes i.e. potential energy and virial
+   * * if calculating global attributes, with and without applying a shift to the potential energy.
+   * Only suitable for the CTC functors.
+   * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
+   * Lennard-Jones forces using a cutoff criterion based on Center-of-Mass to Center-of-Mass cutoffs.
+   * @tparam useMasks if true, functorType uses 0/1-masks instead of gather/scatter approach. Should only be set to false
+   * if functor type is capable of G/S mas
+   * @param molA
+   * @param molB
+   * @param PPL
+   * @param cutoff
+   */
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool useMasks = true>
+  void testSuiteAoSForceCalculation_CTC(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+                                    ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+
+  /**
+   * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff. Only suitable for the STS functors.
+   * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
+   * Lennard-Jones forces using a cutoff criterion based on site to site cutoffs.
    * @tparam newton3 Applies N3L optimization to the AoS Functor.
    * @tparam calculateGlobals The AoS Functor calculates the potential energy and virial of the system of two molecules
    * and the results are tested against expected values.
@@ -58,8 +106,8 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-  void testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
-                               ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testAoSForceCalculation_STS(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+                                   ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Runs a suite of testAoSForceCalculation functions such that the AoS Functor is tested for the given arguments with
@@ -67,16 +115,17 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * * with and without Newton's 3rd law optimization.
    * * with and without the calculation of global attributes i.e. potential energy and virial
    * * if calculating global attributes, with and without applying a shift to the potential energy.
+   * Only suitable for the STS functors.
    * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
-   * Lennard-Jones forces using a cutoff criterion based on Center-of-Mass to Center-of-Mass cutoffs.
+   * Lennard-Jones forces using a cutoff criterion based on site to site cutoffs.
    * @param molA
    * @param molB
    * @param PPL
    * @param cutoff
    */
   template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
-  void testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
-                                    ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
+  void testSuiteAoSForceCalculation_STS(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+                                        ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
    * Compares the forces produced by the single-site functor (LJFunctor) and a multi-site functor applied to single-site
