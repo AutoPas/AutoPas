@@ -89,8 +89,14 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    */
   void resize(const std::array<double, 2> &towerSideLength, const std::array<size_t, 2> &towersPerDim) {
     using namespace autopas::utils::ArrayMath::literals;
+    using autopas::utils::ArrayMath::ceil;
+    using autopas::utils::ArrayUtils::static_cast_copy_array;
     _towerSideLength = towerSideLength;
-    _towerSideLengthReciprocal = 1. / _towerSideLength;
+    _towerSideLengthReciprocal = 1. / towerSideLength;
+    const auto numTowersPerInteractionLength2D =
+        static_cast_copy_array<int>(ceil(_interactionLength / _towerSideLength));
+    _numTowersPerInteractionLength =
+        *std::max_element(numTowersPerInteractionLength2D.begin(), numTowersPerInteractionLength2D.end());
     _towersPerDim = towersPerDim;
     _towers.resize(_towersPerDim[0] * _towersPerDim[1]);
   }
@@ -109,6 +115,11 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
 
   /**
    * Estimates the optimal 2D tower grid side length.
+   *
+   * sideLength = (clusterSize / (numParticles / volume))^(1/3)
+   * The side length is then fitted to exactly fill the (non-halo) box with the same number of towers
+   * as the formula above.
+   *
    * @param numParticles The number of particles in the container.
    * @param boxSize The size of the domain.
    * @param clusterSize the number of particles per cluster.
@@ -120,26 +131,26 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     using autopas::utils::ArrayMath::ceil;
     using autopas::utils::ArrayUtils::static_cast_copy_array;
 
-    const std::array<double, 3> boxSize = _haloBoxMax - _haloBoxMin;
-
+    // estimate the grid size for the actual box, then add halo layers as necessary
+    const std::array<double, 3> boxSize = _boxMax - _boxMin;
     const std::array<double, 2> boxSize2D{boxSize[0], boxSize[1]};
+    if (numParticles == 0) {
+      return {boxSize2D, {1, 1}};
+    }
+
     const double volume = boxSize[0] * boxSize[1] * boxSize[2];
     // We use double here to avoid back and forth casting
-    const auto numTowers = [&]() -> std::array<double, 2> {
-      if (numParticles > 0) {
-        // estimate particle density
-        const double density = static_cast<double>(numParticles) / volume;
-        const auto optimalSideLength = std::cbrt(static_cast<double>(clusterSize) / density);
-        // make sure the towers fill the domain exactly
-        return (ceil(boxSize2D / optimalSideLength));
-      } else {
-        return {1., 1.};
-      }
-    }();
-    const auto towerSideLength = boxSize2D / numTowers;
+    // estimate particle density
+    const double density = static_cast<double>(numParticles) / volume;
+    const auto optimalSideLength = std::cbrt(static_cast<double>(clusterSize) / density);
+    // make sure the towers fill the domain exactly
+    const auto numTowersOwned(ceil(boxSize2D / optimalSideLength));
+    const auto towerSideLengthNew = boxSize2D / numTowersOwned;
+    // pad a halo layer of towers in both directions, filling one interaction length each.
+    const auto numTowers = numTowersOwned + (ceil(towerSideLengthNew / _interactionLength) * 2.);
     // Do not resize the number of towers here!
     // If we get less towers we need to save the particles in the towers we throw away.
-    return {towerSideLength, static_cast_copy_array<size_t>(numTowers)};
+    return {towerSideLengthNew, static_cast_copy_array<size_t>(numTowers)};
   }
 
   /**
@@ -199,15 +210,16 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
 
     for (int dim = 0; dim < 2; dim++) {
       const auto towerDimIndex =
-          static_cast<long int>(floor((pos[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal[dim]));
+          static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _towerSideLengthReciprocal[dim])) +
+          _numTowersPerInteractionLength;
       const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
       const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
       towerIndex2D[dim] = towerDimIndexNonLargerValue;
       /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
       // flag manager
-      if (pos[dim] >= _boxMax[dim]) {
+      if (pos[dim] >= _haloBoxMax[dim]) {
         towerIndex2D[dim] = _towersPerDim[dim] - 1;
-      } else if (pos[dim] < _boxMin[dim]) {
+      } else if (pos[dim] < _haloBoxMin[dim]) {
         towerIndex2D[dim] = 0;
       }
     }

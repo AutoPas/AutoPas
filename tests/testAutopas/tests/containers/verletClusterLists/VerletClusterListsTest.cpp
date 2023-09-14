@@ -236,6 +236,52 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   }
 }
 
+TEST_F(VerletClusterListsTest, testGridAlignment) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayUtils::static_cast_copy_array;
+
+  const std::array<double, 3> boxMin{0., 0., 0.};
+  const std::array<double, 3> boxMax{10., 10., 10.};
+  const std::array<double, 2> boxMin2D{boxMin[0], boxMin[1]};
+  const std::array<double, 2> boxMax2D{boxMax[0], boxMax[1]};
+  const double cutoff{2.};
+  const double skin{0.5};
+  const size_t rebuildFreq{10};
+  const size_t clusterSize{4};
+  autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skin / rebuildFreq, rebuildFreq,
+                                                    clusterSize);
+  size_t numParticles{0};
+  const Particle p0{boxMin, {0., 0., 0.}, numParticles++};
+  verletLists.addParticle(p0);
+  const Particle p1{boxMin - 0.1, {0., 0., 0.}, numParticles++};
+  verletLists.addHaloParticle(p1);
+  const Particle p2{boxMax - 0.1, {0., 0., 0.}, numParticles++};
+  verletLists.addParticle(p2);
+  const Particle p3{boxMax, {0., 0., 0.}, numParticles++};
+  verletLists.addHaloParticle(p3);
+
+  // we need 256 to 500 Particles for a 5x5 grid (= tower side length of 2)
+  // so we add as man as we are missing
+  for (; numParticles < 257;) {
+    const Particle pDummy{(boxMax - boxMin) / 2., {0., 0., 0.}, numParticles++};
+    verletLists.addParticle(pDummy);
+  }
+
+  verletLists.rebuildTowersAndClusters();
+
+  const int expectedTowersPerInteractionLength = 2;
+  EXPECT_EQ(verletLists.getNumTowersPerInteractionLength(), expectedTowersPerInteractionLength);
+  const std::array<double, 2> expectedSideLength = {2., 2.};
+  EXPECT_EQ(verletLists.getTowerSideLength(), expectedSideLength);
+  const std::array<size_t, 2> expectedTowersPerDim = {7, 7};
+  EXPECT_EQ(verletLists.getTowersPerDimension(), expectedTowersPerDim);
+
+  const std::array<size_t, 2> expectedHaloWidthInTowers{expectedTowersPerInteractionLength,
+                                                        expectedTowersPerInteractionLength};
+  EXPECT_EQ(verletLists.getTowerBlock().getTowerIndex2DAtPosition(p0.getR()), expectedHaloWidthInTowers);
+  EXPECT_EQ(verletLists.getTowerBlock().getTowerIndex2DAtPosition(p1.getR()), expectedHaloWidthInTowers - 1ul);
+}
+
 #if defined(AUTOPAS_OPENMP)
 TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace) {
   std::array<double, 3> min = {0, 0, 0};

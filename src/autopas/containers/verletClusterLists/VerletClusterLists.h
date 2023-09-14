@@ -856,6 +856,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   internal::ClusterTower<Particle> &getTowerByIndex(size_t x, size_t y) { return _towerBlock.getTowerByIndex2D(x, y); }
 
+  /**
+   * Getter for the cell block.
+   *
+   * @note This is only used for testing.
+   *
+   * @return
+   */
+  internal::ClusterTowerBlock2D<Particle> &getTowerBlock() { return _towerBlock; }
+
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _towerBlock.getBoxMax(); }
 
   /**
