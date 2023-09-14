@@ -276,19 +276,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const final { return _linkedCells.getBoxMax(); }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::setBoxMax()
-   */
-  void setBoxMax(const std::array<double, 3> &boxMax) final { _linkedCells.setBoxMax(boxMax); }
-
-  /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
   [[nodiscard]] const std::array<double, 3> &getBoxMin() const final { return _linkedCells.getBoxMin(); }
-
-  /**
-   * @copydoc autopas::ParticleContainerInterface::setBoxMin()
-   */
-  void setBoxMin(const std::array<double, 3> &boxMin) final { _linkedCells.setBoxMin(boxMin); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()

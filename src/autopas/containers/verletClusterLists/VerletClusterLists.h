@@ -1035,8 +1035,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
 
-  void setBoxMax(const std::array<double, 3> &boxMax) override { _boxMax = boxMax; }
-
   /**
    * Get the upper corner of the halo box.
    * @return the upper corner of the halo box.
@@ -1044,8 +1042,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] const std::array<double, 3> &getHaloBoxMax() const { return _haloBoxMax; }
 
   [[nodiscard]] const std::array<double, 3> &getBoxMin() const override { return _boxMin; }
-
-  void setBoxMin(const std::array<double, 3> &boxMin) override { _boxMin = boxMin; }
 
   /**
    * Get the lower corner of the halo box.
