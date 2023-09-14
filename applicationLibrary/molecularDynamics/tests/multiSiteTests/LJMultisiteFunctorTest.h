@@ -19,12 +19,13 @@
 // todo there is a lot of code duplication for trying out multiple functors. We should condense into suites.
 
 namespace {
-// Some template aliases to make the tests cleaner
-template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals>
-using LJMultisiteFunctorAVX_Masks = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, true>;
+// Some template aliases to make the tests cleaner.
 
-template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals>
-using LJMultisiteFunctorAVX_GatherScatter = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, false>;
+template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
+using LJMultisiteFunctorAVX_Masks = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true>;
+
+template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
+using LJMultisiteFunctorAVX_GatherScatter = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, false>;
 }
 
 /**
@@ -67,7 +68,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param PPL
    * @param cutoff
    */
-  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift, useMasks>
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
   void testAoSForceCalculation_CTC(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
                                ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
@@ -80,14 +81,12 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * Only suitable for the CTC functors.
    * @tparam functorType Functor tested. Only valid for functors which act on mdLib::MultisiteMoleculeLJ, applying
    * Lennard-Jones forces using a cutoff criterion based on Center-of-Mass to Center-of-Mass cutoffs.
-   * @tparam useMasks if true, functorType uses 0/1-masks instead of gather/scatter approach. Should only be set to false
-   * if functor type is capable of G/S mas
    * @param molA
    * @param molB
    * @param PPL
    * @param cutoff
    */
-  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool useMasks = true>
+  template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
   void testSuiteAoSForceCalculation_CTC(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
                                     ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 

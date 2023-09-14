@@ -165,7 +165,7 @@ class LJMultisiteFunctorAVX
   explicit LJMultisiteFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
       : autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                relevantForTuning, vecLength>>(cutoff),
+                                                relevantForTuning, useMasks, vecLength>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
