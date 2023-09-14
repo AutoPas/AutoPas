@@ -659,6 +659,24 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX_GS: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX_GS) && defined(__AVX__)
+      return f(LJFunctorTypeAVXGS{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor AVX with Gather/Scatter. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AVX_GS=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX_STS: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX_STS) && defined(__AVX__)
+      return f(LJFunctorTypeAVXSTS{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor AVX with site-to-site cutoffs. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AVX_STS=ON`.");
+#endif
+    }
   }
   throw std::runtime_error("Unknown functor choice" +
                            std::to_string(static_cast<int>(_configuration.functorOption.value)));
