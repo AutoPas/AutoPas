@@ -13,12 +13,12 @@ namespace autopas::internal {
  * @todo: add cell border handling
  */
 class CellBorderAndFlagManager {
+ public:
   /**
    * The index type to access the particle cells.
    */
   using index_t = std::size_t;
 
- public:
   /**
    * Cestructor
    */
