@@ -74,7 +74,7 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
         auto &currentTower = towers[towerIndex];
         auto startIndexInTower = clusterCount == 0 ? clusterRange.startIndexInTower : 0;
         for (size_t clusterIndex = startIndexInTower;
-             clusterIndex < currentTower.getNumClusters() && clusterCount < clusterRange.numClusters;
+             clusterIndex < clusterRange.numClusters and clusterCount < clusterRange.numClusters;
              clusterIndex++, clusterCount++) {
           auto &currentCluster = currentTower.getCluster(clusterIndex);
           _clusterFunctor.traverseCluster(currentCluster);

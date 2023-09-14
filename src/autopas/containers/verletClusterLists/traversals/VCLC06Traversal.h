@@ -131,11 +131,12 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
       }
 
       auto &currentTower = clusterList.getTowerByIndex(x, y);
-      for (auto &cluster : currentTower.getClusters()) {
-        _clusterFunctor.traverseCluster(cluster);
+      for (auto clusterIter = currentTower.getFirstOwnedCluster(); clusterIter < currentTower.getFirstTailHaloCluster();
+           ++clusterIter) {
+        _clusterFunctor.traverseCluster(*clusterIter);
 
-        for (auto *neighborClusterPtr : *cluster.getNeighbors()) {
-          _clusterFunctor.traverseClusterPair(cluster, *neighborClusterPtr);
+        for (auto *neighborClusterPtr : *(clusterIter->getNeighbors())) {
+          _clusterFunctor.traverseClusterPair(*clusterIter, *neighborClusterPtr);
         }
       }
     }

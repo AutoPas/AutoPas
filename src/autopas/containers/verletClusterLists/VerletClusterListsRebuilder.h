@@ -145,11 +145,12 @@ class VerletClusterListsRebuilder {
     size_t numClusters = 0;
     for (auto &tower : _towers) {
       numClusters += tower.generateClusters();
-      for (auto &cluster : tower.getClusters()) {
+      for (auto clusterIter = tower.getFirstOwnedCluster(); clusterIter < tower.getFirstTailHaloCluster();
+           ++clusterIter) {
         // VCL stores the references to the lists in the clusters, therefore there is no need to create a
         // cluster -> list lookup structure in the buffer structure
         const auto listID = _neighborListsBuffer.addNeighborList();
-        cluster.setNeighborList(&(_neighborListsBuffer.template getNeighborListRef<false>(listID)));
+        clusterIter->setNeighborList(&(_neighborListsBuffer.template getNeighborListRef<false>(listID)));
       }
     }
 
@@ -165,7 +166,7 @@ class VerletClusterListsRebuilder {
    * false)
    */
   void rebuildNeighborListsAndFillClusters(bool useNewton3) {
-    clearNeighborListsAndmoveDummiesIntoClusters();
+    clearNeighborListsAndMoveDummiesIntoClusters();
     updateNeighborLists(useNewton3);
 
     double dummyParticleDistance = _interactionLength * 2;
@@ -216,8 +217,8 @@ class VerletClusterListsRebuilder {
    * Clears previously saved neighbors from clusters and sets the 3D positions of the dummy particles to inside of the
    * cluster to avoid all dummies being in one place and potentially trigger cluster-cluster distance evaluations.
    */
-  void clearNeighborListsAndmoveDummiesIntoClusters() {
     for (auto &tower : _towers) {
+  void clearNeighborListsAndMoveDummiesIntoClusters() {
       tower.setDummyParticlesToLastActualParticle();
       for (auto &cluster : tower.getClusters()) {
         cluster.clearNeighbors();
@@ -429,30 +430,27 @@ class VerletClusterListsRebuilder {
     // Seems to find a good middle ground between not too much memory allocated and no additional allocations
     // when calling clusterA.addNeighbor(clusterB)
     const auto neighborListReserveHeuristicFactor = (interactionLengthFracOfDomainZ * 2.1) / _clusterSize;
-    const bool isSameTower = (&towerA == &towerB);
-    for (size_t clusterIndexInTowerA = 0; clusterIndexInTowerA < towerA.getNumClusters(); clusterIndexInTowerA++) {
+    for (auto clusterIterA = towerA.getFirstOwnedCluster(); clusterIterA < towerA.getFirstTailHaloCluster();
+         ++clusterIterA) {
       // if we are within one tower depending on newton3 only look at forward neighbors
-      const auto startClusterIndexInTowerB = isSameTower and useNewton3 ? clusterIndexInTowerA + 1ul : 0ul;
-      auto &clusterA = towerA.getCluster(clusterIndexInTowerA);
-      const auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
+      const auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterIterA->getZMinMax();
 
       if (clusterAContainsParticles) {
-        clusterA.getNeighbors()->reserve((towerA.numParticles() + 8 * towerB.numParticles()) *
-                                         neighborListReserveHeuristicFactor);
-        for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
-             clusterIndexInTowerB++) {
+        clusterIterA->getNeighbors()->reserve((towerA.numParticles() + 8 * towerB.numParticles()) *
+                                              neighborListReserveHeuristicFactor);
+
+        for (auto clusterIterB = isSameTower and useNewton3 ? clusterIterA + 1 : towerB.getClusters().begin();
+             clusterIterB < towerB.getClusters().end(); ++clusterIterB) {
           // a cluster cannot be a neighbor to itself
-          // If newton3 is true this is not possible because of the choice of the start index.
-          if (not useNewton3 and isSameTower and clusterIndexInTowerA == clusterIndexInTowerB) {
+          if (&*clusterIterA == &*clusterIterB) {
             continue;
           }
           // can't be const because it will potentially be added as a non-const neighbor
-          auto &clusterB = towerB.getCluster(clusterIndexInTowerB);
-          const auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterB.getZMinMax();
+          const auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterIterB->getZMinMax();
           if (clusterBcontainsParticles) {
             const double distZ = bboxDistance(clusterABoxBottom, clusterABoxTop, clusterBBoxBottom, clusterBBoxTop);
             if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
-              clusterA.addNeighbor(clusterB);
+              clusterIterA->addNeighbor(*clusterIterB);
             }
           }
         }

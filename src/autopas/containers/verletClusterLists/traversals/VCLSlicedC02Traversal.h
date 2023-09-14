@@ -36,10 +36,11 @@ class VCLSlicedC02Traversal
   void processBaseStep(unsigned long x, unsigned long y) {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     auto &currentTower = clusterList.getTowerByIndex(x, y);
-    for (auto &cluster : currentTower.getClusters()) {
-      _clusterFunctor.traverseCluster(cluster);
-      for (auto *neighborCluster : *cluster.getNeighbors()) {
-        _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
+    for (auto clusterIter = currentTower.getFirstOwnedCluster(); clusterIter < currentTower.getFirstTailHaloCluster();
+         ++clusterIter) {
+      _clusterFunctor.traverseCluster(*clusterIter);
+      for (auto *neighborClusterPtr : *(clusterIter->getNeighbors())) {
+        _clusterFunctor.traverseClusterPair(*clusterIter, *neighborClusterPtr);
       }
     }
   }

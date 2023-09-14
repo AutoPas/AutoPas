@@ -106,7 +106,11 @@ class Cluster {
   /**
    * Remove all neighbors.
    */
-  void clearNeighbors() { _neighborClusters->clear(); }
+  void clearNeighbors() {
+    if (_neighborClusters) {
+      _neighborClusters->clear();
+    }
+  }
 
   /**
    *

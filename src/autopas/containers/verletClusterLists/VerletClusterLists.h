@@ -1129,8 +1129,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     for (size_t x = 0; x < _towersPerDim[0]; x++) {
       for (size_t y = 0; y < _towersPerDim[1]; y++) {
         auto &tower = getTowerByIndex(x, y);
-        for (auto &cluster : tower.getClusters()) {
-          loopBody(cluster);
+        for (auto clusterIter = tower.getFirstOwnedCluster(); clusterIter < tower.getFirstTailHaloCluster();
+             ++clusterIter) {
+          loopBody(*clusterIter);
         }
       }
     }
@@ -1157,8 +1158,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       for (size_t y = 0; y < towersPerDimY; y++) {
         auto &tower = getTowerByIndex(x, y);
 
-        for (auto &cluster : tower.getClusters()) {
-          loopBody(cluster);
+        for (auto clusterIter = tower.getFirstOwnedCluster(); clusterIter < tower.getFirstTailHaloCluster();
+             ++clusterIter) {
+          loopBody(*clusterIter);
         }
       }
     }
@@ -1210,10 +1212,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     size_t numClusterPairsTotal = 0;
     bool threadIsInitialized = false;
     // Iterate over the clusters of all towers
-    for (size_t currentTowerIndex = 0; currentTowerIndex < _towers.size(); currentTowerIndex++) {
-      auto &currentTower = _towers[currentTowerIndex];
-      for (size_t currentClusterInTower = 0; currentClusterInTower < currentTower.getNumClusters();
-           currentClusterInTower++) {
+    for (size_t currentTowerIndex = 0; currentTowerIndex < _towerBlock.size(); currentTowerIndex++) {
+      auto &currentTower = _towerBlock[currentTowerIndex];
+      const auto firstOwnedClusterIndex =
+          std::distance(currentTower.getClusters().begin(), currentTower.getFirstOwnedCluster());
+      const auto firstTailHaloClusterIndex =
+          std::distance(currentTower.getClusters().begin(), currentTower.getFirstTailHaloCluster());
+      for (size_t currentClusterInTower = firstOwnedClusterIndex; currentClusterInTower < firstTailHaloClusterIndex;
+           ++currentClusterInTower) {
         auto &currentCluster = currentTower.getCluster(currentClusterInTower);
 
         // If on a new thread, start with the clusters for this thread here.
