@@ -135,7 +135,7 @@ using LJFunctorTypeAVXGS = mdLib::LJMultisiteFunctorAVX<ParticleType, false, tru
  * thus a preprocessor error is thrown if used in that mode.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAVXGSSTS = mdlib::LJMultisiteFunctorAVX_STS<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, true, vecLength>;
+using LJFunctorTypeAVXSTS = mdlib::LJMultisiteFunctorAVX_STS<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, true, vecLength>;
 #else
 #error "MD_FLEXIBLE_FUNCTOR_AVX_STS is not valid in SINGLESITE mode!"
 #endif
@@ -167,22 +167,28 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
  * functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is chosen to
  * be used in the CMake.
  */
+using LJFunctorTypeAbstract =
 #if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
+        mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+        mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AVX
+        mdLib::LJMultisiteFunctorAVX<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, true, vecLength>;
+#elif MD_FLEXIBLE_FUNCTOR_AVX_GS
+        mdLib::LJMultisiteFunctorAVX<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, false, vecLength>;
+#elif MD_FLEXIBLE_FUNCTOR_AVX_STS
+        mdLib::LJMultisiteFunctorAVX_STS<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, true, vecLength>;
 #endif
-
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
+        mdLib::LJFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+        mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
-using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
+        mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
-using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
+        mdLib::LJFunctorSVE<ParticleType, true, true>;
 #endif
 
 #endif
