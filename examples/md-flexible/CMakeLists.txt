@@ -18,8 +18,12 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsL
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON) # Todo clean this: For multisite molecule, this is CTC 0/1-Mask
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
+
+# todo clean this up
+option(MD_FLEXIBLE_FUNCTOR_AVX_GS "If instruction set is available and Multi-site mode is activated, compile AVX Multisite Functor with Gather Scatter Instructions" OFF)
+option(MD_FLEXIBLE_FUNCTOR_AVX_STS "If instruction set is available and Multi-site mode is activated, compile AVX Multisite Functor with Site-to-Site cutoffs" OFF)
 
 target_compile_definitions(
         md-flexible
@@ -28,14 +32,20 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX_GS}>:MD_FLEXIBLE_FUNCTOR_AVX_GS>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX_CTC}>:MD_FLEXIBLE_FUNCTOR_AVX_STS>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
 string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
-if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
-    if (MD_FLEXIBLE_FUNCTOR_AVX)
-        message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
+    if (MD_FLEXIBLE_FUNCTOR_AVX_GS)
+        message(WARNING "Gather/Scatter AVX Functor has not been implemented for Single-Site Molecules")
     endif()
+    if (MD_FLEXIBLE_FUNCTOR_AVX_STS)
+        message(WARNING "Sitewise cutoff criterion is equivalent to center-of-mass-wise cutoff criterion for single-site molecules")
+    endif()
+elseif (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()
