@@ -215,7 +215,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         auto strArg = node[key].as<std::string>();
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-        if (strArg.find("avx") != std::string::npos) {
+        if (strArg.find("gs") != std::string::npos or strArg.find("gather") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX_GS;
+        } else if (strArg.find("sts") != std::string::npos or strArg.find("site-to-site") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX_STS;
+        } else if (strArg.find("avx") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;

@@ -249,7 +249,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.functorOption)::getoptChar: {
-        if (strArg.find("avx") != string::npos) {
+        if (strArg.find("gs") != string::npos or strArg.find("gather") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX_GS;
+        } else if (strArg.find("sts") != string::npos or strArg.find("site-to-site") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX_STS;
+        } else if (strArg.find("avx") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
@@ -259,7 +263,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
-          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'"
+          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX', 'Lennard-Jones-SVE',"
+               << "'Lennard-Jones-Gather/Scatter' or 'Lennard-Jones-Site-To-Site'"
                << endl;
           displayHelp = true;
         }
