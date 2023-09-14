@@ -143,54 +143,6 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
   }
 
   /**
-   * Returns the 2D index of the tower in the tower grid the given 3D coordinates are in.
-   * If the location is outside of the domain, the tower nearest tower is returned.
-   *
-   * @param location The 3D coordinates.
-   * @return 2D tower index.
-   */
-  [[nodiscard]] std::array<size_t, 2> getTowerCoordinates(const std::array<double, 3> &location) const {
-    std::array<size_t, 2> towerIndex2D{};
-
-    for (int dim = 0; dim < 2; dim++) {
-      const auto towerDimIndex =
-          static_cast<long int>(floor((location[dim] - _haloBoxMin[dim]) * _towerSideLengthReciprocal[dim]));
-      const auto towerDimIndexNonNegative = static_cast<size_t>(std::max(towerDimIndex, 0l));
-      const auto towerDimIndexNonLargerValue = std::min(towerDimIndexNonNegative, _towersPerDim[dim] - 1);
-      towerIndex2D[dim] = towerDimIndexNonLargerValue;
-      /// @todo this is a sanity check to prevent doubling of particles, but could be done better! e.g. by border and
-      // flag manager
-      if (location[dim] >= _haloBoxMax[dim]) {
-        towerIndex2D[dim] = _towersPerDim[dim] - 1;
-      } else if (location[dim] < _haloBoxMin[dim]) {
-        towerIndex2D[dim] = 0;
-      }
-    }
-
-    return towerIndex2D;
-  }
-
-  /**
-   * Returns the tower for the given 2D tower index.
-   * @param x The x-index of the tower.
-   * @param y The y-index of the tower.
-   * @return Tower reference.
-   */
-  ClusterTower<Particle> &getTower(const size_t x, const size_t y) { return _towers[towerIndex2DTo1D(x, y)]; }
-
-  /**
-   * Returns the tower the given 3D coordinates are in.
-   * If the location is outside of the domain, the tower nearest tower is returned.
-   *
-   * @param location The 3D coordinates.
-   * @return Tower reference.
-   */
-  ClusterTower<Particle> &getTower(const std::array<double, 3> &location) {
-    auto [towerIndexX, towerIndexY] = getTowerCoordinates(location);
-    return getTower(towerIndexX, towerIndexY);
-  }
-
-  /**
    * Calculates the low and high corner of a tower given by its index.
    *
    * @note If towers are not built yet the corners of the full container are returned.
@@ -232,8 +184,9 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
   }
 
   /**
-   * Return the 2D index of the tower at a given position in the global domain.
-   * @param pos
+   * Returns the 2D index of the tower in the tower grid the given 3D coordinates are in.
+   * If the location is outside of the domain, the tower nearest tower is returned.
+   * * @param pos The 3D coordinates
    * @return array<X, Y>
    */
   [[nodiscard]] std::array<size_t, 2> getTowerIndex2DAtPosition(const std::array<double, 3> &pos) const {
@@ -242,8 +195,6 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
       return {0, 0};
     }
 
-    // FIXME: this is a copy of VerletClusterListsRebuilder::getTowerCoordinates(). See Issue 716
-    // https://github.com/AutoPas/AutoPas/issues/716
     std::array<size_t, 2> towerIndex2D{};
 
     for (int dim = 0; dim < 2; dim++) {
@@ -427,7 +378,7 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
   std::vector<ClusterTower<Particle>> _towers{1};
 
   /**
-   * Dimensions of the 2D xy-grid.
+   * Dimensions of the 2D xy-grid including halo.
    */
   std::array<size_t, 2> _towersPerDim{};
 

@@ -64,15 +64,9 @@ class VerletClusterListsRebuilder {
   /**
    * Rebuilds the towers, clusters, and neighbor lists.
    *
-   * @return new values for VerletClusterLists member variables. They are returned as tuple consisting of:
-   * {
-   *  double:                The new side length of each tower in xy-direction,
-   *  int:                   The interaction length in towers using the new tower side length,
-   *  std::array<size_t, 2>: The number of towers in each dimension using the new tower side length,
-   *  size_t:                The new number of clusters in the container,
-   * }
+   * @return number of clusters
    */
-  auto rebuildTowersAndClusters() {
+  size_t rebuildTowersAndClusters() {
     using namespace autopas::utils::ArrayMath::literals;
     // get rid of dummies
     for (auto &tower : _towerBlock) {
@@ -227,7 +221,7 @@ class VerletClusterListsRebuilder {
       const std::vector<Particle> &vector = particles2D[index];
       for (const auto &particle : vector) {
         if (utils::inBox(particle.getR(), _towerBlock.getHaloBoxMin(), _towerBlock.getHaloBoxMax())) {
-          auto &tower = _towerBlock.getTower(particle.getR());
+          auto &tower = _towerBlock.getTowerAtPosition(particle.getR());
           tower.addParticle(particle);
         } else {
           AutoPasLog(TRACE, "Not adding particle to VerletClusterLists container, because it is outside the halo:\n{}",
@@ -291,7 +285,7 @@ class VerletClusterListsRebuilder {
   void iterateNeighborTowers(const int towerIndexX, const int towerIndexY, const int minNeighborIndexX,
                              const int maxNeighborIndexX, const int minNeighborIndexY, const int maxNeighborIndexY,
                              const bool useNewton3, FunType function) {
-    auto &tower = _towerBlock.getTower(towerIndexX, towerIndexY);
+    auto &tower = _towerBlock.getTowerByIndex2D(towerIndexX, towerIndexY);
     // for all neighbor towers
     for (int neighborIndexY = minNeighborIndexY; neighborIndexY <= maxNeighborIndexY; neighborIndexY++) {
       double distBetweenTowersY =
@@ -309,7 +303,7 @@ class VerletClusterListsRebuilder {
         auto distBetweenTowersXYsqr = distBetweenTowersX * distBetweenTowersX + distBetweenTowersY * distBetweenTowersY;
         // skip if already longer than interactionLength
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
-          auto &neighborTower = _towerBlock.getTower(neighborIndexX, neighborIndexY);
+          auto &neighborTower = _towerBlock.getTowerByIndex2D(neighborIndexX, neighborIndexY);
 
           function(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
         }

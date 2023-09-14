@@ -797,12 +797,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   auto getTowerSideLength() const { return _towerBlock.getTowerSideLength(); }
 
   /**
-   * Returns 1 / towerSideLength
-   * @return
-   */
-  auto getTowerSideLengthReciprocal() const { return _towerBlock.getTowerSideLengthReciprocal(); }
-
-  /**
    * Returns the number of grids per dimension on the container.
    * @return the number of grids per dimension on the container.
    */
@@ -918,7 +912,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     return _neighborLists;
   }
 
- protected:
   /**
    * Rebuild the towers and the clusters.
    * This function sets the container structure to valid.
@@ -994,6 +987,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
+ protected:
   /**
    * Calculates a cluster thread partition that aims to give each thread about the same amount of cluster pair
    * interactions, if each thread handles the neighbors of all clusters it gets assigned.
