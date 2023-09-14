@@ -142,7 +142,7 @@ class LJMultisiteFunctorAVX_STS
   explicit LJMultisiteFunctorAVX_STS(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
       : autopas::Functor<Particle, LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                relevantForTuning>>(cutoff),
+                                                relevantForTuning, useMasks, vecLength>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -231,11 +231,11 @@ class LJMultisiteFunctorAVX_STS
     for (int i = 0; i < numSitesA; i++) {
       for (int j = 0; j < numSitesB; j++) {
         const auto exactSitePositionA = particleA.getR() + rotatedSitePositionsA[i];
-        const auto exactSitePositionB = particleB.getR() + rotatedSitePositionsB[i];
+        const auto exactSitePositionB = particleB.getR() + rotatedSitePositionsB[j];
         const auto displacement = exactSitePositionA - exactSitePositionB;
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-        if (distanceSquared < _cutoffSquaredAoS) {
+        if (distanceSquared > _cutoffSquaredAoS) {
           continue;
         }
 
@@ -463,7 +463,7 @@ class LJMultisiteFunctorAVX_STS
         std::array<double, 3> forceAccumulator = {0., 0., 0.};
 
         SoAKernel<true, false>(
-            siteMask, siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ, siteForceX, siteForceY,
+            siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ, siteForceX, siteForceY,
             siteForceZ, isSiteOwned, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA, forceAccumulator,
             torqueAccumulator, potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
 
@@ -838,7 +838,7 @@ class LJMultisiteFunctorAVX_STS
       const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
       const __m256i ownedStateB =
           remainderCase ? _mm256_mask_i64gather_epi64(_zero, ownedStatePtr, neighborMolIndex, remainderMask, 8)
-                        : _mm256_i64gather_pd(ownedStatePtr, neighborMolIndex, 8);
+                        : _mm256_i64gather_epi64(ownedStatePtr, neighborMolIndex, 8);
       const __m256d dummyMask =
           _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
       const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
@@ -1418,7 +1418,7 @@ class LJMultisiteFunctorAVX_STS
      const __m256i ownedState = autopas::utils::avx::load_epi64(
          remainderCase, &siteOwnership[offset + siteVectorIndex], remainderMask);
      const __m256d dummyMask = _mm256_cmp_pd(_mm256_castsi256_pd(ownedState), _zero, _CMP_NEQ_UQ);
-     const __m256i condition = _mm256_castpd_si256(_mm256_and_pd(cutoffCondition, dummyMask));
+     const __m256d condition = _mm256_and_pd(cutoffCondition, dummyMask);
 
       __m256d scalarMultiple = _mm256_and_pd(condition, scalar);
       scalarMultiple = _mm256_and_pd(_mm256_castsi256_pd(remainderMask), scalarMultiple);

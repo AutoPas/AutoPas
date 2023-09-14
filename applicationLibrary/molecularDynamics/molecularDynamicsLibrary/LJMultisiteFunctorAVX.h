@@ -876,7 +876,7 @@ class LJMultisiteFunctorAVX
       const __m256d cutoffMask = _mm256_cmp_pd(distanceSquaredCoM, _cutoffSquared, _CMP_LE_OS);
       const __m256i ownedStateB =
           remainderCase ? _mm256_mask_i64gather_epi64(_zero, ownedStatePtr, neighborMolIndex, remainderMask, 8)
-                        : _mm256_i64gather_pd(ownedStatePtr, neighborMolIndex, 8);
+                        : _mm256_i64gather_epi64(ownedStatePtr, neighborMolIndex, 8);
       const __m256d dummyMask =
           _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _zero, _CMP_NEQ_OS);  // Assuming that dummy = 0
       const __m256d totalMask = _mm256_and_pd(cutoffMask, dummyMask);
