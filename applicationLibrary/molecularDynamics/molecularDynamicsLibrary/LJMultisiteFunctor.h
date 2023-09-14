@@ -9,7 +9,7 @@
 #include "MoleculeLJ.h"
 #include "MultisiteMoleculeLJ.h"
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -41,7 +41,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJMultisiteFunctor
-    : public autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
+    : public autopas::PairwiseFunctor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
                                                            calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -111,7 +111,7 @@ class LJMultisiteFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+      : autopas::PairwiseFunctor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                       relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},

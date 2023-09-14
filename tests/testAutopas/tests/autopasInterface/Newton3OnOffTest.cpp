@@ -54,7 +54,7 @@ INSTANTIATE_TEST_SUITE_P(
                 // generate both newton3 versions of the same traversal and check that both are applicable
                 bool configOk = autopas::utils::withStaticCellType<Particle>(
                     container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-                      auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy)>();
+                      auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>();
                       auto traversalWithN3 =
                           traversalSelector.generateTraversal(traversalOption, f, container.getTraversalSelectorInfo(),
                                                               dataLayoutOption, autopas::Newton3Option::enabled);
@@ -77,6 +77,7 @@ INSTANTIATE_TEST_SUITE_P(
           return applicableCombinations;
         }()),
     Newton3OnOffTest::PrintToStringParamName());
+
 
 // Count number of Functor calls with and without newton 3 and compare
 void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOption,
@@ -130,7 +131,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
 template <class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container &container, Traversal traversal) {
-  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<InteractionTypeOption::pairwise> *>(traversal.get());
+  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise> *>(traversal.get());
   container.rebuildNeighborLists(pairwiseTraversal);
   container.iteratePairwise(pairwiseTraversal);
 }
@@ -196,7 +197,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
   // simulate iteration
   autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
     iterate(container,
-            autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<
+            autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::template generateTraversal<
                            MockPairwiseFunctor<Particle>>(
                 traversalOption, mockFunctor, traversalSelectorInfo, dataLayout, n3Option));
   });

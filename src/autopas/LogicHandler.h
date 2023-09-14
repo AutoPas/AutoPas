@@ -1227,7 +1227,6 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   timerRemainderTraversal.stop();
   functor.endTraversal(configuration.newton3);
 
-  // TODO: Check correctness of energy sampling for 3-body
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = _autoTuner3B->sampleEnergy();
 
   timerTotal.stop();
@@ -1503,9 +1502,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
 
   /// Pairwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  auto *pairwiseTraversalPtr = dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise>*>(traversalPtr.get());
-  // TODO: error check
-  const IterationMeasurements measurements = iteratePairwise(*functor, *pairwiseTraversalPtr);
+  const IterationMeasurements measurements = iteratePairwise(*functor, *traversalPtr.get());
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {
@@ -1580,9 +1577,7 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
 
   /// Triwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  auto *triwiseTraversalPtr = dynamic_cast<TraversalInterface<InteractionTypeOption::threeBody>*>(traversalPtr.get());
-
-  const IterationMeasurements measurements = iterateTriwise(*functor, *triwiseTraversalPtr);
+  const IterationMeasurements measurements = iterateTriwise(*functor, *traversalPtr.get());
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {

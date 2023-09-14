@@ -1,5 +1,5 @@
 /**
- * @file MockFunctor.h
+ * @file MockPairwiseFunctor.h
  * @author seckler
  * @date 18.04.18
  */

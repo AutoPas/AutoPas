@@ -44,13 +44,13 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   unsigned int clusterSize = traversalOption.to_string().find("luster") != std::string::npos ? 32 : 0;
   // this test assumes a cell size of 1. in each direction
   autopas::TraversalSelectorInfo tsi(cellsPerDim, cutoff, {1., 1., 1.}, clusterSize);
-  std::unique_ptr<autopas::TraversalInterface> traversal;
+  std::unique_ptr<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise>> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::lc_c01) {
-    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
+    traversal = autopas::TraversalSelector<FPCell, autopas::InteractionTypeOption::pairwise>::template generateTraversal<TraversalTest::CountFunctor,
                                                                                autopas::DataLayoutOption::aos, true>(
         traversalOption, functor, tsi);
   } else {
-    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
+    traversal = autopas::TraversalSelector<FPCell, autopas::InteractionTypeOption::pairwise>::template generateTraversal<TraversalTest::CountFunctor,
                                                                                autopas::DataLayoutOption::aos, false>(
         traversalOption, functor, tsi);
   }
@@ -73,7 +73,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
     }
   }
 
-  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<InteractionTypeOption::pairwise> *>(traversal.get());
+  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise> *>(traversal.get());
   linkedCells.iteratePairwise(pairwiseTraversal);
 }
 

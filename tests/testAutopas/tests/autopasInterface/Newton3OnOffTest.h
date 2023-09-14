@@ -12,6 +12,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/InteractionTypeOption.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

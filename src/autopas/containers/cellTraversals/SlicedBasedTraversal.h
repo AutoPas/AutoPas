@@ -12,6 +12,7 @@
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/containers/TraversalInterface.h"
 
 namespace autopas {
 

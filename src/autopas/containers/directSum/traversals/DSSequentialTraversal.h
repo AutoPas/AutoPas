@@ -13,6 +13,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
+#include "autopas/containers/TraversalInterface.h"
 
 namespace autopas {
 

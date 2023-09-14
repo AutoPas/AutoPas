@@ -16,6 +16,7 @@
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -24,6 +25,10 @@ using LJFunctorGlobals =
     mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ true>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorGlobals *);
+
+using ATFunctorGlobals =
+    mdLib::AxilrodTellerFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>;
+extern template bool autopas::AutoPas<Molecule>::computeInteractions(ATFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
 constexpr double skinPerTimestep = 0.2;
@@ -183,7 +188,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
   const auto &recvHaloParticles = sendHaloParticles;
   addHaloParticles(autoPas, recvHaloParticles);
 
-  // 4. iteratePairwise
+  // 4. computeInteractions
   autoPas.computeInteractions(functor);
 }
 
@@ -221,7 +226,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
   addHaloParticles(autoPas1, recvHaloParticles1);
   addHaloParticles(autoPas2, recvHaloParticles2);
 
-  // 4. iteratePairwise
+  // 4. computeInteractions
   autoPas1.computeInteractions(functor1);
   autoPas2.computeInteractions(functor2);
 }
@@ -465,14 +470,9 @@ TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
   using autopas::utils::ArrayUtils::static_cast_copy_array;
 
   NumThreadGuard numThreadGuard(3);
-  const autopas::Configuration conf = [&]() {
-    const auto [containerOption, traversalOption, loadEstimatorOption, dataLayoutOption, newton3Option,
-                cellSizeOption, interactionType] = GetParam();
 
-    return autopas::Configuration{containerOption,     cellSizeOption,   traversalOption,
-                                  loadEstimatorOption, dataLayoutOption, newton3Option, interactionType};
-  }();
-
+  auto conf = GetParam();
+  auto interactionT = conf.interactionType;
   constexpr double cutoffLocal = 1.;
   constexpr double skinLocal = .1;
   constexpr double interactionLength = cutoffLocal + skinLocal;
@@ -482,14 +482,15 @@ TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
   const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
   const autopas::TraversalSelectorInfo traversalSelectorInfo{
       cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
-  LJFunctorGlobals functor(cutoffLocal);
+//  LJFunctorGlobals functor(cutoffLocal);
+  ATFunctorGlobals functor(cutoffLocal);
   const autopas::ContainerSelectorInfo containerSelectorInfo{conf.cellSizeFactor, skinLocal, rebuildFrequency,
                                                              clusterSize, conf.loadEstimator};
   autopas::ContainerSelector<Molecule> containerSelector{boxMinLocal, boxMaxLocal, cutoffLocal};
   containerSelector.selectContainer(conf.container, containerSelectorInfo);
   auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
       containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+        return autopas::TraversalSelector<decltype(particleCellDummy), interactionT>::generateTraversal(
             conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
       });
 
@@ -508,7 +509,7 @@ INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
                              autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
                              autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
                              autopas::Newton3Option::getAllOptions(),
-                             std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(), autopas::InteractionTypeOption::pairwise)),
+                             std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get(), autopas::InteractionTypeOption::threeBody)),
                          AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////

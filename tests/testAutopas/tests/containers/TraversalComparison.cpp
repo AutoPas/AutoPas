@@ -121,11 +121,11 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::generateTraversal(
             traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
       });
 
-  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<InteractionTypeOption::pairwise> *>(traversal.get());
+  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise> *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }

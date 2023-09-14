@@ -10,6 +10,8 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/options/InteractionTypeOption.h"
+#include "autopas/containers/TraversalInterface.h"
 
 namespace autopas {
 
