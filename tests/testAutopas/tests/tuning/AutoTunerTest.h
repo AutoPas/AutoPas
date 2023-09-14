@@ -37,7 +37,7 @@ class AutoTunerTest : public AutoPasTestBase {
       autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled};
   const autopas::Configuration _confLc_c08_N3{autopas::ContainerOption::linkedCells, _cellSizeFactor,
                                               autopas::TraversalOption::lc_c08,      autopas::LoadEstimatorOption::none,
-                                              autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled};
+                                              autopas::DataLayoutOption::aos,        autopas::Newton3Option::enabled};
   const autopas::Configuration _confLc_c08_noN3{
       autopas::ContainerOption::linkedCells, _cellSizeFactor,
       autopas::TraversalOption::lc_c08,      autopas::LoadEstimatorOption::none,
