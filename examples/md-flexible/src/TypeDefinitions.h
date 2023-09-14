@@ -14,6 +14,14 @@
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX) || defined(MD_FLEXIBLE_FUNCTOR_AVX_GS)
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX.h"
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX_STS)
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX_STS.h"
+#endif
+
 #else
 
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
@@ -50,6 +58,18 @@ using ParticleType = mdLib::MultisiteMoleculeLJ;
 using ParticleType = mdLib::MoleculeLJ;
 #endif
 
+/**
+ * Some Functors require a vecLength i.e. the number of doubles which fit into a floating register.
+ * Currently, this is by default set to 4. If AVX512 is used this is set to 8.
+ * Todo check SVE
+ */
+const size_t vecLength =
+#ifdef __AVX512__
+    8;
+#else
+    4;
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**
  * Type of LJFunctorTypeAutovec used in md-flexible.
@@ -82,16 +102,43 @@ using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, a
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
  * Type of LJFunctorTypeAVX used in md-flexible.
- * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
+ * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX (with 0/1-Masks) as determined by CMake flag
+ * MD_FLEXIBLE_MODE. The Multi-site variant uses cutoffs based on the distance between the center-of-masses.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#error "Multi-Site Lennard-Jones Functor does not have AVX support!"
+using LJFunctorTypeAVX = mdLib::LJMultisiteFunctorAVX<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, true, vecLength>;
 #else
 using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #endif
 
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX_GS)
+/**
+ * Type of LJFunctorTypeAVXGS used in md-flexible.
+ * Switches between a single-site LJ Functor with Gather/Scatter instructions and mdLib::LJMultisiteFunctorAVX (with G/S) as determined by CMake flag MD_FLEXIBLE_MODE.
+ * The Multi-site variant uses cutoffs based on the distance between the center-of-masses.
+ * @note No Single-site LJ Functor using Gather/Scatter instructions has been created, so a preprocessor error will be thrown.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+using LJFunctorTypeAVXGS = mdLib::LJMultisiteFunctorAVX<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, false, vecLength>;
+#else
+#error "Gather/Scatter LJ Functor does not have single-site support!"
+#endif
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX_STS)
+/**
+ * Type of LJFunctorTypeAVXSTS used in md-flexible.
+ * The only difference between this and LJFunctorTypeAVX is the cutoff criterion - which here is based individually on
+ * site to site distances. There is no distinction between this functor and LJFunctorTypeAVX in single-site mode, and
+ * thus a preprocessor error is thrown if used in that mode.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+using LJFunctorTypeAVXGSSTS = mdlib::LJMultisiteFunctorAVX_STS<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, true, vecLength>;
+#else
+#error "MD_FLEXIBLE_FUNCTOR_AVX_STS is not valid in SINGLESITE mode!"
+#endif
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)

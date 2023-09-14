@@ -33,7 +33,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX_GS}>:MD_FLEXIBLE_FUNCTOR_AVX_GS>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX_CTC}>:MD_FLEXIBLE_FUNCTOR_AVX_STS>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX_STS}>:MD_FLEXIBLE_FUNCTOR_AVX_STS>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
