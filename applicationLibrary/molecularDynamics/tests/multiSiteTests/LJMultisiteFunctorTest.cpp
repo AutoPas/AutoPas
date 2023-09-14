@@ -221,6 +221,162 @@ void LJMultisiteFunctorTest::testSuiteAoSForceCalculation_CTC(mdLib::MultisiteMo
   testAoSForceCalculation_CTC<functorType, true, true, true>(molA, molB, PPL, cutoff);
 }
 
+
+template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
+void LJMultisiteFunctorTest::testAoSForceCalculation_STS(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+                                                         ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+  using autopas::utils::ArrayMath::add;
+  using autopas::utils::ArrayMath::cross;
+  using autopas::utils::ArrayMath::dot;
+  using autopas::utils::ArrayMath::sub;
+  using autopas::utils::quaternion::rotateVectorOfPositions;
+
+  const auto molTypeA = molA.getTypeId();
+  const auto molTypeB = molB.getTypeId();
+  const auto numberOfSitesA = PPL.getNumSites(molTypeA);
+  const auto numberOfSitesB = PPL.getNumSites(molTypeB);
+  const auto siteTypesA = PPL.getSiteTypes(molTypeA);
+  const auto siteTypesB = PPL.getSiteTypes(molTypeB);
+
+  // determine expected forces + torques (+ globals)
+  std::array<double, 3> expectedForceA{0, 0, 0};
+  std::array<double, 3> expectedTorqueA{0, 0, 0};
+  std::array<double, 3> expectedForceB{0, 0, 0};
+  std::array<double, 3> expectedTorqueB{0, 0, 0};
+
+  double expectedPotentialEnergySum{0.};
+  double expectedVirialSum{0.};
+
+
+  // calculate exact site positions
+  const auto rotatedSitePositionsA = rotateVectorOfPositions(molA.getQuaternion(), PPL.getSitePositions(molTypeA));
+  const auto rotatedSitePositionsB = rotateVectorOfPositions(molB.getQuaternion(), PPL.getSitePositions(molTypeB));
+
+  for (size_t siteA = 0; siteA < numberOfSitesA; ++siteA) {
+    const auto exactSitePositionA = add(rotatedSitePositionsA[siteA], molA.getR());
+    for (size_t siteB = 0; siteB < numberOfSitesB; ++siteB) {
+      const auto exactSitePositionB = add(rotatedSitePositionsB[siteB], molB.getR());
+
+      const auto displacement = sub(exactSitePositionA, exactSitePositionB);
+      const auto distanceSquared = dot(displacement, displacement);
+
+      // determine if site pair is within cutoff and skip calculation if not
+      if (distanceSquared >= cutoff*cutoff) continue ;
+
+      const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).sigmaSquared;
+      const auto epsilon24 = PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).epsilon24;
+
+      const auto invDistSquared = 1. / distanceSquared;
+      const auto lj2 = sigmaSquared * invDistSquared;
+      const auto lj6 = lj2 * lj2 * lj2;
+      const auto lj12 = lj6 * lj6;
+      const auto lj12m6 = lj12 - lj6;  // = LJ potential / (4x epsilon)
+      const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * invDistSquared;
+      const auto force = autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
+
+      expectedForceA = add(expectedForceA, force);
+      if constexpr (newton3) {
+        expectedForceB = sub(expectedForceB, force);
+      }
+
+      const auto torqueOnA = cross(rotatedSitePositionsA[siteA], force);
+      expectedTorqueA = add(expectedTorqueA, torqueOnA);
+      if constexpr (newton3) {
+        const auto torqueOnB = cross(rotatedSitePositionsB[siteB], force);
+        expectedTorqueB = sub(expectedTorqueB, torqueOnB);
+      }
+
+      if constexpr (calculateGlobals) {
+        const auto shift6 = applyShift ? PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).shift6 : 0;
+        const auto shift = shift6 / 6.;
+        const auto epsilon4 = epsilon24 / 6.;
+
+        // only add half the potential energy if no newton3 is used (because we are missing half the interaction
+        // between the two molecules).
+        const auto potentialEnergy = newton3 ? epsilon4 * lj12m6 + shift : 0.5 * (epsilon4 * lj12m6 + shift);
+        const auto virialDimensionwiseContributions =
+            newton3 ? autopas::utils::ArrayMath::mul(displacement, force)
+                    : autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force), 0.5);
+
+        expectedPotentialEnergySum += potentialEnergy;
+        expectedVirialSum += virialDimensionwiseContributions[0] + virialDimensionwiseContributions[1] +
+                             virialDimensionwiseContributions[2];
+      }
+    }
+  }
+
+  // calculate forces and torques using AoS functor
+
+  // create functor
+  functorType<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
+              calculateGlobals, true>
+      functor(cutoff, PPL);
+
+  functor.initTraversal();
+  functor.AoSFunctor(molA, molB, newton3);
+  functor.endTraversal(newton3);
+
+  for (size_t i = 0; i < 3; ++i) {
+    EXPECT_NEAR(molA.getF()[i], expectedForceA[i], 1e-13)
+        << "molA: Unexpected force[" << i << "] = " << molA.getF()[i] << " != " << expectedForceA[i]
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
+  }
+  for (size_t i = 0; i < 3; ++i) {
+    EXPECT_NEAR(molA.getTorque()[i], expectedTorqueA[i], 1e-13)
+        << "molA: Unexpected force[" << i << "] = " << molA.getTorque()[i] << " != " << expectedTorqueA[i]
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
+  }
+  for (size_t i = 0; i < 3; ++i) {
+    EXPECT_NEAR(molB.getF()[i], expectedForceB[i], 1e-13)
+        << "molB: Unexpected force[" << i << "] = " << molB.getF()[i] << " != " << expectedForceB[i]
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
+  }
+  for (size_t i = 0; i < 3; ++i) {
+    EXPECT_NEAR(molB.getTorque()[i], expectedTorqueB[i], 1e-13)
+        << "molB: Unexpected force[" << i << "] = " << molB.getTorque()[i] << " != " << expectedTorqueB[i]
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
+  }
+  if constexpr (calculateGlobals) {
+    EXPECT_NEAR(functor.getPotentialEnergy(), expectedPotentialEnergySum, 1e-13)
+        << "Unexpected potential energy = " << functor.getPotentialEnergy() << " != " << expectedPotentialEnergySum
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
+
+    EXPECT_NEAR(functor.getVirial(), expectedVirialSum, 1e-13)
+        << "Unexpected virial = " << functor.getVirial() << " != " << expectedVirialSum
+        << " as expected with newton3 = " << newton3 << ", calculateGlobals = " << calculateGlobals
+        << ", and applyShift = " << applyShift << ".";
+  }
+}
+
+template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
+void LJMultisiteFunctorTest::testSuiteAoSForceCalculation_STS(mdLib::MultisiteMoleculeLJ molA,
+                                                              mdLib::MultisiteMoleculeLJ molB,
+                                                              ParticlePropertiesLibrary<double, size_t> PPL,
+                                                              double cutoff) {
+  // N3L Disabled, No Calculating Globals
+  testAoSForceCalculation_STS<functorType, false, false, false>(molA, molB, PPL, cutoff);
+
+  // N3L Enabled, No Calculating Globals
+  testAoSForceCalculation_STS<functorType, true, false, false>(molA, molB, PPL, cutoff);
+
+  // N3L Disabled, Calculating Globals, no shift applied
+  testAoSForceCalculation_STS<functorType, false, true, false>(molA, molB, PPL, cutoff);
+
+  // N3L Disabled, Calculating Globals, shift applied
+  testAoSForceCalculation_STS<functorType, false, true, true>(molA, molB, PPL, cutoff);
+
+  // N3L Enabled, Calculating Globals, no shift applied
+  testAoSForceCalculation_STS<functorType, true, true, false>(molA, molB, PPL, cutoff);
+
+  // N3L Enabled, Calculating Globals, shift applied
+  testAoSForceCalculation_STS<functorType, true, true, true>(molA, molB, PPL, cutoff);
+}
+
 template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
 void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
                                                    ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
@@ -586,9 +742,9 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
 
 /**
  * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
- * Tests both LJMultisiteFunctor and LJMultisiteFunctorAVX.
+ * Only tests Center-of-Mass to Center-of-Mass based cutoffs, i.e. LJMultisiteFunctor and the CTC variants of LJMultisiteFunctorAVX.
  */
-TEST_F(LJMultisiteFunctorTest, AoSTest) {
+TEST_F(LJMultisiteFunctorTest, AoSTest_CTC) {
   using mdLib::MultisiteMoleculeLJ;
 
   const double cutoff = 2.5;
@@ -752,6 +908,121 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   // tests: 3 site <-> 3 site, with some different site types
   testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX_GatherScatter>(mol4, mol8, PPL, cutoff);
+}
+
+/**
+ * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
+ * Only tests Site to Site based cutoffs, i.e.  LJMultisiteFunctorAVX_STS.
+ */
+TEST_F(LJMultisiteFunctorTest, AoSTest_STS) {
+  using mdLib::MultisiteMoleculeLJ;
+
+  const double cutoff = 2.5;
+
+  ParticlePropertiesLibrary PPL(cutoff);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(1, 0.5, 0.5, 0.5);
+
+  // Molecules to be used in the tests (explanation of choices documented when tests are run).
+  // For ease of readability, each molecule has its own molType, even when duplicated.
+  MultisiteMoleculeLJ mol0;
+  mol0.setR({0., 0., 0.});
+  mol0.setQuaternion({0., 0., 0., 1.});
+  mol0.setF({0., 0., 0.});
+  mol0.setTorque({0., 0., 0.});
+  mol0.setTypeId(0);
+  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+
+  MultisiteMoleculeLJ mol1;
+  mol1.setR({1., 0., 0.});
+  mol1.setQuaternion({0., 0., 0., 1.});
+  mol1.setF({0., 0., 0.});
+  mol1.setTorque({0., 0., 0.});
+  mol1.setTypeId(1);
+  PPL.addMolType(1, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
+
+  MultisiteMoleculeLJ mol2;
+  mol2.setR({0., 1., 0.});
+  mol2.setQuaternion({0., 0., 0., 1.});
+  mol2.setF({0., 0., 0.});
+  mol2.setTorque({0., 0., 0.});
+  mol2.setTypeId(2);
+  PPL.addMolType(2, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
+
+  MultisiteMoleculeLJ mol3;
+  mol3.setR({0., 0., 0.});
+  mol3.setQuaternion({0., 0., 0., 1.});
+  mol3.setF({0., 0., 0.});
+  mol3.setTorque({0., 0., 0.});
+  mol3.setTypeId(3);
+  PPL.addMolType(3, {0, 0, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
+
+  MultisiteMoleculeLJ mol4;
+  mol4.setR({0., 0., 1.});
+  mol4.setQuaternion({0.7071067811865475, 0.7071067811865475, 0., 0.});
+  mol4.setF({0., 0., 0.});
+  mol4.setTorque({0., 0., 0.});
+  mol4.setTypeId(4);
+  PPL.addMolType(4, {0, 0, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
+
+  MultisiteMoleculeLJ mol5;
+  mol5.setR({2.5, 2.5, 2.5});
+  mol5.setQuaternion({0., 0., 0., 1.});
+  mol5.setF({0., 0., 0.});
+  mol5.setTorque({0., 0., 0.});
+  mol5.setTypeId(5);
+  PPL.addMolType(5, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
+
+  MultisiteMoleculeLJ mol6;
+  mol6.setR({0., 2.55, 0.});
+  mol6.setQuaternion({0., 0., 0., 1.});
+  mol6.setF({0., 0., 0.});
+  mol6.setTorque({0., 0., 0.});
+  mol6.setTypeId(6);
+  PPL.addMolType(6, {0, 0}, {{0., 0.1, 0.}, {0., -0.1, 0.}}, {1., 1., 1.});
+
+  MultisiteMoleculeLJ mol7;
+  mol7.setR({0., 2.45, 0.});
+  mol7.setQuaternion({0., 0., 0., 1.});
+  mol7.setF({0., 0., 0.});
+  mol7.setTorque({0., 0., 0.});
+  mol7.setTypeId(7);
+  PPL.addMolType(7, {0, 0}, {{0., 0.1, 0.}, {0., -0.1, 0.}}, {1., 1., 1.});
+
+  MultisiteMoleculeLJ mol8;
+  mol8.setR({0., 0., 0.});
+  mol8.setQuaternion({0., 0., 0., 1.});
+  mol8.setF({0., 0., 0.});
+  mol8.setTorque({0., 0., 0.});
+  mol8.setTypeId(8);
+  PPL.addMolType(8, {1, 1, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
+
+  PPL.calculateMixingCoefficients();
+
+
+  // tests: 1 site <-> 2 site interaction
+  testSuiteAoSForceCalculation_STS<LJMultisiteFunctorAVX_STS>(mol0, mol1, PPL, cutoff);
+
+  // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
+  testSuiteAoSForceCalculation_STS<LJMultisiteFunctorAVX_STS>(mol0, mol2, PPL, cutoff);
+
+  // tests: 2 site <-> 3 site interaction
+  testSuiteAoSForceCalculation_STS<LJMultisiteFunctorAVX_STS>(mol1, mol3, PPL, cutoff);
+
+  // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
+  testSuiteAoSForceCalculation_STS<LJMultisiteFunctorAVX_STS>(mol3, mol4, PPL, cutoff);
+
+  // tests: 2 site <-> 2 site, where molecules are beyond cutoff
+  testSuiteAoSForceCalculation_STS<LJMultisiteFunctorAVX_STS>(mol1, mol5, PPL, cutoff);
+
+  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
+  testSuiteAoSForceCalculation_STS<LJMultisiteFunctorAVX_STS>(mol0, mol6, PPL, cutoff);
+
+  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
+  testSuiteAoSForceCalculation_STS<LJMultisiteFunctorAVX_STS>(mol0, mol7, PPL, cutoff);
+
+  // tests: 3 site <-> 3 site, with some different site types
+  testSuiteAoSForceCalculation_STS<LJMultisiteFunctorAVX_STS>(mol4, mol8, PPL, cutoff);
 }
 
 /**
@@ -999,6 +1270,27 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   singleSiteSanityCheck<LJMultisiteFunctorAVX_GatherScatter, true, true, true>(mol0, mol1, PPL, cutoff);
+
+
+  // AVX STS Functor
+
+  // N3L optimization disabled, global calculation disabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX_STS, false, false, false>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX_STS, true, false, false>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX_STS, false, true, false>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX_STS, true, true, false>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX_STS, false, true, true>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX_STS, true, true, true>(mol0, mol1, PPL, cutoff);
 }
 
 /**
@@ -1144,6 +1436,49 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoACellAgainstAoS<LJMultisiteFunctorAVX_GatherScatter, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+
+  // AVX STS Functor
+
+  // tests with only owned molecules
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, false, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, false, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 }
 
 /**
@@ -1293,6 +1628,49 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_GatherScatter, true, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+
+  // AVX STS Functor
+
+  // tests with only owned molecules
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, false, false, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, true, false, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, true>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, false, false, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, true, false, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
 }
 
 /**
@@ -1438,4 +1816,47 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_GatherScatter, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+
+  // AVX STS Tests
+
+  // tests with only owned molecules
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, false, false, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, true, false, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, false, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 }
