@@ -1,4 +1,4 @@
-define_list AllContainers = "DirectSum", "LinkedCells", "LinkedCellsReferences", "VarVerletListsAsBuild", "VerletClusterLists", "VerletLists", "VerletListsCells", "PairwiseVerletLists";
+define_list AllContainers = "DirectSum", "LinkedCells", "LinkedCellsReferences", "VarVerletListsAsBuild", "VerletClusterLists", "VerletLists", "VerletListsCells", "PairwiseVerletLists", "Octree";
 define_list LinkedCellsContainer = "LinkedCells", "LinkedCellsReferences";
 define_list VerletListsContainer = "VerletLists", "VerletClusterLists", "VerletListsCells", "PairwiseVerletLists", "VarVerletListsAsBuild";
 
@@ -12,7 +12,7 @@ define maxFactorOfEmptyCellsOverNumParticles = 100.0;
 define isDomainExtremelyEmpty = numEmptyCells / numParticles > maxFactorOfEmptyCellsOverNumParticles;
 
 if isDomainExtremelyEmpty:
-	define_list AllExceptClusterLists = "LinkedCells", "LinkedCellsReferences", "VarVerletListsAsBuild", "VerletLists", "VerletListsCells", "PairwiseVerletLists";
+	define_list AllExceptClusterLists = "LinkedCells", "LinkedCellsReferences", "VarVerletListsAsBuild", "VerletLists", "VerletListsCells", "PairwiseVerletLists", "Octree";
 	[container="VerletClusterLists"] >= [container=AllExceptClusterLists];
 endif
 

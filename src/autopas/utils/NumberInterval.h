@@ -12,7 +12,7 @@ namespace autopas {
  * Class describing an interval
  */
 template <class Number>
-class NumberInterval : public NumberSet<Number> {
+class NumberInterval final : public NumberSet<Number> {
  public:
   /**
    * Default Constructor: Create a range which only contains 0
@@ -41,7 +41,7 @@ class NumberInterval : public NumberSet<Number> {
    * @param numbers One or two values, like the available constructors for NumberInterval.
    * If two are provided the smaller one is assumed to be the min value.
    */
-  inline void resetValues(std::set<Number> &numbers) override {
+  inline void resetValues(const std::set<Number> &numbers) override {
     if (numbers.size() == 1) {
       _min = *numbers.begin();
       _max = *numbers.begin();
@@ -64,6 +64,7 @@ class NumberInterval : public NumberSet<Number> {
 
   inline bool isEmpty() const override { return false; }
   inline bool isFinite() const override { return _max == _min; }
+  inline bool isInterval() const override { return true; }
   size_t size() const override {
     if (isFinite()) return 1ul;
 
@@ -135,6 +136,24 @@ class NumberInterval : public NumberSet<Number> {
   }
 
   Number getMedian() const override { return (_max + _min) / 2; }
+
+  bool operator==(const NumberSet<Number> &rhs) const override {
+    return this->isInterval() == rhs.isInterval() and this->_min == rhs.getMin() and this->_max == rhs.getMax();
+  }
+
+  /**
+   * Check if this and another interval overlap.
+   * @param other
+   * @return
+   */
+  bool overlaps(const NumberInterval<Number> &other) const { return (_min <= other._max) and (_max >= other._min); }
+
+  /**
+   * Check if the other interval is fully included in this interval.
+   * @param other
+   * @return
+   */
+  bool includes(const NumberInterval<Number> &other) const { return (_min <= other._min) and (_max >= other._max); }
 
  private:
   Number _min;

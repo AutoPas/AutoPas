@@ -11,7 +11,8 @@
 autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix)
     : _loggerName("TuningDataLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
-  auto outputFileName("AutoPas_tuningData_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
+  const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
+  auto outputFileName("AutoPas_tuningData_" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
   auto headerLoggerName = _loggerName + "header";

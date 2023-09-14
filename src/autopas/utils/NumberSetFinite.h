@@ -16,7 +16,7 @@ namespace autopas {
  * Class describing a finite set of numbers
  */
 template <class Number>
-class NumberSetFinite : public NumberSet<Number> {
+class NumberSetFinite final : public NumberSet<Number> {
  public:
   /**
    * Default Constructor: Empty set
@@ -31,19 +31,20 @@ class NumberSetFinite : public NumberSet<Number> {
    * Create a NumberSet from a std::set
    * @param values
    */
-  NumberSetFinite(std::set<Number> values) : _set(values) {}
+  NumberSetFinite(const std::set<Number> &values) : _set(values) {}
 
   std::unique_ptr<NumberSet<Number>> clone() const override { return std::make_unique<NumberSetFinite>(*this); }
   /**
    * Setter for NumberSetFinite
    * @param numbers The set of numbers the new NumberSetFinite represents
    */
-  inline void resetValues(std::set<Number> &numbers) override { _set = numbers; }
+  inline void resetValues(const std::set<Number> &numbers) override { _set = numbers; }
 
   std::string to_string() const override { return "" + utils::ArrayUtils::to_string(_set) + ""; }
 
   inline bool isEmpty() const override { return _set.empty(); }
   inline bool isFinite() const override { return true; }
+  inline bool isInterval() const override { return false; }
   inline size_t size() const override { return _set.size(); }
 
   inline Number getMin() const override { return *_set.begin(); }
@@ -60,6 +61,10 @@ class NumberSetFinite : public NumberSet<Number> {
     auto it = std::begin(_set);
     std::advance(it, _set.size() / 2);
     return *it;
+  }
+
+  bool operator==(const NumberSet<Number> &rhs) const override {
+    return this->isInterval() == rhs.isInterval() and getAll() == rhs.getAll();
   }
 
  private:

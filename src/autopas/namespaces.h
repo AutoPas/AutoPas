@@ -96,4 +96,9 @@ namespace octree {}
  */
 namespace tuningLogEntry {}
 
+/**
+ * Generators for search spaces.
+ */
+namespace SearchSpaceGenerators {}
+
 }  // namespace autopas

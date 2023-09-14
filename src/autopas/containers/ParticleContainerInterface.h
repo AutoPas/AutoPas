@@ -16,7 +16,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/selectors/TraversalSelectorInfo.h"
+#include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
 

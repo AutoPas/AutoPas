@@ -19,12 +19,13 @@
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/particles/Particle.h"
-#include "autopas/selectors/AutoTuner.h"
-#include "autopas/selectors/Configuration.h"
-#include "autopas/selectors/ContainerSelector.h"
-#include "autopas/selectors/ContainerSelectorInfo.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/tuning/AutoTuner.h"
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/ContainerSelectorInfo.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/NumParticlesEstimator.h"
+#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
@@ -46,15 +47,18 @@ class LogicHandler {
    * Constructor of the LogicHandler.
    * @param autoTuner
    * @param logicHandlerInfo
+   * @param rebuildFrequency
+   * @param outputSuffix
    */
-  LogicHandler(autopas::AutoTuner &autoTuner, const LogicHandlerInfo &logicHandlerInfo)
-      : _neighborListRebuildFrequency{logicHandlerInfo.rebuildFrequency},
+  LogicHandler(autopas::AutoTuner &autoTuner, const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency,
+               const std::string &outputSuffix)
+      : _neighborListRebuildFrequency{rebuildFrequency},
         _autoTuner(autoTuner),
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
-        _iterationLogger(logicHandlerInfo.outputSuffix),
+        _iterationLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -68,7 +72,7 @@ class LogicHandler {
     // initialize locks needed for remainder traversal
     const auto boxLength = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin;
     const auto interactionLengthInv =
-        1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * logicHandlerInfo.rebuildFrequency);
+        1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * rebuildFrequency);
     initSpacialLocks(boxLength, interactionLengthInv);
     for (auto &lockPtr : _bufferLocks) {
       lockPtr = std::make_unique<std::mutex>();
@@ -496,8 +500,10 @@ class LogicHandler {
 
   /**
    * Checks if the given configuration can be used with the given functor and the current state of the simulation.
-   * For the checks we need to switch to the container in the config. Also we need to build the traversal,
-   * hence, it is returned.
+   *
+   * @note For the checks we need to switch to the container in the config, hece this function can't be const.
+   * Also we need to build the traversal, hence, it is returned.
+   *
    * @tparam PairwiseFunctor
    * @param conf
    * @param pairwiseFunctor
@@ -520,37 +526,7 @@ class LogicHandler {
    * @param haloParticleBuffers
    */
   void setParticleBuffers(const std::vector<FullParticleCell<Particle>> &particleBuffers,
-                          const std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
-    auto exchangeBuffer = [](const auto &newBuffers, auto &oldBuffers, auto &particleCounter) {
-      // sanity check
-      if (oldBuffers.size() < newBuffers.size()) {
-        autopas::utils::ExceptionHandler::exception(
-            "The number of new buffers ({}) is larger than number of existing buffers ({})!", newBuffers.size(),
-            oldBuffers.size());
-      }
-
-      // we will clear the old buffers so subtract the particles from the counters.
-      const auto numParticlesInOldBuffers =
-          std::transform_reduce(oldBuffers.begin(), std::next(oldBuffers.begin(), newBuffers.size()), 0, std::plus<>(),
-                                [](const auto &cell) { return cell.numParticles(); });
-      particleCounter.fetch_sub(numParticlesInOldBuffers, std::memory_order_relaxed);
-
-      // clear the old buffers and copy the content of the new buffers over.
-      size_t numParticlesInNewBuffers = 0;
-      for (size_t i = 0; i < newBuffers.size(); ++i) {
-        oldBuffers[i].clear();
-        for (const auto &p : newBuffers[i]) {
-          ++numParticlesInNewBuffers;
-          oldBuffers[i].addParticle(p);
-        }
-      }
-      // update the counters.
-      particleCounter.fetch_add(numParticlesInNewBuffers, std::memory_order_relaxed);
-    };
-
-    exchangeBuffer(particleBuffers, _particleBuffer, _numParticlesOwned);
-    exchangeBuffer(haloParticleBuffers, _haloParticleBuffer, _numParticlesHalo);
-  }
+                          const std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
    * Getter for the particle buffers.
@@ -560,9 +536,7 @@ class LogicHandler {
    * @return tuple of const references to the internal buffers.
    */
   std::tuple<const std::vector<FullParticleCell<Particle>> &, const std::vector<FullParticleCell<Particle>> &>
-  getParticleBuffers() {
-    return {_particleBuffer, _haloParticleBuffer};
-  }
+  getParticleBuffers() const;
 
  private:
   /**
@@ -704,25 +678,22 @@ class LogicHandler {
   void remainderHelperBufferHaloBuffer(PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
                                        std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
-  void checkMinimalSize() {
-    const auto &container = _containerSelector.getCurrentContainer();
-    // check boxSize at least cutoff + skin
-    for (unsigned int dim = 0; dim < 3; ++dim) {
-      if (container.getBoxMax()[dim] - container.getBoxMin()[dim] < container.getInteractionLength()) {
-        autopas::utils::ExceptionHandler::exception(
-            "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.\nHas to be at least cutoff({}) + skin({}) = {}.", dim,
-            container.getBoxMin()[dim], dim, container.getBoxMax()[dim], container.getCutoff(),
-            container.getVerletSkin(), container.getCutoff() + container.getVerletSkin());
-      }
-    }
-  }
+  /**
+   * Check that the simulation box is at least of interaction length in each direction.
+   *
+   * Throws an exception if minimal size requirements are violated.
+   */
+  void checkMinimalSize() const;
 
-  bool neighborListsAreValid() {
-    if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists()) {
-      _neighborListsAreValid.store(false, std::memory_order_relaxed);
-    }
-    return _neighborListsAreValid.load(std::memory_order_relaxed);
-  }
+  /**
+   * Checks if in the next iteration the neighbor lists have to be rebuilt.
+   *
+   * This can be the case either because we hit the rebuild frequency or because the auto tuner tests
+   * a new configuration.
+   *
+   * @return True iff the neighbor lists will not be rebuild.
+   */
+  bool neighborListsAreValid();
 
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
@@ -791,6 +762,68 @@ class LogicHandler {
 
   IterationLogger _iterationLogger;
 };
+
+template <typename Particle>
+void LogicHandler<Particle>::checkMinimalSize() const {
+  const auto &container = _containerSelector.getCurrentContainer();
+  // check boxSize at least cutoff + skin
+  for (unsigned int dim = 0; dim < 3; ++dim) {
+    if (container.getBoxMax()[dim] - container.getBoxMin()[dim] < container.getInteractionLength()) {
+      autopas::utils::ExceptionHandler::exception(
+          "Box (boxMin[{}]={} and boxMax[{}]={}) is too small.\nHas to be at least cutoff({}) + skin({}) = {}.", dim,
+          container.getBoxMin()[dim], dim, container.getBoxMax()[dim], container.getCutoff(), container.getVerletSkin(),
+          container.getCutoff() + container.getVerletSkin());
+    }
+  }
+}
+
+template <typename Particle>
+bool LogicHandler<Particle>::neighborListsAreValid() {
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists()) {
+    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+  }
+  return _neighborListsAreValid.load(std::memory_order_relaxed);
+}
+
+template <typename Particle>
+void LogicHandler<Particle>::setParticleBuffers(const std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                                const std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+  auto exchangeBuffer = [](const auto &newBuffers, auto &oldBuffers, auto &particleCounter) {
+    // sanity check
+    if (oldBuffers.size() < newBuffers.size()) {
+      autopas::utils::ExceptionHandler::exception(
+          "The number of new buffers ({}) is larger than number of existing buffers ({})!", newBuffers.size(),
+          oldBuffers.size());
+    }
+
+    // we will clear the old buffers so subtract the particles from the counters.
+    const auto numParticlesInOldBuffers =
+        std::transform_reduce(oldBuffers.begin(), std::next(oldBuffers.begin(), newBuffers.size()), 0, std::plus<>(),
+                              [](const auto &cell) { return cell.numParticles(); });
+    particleCounter.fetch_sub(numParticlesInOldBuffers, std::memory_order_relaxed);
+
+    // clear the old buffers and copy the content of the new buffers over.
+    size_t numParticlesInNewBuffers = 0;
+    for (size_t i = 0; i < newBuffers.size(); ++i) {
+      oldBuffers[i].clear();
+      for (const auto &p : newBuffers[i]) {
+        ++numParticlesInNewBuffers;
+        oldBuffers[i].addParticle(p);
+      }
+    }
+    // update the counters.
+    particleCounter.fetch_add(numParticlesInNewBuffers, std::memory_order_relaxed);
+  };
+
+  exchangeBuffer(particleBuffers, _particleBuffer, _numParticlesOwned);
+  exchangeBuffer(haloParticleBuffers, _haloParticleBuffer, _numParticlesHalo);
+}
+
+template <typename Particle>
+std::tuple<const std::vector<FullParticleCell<Particle>> &, const std::vector<FullParticleCell<Particle>> &>
+LogicHandler<Particle>::getParticleBuffers() const {
+  return {_particleBuffer, _haloParticleBuffer};
+}
 
 template <typename Particle>
 template <class PairwiseFunctor>
@@ -864,8 +897,8 @@ void LogicHandler<Particle>::doRemainderTraversal(PairwiseFunctor *f, ContainerT
   utils::ArrayUtils::balanceVectors(particleBuffers, cellToVec);
   utils::ArrayUtils::balanceVectors(haloParticleBuffers, cellToVec);
 
-  // The following part performes the main remainder traversal. The actual calculation is done in 4 steps carried out in
-  // three helper functions.
+  // The following part performs the main remainder traversal. The actual calculation is done in 4 steps carried out
+  // in three helper functions.
 
   // only activate time measurements if it will actually be logged
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
@@ -1059,14 +1092,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    const auto [needsLiveInfo, needsHomogeneityAndMaxDensity] = _autoTuner.prepareIteration();
-
-    if (needsLiveInfo) {
-      LiveInfo info{};
-      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-      _autoTuner.getTuningStrategy().receiveLiveInfo(info);
-    }
-    if (needsHomogeneityAndMaxDensity) {
+    if (_autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
@@ -1074,6 +1100,14 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
       timerCalculateHomogeneity.stop();
       _autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
+    }
+
+    const auto needsLiveInfo = _autoTuner.prepareIteration();
+
+    if (needsLiveInfo) {
+      LiveInfo info{};
+      info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+      _autoTuner.receiveLiveInfo(info);
     }
 
     std::tie(configuration, stillTuning) = _autoTuner.getNextConfig();
@@ -1102,7 +1136,6 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
   tuningTimer.stop();
-  AutoPasLog(DEBUG, "Selecting a configuration took {} ns.", tuningTimer.getTotalTime());
   _autoTuner.logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 
   /// Pairwise iteration
@@ -1161,6 +1194,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     ++_stepsSinceLastListRebuild;
 
     _autoTuner.bumpIterationCounters();
+    ++_iteration;
   }
   return stillTuning;
 }

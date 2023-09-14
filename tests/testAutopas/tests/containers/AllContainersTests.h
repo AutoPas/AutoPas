@@ -7,7 +7,7 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class AllContainersTestsBase : public AutoPasTestBase {

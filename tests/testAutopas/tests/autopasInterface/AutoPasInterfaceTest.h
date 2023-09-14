@@ -10,30 +10,28 @@
 
 #include <tuple>
 
+#include "AutoPasTestBase.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/tuning/Configuration.h"
 #include "autopas/utils/ArrayMath.h"
 
-using testingTuple =
-    std::tuple<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::LoadEstimatorOption>,
-               autopas::DataLayoutOption, autopas::Newton3Option, double /*cell size factor*/>;
-
-class AutoPasInterfaceTest : public testing::Test, public ::testing::WithParamInterface<testingTuple> {
+class AutoPasInterfaceTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::Configuration> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      auto inputTuple = static_cast<ParamType>(info.param);
+      auto conf = static_cast<ParamType>(info.param);
       std::string str;
-      str += std::get<0>(std::get<0>(inputTuple)).to_string() + "_";
-      str += std::get<1>(std::get<0>(inputTuple)).to_string() + "_";
-      str += std::get<2>(std::get<0>(inputTuple)).to_string() + "_";
-      str += std::get<1>(inputTuple).to_string() + "_";
-      str += "N3" + std::get<2>(inputTuple).to_string() + "_";
-      str += std::string{"cellSizeFactor"} + std::to_string(std::get<3>(inputTuple));
+      str += conf.container.to_string() + "_";
+      str += conf.traversal.to_string() + "_";
+      str += conf.loadEstimator.to_string() + "_";
+      str += conf.dataLayout.to_string() + "_";
+      str += "N3" + conf.newton3.to_string() + "_";
+      str += std::string{"cellSizeFactor"} + std::to_string(conf.cellSizeFactor);
       std::replace(str.begin(), str.end(), '-', '_');
       std::replace(str.begin(), str.end(), '.', '_');
       return str;
