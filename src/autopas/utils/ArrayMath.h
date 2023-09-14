@@ -187,6 +187,40 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * Divides two array's element-wise and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param s divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/s`
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> divScalar(const std::array<T, SIZE> &a, T s) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = a[d] / s;
+  }
+  return result;
+}
+
+/**
+ * Divides two array's element-wise and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param s divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/s`
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> divScalar(T s, const std::array<T, SIZE> &a) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = s / a[d];
+  }
+  return result;
+}
+
+/**
  * Generates the dot product of two arrays.
  * Returns the sum of a[i]*b[i] summed over all i, where i is in [0, SIZE)
  * @tparam T floating point type
@@ -479,6 +513,32 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, const std::arr
 template <class T, std::size_t SIZE>
 constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   return div(a, b);
+}
+
+/**
+ * Divides two array's element-wise and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param b divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/b`
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, T b) {
+  return divScalar(a, b);
+}
+
+/**
+ * Divides two array's element-wise and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param b divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a/b[i]`
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator/(T a, const std::array<T, SIZE> &b) {
+  return divScalar(a, b);
 }
 
 /**
