@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#ifndef __AVX__
+#ifndef __AVX512__
 #pragma message "LJMultisiteFunctorAVX.h included, but AVX is not supported by the compiler."
 #else
 #include "immintrin.h"
@@ -125,7 +125,7 @@ class LJMultisiteFunctorAVX
    */
 //  constexpr static bool useCTC = true;
 
-#ifdef __AVX__
+#ifdef __AVX512__
   const __m512d _cutoffSquared{};
   const __m512d _zero{_mm512_set1_pd(0.)};
   const __m512d _one{_mm512_set1_pd(1.)};
@@ -169,7 +169,7 @@ class LJMultisiteFunctorAVX
    * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJMultisiteFunctorAVX(double cutoff, void * /*dummy*/)
-#ifdef __AVX__
+#ifdef __AVX512__
       : autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                 relevantForTuning, useMasks, vecLength>>(cutoff),
         _cutoffSquared{_mm512_set1_pd(cutoff * cutoff)},
@@ -183,9 +183,9 @@ class LJMultisiteFunctorAVX
     }
   }
 #else
-      : Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                 relevantForTuning>>(cutoff) {
-    utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
+    autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
 
@@ -365,7 +365,7 @@ class LJMultisiteFunctorAVX
    */
   template <bool newton3>
   void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
-#ifndef __AVX__
+#ifndef __AVX512
 #pragma message "SoAFunctorCTS called without AVX support!"
 #endif
     if (soa.getNumberOfParticles() == 0) return;
@@ -565,7 +565,7 @@ class LJMultisiteFunctorAVX
    */
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
-#ifndef __AVX__
+#ifndef __AVX512__
 #pragma message "SoAFunctorPair functor called without AVX support!"
 #endif
     if (soaA.getNumberOfParticles() == 0 || soaB.getNumberOfParticles() == 0) return;
@@ -811,6 +811,9 @@ class LJMultisiteFunctorAVX
                         const std::array<double, 3> rotatedSitePositionA, std::array<double, 3> &forceAccumulator,
                         std::array<double, 3> &torqueAccumulator, double &potentialEnergyAccumulator,
                         std::array<double, 3> &virialAccumulator, size_t offset = 0) {
+#ifndef __AVX512__
+#pragma message "LJMultisiteFunctorAVX.h included, but AVX is not supported by the compiler."
+#else
     // Declare mixing variables
     __m512d sigmaSquared = _mm512_set1_pd(_sigmaSquaredAoS);
     __m512d epsilon24 = _mm512_set1_pd(_epsilon24AoS);
@@ -996,6 +999,7 @@ class LJMultisiteFunctorAVX
       virialAccumulator[1] += autopas::utils::avx::horizontalSum(virialSumY);
       virialAccumulator[2] += autopas::utils::avx::horizontalSum(virialSumZ);
     }
+#endif
   }
 
 
