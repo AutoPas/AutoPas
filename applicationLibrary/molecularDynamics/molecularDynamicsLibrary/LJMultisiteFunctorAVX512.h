@@ -5,7 +5,7 @@
  */
 #pragma once
 
-#ifndef __AVX512__
+#ifndef __AVX512F__
 #pragma message "LJMultisiteFunctorAVX.h included, but AVX is not supported by the compiler."
 #else
 #include "immintrin.h"
@@ -43,7 +43,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true, bool useMasks = true, size_t vecLength = 8>
 class LJMultisiteFunctorAVX512
-    : public autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3,
+    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3,
                                                               calculateGlobals, relevantForTuning, useMasks, vecLength>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -125,7 +125,7 @@ class LJMultisiteFunctorAVX512
    */
 //  constexpr static bool useCTC = true;
 
-#ifdef __AVX512__
+#ifdef __AVX512F__
   const __m512d _cutoffSquared{};
   const __m512d _zero{_mm512_set1_pd(0.)};
   const __m512d _one{_mm512_set1_pd(1.)};
@@ -133,14 +133,22 @@ class LJMultisiteFunctorAVX512
    * Masks for the remainder cases
    */
   std::array<__mmask8,8> _remainderMasks{
+//      __mmask8(255), // = 11111111
+//      __mmask8(254), // = 11111110
+//      __mmask8(252), // = 11111100
+//      __mmask8(248), // = 11111000
+//      __mmask8(240), // = 11110000
+//      __mmask8(224), // = 11100000
+//      __mmask8(192), // = 11000000
+//      __mmask8(128), // = 10000000
       __mmask8(255), // = 11111111
-      __mmask8(254), // = 11111110
-      __mmask8(252), // = 11111100
-      __mmask8(248), // = 11111000
-      __mmask8(240), // = 11110000
-      __mmask8(224), // = 11100000
-      __mmask8(192), // = 11000000
-      __mmask8(128), // = 10000000
+      __mmask8(127), // = 01111111
+      __mmask8(63),  // = 00111111
+      __mmask8(31),  // = 00011111
+      __mmask8(15),  // = 00001111
+      __mmask8(7),   // = 00000111
+      __mmask8(3),   // = 00000011
+      __mmask8(1),   // = 00000001
   };
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(autopas::OwnershipState::owned))};
 #endif
@@ -169,7 +177,7 @@ class LJMultisiteFunctorAVX512
    * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit LJMultisiteFunctorAVX512(double cutoff, void * /*dummy*/)
-#ifdef __AVX512__
+#ifdef __AVX512F__
       : autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                 relevantForTuning, useMasks, vecLength>>(cutoff),
         _cutoffSquared{_mm512_set1_pd(cutoff * cutoff)},
@@ -183,8 +191,8 @@ class LJMultisiteFunctorAVX512
     }
   }
 #else
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                relevantForTuning>>(cutoff) {
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                relevantForTuning, useMasks, vecLength>>(cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -365,7 +373,7 @@ class LJMultisiteFunctorAVX512
    */
   template <bool newton3>
   void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
-#ifndef __AVX512
+#ifndef __AVX512F__
 #pragma message "SoAFunctorCTS called without AVX support!"
 #endif
     if (soa.getNumberOfParticles() == 0) return;
@@ -471,14 +479,14 @@ class LJMultisiteFunctorAVX512
 
       // ------------------- Build site mask -------------------
 
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
+
       std::array<double, 3> centerOfMass{xptr[molA], yptr[molA], zptr[molA]};
 
 //
 //      std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soa.getNumberOfParticles() - molA - 1);
 //      std::iota(indices.begin(), indices.end(), molA + 1);
 
-      siteMask = buildSiteMask(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, soa.getNumberOfParticles());
+      const auto siteMask = buildSiteMask(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, 0, soa.getNumberOfParticles());
 
 
       // ------------------- Calculate Forces -------------------
@@ -494,7 +502,7 @@ class LJMultisiteFunctorAVX512
 
         std::array<double, 3> forceAccumulator = {0., 0., 0.};
 
-        SoAKernelMask<true, false, useMasks>(
+        SoAKernelMask<true>(
             siteMask, siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ, siteForceX, siteForceY,
             siteForceZ, isSiteOwned, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA, forceAccumulator,
             torqueAccumulator, potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
@@ -565,7 +573,7 @@ class LJMultisiteFunctorAVX512
    */
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
-#ifndef __AVX512__
+#ifndef __AVX512F__
 #pragma message "SoAFunctorPair functor called without AVX support!"
 #endif
     if (soaA.getNumberOfParticles() == 0 || soaB.getNumberOfParticles() == 0) return;
@@ -685,14 +693,13 @@ class LJMultisiteFunctorAVX512
 
       // ------------------- Build site mask -------------------
 
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> siteMask;
       std::array<double, 3> centerOfMass{xAptr[molA], yAptr[molA], zAptr[molA]};
 
       std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soaB.getNumberOfParticles());
       std::iota(indices.begin(), indices.end(), 0);
 
-      siteMask =
-          buildSiteMask<true>(useMasks, indices, xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass);
+      const auto siteMask =
+          buildSiteMask(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, soaB.getNumberOfParticles());
 
 
       // ------------------- Calculate Forces -------------------
@@ -706,7 +713,7 @@ class LJMultisiteFunctorAVX512
         const std::array<double, 3> exactSitePositionA =
             autopas::utils::ArrayMath::add(rotatedSitePositionA, centerOfMass);
 
-        SoAKernelMask<newton3, true>(
+        SoAKernelMask<newton3>(
             siteMask, siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz, siteForceBx,
             siteForceBy, siteForceBz, isSiteOwnedBArr, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA,
             forceAccumulator, torqueAccumulator, potentialEnergyAccumulator, virialAccumulator);
@@ -796,7 +803,7 @@ class LJMultisiteFunctorAVX512
    * @param virialAccumulator The virial accumulator for all particles
    * @param offset An optional offset for neighbor site vectors (only used by SoAFunctorSingle)
    */
-  template <bool newton3, bool calculateTorque>
+  template <bool newton3>
   inline void SoAKernelMask(const std::vector<__mmask8, autopas::AlignedAllocator<__mmask8>> &siteMaskVec,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &siteTypesB,
                         const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionX,
@@ -811,7 +818,7 @@ class LJMultisiteFunctorAVX512
                         const std::array<double, 3> rotatedSitePositionA, std::array<double, 3> &forceAccumulator,
                         std::array<double, 3> &torqueAccumulator, double &potentialEnergyAccumulator,
                         std::array<double, 3> &virialAccumulator, size_t offset = 0) {
-#ifndef __AVX512__
+#ifndef __AVX512F__
 #pragma message "LJMultisiteFunctorAVX.h included, but AVX is not supported by the compiler."
 #else
     // Declare mixing variables
@@ -847,35 +854,36 @@ class LJMultisiteFunctorAVX512
     // This variable either contains the local mask or the indices of the sites, depending on the template parameter
     __m512i sites = _mm512_setzero_si512();
 
-    for (size_t siteVectorIndex = 0; siteVectorIndex < siteTypesB.size(); siteVectorIndex += vecLength) {
+    for (size_t siteVectorIndex = offset; siteVectorIndex < siteTypesB.size(); siteVectorIndex += vecLength) {
       const size_t remainder = siteTypesB.size() - siteVectorIndex;
       const bool remainderCase = remainder < vecLength;
-      const __mmask8 remainderMask = _remainderMasks[remainder];
-      const __mmask8 siteMask = siteMaskVec[siteVectorIndex / vecLength];
+      const __mmask8 remainderMask = _remainderMasks[8-remainder];
+      const __mmask8 siteMask = siteMaskVec[(siteVectorIndex) / vecLength];
 
       // Load the mixing parameters
       if constexpr (useMixing) {
         const double *const __restrict mixingPtr = useMixing ? _PPLibrary->getMixingDataPtr(siteTypeA, 0) : nullptr;
 
 
-        const __m512i siteTypeIndices = _mm512_load_epi64(&siteTypesB[siteVectorIndex + offset]);
-//        siteTypeIndices = _mm256_mul_epu32(siteTypeIndices, _mm256_set1_epi64x(3));  // This could maybe be problematic!
+        const __m512i siteTypeIndices = remainderCase ? _mm512_maskz_loadu_epi64(remainderMask, &siteTypesB[siteVectorIndex])
+            : _mm512_loadu_epi64(&siteTypesB[siteVectorIndex]);
+//        const __m512i siteTypeIndicesOffset = _mm512_mullox_epi64(siteTypeIndices, _mm256_set1_epi64x(3));  // This could maybe be problematic!
 
         // I think this is correct but potentially not
-        epsilon24 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndices, mixingPtr, 3);
-        sigmaSquared = _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndices, mixingPtr+1, 3); // one used as "filler" in remainder case to avoid dividing by zero
+        epsilon24 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndices, mixingPtr, 1);
+        sigmaSquared = _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndices, mixingPtr+1, 1); // one used as "filler" in remainder case to avoid dividing by zero
         if constexpr (applyShift) {
-          shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndices, mixingPtr+2, 3);
+          shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndices, mixingPtr+2, 1);
         }
       }
 
       // Load the exact site positions of particle B // todo is it faster to just use _mm512_maskz_load_pd?
-      const __m512d exactSitePositionsBX = remainderCase ? _mm512_maskz_load_pd(remainderMask, &exactSitePositionX[siteVectorIndex + offset])
-          : _mm512_load_pd(&exactSitePositionX[siteVectorIndex + offset]);
-      const __m512d exactSitePositionsBY = remainderCase ? _mm512_maskz_load_pd(remainderMask, &exactSitePositionY[siteVectorIndex + offset])
-                                                         : _mm512_load_pd(&exactSitePositionY[siteVectorIndex + offset]);
-      const __m512d exactSitePositionsBZ = remainderCase ? _mm512_maskz_load_pd(remainderMask, &exactSitePositionZ[siteVectorIndex + offset])
-                                                         : _mm512_load_pd(&exactSitePositionZ[siteVectorIndex + offset]);
+      const __m512d exactSitePositionsBX = remainderCase ? _mm512_maskz_loadu_pd(remainderMask, &exactSitePositionX[siteVectorIndex])
+          : _mm512_loadu_pd(&exactSitePositionX[siteVectorIndex]);
+      const __m512d exactSitePositionsBY = remainderCase ? _mm512_maskz_loadu_pd(remainderMask, &exactSitePositionY[siteVectorIndex])
+                                                         : _mm512_loadu_pd(&exactSitePositionY[siteVectorIndex]);
+      const __m512d exactSitePositionsBZ = remainderCase ? _mm512_maskz_loadu_pd(remainderMask, &exactSitePositionZ[siteVectorIndex])
+                                                         : _mm512_loadu_pd(&exactSitePositionZ[siteVectorIndex]);
 
       // Calculate the Lennard-Jones 12-6 potential
 
@@ -907,7 +915,7 @@ class LJMultisiteFunctorAVX512
       forceSumZ = _mm512_add_pd(forceSumZ, forceZ);
 
       // calculate torques
-      if constexpr (calculateTorque) {
+
         const __m512d torqueAX =
             _mm512_fmsub_pd(rotatedSitePositionsAY, forceZ, _mm512_mul_pd(rotatedSitePositionsAZ, forceY));
         const __m512d torqueAY =
@@ -918,34 +926,34 @@ class LJMultisiteFunctorAVX512
         torqueSumX = _mm512_add_pd(torqueSumX, torqueAX);
         torqueSumY = _mm512_add_pd(torqueSumY, torqueAY);
         torqueSumZ = _mm512_add_pd(torqueSumZ, torqueAZ);
-      }
+
 
       // Newton 3 optimization
       if constexpr (newton3) {
         if (remainderCase) {
-          const __m512d forceSumBX = _mm512_maskz_load_pd(remainderMask, &siteForceX[siteVectorIndex + offset]);
+          const __m512d forceSumBX = _mm512_maskz_loadu_pd(remainderMask, &siteForceX[siteVectorIndex]);
           const __m512d newForceSumBX = _mm512_sub_pd(forceSumBX, forceX);
-          _mm512_mask_store_pd(&siteForceX[siteVectorIndex + offset], remainderMask, newForceSumBX);
+          _mm512_mask_storeu_pd(&siteForceX[siteVectorIndex], remainderMask, newForceSumBX);
 
-          const __m512d forceSumBY = _mm512_maskz_load_pd(remainderMask, &siteForceY[siteVectorIndex + offset]);
+          const __m512d forceSumBY = _mm512_maskz_loadu_pd(remainderMask, &siteForceY[siteVectorIndex]);
           const __m512d newForceSumBY = _mm512_sub_pd(forceSumBY, forceY);
-          _mm512_mask_store_pd(&siteForceY[siteVectorIndex + offset], remainderMask, newForceSumBY);
+          _mm512_mask_storeu_pd(&siteForceY[siteVectorIndex], remainderMask, newForceSumBY);
 
-          const __m512d forceSumBZ = _mm512_maskz_load_pd(remainderMask, &siteForceZ[siteVectorIndex + offset]);
+          const __m512d forceSumBZ = _mm512_maskz_loadu_pd(remainderMask, &siteForceZ[siteVectorIndex]);
           const __m512d newForceSumBZ = _mm512_sub_pd(forceSumBZ, forceZ);
-          _mm512_mask_store_pd(&siteForceZ[siteVectorIndex + offset], remainderMask, newForceSumBZ);
+          _mm512_mask_storeu_pd(&siteForceZ[siteVectorIndex], remainderMask, newForceSumBZ);
         } else {
-          const __m512d forceSumBX = _mm512_load_pd( &siteForceX[siteVectorIndex + offset]);
+          const __m512d forceSumBX = _mm512_loadu_pd( &siteForceX[siteVectorIndex]);
           const __m512d newForceSumBX = _mm512_sub_pd(forceSumBX, forceX);
-          _mm512_store_pd(&siteForceX[siteVectorIndex + offset],  newForceSumBX);
+          _mm512_storeu_pd(&siteForceX[siteVectorIndex],  newForceSumBX);
 
-          const __m512d forceSumBY = _mm512_load_pd( &siteForceY[siteVectorIndex + offset]);
+          const __m512d forceSumBY = _mm512_loadu_pd( &siteForceY[siteVectorIndex]);
           const __m512d newForceSumBY = _mm512_sub_pd(forceSumBY, forceY);
-          _mm512_store_pd(&siteForceY[siteVectorIndex + offset], newForceSumBY);
+          _mm512_storeu_pd(&siteForceY[siteVectorIndex], newForceSumBY);
 
-          const __m512d forceSumBZ = _mm512_load_pd( &siteForceZ[siteVectorIndex + offset]);
+          const __m512d forceSumBZ = _mm512_loadu_pd( &siteForceZ[siteVectorIndex]);
           const __m512d newForceSumBZ = _mm512_sub_pd(forceSumBZ, forceZ);
-          _mm512_store_pd(&siteForceZ[siteVectorIndex + offset], newForceSumBZ);
+          _mm512_storeu_pd(&siteForceZ[siteVectorIndex], newForceSumBZ);
         }
 
       }
@@ -987,11 +995,11 @@ class LJMultisiteFunctorAVX512
     forceAccumulator[1] += autopas::utils::avx::horizontalSum(forceSumY);
     forceAccumulator[2] += autopas::utils::avx::horizontalSum(forceSumZ);
 
-    if constexpr (calculateTorque) {
+
       torqueAccumulator[0] += autopas::utils::avx::horizontalSum(torqueSumX);
       torqueAccumulator[1] += autopas::utils::avx::horizontalSum(torqueSumY);
       torqueAccumulator[2] += autopas::utils::avx::horizontalSum(torqueSumZ);
-    }
+
 
     if constexpr (calculateGlobals) {
       potentialEnergyAccumulator += autopas::utils::avx::horizontalSum(potentialEnergySum);
@@ -1006,7 +1014,7 @@ class LJMultisiteFunctorAVX512
   /**
    * build site mask for SoASingle & SoAPair
    */
-  inline std::vector<__mmask8, autopas::AlignedAllocator<__mmask8>> buildTotalSiteMask(
+  inline std::vector<__mmask8, autopas::AlignedAllocator<__mmask8>> buildSiteMask(
       const double *const __restrict xptr, const double *const __restrict yptr, const double *const __restrict zptr,
       const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
       const std::array<double, 3> &centerOfMass, size_t offset, size_t noMolecules) {
