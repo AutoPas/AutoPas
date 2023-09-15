@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/inBox.h"
 
@@ -242,8 +243,8 @@ class VerletClusterListsRebuilder {
         const int maxY = std::min(towerIndexY + numTowersPerInteractionLength, maxTowerIndexY);
 
         iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3,
-                              [this](auto &towerA, auto &towerB, double distBetweenTowersXYsqr, bool useNewton3) {
-                                calculateNeighborsBetweenTowers(towerA, towerB, distBetweenTowersXYsqr, useNewton3);
+                              [this](auto &towerA, auto &towerB, bool useNewton3) {
+                                calculateNeighborsBetweenTowers(towerA, towerB, useNewton3);
                               });
       }
     }
@@ -292,7 +293,7 @@ class VerletClusterListsRebuilder {
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
           auto &neighborTower = _towerBlock.getTowerByIndex2D(neighborIndexX, neighborIndexY);
 
-          function(tower, neighborTower, distBetweenTowersXYsqr, useNewton3);
+          function(tower, neighborTower, useNewton3);
         }
       }
     }
@@ -352,65 +353,45 @@ class VerletClusterListsRebuilder {
    *
    * @param towerA The given tower.
    * @param towerB The given neighbor tower.
-   * @param distBetweenTowersXYsqr The distance in the xy-plane between the towers.
    * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
    * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
    * false)
    */
   void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
-                                       internal::ClusterTower<Particle> &towerB, double distBetweenTowersXYsqr,
-                                       bool useNewton3) {
+                                       internal::ClusterTower<Particle> &towerB, bool useNewton3) {
+    using autopas::utils::ArrayMath::boxDistanceSquared;
+
     const auto interactionLengthFracOfDomainZ =
         _towerBlock.getInteractionLength() / (_towerBlock.getHaloBoxMax()[0] - _towerBlock.getHaloBoxMin()[0]);
     const bool isSameTower = (&towerA == &towerB);
-    // Seems to find a good middle ground between not too much memory allocated and no additional allocations
-    // when calling clusterA.addNeighbor(clusterB)
+    // This heuristic seems to find a good middle ground between not too much memory allocated and no additional
+    // allocations when calling clusterA.addNeighbor(clusterB)
     const auto neighborListReserveHeuristicFactor = (interactionLengthFracOfDomainZ * 2.1) / _clusterSize;
     for (auto clusterIterA = towerA.getFirstOwnedCluster(); clusterIterA < towerA.getFirstTailHaloCluster();
          ++clusterIterA) {
-      // if we are within one tower depending on newton3 only look at forward neighbors
-      const auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterIterA->getZMinMax();
-
-      if (clusterAContainsParticles) {
+      if (not clusterIterA->empty()) {
         clusterIterA->getNeighbors()->reserve((towerA.numParticles() + 8 * towerB.numParticles()) *
                                               neighborListReserveHeuristicFactor);
 
+        // if we are within one tower depending on newton3 only look at forward neighbors
+        // clusterIterB can't be const because it will potentially be added as a non-const neighbor
         for (auto clusterIterB = isSameTower and useNewton3 ? clusterIterA + 1 : towerB.getClusters().begin();
              clusterIterB < towerB.getClusters().end(); ++clusterIterB) {
           // a cluster cannot be a neighbor to itself
           if (&*clusterIterA == &*clusterIterB) {
             continue;
           }
-          // can't be const because it will potentially be added as a non-const neighbor
-          const auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterIterB->getZMinMax();
-          if (clusterBcontainsParticles) {
-            const double distZ = bboxDistance(clusterABoxBottom, clusterABoxTop, clusterBBoxBottom, clusterBBoxTop);
-            if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
+          if (not clusterIterB->empty()) {
+            const auto [aMin, aMax] = clusterIterA->getBoundingBox();
+            const auto [bMin, bMax] = clusterIterB->getBoundingBox();
+            const auto boxDistSquared = boxDistanceSquared(aMin, aMax, bMin, bMax);
+            if (boxDistSquared <= _interactionLengthSqr) {
               clusterIterA->addNeighbor(*clusterIterB);
             }
           }
         }
       }
-    }
-  }
-
-  /**
-   * Calculates the distance of two bounding boxes in one dimension. Assumes disjoint bounding boxes.
-   *
-   * @param min1 minimum coordinate of first bbox in tested dimension
-   * @param max1 maximum coordinate of first bbox in tested dimension
-   * @param min2 minimum coordinate of second bbox in tested dimension
-   * @param max2 maximum coordinate of second bbox in tested dimension
-   * @return distance
-   */
-  [[nodiscard]] double bboxDistance(const double min1, const double max1, const double min2, const double max2) const {
-    if (max1 < min2) {
-      return min2 - max1;
-    } else if (min1 > max2) {
-      return min1 - max2;
-    } else {
-      return 0;
     }
   }
 };
