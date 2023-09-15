@@ -129,20 +129,19 @@ class LJMultisiteFunctorAVX
   const __m512d _cutoffSquared{};
   const __m512d _zero{_mm512_set1_pd(0.)};
   const __m512d _one{_mm512_set1_pd(1.)};
-//  /**
-//   * Masks for the remainder cases
-//   */
-//  std::array<__mmask8,8> _masks[8]{
-//      __mmask8(7),
-//      __mmask8(6),
-//      __mmask8(0, 0, 0, 0, 0, 0, -1, -1),
-//      __mmask8(0, 0, 0, 0, 0, -1, -1, -1),
-//      __mmask8(0, 0, 0, 0, -1, -1, -1, -1),
-//      __mmask8(0, 0, 0, -1, -1, -1, -1, -1),
-//      __mmask8(0, 0, -1, -1, -1, -1, -1, -1),
-//      __mmask8(0, -1, -1, -1, -1, -1, -1, -1),
-//      __mmask8(0, -1, -1, -1, -1, -1, -1, -1)
-//  };
+  /**
+   * Masks for the remainder cases
+   */
+  std::array<__mmask8,8> _remainderMasks{
+      __mmask8(255), // = 11111111
+      __mmask8(254), // = 11111110
+      __mmask8(252), // = 11111100
+      __mmask8(248), // = 11111000
+      __mmask8(240), // = 11110000
+      __mmask8(224), // = 11100000
+      __mmask8(192), // = 11000000
+      __mmask8(128), // = 10000000
+  };
   const __m256i _ownedStateOwnedMM256i{_mm256_set1_epi64x(static_cast<int64_t>(autopas::OwnershipState::owned))};
 #endif
 
@@ -495,7 +494,7 @@ class LJMultisiteFunctorAVX
 
         std::array<double, 3> forceAccumulator = {0., 0., 0.};
 
-        SoAKernel<true, false, useMasks>(
+        SoAKernelMask<true, false, useMasks>(
             siteMask, siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ, siteForceX, siteForceY,
             siteForceZ, isSiteOwned, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA, forceAccumulator,
             torqueAccumulator, potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
@@ -707,7 +706,7 @@ class LJMultisiteFunctorAVX
         const std::array<double, 3> exactSitePositionA =
             autopas::utils::ArrayMath::add(rotatedSitePositionA, centerOfMass);
 
-        SoAKernel<newton3, true, useMasks>(
+        SoAKernelMask<newton3, true>(
             siteMask, siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz, siteForceBx,
             siteForceBy, siteForceBz, isSiteOwnedBArr, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA,
             forceAccumulator, torqueAccumulator, potentialEnergyAccumulator, virialAccumulator);
@@ -848,7 +847,7 @@ class LJMultisiteFunctorAVX
     for (size_t siteVectorIndex = 0; siteVectorIndex < siteTypesB.size(); siteVectorIndex += vecLength) {
       const size_t remainder = siteTypesB.size() - siteVectorIndex;
       const bool remainderCase = remainder < vecLength;
-      const __mmask8 remainderMask(31-remainder); // potentially problematic // TODO FIX
+      const __mmask8 remainderMask = _remainderMasks[remainder];
       const __mmask8 siteMask = siteMaskVec[siteVectorIndex / vecLength];
 
       // Load the mixing parameters
