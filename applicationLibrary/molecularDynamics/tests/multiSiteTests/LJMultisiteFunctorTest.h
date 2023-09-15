@@ -14,6 +14,7 @@
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctorAVX.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctorAVX_STS.h"
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512.h"
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
@@ -38,6 +39,9 @@ using LJMultisiteFunctorAVX_GatherScatter = mdLib::LJMultisiteFunctorAVX<Particl
 
 template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
 using LJMultisiteFunctorAVX_STS = mdlib::LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true, VecLength>;
+
+template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
+using LJMultisiteFunctorAVX512_Masks = mdLib::LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true, VecLength>;
 }
 
 /**

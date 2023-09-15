@@ -908,6 +908,33 @@ TEST_F(LJMultisiteFunctorTest, AoSTest_CTC) {
 
   // tests: 3 site <-> 3 site, with some different site types
   testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX_GatherScatter>(mol4, mol8, PPL, cutoff);
+
+
+  // LJMultisiteFunctorAVX512 with 0/1 Masks
+
+  // tests: 1 site <-> 2 site interaction
+  testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX512_Masks>(mol0, mol1, PPL, cutoff);
+
+  // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
+  testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX512_Masks>(mol0, mol2, PPL, cutoff);
+
+  // tests: 2 site <-> 3 site interaction
+  testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX512_Masks>(mol1, mol3, PPL, cutoff);
+
+  // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
+  testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX512_Masks>(mol3, mol4, PPL, cutoff);
+
+  // tests: 2 site <-> 2 site, where molecules are beyond cutoff
+  testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX512_Masks>(mol1, mol5, PPL, cutoff);
+
+  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
+  testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX512_Masks>(mol0, mol6, PPL, cutoff);
+
+  // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
+  testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX512_Masks>(mol0, mol7, PPL, cutoff);
+
+  // tests: 3 site <-> 3 site, with some different site types
+  testSuiteAoSForceCalculation_CTC<LJMultisiteFunctorAVX512_Masks>(mol4, mol8, PPL, cutoff);
 }
 
 /**
@@ -1180,6 +1207,83 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest_AVX) {
 }
 
 /**
+ * Tests that the AoS functor bypasses molecules that are dummies. Todo merge this and above test
+ */
+TEST_F(LJMultisiteFunctorTest, AoSDummyTest_AVX512) {
+  using mdLib::MultisiteMoleculeLJ;
+
+  const double cutoff = 2.5;
+
+  ParticlePropertiesLibrary PPL(cutoff);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+  PPL.calculateMixingCoefficients();
+
+  MultisiteMoleculeLJ mol0;
+  mol0.setR({0., 0., 0.});
+  mol0.setQuaternion({0., 0., 0., 1.});
+  mol0.setF({0., 0., 0.});
+  mol0.setTorque({0., 0., 0.});
+  mol0.setTypeId(0);
+  mol0.setOwnershipState(autopas::OwnershipState::owned);
+
+  MultisiteMoleculeLJ mol1;
+  mol1.setR({-1., 0., 0.});
+  mol1.setQuaternion({0., 0., 0., 1.});
+  mol1.setF({0., 0., 0.});
+  mol1.setTorque({0., 0., 0.});
+  mol1.setTypeId(0);
+  mol1.setOwnershipState(autopas::OwnershipState::dummy);
+
+  MultisiteMoleculeLJ mol2;
+  mol2.setR({1., 0., 0.});
+  mol2.setQuaternion({0., 0., 0., 1.});
+  mol2.setF({0., 0., 0.});
+  mol2.setTorque({0., 0., 0.});
+  mol2.setTypeId(0);
+  mol2.setOwnershipState(autopas::OwnershipState::dummy);
+
+  // Interact molecules together with newton3 on and off
+  // create functor
+  mdLib::LJMultisiteFunctorAVX512<mdLib::MultisiteMoleculeLJ, true, true, autopas::FunctorN3Modes::Both, true, true, true> functor(
+      cutoff, PPL);
+
+  // newton3 on
+  functor.initTraversal();
+  // Test (owned, dummy)
+  functor.AoSFunctor(mol0, mol1, false);
+  // Test (dummy, owned)
+  functor.AoSFunctor(mol1, mol0, false);
+  // Test (dummy, dummy)
+  functor.AoSFunctor(mol1, mol2, false);
+  functor.endTraversal(false);
+
+  // newton3 on
+  functor.initTraversal();
+  // Test (owned, dummy)
+  functor.AoSFunctor(mol0, mol1, true);
+  // Test (dummy, owned)
+  functor.AoSFunctor(mol1, mol0, true);
+  // Test (dummy, dummy)
+  functor.AoSFunctor(mol1, mol2, true);
+  functor.endTraversal(true);
+
+  // Test all forces and torques are zero
+  // mol0
+  EXPECT_DOUBLE_EQ(mol0.getF()[0], 0);
+  EXPECT_DOUBLE_EQ(mol0.getF()[1], 0);
+  EXPECT_DOUBLE_EQ(mol0.getF()[2], 0);
+  // mol1
+  EXPECT_DOUBLE_EQ(mol1.getF()[0], 0);
+  EXPECT_DOUBLE_EQ(mol1.getF()[1], 0);
+  EXPECT_DOUBLE_EQ(mol1.getF()[2], 0);
+  // mol2
+  EXPECT_DOUBLE_EQ(mol2.getF()[0], 0);
+  EXPECT_DOUBLE_EQ(mol2.getF()[1], 0);
+  EXPECT_DOUBLE_EQ(mol2.getF()[2], 0);
+}
+
+/**
  * Tests for correctness of AoS functor by comparing the force with FunctorLJ for a single-site molecule.
  */
 TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
@@ -1291,6 +1395,27 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   singleSiteSanityCheck<LJMultisiteFunctorAVX_STS, true, true, true>(mol0, mol1, PPL, cutoff);
+
+
+  // AVX512 Functor with 0/1 Masks
+
+  // N3L optimization disabled, global calculation disabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX512_Masks, false, false, false>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX512_Masks, true, false, false>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX512_Masks, false, true, false>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX512_Masks, true, true, false>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX512_Masks, false, true, true>(mol0, mol1, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  singleSiteSanityCheck<LJMultisiteFunctorAVX512_Masks, true, true, true>(mol0, mol1, PPL, cutoff);
 }
 
 /**
@@ -1479,6 +1604,49 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+
+  // AVX512 Functor with 0/1 Mask Tests
+
+  // tests with only owned molecules
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, false, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, false, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 }
 
 /**
@@ -1671,6 +1839,49 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoACellPairAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+
+  // AVX512 Functor with 0/1 Masks Tests
+
+  // tests with only owned molecules
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, false, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, false, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, true>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, true>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, false, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, false, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoACellPairAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, true>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
 }
 
 /**
@@ -1859,4 +2070,47 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoAVerletAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+
+  // AVX512 with 0/1 Masks Tests
+
+  // tests with only owned molecules
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, false, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, false, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, false>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, true>(allOwnedMolecules, PPL, cutoff);
+
+  // tests with a mix of ownership states
+
+  // N3L optimization disabled, global calculation disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift disabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization disabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
+  // N3L optimization enabled, global calculation enabled, apply shift enabled.
+  testSoAVerletAgainstAoS<LJMultisiteFunctorAVX512_Masks, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 }

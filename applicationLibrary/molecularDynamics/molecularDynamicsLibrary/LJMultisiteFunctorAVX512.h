@@ -42,7 +42,7 @@ namespace mdLib {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true, bool useMasks = true, size_t vecLength = 8>
-class LJMultisiteFunctorAVX
+class LJMultisiteFunctorAVX512
     : public autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3,
                                                               calculateGlobals, relevantForTuning, useMasks, vecLength>> {
   /**
@@ -160,7 +160,7 @@ class LJMultisiteFunctorAVX
   /**
    * Deleted default constructor
    */
-  LJMultisiteFunctorAVX() = delete;
+  LJMultisiteFunctorAVX512() = delete;
 
  private:
   /**
@@ -168,9 +168,9 @@ class LJMultisiteFunctorAVX
    * @param cutoff
    * @note param dummy unused, only there to make the signature different from the public constructor.
    */
-  explicit LJMultisiteFunctorAVX(double cutoff, void * /*dummy*/)
+  explicit LJMultisiteFunctorAVX512(double cutoff, void * /*dummy*/)
 #ifdef __AVX512__
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                 relevantForTuning, useMasks, vecLength>>(cutoff),
         _cutoffSquared{_mm512_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
@@ -195,7 +195,7 @@ class LJMultisiteFunctorAVX
    * @note Only to be used with mixing == false
    * @param cutoff
    */
-  explicit LJMultisiteFunctorAVX(double cutoff) : LJMultisiteFunctorAVX(cutoff, nullptr) {
+  explicit LJMultisiteFunctorAVX512(double cutoff) : LJMultisiteFunctorAVX512(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -208,8 +208,8 @@ class LJMultisiteFunctorAVX
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift.
    */
-  explicit LJMultisiteFunctorAVX(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJMultisiteFunctorAVX(cutoff, nullptr) {
+  explicit LJMultisiteFunctorAVX512(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJMultisiteFunctorAVX512(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
