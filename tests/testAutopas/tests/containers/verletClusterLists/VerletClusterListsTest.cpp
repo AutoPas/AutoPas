@@ -105,6 +105,7 @@ auto calculateValidPairs(const std::vector<autopas::Particle *> &particles, doub
   using namespace autopas::utils::ArrayMath::literals;
 
   std::vector<std::pair<autopas::Particle *, autopas::Particle *>> particlePairs;
+  particlePairs.reserve(particlePairs.size() * (particlePairs.size() / 2));
   for (auto *particlePtr : particles) {
     for (auto *neighborPtr : particles) {
       if (particlePtr != neighborPtr) {
@@ -118,14 +119,30 @@ auto calculateValidPairs(const std::vector<autopas::Particle *> &particles, doub
   return particlePairs;
 }
 
-void compareParticlePairs(const std::vector<std::pair<autopas::Particle *, autopas::Particle *>> &first,
-                          const std::vector<std::pair<autopas::Particle *, autopas::Particle *>> &second) {
-  EXPECT_EQ(first.size(), second.size());
-  for (auto pair : first) {
-    EXPECT_TRUE(std::find(second.begin(), second.end(), pair) != second.end());
+void compareParticlePairs(const std::vector<std::pair<autopas::Particle *, autopas::Particle *>> &expected,
+                          const std::vector<std::pair<autopas::Particle *, autopas::Particle *>> &actual,
+                          const std::string &errMsg) {
+  using autopas::utils::ArrayUtils::operator<<;
+  EXPECT_EQ(expected.size(), actual.size()) << errMsg << "\n"
+                                            << "Number of pairwise interactions differs.";
+  std::cout << "---------------------------- EXPECTED: ----------------------------" << std::endl;
+  for (const auto [a, b] : expected) {
+    std::cout << a->getID() << " " << a->getR() << " <-> " << b->getID() << " " << b->getR() << "\n";
   }
+  std::cout << "----------------------------- ACTUAL: -----------------------------" << std::endl;
+  for (const auto [a, b] : actual) {
+    std::cout << a->getID() << " " << a->getR() << " <-> " << b->getID() << " " << b->getR() << "\n";
+  }
+  EXPECT_THAT(actual, ::testing::UnorderedElementsAreArray(expected)) << errMsg;
+  //  for (auto pair : expected) {
+  //    EXPECT_TRUE(std::find(actual.begin(), actual.end(), pair) != actual.end()) << errMsg;
+  //  }
 }
 
+/**
+ * Fill a VLC container with randomly placed particles and compare pairwise interactions before and after
+ * random movement to N^2 calculated interactions.
+ */
 TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin) {
   using namespace autopas::utils::ArrayMath::literals;
 
@@ -135,11 +152,12 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   const double cutoffSqr = cutoff * cutoff;
   const double skinPerTimestep = 0.01;
   const unsigned int rebuildFrequency = 20;
-  const unsigned long numParticles = 271;
+  const unsigned long numParticles = 10;
   const size_t clusterSize = 4;
   autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                                     clusterSize);
 
+  // Fill the container with random particles and build neighbor lists
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
   CollectParticlePairsFunctor functor{cutoff, boxMin, boxMax};
@@ -147,28 +165,34 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
       verletTraversal(&functor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
 
+  // copy all generated particles
   std::vector<autopas::Particle *> particles;
   for (auto it = verletLists.begin(); it.isValid(); ++it) {
     particles.push_back(&(*it));
   }
 
-  auto referenceParticlePairs = calculateValidPairs(particles, cutoffSqr);
+  // manually compute all pairs with a N^2 loop
+  const auto referenceParticlePairs = calculateValidPairs(particles, cutoffSqr);
 
+  // Use special functor to collect neighbor interactions from container neighbor lists
   functor.initTraversal();
   verletLists.iteratePairwise(&verletTraversal);
   functor.endTraversal(false);
   auto calculatedParticlePairs = functor.getParticlePairs();
-  compareParticlePairs(referenceParticlePairs, calculatedParticlePairs);
+  // Check that everything is fine so far
+  compareParticlePairs(referenceParticlePairs, calculatedParticlePairs,
+                       "After initialization, before particles moved.");
 
-  // Move particles
+  // Move all particles by "random" values within the box
   int i = -130;
   for (auto it = verletLists.begin(); it.isValid(); ++it, ++i) {
     auto &particle = *it;
     // generate some different directions
-    const std::array<double, 3> direction = {(double)(i % 2), (double)(i % 3),
-                                             (double)(i % numParticles) / (double)numParticles};
+    const std::array<double, 3> direction = {static_cast<double>(i % 2), static_cast<double>(i % 3),
+                                             static_cast<double>(i % numParticles) / static_cast<double>(numParticles)};
     const auto offset = autopas::utils::ArrayMath::normalize(direction) * (skinPerTimestep * rebuildFrequency / 2.1);
     particle.addR(offset);
+    // Clamp the new position to the domain boundaries
     // Upper corner is excluded
     constexpr double smallValue = 0.000001;
     const auto x = std::clamp(particle.getR()[0], boxMin[0], boxMax[0] - smallValue);
@@ -177,13 +201,16 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
     particle.setR({x, y, z});
   }
 
+  // generate a new reference
   const auto referenceParticlePairsAfterMove = calculateValidPairs(particles, cutoffSqr);
 
+  // generate new pairwise interactions
   functor.initTraversal();
   verletLists.iteratePairwise(&verletTraversal);
   functor.endTraversal(false);
   const auto calculatedParticlePairsAfterMove = functor.getParticlePairs();
-  compareParticlePairs(referenceParticlePairsAfterMove, calculatedParticlePairsAfterMove);
+  // final comparison
+  compareParticlePairs(referenceParticlePairsAfterMove, calculatedParticlePairsAfterMove, "After random movement");
 }
 
 auto getClusterNeighbors(autopas::VerletClusterLists<Particle> &verletLists) {

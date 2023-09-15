@@ -185,6 +185,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
 
   // 4. iteratePairwise
   autoPas.iteratePairwise(functor);
+  std::cout << "--------------------------------" << std::endl;
 }
 
 template <typename Functor>

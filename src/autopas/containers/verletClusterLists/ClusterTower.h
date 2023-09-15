@@ -295,12 +295,28 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
+   * Returns the index of the first cluster that contains at least one owned particle.
+   * @return
+   */
+  [[nodiscard]] size_t getFirstOwnedClusterIndex() const {
+    return std::distance(_clusters.cbegin(), decltype(_clusters.cbegin()){_firstOwnedCluster});
+  }
+
+  /**
    * Returns an iterator to the first particle after the owned clusters, that contains no owned particles anymore.
    * @return
    */
   [[nodiscard]] const typename std::vector<autopas::internal::Cluster<Particle>>::iterator &getFirstTailHaloCluster()
       const {
     return _firstTailHaloCluster;
+  }
+
+  /**
+   * Returns the index of the first particle after the owned clusters, that contains no owned particles anymore.
+   * @return
+   */
+  [[nodiscard]] size_t getFirstTailHaloClusterIndex() const {
+    return std::distance(_clusters.cbegin(), decltype(_clusters.cbegin()){_firstTailHaloCluster});
   }
 
   /**
@@ -490,12 +506,12 @@ class ClusterTower : public ParticleCell<Particle> {
    * This cluster might consist of owned, halo, and, if the number of particles in the tower is smaller
    * than the cluster size, dummy particles.
    */
-  typename decltype(_clusters)::iterator _firstOwnedCluster;
+  typename decltype(_clusters)::iterator _firstOwnedCluster{_clusters.end()};
   /**
    * Iterator pointing to the first cluster after the owned clusters that contains no owned particles anymore.
    * This cluster might consist of halo and dummy particles.
    */
-  typename decltype(_clusters)::iterator _firstTailHaloCluster;
+  typename decltype(_clusters)::iterator _firstTailHaloCluster{_clusters.end()};
 
   /**
    * The particle cell to store the particles and SoA for this tower.
