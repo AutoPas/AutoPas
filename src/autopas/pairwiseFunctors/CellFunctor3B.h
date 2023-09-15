@@ -432,8 +432,6 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       }
     }
   } else {
-    auto innerStart = cell2.begin();
-
     for (auto outerOuter = cell1.begin(); outerOuter != cell1.end(); ++outerOuter) {
       Particle &p1 = *outerOuter;
 
@@ -442,19 +440,19 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       ++outer;
       for (; outer != cell1.end(); ++outer) {
         Particle &p2 = *outer;
-        for (auto inner = innerStart; inner != cell2.end(); ++inner) {
+        for (auto inner = cell2.begin(); inner != cell2.end(); ++inner) {
           Particle &p3 = *inner;
 
           _functor->AoSFunctor(p1, p2, p3, false);
+          _functor->AoSFunctor(p2, p1, p3, false); // because of no newton and p2 still in cell1
           if (bidirectional) {
-            _functor->AoSFunctor(p2, p1, p3, false);
             _functor->AoSFunctor(p3, p1, p2, false);
           }
         }
       }
 
       // Particle 1 in cell 1, particles 2 and 3 in cell 2
-      outer = innerStart;
+      outer = cell2.begin();
       for (; outer != cell2.end(); ++outer) {
         Particle &p2 = *outer;
         auto inner = outer;
@@ -559,17 +557,13 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       }
     }
   } else {
-    auto outerOuter = cell1.begin();
-    auto outer = cell2.begin();
-    auto inner = cell3.begin();
-
-    for (; outerOuter != cell1.end(); ++outerOuter) {
+    for (auto outerOuter = cell1.begin(); outerOuter != cell1.end(); ++outerOuter) {
       Particle &p1 = *outerOuter;
 
-      for (; outer != cell2.end(); ++outer) {
+      for (auto outer = cell2.begin(); outer != cell2.end(); ++outer) {
         Particle &p2 = *outer;
 
-        for (; inner != cell3.end(); ++inner) {
+        for (auto inner = cell3.begin(); inner != cell3.end(); ++inner) {
           Particle &p3 = *inner;
 
           _functor->AoSFunctor(p1, p2, p3, false);

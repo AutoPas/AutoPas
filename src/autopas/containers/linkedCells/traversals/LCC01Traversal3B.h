@@ -192,6 +192,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
   using namespace utils::ArrayMath::literals;
 
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
+  _cellOffsets.emplace_back(0, 0, std::array<double, 3>{1., 1., 1.});
 
   // offsets for the first cell
   for (long x1 = -this->_overlap[0]; x1 <= static_cast<long>(this->_overlap[0]); ++x1) {
@@ -204,12 +205,12 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
             std::max(0l, (std::abs(z1) - 1l)) * this->_cellLength[2],
         };
         const double distSquare = utils::ArrayMath::dot(dist01, dist01);
-        if (distSquare > interactionLengthSquare) break;
+        if (distSquare > interactionLengthSquare) continue;
 
         // offsets for the second cell
-        for (long x2 = x1; x2 <= static_cast<long>(this->_overlap[0]); ++x2) {
-          for (long y2 = y1; y2 <= static_cast<long>(this->_overlap[1]); ++y2) {
-            for (long z2 = z1; z2 <= static_cast<long>(this->_overlap[2]); ++z2) {
+        for (long x2 = -this->_overlap[0]; x2 <= static_cast<long>(this->_overlap[0]); ++x2) {
+          for (long y2 = -this->_overlap[1]; y2 <= static_cast<long>(this->_overlap[1]); ++y2) {
+            for (long z2 = -this->_overlap[2]; z2 <= static_cast<long>(this->_overlap[2]); ++z2) {
               // check distance between cell 1 and cell 2
               const std::array<double, 3> dist12 = {
                   std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
@@ -217,7 +218,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
                   std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2],
               };
               const double dist12Squared = utils::ArrayMath::dot(dist12, dist12);
-              if (dist12Squared > interactionLengthSquare) break;
+              if (dist12Squared > interactionLengthSquare) continue;
 
               // check distance between base cell and cell 2
               const std::array<double, 3> dist02 = {
@@ -226,7 +227,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
                   std::max(0l, (std::abs(z2) - 1l)) * this->_cellLength[2],
               };
               const double dist02Squared = utils::ArrayMath::dot(dist02, dist02);
-              if (dist02Squared > interactionLengthSquare) break;
+              if (dist02Squared > interactionLengthSquare) continue;
 
               const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
                   x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
@@ -234,9 +235,14 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
               const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(
                   x2, y2, z2, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
 
+              if (offset2 <= offset1) continue;
               // sorting direction towards middle of cell 1 and cell 2
               const std::array<double, 3> sortDirection = dist01 + dist02;
-
+//              auto checkExists = [&](std::tuple<long, long, std::array<double, 3>> offs) -> bool {
+//                auto off1 = std::get<0>(offs);
+//                auto off2 = std::get<1>(offs);
+//                return (off1 == offset1 and off2 == offset2) or (off1 == offset2 and off2 == offset1);
+//              };
               _cellOffsets.emplace_back(offset1, offset2, utils::ArrayMath::normalize(sortDirection));
             }
           }
@@ -244,6 +250,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
       }
     }
   }
+
 }
 
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
