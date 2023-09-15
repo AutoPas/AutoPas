@@ -125,18 +125,7 @@ void compareParticlePairs(const std::vector<std::pair<autopas::Particle *, autop
   using autopas::utils::ArrayUtils::operator<<;
   EXPECT_EQ(expected.size(), actual.size()) << errMsg << "\n"
                                             << "Number of pairwise interactions differs.";
-  std::cout << "---------------------------- EXPECTED: ----------------------------" << std::endl;
-  for (const auto [a, b] : expected) {
-    std::cout << a->getID() << " " << a->getR() << " <-> " << b->getID() << " " << b->getR() << "\n";
-  }
-  std::cout << "----------------------------- ACTUAL: -----------------------------" << std::endl;
-  for (const auto [a, b] : actual) {
-    std::cout << a->getID() << " " << a->getR() << " <-> " << b->getID() << " " << b->getR() << "\n";
-  }
   EXPECT_THAT(actual, ::testing::UnorderedElementsAreArray(expected)) << errMsg;
-  //  for (auto pair : expected) {
-  //    EXPECT_TRUE(std::find(actual.begin(), actual.end(), pair) != actual.end()) << errMsg;
-  //  }
 }
 
 /**
@@ -152,7 +141,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   const double cutoffSqr = cutoff * cutoff;
   const double skinPerTimestep = 0.01;
   const unsigned int rebuildFrequency = 20;
-  const unsigned long numParticles = 10;
+  const unsigned long numParticles = 30;
   const size_t clusterSize = 4;
   autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                                     clusterSize);
