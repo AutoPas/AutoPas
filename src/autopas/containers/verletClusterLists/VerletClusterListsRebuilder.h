@@ -6,16 +6,10 @@
 
 #pragma once
 
-#include "VerletClusterLists.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
-
-template <class Particle>
-class VerletClusterLists;
-
-namespace internal {
+namespace autopas::internal {
 
 /**
  * Helper class for rebuilding the VerletClusterLists container.
@@ -34,9 +28,7 @@ class VerletClusterListsRebuilder {
 
  private:
   size_t _clusterSize;
-
   NeighborListsBuffer_T &_neighborListsBuffer;
-
   std::vector<Particle> &_particlesToAdd;
   ClusterTowerBlock2D<Particle> &_towerBlock;
   double _interactionLengthSqr;
@@ -45,19 +37,20 @@ class VerletClusterListsRebuilder {
   /**
    * Constructs the builder from the cluster list.
    *
-   * @param clusterList The cluster list to rebuild the neighbor lists for.
    * @param towerBlock The towers from the cluster list to rebuild.
    * @param particlesToAdd New particles to add.
    * @param neighborListsBuffer Buffer structure to hold all neighbor lists.
    * @param clusterSize Size of the clusters in particles.
+   * @param interactionLengthSqr Squared interaction length (cutoff + skin)^2
    */
-  VerletClusterListsRebuilder(const VerletClusterLists<Particle> &clusterList,
-                              ClusterTowerBlock2D<Particle> &towerBlock, std::vector<Particle> &particlesToAdd,
-                              NeighborListsBuffer_T &neighborListsBuffer, size_t clusterSize)
+  VerletClusterListsRebuilder(ClusterTowerBlock2D<Particle> &towerBlock, std::vector<Particle> &particlesToAdd,
+                              NeighborListsBuffer_T &neighborListsBuffer, size_t clusterSize,
+                              double interactionLengthSqr)
       : _clusterSize(clusterSize),
         _neighborListsBuffer(neighborListsBuffer),
         _particlesToAdd(particlesToAdd),
-        _towerBlock(towerBlock) {}
+        _towerBlock(towerBlock),
+        _interactionLengthSqr(interactionLengthSqr) {}
 
   /**
    * Rebuilds the towers, clusters, and neighbor lists.
@@ -242,6 +235,7 @@ class VerletClusterListsRebuilder {
 #endif
     for (int towerIndexY = 0; towerIndexY <= maxTowerIndexY; towerIndexY++) {
       for (int towerIndexX = 0; towerIndexX <= maxTowerIndexX; towerIndexX++) {
+        // calculate extent of interesting tower 2D indices
         const int minX = std::max(towerIndexX - numTowersPerInteractionLength, 0);
         const int minY = std::max(towerIndexY - numTowersPerInteractionLength, 0);
         const int maxX = std::min(towerIndexX + numTowersPerInteractionLength, maxTowerIndexX);
@@ -420,6 +414,4 @@ class VerletClusterListsRebuilder {
     }
   }
 };
-}  //  namespace internal
-
-}  //  namespace autopas
+}  // namespace autopas::internal

@@ -938,8 +938,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       particlesBuffer.clear();
     });
 
-    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towerBlock, particlesToAdd,
-                                                                                 _neighborLists, _clusterSize);
+    const double interactionLength = _cutoff + _skinPerTimestep * _rebuildFrequency;
+    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(
+        _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength);
 
     _numClusters = _builder->rebuildTowersAndClusters();
 
