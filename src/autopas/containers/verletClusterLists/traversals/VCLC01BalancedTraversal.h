@@ -72,9 +72,11 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
       for (size_t towerIndex = clusterRange.startTowerIndex;
            clusterCount < clusterRange.numClusters and towerIndex < towers.size(); towerIndex++) {
         auto &currentTower = towers[towerIndex];
-        auto startIndexInTower = clusterCount == 0 ? clusterRange.startIndexInTower : 0;
+        auto startIndexInTower =
+            clusterCount == 0 ? clusterRange.startIndexInTower : currentTower.getFirstOwnedClusterIndex();
         for (size_t clusterIndex = startIndexInTower;
-             clusterIndex < clusterRange.numClusters and clusterCount < clusterRange.numClusters;
+             clusterIndex < clusterRange.numClusters and clusterCount < clusterRange.numClusters and
+             clusterIndex < currentTower.getFirstTailHaloClusterIndex();
              clusterIndex++, clusterCount++) {
           auto &currentCluster = currentTower.getCluster(clusterIndex);
           _clusterFunctor.traverseCluster(currentCluster);
