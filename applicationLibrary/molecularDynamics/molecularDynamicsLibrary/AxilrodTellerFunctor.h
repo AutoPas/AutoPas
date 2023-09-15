@@ -172,8 +172,8 @@ class AxilrodTellerFunctor
                 + drjk * (- dr2i * dr2j + dr2ij * dr2ki - 5.0 * dr2ijk / dr2jk)
                 + drki * (dr2i * dr2j - dr2ij * dr2jk + 5.0 * dr2ijk / dr2ki);
       fk *= 3.0 * invdr5; */
-      fk = fi + fj;
-      k.subF(fk);
+      fk = (fi + fj) * (-1.0);
+      k.addF(fk);
     }
 
     if (calculateGlobals) {
