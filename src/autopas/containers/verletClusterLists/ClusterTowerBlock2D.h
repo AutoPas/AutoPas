@@ -152,7 +152,7 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     const auto numTowersOwned(ceil(boxSize2D / optimalSideLength));
     const auto towerSideLengthNew = boxSize2D / numTowersOwned;
     // pad a halo layer of towers in both directions, filling one interaction length each.
-    const auto numTowers = numTowersOwned + (ceil(towerSideLengthNew / _interactionLength) * 2.);
+    const auto numTowers = numTowersOwned + (ceil(_interactionLength / towerSideLengthNew) * 2.);
     // Do not resize the number of towers here!
     // If we get less towers we need to save the particles in the towers we throw away.
     return {towerSideLengthNew, static_cast_copy_array<size_t>(numTowers)};
@@ -390,9 +390,8 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
 
   /**
    * Internal storage, particles are split into a grid in xy-dimension.
-   * Will always contain at least one tower.
    */
-  std::vector<ClusterTower<Particle>> _towers{1};
+  std::vector<ClusterTower<Particle>> _towers;
 
   /**
    * Dimensions of the 2D xy-grid including halo.

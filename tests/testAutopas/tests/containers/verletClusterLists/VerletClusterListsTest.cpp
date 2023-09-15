@@ -251,12 +251,16 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
   autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skin / rebuildFreq, rebuildFreq,
                                                     clusterSize);
   size_t numParticles{0};
+  // lower corner of the inner box, thus in the first inner tower
   const Particle p0{boxMin, {0., 0., 0.}, numParticles++};
   verletLists.addParticle(p0);
+  // just outside the lower corner, thus in the halo
   const Particle p1{boxMin - 0.1, {0., 0., 0.}, numParticles++};
   verletLists.addHaloParticle(p1);
+  // just inside the upper corner, thus in the last inner tower
   const Particle p2{boxMax - 0.1, {0., 0., 0.}, numParticles++};
   verletLists.addParticle(p2);
+  // just outside the upper corner, thus in the halo
   const Particle p3{boxMax, {0., 0., 0.}, numParticles++};
   verletLists.addHaloParticle(p3);
 
@@ -273,13 +277,19 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
   EXPECT_EQ(verletLists.getNumTowersPerInteractionLength(), expectedTowersPerInteractionLength);
   const std::array<double, 2> expectedSideLength = {2., 2.};
   EXPECT_EQ(verletLists.getTowerSideLength(), expectedSideLength);
-  const std::array<size_t, 2> expectedTowersPerDim = {7, 7};
-  EXPECT_EQ(verletLists.getTowersPerDimension(), expectedTowersPerDim);
+  const std::array<size_t, 2> expectedTowersPerDim = {5, 5};
+  const std::array<size_t, 2> expectedTowersPerDimTotal =
+      expectedTowersPerDim + (2ul * expectedTowersPerInteractionLength);
+  EXPECT_EQ(verletLists.getTowersPerDimension(), expectedTowersPerDimTotal);
 
   const std::array<size_t, 2> expectedHaloWidthInTowers{expectedTowersPerInteractionLength,
                                                         expectedTowersPerInteractionLength};
   EXPECT_EQ(verletLists.getTowerBlock().getTowerIndex2DAtPosition(p0.getR()), expectedHaloWidthInTowers);
   EXPECT_EQ(verletLists.getTowerBlock().getTowerIndex2DAtPosition(p1.getR()), expectedHaloWidthInTowers - 1ul);
+  EXPECT_EQ(verletLists.getTowerBlock().getTowerIndex2DAtPosition(p2.getR()),
+            expectedTowersPerDimTotal - 1ul - expectedHaloWidthInTowers);
+  EXPECT_EQ(verletLists.getTowerBlock().getTowerIndex2DAtPosition(p3.getR()),
+            expectedTowersPerDimTotal - expectedHaloWidthInTowers);
 }
 
 #if defined(AUTOPAS_OPENMP)
