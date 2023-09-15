@@ -646,4 +646,25 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
 
 }  // namespace literals
 
+/**
+ * Calculate the squared minimum distance between two boxes, which are aligned to the Cartesian grid.
+ * The boxes are given by their lower and upper corners.
+ * @param aMin
+ * @param aMax
+ * @param bMin
+ * @param bMax
+ * @return squared minimum distance
+ */
+template <class T, std::size_t SIZE>
+double boxDistanceSquared(const std::array<T, SIZE> &aMin, const std::array<T, SIZE> &aMax,
+                          const std::array<T, SIZE> &bMin, const std::array<T, SIZE> &bMax) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::dot;
+  using autopas::utils::ArrayMath::max;
+
+  const auto aToB = max(std::array<T, SIZE>{}, aMin - bMax);
+  const auto bToA = max(std::array<T, SIZE>{}, bMin - aMax);
+
+  return dot(aToB, aToB) + dot(bToA, bToA);
+}
 }  // namespace autopas::utils::ArrayMath
