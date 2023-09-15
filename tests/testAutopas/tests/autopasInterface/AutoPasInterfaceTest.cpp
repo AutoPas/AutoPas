@@ -16,7 +16,6 @@
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -25,10 +24,6 @@ using LJFunctorGlobals =
     mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ true>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorGlobals *);
-
-using ATFunctorGlobals =
-    mdLib::AxilrodTellerFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>;
-extern template bool autopas::AutoPas<Molecule>::computeInteractions(ATFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
 constexpr double skinPerTimestep = 0.2;
@@ -190,6 +185,9 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
 
   // 4. computeInteractions
   autoPas.computeInteractions(functor);
+
+  // 5. updateCounters
+  autoPas.incrementIterationCounters();
 }
 
 template <typename Functor>
@@ -229,6 +227,10 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
   // 4. computeInteractions
   autoPas1.computeInteractions(functor1);
   autoPas2.computeInteractions(functor2);
+
+  // 5. update Counters
+  autoPas1.incrementIterationCounters();
+  autoPas2.incrementIterationCounters();
 }
 
 template <typename Functor>
@@ -472,7 +474,6 @@ TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
   NumThreadGuard numThreadGuard(3);
 
   auto conf = GetParam();
-  auto interactionT = conf.interactionType;
   constexpr double cutoffLocal = 1.;
   constexpr double skinLocal = .1;
   constexpr double interactionLength = cutoffLocal + skinLocal;
@@ -482,15 +483,14 @@ TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
   const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
   const autopas::TraversalSelectorInfo traversalSelectorInfo{
       cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
-//  LJFunctorGlobals functor(cutoffLocal);
-  ATFunctorGlobals functor(cutoffLocal);
+  LJFunctorGlobals functor(cutoffLocal);
   const autopas::ContainerSelectorInfo containerSelectorInfo{conf.cellSizeFactor, skinLocal, rebuildFrequency,
                                                              clusterSize, conf.loadEstimator};
   autopas::ContainerSelector<Molecule> containerSelector{boxMinLocal, boxMaxLocal, cutoffLocal};
   containerSelector.selectContainer(conf.container, containerSelectorInfo);
   auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
       containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy), interactionT>::generateTraversal(
+        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::generateTraversal(
             conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
       });
 
