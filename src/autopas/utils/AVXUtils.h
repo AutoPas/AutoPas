@@ -25,6 +25,10 @@ inline double horizontalSum(const __m256d &data) {
   return _mm_cvtsd_f64(_mm256_extractf128_pd(sum, 0));
 }
 
+inline double horizontalSum(const __m512d &data) {
+  return _mm512_reduce_add_pd(data);
+}
+
 /**
  * @brief Utility function to conditionally load contiguous 64-bit doubles from memory
  * @param useMask whether to use the mask
@@ -39,6 +43,14 @@ inline __m256d load_pd(bool useMask, const double *const __restrict data, const 
     return _mm256_loadu_pd(data);
   }
 }
+
+//inline __m512d load_pd(bool useMask, const double *const __restrict data, const __m512i &mask) {
+//  if (useMask) {
+//    return _mm512_mask_load_pd((__mmask8)mask, data);
+//  } else {
+//    return _mm512_loadu_pd(data);
+//  }
+//}
 
 /**
  * @brief Utility function to conditionally load contiguous 64-bit integers from memory
