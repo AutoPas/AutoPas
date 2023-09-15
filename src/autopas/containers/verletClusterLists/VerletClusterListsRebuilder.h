@@ -39,7 +39,6 @@ class VerletClusterListsRebuilder {
 
   std::vector<Particle> &_particlesToAdd;
   ClusterTowerBlock2D<Particle> &_towerBlock;
-  int _interactionLengthInTowers;
   double _interactionLengthSqr;
 
  public:
@@ -58,8 +57,7 @@ class VerletClusterListsRebuilder {
       : _clusterSize(clusterSize),
         _neighborListsBuffer(neighborListsBuffer),
         _particlesToAdd(particlesToAdd),
-        _towerBlock(towerBlock),
-        _interactionLengthInTowers(clusterList.getNumTowersPerInteractionLength()) {}
+        _towerBlock(towerBlock) {}
 
   /**
    * Rebuilds the towers, clusters, and neighbor lists.
@@ -87,11 +85,6 @@ class VerletClusterListsRebuilder {
     const auto [towerSideLength, numTowersPerDim] =
         _towerBlock.estimateOptimalGridSideLength(numParticles, _clusterSize);
     const auto numTowersNew = numTowersPerDim[0] * numTowersPerDim[1];
-    // The number of towers considered for interaction should be the same in every direction
-    _interactionLengthInTowers =
-        static_cast<int>(std::ceil(*std::min_element(_towerBlock.getTowerSideLengthReciprocal().begin(),
-                                                     _towerBlock.getTowerSideLengthReciprocal().end()) *
-                                   _towerBlock.getInteractionLength()));
 
     // collect all particles that are now not in the right tower anymore
     auto invalidParticles = collectOutOfBoundsParticlesFromTowers();
@@ -241,7 +234,7 @@ class VerletClusterListsRebuilder {
   void updateNeighborLists(bool useNewton3) {
     const int maxTowerIndexX = _towerBlock.getTowersPerDim()[0] - 1;
     const int maxTowerIndexY = _towerBlock.getTowersPerDim()[1] - 1;
-
+    const auto numTowersPerInteractionLength = _towerBlock.getNumTowersPerInteractionLength();
     // for all towers
 #if defined(AUTOPAS_OPENMP)
     /// @todo: find sensible chunksize
@@ -249,10 +242,10 @@ class VerletClusterListsRebuilder {
 #endif
     for (int towerIndexY = 0; towerIndexY <= maxTowerIndexY; towerIndexY++) {
       for (int towerIndexX = 0; towerIndexX <= maxTowerIndexX; towerIndexX++) {
-        const int minX = std::max(towerIndexX - _interactionLengthInTowers, 0);
-        const int minY = std::max(towerIndexY - _interactionLengthInTowers, 0);
-        const int maxX = std::min(towerIndexX + _interactionLengthInTowers, maxTowerIndexX);
-        const int maxY = std::min(towerIndexY + _interactionLengthInTowers, maxTowerIndexY);
+        const int minX = std::max(towerIndexX - numTowersPerInteractionLength, 0);
+        const int minY = std::max(towerIndexY - numTowersPerInteractionLength, 0);
+        const int maxX = std::min(towerIndexX + numTowersPerInteractionLength, maxTowerIndexX);
+        const int maxY = std::min(towerIndexY + numTowersPerInteractionLength, maxTowerIndexY);
 
         iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3,
                               [this](auto &towerA, auto &towerB, double distBetweenTowersXYsqr, bool useNewton3) {
@@ -319,11 +312,12 @@ class VerletClusterListsRebuilder {
    * @return The index of the interaction cell containing the given tower.
    */
   int get1DInteractionCellIndexForTower(const int towerIndexX, const int towerIndexY) {
-    const int interactionCellTowerX = towerIndexX / _interactionLengthInTowers;
-    const int interactionCellTowerY = towerIndexY / _interactionLengthInTowers;
+    const auto numTowersPerInteractionLength = _towerBlock.getNumTowersPerInteractionLength();
+    const int interactionCellTowerX = towerIndexX / numTowersPerInteractionLength;
+    const int interactionCellTowerY = towerIndexY / numTowersPerInteractionLength;
 
-    const int numInteractionCellsX =
-        static_cast<int>(std::ceil(_towerBlock.getTowersPerDim()[0] / static_cast<double>(_interactionLengthInTowers)));
+    const int numInteractionCellsX = static_cast<int>(
+        std::ceil(_towerBlock.getTowersPerDim()[0] / static_cast<double>(numTowersPerInteractionLength)));
 
     return interactionCellTowerX + numInteractionCellsX * interactionCellTowerY;
   }

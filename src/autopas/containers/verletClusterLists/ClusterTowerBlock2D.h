@@ -95,6 +95,11 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     _towerSideLengthReciprocal = 1. / towerSideLength;
     const auto numTowersPerInteractionLength2D =
         static_cast_copy_array<int>(ceil(_interactionLength / _towerSideLength));
+    // sanity check
+    if (numTowersPerInteractionLength2D[0] != numTowersPerInteractionLength2D[1]) {
+      AutoPasLog(WARN, "Number of towers per interaction length differs in X vs Y direction! {}",
+                 utils::ArrayUtils::to_string(numTowersPerInteractionLength2D));
+    }
     _numTowersPerInteractionLength =
         *std::max_element(numTowersPerInteractionLength2D.begin(), numTowersPerInteractionLength2D.end());
     _towersPerDim = towersPerDim;
