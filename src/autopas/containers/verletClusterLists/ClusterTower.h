@@ -133,8 +133,7 @@ class ClusterTower : public ParticleCell<Particle> {
         _firstOwnedCluster = _clusters.begin() + index;
         foundFirstOwnedCluster = true;
       }
-      if (not foundFirstTailHaloCluster and foundFirstOwnedCluster and _clusters[index][0].isHalo() and
-          not _clusters[index][_clusterSize - 1].isOwned()) {
+      if (not foundFirstTailHaloCluster and foundFirstOwnedCluster and not isAnyOfClusterOwned(_clusters[index])) {
         _firstTailHaloCluster = _clusters.begin() + index;
         foundFirstTailHaloCluster = true;
       }
