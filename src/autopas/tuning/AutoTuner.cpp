@@ -290,6 +290,7 @@ bool AutoTuner::initEnergy() {
     if (_tuningMetric == TuningMetricOption::energy) {
       throw utils::ExceptionHandler::AutoPasException(errMsg);
     } else {
+      AutoPasLog(INFO, "Energy Measurement not possible on this system");
       return false;
     }
   }
@@ -306,6 +307,7 @@ bool AutoTuner::resetEnergy() {
        * very unlikely to happen, as check was performed at initialisation of autotuner
        * but may occur if permissions are changed during runtime.
        */
+      AutoPasLog(INFO, "Energy Measurement not possible on this system");
       _energyMeasurementPossible = false;
       if (_tuningMetric == TuningMetricOption::energy) {
         throw utils::ExceptionHandler::AutoPasException(errMsg);
@@ -321,6 +323,7 @@ std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
   if (_energyMeasurementPossible) {
     errMsg.append(_raplMeter.sample());
     if (not errMsg.empty()) {
+      AutoPasLog(INFO, "Energy Measurement not possible on this system");
       _energyMeasurementPossible = false;
       if (_tuningMetric == TuningMetricOption::energy) {
         throw utils::ExceptionHandler::AutoPasException(errMsg);
