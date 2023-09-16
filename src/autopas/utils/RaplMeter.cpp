@@ -19,7 +19,7 @@
 
 namespace autopas::utils {
 
-int RaplMeter::open_perf_event(int type, int config, int cpu) {
+int RaplMeter::open_perf_event(int type, int config, int cpu, std::string &errMsg) {
   struct perf_event_attr attr;
   memset(&attr, 0, sizeof(attr));
   attr.type = type;
@@ -31,17 +31,21 @@ int RaplMeter::open_perf_event(int type, int config, int cpu) {
   int fd = syscall(__NR_perf_event_open, &attr, -1 /*PID*/, cpu, -1 /*GROUP FD*/, 0 /*FLAGS*/);
   if (fd < 0) {
     if (errno == EACCES) {
-      throw ExceptionHandler::AutoPasException("Failed to open perf event: Permission denied");
+      // throw ExceptionHandler::AutoPasException("Failed to open perf event: Permission denied");
+      errMsg.assign("RaplMeter::open_perf_event(): Failed to open perf event: Permission denied");
+      return -1;
     }
     std::stringstream err_msg;
-    err_msg << "Failed to open perf event " << strerror(errno) << " (type=" << type << ", config=" << config
-            << ", cpu=" << cpu << ")";
-    throw ExceptionHandler::AutoPasException(err_msg.str());
+    err_msg << "RaplMeter::open_perf_event(): Failed to open perf event " << strerror(errno) << " (type=" << type
+            << ", config=" << config << ", cpu=" << cpu << ")";
+    // throw ExceptionHandler::AutoPasException(err_msg.str());
+    errMsg.assign(err_msg.str());
+    return -1;
   }
   return fd;
 }
 
-void RaplMeter::init() {
+std::string RaplMeter::init() {
   {
     FILE *fd;
     int i = 0;
@@ -55,7 +59,7 @@ void RaplMeter::init() {
         break;
       }
       if (fscanf(fd, "%d", &package) == 0) {
-        throw ExceptionHandler::AutoPasException("failed to read cpu topology");
+        return "RaplMeter::init(): failed to read cpu topology";
       }
       fclose(fd);
       if (this->_cpus.size() == 0 or last_package < package) {
@@ -68,11 +72,11 @@ void RaplMeter::init() {
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r")) {
     if (fscanf(fff, "%d", &this->_type) != 1) {
-      throw ExceptionHandler::AutoPasException("Failed to parse /sys/bus/event_source/devices/power/type");
+      return "RaplMeter::init(): Failed to parse /sys/bus/event_source/devices/power/type";
     }
     fclose(fff);
   } else {
-    throw ExceptionHandler::AutoPasException("No support for energy measurements detected.");
+    return "RaplMeter::init(): No support for energy measurements detected.";
   }
 
   this->_psys_config = 0;
@@ -146,6 +150,8 @@ void RaplMeter::init() {
     AutoPasLog(DEBUG, "ram scale={} J", _ram_unit);
     fclose(fff);
   }
+
+  return std::string();
 }
 
 RaplMeter::~RaplMeter() {
@@ -171,19 +177,23 @@ RaplMeter::~RaplMeter() {
   }
 }
 
-long RaplMeter::read_perf_event(int fd) {
+long RaplMeter::read_perf_event(int fd, std::string &errMsg) {
   if (fd == -1) {
     return 0;
   }
   long value;
   lseek(fd, 0, SEEK_SET);
   if (read(fd, &value, 8) == -1) {
-    throw ExceptionHandler::AutoPasException("Failed to read perf event:\n\t");
+    errMsg.assign("RaplMeter::read_perf_event: Failed to read perf event: ");
+    errMsg.append(std::strerror(errno));
+    return 0;
   }
   return value;
 }
 
-void RaplMeter::reset() {
+std::string RaplMeter::reset() {
+  std::string errMsg;
+
   for (int f : this->_psys_fd) {
     if (f != -1) {
       close(f);
@@ -212,48 +222,78 @@ void RaplMeter::reset() {
 
   for (int i : this->_cpus) {
     if (this->_psys_config > 0) {
-      this->_psys_fd.push_back(open_perf_event(this->_type, this->_psys_config, i));
+      this->_psys_fd.push_back(open_perf_event(this->_type, this->_psys_config, i, errMsg));
+      if (not errMsg.empty()) {
+        return errMsg;
+      }
     }
     if (this->_pkg_config > 0) {
-      this->_pkg_fd.push_back(open_perf_event(this->_type, this->_pkg_config, i));
+      this->_pkg_fd.push_back(open_perf_event(this->_type, this->_pkg_config, i, errMsg));
+      if (not errMsg.empty()) {
+        return errMsg;
+      }
     }
     if (this->_cores_config > 0) {
-      this->_cores_fd.push_back(open_perf_event(this->_type, this->_cores_config, i));
+      this->_cores_fd.push_back(open_perf_event(this->_type, this->_cores_config, i, errMsg));
+      if (not errMsg.empty()) {
+        return errMsg;
+      }
     }
     if (this->_ram_config > 0) {
-      this->_ram_fd.push_back(open_perf_event(this->_type, this->_ram_config, i));
+      this->_ram_fd.push_back(open_perf_event(this->_type, this->_ram_config, i, errMsg));
+      if (not errMsg.empty()) {
+        return errMsg;
+      }
     }
   }
+
+  return errMsg;
 }
 
-void RaplMeter::sample() {
+std::string RaplMeter::sample() {
+  std::string errMsg;
+
   this->_psys_raw = 0;
   for (int f : this->_psys_fd) {
     if (f != -1) {
-      this->_psys_raw += read_perf_event(f);
+      this->_psys_raw += read_perf_event(f, errMsg);
+      if (not errMsg.empty()) {
+        return errMsg;
+      }
     }
   }
 
   this->_pkg_raw = 0;
   for (int f : this->_pkg_fd) {
     if (f != -1) {
-      this->_pkg_raw += read_perf_event(f);
+      this->_pkg_raw += read_perf_event(f, errMsg);
+      if (not errMsg.empty()) {
+        return errMsg;
+      }
     }
   }
 
   this->_cores_raw = 0;
   for (int f : this->_cores_fd) {
     if (f != -1) {
-      this->_cores_raw += read_perf_event(f);
+      this->_cores_raw += read_perf_event(f, errMsg);
+      if (not errMsg.empty()) {
+        return errMsg;
+      }
     }
   }
 
   this->_ram_raw = 0;
   for (int f : this->_ram_fd) {
     if (f != -1) {
-      this->_ram_raw += read_perf_event(f);
+      this->_ram_raw += read_perf_event(f, errMsg);
+      if (not errMsg.empty()) {
+        return errMsg;
+      }
     }
   }
+
+  return errMsg;
 }
 
 double RaplMeter::get_psys_energy() { return this->_psys_unit * this->_psys_raw; }
