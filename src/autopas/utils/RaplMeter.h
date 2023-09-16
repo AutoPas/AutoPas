@@ -34,17 +34,20 @@ class RaplMeter {
 
   /**
    *initialisation may fail, so moved out of constructor
+   @return Error message. The error is message is empty on success
    */
   std::string init();
 
   /**
    * reset perf file descriptors to start new measurement
+   * @return Error message. The error is message is empty on success
    */
   std::string reset();
 
   /**
    * measure power consumption since last call to reset
    * the results can be retrieved with the get_<domain>_energy() functions.
+   * @return Error message. The error is message is empty on success
    */
   std::string sample();
 
