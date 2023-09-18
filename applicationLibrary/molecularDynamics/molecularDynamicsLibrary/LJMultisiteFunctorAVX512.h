@@ -129,6 +129,7 @@ class LJMultisiteFunctorAVX512
   const __m512d _cutoffSquared{};
   const __m512d _zero{_mm512_set1_pd(0.)};
   const __m512d _one{_mm512_set1_pd(1.)};
+  const __m512i _three{_mm512_set1_epi64(3)}; // todo remove this
   /**
    * Masks for the remainder cases
    */
@@ -869,11 +870,24 @@ class LJMultisiteFunctorAVX512
             : _mm512_loadu_epi64(&siteTypesB[siteVectorIndex]);
 //        const __m512i siteTypeIndicesOffset = _mm512_mullox_epi64(siteTypeIndices, _mm256_set1_epi64x(3));  // This could maybe be problematic!
 
+        // todo this is really silly - just generate different pointers for different mixing data types
+        const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndices, _three);
+
+
         // I think this is correct but potentially not
-        epsilon24 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndices, mixingPtr, 1);
-        sigmaSquared = _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndices, mixingPtr+1, 1); // one used as "filler" in remainder case to avoid dividing by zero
-        if constexpr (applyShift) {
-          shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndices, mixingPtr+2, 1);
+        if (remainderCase) {
+          epsilon24 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr, 8);
+          sigmaSquared =
+              _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndicesScaled, mixingPtr + 8, 8);  // one used as "filler" in remainder case to avoid dividing by zero
+          if constexpr (applyShift) {
+            shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr + 16, 8);
+          }
+        } else {
+          epsilon24 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr, 8);
+          sigmaSquared = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 8, 8);
+          if constexpr (applyShift) {
+            shift6 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 16, 8);
+          }
         }
       }
 
