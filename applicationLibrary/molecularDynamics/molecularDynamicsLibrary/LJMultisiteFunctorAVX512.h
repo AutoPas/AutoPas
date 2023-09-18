@@ -447,6 +447,7 @@ class LJMultisiteFunctorAVX512
     // Fill site-wise std::vectors for SIMD
 
     for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+      // todo fix this
       std::vector<std::array<double, 3>> rotatedSitePositions;
       if constexpr (useMixing) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
@@ -497,7 +498,7 @@ class LJMultisiteFunctorAVX512
 //      std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soa.getNumberOfParticles() - molA - 1);
 //      std::iota(indices.begin(), indices.end(), molA + 1);
 
-      const auto siteMask = buildSiteMask(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, soa.getNumberOfParticles());
+      const auto siteMask = buildSiteMask(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, soa.getNumberOfParticles(), noSitesB);
 
 
       // ------------------- Calculate Forces -------------------
@@ -713,7 +714,7 @@ class LJMultisiteFunctorAVX512
       std::iota(indices.begin(), indices.end(), 0);
 
       const auto siteMask =
-          buildSiteMask(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, soaB.getNumberOfParticles());
+          buildSiteMask(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, soaB.getNumberOfParticles(), siteCountB);
 
 
       // ------------------- Calculate Forces -------------------
@@ -872,7 +873,7 @@ class LJMultisiteFunctorAVX512
       const size_t remainder = siteTypesB.size() - siteVectorIndex;
       const bool remainderCase = remainder < vecLength;
       const __mmask8 remainderMask = _remainderMasks[8-remainder];
-      const __mmask8 siteMask = siteMaskVec[(siteVectorIndex) / vecLength];
+      const __mmask8 siteMask = siteMaskVec[(siteVectorIndex-offset) / vecLength];
 
       // Load the mixing parameters
       if constexpr (useMixing) {
@@ -1057,10 +1058,10 @@ class LJMultisiteFunctorAVX512
   inline std::vector<__mmask8, autopas::AlignedAllocator<__mmask8>> buildSiteMask(
       const double *const __restrict xptr, const double *const __restrict yptr, const double *const __restrict zptr,
       const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
-      const std::array<double, 3> &centerOfMass, size_t offset, size_t noMolecules) {
+      const std::array<double, 3> &centerOfMass, size_t offset, size_t noMolecules, size_t noSites) {
     std::vector<__mmask8, autopas::AlignedAllocator<__mmask8>> siteMask;
 
-    const size_t sizeOfSiteMask = noMolecules / 8 + 1; // Every 8 molecules fit into 1 __mmask8 (+ one for remainders)
+    const size_t sizeOfSiteMask = noSites / 8 + 1; // Every 8 molecules fit into 1 __mmask8 (+ one for remainders)
     siteMask.reserve(sizeOfSiteMask);
 
     size_t siteIndex = 0;
@@ -1090,16 +1091,18 @@ class LJMultisiteFunctorAVX512
       const bool dummyCondition = ownedStatePtr[molIndex] != autopas::OwnershipState::dummy;
       const bool condition = cutoffCondition and dummyCondition;
 
-      if (condition) {
-        maskTemp = _mm512_kor(maskTemp, __mmask8(uniqueBitFlipInt));
-      }
+      for (size_t site = 0; site < siteCount; site++) {
+        if (condition) {
+          maskTemp = _mm512_kor(maskTemp, __mmask8(uniqueBitFlipInt));
+        }
 
-      if (uniqueBitFlipInt >= 128) {
-        siteMask.emplace_back(maskTemp);
-        maskTemp = 0; // reset maskTemp
-        uniqueBitFlipInt = 1; // reset such that first bit will be flipped next
-      } else {
-        uniqueBitFlipInt *= 2;  // Shift to the next bit to be modified.
+        if (uniqueBitFlipInt >= 128) {
+          siteMask.emplace_back(maskTemp);
+          maskTemp = 0;          // reset maskTemp
+          uniqueBitFlipInt = 1;  // reset such that first bit will be flipped next
+        } else {
+          uniqueBitFlipInt *= 2;  // Shift to the next bit to be modified.
+        }
       }
     }
     // emplace back final mask
