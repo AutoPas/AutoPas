@@ -18,30 +18,22 @@ class LogicHandlerInfo {
   /**
    * Lower corner of the container.
    */
-  std::array<double, 3> boxMin;
+  std::array<double, 3> boxMin{0., 0., 0.};
   /**
    * Upper corner of the container.
    */
-  std::array<double, 3> boxMax;
+  std::array<double, 3> boxMax{0., 0., 0.};
   /**
    * Cutoff radius to be used in this simulation.
    */
-  double cutoff;
+  double cutoff{1.};
   /**
    * Length added to the cutoff for the Verlet lists' skin.
    */
-  double verletSkinPerTimestep;
-  /**
-   * The rebuild frequency for all containers.
-   */
-  unsigned int rebuildFrequency;
+  double verletSkinPerTimestep{0.02};
   /**
    * Number of particles in a cluster to use in VCL.
    */
-  unsigned int verletClusterSize;
-  /**
-   * Suffix for all output (log) files produced by the LogicHandler.
-   */
-  std::string outputSuffix;
+  unsigned int verletClusterSize{4};
 };
 }  // namespace autopas

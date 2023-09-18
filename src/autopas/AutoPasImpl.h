@@ -10,17 +10,22 @@
 #include <memory>
 #include <ostream>
 #include <type_traits>
+#include <vector>
 
+// The LogicHandler includes dependencies to wide parts of AutoPas, making it expensive to compile and thus is moved
+// here from AutoPasDecl.h.
 #include "autopas/AutoPasDecl.h"
 #include "autopas/InstanceCounter.h"
-#include "autopas/LogicHandlerInfo.h"
-#include "autopas/Version.h"
-#include "autopas/utils/CompileInfo.h"
-
-// These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
 #include "autopas/LogicHandler.h"
-#include "autopas/selectors/AutoTuner.h"
-#include "autopas/selectors/tuningStrategy/TuningStrategyFactory.h"
+#include "autopas/Version.h"
+#include "autopas/tuning/AutoTuner.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
+#include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "autopas/utils/CompileInfo.h"
+#include "autopas/utils/NumberInterval.h"
+#include "autopas/utils/NumberSetFinite.h"
 
 namespace autopas {
 
@@ -58,29 +63,54 @@ template <class Particle>
 void AutoPas<Particle>::init() {
   AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
   AutoPasLog(INFO, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
-  if (_numSamples % _verletRebuildFrequency != 0) {
+  if (_autoTunerInfo.maxSamples % _verletRebuildFrequency != 0) {
     AutoPasLog(WARN,
                "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
                "when multiple AutoPas instances interact (e.g. via MPI).",
-               _numSamples, _verletRebuildFrequency);
+               _autoTunerInfo.maxSamples, _verletRebuildFrequency);
   }
 
-  if (_autopasMPICommunicator == AUTOPAS_MPI_COMM_NULL) {
-    AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_autopasMPICommunicator);
+  if (_tuningStrategyFactoryInfo.autopasMpiCommunicator == AUTOPAS_MPI_COMM_NULL) {
+    AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_tuningStrategyFactoryInfo.autopasMpiCommunicator);
   } else {
     _externalMPICommunicator = true;
   }
-  auto tuningStrategy = TuningStrategyFactory::generateTuningStrategy(
-      _tuningStrategyOption, _allowedContainers, *_allowedCellSizeFactors, _allowedTraversals, _allowedLoadEstimators,
-      _allowedDataLayouts, _allowedNewton3Options, _maxEvidence, _relativeOptimumRange, _maxTuningPhasesWithoutTest,
-      _relativeBlacklistRange, _evidenceFirstPrediction, _acquisitionFunctionOption, _extrapolationMethodOption,
-      _ruleFileName, _outputSuffix, _mpiStrategyOption, _autopasMPICommunicator);
-  _autoTuner = std::make_unique<autopas::AutoTuner>(
-      std::move(tuningStrategy), _mpiTuningMaxDifferenceForBucket, _mpiTuningWeightForMaxDensity, _selectorStrategy,
-      _tuningMetricOption, _tuningInterval, _numSamples, _verletRebuildFrequency, _outputSuffix, _useTuningLogger);
-  LogicHandlerInfo logicHandlerInfo{
-      _boxMin, _boxMax, _cutoff, _verletSkinPerTimestep, _verletRebuildFrequency, _verletClusterSize, _outputSuffix};
-  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(*_autoTuner, logicHandlerInfo);
+  if (std::find(_tuningStrategyOptions.begin(), _tuningStrategyOptions.end(),
+                TuningStrategyOption::mpiDivideAndConquer) != _tuningStrategyOptions.end()) {
+    _tuningStrategyFactoryInfo.mpiDivideAndConquer = true;
+  }
+
+  // If an interval was given for the cell size factor, change it to the relevant values.
+  // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
+  const auto cellSizeFactors = [&]() -> NumberSetFinite<double> {
+    if (const auto *csfIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedCellSizeFactors.get())) {
+      const auto interactionLength =
+          _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency;
+      const auto boxLengthX = _logicHandlerInfo.boxMax[0] - _logicHandlerInfo.boxMin[0];
+      return {SearchSpaceGenerators::calculateRelevantCsfs(*csfIntervalPtr, interactionLength, boxLengthX)};
+    } else {
+      // in this case _allowedCellSizeFactors is a finite set
+      return {_allowedCellSizeFactors->getAll()};
+    }
+  }();
+  const auto searchSpace =
+      SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals, _allowedLoadEstimators,
+                                              _allowedDataLayouts, _allowedNewton3Options, &cellSizeFactors);
+
+  AutoTuner::TuningStrategiesListType tuningStrategies;
+  tuningStrategies.reserve(_tuningStrategyOptions.size());
+  for (const auto &strategy : _tuningStrategyOptions) {
+    tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
+        searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
+  }
+  if (_useTuningStrategyLoggerProxy) {
+    tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
+  }
+  _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+                                                    _verletRebuildFrequency, _outputSuffix);
+
+  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
+      *_autoTuner, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
 
 template <class Particle>
@@ -181,8 +211,14 @@ std::vector<Particle> AutoPas<Particle>::updateContainer() {
 template <class Particle>
 std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &boxMin,
                                                    const std::array<double, 3> &boxMax) {
-  _boxMin = boxMin;
-  _boxMax = boxMax;
+  if (_allowedCellSizeFactors->isInterval()) {
+    AutoPasLog(WARN,
+               "The allowed Cell Size Factors are a continuous interval but internally only those values that "
+               "yield unique numbers of cells are used. Resizing does not cause these values to be recalculated so "
+               "the same configurations might now yield different and non-unique numbers of cells!");
+  }
+  _logicHandlerInfo.boxMin = boxMin;
+  _logicHandlerInfo.boxMax = boxMax;
   return _logicHandler->resizeBox(boxMin, boxMax);
 }
 

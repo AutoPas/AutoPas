@@ -8,7 +8,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/options/ContainerOption.h"
-#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class ParticleCounterTest : public AutoPasTestBase, public ::testing::WithParamInterface<autopas::ContainerOption> {
