@@ -939,9 +939,9 @@ class LJMultisiteFunctorAVX512
       const __m512d forceZ = _mm512_maskz_mul_pd((siteMask), scalar, displacementZ);
 
       if (remainderCase) {
-        forceSumX = _mm512_maskz_add_pd(remainderMask, forceSumX, forceX);
-        forceSumY = _mm512_maskz_add_pd(remainderMask, forceSumY, forceY);
-        forceSumZ = _mm512_maskz_add_pd(remainderMask, forceSumZ, forceZ);
+        forceSumX = _mm512_mask_add_pd(forceSumX, remainderMask, forceSumX, forceX);
+        forceSumY = _mm512_mask_add_pd(forceSumY, remainderMask, forceSumY, forceY);
+        forceSumZ = _mm512_mask_add_pd(forceSumZ, remainderMask, forceSumZ, forceZ);
       } else {
         forceSumX = _mm512_add_pd( forceSumX, forceX);
         forceSumY = _mm512_add_pd( forceSumY, forceY);
@@ -958,9 +958,9 @@ class LJMultisiteFunctorAVX512
             _mm512_fmsub_pd(rotatedSitePositionsAX, forceY, _mm512_mul_pd(rotatedSitePositionsAY, forceX));
 
         if (remainderCase) {
-          torqueSumX = _mm512_maskz_add_pd(remainderMask, torqueSumX, torqueAX);
-          torqueSumY = _mm512_maskz_add_pd(remainderMask, torqueSumY, torqueAY);
-          torqueSumZ = _mm512_maskz_add_pd(remainderMask, torqueSumZ, torqueAZ);
+          torqueSumX = _mm512_mask_add_pd(torqueSumX, remainderMask, torqueSumX, torqueAX);
+          torqueSumY = _mm512_mask_add_pd(torqueSumY, remainderMask, torqueSumY, torqueAY);
+          torqueSumZ = _mm512_mask_add_pd(torqueSumZ, remainderMask, torqueSumZ, torqueAZ);
         } else {
           torqueSumX = _mm512_add_pd(torqueSumX, torqueAX);
           torqueSumY = _mm512_add_pd(torqueSumY, torqueAY);
