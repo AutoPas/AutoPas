@@ -415,6 +415,9 @@ class LJMultisiteFunctorAVX512
     std::array<double, 3> virialAccumulator = {0., 0., 0.};
 
     // ------------------------------ Setup auxiliary vectors -----------------------------
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionZ;
 
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionX;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionY;
@@ -428,6 +431,9 @@ class LJMultisiteFunctorAVX512
     std::vector<size_t, autopas::AlignedAllocator<size_t>> isSiteOwned;
 
     // pre-reserve site std::vectors
+    rotatedSitePositionX.reserve(siteCount);
+    rotatedSitePositionY.reserve(siteCount);
+    rotatedSitePositionZ.reserve(siteCount);
     exactSitePositionX.reserve(siteCount);
     exactSitePositionY.reserve(siteCount);
     exactSitePositionZ.reserve(siteCount);
@@ -439,8 +445,9 @@ class LJMultisiteFunctorAVX512
     isSiteOwned.reserve(siteCount);
 
     // Fill site-wise std::vectors for SIMD
-    std::vector<std::array<double, 3>> rotatedSitePositions;
+
     for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+      std::vector<std::array<double, 3>> rotatedSitePositions;
       if constexpr (useMixing) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
@@ -452,6 +459,9 @@ class LJMultisiteFunctorAVX512
       size_t localSiteCount = useMixing ? _PPLibrary->getNumSites(typeptr[mol]) : _sitePositionsLJ.size();
 
       for (size_t site = 0; site < localSiteCount; ++site) {
+        rotatedSitePositionX.push_back(rotatedSitePositions[site][0]);
+        rotatedSitePositionY.push_back(rotatedSitePositions[site][1]);
+        rotatedSitePositionZ.push_back(rotatedSitePositions[site][2]);
         exactSitePositionX.push_back(rotatedSitePositions[site][0] + xptr[mol]);
         exactSitePositionY.push_back(rotatedSitePositions[site][1] + yptr[mol]);
         exactSitePositionZ.push_back(rotatedSitePositions[site][2] + zptr[mol]);
@@ -487,17 +497,18 @@ class LJMultisiteFunctorAVX512
 //      std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soa.getNumberOfParticles() - molA - 1);
 //      std::iota(indices.begin(), indices.end(), molA + 1);
 
-      const auto siteMask = buildSiteMask(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, 0, soa.getNumberOfParticles());
+      const auto siteMask = buildSiteMask(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, soa.getNumberOfParticles());
 
 
       // ------------------- Calculate Forces -------------------
 
       // These values are not needed for the calculation, because there is no torque calculation for this functor
-      const std::array<double, 3> rotatedSitePositionA{0.0, 0.0, 0.0};
       std::array<double, 3> torqueAccumulator = {0., 0., 0.};
 
       for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
         const size_t siteTypeA = siteTypes[siteA];
+        const std::array<double, 3> rotatedSitePositionA = {rotatedSitePositionX[siteA], rotatedSitePositionY[siteA],
+                                                            rotatedSitePositionZ[siteA]};
         const std::array<double, 3> exactSitePositionA = {exactSitePositionX[siteA], exactSitePositionY[siteA],
                                                           exactSitePositionZ[siteA]};
 
@@ -508,52 +519,54 @@ class LJMultisiteFunctorAVX512
             siteForceZ, isSiteOwned, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA, forceAccumulator,
             torqueAccumulator, potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
 
-        // sum forces on single site in mol A
-        siteForceX[siteA] += forceAccumulator[0];
-        siteForceY[siteA] += forceAccumulator[1];
-        siteForceZ[siteA] += forceAccumulator[2];
+        // Add forces + torques to molA
+        fxptr[molA] += forceAccumulator[0];
+        fyptr[molA] += forceAccumulator[1];
+        fzptr[molA] += forceAccumulator[2];
+
+        txptr[molA] += torqueAccumulator[0];
+        typtr[molA] += torqueAccumulator[1];
+        tzptr[molA] += torqueAccumulator[2];
       }
       siteIndexMolA += noSitesInMolA;
     }
 
     // ------------------------------ Reduction -----------------------------
+    // i.e. add the "newton3" site forces to add to the molecular force + torque counters
 
     if constexpr (useMixing) {
-      size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
-        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
+              size_t siteIndex = 0;
+              for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
           fxptr[mol] += siteForceX[siteIndex];
           fyptr[mol] += siteForceY[siteIndex];
           fzptr[mol] += siteForceZ[siteIndex];
-          txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                        rotatedSitePositions[site][2] * siteForceY[siteIndex];
-          typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                        rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-          tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                        rotatedSitePositions[site][1] * siteForceX[siteIndex];
+          txptr[mol] += rotatedSitePositionY[siteIndex] * siteForceZ[siteIndex] -
+                        rotatedSitePositionZ[siteIndex] * siteForceY[siteIndex];
+          typtr[mol] += rotatedSitePositionZ[siteIndex] * siteForceX[siteIndex] -
+                        rotatedSitePositionX[siteIndex] * siteForceZ[siteIndex];
+          tzptr[mol] += rotatedSitePositionX[siteIndex] * siteForceY[siteIndex] -
+                        rotatedSitePositionY[siteIndex] * siteForceX[siteIndex];
           ++siteIndex;
         }
-      }
+              }
     } else {
-      size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soa.getNumberOfParticles(); mol++) {
-        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _sitePositionsLJ);
+              size_t siteIndex = 0;
+              for (size_t mol = 0; mol < soa.getNumberOfParticles(); mol++) {
         for (size_t site = 0; site < _sitePositionsLJ.size(); ++site) {
           fxptr[mol] += siteForceX[siteIndex];
           fyptr[mol] += siteForceY[siteIndex];
           fzptr[mol] += siteForceZ[siteIndex];
-          txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                        rotatedSitePositions[site][2] * siteForceY[siteIndex];
-          typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                        rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-          tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                        rotatedSitePositions[site][1] * siteForceX[siteIndex];
+          txptr[mol] += rotatedSitePositionY[siteIndex] * siteForceZ[siteIndex] -
+                        rotatedSitePositionZ[siteIndex] * siteForceY[siteIndex];
+          typtr[mol] += rotatedSitePositionZ[siteIndex] * siteForceX[siteIndex] -
+                        rotatedSitePositionX[siteIndex] * siteForceZ[siteIndex];
+          tzptr[mol] += rotatedSitePositionX[siteIndex] * siteForceY[siteIndex] -
+                        rotatedSitePositionY[siteIndex] * siteForceX[siteIndex];
           ++siteIndex;
         }
       }
+
     }
 
     if constexpr (calculateGlobals) {
@@ -878,15 +891,15 @@ class LJMultisiteFunctorAVX512
         if (remainderCase) {
           epsilon24 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr, 8);
           sigmaSquared =
-              _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndicesScaled, mixingPtr + 8, 8);  // one used as "filler" in remainder case to avoid dividing by zero
+              _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndicesScaled, mixingPtr + 1, 8);  // one used as "filler" in remainder case to avoid dividing by zero
           if constexpr (applyShift) {
-            shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr + 16, 8);
+            shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr + 2, 8);
           }
         } else {
           epsilon24 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr, 8);
-          sigmaSquared = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 8, 8);
+          sigmaSquared = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 1, 8);
           if constexpr (applyShift) {
-            shift6 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 16, 8);
+            shift6 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 2, 8);
           }
         }
       }
@@ -920,13 +933,20 @@ class LJMultisiteFunctorAVX512
 
       const __m512d scalar = _mm512_mul_pd(epsilon24, _mm512_mul_pd(_mm512_add_pd(lj12, lj12m6), invDistSquared));
 
-      const __m512d forceX = _mm512_maskz_mul_pd(siteMask, scalar, displacementX);
-      const __m512d forceY = _mm512_maskz_mul_pd(siteMask, scalar, displacementY);
-      const __m512d forceZ = _mm512_maskz_mul_pd(siteMask, scalar, displacementZ);
+      // Determine forces and mask out sites beyond cutoff
+      const __m512d forceX = _mm512_maskz_mul_pd((siteMask), scalar, displacementX);
+      const __m512d forceY = _mm512_maskz_mul_pd((siteMask), scalar, displacementY);
+      const __m512d forceZ = _mm512_maskz_mul_pd((siteMask), scalar, displacementZ);
 
-      forceSumX = _mm512_add_pd(forceSumX, forceX);
-      forceSumY = _mm512_add_pd(forceSumY, forceY);
-      forceSumZ = _mm512_add_pd(forceSumZ, forceZ);
+      if (remainderCase) {
+        forceSumX = _mm512_maskz_add_pd(remainderMask, forceSumX, forceX);
+        forceSumY = _mm512_maskz_add_pd(remainderMask, forceSumY, forceY);
+        forceSumZ = _mm512_maskz_add_pd(remainderMask, forceSumZ, forceZ);
+      } else {
+        forceSumX = _mm512_add_pd( forceSumX, forceX);
+        forceSumY = _mm512_add_pd( forceSumY, forceY);
+        forceSumZ = _mm512_add_pd( forceSumZ, forceZ);
+      }
 
       // calculate torques
 
@@ -937,9 +957,15 @@ class LJMultisiteFunctorAVX512
         const __m512d torqueAZ =
             _mm512_fmsub_pd(rotatedSitePositionsAX, forceY, _mm512_mul_pd(rotatedSitePositionsAY, forceX));
 
-        torqueSumX = _mm512_add_pd(torqueSumX, torqueAX);
-        torqueSumY = _mm512_add_pd(torqueSumY, torqueAY);
-        torqueSumZ = _mm512_add_pd(torqueSumZ, torqueAZ);
+        if (remainderCase) {
+          torqueSumX = _mm512_maskz_add_pd(remainderMask, torqueSumX, torqueAX);
+          torqueSumY = _mm512_maskz_add_pd(remainderMask, torqueSumY, torqueAY);
+          torqueSumZ = _mm512_maskz_add_pd(remainderMask, torqueSumZ, torqueAZ);
+        } else {
+          torqueSumX = _mm512_add_pd(torqueSumX, torqueAX);
+          torqueSumY = _mm512_add_pd(torqueSumY, torqueAY);
+          torqueSumZ = _mm512_add_pd(torqueSumZ, torqueAZ);
+        }
 
 
       // Newton 3 optimization
@@ -1010,9 +1036,9 @@ class LJMultisiteFunctorAVX512
     forceAccumulator[2] += autopas::utils::avx::horizontalSum(forceSumZ);
 
 
-      torqueAccumulator[0] += autopas::utils::avx::horizontalSum(torqueSumX);
-      torqueAccumulator[1] += autopas::utils::avx::horizontalSum(torqueSumY);
-      torqueAccumulator[2] += autopas::utils::avx::horizontalSum(torqueSumZ);
+    torqueAccumulator[0] += autopas::utils::avx::horizontalSum(torqueSumX);
+    torqueAccumulator[1] += autopas::utils::avx::horizontalSum(torqueSumY);
+    torqueAccumulator[2] += autopas::utils::avx::horizontalSum(torqueSumZ);
 
 
     if constexpr (calculateGlobals) {
@@ -1039,10 +1065,9 @@ class LJMultisiteFunctorAVX512
 
     size_t siteIndex = 0;
 
-    std::array<bool, 8> siteMaskTemp{0};
     __mmask8 maskTemp(0);
-    size_t maskCounter = 0; // When this reaches 7, we reduce the mask into one of these temp masks and push it onto returned vector
-    for (size_t molIndex = 0; molIndex < noMolecules; molIndex++) {
+    size_t uniqueBitFlipInt = 1; // The integer value, which, when converted into binary, and "OR"ed with maskTemp, flips maskTemp[maskCounter] to 1.
+    for (size_t molIndex = offset; molIndex < noMolecules; molIndex++) {
       const size_t siteCount = useMixing ? _PPLibrary->getNumSites(typeptr[molIndex]) : _sitePositionsLJ.size();
 
       const double xPosB = xptr[molIndex];
@@ -1066,17 +1091,19 @@ class LJMultisiteFunctorAVX512
       const bool condition = cutoffCondition and dummyCondition;
 
       if (condition) {
-        maskTemp++; // Flip the rightmost bit to 1
+        maskTemp = _mm512_kor(maskTemp, __mmask8(uniqueBitFlipInt));
       }
 
-      if (maskCounter == 7) {
+      if (uniqueBitFlipInt >= 128) {
         siteMask.emplace_back(maskTemp);
         maskTemp = 0; // reset maskTemp
-        maskCounter = 0; // reset maskCounter
+        uniqueBitFlipInt = 1; // reset such that first bit will be flipped next
       } else {
-        maskTemp = maskTemp << 1; // shift the bits to the left, padding the rightmost bit with 0
+        uniqueBitFlipInt *= 2;  // Shift to the next bit to be modified.
       }
     }
+    // emplace back final mask
+    siteMask.emplace_back(maskTemp);
     return siteMask;
   }
 
