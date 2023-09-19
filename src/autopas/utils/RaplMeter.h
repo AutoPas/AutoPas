@@ -26,30 +26,31 @@ class RaplMeter {
   int _psys_config, _pkg_config, _cores_config, _ram_config;
   std::vector<int> _psys_fd, _pkg_fd, _cores_fd, _ram_fd;
 
-  int open_perf_event(int type, int config, int cpu, std::string &errMsg);
-  long read_perf_event(int fd, std::string &errMsg);
+  int open_perf_event(int type, int config, int cpu);
+  long read_perf_event(int fd);
 
  public:
   ~RaplMeter();
 
   /**
    *initialisation may fail, so moved out of constructor
+   Note: This functios returns an error message instead of throwing an exception if initialization is not possible. This
+   way debuggers don't break on the start of every autopas initialization if we are not interested in energy
+   measurement.
    @return Error message. The error is message is empty on success
    */
   std::string init();
 
   /**
    * reset perf file descriptors to start new measurement
-   * @return Error message. The error is message is empty on success
    */
-  std::string reset();
+  void reset();
 
   /**
    * measure power consumption since last call to reset
    * the results can be retrieved with the get_<domain>_energy() functions.
-   * @return Error message. The error is message is empty on success
    */
-  std::string sample();
+  void sample();
 
   /**
    * returns the energy consumed by the cpu package between the last call to sample() and the preceding
