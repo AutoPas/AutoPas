@@ -800,7 +800,7 @@ class LJMultisiteFunctorAVX512
           std::array<double, 3> forceAccumulator = {0., 0., 0.};
           std::array<double, 3> torqueAccumulator = {0., 0., 0.};
 
-          SoAKernelGS<true>(sitePairIndicies, siteTypesBConst, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz,
+          SoAKernelGS<newton3>(sitePairIndicies, siteTypesBConst, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz,
                             siteForceBx, siteForceBy, siteForceBz, isSiteOwnedBArr, ownedStateA, siteTypeA, exactSitePositionA,
                             rotatedSitePositionA, forceAccumulator, torqueAccumulator, potentialEnergyAccumulator, virialAccumulator);
 
