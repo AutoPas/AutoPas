@@ -945,7 +945,7 @@ class LJMultisiteFunctorAVX512
     for (size_t siteVectorIndex = offset; siteVectorIndex < siteTypesB.size(); siteVectorIndex += vecLength) {
       const size_t remainder = siteTypesB.size() - siteVectorIndex;
       const bool remainderCase = remainder < vecLength;
-      const __mmask8 remainderMask = _remainderMasks[8-remainder];
+      const __mmask8 remainderMask = remainderCase ? _remainderMasks[8-remainder] : __mmask8(255);
       const __mmask8 siteMask = siteMaskVec[(siteVectorIndex-offset) / vecLength];
 
       // Load the mixing parameters
@@ -1175,7 +1175,7 @@ class LJMultisiteFunctorAVX512
     for (size_t siteVectorIndex = 0; siteVectorIndex < sitePairIndicies.size(); siteVectorIndex += vecLength) {
       const size_t remainder = sitePairIndicies.size() - siteVectorIndex;
       const bool remainderCase = remainder < vecLength;
-      const __mmask8 remainderMask = _remainderMasks[8-remainder];
+      const __mmask8 remainderMask = remainderCase ? _remainderMasks[8-remainder] : __mmask8(255);
 
       const __m512i sitePairIndicesVec = remainderCase ? _mm512_maskz_loadu_epi64(remainderMask, &sitePairIndicies[siteVectorIndex])
           : _mm512_loadu_epi64(&sitePairIndicies[siteVectorIndex]);
