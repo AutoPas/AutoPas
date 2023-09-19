@@ -537,7 +537,7 @@ class LJMultisiteFunctorAVX512
         }
       } else {
         // --------------------- Build list of indices ----------------
-        const auto sitePairIndicies = buildSitePairIndices(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, siteIndexMolB, soa.getNumberOfParticles()-molA,
+        const auto sitePairIndicies = buildSitePairIndices(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, siteIndexMolB, soa.getNumberOfParticles(),
                                                            noSitesB);
         // Calculate Forces
 
