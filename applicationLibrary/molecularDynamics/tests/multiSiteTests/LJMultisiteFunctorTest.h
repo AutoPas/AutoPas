@@ -15,33 +15,33 @@
 #include "molecularDynamicsLibrary/LJMultisiteFunctorAVX.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctorAVX_STS.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512.h"
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_STS.h"
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 // todo there is a lot of code duplication for trying out multiple functors. We should condense into suites.
 
-// Number of doubles that fit into a vector register
-const size_t VecLength =
-#ifdef __AVX512F__
-8;
-#else
-4;
-#endif
-
 namespace {
 // Some template aliases to make the tests cleaner.
 
 template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
-using LJMultisiteFunctorAVX_Masks = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true, VecLength>;
+using LJMultisiteFunctorAVX_Masks = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true, 4>;
 
 template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
-using LJMultisiteFunctorAVX_GatherScatter = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, false, VecLength>;
+using LJMultisiteFunctorAVX_GatherScatter = mdLib::LJMultisiteFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, false, 4>;
 
 template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
-using LJMultisiteFunctorAVX_STS = mdlib::LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true, VecLength>;
+using LJMultisiteFunctorAVX_STS = mdlib::LJMultisiteFunctorAVX_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true, 4>;
 
 template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
-using LJMultisiteFunctorAVX512_Masks = mdLib::LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true, VecLength>;
+using LJMultisiteFunctorAVX512_Masks = mdLib::LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, true, 8>;
+
+template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
+using LJMultisiteFunctorAVX512_GatherScatter = mdLib::LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, false, 8>;
+
+template<class Particle, bool applyShift, bool useMixing, autopas::FunctorN3Modes useNewton3, bool calculateGlobals, bool relevantForTuning>
+using LJMultisiteFunctorAVX512_STS = mdLib::LJMultisiteFunctorAVX512_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, false, 8>;
+
 }
 
 /**
