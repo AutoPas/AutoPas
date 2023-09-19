@@ -628,6 +628,8 @@ class LJMultisiteFunctorAVX512
 #ifndef __AVX512F__
 #pragma message "SoAFunctorPair functor called without AVX support!"
 #endif
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (soaA.getNumberOfParticles() == 0 || soaB.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict xAptr = soaA.template begin<Particle::AttributeNames::posX>();
@@ -681,6 +683,10 @@ class LJMultisiteFunctorAVX512
     std::array<double, 3> virialAccumulator = {0., 0., 0.};
 
     // ------------------------------ Setup auxiliary vectors -----------------------------
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionBx;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionBy;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionBz;
+
 
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBx;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBy;
@@ -717,6 +723,10 @@ class LJMultisiteFunctorAVX512
 
       size_t localSiteCount = useMixing ? _PPLibrary->getNumSites(typeptrB[mol]) : _sitePositionsLJ.size();
       for (size_t site = 0; site < localSiteCount; ++site) {
+        rotatedSitePositionBx.push_back(rotatedSitePositions[site][0]);
+        rotatedSitePositionBy.push_back(rotatedSitePositions[site][1]);
+        rotatedSitePositionBz.push_back(rotatedSitePositions[site][2]);
+
         exactSitePositionBx.push_back(rotatedSitePositions[site][0] + xBptr[mol]);
         exactSitePositionBy.push_back(rotatedSitePositions[site][1] + yBptr[mol]);
         exactSitePositionBz.push_back(rotatedSitePositions[site][2] + zBptr[mol]);
@@ -728,6 +738,7 @@ class LJMultisiteFunctorAVX512
         }
       }
     }
+    const auto siteTypesBConst = siteTypesB;
 
     // ------------------------------ Main force calculation loop -----------------------------
 
@@ -740,43 +751,68 @@ class LJMultisiteFunctorAVX512
       const auto noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptrA[molA]) : _sitePositionsLJ.size();
       const auto unrotatedSitePositionsA = useMixing ? _PPLibrary->getSitePositions(typeptrA[molA]) : _sitePositionsLJ;
 
+      const std::array<double, 3> centerOfMass{xAptr[molA], yAptr[molA], zAptr[molA]};
       const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, unrotatedSitePositionsA);
 
+      const auto siteTypesA = _PPLibrary->getSiteTypes(typeptrA[molA]);
+
       // ------------------- Build site mask -------------------
 
-      std::array<double, 3> centerOfMass{xAptr[molA], yAptr[molA], zAptr[molA]};
-
-      std::vector<size_t, autopas::AlignedAllocator<size_t>> indices(soaB.getNumberOfParticles());
-      std::iota(indices.begin(), indices.end(), 0);
-
-      const auto siteMask =
-          buildSiteMask(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, soaB.getNumberOfParticles(), siteCountB);
 
 
-      // ------------------- Calculate Forces -------------------
+      if constexpr (useMasks) {
+        const auto siteMask = buildSiteMask(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0,
+                                            soaB.getNumberOfParticles(), siteCountB);
 
-      std::array<double, 3> forceAccumulator = {0., 0., 0.};
-      std::array<double, 3> torqueAccumulator = {0., 0., 0.};
+        // ------------------- Calculate Forces -------------------
 
-      for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
-        const size_t siteTypeA = _PPLibrary->getSiteTypes(typeptrA[molA])[siteA];
-        const std::array<double, 3> rotatedSitePositionA = rotatedSitePositionsA[siteA];
-        const std::array<double, 3> exactSitePositionA =
-            autopas::utils::ArrayMath::add(rotatedSitePositionA, centerOfMass);
+        std::array<double, 3> forceAccumulator = {0., 0., 0.};
+        std::array<double, 3> torqueAccumulator = {0., 0., 0.};
 
-        SoAKernelMask<newton3>(
-            siteMask, siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz, siteForceBx,
-            siteForceBy, siteForceBz, isSiteOwnedBArr, ownedStateA, siteTypeA, exactSitePositionA, rotatedSitePositionA,
-            forceAccumulator, torqueAccumulator, potentialEnergyAccumulator, virialAccumulator);
+        for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
+          const size_t siteTypeA = siteTypesA[siteA];
+          const std::array<double, 3> rotatedSitePositionA = rotatedSitePositionsA[siteA];
+          const std::array<double, 3> exactSitePositionA = rotatedSitePositionA + centerOfMass;
+
+          SoAKernelMask<newton3>(siteMask, siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz,
+                                 siteForceBx, siteForceBy, siteForceBz, isSiteOwnedBArr, ownedStateA, siteTypeA,
+                                 exactSitePositionA, rotatedSitePositionA, forceAccumulator, torqueAccumulator,
+                                 potentialEnergyAccumulator, virialAccumulator);
+        }
+        // Add forces and torques to mol A
+        fxAptr[molA] += forceAccumulator[0];
+        fyAptr[molA] += forceAccumulator[1];
+        fzAptr[molA] += forceAccumulator[2];
+        txAptr[molA] += torqueAccumulator[0];
+        tyAptr[molA] += torqueAccumulator[1];
+        tzAptr[molA] += torqueAccumulator[2];
+      } else {
+        const auto sitePairIndicies = buildSitePairIndices(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, 0, soaB.getNumberOfParticles(),
+                                                           siteCountB);
+
+        for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
+          const size_t siteTypeA = siteTypesA[siteA];
+
+          const std::array<double, 3> rotatedSitePositionA = rotatedSitePositionsA[siteA];
+          const std::array<double, 3> exactSitePositionA = rotatedSitePositionA + centerOfMass;
+
+          std::array<double, 3> forceAccumulator = {0., 0., 0.};
+          std::array<double, 3> torqueAccumulator = {0., 0., 0.};
+
+          SoAKernelGS<true>(sitePairIndicies, siteTypesBConst, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz,
+                            siteForceBx, siteForceBy, siteForceBz, isSiteOwnedBArr, ownedStateA, siteTypeA, exactSitePositionA,
+                            rotatedSitePositionA, forceAccumulator, torqueAccumulator, potentialEnergyAccumulator, virialAccumulator);
+
+          // Add forces + torques to molA
+          fxAptr[molA] += forceAccumulator[0];
+          fyAptr[molA] += forceAccumulator[1];
+          fzAptr[molA] += forceAccumulator[2];
+          txAptr[molA] += torqueAccumulator[0];
+          tyAptr[molA] += torqueAccumulator[1];
+          tzAptr[molA] += torqueAccumulator[2];
+        }
       }
-      // Add forces and torques to mol A
-      fxAptr[molA] += forceAccumulator[0];
-      fyAptr[molA] += forceAccumulator[1];
-      fzAptr[molA] += forceAccumulator[2];
-      txAptr[molA] += torqueAccumulator[0];
-      tyAptr[molA] += torqueAccumulator[1];
-      tzAptr[molA] += torqueAccumulator[2];
     }
 
     // ------------------------------ Reduction -----------------------------
