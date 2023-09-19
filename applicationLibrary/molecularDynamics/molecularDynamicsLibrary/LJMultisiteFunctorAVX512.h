@@ -446,10 +446,10 @@ class LJMultisiteFunctorAVX512
     isSiteOwned.reserve(siteCount);
 
     // Fill site-wise std::vectors for SIMD
+    std::vector<std::array<double, 3>> rotatedSitePositions;
 
     for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
       // todo fix this
-      std::vector<std::array<double, 3>> rotatedSitePositions;
       if constexpr (useMixing) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
@@ -473,6 +473,8 @@ class LJMultisiteFunctorAVX512
         }
       }
     }
+
+    const auto siteTypesConst = siteTypes;
 
     // ------------------------------ Main force calculation loop -----------------------------
     auto force_start = std::chrono::high_resolution_clock::now();
@@ -533,15 +535,14 @@ class LJMultisiteFunctorAVX512
           typtr[molA] += torqueAccumulator[1];
           tzptr[molA] += torqueAccumulator[2];
         }
-        siteIndexMolA += noSitesInMolA;
-      }else {
+      } else {
         // --------------------- Build list of indices ----------------
-        const auto sitePairIndicies = buildSitePairIndices(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, soa.getNumberOfParticles()-molA,
+        const auto sitePairIndicies = buildSitePairIndices(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, siteIndexMolB, soa.getNumberOfParticles()-molA,
                                                            noSitesB);
         // Calculate Forces
 
         for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
-          const size_t siteTypeA = siteTypes[siteA];
+          const size_t siteTypeA = siteTypesConst[siteA];
           const std::array<double, 3> rotatedSitePositionA = {rotatedSitePositionX[siteA], rotatedSitePositionY[siteA],
                                                               rotatedSitePositionZ[siteA]};
           const std::array<double, 3> exactSitePositionA = {exactSitePositionX[siteA], exactSitePositionY[siteA],
@@ -550,7 +551,7 @@ class LJMultisiteFunctorAVX512
           std::array<double, 3> forceAccumulator = {0., 0., 0.};
           std::array<double, 3> torqueAccumulator = {0., 0., 0.};
 
-          SoAKernelGS<true>(sitePairIndicies, siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ,
+          SoAKernelGS<true>(sitePairIndicies, siteTypesConst, exactSitePositionX, exactSitePositionY, exactSitePositionZ,
                             siteForceX, siteForceY, siteForceZ, isSiteOwned, ownedStateA, siteTypeA, exactSitePositionA,
                             rotatedSitePositionA, forceAccumulator, torqueAccumulator, potentialEnergyAccumulator,
                             virialAccumulator);
@@ -1136,12 +1137,12 @@ class LJMultisiteFunctorAVX512
     __m512d virialSumZ = _zero;
 
     for (size_t siteVectorIndex = 0; siteVectorIndex < sitePairIndicies.size(); siteVectorIndex += vecLength) {
-      const size_t remainder = siteTypesB.size() - siteVectorIndex;
+      const size_t remainder = sitePairIndicies.size() - siteVectorIndex;
       const bool remainderCase = remainder < vecLength;
       const __mmask8 remainderMask = _remainderMasks[8-remainder];
 
-      const __m512i sitePairIndicesVec = remainderCase ? _mm512_maskz_loadu_epi64(remainderMask, &sitePairIndicies[(siteVectorIndex) / vecLength])
-          : _mm512_loadu_epi64(&siteTypesB[siteVectorIndex]);
+      const __m512i sitePairIndicesVec = remainderCase ? _mm512_maskz_loadu_epi64(remainderMask, &sitePairIndicies[siteVectorIndex])
+          : _mm512_loadu_epi64(&sitePairIndicies[siteVectorIndex]);
 
       // Gather relevant info
 
@@ -1155,7 +1156,7 @@ class LJMultisiteFunctorAVX512
 
         // I think this is correct but potentially not
         if (remainderCase) {
-          __m512i siteTypeIndicies = _mm512_mask_i64gather_epi64(_zeroI, remainderMask, sitePairIndicesVec, &siteTypesB, 8);
+          const __m512i siteTypeIndicies = _mm512_mask_i64gather_epi64(_zeroI, remainderMask, sitePairIndicesVec, &siteTypesB[0], 8);
           const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndicies, _three);
 
 
@@ -1166,7 +1167,7 @@ class LJMultisiteFunctorAVX512
             shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr + 2, 8);
           }
         } else {
-          __m512i siteTypeIndicies = _mm512_i64gather_epi64(sitePairIndicesVec, &siteTypesB, 8);
+          const __m512i siteTypeIndicies = _mm512_i64gather_epi64(sitePairIndicesVec, &siteTypesB[0], 8);
           const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndicies, _three);
 
           epsilon24 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr, 8);
@@ -1178,12 +1179,12 @@ class LJMultisiteFunctorAVX512
       }
 
       // Load the exact site positions of particle B // todo is it faster to just use _mm512_maskz_load_pd?
-      const __m512d exactSitePositionsBX = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &exactSitePositionX, 8)
-                                                         : _mm512_i64gather_pd(sitePairIndicesVec, &exactSitePositionX, 8);
-      const __m512d exactSitePositionsBY = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &exactSitePositionY, 8)
-                                                         : _mm512_i64gather_pd(sitePairIndicesVec, &exactSitePositionY, 8);
-      const __m512d exactSitePositionsBZ = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &exactSitePositionZ, 8)
-                                                         : _mm512_i64gather_pd(sitePairIndicesVec, &exactSitePositionZ, 8);
+      const __m512d exactSitePositionsBX = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &exactSitePositionX[0], 8)
+                                                         : _mm512_i64gather_pd(sitePairIndicesVec, &exactSitePositionX[0], 8);
+      const __m512d exactSitePositionsBY = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &exactSitePositionY[0], 8)
+                                                         : _mm512_i64gather_pd(sitePairIndicesVec, &exactSitePositionY[0], 8);
+      const __m512d exactSitePositionsBZ = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &exactSitePositionZ[0], 8)
+                                                         : _mm512_i64gather_pd(sitePairIndicesVec, &exactSitePositionZ[0], 8);
 
       // Calculate the Lennard-Jones 12-6 potential
 
@@ -1244,29 +1245,29 @@ class LJMultisiteFunctorAVX512
       // Newton 3 optimization
       if constexpr (newton3) {
         if (remainderCase) {
-          const __m512d forceSumBX = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceX, 8);
+          const __m512d forceSumBX = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceX[0], 8);
           const __m512d newForceSumBX = _mm512_sub_pd(forceSumBX, forceX);
-          _mm512_mask_i64scatter_pd(&siteForceX, remainderMask, sitePairIndicesVec, newForceSumBX, 8);
+          _mm512_mask_i64scatter_pd(&siteForceX[0], remainderMask, sitePairIndicesVec, newForceSumBX, 8);
 
-          const __m512d forceSumBY = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceY, 8);
+          const __m512d forceSumBY = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceY[0], 8);
           const __m512d newForceSumBY = _mm512_sub_pd(forceSumBY, forceY);
-          _mm512_mask_i64scatter_pd(&siteForceY, remainderMask, sitePairIndicesVec, newForceSumBY, 8);
+          _mm512_mask_i64scatter_pd(&siteForceY[0], remainderMask, sitePairIndicesVec, newForceSumBY, 8);
 
-          const __m512d forceSumBZ = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceZ, 8);
+          const __m512d forceSumBZ = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceZ[0], 8);
           const __m512d newForceSumBZ = _mm512_sub_pd(forceSumBZ, forceZ);
-          _mm512_mask_i64scatter_pd(&siteForceZ, remainderMask, sitePairIndicesVec, newForceSumBZ, 8);
+          _mm512_mask_i64scatter_pd(&siteForceZ[0], remainderMask, sitePairIndicesVec, newForceSumBZ, 8);
         } else {
-          const __m512d forceSumBX = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceX, 8);
+          const __m512d forceSumBX = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceX[0], 8);
           const __m512d newForceSumBX = _mm512_sub_pd(forceSumBX, forceX);
-          _mm512_i64scatter_pd(&siteForceX, sitePairIndicesVec, newForceSumBX, 8);
+          _mm512_i64scatter_pd(&siteForceX[0], sitePairIndicesVec, newForceSumBX, 8);
 
-          const __m512d forceSumBY = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceY, 8);
+          const __m512d forceSumBY = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceY[0], 8);
           const __m512d newForceSumBY = _mm512_sub_pd(forceSumBY, forceY);
-          _mm512_i64scatter_pd(&siteForceY, sitePairIndicesVec, newForceSumBY, 8);
+          _mm512_i64scatter_pd(&siteForceY[0], sitePairIndicesVec, newForceSumBY, 8);
 
-          const __m512d forceSumBZ = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceZ, 8);
+          const __m512d forceSumBZ = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceZ[0], 8);
           const __m512d newForceSumBZ = _mm512_sub_pd(forceSumBZ, forceZ);
-          _mm512_i64scatter_pd(&siteForceZ, sitePairIndicesVec, newForceSumBZ, 8);
+          _mm512_i64scatter_pd(&siteForceZ[0], sitePairIndicesVec, newForceSumBZ, 8);
         }
 
       }
