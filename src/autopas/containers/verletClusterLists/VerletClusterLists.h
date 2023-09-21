@@ -120,7 +120,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
               unsigned long cellLoad = 0;
               auto &tower = _towerBlock.getTowerByIndex2D(x, y);
               for (auto &cluster : tower.getClusters()) {
-                cellLoad += cluster.getNeighbors()->size();
+                if (cluster.getNeighbors()) {
+                  cellLoad += cluster.getNeighbors()->size();
+                }
               }
               sum += cellLoad;
             }
