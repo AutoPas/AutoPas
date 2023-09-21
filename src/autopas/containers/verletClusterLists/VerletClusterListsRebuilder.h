@@ -139,7 +139,7 @@ class VerletClusterListsRebuilder {
    */
   void rebuildNeighborListsAndFillClusters() {
     clearNeighborListsAndMoveDummiesIntoClusters();
-    updateNeighborLists(_newton3);
+    updateNeighborLists();
 
     double dummyParticleDistance = _towerBlock.getInteractionLength() * 2;
     double startDummiesX = 1000 * _towerBlock.getHaloBoxMax()[0];
@@ -223,13 +223,9 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Updates the neighbor lists.
-   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
-   * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
-   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
-   * false)
+   * Updates the neighbor lists for all clusters.
    */
-  void updateNeighborLists(bool useNewton3) {
+  void updateNeighborLists() {
     const int maxTowerIndexX = _towerBlock.getTowersPerDim()[0] - 1;
     const int maxTowerIndexY = _towerBlock.getTowersPerDim()[1] - 1;
     const auto numTowersPerInteractionLength = _towerBlock.getNumTowersPerInteractionLength();
