@@ -157,7 +157,7 @@ class Cluster {
   /**
    * A pointer to the first particle of the cluster.
    */
-  Particle *_firstParticle;
+  Particle *_firstParticle = nullptr;
   /**
    * The SoAView for this cluster.
    */
@@ -165,7 +165,7 @@ class Cluster {
   /**
    * The list of neighbor clusters of this cluster.
    */
-  std::vector<Cluster *> *_neighborClusters;
+  std::vector<Cluster *> *_neighborClusters = nullptr;
 };
 
 }  // namespace autopas::internal
