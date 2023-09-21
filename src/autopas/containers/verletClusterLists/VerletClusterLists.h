@@ -739,7 +739,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
     // when rebuildTowersAndClusters() was not called explicitly.
-    if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder.getNewton3) {
+    if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
       // clear the lists buffer because clusters will be recreated
       _neighborLists.clear();
       rebuildTowersAndClusters(traversal->getUseNewton3());
