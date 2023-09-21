@@ -60,10 +60,7 @@ class VCLClusterIterationTraversal : public TraversalInterface,
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
 
     const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
-      _clusterFunctor.traverseCluster(cluster);
-      for (auto *neighborCluster : *cluster.getNeighbors()) {
-        _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
-      }
+      _clusterFunctor.processCluster(cluster);
     };
 
     clusterList.template traverseClusters<true>(_clusterTraverseFunctor);

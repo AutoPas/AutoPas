@@ -132,7 +132,7 @@ class Cluster {
    * Get the bounding box of this cluster
    * @return tuple<lowerCorner, upperCorner>
    */
-  std::tuple<std::array<double, 3>, std::array<double, 3>> getBoundingBox() const {
+  [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getBoundingBox() const {
     auto lowerCorner = _firstParticle->getR();
     auto upperCorner = _firstParticle[_clusterSize - 1].getR();
 

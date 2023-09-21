@@ -38,10 +38,7 @@ class VCLSlicedC02Traversal
     auto &currentTower = clusterList.getTowerByIndex(x, y);
     for (auto clusterIter = currentTower.getFirstOwnedCluster(); clusterIter < currentTower.getFirstTailHaloCluster();
          ++clusterIter) {
-      _clusterFunctor.traverseCluster(*clusterIter);
-      for (auto *neighborClusterPtr : *(clusterIter->getNeighbors())) {
-        _clusterFunctor.traverseClusterPair(*clusterIter, *neighborClusterPtr);
-      }
+      _clusterFunctor.processCluster(*clusterIter);
     }
   }
 

@@ -32,6 +32,22 @@ class VCLClusterFunctor {
       : _functor(functor), _clusterSize(clusterSize) {}
 
   /**
+   * Invokes the calculations of all interactions within the cluster and, if they exist, it's neighbors.
+   * @param cluster
+   */
+  void processCluster(internal::Cluster<Particle> &cluster) {
+    traverseCluster(cluster);
+
+    // only iterate neighbors if the neighbor list contains more than just nullptr
+    if (*(cluster.getNeighbors()->data())) {
+      for (auto *neighborClusterPtr : *(cluster.getNeighbors())) {
+        traverseClusterPair(cluster, *neighborClusterPtr);
+      }
+    }
+  }
+
+ private:
+  /**
    * Traverses pairs of all particles in the given cluster. Always uses newton 3 in the AoS data layout.
    * @param cluster The cluster to traverse.
    */
