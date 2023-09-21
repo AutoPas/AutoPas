@@ -32,7 +32,6 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    * @param boxMin
    * @param boxMax
    * @param interactionLength
-   * @param _clusterSize
    */
   ClusterTowerBlock2D(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                       double interactionLength)
@@ -126,7 +125,6 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    * as the formula above.
    *
    * @param numParticles The number of particles in the container.
-   * @param boxSize The size of the domain.
    * @param clusterSize the number of particles per cluster.
    * @return tuple{gridSideLength, numberOfTowers}.
    */
@@ -290,50 +288,62 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
   size_t getFirstOwnedTowerIndex() const { return _firstOwnedTowerIndex; }
   /**
    * Getter
+   * @return
    */
   size_t getLastOwnedTowerIndex() const { return _lastOwnedTowerIndex; }
   /**
    * Getter
+   * @return
    */
   double getInteractionLength() const { return _interactionLength; }
   /**
    * Getter
+   * @return
    */
   int getNumTowersPerInteractionLength() const { return _numTowersPerInteractionLength; }
   /**
    * Getter
+   * @return
    */
   const std::array<double, 3> &getBoxMin() const { return _boxMin; }
   /**
    * Getter
+   * @return
    */
   const std::array<double, 3> &getBoxMax() const { return _boxMax; }
   /**
    * Getter
+   * @return
    */
   const std::array<double, 3> &getHaloBoxMin() const { return _haloBoxMin; }
   /**
    * Getter
+   * @return
    */
   const std::array<double, 3> &getHaloBoxMax() const { return _haloBoxMax; }
   /**
    * Getter
+   * @return
    */
   const std::vector<ClusterTower<Particle>> &getTowers() const { return _towers; }
   /**
    * Getter for a mutable reference
+   * @return
    */
   std::vector<ClusterTower<Particle>> &getTowersRef() { return _towers; }
   /**
    * Getter
+   * @return
    */
   const std::array<size_t, 2> &getTowersPerDim() const { return _towersPerDim; }
   /**
    * Getter
+   * @return
    */
   const std::array<double, 2> &getTowerSideLength() const { return _towerSideLength; }
   /**
    * Getter
+   * @return
    */
   const std::array<double, 2> &getTowerSideLengthReciprocal() const { return _towerSideLengthReciprocal; }
 
