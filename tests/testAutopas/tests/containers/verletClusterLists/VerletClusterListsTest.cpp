@@ -229,21 +229,29 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   const unsigned int rebuildFrequency = 10;
   const int numParticles = 2431;
   const size_t clusterSize = 4;
-  autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                                    clusterSize);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(
-      verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+  std::unordered_map<size_t, std::vector<size_t>> neighborsNoN3{}, neighborsN3{};
 
-  MockFunctor<Particle> functor;
-  autopas::VCLC06Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(&functor,
-                                                                                                  clusterSize);
-  verletLists.rebuildNeighborLists(&traversalNoN3);
-  auto neighborsNoN3 = getClusterNeighbors(verletLists);
+  for (bool newton3 : {true, false}) {
+    autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
+                                                      clusterSize);
 
-  autopas::VCLC06Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversalN3(&functor, clusterSize);
-  verletLists.rebuildNeighborLists(&traversalN3);
-  auto neighborsN3 = getClusterNeighbors(verletLists);
+    autopasTools::generators::RandomGenerator::fillWithParticles(
+        verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
+
+    MockFunctor<Particle> functor;
+    if (newton3) {
+      autopas::VCLC06Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(&functor,
+                                                                                                      clusterSize);
+      verletLists.rebuildNeighborLists(&traversalNoN3);
+      neighborsNoN3 = getClusterNeighbors(verletLists);
+    } else {
+      autopas::VCLC06Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversalN3(&functor,
+                                                                                                   clusterSize);
+      verletLists.rebuildNeighborLists(&traversalN3);
+      neighborsN3 = getClusterNeighbors(verletLists);
+    }
+  }
 
   EXPECT_EQ(getNumNeighbors(neighborsNoN3), getNumNeighbors(neighborsN3) * 2);
 
