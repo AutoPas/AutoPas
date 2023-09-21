@@ -33,6 +33,7 @@ class VerletClusterListsRebuilder {
   std::vector<Particle> &_particlesToAdd;
   ClusterTowerBlock2D<Particle> &_towerBlock;
   double _interactionLengthSqr;
+  bool _newton3;
 
  public:
   /**
@@ -43,18 +44,21 @@ class VerletClusterListsRebuilder {
    * @param neighborListsBuffer Buffer structure to hold all neighbor lists.
    * @param clusterSize Size of the clusters in particles.
    * @param interactionLengthSqr Squared interaction length (cutoff + skin)^2
+   * @param newton3 If the current configuration uses newton3
    */
   VerletClusterListsRebuilder(ClusterTowerBlock2D<Particle> &towerBlock, std::vector<Particle> &particlesToAdd,
                               NeighborListsBuffer_T &neighborListsBuffer, size_t clusterSize,
-                              double interactionLengthSqr)
+                              double interactionLengthSqr, bool newton3)
       : _clusterSize(clusterSize),
         _neighborListsBuffer(neighborListsBuffer),
         _particlesToAdd(particlesToAdd),
         _towerBlock(towerBlock),
-        _interactionLengthSqr(interactionLengthSqr) {}
+        _interactionLengthSqr(interactionLengthSqr),
+        _newton3(newton3) {}
 
   /**
-   * Rebuilds the towers, clusters, and neighbor lists.
+   * Rebuilds the towers, sorts the particles into them and creates the clusters with a reference to an uninitialized
+   * neighbor list.
    *
    * @return number of clusters
    */
@@ -113,8 +117,8 @@ class VerletClusterListsRebuilder {
     size_t numClusters = 0;
     for (auto &tower : _towerBlock) {
       numClusters += tower.generateClusters();
-      for (auto clusterIter = tower.getFirstOwnedCluster(); clusterIter < tower.getFirstTailHaloCluster();
-           ++clusterIter) {
+      for (auto clusterIter = _newton3 ? tower.getClusters().begin() : tower.getFirstOwnedCluster();
+           clusterIter < (_newton3 ? tower.getClusters().end() : tower.getFirstTailHaloCluster()); ++clusterIter) {
         // VCL stores the references to the lists in the clusters, therefore there is no need to create a
         // cluster -> list lookup structure in the buffer structure
         const auto listID = _neighborListsBuffer.addNeighborList();
@@ -126,16 +130,16 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Rebuilds the neighbor lists and fills Clusters with dummies as described in
-   * ClusterTower::setDummyValues.
-   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
-   * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
-   * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both
-   * (for newton3 == false)
+   * Rebuilds the neighbor lists and fills Clusters with dummies as described in ClusterTower::setDummyValues.
+   *
+   * @note Here, _newton3 decides, whether neighbor lists should use newton3. This changes what the lists contain.
+   * For two interacting clusters A and B, if _newton3 == false, the interaction A->B is in the list of cluster B, and
+   * B->A is in cluster A. If newton3 == true, the two-way interaction A<->B will only be in the cluster that comes
+   * first when iterating through towers.
    */
-  void rebuildNeighborListsAndFillClusters(bool useNewton3) {
+  void rebuildNeighborListsAndFillClusters() {
     clearNeighborListsAndMoveDummiesIntoClusters();
-    updateNeighborLists(useNewton3);
+    updateNeighborLists(_newton3);
 
     double dummyParticleDistance = _towerBlock.getInteractionLength() * 2;
     double startDummiesX = 1000 * _towerBlock.getHaloBoxMax()[0];
@@ -242,10 +246,8 @@ class VerletClusterListsRebuilder {
         const int maxX = std::min(towerIndexX + numTowersPerInteractionLength, maxTowerIndexX);
         const int maxY = std::min(towerIndexY + numTowersPerInteractionLength, maxTowerIndexY);
 
-        iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY, useNewton3,
-                              [this](auto &towerA, auto &towerB, bool useNewton3) {
-                                calculateNeighborsBetweenTowers(towerA, towerB, useNewton3);
-                              });
+        iterateNeighborTowers(towerIndexX, towerIndexY, minX, maxX, minY, maxY,
+                              [this](auto &towerA, auto &towerB) { calculateNeighborsBetweenTowers(towerA, towerB); });
       }
     }
   }
@@ -259,6 +261,8 @@ class VerletClusterListsRebuilder {
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both
    * (for newton3 == false)
    *
+   * @note _newton3 Specifies, whether neighbor lists should contain only forward neighbors.
+   *
    * @tparam FunType type of function
    * @param towerIndexX The x index of the given tower.
    * @param towerIndexY The y index of the given tower.
@@ -266,13 +270,12 @@ class VerletClusterListsRebuilder {
    * @param maxNeighborIndexX The maximum neighbor tower index in x direction.
    * @param minNeighborIndexY The minimum neighbor tower index in y direction.
    * @param maxNeighborIndexY The maximum neighbor tower index in y direction.
-   * @param useNewton3 Specifies, whether neighbor lists should contain only forward neighbors.
    * @param function Function to apply on every neighbor tower. Typically this is calculateNeighborsBetweenTowers().
    */
   template <class FunType>
   void iterateNeighborTowers(const int towerIndexX, const int towerIndexY, const int minNeighborIndexX,
                              const int maxNeighborIndexX, const int minNeighborIndexY, const int maxNeighborIndexY,
-                             const bool useNewton3, FunType function) {
+                             FunType function) {
     auto &tower = _towerBlock.getTowerByIndex2D(towerIndexX, towerIndexY);
     // for all neighbor towers
     for (int neighborIndexY = minNeighborIndexY; neighborIndexY <= maxNeighborIndexY; neighborIndexY++) {
@@ -280,7 +283,7 @@ class VerletClusterListsRebuilder {
           std::max(0, std::abs(towerIndexY - neighborIndexY) - 1) * _towerBlock.getTowerSideLength()[1];
 
       for (int neighborIndexX = minNeighborIndexX; neighborIndexX <= maxNeighborIndexX; neighborIndexX++) {
-        if (useNewton3 and not isForwardNeighbor(towerIndexX, towerIndexY, neighborIndexX, neighborIndexY)) {
+        if (_newton3 and not isForwardNeighbor(towerIndexX, towerIndexY, neighborIndexX, neighborIndexY)) {
           continue;
         }
 
@@ -293,7 +296,7 @@ class VerletClusterListsRebuilder {
         if (distBetweenTowersXYsqr <= _interactionLengthSqr) {
           auto &neighborTower = _towerBlock.getTowerByIndex2D(neighborIndexX, neighborIndexY);
 
-          function(tower, neighborTower, useNewton3);
+          function(tower, neighborTower);
         }
       }
     }
@@ -353,13 +356,12 @@ class VerletClusterListsRebuilder {
    *
    * @param towerA The given tower.
    * @param towerB The given neighbor tower.
-   * @param useNewton3 Specifies, whether neighbor lists should use newton3. This changes the way what the lists
    * contain. If an cluster A interacts with cluster B, then this interaction will either show up only once in the
    * interaction lists of the custers (for newton3 == true) or show up in the interaction lists of both (for newton3 ==
    * false)
    */
   void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
-                                       internal::ClusterTower<Particle> &towerB, bool useNewton3) {
+                                       internal::ClusterTower<Particle> &towerB) {
     using autopas::utils::ArrayMath::boxDistanceSquared;
 
     const auto interactionLengthFracOfDomainZ =
@@ -368,18 +370,26 @@ class VerletClusterListsRebuilder {
     // This heuristic seems to find a good middle ground between not too much memory allocated and no additional
     // allocations when calling clusterA.addNeighbor(clusterB)
     const auto neighborListReserveHeuristicFactor = (interactionLengthFracOfDomainZ * 2.1) / _clusterSize;
-    for (auto clusterIterA = towerA.getFirstOwnedCluster(); clusterIterA < towerA.getFirstTailHaloCluster();
-         ++clusterIterA) {
+    const auto isHaloCluster = [](const auto &clusterIter, const auto &tower) {
+      return clusterIter < tower.getFirstOwnedCluster() or clusterIter >= tower.getFirstTailHaloCluster();
+    };
+    // iterate over all clusters from tower A. In newton3 mode go over all of them, otherwise only owned.
+    for (auto clusterIterA = _newton3 ? towerA.getClusters().begin() : towerA.getFirstOwnedCluster();
+         clusterIterA < (_newton3 ? towerA.getClusters().end() : towerA.getFirstTailHaloCluster()); ++clusterIterA) {
       if (not clusterIterA->empty()) {
         clusterIterA->getNeighbors()->reserve((towerA.numParticles() + 8 * towerB.numParticles()) *
                                               neighborListReserveHeuristicFactor);
 
         // if we are within one tower depending on newton3 only look at forward neighbors
         // clusterIterB can't be const because it will potentially be added as a non-const neighbor
-        for (auto clusterIterB = isSameTower and useNewton3 ? clusterIterA + 1 : towerB.getClusters().begin();
+        for (auto clusterIterB = isSameTower and _newton3 ? clusterIterA + 1 : towerB.getClusters().begin();
              clusterIterB < towerB.getClusters().end(); ++clusterIterB) {
           // a cluster cannot be a neighbor to itself
           if (&*clusterIterA == &*clusterIterB) {
+            continue;
+          }
+          // never do halo-halo interactions
+          if (isHaloCluster(clusterIterA, towerA) and isHaloCluster(clusterIterB, towerB)) {
             continue;
           }
           if (not clusterIterB->empty()) {

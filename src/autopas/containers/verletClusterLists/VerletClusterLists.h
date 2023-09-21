@@ -738,9 +738,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (_isValid == ValidityState::invalid) {
       // clear the lists buffer because clusters will be recreated
       _neighborLists.clear();
-      rebuildTowersAndClusters();
+      rebuildTowersAndClusters(traversal->getUseNewton3());
     }
-    _builder->rebuildNeighborListsAndFillClusters(traversal->getUseNewton3());
+    _builder->rebuildNeighborListsAndFillClusters();
 
     auto *clusterTraversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
     if (clusterTraversalInterface) {
@@ -922,10 +922,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Rebuild the towers and the clusters.
+   * Initializes a new VerletClusterListsRebuilder and uses it to rebuild the towers and the clusters.
    * This function sets the container structure to valid.
+   * @param newton3 Indicate whether the VerletClusterRebuilder should consider newton3 or not.
    */
-  void rebuildTowersAndClusters() {
+  void rebuildTowersAndClusters(bool newton3) {
     using namespace utils::ArrayMath::literals;
     // collect all particles to add from across the thread buffers
     typename decltype(_particlesToAdd)::value_type particlesToAdd;
@@ -940,7 +941,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     const double interactionLength = _cutoff + _skinPerTimestep * _rebuildFrequency;
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(
-        _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength);
+        _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3);
 
     _numClusters = _builder->rebuildTowersAndClusters();
 
