@@ -134,7 +134,9 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
       for (auto clusterIter = useNewton3 ? currentTower.getClusters().begin() : currentTower.getFirstOwnedCluster();
            clusterIter < (useNewton3 ? currentTower.getClusters().end() : currentTower.getFirstTailHaloCluster());
            ++clusterIter) {
-        _clusterFunctor.processCluster(*clusterIter);
+        const auto isHaloCluster =
+            clusterIter < currentTower.getFirstOwnedCluster() or clusterIter >= currentTower.getFirstTailHaloCluster();
+        _clusterFunctor.processCluster(*clusterIter, isHaloCluster);
       }
     }
   }

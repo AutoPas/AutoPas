@@ -39,7 +39,9 @@ class VCLSlicedBalancedTraversal
 
     for (auto clusterIter = currentTower.getFirstOwnedCluster(); clusterIter < currentTower.getFirstTailHaloCluster();
          ++clusterIter) {
-      _clusterFunctor.processCluster(*clusterIter);
+      const auto isHaloCluster =
+          clusterIter < currentTower.getFirstOwnedCluster() or clusterIter >= currentTower.getFirstTailHaloCluster();
+      _clusterFunctor.processCluster(*clusterIter, isHaloCluster);
     }
   }
 

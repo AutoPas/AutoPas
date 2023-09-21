@@ -34,9 +34,12 @@ class VCLClusterFunctor {
   /**
    * Invokes the calculations of all interactions within the cluster and, if they exist, it's neighbors.
    * @param cluster
+   * @param isHaloCluster
    */
-  void processCluster(internal::Cluster<Particle> &cluster) {
-    traverseCluster(cluster);
+  void processCluster(internal::Cluster<Particle> &cluster, bool isHaloCluster) {
+    if (not isHaloCluster) {
+      traverseCluster(cluster);
+    }
 
     // only iterate neighbors if the neighbor list contains more than just nullptr
     if (*(cluster.getNeighbors()->data())) {
