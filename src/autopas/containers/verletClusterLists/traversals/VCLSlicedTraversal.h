@@ -36,7 +36,8 @@ class VCLSlicedTraversal
   void processBaseStep(unsigned long x, unsigned long y) {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     auto &currentTower = clusterList.getTowerByIndex(x, y);
-    for (auto clusterIter = currentTower.getFirstOwnedCluster(); clusterIter < currentTower.getFirstTailHaloCluster();
+    for (auto clusterIter = (useNewton3 ? currentTower.getClusters().begin() : currentTower.getFirstOwnedCluster());
+         clusterIter < (useNewton3 ? currentTower.getClusters().end() : currentTower.getFirstTailHaloCluster());
          ++clusterIter) {
       const auto isHaloCluster =
           clusterIter < currentTower.getFirstOwnedCluster() or clusterIter >= currentTower.getFirstTailHaloCluster();
