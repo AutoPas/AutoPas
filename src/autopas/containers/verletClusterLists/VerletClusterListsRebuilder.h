@@ -400,5 +400,10 @@ class VerletClusterListsRebuilder {
       }
     }
   }
+  /**
+   * Getter
+   * @return
+   */
+  bool getNewton3() const { return _newton3; }
 };
 }  // namespace autopas::internal
