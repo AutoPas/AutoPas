@@ -264,8 +264,6 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
 
   const std::array<double, 3> boxMin{0., 0., 0.};
   const std::array<double, 3> boxMax{10., 10., 10.};
-  const std::array<double, 2> boxMin2D{boxMin[0], boxMin[1]};
-  const std::array<double, 2> boxMax2D{boxMax[0], boxMax[1]};
   const double cutoff{2.};
   const double skin{0.5};
   const size_t rebuildFreq{10};
@@ -293,7 +291,7 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
     verletLists.addParticle(pDummy);
   }
 
-  verletLists.rebuildTowersAndClusters();
+  verletLists.rebuildTowersAndClusters(false);
 
   const int expectedTowersPerInteractionLength = 2;
   EXPECT_EQ(verletLists.getNumTowersPerInteractionLength(), expectedTowersPerInteractionLength);
