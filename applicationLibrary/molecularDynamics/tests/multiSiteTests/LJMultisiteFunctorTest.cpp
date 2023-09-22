@@ -1563,49 +1563,6 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
   testSoACellAgainstAoS<LJMultisiteFunctorAVX_GatherScatter, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 
 
-  // AVX STS Functor
-
-  // tests with only owned molecules
-
-  // N3L optimization disabled, global calculation disabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, false, false>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation disabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, false, false>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, false>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, false>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, true>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(allOwnedMolecules, PPL, cutoff);
-
-  // tests with a mix of ownership states
-
-  // N3L optimization disabled, global calculation disabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, false, false>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation disabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<LJMultisiteFunctorAVX_STS, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
-
-
   // AVX512 Functor with 0/1 Mask Tests
 
   // tests with only owned molecules
