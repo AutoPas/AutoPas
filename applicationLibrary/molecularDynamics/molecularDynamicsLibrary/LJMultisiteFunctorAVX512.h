@@ -17,7 +17,6 @@
 #include "autopas/utils/ExceptionHandler.h"
 #include "MultisiteMoleculeLJ.h"
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/utils/AVXUtils.h"
 #include "autopas/utils/Quaternion.h"
 #include "autopas/utils/WrapOpenMP.h"
 
