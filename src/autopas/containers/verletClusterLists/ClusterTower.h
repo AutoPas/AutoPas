@@ -200,10 +200,10 @@ class ClusterTower : public ParticleCell<Particle> {
   }
 
   /**
-   * Get the number of all particles saved in the tower without dummies for data structure reasons (owned + halo +
-   * dummies for non-datastructure purposes).
-   * @return Number of all particles saved in the tower without dummies for data structure reasons (owned + halo +
-   * dummies for non-datastructure purposes).
+   * Get the number of all particles saved in the tower without tailing dummies that are used to fill up clusters (owned
+   * + halo + dummies excuding tailing dummies).
+   * @return Number of all particles saved in the tower without tailing dummies that are used to fill up clusters (owned
+   * + halo + dummies excuding tailing dummies).
    */
   [[nodiscard]] unsigned long getNumActualParticles() const {
     return _particlesStorage.size() - getNumTailDummyParticles();

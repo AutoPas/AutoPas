@@ -91,8 +91,8 @@ class ParticleCell {
 
   /**
    * Get the number of particles with respect to the specified IteratorBehavior.
-   * Note: Since this function counts the number of the respective particles in the internal particle storage, this is
-   * in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
+   * @warning: Since this function counts the number of the respective particles in the internal particle storage, this
+   * is in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
    * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
    * the function size() can be used.
    * @param behavior Behavior of the iterator, see IteratorBehavior.

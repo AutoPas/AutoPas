@@ -51,7 +51,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   void addParticle(const Particle &p) override {
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
 
-    // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: is a cell is a
+    // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: if a cell is a
     // dummy-cell, only dummies can be added, otherwise dummies can always be added
     if ((not toInt64(p.getOwnershipState() & this->_ownershipState)) and
         p.getOwnershipState() != OwnershipState::dummy) {
