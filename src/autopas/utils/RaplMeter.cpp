@@ -41,7 +41,7 @@ int RaplMeter::open_perf_event(int type, int config, int cpu) {
   return fd;
 }
 
-void RaplMeter::init() {
+std::string RaplMeter::init() {
   {
     FILE *fd;
     int i = 0;
@@ -55,7 +55,7 @@ void RaplMeter::init() {
         break;
       }
       if (fscanf(fd, "%d", &package) == 0) {
-        throw ExceptionHandler::AutoPasException("failed to read cpu topology");
+        return "RaplMeter::init(): failed to read cpu topology";
       }
       fclose(fd);
       if (this->_cpus.size() == 0 or last_package < package) {
@@ -68,11 +68,11 @@ void RaplMeter::init() {
   }
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r")) {
     if (fscanf(fff, "%d", &this->_type) != 1) {
-      throw ExceptionHandler::AutoPasException("Failed to parse /sys/bus/event_source/devices/power/type");
+      return "RaplMeter::init(): Failed to parse /sys/bus/event_source/devices/power/type";
     }
     fclose(fff);
   } else {
-    throw ExceptionHandler::AutoPasException("No support for energy measurements detected.");
+    return "RaplMeter::init(): No support for energy measurements detected.";
   }
 
   this->_psys_config = 0;
@@ -146,6 +146,18 @@ void RaplMeter::init() {
     AutoPasLog(DEBUG, "ram scale={} J", _ram_unit);
     fclose(fff);
   }
+
+  // check permission to open perf
+  int fd = syscall(__NR_perf_event_open);
+  if (fd < 0) {
+    if (errno == EACCES) {
+      return "Failed to open perf event: Permission denied";
+    }
+  } else {
+    close(fd);
+  }
+
+  return std::string();
 }
 
 RaplMeter::~RaplMeter() {

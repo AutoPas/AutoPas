@@ -69,6 +69,8 @@ ExternalProject_ADD(
         BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/antlr4cpp/install/lib/libantlr4-runtime.a
         # point antlr4cpp to utf8cpp install dir
         CMAKE_ARGS       -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${antlr4cpp_prefix}/install -DCMAKE_CXX_FLAGS=-w -DCMAKE_PREFIX_PATH=${UTFCPP_DIR}/install
+        # make sure UUID and UTF8CPP is installed before antlr is installed
+        DEPENDS          uuid_bundled utf8cpp_bundled
         # Patch away the shared library target
         PATCH_COMMAND    sed --in-place -e /install.*shared/,+2d               runtime/CMakeLists.txt  &&
                          sed --in-place -e /set_target_properties.*shared/,+9d runtime/CMakeLists.txt  &&
