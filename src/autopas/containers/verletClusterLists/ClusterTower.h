@@ -442,6 +442,5 @@ class ClusterTower : public ParticleCell<Particle> {
   size_t _numDummyParticles{};
 
   internal::ParticleDeletedObserver *_particleDeletionObserver{nullptr};
-};  // namespace autopas::internal
-
+};
 }  // namespace autopas::internal
