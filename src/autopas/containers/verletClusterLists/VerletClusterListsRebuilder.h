@@ -425,7 +425,7 @@ class VerletClusterListsRebuilder {
   void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
                                        internal::ClusterTower<Particle> &towerB, double distBetweenTowersXYsqr,
                                        bool useNewton3) {
-    const auto interactionLengthFracOfDomainZ = _interactionLength / (_haloBoxMax[0] - _haloBoxMin[0]);
+    const auto interactionLengthFracOfDomainZ = _interactionLength / (_haloBoxMax[2] - _haloBoxMin[2]);
     // Seems to find a good middle ground between not too much memory allocated and no additional allocations
     // when calling clusterA.addNeighbor(clusterB)
     const auto neighborListReserveHeuristicFactor = (interactionLengthFracOfDomainZ * 2.1) / _clusterSize;
