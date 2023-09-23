@@ -562,7 +562,7 @@ inline int AutoPas_MPI_Waitall(int count, AutoPas_MPI_Request array_of_requests[
                                AutoPas_MPI_Status *array_of_statuses);
 
 /**
- * Wraooer for MPI_Gather
+ * Wrapper for MPI_Gather
  * @param buffer_send
  * @param count_send
  * @param datatype_send

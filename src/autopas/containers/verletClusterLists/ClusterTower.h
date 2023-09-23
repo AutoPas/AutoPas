@@ -242,7 +242,6 @@ class ClusterTower : public ParticleCell<Particle> {
     // copy out of bounds particles
     std::vector<Particle> outOfBoundsParticles(firstOutOfBoundsParticleIter, _particlesStorage.end());
     // shrink the particle storage so all out of bounds particles are cut away
-    //    _particlesStorage.resize(std::distance(_particlesStorage.begin(), firstOutOfBoundsParticleIter), Particle());
     _particlesStorage.resize(std::distance(_particlesStorage.begin(), firstOutOfBoundsParticleIter),
                              *_particlesStorage.begin());
     return outOfBoundsParticles;
@@ -523,6 +522,5 @@ class ClusterTower : public ParticleCell<Particle> {
   size_t _numDummyParticles{};
 
   internal::ParticleDeletedObserver *_particleDeletionObserver{nullptr};
-};  // namespace autopas::internal
-
+};
 }  // namespace autopas::internal

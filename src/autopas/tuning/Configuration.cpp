@@ -46,7 +46,7 @@ std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) 
   return retString;
 }
 
-bool autopas::Configuration::isValid() const {
+bool autopas::Configuration::hasCompatibleValues() const {
   // Check if container and traversal fit together
   const auto &allContainerTraversals = compatibleTraversals::allCompatibleTraversals(container);
   if (allContainerTraversals.find(traversal) == allContainerTraversals.end()) {

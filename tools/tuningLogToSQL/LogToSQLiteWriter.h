@@ -1,18 +1,19 @@
 #pragma once
 
-#include "autopas/tuning/Configuration.h"
-#include "autopas/tuning/tuningStrategy/LiveInfo.h"
+#include <sqlite3.h>
 
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
 
-#include <sqlite3.h>
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/tuningStrategy/LiveInfo.h"
 
 /**
- * This namespace defines functions to both read and write tuning log entries. 
- * They are declared and documented in src/autopas/tuning/tuningStrategy/TuningLogEntry.h. TODO(tobias): Move definition there.
+ * This namespace defines functions to both read and write tuning log entries.
+ * They are declared and documented in src/autopas/tuning/tuningStrategy/TuningLogEntry.h. TODO(tobias): Move definition
+ * there.
  */
 namespace autopas::tuningLogEntry {
 template <class T>
@@ -53,14 +54,14 @@ size_t readReset(std::stringstream &str) { return std::get<0>(fromString<size_t>
 std::string writeLiveInfo(const LiveInfo &liveInfo) { return toString(std::string{"liveInfo"}, liveInfo); }
 
 LiveInfo readLiveInfo(std::stringstream &str) { return std::get<0>(fromString<LiveInfo>(str)); }
-};  // namespace autopas::TuningLogEntry
+};  // namespace autopas::tuningLogEntry
 
 /**
  * A small helper callback to print out SQLite statement results.
  * The arguments are according to the requirements for callbacks that are passed to sqlite3_exec.
  */
-static int callback(void*, int argc, char** argv, char** azColName) {
-  for(int i = 0; i < argc; ++i) {
+static int callback(void *, int argc, char **argv, char **azColName) {
+  for (int i = 0; i < argc; ++i) {
     std::cout << azColName[i] << " = " << (argv[i] ? argv[i] : "NULL") << " ";
   }
   std::cout << std::endl;
@@ -72,16 +73,16 @@ static int callback(void*, int argc, char** argv, char** azColName) {
  * @param str The string to escape.
  * @returns The escaped string.
  */
-static std::string escapeSingleQuotesForSQL(const std::string& str) {
+static std::string escapeSingleQuotesForSQL(const std::string &str) {
   std::string result;
   // If we call this function, we expect that there often are single quotes in the string.
   // In many cases, there isn't just one, so reserve a bit of extra memory to decrease the
   // chance that two resizes are necessary.
   result.reserve(str.size() + 6);
 
-  for(char c : str) {
+  for (char c : str) {
     result.push_back(c);
-    if(c == '\'') {
+    if (c == '\'') {
       result.push_back('\'');
     }
   }
@@ -90,7 +91,7 @@ static std::string escapeSingleQuotesForSQL(const std::string& str) {
 }
 
 /**
- * This class creates a SQLite3 database with a schema for tuning log entries, and offers 
+ * This class creates a SQLite3 database with a schema for tuning log entries, and offers
  * methods to write files containing such log entries to it.
  *
  */
@@ -100,23 +101,23 @@ class LogToSQLiteWriter {
    * The constructor. It creates the database.
    * @param databaseName The name of the database file to create.
    */
-  explicit LogToSQLiteWriter(const std::string& databaseName) : _db(nullptr) {
+  explicit LogToSQLiteWriter(const std::string &databaseName) : _db(nullptr) {
     auto failed = sqlite3_open(databaseName.c_str(), &_db);
 
-    if(failed) {
+    if (failed) {
       AutoPasLog(ERROR, "Can't open database {}: {}", databaseName, sqlite3_errmsg(_db));
       throw std::invalid_argument{databaseName};
     }
 
     createSchema();
   }
-  
+
   /**
    * Write a file containing tuning log entries to the database.
-   * @param filename The name of the file with the log entries that should be written to 
+   * @param filename The name of the file with the log entries that should be written to
    * the database.
    */
-  void write(const char* filename) {
+  void write(const char *filename) {
     std::ifstream in{filename};
 
     if (not in.is_open()) {
@@ -142,33 +143,30 @@ class LogToSQLiteWriter {
 
       if (type == "evidence") {
         const auto &[time, iteration, config] = autopas::tuningLogEntry::readEvidence(stream);
-        insertMeasurements << sepMeasurements << "(\'" << escapedFilename << "\',\'"
-            << config.container << "\'," << config.cellSizeFactor << ",\'" << config.traversal << "\',\'"
-            << config.loadEstimator << "\',\'" << config.dataLayout << "\',\'" << config.newton3 << "\',"
-            << iteration << "," << time << ")";
+        insertMeasurements << sepMeasurements << "(\'" << escapedFilename << "\',\'" << config.container << "\',"
+                           << config.cellSizeFactor << ",\'" << config.traversal << "\',\'" << config.loadEstimator
+                           << "\',\'" << config.dataLayout << "\',\'" << config.newton3 << "\'," << iteration << ","
+                           << time << ")";
         sepMeasurements = ',';
       } else if (type == "tune") {
         // Do nothing in former tune
       } else if (type == "liveInfo") {
         const auto &liveInfo = autopas::tuningLogEntry::readLiveInfo(stream);
-        const auto& d = liveInfo.get();
-        auto toStr = [](const auto& variant) {
+        const auto &d = liveInfo.get();
+        auto toStr = [](const auto &variant) {
           return std::visit([](const auto &val) { return std::to_string(val); }, variant);
         };
-        insertScenarios << sepScenarios << "( \'" << escapedFilename << "\',"
-            << toStr(d.at("avgParticlesPerCell")) << "," << toStr(d.at("cutoff")) << ","
-            << toStr(d.at("domainSizeX")) << "," << toStr(d.at("domainSizeY")) << ","
-            << toStr(d.at("domainSizeZ")) << ","
-                        << toStr(d.at("maxParticlesPerCell")) << ","
-            << toStr(d.at("minParticlesPerCell")) << "," << toStr(d.at("numCells")) << ","
-            << toStr(d.at("numEmptyCells")) << "," << toStr(d.at("numHaloParticles")) << ","
-            << toStr(d.at("numParticles")) << "," << toStr(d.at("particleSize")) << ","
-            << toStr(d.at("particleSizeNeededByFunctor")) << ","
-            << toStr(d.at("particlesPerBlurredCellStdDev")) << ","
-            << toStr(d.at("particlesPerCellStdDev")) << ","
-            << toStr(d.at("skin")) << "," << toStr(d.at("threadCount")) << ","
-            << toStr(d.at("rebuildFrequency")) << "," << toStr(d.at("estimatedNumNeighborInteractions"))
-            << ")";
+        insertScenarios << sepScenarios << "( \'" << escapedFilename << "\'," << toStr(d.at("avgParticlesPerCell"))
+                        << "," << toStr(d.at("cutoff")) << "," << toStr(d.at("domainSizeX")) << ","
+                        << toStr(d.at("domainSizeY")) << "," << toStr(d.at("domainSizeZ")) << ","
+                        << toStr(d.at("maxParticlesPerCell")) << "," << toStr(d.at("minParticlesPerCell")) << ","
+                        << toStr(d.at("numCells")) << "," << toStr(d.at("numEmptyCells")) << ","
+                        << toStr(d.at("numHaloParticles")) << "," << toStr(d.at("numParticles")) << ","
+                        << toStr(d.at("particleSize")) << "," << toStr(d.at("particleSizeNeededByFunctor")) << ","
+                        << toStr(d.at("particlesPerBlurredCellStdDev")) << "," << toStr(d.at("particlesPerCellStdDev"))
+                        << "," << toStr(d.at("skin")) << "," << toStr(d.at("threadCount")) << ","
+                        << toStr(d.at("rebuildFrequency")) << "," << toStr(d.at("estimatedNumNeighborInteractions"))
+                        << ")";
         sepScenarios = ',';
       } else if (type == "reset" || in.eof()) {
         // Do nothing on reset
@@ -180,47 +178,43 @@ class LogToSQLiteWriter {
     sendQuery(insertScenarios.str().c_str());
     sendQuery(insertMeasurements.str().c_str());
   }
-  
+
   /**
    * The destructor. It closes the databsae.
    */
-  ~LogToSQLiteWriter() {
-    sqlite3_close(_db);
-  }
+  ~LogToSQLiteWriter() { sqlite3_close(_db); }
 
  private:
   /**
    * Helper function to create the schema defined in the schemaSQL static member.
    */
-  void createSchema() {
-    sendQuery(schemaSQL);
-  }
+  void createSchema() { sendQuery(schemaSQL); }
 
   /**
    * Helper Function to send arbitrary queries to the SQLite3 database.
    * The results are not returned but printed using the static callback() function.
    * @param query The query to send.
    */
-  void sendQuery(const char* query) {
-    char* errMsg = nullptr;
-     auto returnCode = sqlite3_exec(_db, query, callback, nullptr, &errMsg);
+  void sendQuery(const char *query) {
+    char *errMsg = nullptr;
+    auto returnCode = sqlite3_exec(_db, query, callback, nullptr, &errMsg);
 
-     if(returnCode != SQLITE_OK) {
-       AutoPasLog(ERROR, "SQL error: {}", errMsg);
-       sqlite3_free(errMsg);
-     }
+    if (returnCode != SQLITE_OK) {
+      AutoPasLog(ERROR, "SQL error: {}", errMsg);
+      sqlite3_free(errMsg);
+    }
   }
 
  private:
   /**
    * The SQLite database object. It is created in the constructor and destructed in the destructor.
    */
-  sqlite3* _db;
-  
+  sqlite3 *_db;
+
   /**
    * The schema of the SQLite database. See explanation in README.md.
    */
-  static constexpr const char* schemaSQL = R"SQL(
+  static constexpr const char *schemaSQL = R"SQL(
 CREATE TABLE ScenarioRaw (
   filename VARCHAR(1024) PRIMARY KEY,
   avgParticlesPerCell FLOAT,

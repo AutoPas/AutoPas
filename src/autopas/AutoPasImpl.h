@@ -12,18 +12,18 @@
 #include <type_traits>
 #include <vector>
 
+// The LogicHandler includes dependencies to wide parts of AutoPas, making it expensive to compile and thus is moved
+// here from AutoPasDecl.h.
 #include "autopas/AutoPasDecl.h"
 #include "autopas/InstanceCounter.h"
+#include "autopas/LogicHandler.h"
 #include "autopas/Version.h"
 #include "autopas/tuning/AutoTuner.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/CompileInfo.h"
-
-// These next three includes have dependencies to all of AutoPas and thus are moved here from AutoPasDecl.h.
-#include "autopas/LogicHandler.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSetFinite.h"
 

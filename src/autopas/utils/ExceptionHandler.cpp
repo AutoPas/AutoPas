@@ -75,10 +75,8 @@ autopas::utils::ExceptionHandler::AutoPasException::AutoPasException(std::string
   int myRank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
   _description = "Rank " + std::to_string(myRank) + " : " + _description;
-  // if there is an AutoPas logger active, flush it
-  if (autopas::Logger::get()) {
-    autopas::Logger::get()->flush();
-  }
+  // Flush all existing loggers (main AutoPas, optional csv loggers, ...)
+  spdlog::apply_all([](auto loggerPtr) { loggerPtr->flush(); });
 }
 
 autopas::utils::ExceptionHandler::AutoPasException::AutoPasException(

@@ -1273,7 +1273,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   std::unique_ptr<internal::VerletClusterListsRebuilder<Particle>> _builder;
 
   /**
-   * Structure to provided persistent memory for neighbor lists. Will be filled by the builder.
+   * Structure to provide persistent memory for neighbor lists. Will be filled by the builder.
    */
   typename internal::VerletClusterListsRebuilder<Particle>::NeighborListsBuffer_T _neighborLists{};
 };

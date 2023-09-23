@@ -131,7 +131,7 @@ void RegularGridDecomposition::initializeLocalDomain() {
 
 void RegularGridDecomposition::initializeLocalBox() {
   for (int i = 0; i < 3; ++i) {
-    double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
+    const double localBoxWidth = (_globalBoxMax[i] - _globalBoxMin[i]) / static_cast<double>(_decomposition[i]);
 
     _localBoxMin[i] = _domainId[i] * localBoxWidth + _globalBoxMin[i];
     _localBoxMax[i] = (_domainId[i] + 1) * localBoxWidth + _globalBoxMin[i];
@@ -169,12 +169,13 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
   const double haloWidth = _cutoffWidth + skinWidth;
 
   // since we currently don't have any halo particles, estimate the number by comparing box and halo volume and add 10%
-  const auto localBoxLength = _localBoxMax - _localBoxMin;
-  const auto localBoxVolume = std::reduce(localBoxLength.begin(), localBoxLength.end(), 1., std::multiplies());
-  const auto haloBoxLength = localBoxLength + 2 * haloWidth;
-  const auto haloBoxVolume = std::reduce(haloBoxLength.begin(), haloBoxLength.end(), 1., std::multiplies());
+  const auto localBoxDimensions = _localBoxMax - _localBoxMin;
+  const auto localBoxVolume = std::reduce(localBoxDimensions.begin(), localBoxDimensions.end(), 1., std::multiplies());
+  const auto haloBoxDimensions = localBoxDimensions + 2 * haloWidth;
+  const auto haloBoxVolume = std::reduce(haloBoxDimensions.begin(), haloBoxDimensions.end(), 1., std::multiplies());
   const auto haloActualVolume = haloBoxVolume - localBoxVolume;
-  _haloParticles.reserve(autoPasContainer.getNumberOfParticles() * (haloActualVolume / localBoxVolume) * 1.1);
+  _haloParticles.reserve(
+      static_cast<size_t>(autoPasContainer.getNumberOfParticles() * (haloActualVolume / localBoxVolume) * 1.1));
 
   for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
     // completely bypass Halo particle exchange in this dimension if boundaries in this direction are not periodic
@@ -478,18 +479,17 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
   using autopas::utils::Math::isNear;
   using namespace autopas::utils::ArrayMath::literals;
 
-  const auto getBoxLength = [](const auto &bMin, const auto &bMax) {
+  const auto getBoxDimensions = [](const auto &bMin, const auto &bMax) {
     const auto bLength = bMax - bMin;
     return std::reduce(bLength.begin(), bLength.end(), 1., std::multiplies());
   };
-  const auto boxVolume = getBoxLength(boxMin, boxMax);
-  const auto localBoxVolume = getBoxLength(_localBoxMin, _localBoxMax);
-
-  const auto globalBoxLengthDir = _globalBoxMax[direction] - _globalBoxMin[direction];
+  const auto boxVolume = getBoxDimensions(boxMin, boxMax);
+  const auto localBoxVolume = getBoxDimensions(_localBoxMin, _localBoxMax);
 
   // estimate the number of halo particles by calculating the fraction of the search box and scale it up by 10%
-  haloParticlesBuffer.reserve(boxVolume / localBoxVolume * autoPasContainer.getNumberOfParticles() * 1.1);
-  // Collect the halo particles for the right neighbor
+  haloParticlesBuffer.reserve(
+      static_cast<size_t>(boxVolume / localBoxVolume * autoPasContainer.getNumberOfParticles() * 1.1));
+  // Collect the halo particles for the neighbor
   for (auto particleIter = autoPasContainer.getRegionIterator(boxMin, boxMax, autopas::IteratorBehavior::owned);
        particleIter.isValid(); ++particleIter) {
     haloParticlesBuffer.push_back(*particleIter);
@@ -544,7 +544,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
                                                                       size_t direction) {
   using autopas::utils::Math::isNear;
   using namespace autopas::utils::ArrayMath::literals;
-  const std::array<double, _dimensionCount> globalBoxLength = _globalBoxMax - _globalBoxMin;
+  const std::array<double, _dimensionCount> globalBoxDimensions = _globalBoxMax - _globalBoxMin;
 
   // The chosen size is the best guess based on the particles vector being distributed into three other vectors.
   const auto sizeEstimate = particles.size() / 3;
@@ -565,7 +565,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
       if (isNear(_localBoxMin[direction], _globalBoxMin[direction])) {
         // TODO: check if this failsafe is really reasonable.
         //  It should only trigger if a particle's position was already inside the box?
-        const auto periodicPosition = position[direction] + globalBoxLength[direction];
+        const auto periodicPosition = position[direction] + globalBoxDimensions[direction];
         const auto justInsideOfBox = std::nextafter(_globalBoxMax[direction], _globalBoxMin[direction]);
         position[direction] = std::min(justInsideOfBox, periodicPosition);
         leftNeighborParticles.back().setR(position);
@@ -578,7 +578,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
       if (isNear(_localBoxMax[direction], _globalBoxMax[direction])) {
         // TODO: check if this failsafe is really reasonable.
         //  It should only trigger if a particle's position was already inside the box?
-        const auto periodicPosition = position[direction] - globalBoxLength[direction];
+        const auto periodicPosition = position[direction] - globalBoxDimensions[direction];
         position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
         rightNeighborParticles.back().setR(position);
       }

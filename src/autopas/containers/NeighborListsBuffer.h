@@ -15,7 +15,12 @@
 namespace autopas {
 /**
  * Class for manual memory management of neighbor lists.
+ *
+ * The key, value system behaves similar to a std::unordered_map, so see the
+ * [official doc](https://en.cppreference.com/w/cpp/container/unordered_map) regarding these details.
+ *
  * A internal buffer of lists is kept in memory, never deleted, and only its content cleared and reassigned.
+ * Get access to new lists via the index returned from getNewNeighborList() and work on them via getNeighborListRef().
  *
  * @tparam Key Preferably something that is cheap to destroy.
  * @tparam Value Has to be default constructable.
@@ -64,9 +69,9 @@ class NeighborListsBuffer {
    *
    * @note This function is NOT thread safe.
    *
-   * @return
+   * @return Index of the newly reserved list.
    */
-  size_t addNeighborList() {
+  size_t getNewNeighborList() {
     // if the buffer is saturated...
     if (_lastValidListIndex >= _neighborLists.size()) {
       // ...grow it and initialize all new lists. Make sure to grow to at least 10 lists.
@@ -84,11 +89,10 @@ class NeighborListsBuffer {
    * @note This function is NOT thread safe.
    *
    * @param key
-   * @return Index of the neighbor list in the internal data structure.
+   * @return Index of the newly reserved list.
    */
-  size_t addNeighborList(const Key &key) {
-    //  size_t addNeighborList(const std::conditional<std::is_pointer_v<Key>, Key, Key &> key) {
-    const auto newIndex = addNeighborList();
+  size_t getNewNeighborList(const Key &key) {
+    const auto newIndex = getNewNeighborList();
     _keyMap.emplace(key, newIndex);
     return newIndex;
   }
@@ -106,7 +110,7 @@ class NeighborListsBuffer {
    * Resize the internal buffer so that there are new spare lists.
    * If n is not larger than the current capacity nothing happens.
    *
-   * @param n
+   * @param n Number of lists to allocate space for.
    */
   void reserveNeighborLists(size_t n) { _neighborLists.resize(n, std::vector<Value>(_defaultListLength)); }
 

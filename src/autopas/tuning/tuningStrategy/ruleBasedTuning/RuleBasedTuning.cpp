@@ -17,7 +17,7 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
       _verifyModeEnabled(verifyModeEnabled),
       _ruleFileName(std::move(ruleFileName)),
       _tuningErrorPrinter(std::move(tuningErrorPrinter)) {
-  // Check if the given rule file exists and throw of not
+  // Check if the given rule file exists and throw if not
   struct stat buffer;
   if (stat(_ruleFileName.c_str(), &buffer) != 0) {
     utils::ExceptionHandler::exception("Rule file {} does not exist!", _ruleFileName);

@@ -363,7 +363,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         config.extrapolationMethodOption.value = *parsedOptions.begin();
 
       } else if (key == config.tuningStrategyOptions.name) {
-        expected = "Exactly one tuning strategy option out of the possible values.";
+        expected = "List of tuning strategies that will be applied in the given order.";
         description = config.tuningStrategyOptions.description;
 
         config.tuningStrategyOptions.value =

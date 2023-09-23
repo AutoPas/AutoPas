@@ -281,7 +281,7 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecul
                                                                            << "Called from line: " << line;
 }
 
-void setFromOptions(const autopas::Configuration &conf, autopas::AutoPas<Molecule> &autoPas) {
+void setFromConfig(const autopas::Configuration &conf, autopas::AutoPas<Molecule> &autoPas) {
   autoPas.setAllowedContainers({conf.container});
   autoPas.setAllowedTraversals({conf.traversal});
   autoPas.setAllowedLoadEstimators({conf.loadEstimator});
@@ -294,7 +294,7 @@ void testSimulationLoop(const autopas::Configuration &conf) {
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
-  setFromOptions(conf, autoPas);
+  setFromConfig(conf, autoPas);
 
   defaultInit(autoPas);
 
@@ -385,7 +385,7 @@ void testHaloCalculation(const autopas::Configuration &conf) {
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
-  setFromOptions(conf, autoPas);
+  setFromConfig(conf, autoPas);
 
   defaultInit(autoPas);
 
@@ -460,7 +460,7 @@ TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
   }
 }
 
-TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
+TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::ArrayMath::ceil;
   using autopas::utils::ArrayUtils::static_cast_copy_array;
@@ -494,9 +494,9 @@ TEST_P(AutoPasInterfaceTest, ConfigIsValidVSTraversalIsApplicable) {
             conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
       });
 
-  EXPECT_EQ(conf.isValid(), traversalPtr->isApplicable())
-      << "Either the domain is chosen badly (fix this!) or isValid and isApplicable don't follow the same logic "
-         "anymore.";
+  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr->isApplicable())
+      << "Either the domain is chosen badly (fix this!) or hasCompatibleValues and isApplicable don't follow the same"
+         "logic anymore.";
 }
 
 using ::testing::Combine;

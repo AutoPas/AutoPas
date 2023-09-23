@@ -72,8 +72,8 @@ class VerletClusterListsRebuilder {
     // count particles by accumulating tower sizes
     const size_t numParticles = std::accumulate(_towerBlock.begin(), _towerBlock.end(), _particlesToAdd.size(),
                                                 [](auto acc, const auto &tower) {
-                                                  // actually we want only the number of real particles but dummies were
-                                                  // just deleted.
+                                                  // actually we want only the number of owned or halo particles
+                                                  // but dummies were just deleted.
                                                   return acc + tower.getNumAllParticles();
                                                 });
 
@@ -121,7 +121,7 @@ class VerletClusterListsRebuilder {
            clusterIter < (_newton3 ? tower.getClusters().end() : tower.getFirstTailHaloCluster()); ++clusterIter) {
         // VCL stores the references to the lists in the clusters, therefore there is no need to create a
         // cluster -> list lookup structure in the buffer structure
-        const auto listID = _neighborListsBuffer.addNeighborList();
+        const auto listID = _neighborListsBuffer.getNewNeighborList();
         clusterIter->setNeighborList(&(_neighborListsBuffer.template getNeighborListRef<false>(listID)));
       }
     }
@@ -187,8 +187,7 @@ class VerletClusterListsRebuilder {
     std::vector<std::vector<Particle>> outOfBoundsParticles;
     outOfBoundsParticles.resize(_towerBlock.size());
     for (size_t towerIndex = 0; towerIndex < _towerBlock.size(); towerIndex++) {
-      const auto towerIndex2D = _towerBlock.towerIndex1DTo2D(towerIndex);
-      const auto &[towerBoxMin, towerBoxMax] = _towerBlock.getTowerBoundingBox(towerIndex2D);
+      const auto &[towerBoxMin, towerBoxMax] = _towerBlock.getTowerBoundingBox(towerIndex);
       outOfBoundsParticles[towerIndex] = _towerBlock[towerIndex].collectOutOfBoundsParticles(towerBoxMin, towerBoxMax);
     }
     return outOfBoundsParticles;
@@ -361,7 +360,7 @@ class VerletClusterListsRebuilder {
     using autopas::utils::ArrayMath::boxDistanceSquared;
 
     const auto interactionLengthFracOfDomainZ =
-        _towerBlock.getInteractionLength() / (_towerBlock.getHaloBoxMax()[0] - _towerBlock.getHaloBoxMin()[0]);
+        _towerBlock.getInteractionLength() / (_towerBlock.getHaloBoxMax()[2] - _towerBlock.getHaloBoxMin()[2]);
     const bool isSameTower = (&towerA == &towerB);
     // This heuristic seems to find a good middle ground between not too much memory allocated and no additional
     // allocations when calling clusterA.addNeighbor(clusterB)
