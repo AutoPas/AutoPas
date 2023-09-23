@@ -249,7 +249,11 @@ class VerletClusterListsRebuilder {
     std::vector<std::vector<Particle>> outOfBoundsParticles;
     outOfBoundsParticles.resize(_towers.size());
     for (size_t towerIndex = 0; towerIndex < _towers.size(); towerIndex++) {
-      const auto &[towerBoxMin, towerBoxMax] = VerletClusterLists<Particle>::getTowerBoundingBox(towerIndex);
+      const auto towerIndex2D = towerIndex1DTo2D(towerIndex);
+      // we have to use the static version because we have no VCL object and the passed values are the most up-to-date
+      // ones.
+      const auto &[towerBoxMin, towerBoxMax] = VerletClusterLists<Particle>::getTowerBoundingBox(
+          towerIndex2D, _towersPerDim, _towerSideLength, _boxMin, _boxMax, _haloBoxMin, _haloBoxMax);
       outOfBoundsParticles[towerIndex] = _towers[towerIndex].collectOutOfBoundsParticles(towerBoxMin, towerBoxMax);
     }
     return outOfBoundsParticles;
