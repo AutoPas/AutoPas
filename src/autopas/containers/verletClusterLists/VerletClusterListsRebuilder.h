@@ -99,7 +99,7 @@ class VerletClusterListsRebuilder {
     // count particles by accumulating tower sizes
     const size_t numParticles =
         std::accumulate(_towers.begin(), _towers.end(), _particlesToAdd.size(), [](auto acc, const auto &tower) {
-          // actually we want only the number of real particles but dummies were just deleted.
+          // actually we want only the number of owned or halo particles but dummies were just deleted.
           return acc + tower.getNumAllParticles();
         });
 

@@ -877,7 +877,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Calculates the low and high corner of a tower given by its 2D grid index.
+   * Calculates the low and high corner of a tower given by its 2D grid index. Static version.
    *
    * @param index2D
    * @param towersPerDim
@@ -1478,7 +1478,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   std::unique_ptr<internal::VerletClusterListsRebuilder<Particle>> _builder;
 
   /**
-   * Structure to provided persistent memory for neighbor lists. Will be filled by the builder.
+   * Structure to provide persistent memory for neighbor lists. Will be filled by the builder.
    */
   typename internal::VerletClusterListsRebuilder<Particle>::NeighborListsBuffer_T _neighborLists{};
 };
