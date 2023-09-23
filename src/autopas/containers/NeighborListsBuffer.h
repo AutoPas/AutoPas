@@ -85,7 +85,6 @@ class NeighborListsBuffer {
    * @return Index of the neighbor list in the internal data structure.
    */
   size_t addNeighborList(const Key &key) {
-    //  size_t addNeighborList(const std::conditional<std::is_pointer_v<Key>, Key, Key &> key) {
     const auto newIndex = addNeighborList();
     _keyMap.emplace(key, newIndex);
     return newIndex;
