@@ -117,7 +117,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   /**
    * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     // parallelizing this loop is only worth it if we have LOTS of cells.

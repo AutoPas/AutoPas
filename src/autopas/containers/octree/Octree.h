@@ -376,7 +376,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   /**
    * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     return this->_cells[CellTypes::OWNED].getNumberOfParticles(behavior) +
            this->_cells[CellTypes::HALO].getNumberOfParticles(behavior);
   }

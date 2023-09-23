@@ -195,7 +195,7 @@ class ClusterTower : public ParticleCell<Particle> {
   /**
    * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     return _particlesStorage.getNumberOfParticles(behavior);
   }
 

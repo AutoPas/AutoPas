@@ -149,7 +149,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     return std::count_if(this->_particles.begin(), this->_particles.end(),
                          [&behavior](auto p) { return behavior.contains(p); });
   }

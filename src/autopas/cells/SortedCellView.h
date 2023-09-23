@@ -95,7 +95,7 @@ class SortedCellView : public ParticleCell<Particle> {
   /**
    * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     return std::count_if(_particles.begin(), _particles.end(),
                          [&behavior](auto pair) { return behavior.contains(*(std::get<1>(pair))); });
   }

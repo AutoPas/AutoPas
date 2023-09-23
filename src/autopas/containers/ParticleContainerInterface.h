@@ -180,8 +180,7 @@ class ParticleContainerInterface {
    * @param behavior Behavior of the iterator, see IteratorBehavior.
    * @return The number of particles with respect to the specified IteratorBehavior.
    */
-  [[nodiscard]] virtual unsigned long getNumberOfParticles(
-      IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
+  [[nodiscard]] virtual size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
 
   /**
    * Get the total number of particles saved in the container (owned + halo + dummy).

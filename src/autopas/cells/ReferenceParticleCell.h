@@ -63,9 +63,9 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
           p->getOwnershipState(), this->_ownershipState);
     }
 
-    _particlesLock.lock();
+    this->_cellLock.lock();
     _particles.push_back(p);
-    _particlesLock.unlock();
+    this->_cellLock.unlock();
   }
 
   /**
@@ -158,13 +158,13 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   /**
    * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     size_t numParticles{0};
 
-    _particlesLock.lock();
+    this->_cellLock.lock();
     numParticles =
         std::count_if(_particles.begin(), _particles.end(), [&behavior](auto p) { return behavior.contains(*p); });
-    _particlesLock.unlock();
+    this->_cellLock.unlock();
 
     return numParticles;
   }
@@ -213,7 +213,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   }
 
   void deleteByIndex(size_t index) override {
-    std::lock_guard<AutoPasLock> lock(_particlesLock);
+    std::lock_guard<AutoPasLock> lock(this->_cellLock);
     if (index >= size()) {
       utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", size(), index);
     }
@@ -263,7 +263,6 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   SoA<SoAArraysType> _particleSoABuffer;
 
  private:
-  mutable AutoPasLock _particlesLock;
   std::array<double, 3> _cellLength;
 
   template <bool regionCheck, typename Lambda>

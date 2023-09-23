@@ -139,7 +139,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   /**
    * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     std::lock_guard<AutoPasLock> lock(_lock);
     return _pointer->getNumberOfParticles(behavior);
   }

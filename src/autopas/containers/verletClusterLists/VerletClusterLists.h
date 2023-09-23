@@ -787,13 +787,16 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   /**
    * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     // sum up all particles in towers that fulfill behavior
     size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0, [&behavior](size_t acc, const auto &tower) {
       return acc + tower.getNumberOfParticles(behavior);
     });
 
-    // sum up all particles in that are inserted into towers in the next rebuild
+    // Since we can not directly insert particles into towers without a rebuild of the whole data structure,
+    // _particlesToAdd is used to store all these particles temporarily until the next rebuild inserts them into the
+    // towers data structure. However, these particles already belong to the respective tower, so we have to count them
+    // as well.
     sum = std::accumulate(
         _particlesToAdd.begin(), _particlesToAdd.end(), sum, [&behavior](size_t acc, const auto &buffer) {
           return acc +

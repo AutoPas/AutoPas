@@ -185,7 +185,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   /**
    * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
-  [[nodiscard]] unsigned long getNumberOfParticles(IteratorBehavior behavior) const override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     std::lock_guard<AutoPasLock> guard(this->_cellLock);
     return std::count_if(_particles.begin(), _particles.end(), [&behavior](auto p) { return behavior.contains(p); });
   }

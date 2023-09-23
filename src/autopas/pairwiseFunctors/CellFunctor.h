@@ -138,9 +138,9 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
 
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  if ((DataLayout == DataLayoutOption::soa &&
+  if ((DataLayout == DataLayoutOption::soa and
        (cell1._particleSoABuffer.size() == 0 and cell2._particleSoABuffer.size() == 0)) or
-      (DataLayout == DataLayoutOption::aos && (cell1.size() == 0 and cell2.size() == 0))) {
+      (DataLayout == DataLayoutOption::aos and (cell1.size() == 0 and cell2.size() == 0))) {
     return;
   }
 

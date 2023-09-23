@@ -98,8 +98,7 @@ class ParticleCell {
    * @param behavior Behavior of the iterator, see IteratorBehavior.
    * @return The number of particles with respect to the specified IteratorBehavior.
    */
-  [[nodiscard]] virtual unsigned long getNumberOfParticles(
-      IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
+  [[nodiscard]] virtual size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
 
   /**
    * Check if the cell is empty.
@@ -149,7 +148,7 @@ class ParticleCell {
    * ownedOrHalo: this cell can contain owned or halo particles
    * @return type of particles inside this cell
    */
-  const OwnershipState getPossibleParticleOwnerships() { return _ownershipState; }
+  OwnershipState getPossibleParticleOwnerships() const { return _ownershipState; }
 
   /**
    * Set the type of particles contained in this cell. Possible values:
