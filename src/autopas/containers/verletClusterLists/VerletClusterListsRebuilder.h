@@ -148,7 +148,7 @@ class VerletClusterListsRebuilder {
       for (auto &cluster : tower.getClusters()) {
         // VCL stores the references to the lists in the clusters, therefore there is no need to create a
         // cluster -> list lookup structure in the buffer structure
-        const auto listID = _neighborListsBuffer.addNeighborList();
+        const auto listID = _neighborListsBuffer.getNewNeighborList();
         cluster.setNeighborList(&(_neighborListsBuffer.template getNeighborListRef<false>(listID)));
       }
     }
