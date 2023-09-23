@@ -20,8 +20,8 @@ namespace autopas {
  * [official doc](https://en.cppreference.com/w/cpp/container/unordered_map) regarding these details.
  *
  * A internal buffer of lists is kept in memory, never deleted, and only its content cleared and reassigned.
- * Get access to new lists via the index returned from getNewNeighborList() and work on them via getNeighborListRef()
- * .
+ * Get access to new lists via the index returned from getNewNeighborList() and work on them via getNeighborListRef().
+ *
  * @tparam Key Preferably something that is cheap to destroy.
  * @tparam Value Has to be default constructable.
  * @tparam Hash
