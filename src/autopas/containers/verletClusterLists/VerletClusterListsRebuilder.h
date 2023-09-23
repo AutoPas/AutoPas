@@ -165,7 +165,7 @@ class VerletClusterListsRebuilder {
    * false)
    */
   void rebuildNeighborListsAndFillClusters(bool useNewton3) {
-    clearNeighborListsAndmoveDummiesIntoClusters();
+    clearNeighborListsAndMoveDummiesIntoClusters();
     updateNeighborLists(useNewton3);
 
     double dummyParticleDistance = _interactionLength * 2;
@@ -216,7 +216,7 @@ class VerletClusterListsRebuilder {
    * Clears previously saved neighbors from clusters and sets the 3D positions of the dummy particles to inside of the
    * cluster to avoid all dummies being in one place and potentially trigger cluster-cluster distance evaluations.
    */
-  void clearNeighborListsAndmoveDummiesIntoClusters() {
+  void clearNeighborListsAndMoveDummiesIntoClusters() {
     for (auto &tower : _towers) {
       tower.setDummyParticlesToLastActualParticle();
       for (auto &cluster : tower.getClusters()) {
