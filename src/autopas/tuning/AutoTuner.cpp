@@ -21,27 +21,27 @@
 
 namespace autopas {
 AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace,
-                     const AutoTunerInfo &info, unsigned int rebuildFrequency, const std::string &outputSuffix)
-    : _selectorStrategy(info.selectorStrategy),
+                     const AutoTunerInfo &autoTunerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
+    : _selectorStrategy(autoTunerInfo.selectorStrategy),
       _tuningStrategies(std::move(tuningStrategies)),
       _iteration(0),
-      _tuningInterval(info.tuningInterval),
-      _iterationsSinceTuning(info.tuningInterval),  // init to max so that tuning happens in first iteration
-      _tuningMetric(info.tuningMetric),
+      _tuningInterval(autoTunerInfo.tuningInterval),
+      _iterationsSinceTuning(autoTunerInfo.tuningInterval),  // init to max so that tuning happens in first iteration
+      _tuningMetric(autoTunerInfo.tuningMetric),
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
-      _maxSamples(info.maxSamples),
+      _maxSamples(autoTunerInfo.maxSamples),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
           _tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
       _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
-      _samplesNotRebuildingNeighborLists(info.maxSamples),
+      _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
-      _tuningDataLogger(info.maxSamples, outputSuffix) {
-  _samplesRebuildingNeighborLists.reserve(info.maxSamples);
+      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix) {
+  _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
   if (_searchSpace.empty()) {
@@ -182,7 +182,7 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
                                             [](const auto &conf) { return conf.toShortString(false); }));
   });
 
-  // let all configurations apply their optimizations in the order they are defined.
+  // let all strategies optimize the queue in the order they are defined.
   // If any is still tuning consider the tuning phase still ongoing.
   std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
     tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
@@ -233,7 +233,8 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
               case TuningMetricOption::energy:
                 return "energy consumption";
             }
-            return "unknown tuning metric";
+            autopas::utils::ExceptionHandler::exception("AutoTuner::addMeasurement(): Unknown tuning metric.");
+            return "Unknown tuning metric";
           }(),
           [&]() {
             std::ostringstream ss;
@@ -274,16 +275,25 @@ bool AutoTuner::willRebuildNeighborLists() const {
 }
 
 bool AutoTuner::initEnergy() {
-  // Check if energy measurement is possible,
-  try {
-    _raplMeter.init();
-    _raplMeter.reset();
-    _raplMeter.sample();
-  } catch (const utils::ExceptionHandler::AutoPasException &e) {
+  // Check if energy measurement is possible.
+  std::string errMsg(_raplMeter.init());
+  if (errMsg.empty()) {
+    try {
+      _raplMeter.reset();
+      _raplMeter.sample();
+    } catch (const utils::ExceptionHandler::AutoPasException &e) {
+      if (_tuningMetric == TuningMetricOption::energy) {
+        throw e;
+      } else {
+        AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
+        return false;
+      }
+    }
+  } else {
     if (_tuningMetric == TuningMetricOption::energy) {
-      throw e;
+      throw utils::ExceptionHandler::AutoPasException(errMsg);
     } else {
-      AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
+      AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", errMsg);
       return false;
     }
   }

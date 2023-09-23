@@ -182,12 +182,9 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
-      {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled},
-      {autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
+      _confDs_seq_noN3,
+      _confDs_seq_N3,
+      _confLc_c08_noN3,
   };
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
@@ -238,12 +235,9 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled},
-      {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
-      {autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled},
+      _confDs_seq_noN3,
+      _confDs_seq_N3,
+      _confLc_c08_N3,
   };
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
@@ -285,10 +279,8 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      {autopas::ContainerOption::directSum, cellSizeFactor, autopas::TraversalOption::ds_sequential,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
-      {autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-       autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled},
+      _confDs_seq_noN3,
+      _confLc_c08_noN3,
   };
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
@@ -330,7 +322,7 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
       .maxSamples = 3,
   };
 
-  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c01, _confLc_c18, _confLc_c08};
+  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
@@ -379,7 +371,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const auto searchSpace = {_confLc_c01, _confLc_c18, _confLc_c08};
+  const auto searchSpace = {_confLc_c01_noN3, _confLc_c18_noN3, _confLc_c08_noN3};
 
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
@@ -452,11 +444,11 @@ TEST_F(AutoTunerTest, testOneConfig) {
       .maxSamples = 3,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08};
+  const auto searchSpace = {_confLc_c08_noN3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
-  EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
+  EXPECT_EQ(_confLc_c08_noN3, tuner.getCurrentConfig());
 
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
@@ -470,7 +462,7 @@ TEST_F(AutoTunerTest, testOneConfig) {
     }
     logicHandler.iteratePairwisePipeline(&functor);
     ++numSamples;
-    EXPECT_EQ(_confLc_c08, tuner.getCurrentConfig());
+    EXPECT_EQ(_confLc_c08_noN3, tuner.getCurrentConfig());
   }
 }
 
@@ -489,13 +481,7 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
       .maxSamples = 3,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::enabled);
-  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                  autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                  autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled);
-  const auto searchSpace = {confNoN3, confN3};
+  const auto searchSpace = {_confLc_c08_noN3, _confLc_c08_N3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
@@ -507,18 +493,17 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
   logicHandler.iteratePairwisePipeline(&functor);
-  EXPECT_EQ(confN3, tuner.getCurrentConfig());
+  EXPECT_EQ(_confLc_c08_N3, tuner.getCurrentConfig());
   logicHandler.iteratePairwisePipeline(&functor);
-  EXPECT_EQ(confN3, tuner.getCurrentConfig());
+  EXPECT_EQ(_confLc_c08_N3, tuner.getCurrentConfig());
   logicHandler.iteratePairwisePipeline(&functor);
-  EXPECT_EQ(confN3, tuner.getCurrentConfig());
+  EXPECT_EQ(_confLc_c08_N3, tuner.getCurrentConfig());
 }
 
 /**
  * All generated configurations are thrown out at runtime.
  */
 TEST_F(AutoTunerTest, testLastConfigThrownOut) {
-  const double cellSizeFactor = 1.;
   const unsigned int verletRebuildFrequency = 20;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
@@ -529,14 +514,8 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
       .maxSamples = 3,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  autopas::Configuration confN3(autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
-                                autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                                autopas::Newton3Option::enabled);
-  autopas::Configuration confNoN3(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                  autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                  autopas::DataLayoutOption::soa, autopas::Newton3Option::enabled);
 
-  const auto searchSpace = {confN3, confNoN3};
+  const auto searchSpace = {_confLc_c08_noN3, _confLc_c18_noN3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
@@ -544,8 +523,8 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
   EXPECT_THROW(logicHandler.iteratePairwisePipeline(&functor), autopas::utils::ExceptionHandler::AutoPasException);
 }
@@ -557,7 +536,6 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
  * Expect to choose the first because the second one is worse on average.
  */
 TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
-  const double cellSizeFactor = 1.;
   const unsigned int verletRebuildFrequency = 20;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
@@ -568,13 +546,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
       .maxSamples = 2,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const autopas::Configuration confA(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                     autopas::TraversalOption::lc_c08, autopas::LoadEstimatorOption::none,
-                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
-  const autopas::Configuration confB(autopas::ContainerOption::linkedCells, cellSizeFactor,
-                                     autopas::TraversalOption::lc_c18, autopas::LoadEstimatorOption::none,
-                                     autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled);
-  const auto searchSpace = {confA, confB};
+  // Use configurations with N3, otherwise there are more calls to AoSFunctor
+  const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(tuner, logicHandlerInfo, verletRebuildFrequency, "");
 
@@ -582,6 +555,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   testing::NiceMock<MockFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
       .Times(testing::AtLeast(0));
   EXPECT_CALL(functor, SoAExtractor(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
