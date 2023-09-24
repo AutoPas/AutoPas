@@ -1,7 +1,8 @@
 # make test optional. Useful also when no network connection is available
-option(
+option_conditional(
     AUTOPAS_BUILD_TESTS
-    "Build tests based on the Google Test Framework (will be downloaded if not available)" ON
+    "Build tests based on the Google Test Framework (will be downloaded if not available)"
+    AUTOPAS_STANDALONE_BUILD
 )
 
 # do nothing if nothing should be done

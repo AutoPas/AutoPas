@@ -6,9 +6,13 @@
 
 #include "DifferentParticlesTest.h"
 
-#include "autopas/AutoPas.h"
+#include "autopas/AutoPasDecl.h"
 #include "testingHelpers/NonConstructibleParticle.h"
 #include "testingHelpers/commonTypedefs.h"
+
+extern template class autopas::AutoPas<NonConstructibleParticle>;
+extern template bool autopas::AutoPas<NonConstructibleParticle>::iteratePairwise(
+    MockFunctor<NonConstructibleParticle> *);
 
 /**
  * Tests if AutoPas still compiles with a Particle that implements the normal interface, BUT no constructor.

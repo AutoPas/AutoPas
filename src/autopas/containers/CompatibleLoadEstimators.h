@@ -76,9 +76,9 @@ static bool usesLoadEstimator(autopas::TraversalOption traversal) {
  * @param allowedOptions
  * @return applicable traversals or {none}
  */
-static std::set<autopas::LoadEstimatorOption> getApplicableLoadEstimators(
+[[maybe_unused]] static std::set<autopas::LoadEstimatorOption> getApplicableLoadEstimators(
     autopas::ContainerOption container, autopas::TraversalOption traversal,
-    const std::set<autopas::LoadEstimatorOption> allowedOptions) {
+    const std::set<autopas::LoadEstimatorOption> &allowedOptions) {
   if (usesLoadEstimator(traversal)) {
     auto compatible = allCompatibleLoadEstimators(container);
     std::set<autopas::LoadEstimatorOption> intersection;

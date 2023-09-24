@@ -11,6 +11,14 @@ Alternatively you can build the documentation on your own:
 * requirements: [Doxygen](http://www.doxygen.nl/)
 * `make doc_doxygen_md-flexible`
 
+## MD-flexible modes
+MD-flexible supports two types of particle simulation: single-site and multi-site Molecular
+Dynamics simulations. Single-Site MD supports simple MD simulations using only single-site
+Lennard-Jones molecules. Multi-Site MD supports molecules formed from fixed rigid bodies of
+LJ sites. The different modes can be toggled at compile time (see below) and requires slightly
+different input files (see `AllOptions.yaml`).
+
+
 ## Compiling
 To build MD-Flexible execute the following from the AutoPas root folder:
 ```bash
@@ -19,11 +27,37 @@ cmake ..
 make md-flexible
 ```
 
+### Compiling with different md-flexible modes
+To compile md-flexible in single-site MD mode, set `MD_FLEXIBLE_MODE` to `SINGLESITE` via `cmake`:
+```bash
+cmake -DMD_FLEXIBLE_MODE=SINGLESITE ..
+```
+Alternatively, md-flexible can be compiled in multi-site MD mode, by setting `MD_FLEXIBLE_MODE` to
+`MULTISITE` via `cmake`:
+```bash
+cmake -DMD_FLEXIBLE_MODE=MULTISITE ..
+```
+
+By default, md-flexible is compiled in single-site MD mode.
+
+### Compiling with MPI
+To use the MPI parallelization of md-flexible activate `MD_FLEXIBLE_USE_MPI` via `cmake`:
+```bash
+cmake -DMD_FLEXIBLE_USE_MPI=ON ..
+Using this option does not guarantee that MPI will be used. There are some additional requirements:
+* MPI is installed
+* mpirun is called with more than 1 process
+```
+
 ## Testing
 Simple tests can be run via:
 ```bash
 make mdFlexTests
 ctest -R mdFlexTests
+```
+To run Tests with MPI enabled:
+```bash
+mpiexec -np 4 ./examples/md-flexible/tests/mdFlexTests
 ```
 
 ## Usage
@@ -42,6 +76,13 @@ The Falling Drop example simulation can be started with:
  cd examples/md-flexible
  ./md-flexible --yaml-filename fallingDrop.yaml
 ```
+
+To execute md-flexible using MPI run the following command in the build directory:
+```bash
+mpirun -np 4 ./examples/md-flexible/md-flexible --yaml-filename ./examples/md-flexible/fallingDrop.yaml
+```
+The number 4 can be exchanged by any number assuming the hardware supports the 
+selected number of processes.
 
 ### Input
 
@@ -70,23 +111,38 @@ For examples how to define and configure each object see [`input/AllOptions.yaml
 
 ### Output
 
-* After every execution, a configuration YAML file is generated. It is
-possible to use this file as input for a new simulation.
+* After every execution, a configuration YAML file is generated. It is possible
+  to use this file as input for a new simulation.
+
 * You can generate vtk output by providing a vtk-filename
-(see help for details).
+(see help for details). The output contains two different vtk files. One for
+  visualizing the particles another for the visualization of the subdomains of
+  the domain decomposition.
+The cells contain additional information about the configuration of the AutoPas
+  container responsible for simulating the cell.
+To visualize the particle records load the .pvtu files in ParaView. To visualize
+  the cells of the decomposition load the .pvts files in ParaView.
+
 
 ### Checkpoints
 
 MD-Flexible can be initialized through a previously written VTK file.
+For this pass the path to the `pvtu` file and make sure that the `vtu` files
+which it references are in the correct location.
+
 Please use only VTK files written by MD-Flexible since the parsing is
 rather strict. The VTK file only contains Information about all
 particles positions, velocities, forces and typeIDs. All other options,
 especially the simulation box size and particle properties (still) need
 to be set through a YAML file.
 
+### Load Balancing
+MD-Flexible allows users to select between two load balancers: The Inverted Pressure method and ALL's Tensor method.
+The load balancer can be selected using the 'load-balancer' configuration option.
+
 ### Command line Completions
 
-md-flexible can generate a shell completions file with it's latest options.
+md-flexible can generate a shell completions file with its latest options.
 Feel free to add completions for your favorite shell.
 
 #### zsh

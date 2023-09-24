@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include "autopas/iterators/SingleCellIteratorWrapper.h"
+#include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
@@ -53,9 +54,26 @@ class ParticleCell {
   using ParticleType = Particle;
 
   /**
-   * Destructor of ParticleCell.
+   * Default destructor.
    */
   virtual ~ParticleCell() = default;
+
+  /**
+   * Default default constructor.
+   */
+  explicit ParticleCell() = default;
+
+  /**
+   * Default move constructor.
+   * @param other
+   */
+  ParticleCell(ParticleCell &&other) noexcept = default;
+
+  /**
+   * Copy constructor that creates a new default constructed lock for the new cell.
+   * @param other
+   */
+  ParticleCell(const ParticleCell &other) : _cellLock(){};
 
   /**
    * Adds a Particle to the cell.
@@ -64,37 +82,16 @@ class ParticleCell {
   virtual void addParticle(const Particle &p) = 0;
 
   /**
-   * Get an iterator to the start of a ParticleCell.
-   * normal use:
-   * for(auto iter = cell.begin(); iter.isValid; ++iter){...}
-   * @return the iterator
-   */
-  virtual SingleCellIteratorWrapper<Particle, true> begin() = 0;
-
-  /**
-   * @copydoc begin()
-   * @note const version
-   */
-  virtual SingleCellIteratorWrapper<Particle, false> begin() const = 0;
-
-  /**
-   * End expression for all cells, this simply returns false.
-   * Allows range-based for loops.
-   * @return false
-   */
-  [[nodiscard]] constexpr bool end() const { return false; }
-
-  /**
    * Get the number of particles stored in this cell.
    * @return number of particles stored in this cell
    */
   [[nodiscard]] virtual unsigned long numParticles() const = 0;
 
   /**
-   * Check if the cell is not empty.
-   * @return true if at least one particle is stored in this cell
+   * Check if the cell is empty.
+   * @return true if no particles are stored in this cell.
    */
-  [[nodiscard]] virtual bool isNotEmpty() const = 0;
+  [[nodiscard]] virtual bool isEmpty() const = 0;
 
   /**
    * Deletes all particles in this cell.
@@ -129,6 +126,11 @@ class ParticleCell {
    * @return cell side length
    */
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
+
+  /**
+   * Lock object for exclusive access to this cell.
+   */
+  AutoPasLock _cellLock{};
 };
 
 }  // namespace autopas

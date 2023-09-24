@@ -24,36 +24,42 @@ TEST_F(VarVerletListsTest, VerletListConstructor) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
 }
 
 TEST_F(VarVerletListsTest, testAddParticleNumParticle) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
-  EXPECT_EQ(verletLists.getNumParticles(), 0);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
+  EXPECT_EQ(verletLists.getNumberOfParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
-  EXPECT_EQ(verletLists.getNumParticles(), 1);
+  EXPECT_EQ(verletLists.getNumberOfParticles(), 1);
 
   std::array<double, 3> r2 = {1.5, 2, 2};
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
-  EXPECT_EQ(verletLists.getNumParticles(), 2);
+  EXPECT_EQ(verletLists.getNumberOfParticles(), 2);
 }
 
 TEST_F(VarVerletListsTest, testDeleteAllParticles) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
-  EXPECT_EQ(verletLists.getNumParticles(), 0);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
+  EXPECT_EQ(verletLists.getNumberOfParticles(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -62,18 +68,20 @@ TEST_F(VarVerletListsTest, testDeleteAllParticles) {
   std::array<double, 3> r2 = {1.5, 2, 2};
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
-  EXPECT_EQ(verletLists.getNumParticles(), 2);
+  EXPECT_EQ(verletLists.getNumberOfParticles(), 2);
 
   verletLists.deleteAllParticles();
-  EXPECT_EQ(verletLists.getNumParticles(), 0);
+  EXPECT_EQ(verletLists.getNumberOfParticles(), 0);
 }
 
 TEST_F(VarVerletListsTest, testVerletListBuild) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -98,8 +106,10 @@ TEST_F(VarVerletListsTest, testVerletList) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -124,8 +134,10 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
 
   std::array<double, 3> r = {1.4, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -151,8 +163,10 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -179,8 +193,10 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -208,8 +224,10 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
-  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(min, max, cutoff, skin);
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
+  autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
+      min, max, cutoff, skinPerTimestep, rebuildFrequency);
 
   std::array<double, 3> r = {0.9, 0.9, 0.9};
   Particle p(r, {0., 0., 0.}, 0);

@@ -36,4 +36,7 @@ long autopas::utils::Timer::stop() {
 
   return diff;
 }
+
+void autopas::utils::Timer::reset() { _totalTime = 0; }
+
 void autopas::utils::Timer::addTime(long nanoseconds) { _totalTime += nanoseconds; }

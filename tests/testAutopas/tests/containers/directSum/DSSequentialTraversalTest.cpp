@@ -58,38 +58,3 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
     traversal.traverseParticlePairs();
   }
 }
-
-#if defined(AUTOPAS_CUDA)
-TEST_F(DSSequentialTraversalTest, testTraversalCuda) {
-  size_t numParticles = 20;
-  size_t numHaloParticles = 10;
-
-  MFunctor functor;
-  std::vector<FPCell> cells;
-  cells.resize(2);
-  autopas::Particle defaultParticle;
-
-  Particle particle;
-  for (size_t i = 0; i < numParticles + numHaloParticles; ++i) {
-    particle.setID(i);
-    // first particles go in domain cell rest to halo cell
-    if (i < numParticles) {
-      particle.setR(autopasTools::generators::RandomGenerator::randomPosition({0, 0, 0}, {10, 10, 10}));
-      cells[0].addParticle(particle);
-    } else {
-      particle.setR(autopasTools::generators::RandomGenerator::randomPosition({10, 10, 10}, {20, 20, 20}));
-      cells[1].addParticle(particle);
-    }
-  }
-
-  autopas::DSSequentialTraversal<FPCell, MFunctor, autopas::DataLayoutOption::cuda, true> traversal(
-      &functor, 100 /*big enough to contain both particles*/);
-  // domain SoA with itself
-  EXPECT_CALL(functor, CudaFunctor(_, true)).Times(1);
-  // domain SoA with halo
-  EXPECT_CALL(functor, CudaFunctor(_, _, true)).Times(1);
-  traversal.setCellsToTraverse(cells);
-  traversal.traverseParticlePairs();
-}
-
-#endif

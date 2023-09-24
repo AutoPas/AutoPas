@@ -11,11 +11,11 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/RandomGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 enum DeletionPosition {
@@ -57,8 +57,8 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static auto getTestParams();
 
  protected:
-  template <class ContainerPtrType>
-  static void executeShift(ContainerPtrType containerPtr, double magnitude, size_t totalNumParticles);
+  template <class ContainerType>
+  static void executeShift(ContainerType &containerPtr, double magnitude, size_t totalNumParticles);
 
   template <bool globals>
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForces(

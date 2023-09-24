@@ -1,0 +1,53 @@
+# Workflow for generating, checking, and deploying our doxygen documentation.
+name: Doxygen
+
+# Controls when the action will run.
+on:
+  push:
+    # pushes to master
+    branches: [ master ]
+  pull_request:
+    # PRs to master
+    # branches: [ master ]
+# abort old runs if a new one is started
+concurrency:
+  group: ${{ github.head_ref }}-doxygen
+  cancel-in-progress: true
+
+jobs:
+  DocumentationCheck:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [ "", _md-flexible ]
+    name: DocumentationCheck AutoPas${{ matrix.config }}
+    env:
+      # this is currently dictated by the autopas-build-doxygen container
+      BUILD_DIR: docker-build-doxygen
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build documentation
+        # writes all warnings to warnings.out
+        uses: docker://autopas/autopas-build-doxygen
+        with:
+          entrypoint: buildDocumentation.sh
+          # arg1 make target
+          # arg2 path to root of AutoPas directory.
+          args: doc_doxygen${{ matrix.config }} .
+
+      - name: Deploy documentation (only on master)
+        uses: peaceiris/actions-gh-pages@v3.7.2
+        if: github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          publish_dir: ./${{ env.BUILD_DIR }}/doc_doxygen${{ matrix.config }}/html/ # from dir
+          destination_dir: doxygen_documentation${{ matrix.config }}/git-master/ # to dir
+          external_repository: AutoPas/AutoPas.github.io
+          publish_branch: main
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com

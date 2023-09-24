@@ -10,9 +10,7 @@
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/particles/OwnershipState.h"
-#include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 
@@ -29,6 +27,10 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * The structure of the SoAs is defined by the particle.
    */
   using SoAArraysType = typename Particle::SoAArraysType;
+  /**
+   * Type that holds or refers to the actual particles.
+   */
+  using StorageType = std::vector<Particle *>;
 
   /**
    * Constructs a new ReferenceParticleCell.
@@ -56,12 +58,85 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     _particlesLock.unlock();
   }
 
-  SingleCellIteratorWrapper<Particle, true> begin() override {
-    return SingleCellIteratorWrapper<Particle, true>(new iterator_t(this));
+  /**
+   * @copydoc autopas::FullParticleCell::begin()
+   */
+  [[nodiscard]] CellIterator<StorageType, true> begin() { return CellIterator<StorageType, true>(_particles.begin()); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::begin()
+   * @note const version
+   */
+  [[nodiscard]] CellIterator<StorageType, false> begin() const {
+    return CellIterator<StorageType, false>(_particles.cbegin());
   }
 
-  SingleCellIteratorWrapper<Particle, false> begin() const override {
-    return SingleCellIteratorWrapper<Particle, false>(new const_iterator_t(this));
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   */
+  [[nodiscard]] CellIterator<StorageType, true> end() { return CellIterator<StorageType, true>(_particles.end()); }
+
+  /**
+   * @copydoc autopas::FullParticleCell::end()
+   * @note const version
+   */
+  [[nodiscard]] CellIterator<StorageType, false> end() const {
+    return CellIterator<StorageType, false>(_particles.cend());
+  }
+
+  /**
+   * Executes code for every particle in this cell as defined by lambda function.
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on particles
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, IteratorBehavior behavior) {
+    const std::array<double, 3> dummy{};
+    forEachImpl<false>(forEachLambda, dummy, dummy, behavior);
+  }
+
+  /**
+   * Executes code for every particle in this cell as defined by lambda function.
+   * @tparam Lambda (Particle &p) -> void
+   * @param forEachLambda code to be executed on particles
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda>
+  void forEach(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+               const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    forEachImpl<true>(forEachLambda, lowerCorner, higherCorner, behavior);
+  }
+  /**
+   * Reduce properties of particles as defined by a lambda function.
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, IteratorBehavior behavior) {
+    const std::array<double, 3> dummy{};
+    reduceImpl<true, false>(reduceLambda, result, dummy, dummy, behavior);
+  }
+
+  /**
+   * Reduce properties of particles as defined by a lambda function.
+   * @tparam Lambda (Particle p, A initialValue) -> void
+   * @tparam A type of particle attribute to be reduced
+   * @param reduceLambda code to reduce properties of particles
+   * @param result reference to result of type A
+   * @param lowerCorner lower corner of bounding box
+   * @param higherCorner higher corner of bounding box
+   * @param behavior ownerships of particles that should be in-/excluded
+   */
+  template <typename Lambda, typename A>
+  void reduce(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+              const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    reduceImpl<true, true>(reduceLambda, result, lowerCorner, higherCorner, behavior);
   }
 
   [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
@@ -99,7 +174,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    */
   [[nodiscard]] const Particle &at(size_t index) const { return *(_particles.at(index)); }
 
-  [[nodiscard]] bool isNotEmpty() const override { return numParticles() > 0; }
+  [[nodiscard]] bool isEmpty() const override { return numParticles() == 0; }
 
   void clear() override { _particles.clear(); }
 
@@ -152,30 +227,41 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   /**
    * Storage of the molecules of the cell.
    */
-  std::vector<Particle *> _particles;
+  StorageType _particles;
 
   /**
    * SoA buffer of this cell.
    */
   SoA<SoAArraysType> _particleSoABuffer;
 
-  /**
-   * Device particle SoABuffer.
-   */
-  CudaSoA<typename Particle::CudaDeviceArraysType> _particleSoABufferDevice;
-
-  /**
-   * Type of the internal iterator.
-   */
-  using iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, true>;
-
-  /**
-   * Type of the internal const iterator.
-   */
-  using const_iterator_t = internal::SingleCellIterator<Particle, ReferenceParticleCell<Particle>, false>;
-
  private:
   AutoPasLock _particlesLock;
   std::array<double, 3> _cellLength;
+
+  template <bool regionCheck, typename Lambda>
+  void forEachImpl(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                   const std::array<double, 3> &higherCorner,
+                   IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+    for (Particle *p : _particles) {
+      if (behavior.contains(*p)) {
+        if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
+          forEachLambda(*p);
+        }
+      }
+    }
+  }
+
+  template <bool ownershipCheck, bool regionCheck, typename Lambda, typename A>
+  void reduceImpl(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                  const std::array<double, 3> &higherCorner,
+                  IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHaloOrDummy) {
+    for (Particle *p : _particles) {
+      if ((not ownershipCheck) or behavior.contains(*p)) {
+        if ((not regionCheck) or utils::inBox(p->getR(), lowerCorner, higherCorner)) {
+          reduceLambda(*p, result);
+        }
+      }
+    }
+  }
 };
 }  // namespace autopas

@@ -59,7 +59,7 @@ for datafile in datafiles:
 
     regexCollectedTimes='.* Collected times for +({.*}).*\[(.*)\].*: *([0-9]+)'
     regexSelectedConf='.* Selected Configuration +({.*})'
-    regexIterTook='.* IteratePairwise took +([0-9]+) .*'
+    regexIterTook='.* AutoTuner::iteratePairwise +took +([0-9]+) .*'
     regexIter='.*Iteration +([0-9]+)'
     regexTuning='.*Tuning: +([a-z]+)'
 

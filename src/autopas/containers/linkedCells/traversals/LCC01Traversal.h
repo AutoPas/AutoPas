@@ -123,8 +123,7 @@ class LCC01Traversal
    * @return
    */
   [[nodiscard]] bool isApplicable() const override {
-    return not(dataLayout == DataLayoutOption::cuda) and not useNewton3 and
-           not(combineSoA && dataLayout != DataLayoutOption::soa);
+    return not useNewton3 and not(combineSoA and dataLayout != DataLayoutOption::soa);
   }
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
@@ -200,12 +199,11 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
   for (long x = -this->_overlap[0]; x <= 0l; ++x) {
     for (long y = -this->_overlap[1]; y <= static_cast<long>(this->_overlap[1]); ++y) {
       for (long z = -this->_overlap[2]; z <= static_cast<long>(this->_overlap[2]); ++z) {
-        std::array<double, 3> pos = {};
-        // SORTING DEBUG
-        pos[0] = std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0];
-        pos[1] = std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1];
-        pos[2] = std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2];
-
+        const std::array<double, 3> pos = {
+            std::max(0l, (std::abs(x) - 1l)) * this->_cellLength[0],
+            std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1],
+            std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2],
+        };
         const double distSquare = utils::ArrayMath::dot(pos, pos);
         if (distSquare <= interactionLengthSquare) {
           // following has been moved below since seemingly ix and not x is used for the direction
@@ -217,7 +215,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           //          sortingDir = utils::ArrayMath::normalize(sortingDir);
 
           const long currentOffset = utils::ThreeDimensionalMapping::threeToOneD(
-              x, y, z, utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
+              x, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
           const bool containCurrentOffset =
               std::any_of(_cellOffsets[x + this->_overlap[0]].cbegin(), _cellOffsets[x + this->_overlap[0]].cend(),
                           [currentOffset](const auto &e) { return e.first == currentOffset; });
@@ -226,7 +224,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
           }
           for (long ix = x; ix <= std::abs(x); ++ix) {
             const long offset = utils::ThreeDimensionalMapping::threeToOneD(
-                ix, y, z, utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension));
+                ix, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
             const size_t index = ix + this->_overlap[0];
             // ix seems to be used - if this is pushed, this passes the tests
             std::array<double, 3> sortingDir = {static_cast<double>(ix), static_cast<double>(y),
@@ -249,7 +247,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
               // make sure center of slice is always at the beginning
               _cellOffsets[index].insert(_cellOffsets[index].cbegin(), std::make_pair(offset, sortingDir));
             } else {
-              _cellOffsets[index].push_back(std::make_pair(offset, sortingDir));
+              _cellOffsets[index].emplace_back(offset, sortingDir);
             }
           }
         }
@@ -327,7 +325,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
         // slice contains base cell -> skip particles of base cell. This is not supported by CellFunctor, so call
         // pairwise functor directly.
         auto startIndex = baseCell.numParticles();
-        auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumParticles();
+        auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumberOfParticles();
         _pairwiseFunctor->SoAFunctorPair(baseCell._particleSoABuffer,
                                          {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell

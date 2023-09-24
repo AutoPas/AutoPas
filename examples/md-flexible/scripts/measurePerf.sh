@@ -54,10 +54,8 @@ traversals__LinkedCells=lc_c08
 traversals__VerletLists=vl_list_iteration
 traversals__VerletCells=vlc_c18
 traversals__VerletClusterLists=vcl_c06
-#traversals__VerletClusterCells=vcc_cluster_iteration
 
 # iterate over containers
-# add VerletClusterCells when it supports SoAs with global calculation
 for container in DirectSum LinkedCells VerletLists VerletClusterLists VerletCells ;
 do
     separate "Container: ${container}"
@@ -145,11 +143,11 @@ do
                             --no-progress-bar \
                             --particle-generator uniform \
                             --particles-total ${Mols[$i]} \
-                            --periodic false \
+                            --boundary-type none \
                             --traversal ${!t} \
                             --tuning-interval $(( ${thisReps} + 1 )) \
                             --verlet-rebuild-frequency ${VLRebuild[$iVL]} \
-                            --verlet-skin-radius ${VLSkin[$iVL]} \
+                            --verlet-skin-radius-per-timestep ${VLSkin[$iVL]} \
 
                         )
 

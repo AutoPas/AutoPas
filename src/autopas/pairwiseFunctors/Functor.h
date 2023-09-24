@@ -11,12 +11,7 @@
 
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
-#include "autopas/utils/CudaSoA.h"
 #include "autopas/utils/SoAView.h"
-
-#if defined(AUTOPAS_CUDA)
-#include "autopas/pairwiseFunctors/FunctorCuda.cuh"
-#endif
 
 namespace autopas {
 
@@ -145,8 +140,7 @@ class Functor {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
-                                const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                                bool newton3) {
+                                const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorVerlet: not yet implemented");
   }
 
@@ -163,55 +157,6 @@ class Functor {
    */
   virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
     utils::ExceptionHandler::exception("Functor::SoAFunctorPair: not yet implemented");
-  }
-
-  /**
-   * Functor using Cuda on SoA in device Memory
-   *
-   * This Functor calculates the pair-wise interactions between particles in the device_handle on the GPU
-   *
-   * @param device_handle soa in device memory
-   * @param newton3 defines whether or whether not to use newton
-   */
-  virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3) {
-    utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3: not yet implemented");
-  }
-
-  /**
-   * Functor using Cuda on SoAs in device Memory
-   *
-   * This Functor calculates the pair-wise interactions between particles in the device_handle1 and device_handle2 on
-   * the GPU
-   *
-   * @param device_handle1 first soa in device memory
-   * @param device_handle2 second soa in device memory
-   * @param newton3 defines whether or whether not to use newton
-   */
-  virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-                           CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3) {
-    utils::ExceptionHandler::exception("Functor::CudaFunctorNoN3(two cells): not yet implemented");
-  }
-
-  /**
-   * Copies the SoA data of the given cell to the Cuda device.
-   *
-   * @param soa  Structure of arrays where the data is loaded.
-   * @param device_handle soa in device memory where the data is copied to
-   */
-  virtual void deviceSoALoader(SoA<SoAArraysType> &soa,
-                               CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
-    utils::ExceptionHandler::exception("Functor::CudaDeviceSoALoader: not yet implemented");
-  }
-
-  /**
-   * Copies the data stored on the Cuda device back to the SoA overwrites the data in the soa
-   *
-   * @param soa  Structure of arrays where the data copied to.
-   * @param device_handle soa in device memory where the data is loaded from
-   */
-  virtual void deviceSoAExtractor(SoA<SoAArraysType> &soa,
-                                  CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
-    utils::ExceptionHandler::exception("Functor::CudaDeviceSoAExtractor: not yet implemented");
   }
 
   /**
@@ -270,32 +215,6 @@ class Functor {
   virtual bool isRelevantForTuning() = 0;
 
   /**
-   * Check whether the given clusterSize is appropriate and can be used by the functor.
-   * @param clusterSize The size of the clusters.
-   * @param dataLayout The used data layout.
-   * @return true, iff the cluster size is appropriate.
-   */
-  virtual bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const = 0;
-
-#if defined(AUTOPAS_CUDA)
-  /**
-   * Provides an interface for traversals to directly access Cuda Functions
-   * @return Pointer to CudaWrapper of the Functor
-   */
-  virtual CudaWrapperInterface<typename Particle::ParticleSoAFloatPrecision> *getCudaWrapper() { return nullptr; }
-
-  /**
-   * Creates a Cuda SoA object containing all the relevant pointers from the generic Cuda SoA
-   * @param device_handle
-   * @return unique pointer to the object
-   */
-  virtual std::unique_ptr<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>> createFunctorCudaSoA(
-      CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle) {
-    return std::make_unique<FunctorCudaSoA<typename Particle::ParticleSoAFloatPrecision>>();
-  }
-#endif
-
-  /**
    * Getter for the functor's cutoff
    * @return
    */
@@ -322,12 +241,12 @@ class Functor {
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
      * in the following loop.
      */
-    // maybe_unused necessary because gcc doesnt understand that pointer is used later
+    // maybe_unused necessary because gcc doesn't understand that pointer is used later
     [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getNeededAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // load particles in SoAs
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
       /**
        * The following statement writes the values of all attributes defined in neededAttr into the respective position
        * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
@@ -355,12 +274,12 @@ class Functor {
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
      * in the following loop.
      */
-    // maybe_unused necessary because gcc doesnt understand that pointer is used later
+    // maybe_unused necessary because gcc doesn't understand that pointer is used later
     [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
 
     auto cellIter = cell.begin();
     // write values in SoAs back to particles
-    for (size_t i = offset; cellIter.isValid(); ++cellIter, ++i) {
+    for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
       /**
        * The following statement writes the value of all attributes defined in computedAttr back into the particle.
        * I represents the index inside computedAttr.

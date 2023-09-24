@@ -16,7 +16,7 @@ size_t autopas::memoryProfiler::currentMemoryUsage() {
   std::ifstream statusFile(statusFileName);
   if (statusFile.rdstate() != std::ifstream::goodbit) {
     // this seems non-critical so we don't throw an exception
-    AutoPasLog(error, "Error opening {}", statusFileName);
+    AutoPasLog(ERROR, "Error opening {}", statusFileName);
     return 0;
   }
 
@@ -30,6 +30,6 @@ size_t autopas::memoryProfiler::currentMemoryUsage() {
     }
   }
 
-  AutoPasLog(error, "Could not read memory usage!");
+  AutoPasLog(ERROR, "Could not read memory usage!");
   return 0;
 }

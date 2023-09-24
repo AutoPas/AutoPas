@@ -7,11 +7,11 @@
 #include <array>
 #include <iostream>
 
+#include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
-#include "autopas/sph/autopassph.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
-using Particle = autopas::sph::SPHParticle;
+using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
 template <class Container, class Functor>
@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
   boxMax[1] = boxMax[2] = boxMax[0] / 1.0;
   double cutoff = .03;
 
-  autopas::sph::SPHCalcDensityFunctor<Particle> densfunc;
-  autopas::sph::SPHCalcHydroForceFunctor<Particle> hydrofunc;
+  sphLib::SPHCalcDensityFunctor<Particle> densfunc;
+  sphLib::SPHCalcHydroForceFunctor<Particle> hydrofunc;
 
   int numParticles;
   int numIterations;
@@ -54,8 +54,8 @@ int main(int argc, char *argv[]) {
   int functorTypeInt = 0;
   enum FunctorType { densityFunctor, hydroForceFunctor } functorType = densityFunctor;
 
-  double skin = 0.;
-  int rebuildFrequency = 10;
+  double skinPerTimestep = 0.;
+  unsigned int rebuildFrequency = 10;
   bool useNewton3 = true;
   try {
     if (argc >= 9) {
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
     }
     if (argc >= 7) {
       rebuildFrequency = std::stoi(argv[6]);
-      skin = std::stod(argv[5]);
+      skinPerTimestep = std::stod(argv[5]);
     }
     if (argc >= 5) {
       functorTypeInt = std::stoi(argv[4]);
@@ -83,14 +83,15 @@ int main(int argc, char *argv[]) {
       throw std::runtime_error("too few arguments");
     }
   } catch (const std::exception &e) {
-    std::cerr
-        << "ERROR parsing the input arguments: " << e.what() << std::endl
-        << "sph-diagram-generation requires the following arguments:" << std::endl
-        << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 [boxSize]]]]:"
-        << std::endl
-        << std::endl
-        << "containerType should be either linked-cells, direct sum, verlet lists or verlet lists cells" << std::endl
-        << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
+    std::cerr << "ERROR parsing the input arguments: " << e.what() << std::endl
+              << "sph-diagram-generation requires the following arguments:" << std::endl
+              << "numParticles numIterations containerType [functorType [skinPerTimestep rebuildFrequency [useNewton3 "
+                 "[boxSize]]]]:"
+              << std::endl
+              << std::endl
+              << "containerType should be either linked-cells, direct sum, verlet lists or verlet lists cells"
+              << std::endl
+              << "functorType should be either 0 (density functor) or 1 (hydro force functor)" << std::endl;
     exit(1);
   }
 
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
-  autoPas.setVerletSkin(skin * cutoff);
+  autoPas.setVerletSkinPerTimestep(skinPerTimestep * cutoff / rebuildFrequency);
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setAllowedContainers(containerOptions);
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});

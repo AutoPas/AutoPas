@@ -39,10 +39,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01_combined_SoA,
     /**
-     * LCC01CudaTraversal : CUDA version of LCC01Traversal.
-     */
-    lc_c01_cuda,
-    /**
      * LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
      * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse-grained.
      */
@@ -81,12 +77,16 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_sliced_c02,
 
-    // VerletClusterCells Traversals:
+    // Octree Traversals:
     /**
-     * VCCClusterIterationCUDATraversal : CUDA. Concurrent processing of all clusters avoiding data races through
-     * atomics.
+     * OTC01Traversal : Simple DFS traversal without newton 3 optimization
      */
-    vcc_cluster_iteration_cuda,
+    ot_c01,
+    /**
+     * OTC18Traversal : DFS traversal with newton 3 optimization that checks whether a neighbor has already been
+     * processed via ID comparison
+     */
+    ot_c18,
 
     // VerletClusterLists Traversals:
     /**
@@ -113,7 +113,7 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_sliced_balanced,
     /**
-     * VCCSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
+     * VCLSlicedC02Traversal : 1D slicing with as many slices of minimal thickness as possible. No locks but two way
      * coloring of slices.
      */
     vcl_sliced_c02,
@@ -175,6 +175,13 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vlp_sliced_c02,
 
+    /**
+     * VLCCellPairC08Traversal : based on LCC08Traversal.
+     * The pairwise neighbor list allows access to the relevant pairs of interacting particles for each pair of cells,
+     * including the diagonal non-base pair of cells in the standard c08 step.
+     */
+    vlp_c08,
+
     // VarVerlet Traversals:
     /**
      * VVLAsBuildTraversal : Track which thread built what neighbor list and schedule them the same way for the pairwise
@@ -223,16 +230,12 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
-        {TraversalOption::lc_c01_cuda, "lc_c01_cuda"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
         {TraversalOption::lc_c18, "lc_c18"},
-
-        // VerletClusterCells Traversals:
-        {TraversalOption::vcc_cluster_iteration_cuda, "vcc_cluster_iteration_cuda"},
 
         // VerletClusterLists Traversals:
         {TraversalOption::vcl_cluster_iteration, "vcl_cluster_iteration"},
@@ -261,6 +264,11 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vlp_c18, "vlp_c18"},
         {TraversalOption::vlp_c01, "vlp_c01"},
         {TraversalOption::vlp_sliced_balanced, "vlp_sliced_balanced"},
+        {TraversalOption::vlp_c08, "vlp_c08"},
+
+        // Octree Traversals:
+        {TraversalOption::ot_c18, "ot_c18"},
+        {TraversalOption::ot_c01, "ot_c01"},
     };
   };
 

@@ -75,13 +75,10 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   VerletNeighborListAsBuild() : _aosNeighborList{}, _soaListIsValid(false) {}
 
-  /**
-   * @copydoc VerletNeighborListInterface::getContainerType()
-   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::varVerletListsAsBuild; }
 
   /**
-   * @copydoc VerletNeighborListInterface::buildAoSNeighborList()
+   * @copydoc autopas::VerletNeighborListInterface::buildAoSNeighborList()
    *
    * It executes C08 on the passed LinkedCells container and saves the resulting pairs in the neighbor list, remembering
    * the thread and current color for each pair.
@@ -105,9 +102,6 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     }
   }
 
-  /**
-   * @copydoc VerletNeighborListInterface::checkNeighborListValidity()
-   */
   bool checkNeighborListValidity(bool useNewton3, double cutoff) override {
     _allPairsPresent = true;
     if (_baseLinkedCells == nullptr) return false;
@@ -156,9 +150,6 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
    */
   const auto &getSoANeighborList() { return _soaNeighborList; }
 
-  /**
-   * @copydoc ColorChangeObserver::receiveColorChange()
-   */
   void receiveColorChange(unsigned long newColor) override { _currentColor = newColor; }
 
   /**
@@ -168,7 +159,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     // Generate a map from pointer to particle index in the SoA. This works, because during loadSoA"()" the particles
     // are loaded in the same order.
     std::unordered_map<Particle *, size_t> _aos2soaMap;
-    _aos2soaMap.reserve(_baseLinkedCells->getNumParticles());
+    _aos2soaMap.reserve(_baseLinkedCells->getNumberOfParticles());
     size_t i = 0;
     // needs to iterate also over dummies!
     for (auto iter = _baseLinkedCells->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
@@ -234,14 +225,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     }
   }
 
-  /**
-   * @copydoc VerletNeighborListInterface::isSoAListValid()
-   */
   bool isSoAListValid() const override { return _soaListIsValid; }
 
-  /**
-   * @copydoc VerletNeighborListInterface::getNumberOfNeighborPairs()
-   */
   long getNumberOfNeighborPairs() const override {
     long numPairs = 0;
     for (const auto &colorList : _aosNeighborList) {

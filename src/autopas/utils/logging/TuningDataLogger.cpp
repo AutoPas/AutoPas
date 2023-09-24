@@ -11,7 +11,8 @@
 autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix)
     : _loggerName("TuningDataLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
-  auto outputFileName("AutoPas_tuningData_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
+  const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
+  auto outputFileName("AutoPas_tuningData_" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
   auto headerLoggerName = _loggerName + "header";
@@ -41,11 +42,14 @@ autopas::TuningDataLogger::~TuningDataLogger() {
 }
 
 void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &configuration,
-                                              const std::vector<long> &samples, size_t iteration, long reducedValue,
-                                              long smoothedVale) {
+                                              const std::vector<long> &samplesRebuildingNeighborLists,
+                                              const std::vector<long> &samplesNotRebuildingNeighborLists,
+                                              size_t iteration, long reducedValue, long smoothedValue) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   spdlog::get(_loggerName)
-      ->info("{},{},{},{},{}", iteration, configuration.getCSVLine(),
-             utils::ArrayUtils::to_string(samples, ",", {"", ""}), reducedValue, smoothedVale);
+      ->info("{},{},{},{},{},{}", iteration, configuration.getCSVLine(),
+             utils::ArrayUtils::to_string(samplesRebuildingNeighborLists, ",", {"", ""}),
+             utils::ArrayUtils::to_string(samplesNotRebuildingNeighborLists, ",", {"", ""}), reducedValue,
+             smoothedValue);
 #endif
 }

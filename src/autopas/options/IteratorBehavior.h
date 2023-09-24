@@ -9,6 +9,7 @@
 #include <set>
 
 #include "autopas/options/Option.h"
+#include "autopas/particles/OwnershipState.h"
 
 namespace autopas {
 inline namespace options {
@@ -58,7 +59,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
   static_assert((owned | halo) == ownedOrHalo, "Iterator behaviors are defined with non matching values!");
   static_assert((owned | halo | dummy) == ownedOrHaloOrDummy,
                 "Iterator behaviors are defined with non matching values!");
-  // forceSequential must does not overlap with anything else
+  // forceSequential must not overlap with anything else
   static_assert((ownedOrHaloOrDummy & forceSequential) == 0,
                 "Iterator behaviors are defined with non matching values!");
 
@@ -110,6 +111,29 @@ class IteratorBehavior : public Option<IteratorBehavior> {
         {IteratorBehavior::ownedOrHaloOrDummy, "ownedOrHaloOrDummy"},
         {IteratorBehavior::forceSequential, "forceSequential"},
     };
+  }
+
+  /**
+   * Check whether this iterator behavior covers the given particle
+   * @tparam ParticleType
+   * @param particle particle to be checked
+   * @return true if this iterator behavior covers the given particle, false otherwise
+   */
+  template <typename ParticleType>
+  bool contains(ParticleType &particle) {
+    switch (this->_value) {
+      case options::IteratorBehavior::ownedOrHaloOrDummy:
+        return true;
+      case options::IteratorBehavior::ownedOrHalo:
+        return not particle.isDummy();
+      case options::IteratorBehavior::halo:
+        return particle.isHalo();
+      case options::IteratorBehavior::owned:
+        return particle.isOwned();
+      default:
+        utils::ExceptionHandler::exception("unknown iterator behavior");
+        return false;
+    }
   }
 
  private:

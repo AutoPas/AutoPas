@@ -14,7 +14,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
-#include "autopas/utils/CudaSoAType.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
 #include "autopas/utils/markParticleAsDeleted.h"
@@ -26,7 +26,8 @@ namespace autopas {
  *
  * If a different Particle class should be used with AutoPas this class must be used as a base to build your own
  * Particle class.
- * @tparam Floating point type to be used for the SoAs.
+ * @tparam floatType Floating point type to be used for the SoAs.
+ * @tparam idType Integer type to be used for IDs.
  */
 template <typename floatType, typename idType>
 class ParticleBase {
@@ -39,7 +40,7 @@ class ParticleBase {
    * @param v Velocity of the particle.
    * @param id Id of the particle.
    */
-  ParticleBase(std::array<double, 3> r, std::array<double, 3> v, idType id)
+  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id)
       : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
 
   /**
@@ -75,6 +76,13 @@ class ParticleBase {
 
  public:
   /**
+   * Stream operator for instances of ParticleBase class.
+   * @return String representation.
+   */
+  template <typename T, typename P>
+  friend std::ostream &operator<<(std::ostream &os, const autopas::ParticleBase<T, P> &D);
+
+  /**
    * Equality operator for ParticleBase class.
    * @param rhs
    * @return
@@ -106,13 +114,19 @@ class ParticleBase {
    * Add a partial force to the force acting on the particle
    * @param f partial force to be added
    */
-  void addF(const std::array<double, 3> &f) { _f = utils::ArrayMath::add(_f, f); }
+  void addF(const std::array<double, 3> &f) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _f += f;
+  }
 
   /**
    * Substract a partial force from the force acting on the particle
    * @param f partial force to be substracted
    */
-  void subF(const std::array<double, 3> &f) { _f = utils::ArrayMath::sub(_f, f); }
+  void subF(const std::array<double, 3> &f) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _f -= f;
+  }
 
   /**
    * Get the id of the particle
@@ -142,7 +156,10 @@ class ParticleBase {
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
-  void addR(const std::array<double, 3> &r) { _r = utils::ArrayMath::add(_r, r); }
+  void addR(const std::array<double, 3> &r) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _r += r;
+  }
 
   /**
    * Get the velocity of the particle
@@ -160,7 +177,10 @@ class ParticleBase {
    * Add a vector to the current velocity of the particle
    * @param v vector to be added
    */
-  void addV(const std::array<double, 3> &v) { _v = utils::ArrayMath::add(_v, v); }
+  void addV(const std::array<double, 3> &v) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _v += v;
+  }
 
   /**
    * Creates a string containing all data of the particle.
@@ -172,17 +192,16 @@ class ParticleBase {
     text << "Particle"
          << "\nID      : " << _id
          << "\nPosition: "
-         << utils::ArrayUtils::to_string(_r)
+         << autopas::utils::ArrayUtils::to_string(_r)
          << "\nVelocity: "
-         << utils::ArrayUtils::to_string(_v)
+         << autopas::utils::ArrayUtils::to_string(_v)
          << "\nForce   : "
-         << utils::ArrayUtils::to_string(_f)
+         << autopas::utils::ArrayUtils::to_string(_f)
          << "\nOwnershipState : "
          << _ownershipState;
     // clang-format on
     return text.str();
   }
-
   /**
    * Defines whether the particle is owned by the current AutoPas object (aka (MPI-)process)
    * @return true if the particle is owned by the current AutoPas object, false otherwise
@@ -201,6 +220,12 @@ class ParticleBase {
    * @return true if the particle is a dummy.
    */
   [[nodiscard]] bool isDummy() const { return _ownershipState == OwnershipState::dummy; }
+
+  /**
+   * Returns the particle's ownership state.
+   * @return the current OwnershipState
+   */
+  [[nodiscard]] OwnershipState getOwnershipState() const { return _ownershipState; }
 
   /**
    * Set the OwnershipState to the given value
@@ -232,21 +257,15 @@ class ParticleBase {
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
 
-#if defined(AUTOPAS_CUDA)
   /**
-   * The type for storage arrays for Cuda.
+   * Non-const getter for the pointer of this object.
+   * @tparam attribute Attribute name.
+   * @return this.
    */
-  using CudaDeviceArraysType =
-      typename autopas::utils::CudaSoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
-                                           floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                           floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
-#else
-  /**
-   * The type for storage arrays for Cuda.
-   * empty if compiled without Cuda Support.
-   */
-  using CudaDeviceArraysType = typename autopas::utils::CudaSoAType<>::Type;
-#endif
+  template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+    return this;
+  }
 
   /**
    * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
@@ -254,11 +273,9 @@ class ParticleBase {
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
-  template <AttributeNames attribute>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
-    if constexpr (attribute == AttributeNames::ptr) {
-      return this;
-    } else if constexpr (attribute == AttributeNames::id) {
+  template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
+  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+    if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
@@ -311,7 +328,8 @@ class ParticleBase {
  private:
   /**
    * Marks a particle as deleted.
-   * @note: This function should not be used from outside of AutoPas. Instead, use AutoPas::deleteParticle(iterator).
+   * @note: This function should not be used from outside of AutoPas,
+   * because the logic handler keeps track of the number of particles. Instead, use AutoPas::deleteParticle(iterator).
    * @note: From within autopas, you might want to use internal::markParticleAsDeleted(Particle &particle)
    */
   void markAsDeleted() {
@@ -326,5 +344,23 @@ class ParticleBase {
   template <class T>
   friend void internal::markParticleAsDeleted(T &);
 };
+
+/**
+ * Stream operator for instances of ParticleBase class.
+ * This function enables passing ParticleBase objects to an ostream via `<<`
+ * @tparam Floating point type to be used for the SoAs.
+ * @param os
+ * @param particle
+ * @return String representation.
+ */
+template <typename floatType, typename idType>
+std::ostream &operator<<(std::ostream &os, const ParticleBase<floatType, idType> &particle) {
+  using utils::ArrayUtils::operator<<;
+  os << "Particle"
+     << "\nID      : " << particle._id << "\nPosition: " << particle._r << "\nVelocity: " << particle._v
+     << "\nForce   : " << particle._f << "\nOwnershipState : " << particle._ownershipState;
+  // clang-format on
+  return os;
+}
 
 }  // namespace autopas

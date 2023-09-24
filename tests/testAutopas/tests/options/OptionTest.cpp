@@ -46,12 +46,12 @@ TEST(OptionTest, parseContainerOptionsTest) {
       {autopas::ContainerOption::directSum, "directSum"},
       {autopas::ContainerOption::linkedCells, "linkedCells"},
       {autopas::ContainerOption::varVerletListsAsBuild, "varVerletListsAsBuild"},
-      {autopas::ContainerOption::verletClusterCells, "vclustercells"},
       {autopas::ContainerOption::verletClusterLists, "vclusterlists"},
       {autopas::ContainerOption::verletLists, "verletLists"},
       {autopas::ContainerOption::verletListsCells, "verletLists-cells"},
       {autopas::ContainerOption::linkedCellsReferences, "linkedCellsreferenc"},
-      {autopas::ContainerOption::pairwiseVerletLists, "pairwiseVerlet"}};
+      {autopas::ContainerOption::pairwiseVerletLists, "pairwiseVerlet"},
+      {autopas::ContainerOption::octree, "octree"}};
 
   EXPECT_EQ(mapEnumString.size(), autopas::ContainerOption::getOptionNames().size());
 
@@ -61,11 +61,8 @@ TEST(OptionTest, parseContainerOptionsTest) {
 
 TEST(OptionTest, parseDataLayoutOptionsTest) {
   std::map<autopas::DataLayoutOption, std::string> mapEnumString = {
-    {autopas::DataLayoutOption::aos, "aos"},
-    {autopas::DataLayoutOption::soa, "soa"},
-#if defined(AUTOPAS_CUDA)
-    {autopas::DataLayoutOption::cuda, "cuda"},
-#endif
+      {autopas::DataLayoutOption::aos, "aos"},
+      {autopas::DataLayoutOption::soa, "soa"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::DataLayoutOption::getOptionNames().size());
@@ -89,12 +86,17 @@ TEST(OptionTest, parseSelectorOptionsTest) {
 
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
+      {autopas::TuningStrategyOption::activeHarmony, "harmony"},
       {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
       {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
-      {autopas::TuningStrategyOption::randomSearch, "random"},
-      {autopas::TuningStrategyOption::activeHarmony, "harmony"},
+      {autopas::TuningStrategyOption::mpiDivideAndConquer, "divide&conquer"},
       {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
+      {autopas::TuningStrategyOption::randomSearch, "random"},
+      {autopas::TuningStrategyOption::ruleBasedTuning, "rule-based"},
+      {autopas::TuningStrategyOption::slowConfigFilter, "slow-filter"},
+      {autopas::TuningStrategyOption::sortByName, "sortbyname"},
+      {autopas::TuningStrategyOption::tuningStrategyLogger, "tuningstratLogger"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());

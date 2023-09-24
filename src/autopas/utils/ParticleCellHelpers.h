@@ -14,15 +14,14 @@ namespace autopas::internal {
  * cellI and overwrites the particle with particleI, if it is found.
  * @param cell
  * @param particle
- * @tparam ParticleType
  * @tparam CellType
  * @return true if the particle was updated, false otherwise.
  */
-template <class ParticleType, class CellType>
-static bool checkParticleInCellAndUpdateByID(CellType &cell, const ParticleType &particle) {
-  for (auto iterator = cell.begin(); iterator.isValid(); ++iterator) {
-    if (iterator->getID() == particle.getID()) {
-      *iterator = particle;
+template <class CellType>
+static bool checkParticleInCellAndUpdateByID(CellType &cell, const typename CellType::ParticleType &particle) {
+  for (auto &p : cell) {
+    if (p.getID() == particle.getID()) {
+      p = particle;
       return true;
     }
   }
@@ -36,14 +35,18 @@ static bool checkParticleInCellAndUpdateByID(CellType &cell, const ParticleType 
  * @param absError maximal distance the previous particle is allowed to be away from the new particle.
  * @note This version is useful, if there might be more than one particle with the same id in the same cell.
  */
-template <class ParticleType, class CellType>
-static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const ParticleType &particle, double absError) {
-  for (auto iterator = cell.begin(); iterator.isValid(); ++iterator) {
-    if (iterator->getID() == particle.getID()) {
-      auto distanceVec = autopas::utils::ArrayMath::sub(iterator->getR(), particle.getR());
+template <class CellType>
+static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const typename CellType::ParticleType &particle,
+                                                        double absError) {
+  using namespace autopas::utils::ArrayMath::literals;
+  // This lock is relevant for octree and directSum.
+  std::lock_guard<AutoPasLock> cellLock(cell._cellLock);
+  for (auto &p : cell) {
+    if (p.getID() == particle.getID()) {
+      auto distanceVec = p.getR() - particle.getR();
       auto distanceSqr = autopas::utils::ArrayMath::dot(distanceVec, distanceVec);
       if (distanceSqr < absError * absError) {
-        *iterator = particle;
+        p = particle;
         // found the particle, returning.
         return true;
       }

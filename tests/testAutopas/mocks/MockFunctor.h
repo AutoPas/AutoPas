@@ -13,10 +13,6 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
-#if defined(AUTOPAS_CUDA)
-#include "autopas/utils/CudaSoA.h"
-#endif
-
 template <class Particle>
 class MockFunctor : public autopas::Functor<Particle, MockFunctor<Particle>> {
  public:
@@ -63,33 +59,6 @@ class MockFunctor : public autopas::Functor<Particle, MockFunctor<Particle>> {
   // virtual bool allowsNonNewton3() { return false; }
   MOCK_METHOD(bool, allowsNonNewton3, (), (override));
 
-  MOCK_METHOD(bool, isAppropriateClusterSize, (unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout),
-              (const, override));
-
   //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));
-
-#if defined(AUTOPAS_CUDA)
-  // virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle, bool newton3)
-  MOCK_METHOD(void, CudaFunctor,
-              (autopas::CudaSoA<typename Particle::CudaDeviceArraysType> & device_handle, bool newton3), (override));
-
-  /*virtual void CudaFunctor(CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle1,
-  CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3)*/
-  MOCK_METHOD(void, CudaFunctor,
-              (autopas::CudaSoA<typename Particle::CudaDeviceArraysType> & device_handle1,
-               autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle2, bool newton3),
-              (override));
-
-  //  void deviceSoALoader(::autopas::SoA<SoAArraysType> &soa,
-  //                       CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle)
-  MOCK_METHOD(void, deviceSoALoader,
-              (autopas::SoA<typename Particle::SoAArraysType> & soa,
-               autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle),
-              (override));
-  MOCK_METHOD(void, deviceSoAExtractor,
-              (autopas::SoA<typename Particle::SoAArraysType> & soa,
-               autopas::CudaSoA<typename Particle::CudaDeviceArraysType> &device_handle),
-              (override));
-#endif
 };

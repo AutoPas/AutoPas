@@ -51,18 +51,16 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     return true;
   }
 
-  bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-    return false;  // this functor shouldn't be called with clusters!
-  }
-
   /**
    * @copydoc Functor::AoSFunctor()
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+    auto dist = i.getR() - j.getR();
     double distsquare = utils::ArrayMath::dot(dist, dist);
     if (distsquare < _cutoffskinsquared) {
       // this is thread safe, only if particle i is accessed by only one
@@ -89,7 +87,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
    * @copydoc Functor::SoAFunctorSingle()
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
-    if (soa.getNumParticles() == 0) return;
+    if (soa.getNumberOfParticles() == 0) return;
 
     auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -110,7 +108,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     // iterating over particle indices and accessing currentList at index i works
     // because the particles are iterated in the same order they are loaded in
     // which is the same order they were initialized when building the aosNeighborList
-    size_t numPart = soa.getNumParticles();
+    size_t numPart = soa.getNumberOfParticles();
     for (unsigned int i = 0; i < numPart; ++i) {
       for (unsigned int j = i + 1; j < numPart; ++j) {
         const double drx = xptr[i] - xptr[j];
@@ -145,7 +143,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
    * @param soa2 Second structure of arrays.
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
-    if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+    if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
     auto **const __restrict__ ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -172,9 +170,9 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     // iterating over particle indices and accessing currentList at index i works
     // because the particles are iterated in the same order they are loaded in
     // which is the same order they were initialized when building the aosNeighborList
-    size_t numPart1 = soa1.getNumParticles();
+    size_t numPart1 = soa1.getNumberOfParticles();
     for (unsigned int i = 0; i < numPart1; ++i) {
-      size_t numPart2 = soa2.getNumParticles();
+      size_t numPart2 = soa2.getNumberOfParticles();
       for (unsigned int j = 0; j < numPart2; ++j) {
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];

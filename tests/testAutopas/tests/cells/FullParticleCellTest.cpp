@@ -23,8 +23,8 @@ TEST_F(FullParticleCellTest, testRangeBasedLoop) {
     particle.setF({42., 42., 42.});
   }
 
-  for (auto iter = cell.begin(); iter.isValid(); ++iter) {
-    decltype(iter->getF()) comparison = {42., 42., 42};
-    ASSERT_EQ(iter->getF(), comparison);
+  for (auto p : cell) {
+    decltype(p.getF()) comparison = {42., 42., 42};
+    ASSERT_EQ(p.getF(), comparison);
   }
 }

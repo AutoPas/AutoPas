@@ -130,7 +130,7 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
         continue;
       }
 
-      auto &currentTower = clusterList.getTowerAtCoordinates(x, y);
+      auto &currentTower = clusterList.getTowerByIndex(x, y);
       for (auto &cluster : currentTower.getClusters()) {
         _clusterFunctor.traverseCluster(cluster);
 

@@ -44,7 +44,7 @@ class SoAStorage {
   }
 
   /**
-   * @copydoc get()
+   * @copydoc autopas::utils::SoAStorage<SoAArraysType>::get()
    * @note const variant
    */
   template <size_t soaAttribute>

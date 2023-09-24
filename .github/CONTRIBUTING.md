@@ -1,3 +1,4 @@
+
 # Contributing to AutoPas
 
 **Thanks for contributing to AutoPas!** 
@@ -23,9 +24,10 @@ Please keep in mind the following notes while working.
 * Class names start with a capital letter.
 * Use camelCase over snake_case.
 * Google code style is enforced by the CI server.
+* To enable code formatting targets set the `cmake` variable `AUTOPAS_FORMATTING_TARGETS` to `ON`.
 * Clang format version 9 is enforced (Other versions might format slightly differently).
 * Use `make clangformat` before submitting a PR.
-* [cmake format](https://github.com/cheshirekow/cmake_format/tree/master/cmake_format) is enforced.
+* [cmake format](https://github.com/cheshirekow/cmake_format) is enforced.
 * Use `make cmakeformat` before submitting a PR.
 
 ### Comment Style
@@ -55,19 +57,18 @@ Please keep in mind the following notes while working.
 * Please avoid using commits to save your unfinished work before switching branches, this pollutes the commit history. Please use `git stash` instead.
 
 ## Docker
-You want to compile AutoPas with CUDA or any sanitizers but do not have the appropriate compiler? Don't fret! There are docker containers for that. The containers are built from the [AutoPas-Dockerfiles repository](https://github.com/AutoPas/AutoPas-Dockerfiles) and prebuilds are hosted at [dockerhub](https://hub.docker.com/search?q=autopas%2F&type=image). To use a compiler from a container either mount your AutoPas folder and start bash in the container:
+You want to compile AutoPas with any sanitizers but do not have the appropriate compiler? Don't fret! There are docker containers for that. The containers are built from the [AutoPas-Dockerfiles repository](https://github.com/AutoPas/AutoPas-Dockerfiles) and prebuilds are hosted at [dockerhub](https://hub.docker.com/search?q=autopas%2F&type=image). To use a compiler from a container either mount your AutoPas folder and start bash in the container:
 ```bash
-docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda bash
+docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-intel bash
 ```
 or directly start the compilation process:
 ```bash
-docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-cuda \
+docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-intel \
   bash -c "cd /autopas/build \
   && cmake -G Ninja .. \
   && ninja"
 ```
-You will not be able to completely compile the unit tests with CUDA without a GPU in your system since CMake will try to run tests during the build process.
-The tests executed within Jenkins are using these docker images.
+The tests executed through Jenkins are using these docker images.
 
 ## Jenkins/CI
 A continuous integration setup (CI) is automatically run for each open pull request and for the master.
@@ -110,10 +111,12 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Add a new enum in `TraversalOption::Value`.
   * Add a new string representation in the `map` of `TraversalOption::getOptionNames()`.
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
-* Add a case for the new traversal in `src/autopas/selectors/TraversalSelector.h::generateTraversal()`.
+  * If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals (E.g. `CompatibleTraversals::allTraversalsSupportingOnlySoA()`).
+* Add a case for the new traversal in `src/autopas/tuning/selectors/TraversalSelector.h::generateTraversal()`.
 * Check that the new option is working in the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `OptionTest::parseTraversalOptionsTest`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/tuning/AutoTunerTest.cpp::testAllConfigurations()` and `OptionTest::parseTraversalOptionsTest`).
 * Add new unit tests for your traversal.
+* Regenerate the `RuleLanguage.g4` via the `generateRuleLanguage.sh` script, both located in `src/autopas/tuning/tuningStrategy/ruleBasedTuning`
 
 ### Adding a new Container
 * Create a new container class under `src/autopas/containers/`.
@@ -123,18 +126,19 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Add a new string representation in the `map` of `ContainerOption::getOptionNames()`.
 * Create a new set of compatible traversals in `src/autopas/containers/CompatibleTraversals.h`.
 * Create a new `case` statement in `src/autopas/utils/StaticContainerSelector.h`.
-* Add a case for the new container in `src/autopas/selectors/ContainerSelector.h::generateContainer()`.
+* Add a case for the new container in `src/autopas/tuning/selectors/ContainerSelector.h::generateContainer()`.
 * Check that the new option is working in the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/selectors/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseContainerOptionsTest`).
+* Adapt unit tests (e.g. expected number of iterations in `tests/testAutopas/tests/tuning/AutoTunerTest.cpp::testAllConfigurations()` and `StringUtilsTest::parseContainerOptionsTest`).
 * Add new unit tests for your container.
+* Regenerate the `RuleLanguage.g4` via the `generateRuleLanguage.sh` script, both located in `src/autopas/tuning/tuningStrategy/ruleBasedTuning`
 
 ### Adding a new Tuning Strategy
-* Create a new tuning strategy class under `src/autopas/selectors/tuningStrategy`.
-* Derive your new strategy from `src/autopas/selectors/tuningStrategy/TuningStrategyInterface.h` or a more similar one.
+* Create a new tuning strategy class under `src/autopas/tuning/tuningStrategy`.
+* Derive your new strategy from `src/autopas/tuning/tuningStrategy/TuningStrategyInterface.h` or a more similar one.
 * Go to `src/autopas/options/TuningStrategyOption.h`.
   * Add a new enum in `TuningStrategyOption::Value`.
   * Add a new string representation in the `map` of `TuningStrategyOption::getOptionNames()`.
-* In `src/autopas/AutoPas.h::generateTuningStrategy()`:
+* In `src/autopas/tuning/tuningStrategy/TuningStrategyFactory.cpp::generateTuningStrategy()`:
   * Add a `case` for the new strategy.
   * If the new strategy handles communication between processes itself, make sure to not wrap it in the lower `mpiStrategyOption`-switch.
 * Check that the new option is working in the md-flexible example.
@@ -147,18 +151,19 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Inherit from `src/autopas/options/Option.h`. This will also generate functions for conversion from and to strings.
 * Add new unit tests for your option, mainly in `tests/testAutopas/tests/options/OptionTest.cpp`.
 * Also add the new option to md-flexible! 
-  * The option needs to be added in `examples/md-flexible/src/parsing/MDFlexConfig.h`.
-  * Parsing for it in `examples/md-flexible/src/parsing/CLIParser.cpp` and `YamlParser.cpp`
+  * Add the option in `examples/md-flexible/src/parsing/MDFlexConfig.h`
+  * Add it to `MDFlexConfig::to_string`
+  * Parse it in `examples/md-flexible/src/parsing/CLIParser.cpp` (in `CLIParser::parseInput()`: Add it to `relevantOptions` and switch)
+  * Parse it in `examples/md-flexible/src/configuration/YamlParser.cpp`
+  * If applicable, pass the option value to AutoPas in `Simulation::Simulation()`
   * Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`
 
 ### Making an Option tunable
-* If not already done, add a new setter to `src/autopas/AutoPas.h`.
-* Initiate the set of allowed options to all options in the constructor of AutoPas.
-* Add your option to `src/autopas/selectors/Configuration.h` and adjust constructors, comparison operators and ConfigHash function accordingly.
-* Add a parameter for your option to `TuningStrategyFactory::generateTuningStrategy` and pass it to the constructors for each tuning strategy.
+* If not already done, add a new setter to `src/autopas/AutoPasDecl.h`.
+* Add your option to `src/autopas/tuning/Configuration.h` and adjust constructors, comparison operators and ConfigHash function accordingly.
 * Adjust the individual tuning strategies accordingly; the exact implementation will depend on the purpose of your option, but some general advice is:
   * Depending on your new option, it might make sense for some tuning strategies to merge it with another option to avoid sparse dimensions.
-  * `FullSearch` and `PredictiveTuning` inherit from `SetSearchSpaceBasedTuningStrategy`, adjust the constructor for this class and the method `populateSearchSpace()`.
+  * Make sure it is added to the search spaces that is passed to the `AutoTuner` in `AutoPas::init()`
   * For bayesian based tuning strategies your option will also have to be integrated into `FeatureVector` and `FeatureVectorEncoder`.
   * Extend `FeatureVectorEncoder` by modifying `setAllowedOptions()`, `convertToTunable()` and `convertFromTunable()`. If the new option wasn't merged with another one you may have to add a new index to `DiscreteIndices` or `ContinuousIndices`
   * Make sure to declare your option by calling `configureTuningParameter()` in `ActiveHarmony::resetHarmony()`.
@@ -170,6 +175,13 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * If the new options depends on others, implement it similarly to traversals, containers, and load estimators.
 * Adjust any tests that are affected by these changes. The following tests will definitely require changes:
   * `tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.{h,cpp}`
-  * `tests/testAutopas/tests/selectors/AutoTunerTest.cpp`
-  * `tests/testAutopas/tests/selectors/FeatureVectorTest.cpp`
-  * Tests for the individual tuning strategies. See files in `tests/testAutopas/tests/selectors/tuningStrategy/`.
+  * `tests/testAutopas/tests/tuning/AutoTunerTest.cpp`
+  * `tests/testAutopas/tests/tuning/FeatureVectorTest.cpp`
+  * Tests for the individual tuning strategies. See files in `tests/testAutopas/tests/tuning/tuningStrategy/`.
+
+### Rule Based Tuning and Antlr
+Whenever any option is added that is part of the tuning procedure, it has to be added to the Antlr parsing logic and grammar.
+To update the grammar, simply run `src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh` and overwrite the old `src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLangugage.g4` file.
+To update the parser, the easiest way to do this is via the CLion plugin for Antlr4. Just right-click the g4 file -> 'Configure ANTLR' (Output directory, input grammar file, namespace `autopas_generated_rule_syntax`, language) and then right click the g4 again -> 'Generate ANTLR Recognizer'. Don't forget to apply clang-format afterward.
+
+**WARNING** The CLion plugin and Antlr version must match!. For example for Antlr version 4.9.1 the plugin version 1.16 is needed, otherwise incompatible parser code is generated. See [Antlr plugin's GitHub page](https://github.com/antlr/intellij-plugin-v4/releases) for what is compatible and get the plugin's binary from the [jetbrains plugin webpage](https://plugins.jetbrains.com/plugin/7358-antlr-v4/versions).

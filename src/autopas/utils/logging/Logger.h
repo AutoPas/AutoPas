@@ -16,6 +16,11 @@
 
 #ifdef AUTOPAS_VERBOSE_LOG
 /**
+ * Helper Macro to get only the basename
+ */
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+/**
  * Macro for logging providing common meta information.
  * @param lvl Possible levels: trace, debug, info, warn, error, critical.
  * @param fmt Message with formatting tokens
@@ -23,10 +28,10 @@
  */
 #define AutoPasLog(lvl, fmt, ...)                                        \
   {                                                                      \
-    size_t textwidth = 26; /* If filenames get cropped increase this! */ \
+    size_t textwidth = 35; /* If filenames get cropped increase this! */ \
     std::string s;                                                       \
     s.reserve(textwidth);                                                \
-    s.append(SPDLOG_FILE_BASENAME(__FILE__));                            \
+    s.append(__FILENAME__);                                              \
     s.append(":");                                                       \
     s.append(std::to_string(__LINE__));                                  \
     s.resize(textwidth, ' ');                                            \
@@ -40,8 +45,7 @@
  * @param ... Formatting arguments
  * @note A ';' is enforced at the end of the macro.
  */
-#define AutoPasLog(lvl, fmt, ...) spdlog::get("AutoPasLog")->lvl(fmt, ##__VA_ARGS__)
-
+#define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(spdlog::get("AutoPasLog"), fmt, ##__VA_ARGS__)
 #endif
 
 namespace autopas {
@@ -64,7 +68,9 @@ class Logger {
    */
   static void create(std::string &filename) {
     // drop an already registered Logger if it exists
-    if (spdlog::get(loggerName())) spdlog::drop(loggerName());
+    if (spdlog::get(loggerName())) {
+      unregister();
+    }
     spdlog::basic_logger_mt(loggerName(), filename);
   }
 
@@ -75,20 +81,22 @@ class Logger {
    */
   static void create(std::ostream &oss = std::cout) {
     // drop an already registered Logger if it exists
-    if (spdlog::get(loggerName())) spdlog::drop(loggerName());
-    std::shared_ptr<spdlog::sinks::sink> ostream_sink;
+    if (spdlog::get(loggerName())) {
+      unregister();
+    }
+    std::shared_ptr<spdlog::sinks::sink> ostreamSink;
 #ifdef AUTOPAS_COLORED_CONSOLE_LOGGING
     if (oss.rdbuf() == std::cout.rdbuf()) {
-      ostream_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+      ostreamSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     } else if (oss.rdbuf() == std::cerr.rdbuf()) {
-      ostream_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
+      ostreamSink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
     } else {  // no color for streams other than cout / cerr
-      ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+      ostreamSink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
     }
 #else
-    ostream_sink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
+    ostreamSink = std::make_shared<spdlog::sinks::ostream_sink_mt>(oss);
 #endif
-    auto logger = std::make_shared<spdlog::logger>(loggerName(), ostream_sink);
+    auto logger = std::make_shared<spdlog::logger>(loggerName(), ostreamSink);
     spdlog::register_logger(logger);
   }
 

@@ -19,7 +19,7 @@ namespace autopas::compatibleTraversals {
  * Lists all traversal options applicable for the Direct Sum container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allDSCompatibleTraversals() {
+[[maybe_unused]] static const std::set<TraversalOption> &allDSCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::ds_sequential};
   return s;
 }
@@ -28,14 +28,18 @@ static const std::set<TraversalOption> &allDSCompatibleTraversals() {
  * Lists all traversal options applicable for the Linked Cells container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allLCCompatibleTraversals() {
-  static const std::set<TraversalOption> s {
-    TraversalOption::lc_c01, TraversalOption::lc_c08, TraversalOption::lc_c18, TraversalOption::lc_sliced,
-        TraversalOption::lc_sliced_balanced, TraversalOption::lc_c01_combined_SoA, TraversalOption::lc_c04,
-        TraversalOption::lc_c04_combined_SoA, TraversalOption::lc_c04_HCP, TraversalOption::lc_sliced_c02,
-#if defined(AUTOPAS_CUDA)
-        TraversalOption::lc_c01_cuda
-#endif
+[[maybe_unused]] static const std::set<TraversalOption> &allLCCompatibleTraversals() {
+  static const std::set<TraversalOption> s{
+      TraversalOption::lc_c01,
+      TraversalOption::lc_c08,
+      TraversalOption::lc_c18,
+      TraversalOption::lc_sliced,
+      TraversalOption::lc_sliced_balanced,
+      TraversalOption::lc_c01_combined_SoA,
+      TraversalOption::lc_c04,
+      TraversalOption::lc_c04_combined_SoA,
+      TraversalOption::lc_c04_HCP,
+      TraversalOption::lc_sliced_c02,
   };
   return s;
 }
@@ -45,13 +49,15 @@ static const std::set<TraversalOption> &allLCCompatibleTraversals() {
  * Lists all traversal options applicable for the Reference Linked Cells container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allRLCCompatibleTraversals() { return allLCCompatibleTraversals(); }
+[[maybe_unused]] static const std::set<TraversalOption> &allRLCCompatibleTraversals() {
+  return allLCCompatibleTraversals();
+}
 
 /**
  * Lists all traversal options applicable for the Verlet Cluster Lists container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
+[[maybe_unused]] static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::vcl_cluster_iteration, TraversalOption::vcl_c06,
                                            TraversalOption::vcl_c01_balanced,      TraversalOption::vcl_sliced,
                                            TraversalOption::vcl_sliced_balanced,   TraversalOption::vcl_sliced_c02};
@@ -62,7 +68,7 @@ static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
  * Lists all traversal options applicable for the Verlet Lists container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allVLCompatibleTraversals() {
+[[maybe_unused]] static const std::set<TraversalOption> &allVLCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::vl_list_iteration};
   return s;
 }
@@ -71,7 +77,7 @@ static const std::set<TraversalOption> &allVLCompatibleTraversals() {
  * Lists all traversal options applicable for the Verlet Lists Cells container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
+[[maybe_unused]] static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::vlc_sliced, TraversalOption::vlc_c18,
                                            TraversalOption::vlc_c01, TraversalOption::vlc_sliced_c02,
                                            TraversalOption::vlc_sliced_balanced};
@@ -79,19 +85,10 @@ static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
 }
 
 /**
- * Lists all traversal options applicable for the Verlet Cluster Cells container.
- * @return Set of all applicable traversal options.
- */
-static const std::set<TraversalOption> &allVCCCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vcc_cluster_iteration_cuda};
-  return s;
-}
-
-/**
  * Lists all traversal options applicable for the Var Verlet Lists As Build container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
+[[maybe_unused]] static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
   static const std::set<TraversalOption> s{TraversalOption::vvl_as_built};
   return s;
 }
@@ -100,19 +97,72 @@ static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
  * Lists all traversal options applicable for the Pairwise Verlet Lists container.
  * @return set of all applicable traversal options.
  */
-static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vlp_sliced, TraversalOption::vlp_c18,
-                                           TraversalOption::vlp_c01, TraversalOption::vlp_sliced_c02,
-                                           TraversalOption::vlp_sliced_balanced};
+[[maybe_unused]] static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::vlp_sliced,
+                                           TraversalOption::vlp_c18,
+                                           TraversalOption::vlp_c01,
+                                           TraversalOption::vlp_sliced_c02,
+                                           TraversalOption::vlp_sliced_balanced,
+                                           TraversalOption::vlp_c08};
   return s;
 }
+
+/**
+ * Lists all traversal options applicable for the Octree container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allOTCompatibleTraversals() {
+  static const std::set<TraversalOption> s{TraversalOption::ot_c18, TraversalOption::ot_c01};
+  return s;
+}
+
+/**
+ * Provides a set of all traversals that only support Newton3 mode disabled.
+ * @return
+ */
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Disabled() {
+  return {
+      TraversalOption::lc_c01,
+      TraversalOption::lc_c01_combined_SoA,
+      TraversalOption::ot_c01,
+      TraversalOption::vcl_c01_balanced,
+      TraversalOption::vcl_cluster_iteration,
+      TraversalOption::vl_list_iteration,
+      TraversalOption::vlc_c01,
+      TraversalOption::vlp_c01,
+  };
+};
+/**
+ * Provides a set of all traversals that only support Newton3 mode enabled.
+ * @return
+ */
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Enabled() {
+  return {
+      TraversalOption::ot_c18,
+  };
+};
+/**
+ * Provides a set of all traversals that only support DataLayout AoS.
+ * @return
+ */
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
+/**
+ * Provides a set of all traversals that only support DataLayout SoA.
+ * @return
+ */
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlySoA() {
+  return {
+      TraversalOption::lc_c01_combined_SoA,
+      TraversalOption::lc_c04_combined_SoA,
+  };
+};
 
 /**
  * Lists all traversal options applicable for the given container.
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
  */
-static inline const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption) {
+[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption) {
   switch (containerOption) {
     case ContainerOption::linkedCells: {
       return allLCCompatibleTraversals();
@@ -129,9 +179,6 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     case ContainerOption::verletListsCells: {
       return allVLCCompatibleTraversals();
     }
-    case ContainerOption::verletClusterCells: {
-      return allVCCCompatibleTraversals();
-    }
     case ContainerOption::varVerletListsAsBuild: {
       return allVarVLAsBuildCompatibleTraversals();
     }
@@ -140,6 +187,9 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
     }
     case ContainerOption::pairwiseVerletLists: {
       return allVLPCompatibleTraversals();
+    }
+    case ContainerOption::octree: {
+      return allOTCompatibleTraversals();
     }
   }
 
@@ -155,7 +205,7 @@ static inline const std::set<TraversalOption> &allCompatibleTraversals(Container
  * @param traversalOption TraversalOption
  * @return set of all compatible container options.
  */
-static inline std::set<ContainerOption> allCompatibleContainers(TraversalOption traversalOption) {
+[[maybe_unused]] static std::set<ContainerOption> allCompatibleContainers(TraversalOption traversalOption) {
   std::set<ContainerOption> result{};
 
   for (const auto &container : ContainerOption::getAllOptions()) {

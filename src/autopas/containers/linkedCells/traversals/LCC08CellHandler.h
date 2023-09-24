@@ -38,7 +38,7 @@ class LCC08CellHandler {
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, std::array<unsigned long, 3> cellsPerDimension,
+  explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             const double interactionLength, const std::array<double, 3> &cellLength,
                             const std::array<unsigned long, 3> &overlap)
       : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
@@ -57,26 +57,32 @@ class LCC08CellHandler {
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
- private:
+ protected:
+  /**
+   * Pair sets for processBaseCell().
+   * Values are: offset of first cell, offset of second cell, sorting direction.
+   */
+  std::vector<std::tuple<unsigned long, unsigned long, std::array<double, 3>>> _cellPairOffsets;
+
   /**
    * Computes pairs for the block used in processBaseCell().
    * The algorithm used to generate the cell pairs can be visualized with a python script, which can be found in
    * docs/C08TraversalScheme.py
    * @param cellsPerDimension
    */
-  void computeOffsets(std::array<unsigned long, 3> cellsPerDimension);
+  void computeOffsets(const std::array<unsigned long, 3> &cellsPerDimension);
 
+  /**
+   * Overlap of interacting cells. Array allows asymmetric cell sizes.
+   */
+  const std::array<unsigned long, 3> _overlap;
+
+ private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
       _cellFunctor;
-
-  /**
-   * Pair sets for processBaseCell().
-   * Values are: offset of first cell, offset of second cell, sorting direction.
-   */
-  std::vector<std::tuple<unsigned long, unsigned long, std::array<double, 3>>> _cellPairOffsets;
 
   /**
    * Interaction length (cutoff + skin).
@@ -87,11 +93,6 @@ class LCC08CellHandler {
    * Cell length in CellBlock3D.
    */
   const std::array<double, 3> _cellLength;
-
-  /**
-   * Overlap of interacting cells. Array allows asymmetric cell sizes.
-   */
-  const std::array<unsigned long, 3> _overlap;
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
@@ -114,7 +115,8 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
-    std::array<unsigned long, 3> cellsPerDimension) {
+    const std::array<unsigned long, 3> &cellsPerDimension) {
+  using namespace autopas::utils::ArrayMath::literals;
   using std::make_pair;
 
   //////////////////////////////
@@ -123,7 +125,7 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   const unsigned long ov1_squared = ov1 * ov1;
   //////////////////////////////
 
-  std::array<unsigned long, 3> overlap_1 = utils::ArrayMath::addScalar(_overlap, 1ul);
+  const std::array<unsigned long, 3> overlap_1 = _overlap + 1ul;
 
   std::vector<unsigned long> cellOffsets;
   cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
@@ -152,10 +154,9 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         // origin
         {
           // check whether cell is within interaction length
-          auto distVec = utils::ArrayMath::mul(
-              {std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
-          const std::array<unsigned long, 3> real_pos =
-              utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[z], cellsPerDimension);
+          const auto distVec =
+              std::array<double, 3>{std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)} *
+              _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             // sorting direction is NOT distance vector. Sorting fix:
@@ -174,8 +175,9 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         // back left
         if (y != _overlap[1] and z != 0) {
           // check whether cell is within interaction length
-          auto distVec = utils::ArrayMath::mul(
-              {std::max(zero, x - one), std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)}, _cellLength);
+          const auto distVec = std::array<double, 3>{std::max(zero, x - one), std::max(zero, _overlap[1] - y - one),
+                                                     std::max(zero, z - one)} *
+                               _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             std::array<double, 3> baseCellVec = utils::ArrayUtils::static_cast_array<double>(
@@ -192,8 +194,9 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         // front right
         if (x != _overlap[0] and (y != 0 or z != 0)) {
           // check whether cell is within interaction length
-          auto distVec = utils::ArrayMath::mul(
-              {std::max(zero, _overlap[0] - x - one), std::max(zero, y - one), std::max(zero, z - one)}, _cellLength);
+          const auto distVec = std::array<double, 3>{std::max(zero, _overlap[0] - x - one), std::max(zero, y - one),
+                                                     std::max(zero, z - one)} *
+                               _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             std::array<double, 3> baseCellVec =
@@ -211,9 +214,9 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
         // back right
         if (y != _overlap[1] and x != _overlap[0] and z != 0) {
           // check whether cell is within interaction length
-          auto distVec = utils::ArrayMath::mul(
-              {std::max(zero, _overlap[0] - x - one), std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)},
-              _cellLength);
+          const auto distVec = std::array<double, 3>{std::max(zero, _overlap[0] - x - one),
+                                                     std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)} *
+                               _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
             std::array<double, 3> baseCellVec =

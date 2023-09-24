@@ -59,15 +59,13 @@ class VerletListHelpers {
       return true;
     }
 
-    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-      return false;  // this functor shouldn't be called with clusters!
-    }
-
     void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
+      using namespace autopas::utils::ArrayMath::literals;
+
       if (i.isDummy() or j.isDummy()) {
         return;
       }
-      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      auto dist = i.getR() - j.getR();
 
       double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _interactionLengthSquared) {
@@ -88,14 +86,14 @@ class VerletListHelpers {
      * @param newton3 whether to use newton 3
      */
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
-      if (soa.getNumParticles() == 0) return;
+      if (soa.getNumberOfParticles() == 0) return;
 
       auto **const __restrict ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+      const double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+      const double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+      const double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-      size_t numPart = soa.getNumParticles();
+      size_t numPart = soa.getNumberOfParticles();
       for (unsigned int i = 0; i < numPart; ++i) {
         auto &currentList = _verletListsAoS.at(ptrptr[i]);
 
@@ -128,23 +126,23 @@ class VerletListHelpers {
      * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
-      if (soa1.getNumParticles() == 0 || soa2.getNumParticles() == 0) return;
+      if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
       auto **const __restrict ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+      const double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+      const double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+      const double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
       auto **const __restrict ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-      double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-      double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-      double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+      const double *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+      const double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+      const double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-      size_t numPart1 = soa1.getNumParticles();
+      size_t numPart1 = soa1.getNumberOfParticles();
       for (unsigned int i = 0; i < numPart1; ++i) {
         auto &currentList = _verletListsAoS.at(ptr1ptr[i]);
 
-        size_t numPart2 = soa2.getNumParticles();
+        size_t numPart2 = soa2.getNumberOfParticles();
 
         for (unsigned int j = 0; j < numPart2; ++j) {
           const double drx = x1ptr[i] - x2ptr[j];
@@ -165,7 +163,7 @@ class VerletListHelpers {
     }
 
     /**
-     * @copydoc Functor::getNeededAttr()
+     * @copydoc autopas::Functor::getNeededAttr()
      */
     constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
       return std::array<typename Particle::AttributeNames, 4>{
@@ -174,7 +172,7 @@ class VerletListHelpers {
     }
 
     /**
-     * @copydoc Functor::getComputedAttr()
+     * @copydoc autopas::Functor::getComputedAttr()
      */
     constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
       return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
@@ -225,12 +223,10 @@ class VerletListHelpers {
       return true;
     }
 
-    bool isAppropriateClusterSize(unsigned int clusterSize, DataLayoutOption::Value dataLayout) const override {
-      return false;  // this functor shouldn't be used with clusters!
-    }
-
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-      auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+      using namespace autopas::utils::ArrayMath::literals;
+
+      auto dist = i.getR() - j.getR();
       double distsquare = utils::ArrayMath::dot(dist, dist);
       if (distsquare < _cutoffsquared) {
         // this is thread safe, we have variables on the stack

@@ -11,9 +11,11 @@
 #include <vector>
 
 #include "WrapMPI.h"
-#include "autopas/selectors/Configuration.h"
+#include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/tuning/Configuration.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
+#include "autopas/utils/SimilarityFunctions.h"
 
 /**
  * Provides several functions for handling configurations among mpi ranks.
@@ -76,11 +78,36 @@ void distributeConfigurations(std::set<ContainerOption> &containerOptions, Numbe
                               int rank, int commSize);
 
 /**
+ * Distribute ranks in buckets, which contain only ranks with similar scenarios.
+ * Each bucket then has its own search space.
+ *
+ * If negative (=invalid) values for homogeneity or density are passed, every rank gets its own bucket.
+ *
+ * @param comm MPI communicator
+ * @param bucket new MPI communicator for its bucket
+ * @param smoothedHomogeneity homogeneity smoothed over last 10 iterations.
+ * @param maxDensity maxDensity smoothed over last 10 iterations.
+ * @param MPITuningMaxDifferenceForBucket For MPI-tuning: Maximum of the relative difference in the comparison metric
+ * for two ranks which exchange their tuning information.
+ * @param MPITuningWeightForMaxDensity For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution.
+ */
+void distributeRanksInBuckets(AutoPas_MPI_Comm comm, AutoPas_MPI_Comm *bucket, double smoothedHomogeneity,
+                              double maxDensity, double MPITuningMaxDifferenceForBucket,
+                              double MPITuningWeightForMaxDensity);
+
+/**
  * Serializes a configuration object for communication via MPI.
  * @param configuration: the configuration to be sent.
  * @return The serialization
  */
 SerializedConfiguration serializeConfiguration(Configuration configuration);
+
+/**
+ * Serialize a vector of configuration objects into a vector of bytes via serializeConfiguration().
+ * @param configurations
+ * @return Concatenated byte representations of configurations.
+ */
+std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> &configurations);
 
 /**
  * Recreates a Configuration object from the object obtained by _serializeConfiguration.
@@ -90,12 +117,30 @@ SerializedConfiguration serializeConfiguration(Configuration configuration);
 Configuration deserializeConfiguration(SerializedConfiguration config);
 
 /**
+ * Deserialize a vector of bytes into a vector of configurations.
+ * @param configurationsSerialized
+ * @return
+ */
+std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized);
+
+/**
  * Handles communication to select the globally best configuration.
  * @param comm: The communicator used for sending and receiving the optimal configuration.
  * @param localOptimalConfig: The locally optimal configuration to be compared with others.
  * @param localOptimalTime: The time measured for localOptimalConfig.
  * @return The globally optimal configuration.
  */
-Configuration optimizeConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig, size_t localOptimalTime);
+Configuration findGloballyBestConfiguration(AutoPas_MPI_Comm comm, Configuration localOptimalConfig,
+                                            long localOptimalTime);
+
+/**
+ * Gather the configuration vectors of all ranks in the communicator into one vector at the root process.
+ * @param comm
+ * @param localConfigurations
+ * @param root
+ * @return Combined vector of configurations
+ */
+std::vector<Configuration> gatherConfigurations(AutoPas_MPI_Comm comm,
+                                                const std::vector<Configuration> &localConfigurations, int root);
 
 }  // namespace autopas::utils::AutoPasConfigurationCommunicator

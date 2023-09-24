@@ -12,7 +12,6 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -36,14 +35,15 @@ class Newton3OnOffTest
 
   static double getCutoff() { return 1.0; }
   static double getCellSizeFactor() { return 1.0; }
-  static double getVerletSkin() { return 0.0; }
+  static double getVerletSkinPerTimestep() { return 0.0; }
+  static unsigned int getRebuildFrequency() { return 20; }
   static int getClusterSize() { return 4; }
 
   void countFunctorCalls(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                          autopas::DataLayoutOption dataLayout);
 
   template <class Container, class Traversal>
-  void iterate(Container container, Traversal traversal);
+  void iterate(Container &container, Traversal traversal);
 
   MockFunctor<Particle> mockFunctor;
 

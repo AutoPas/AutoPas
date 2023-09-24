@@ -1,4 +1,4 @@
-option(spdlog_ForceBundled "Do not look for an installed version, always use bundled." OFF)
+option(spdlog_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${spdlog_ForceBundled})
     # first try: check if we find any installed version
@@ -30,9 +30,9 @@ FetchContent_Declare(
     URL
         # spdlog master:
         # https://github.com/gabime/spdlog/archive/v1.x.zip
-        # spdlog commit 79259fd:
+        # spdlog commit e86be93 (15.11.2021):
         ${AUTOPAS_SOURCE_DIR}/libs/spdlog-1.x.zip
-    URL_HASH MD5=7415a9768f3433bd93d78c1c87fd0576
+    URL_HASH MD5=77292ebfc86717e1b5914c4d7b69140f
 )
 
 # Disable stuff we don't need
@@ -65,8 +65,18 @@ if (IS_DIRECTORY "${spdlog_SOURCE_DIR}")
     set_property(DIRECTORY ${spdlog_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
 endif ()
 
+# let ccmake and cmake-gui offer options
+set(AUTOPAS_MIN_LOG_LVL
+        "INFO"
+        CACHE
+        STRING "Choose the finest log level to be compiled."
+)
+set_property(CACHE AUTOPAS_MIN_LOG_LVL PROPERTY STRINGS "TRACE;DEBUG;INFO;WARN;ERROR;CRITICAL;OFF")
+
 # Disable warnings
 target_compile_options(spdlog PRIVATE -w)
+# Set the finest compiled log level on the cmake target. Everything that includes this target will be affected!
+target_compile_options(spdlog PUBLIC -DSPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_${AUTOPAS_MIN_LOG_LVL})
 
 get_target_property(propval spdlog INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(spdlog SYSTEM PUBLIC "${propval}")

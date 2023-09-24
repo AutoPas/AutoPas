@@ -5,10 +5,16 @@
  */
 #include "VerletListsCellsTest.h"
 
+#include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
+#include "autopas/particles/Particle.h"
+#include "autopasTools/generators/RandomGenerator.h"
+#include "mocks/MockFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -18,10 +24,11 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skin = 0.2;
+  double skinPerTimestep = 0.01;
+  unsigned int rebuildFrequency = 20;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   autopas::VerletListsCells<Particle, autopas::VLCAllCellsNeighborList<Particle>> verletLists(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, skin, cellSizefactor, loadEstimator, buildType);
+      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizefactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -69,23 +76,23 @@ void soaTest(const double cellSizeFactor,
   }
 
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists1(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, 0.3, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists2(
-      min, max, cutoff, autopas::TraversalOption::lc_c18, 0.3, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
                                                                verletLists1.getBoxMax(), 100);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
                                                                verletLists2.getBoxMax(), 100);
-  autopas::LJFunctor<Molecule> ljFunctor(cutoff);
+  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
 
-  autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
+  autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
                            autopas::VLCCellPairNeighborList<Molecule>, autopas::ContainerOption::verletListsCells>
       verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
                        verletLists1.getCellLength());
-  autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, true,
+  autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, true,
                            autopas::VLCCellPairNeighborList<Molecule>, autopas::ContainerOption::verletListsCells>
       soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
                    verletLists2.getCellLength());

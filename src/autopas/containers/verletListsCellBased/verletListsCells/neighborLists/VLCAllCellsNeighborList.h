@@ -25,6 +25,10 @@ namespace autopas {
  */
 template <class ParticleCell>
 class TraversalSelector;
+
+template <class Particle, class NeighborList>
+class VLCTraversalInterface;
+
 /**
  * Neighbor list to be used with VerletListsCells container. Classic implementation of verlet lists based on linked
  * cells.
@@ -67,14 +71,15 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     size_t cellsSize = cells.size();
     _aosNeighborList.resize(cellsSize);
     for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
-      _aosNeighborList[cellIndex].reserve(cells[cellIndex].numParticles());
+      auto &cell = cells[cellIndex];
+      _aosNeighborList[cellIndex].reserve(cell.numParticles());
       size_t particleIndexWithinCell = 0;
-      for (auto iter = cells[cellIndex].begin(); iter.isValid(); ++iter, ++particleIndexWithinCell) {
+      for (auto iter = cell.begin(); iter != cell.end(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
         _aosNeighborList[cellIndex].emplace_back(particle, std::vector<Particle *>());
         // In a cell with N particles, reserve space for 5N neighbors.
         // 5 is an empirically determined magic number that provides good speed.
-        _aosNeighborList[cellIndex].back().second.reserve(cells[cellIndex].numParticles() * 5);
+        _aosNeighborList[cellIndex].back().second.reserve(cell.numParticles() * 5);
         _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
     }
@@ -110,7 +115,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
     // particle pointer to global index of particle
     std::unordered_map<Particle *, size_t> particleToIndex;
-    particleToIndex.reserve(linkedCells.getNumParticles());
+    particleToIndex.reserve(linkedCells.getNumberOfParticles());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
       particleToIndex[&(*iter)] = i;
@@ -141,6 +146,18 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
         // add newly constructed pair of particle index and SoA neighbor list to cell
         soaCurrentCell.emplace_back(std::make_pair(currentParticleGlobalIndex, currentSoANeighborList));
       }
+    }
+  }
+
+  void setUpTraversal(TraversalInterface *traversal) override {
+    auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);
+
+    if (vTraversal) {
+      vTraversal->setVerletList(*this);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in VerletListCells.h. TraversalID: {}",
+          traversal->getTraversalType());
     }
   }
 

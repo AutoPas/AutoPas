@@ -31,7 +31,9 @@ class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, C
   void initTraversal() override { _pairs.clear(); }
 
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
-    auto dist = autopas::utils::ArrayMath::sub(i.getR(), j.getR());
+    using namespace autopas::utils::ArrayMath::literals;
+
+    auto dist = i.getR() - j.getR();
     if (autopas::utils::ArrayMath::dot(dist, dist) > getCutoff() * getCutoff() or
         not autopas::utils::inBox(i.getR(), _min, _max) or not autopas::utils::inBox(j.getR(), _min, _max))
       return;
@@ -49,10 +51,6 @@ class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, C
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
-
-  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
-    return true;
-  }
 
   auto getParticlePairs() { return _pairs; }
 };
@@ -86,10 +84,6 @@ class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::Partic
 
   bool allowsNewton3() override { return true; }
   bool allowsNonNewton3() override { return true; }
-
-  bool isAppropriateClusterSize(unsigned int clusterSize, autopas::DataLayoutOption::Value dataLayout) const override {
-    return dataLayout == autopas::DataLayoutOption::aos;  // this functor supports clusters only for aos!
-  }
 
   void nextColor(int newColor) { _currentColor = newColor; }
 };

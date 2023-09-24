@@ -4,66 +4,80 @@
  * @date 13/05/19
  */
 #pragma once
-#include "autopas/AutoPas.h"
-#include "autopas/utils/ArrayMath.h"
+
+#include "TypeDefinitions.h"
+#include "autopas/AutoPasDecl.h"
+#include "autopas/utils/Quaternion.h"
+#include "src/configuration/MDFlexConfig.h"
 
 /**
  * Functions for updating velocities and positions as simulation time progresses.
  */
 namespace TimeDiscretization {
-
 /**
  * Calculate and update the position for every particle using the Störmer-Verlet Algorithm.
- * @param autopas
- * @param particlePropertiesLibrary
- * @param deltaT time step width
+ *
+ * Specifically, the formula for this is
+ *      x_{n+1} = x_n + delta_t * v_n + delta_t^2 / ( 2 * mass) * f_n
+ *                      {   velTerm }   {        forceTerm          }
+ *
+ * In addition, pushes the force stored in the force vector to the old force vector and sets the force vector to the
+ * global force in preparation for the calculate forces stage.
+ *
+ * @param autoPasContainer The container for which to update the positions.
+ * @param particlePropertiesLibrary The particle properties library for the particles in the container.
+ * @param deltaT The time step width.
+ * @param globalForce Base force value to which every particle is reset.
+ * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
+ * (>skin/2/rebuildFrequency).
  */
-template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-void calculatePositions(AutoPasTemplate &autopas, const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
-                        const double deltaT) {
-  // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
+void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
+                                      const ParticlePropertiesLibraryType &particlePropertiesLibrary,
+                                      const double &deltaT, const std::array<double, 3> &globalForce,
+                                      bool fastParticlesThrow);
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto v = iter->getV();
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-    auto f = iter->getF();
-    iter->setOldF(f);
-    iter->setF({0., 0., 0.});
-    v = mulScalar(v, deltaT);
-    f = mulScalar(f, (deltaT * deltaT / (2 * m)));
-    auto newR = add(v, f);
-    iter->addR(newR);
-  }
-}
+/**
+ * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
+ * Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods (https://doi.org/10.1103/PhysRevE.81.056706)
+ * (method A); with slight adaptations to account for md-flexible primarily using (angular) velocities rather than
+ * (angular) momentums. Code lines are commented with references to corresponding equations within the paper.
+ *
+ * In addition, resets the torques to that determined by the global force only.
+ *
+ * @note Throws error if md-flexible is compiled without multi-site support.
+ *
+ * @param autoPasContainer
+ * @param particlePropertiesLibrary
+ * @param deltaT
+ * @param globalForce
+ */
+void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
+                                         const ParticlePropertiesLibraryType &particlePropertiesLibrary,
+                                         const double &deltaT, const std::array<double, 3> &globalForce);
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
- * @param autopas
- * @param particlePropertiesLibrary
- * @param deltaT time step width
+ *
+ * Specifically
+ *      v_{n+1} = v_n + delta_t / (2 * mass) * (F_n + F_{n-1})
+ *
+ * @param autoPasContainer The container for which to update the velocities.
+ * @param particlePropertiesLibrary The particle properties library for the particles in the container.
+ * @param deltaT The time step width.
  */
-template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-void calculateVelocities(AutoPasTemplate &autopas, const ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
-                         const double deltaT) {
-  // helper declarations for operations with vector
-  using autopas::utils::ArrayMath::add;
-  using autopas::utils::ArrayMath::mulScalar;
+void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto m = particlePropertiesLibrary.getMass(iter->getTypeId());
-    auto force = iter->getF();
-    auto oldForce = iter->getOldf();
-    auto newV = mulScalar((add(force, oldForce)), deltaT / (2 * m));
-    iter->addV(newV);
-  }
-}
+/**
+ * Calculate and update the angular velocity for every particle.
+ *
+ * @note Throws error if md-flexible is compiled without multi-site support.
+ *
+ * @param autoPasContainer
+ * @param particlePropertiesLibrary
+ * @param deltaT
+ */
+void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
+                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 
 }  // namespace TimeDiscretization

@@ -54,6 +54,11 @@ namespace ArrayMath {}
 namespace ArrayUtils {}
 
 /**
+ * Namespace for functions that provide information about what the code was compiled with.
+ */
+namespace CompileInfo {}
+
+/**
  * Some functions to parse enums from (input-) strings.
  */
 namespace StringUtils {}
@@ -69,11 +74,31 @@ namespace ThreeDimensionalMapping {}
  */
 namespace TupleUtils {}
 
+/**
+ * Functions to estimate numbers of particles.
+ */
+namespace NumParticlesEstimator {}
+
 }  // namespace utils
 
 /**
  * Namespace that contains the explicitly defined options of AutoPas.
  */
 namespace options {}
+
+/**
+ * Namespace that contains code that is used by the octree internally.
+ */
+namespace octree {}
+
+/**
+ * Contains some helpers to write and read the tuning log entries.
+ */
+namespace tuningLogEntry {}
+
+/**
+ * Generators for search spaces.
+ */
+namespace SearchSpaceGenerators {}
 
 }  // namespace autopas

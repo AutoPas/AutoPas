@@ -8,14 +8,12 @@
 #pragma once
 
 #include "autopas/cells/SortedCellView.h"
-#include "autopas/iterators/SingleCellIterator.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas {
-namespace internal {
+namespace autopas::internal {
 /**
- * A cell functor. This functor is build from the normal Functor of the template
+ * A cell functor. This functor is built from the normal Functor of the template
  * type ParticleFunctor. It is an internal object to handle interactions between
  * two cells of particles.
  * @tparam Particle
@@ -98,17 +96,9 @@ class CellFunctor {
 
   void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2);
 
-  void processCellPairCudaNoN3(ParticleCell &cell1, ParticleCell &cell2);
-
-  void processCellPairCudaN3(ParticleCell &cell1, ParticleCell &cell2);
-
   void processCellSoAN3(ParticleCell &cell);
 
   void processCellSoANoN3(ParticleCell &cell);
-
-  void processCellCudaNoN3(ParticleCell &cell);
-
-  void processCellCudaN3(ParticleCell &cell);
 
   ParticleFunctor *_functor;
 
@@ -125,7 +115,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCell(
     ParticleCell &cell) {
-  if ((DataLayout == DataLayoutOption::soa && cell._particleSoABuffer.getNumParticles() == 0) ||
+  if ((DataLayout == DataLayoutOption::soa && cell._particleSoABuffer.getNumberOfParticles() == 0) ||
       (DataLayout == DataLayoutOption::aos && cell.numParticles() == 0)) {
     return;
   }
@@ -141,13 +131,6 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
         processCellSoANoN3(cell);
       }
       break;
-    case DataLayoutOption::cuda:
-      if (useNewton3) {
-        processCellCudaN3(cell);
-      } else {
-        processCellCudaNoN3(cell);
-      }
-      break;
   }
 }
 
@@ -156,8 +139,8 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
 
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  if ((DataLayout == DataLayoutOption::soa &&
-       (cell1._particleSoABuffer.getNumParticles() == 0 || cell2._particleSoABuffer.getNumParticles() == 0)) ||
+  if ((DataLayout == DataLayoutOption::soa && (cell1._particleSoABuffer.getNumberOfParticles() == 0 ||
+                                               cell2._particleSoABuffer.getNumberOfParticles() == 0)) ||
       (DataLayout == DataLayoutOption::aos && (cell1.numParticles() == 0 || cell2.numParticles() == 0))) {
     return;
   }
@@ -175,13 +158,6 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
         processCellPairSoAN3(cell1, cell2);
       } else {
         processCellPairSoANoN3(cell1, cell2);
-      }
-      break;
-    case DataLayoutOption::cuda:
-      if (useNewton3) {
-        processCellPairCudaN3(cell1, cell2);
-      } else {
-        processCellPairCudaNoN3(cell1, cell2);
       }
       break;
   }
@@ -216,13 +192,13 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       }
     }
   } else {
-    auto outer = getStaticCellIter(cell);
-    for (; outer.isValid(); ++outer) {
+    auto outer = cell.begin();
+    for (; outer != cell.end(); ++outer) {
       Particle &p1 = *outer;
 
       auto inner = outer;
       ++inner;
-      for (; inner.isValid(); ++inner) {
+      for (; inner != cell.end(); ++inner) {
         Particle &p2 = *inner;
 
         if constexpr (newton3) {
@@ -257,13 +233,13 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       }
     }
   } else {
-    auto outer = getStaticCellIter(cell1);
-    auto innerStart = getStaticCellIter(cell2);
+    auto outer = cell1.begin();
+    auto innerStart = cell2.begin();
 
-    for (; outer.isValid(); ++outer) {
+    for (; outer != cell1.end(); ++outer) {
       Particle &p1 = *outer;
 
-      for (auto inner = innerStart; inner.isValid(); ++inner) {
+      for (auto inner = innerStart; inner != cell2.end(); ++inner) {
         Particle &p2 = *inner;
 
         _functor->AoSFunctor(p1, p2, true);
@@ -295,12 +271,12 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       }
     }
   } else {
-    auto innerStart = getStaticCellIter(cell2);
+    auto innerStart = cell2.begin();
 
-    for (auto outer = cell1.begin(); outer.isValid(); ++outer) {
+    for (auto outer = cell1.begin(); outer != cell1.end(); ++outer) {
       Particle &p1 = *outer;
 
-      for (auto inner = innerStart; inner.isValid(); ++inner) {
+      for (auto inner = innerStart; inner != cell2.end(); ++inner) {
         Particle &p2 = *inner;
 
         _functor->AoSFunctor(p1, p2, false);
@@ -338,34 +314,4 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     ParticleCell &cell) {
   _functor->SoAFunctorSingle(cell._particleSoABuffer, false);  // the functor has to enable this...
 }
-
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
-          bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
-                 bidirectional>::processCellPairCudaNoN3(ParticleCell &cell1, ParticleCell &cell2) {
-  _functor->CudaFunctor(cell1._particleSoABufferDevice, cell2._particleSoABufferDevice, false);
-  if (bidirectional) _functor->CudaFunctor(cell2._particleSoABufferDevice, cell1._particleSoABufferDevice, false);
-}
-
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
-          bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellCudaNoN3(
-    ParticleCell &cell) {
-  _functor->CudaFunctor(cell._particleSoABufferDevice, false);
-}
-
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
-          bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairCudaN3(
-    ParticleCell &cell1, ParticleCell &cell2) {
-  _functor->CudaFunctor(cell1._particleSoABufferDevice, cell2._particleSoABufferDevice, true);
-}
-
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
-          bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellCudaN3(
-    ParticleCell &cell) {
-  _functor->CudaFunctor(cell._particleSoABufferDevice, true);
-}
-}  // namespace internal
-}  // namespace autopas
+}  // namespace autopas::internal

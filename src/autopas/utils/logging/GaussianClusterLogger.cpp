@@ -17,8 +17,8 @@ GaussianClusterLogger::GaussianClusterLogger(GaussianModelTypes::VectorToStringF
                                              const std::string &outputSuffix)
     : _nodeStream(streamMode), _edgeStream(streamMode), _vecToStringFun(std::move(vecToStringFun)) {
 #ifdef AUTOPAS_LOG_GAUSSIANCLUSTER
-  _outputFileName = "gaussianCluster_graph_" + outputSuffix + utils::Timer::getDateStamp() + ".out";
-
+  const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
+  _outputFileName = "gaussianCluster_graph_" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".out";
   reset();
 #endif
 }
@@ -79,7 +79,7 @@ void GaussianClusterLogger::flush() {
     outputFile << _edgeStream.str();
     outputFile << end_marker << std::endl;
   } else {
-    AutoPasLog(error, "Output file {} is not open for writing!", _outputFileName);
+    AutoPasLog(ERROR, "Output file {} is not open for writing!", _outputFileName);
   }
   outputFile.close();
   reset();
