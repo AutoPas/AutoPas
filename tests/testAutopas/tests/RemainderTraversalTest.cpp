@@ -428,7 +428,7 @@ TEST_P(RemainderTraversalTest, testRemainderTraversal) {
     if (choiceB == ParticleStorage::bufferHalo) {
       particle3.setR({1., -1., 1.});
     }
-    addParticleToTest(particle2, choiceB, autopas::autopas_get_max_threads() - 1);
+    addParticleToTest(particle3, choiceB, autopas::autopas_get_max_threads() - 1);
   }
 
   /// TEST
