@@ -144,7 +144,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   /**
    * @copydoc OctreeNodeInterface::size()
    */
-  unsigned long size() const override { return this->_particles.size(); }
+  size_t size() const override { return this->_particles.size(); }
 
   /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()

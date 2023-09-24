@@ -87,7 +87,7 @@ class ParticleCell {
    * Get the number of all particles stored in this cell (owned, halo and dummy).
    * @return number of particles stored in this cell (owned, halo and dummy).
    */
-  [[nodiscard]] virtual unsigned long size() const = 0;
+  [[nodiscard]] virtual size_t size() const = 0;
 
   /**
    * Get the number of particles with respect to the specified IteratorBehavior.
@@ -171,12 +171,18 @@ class ParticleCell {
   }
 
   /**
+   * Get a reference to the lock object for exclusive access to this cell
+   * @return reference to the cell lock
+   */
+  AutoPasLock &getCellLock() const { return _cellLock; }
+
+ protected:
+  /**
    * Lock object for exclusive access to this cell. This lock has to be mutable since it is set in
    * getNumberOfParticles() const.
    */
   mutable AutoPasLock _cellLock{};
 
- protected:
   /**
    * The particles which can be contained in this cell are determined by the OwnershipState
    */

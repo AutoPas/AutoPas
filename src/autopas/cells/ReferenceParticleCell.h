@@ -63,9 +63,8 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
           p->getOwnershipState(), this->_ownershipState);
     }
 
-    this->_cellLock.lock();
+    std::lock_guard<AutoPasLock> guard(this->_cellLock);
     _particles.push_back(p);
-    this->_cellLock.unlock();
   }
 
   /**
@@ -153,18 +152,17 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * Get the number of all particles stored in this cell (owned, halo and dummy).
    * @return number of particles stored in this cell (owned, halo and dummy).
    */
-  [[nodiscard]] unsigned long size() const override { return _particles.size(); }
+  [[nodiscard]] size_t size() const override { return _particles.size(); }
 
   /**
    * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
   [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
-    size_t numParticles{0};
+    std::lock_guard<AutoPasLock> guard(this->_cellLock);
 
-    this->_cellLock.lock();
+    size_t numParticles{0};
     numParticles =
         std::count_if(_particles.begin(), _particles.end(), [&behavior](auto p) { return behavior.contains(*p); });
-    this->_cellLock.unlock();
 
     return numParticles;
   }

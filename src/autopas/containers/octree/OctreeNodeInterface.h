@@ -96,7 +96,7 @@ class OctreeNodeInterface {
   /**
    * @copydoc CellBasedParticleContainer::size()
    */
-  virtual unsigned long size() const = 0;
+  virtual size_t size() const = 0;
 
   /**
    * @copydoc CellBasedParticleContainer::getNumberOfParticles()

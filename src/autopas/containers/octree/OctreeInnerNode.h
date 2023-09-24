@@ -159,7 +159,7 @@ class OctreeInnerNode : public OctreeNodeInterface<Particle> {
   /**
    * @copydoc OctreeNodeInterface::size()
    */
-  unsigned long size() const override {
+  size_t size() const override {
     unsigned int result = 0;
     for (const auto &child : _children) {
       result += child->size();

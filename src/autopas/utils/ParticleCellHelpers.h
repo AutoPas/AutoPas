@@ -40,7 +40,7 @@ static bool checkParticleInCellAndUpdateByIDAndPosition(CellType &cell, const ty
                                                         double absError) {
   using namespace autopas::utils::ArrayMath::literals;
   // This lock is relevant for octree and directSum.
-  std::lock_guard<AutoPasLock> cellLock(cell._cellLock);
+  std::lock_guard<AutoPasLock> cellLock(cell.getCellLock());
   for (auto &p : cell) {
     if (p.getID() == particle.getID()) {
       auto distanceVec = p.getR() - particle.getR();

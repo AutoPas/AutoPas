@@ -369,7 +369,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * Get the total number of particles saved in the container (owned + halo + dummy).
    * @return Number of particles saved in the container (owned + halo + dummy).
    */
-  [[nodiscard]] unsigned long size() const override {
+  [[nodiscard]] size_t size() const override {
     return this->_cells[CellTypes::OWNED].size() + this->_cells[CellTypes::HALO].size();
   }
 

@@ -180,7 +180,7 @@ class FullParticleCell : public ParticleCell<Particle> {
    * Get the number of all particles stored in this cell (owned, halo and dummy).
    * @return number of particles stored in this cell (owned, halo and dummy).
    */
-  [[nodiscard]] unsigned long size() const override { return _particles.size(); }
+  [[nodiscard]] size_t size() const override { return _particles.size(); }
 
   /**
    * @copydoc autopas::ParticleCell::getNumberOfParticles()

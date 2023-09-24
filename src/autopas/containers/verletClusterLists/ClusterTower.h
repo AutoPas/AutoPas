@@ -190,7 +190,7 @@ class ClusterTower : public ParticleCell<Particle> {
    * Get the number of all particles stored in this tower (owned, halo and dummy).
    * @return number of particles stored in this tower (owned, halo and dummy).
    */
-  [[nodiscard]] unsigned long size() const override { return getNumActualParticles(); }
+  [[nodiscard]] size_t size() const override { return getNumActualParticles(); }
 
   /**
    * @copydoc autopas::ParticleCell::getNumberOfParticles()

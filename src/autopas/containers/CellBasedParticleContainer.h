@@ -136,7 +136,7 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Get the total number of particles saved in the container (owned + halo + dummy).
    * @return Number of particles saved in the container (owned + halo + dummy).
    */
-  [[nodiscard]] unsigned long size() const override {
+  [[nodiscard]] size_t size() const override {
     size_t numParticles = 0ul;
 #ifdef AUTOPAS_OPENMP
     // parallelizing this loop is only worth it if we have LOTS of cells.
