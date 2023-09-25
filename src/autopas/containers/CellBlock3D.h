@@ -420,6 +420,21 @@ inline void CellBlock3D<ParticleCell>::rebuild(std::vector<ParticleCell> &vec, c
   for (auto &cell : *_cells) {
     cell.setCellLength(_cellLength);
   }
+
+  // determine the OwnershipStates, each cell can contain. This is later used in the CellFunctor to skip calculations
+  for (int i = 0; i < numCells; i++) {
+    const bool canHaveHalos = cellCanContainHaloParticles(i);
+    const bool canHaveOwned = cellCanContainOwnedParticles(i);
+    if (canHaveHalos and canHaveOwned) {
+      (*_cells)[i].setPossibleParticleOwnerships(OwnershipState::owned | OwnershipState::halo);
+    } else if (canHaveHalos) {
+      (*_cells)[i].setPossibleParticleOwnerships(OwnershipState::halo);
+    } else if (canHaveOwned) {
+      (*_cells)[i].setPossibleParticleOwnerships(OwnershipState::owned);
+    } else {
+      (*_cells)[i].setPossibleParticleOwnerships(OwnershipState::dummy);
+    }
+  }
 }
 
 template <class ParticleCell>

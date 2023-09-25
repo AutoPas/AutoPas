@@ -108,7 +108,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
     double *const __restrict densityptr = soa.template begin<Particle::AttributeNames::density>();
@@ -130,7 +130,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    for (unsigned int indexFirst = 0; indexFirst < soa.getNumberOfParticles(); ++indexFirst) {
+    for (unsigned int indexFirst = 0; indexFirst < soa.size(); ++indexFirst) {
       // checks whether particle i is owned.
       if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
         continue;
@@ -145,7 +145,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
       // icpc vectorizes this.
       // g++ only with -ffast-math or -funsafe-math-optimizations
       // #pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
-      for (unsigned int j = indexFirst + 1; j < soa.getNumberOfParticles(); ++j) {
+      for (unsigned int j = indexFirst + 1; j < soa.size(); ++j) {
         using namespace autopas::utils::ArrayMath::literals;
 
         const double drx = xptr[indexFirst] - xptr[j];
@@ -228,7 +228,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
-    if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
+    if (soa1.size() == 0 || soa2.size() == 0) return;
 
     double *const __restrict massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
     double *const __restrict densityptr1 = soa1.template begin<Particle::AttributeNames::density>();
@@ -269,7 +269,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
     const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
-    for (unsigned int indexFirst = 0; indexFirst < soa1.getNumberOfParticles(); ++indexFirst) {
+    for (unsigned int indexFirst = 0; indexFirst < soa1.size(); ++indexFirst) {
       // checks whether particle i is owned.
       if (ownedStatePtr1[indexFirst] == autopas::OwnershipState::dummy) {
         continue;
@@ -284,7 +284,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
       // icpc vectorizes this.
       // g++ only with -ffast-math or -funsafe-math-optimizations
       // #pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
-      for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
+      for (unsigned int j = 0; j < soa2.size(); ++j) {
         using namespace autopas::utils::ArrayMath::literals;
 
         const double drx = xptr1[indexFirst] - xptr2[j];
@@ -372,7 +372,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 

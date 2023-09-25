@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ParticleTypeTrait.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
@@ -74,6 +75,13 @@ void GridGenerator::fillWithParticles(std::vector<ParticleCell> &cells, const st
         p.setR(pos);
         p.setID(id++);
         const auto cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(cellIndex3D, cellsPerDimension);
+
+        if (cells[cellIndex].getPossibleParticleOwnerships() == autopas::OwnershipState::halo) {
+          p.setOwnershipState(autopas::OwnershipState::halo);
+        }
+        if (cells[cellIndex].getPossibleParticleOwnerships() == autopas::OwnershipState::dummy) {
+          p.setOwnershipState(autopas::OwnershipState::dummy);
+        }
         cells[cellIndex].addParticle(p);
       }
     }
