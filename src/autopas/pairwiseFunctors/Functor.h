@@ -233,9 +233,9 @@ class Functor {
 
   template <typename cell_t, std::size_t... I>
   void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
-    soa.resizeArrays(offset + cell.numParticles());
+    soa.resizeArrays(offset + cell.size());
 
-    if (cell.numParticles() == 0) return;
+    if (cell.size() == 0) return;
 
     /**
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
@@ -268,7 +268,7 @@ class Functor {
    */
   template <typename cell_t, std::size_t... I>
   void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
-    if (cell.numParticles() == 0) return;
+    if (cell.size() == 0) return;
 
     /**
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups

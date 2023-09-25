@@ -103,8 +103,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
     autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
       EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
           .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::WithArgs<0, 1>(
-              testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
+          .WillRepeatedly(
+              testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
       EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
           .Times(testing::AtLeast(1));
     });

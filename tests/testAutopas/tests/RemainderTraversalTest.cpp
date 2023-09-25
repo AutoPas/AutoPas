@@ -32,16 +32,15 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
                               std::vector<autopas::FullParticleCell<Molecule>> &particlesHaloBuffers,
                               autopas::Newton3Option n3) {
   // sanity check that there are exactly two particles in the test
-  const auto numParticlesInBuffers =
-      std::transform_reduce(particlesBuffers.begin(), particlesBuffers.end(), 0, std::plus<>(),
-                            [](const auto &cell) { return cell.numParticles(); });
+  const auto numParticlesInBuffers = std::transform_reduce(particlesBuffers.begin(), particlesBuffers.end(), 0,
+                                                           std::plus<>(), [](const auto &cell) { return cell.size(); });
   const auto numParticlesHaloBuffers =
       std::transform_reduce(particlesHaloBuffers.begin(), particlesHaloBuffers.end(), 0, std::plus<>(), [](auto &cell) {
         // guarantee that all halo particles are actually tagged as such
         for (auto &p : cell) {
           p.setOwnershipState(autopas::OwnershipState::halo);
         }
-        return cell.numParticles();
+        return cell.size();
       });
   ASSERT_EQ(
       particlesContainerOwned.size() + particlesContainerHalo.size() + numParticlesInBuffers + numParticlesHaloBuffers,
@@ -79,7 +78,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   }
   logicHandler.setParticleBuffers(particlesBuffers, particlesHaloBuffers);
 
-  ASSERT_EQ(container.getNumberOfParticles(), 2 - numParticlesInBuffers - numParticlesHaloBuffers)
+  ASSERT_EQ(container.size(), 2 - numParticlesInBuffers - numParticlesHaloBuffers)
       << "Not all particles were added to the container! ParticlesBuffers(" << numParticlesInBuffers << ") HaloBuffer("
       << numParticlesHaloBuffers << ")";
 
@@ -351,12 +350,12 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   for (const auto &p : particles) {
     logicHandler.addParticle(p);
   }
-  ASSERT_EQ(logicHandler.getContainer().getNumberOfParticles(), particles.size())
+  ASSERT_EQ(logicHandler.getContainer().size(), particles.size())
       << "Container contains incorrect number of particles!";
   for (const auto &p : haloParticles) {
     logicHandler.addHaloParticle(p);
   }
-  ASSERT_EQ(logicHandler.getContainer().getNumberOfParticles(), particles.size() + haloParticles.size())
+  ASSERT_EQ(logicHandler.getContainer().size(), particles.size() + haloParticles.size())
       << "Container contains incorrect number of halo particles!";
 
   logicHandler.setParticleBuffers(particlesBuffer, haloParticlesBuffer);
