@@ -292,7 +292,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
         for (const auto &offset : _cellOffsets[i]) {
           const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
-          newSize += otherCell.numParticles();
+          newSize += otherCell.size();
         }
         combinationSlice[slice]._particleSoABuffer.resizeArrays(newSize);
       }
@@ -324,8 +324,8 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
       if (slice == (currentSlice + this->_overlap[0]) % cOffSize) {
         // slice contains base cell -> skip particles of base cell. This is not supported by CellFunctor, so call
         // pairwise functor directly.
-        auto startIndex = baseCell.numParticles();
-        auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumberOfParticles();
+        auto startIndex = baseCell.size();
+        auto endIndex = combinationSlice[slice]._particleSoABuffer.size();
         _pairwiseFunctor->SoAFunctorPair(baseCell._particleSoABuffer,
                                          {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell

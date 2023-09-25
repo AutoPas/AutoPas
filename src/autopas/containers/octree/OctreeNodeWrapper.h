@@ -86,6 +86,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   void addParticle(const Particle &p) override {
     std::lock_guard<AutoPasLock> lock(_lock);
+
     auto ret = _pointer->insert(p);
     if (ret) _pointer = std::move(ret);
 
@@ -127,12 +128,20 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
   CellIterator<StorageType, false> end() const { return CellIterator<StorageType, false>(_ps.end()); }
 
   /**
-   * Get the number of particles stored in this cell.
-   * @return number of particles stored in this cell
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
    */
-  [[nodiscard]] unsigned long numParticles() const override {
+  [[nodiscard]] size_t size() const override {
     std::lock_guard<AutoPasLock> lock(_lock);
     return _enclosedParticleCount;
+  }
+
+  /**
+   * @copydoc autopas::ParticleCell::getNumberOfParticles()
+   */
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    std::lock_guard<AutoPasLock> lock(_lock);
+    return _pointer->getNumberOfParticles(behavior);
   }
 
   /**
@@ -172,6 +181,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    */
   bool deleteParticle(Particle &particle) {
     --_enclosedParticleCount;
+
     return _pointer->deleteParticle(particle);
   };
 

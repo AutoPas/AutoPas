@@ -86,14 +86,14 @@ class VerletListHelpers {
      * @param newton3 whether to use newton 3
      */
     void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
-      if (soa.getNumberOfParticles() == 0) return;
+      if (soa.size() == 0) return;
 
       auto **const __restrict ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
       const double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
       const double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
       const double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-      size_t numPart = soa.getNumberOfParticles();
+      size_t numPart = soa.size();
       for (unsigned int i = 0; i < numPart; ++i) {
         auto &currentList = _verletListsAoS.at(ptrptr[i]);
 
@@ -126,7 +126,7 @@ class VerletListHelpers {
      * @note newton3 is ignored here, as for newton3=false SoAFunctorPair(soa2, soa1) will also be called.
      */
     void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
-      if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
+      if (soa1.size() == 0 || soa2.size() == 0) return;
 
       auto **const __restrict ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
       const double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -138,11 +138,11 @@ class VerletListHelpers {
       const double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
       const double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-      size_t numPart1 = soa1.getNumberOfParticles();
+      size_t numPart1 = soa1.size();
       for (unsigned int i = 0; i < numPart1; ++i) {
         auto &currentList = _verletListsAoS.at(ptr1ptr[i]);
 
-        size_t numPart2 = soa2.getNumberOfParticles();
+        size_t numPart2 = soa2.size();
 
         for (unsigned int j = 0; j < numPart2; ++j) {
           const double drx = x1ptr[i] - x2ptr[j];

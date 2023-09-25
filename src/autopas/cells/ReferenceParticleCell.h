@@ -53,9 +53,18 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    * @copydoc ParticleCell::addParticle()
    */
   void addParticleReference(Particle *p) {
-    _particlesLock.lock();
+    // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: is a cell is a
+    // dummy-cell, only dummies can be added, otherwise dummies can always be added
+    if ((not toInt64(p->getOwnershipState() & this->_ownershipState)) and
+        p->getOwnershipState() != OwnershipState::dummy) {
+      autopas::utils::ExceptionHandler::exception(
+          "ReferenceParticleCell::addParticleReference() can not add a particle with OwnershipState {} to a cell with "
+          "OwnershipState {}",
+          p->getOwnershipState(), this->_ownershipState);
+    }
+
+    std::lock_guard<AutoPasLock> guard(this->_cellLock);
     _particles.push_back(p);
-    _particlesLock.unlock();
   }
 
   /**
@@ -139,7 +148,24 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
     reduceImpl<true, true>(reduceLambda, result, lowerCorner, higherCorner, behavior);
   }
 
-  [[nodiscard]] unsigned long numParticles() const override { return _particles.size(); }
+  /**
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
+   */
+  [[nodiscard]] size_t size() const override { return _particles.size(); }
+
+  /**
+   * @copydoc autopas::ParticleCell::getNumberOfParticles()
+   */
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    std::lock_guard<AutoPasLock> guard(this->_cellLock);
+
+    size_t numParticles{0};
+    numParticles =
+        std::count_if(_particles.begin(), _particles.end(), [&behavior](auto p) { return behavior.contains(*p); });
+
+    return numParticles;
+  }
 
   /**
    * Returns a reference to the element at position n in the cell.
@@ -174,7 +200,7 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
    */
   [[nodiscard]] const Particle &at(size_t index) const { return *(_particles.at(index)); }
 
-  [[nodiscard]] bool isEmpty() const override { return numParticles() == 0; }
+  [[nodiscard]] bool isEmpty() const override { return size() == 0; }
 
   void clear() override { _particles.clear(); }
 
@@ -185,15 +211,15 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   }
 
   void deleteByIndex(size_t index) override {
-    std::lock_guard<AutoPasLock> lock(_particlesLock);
-    if (index >= numParticles()) {
-      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", numParticles(), index);
+    std::lock_guard<AutoPasLock> lock(this->_cellLock);
+    if (index >= size()) {
+      utils::ExceptionHandler::exception("Index out of range (range: [0, {}[, index: {})", size(), index);
     }
 
     _particles[index]->setOwnershipState(OwnershipState::dummy);
 
-    if (index < numParticles() - 1) {
-      std::swap(_particles[index], _particles[numParticles() - 1]);
+    if (index < size() - 1) {
+      std::swap(_particles[index], _particles[size() - 1]);
     }
     _particles.pop_back();
   }
@@ -235,7 +261,6 @@ class ReferenceParticleCell : public ParticleCell<Particle> {
   SoA<SoAArraysType> _particleSoABuffer;
 
  private:
-  AutoPasLock _particlesLock;
   std::array<double, 3> _cellLength;
 
   template <bool regionCheck, typename Lambda>

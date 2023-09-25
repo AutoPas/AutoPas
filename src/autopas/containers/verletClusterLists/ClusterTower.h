@@ -88,18 +88,18 @@ class ClusterTower : public ParticleCell<Particle> {
       _particlesStorage.sortByDim(2);
 
       // if the number of particles is divisible by the cluster size this is 0
-      const auto sizeLastCluster = _particlesStorage.numParticles() % _clusterSize;
+      const auto sizeLastCluster = _particlesStorage.size() % _clusterSize;
       _numDummyParticles = sizeLastCluster == 0 ? 0 : _clusterSize - sizeLastCluster;
 
       // fill the last cluster with dummy copies of the last particle
-      auto lastParticle = _particlesStorage[_particlesStorage.numParticles() - 1];
+      auto lastParticle = _particlesStorage[_particlesStorage.size() - 1];
       markParticleAsDeleted(lastParticle);
       for (size_t i = 0; i < _numDummyParticles; i++) {
         _particlesStorage.addParticle(lastParticle);
       }
 
       // Mark start of the different clusters by adding pointers to _particlesStorage
-      size_t numClusters = _particlesStorage.numParticles() / _clusterSize;
+      size_t numClusters = _particlesStorage.size() / _clusterSize;
       _clusters.reserve(numClusters);
       for (size_t index = 0; index < numClusters; index++) {
         _clusters.emplace_back(&(_particlesStorage[_clusterSize * index]), _clusterSize);
@@ -187,22 +187,37 @@ class ClusterTower : public ParticleCell<Particle> {
   [[nodiscard]] size_t getNumTailDummyParticles() const { return _numDummyParticles; }
 
   /**
-   * @copydoc getNumActualParticles()
+   * Get the number of all particles stored in this tower (owned, halo and dummy).
+   * @return number of particles stored in this tower (owned, halo and dummy).
    */
-  [[nodiscard]] unsigned long numParticles() const override { return getNumActualParticles(); }
+  [[nodiscard]] size_t size() const override { return getNumActualParticles(); }
 
   /**
-   * Returns the number of particles in the tower before the filler dummies.
-   * There might still be particles that were marked as dummies due to deletion.
-   * @return
+   * @copydoc autopas::ParticleCell::getNumberOfParticles()
    */
-  [[nodiscard]] size_t getNumActualParticles() const { return getNumAllParticles() - getNumTailDummyParticles(); }
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    return _particlesStorage.getNumberOfParticles(behavior);
+  }
 
   /**
-   * Returns the size of the internal particle storage aka. the total number of particles incl. dummies.
-   * @return
+   * Get the number of all particles saved in the tower without tailing dummies that are used to fill up clusters (owned
+   * + halo + dummies excuding tailing dummies).
+   * @return Number of all particles saved in the tower without tailing dummies that are used to fill up clusters (owned
+   * + halo + dummies excuding tailing dummies).
    */
-  [[nodiscard]] size_t getNumAllParticles() const { return _particlesStorage.numParticles(); }
+  [[nodiscard]] unsigned long getNumActualParticles() const {
+    return _particlesStorage.size() - getNumTailDummyParticles();
+  }
+
+  /**
+   * @copydoc autopas::ParticleCell::getPossibleParticleOwnerships()
+   */
+  const OwnershipState getPossibleParticleOwnerships() { return _particlesStorage.getPossibleParticleOwnerships(); }
+
+  /**
+   * @copydoc autopas::ParticleCell::setPossibleParticleOwnerships()
+   */
+  void setPossibleParticleOwnerships(OwnershipState state) { _particlesStorage.setPossibleParticleOwnerships(state); }
 
   /**
    * Returns the number of clusters in the tower.
@@ -339,6 +354,7 @@ class ClusterTower : public ParticleCell<Particle> {
       std::swap(_particlesStorage._particles[getNumActualParticles() - 1],
                 _particlesStorage._particles[_particlesStorage._particles.size() - 1]);
     }
+
     _particlesStorage._particles.pop_back();
 
     if (_particleDeletionObserver) {

@@ -159,7 +159,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     // Generate a map from pointer to particle index in the SoA. This works, because during loadSoA"()" the particles
     // are loaded in the same order.
     std::unordered_map<Particle *, size_t> _aos2soaMap;
-    _aos2soaMap.reserve(_baseLinkedCells->getNumberOfParticles());
+    _aos2soaMap.reserve(_baseLinkedCells->size());
     size_t i = 0;
     // needs to iterate also over dummies!
     for (auto iter = _baseLinkedCells->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
@@ -206,7 +206,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     size_t offset = 0;
     for (auto &cell : _baseLinkedCells->getCells()) {
       f->SoALoader(cell, _soa, offset);
-      offset += cell.numParticles();
+      offset += cell.size();
     }
 
     return &_soa;
@@ -221,7 +221,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     size_t offset = 0;
     for (auto &cell : _baseLinkedCells->getCells()) {
       f->SoAExtractor(cell, _soa, offset);
-      offset += cell.numParticles();
+      offset += cell.size();
     }
   }
 
