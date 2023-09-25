@@ -769,12 +769,13 @@ class LogicHandler {
    *  - haloParticleBuffer -> particleBuffer
    *
    * @note Buffers need to have at least one (empty) cell. They must not be empty.
+   * @note TODO: Update this function with SoA-usage
    *
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.
    * @tparam TriwiseFunctor
    * @param f
-   * @param container Reference the container. Preferably pass the container with the actual static type.
+   * @param container Reference to the container. Preferably pass the container with the actual static type.
    * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
    * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
    * updated.
@@ -1287,25 +1288,27 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
   timerBufferBufferBuffer.start();
 #endif
   // Step 1: 3-body interactions of all particles in the buffers (owned and halo)
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for
+#endif
   for (auto i = 0; i < numOwnedBufferParticles; ++i) {
     Particle &p1 = *bufferParticles[i];
 
-    for (auto j = i + 1; j < numTotal; ++j) {
+    for (auto j = 0; j < numTotal; ++j) {
+      if (i == j) continue;
       Particle &p2 = *bufferParticles[j];
 
       for (auto k = j + 1; k < numTotal; ++k) {
+        if (k == i) continue;
         Particle &p3 = *bufferParticles[k];
 
-        if constexpr (newton3) {
-          f->AoSFunctor(p1, p2, p3, true);
-        } else {
-          f->AoSFunctor(p1, p2, p3, false);
-          if (j < numOwnedBufferParticles) f->AoSFunctor(p2, p1, p3, false);
-          if (k < numOwnedBufferParticles) f->AoSFunctor(p3, p1, p2, false);
-        }
+        // no newton3 for now due to race conditions
+        f->AoSFunctor(p1, p2, p3, false);
       }
     }
   }
+
+
 #if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
   timerBufferBufferBuffer.stop();
   timerBufferBufferContainer.start();
@@ -1316,30 +1319,28 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
   const auto interactionLengthInv = 1. / container.getInteractionLength();
 
   const double cutoff = container.getCutoff();
-
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for
+#endif
   for (auto i = 0; i < numTotal; ++i) {
     Particle &p1 = *bufferParticles[i];
     const auto pos = p1.getR();
     const auto min = pos - cutoff;
     const auto max = pos + cutoff;
 
-    for (auto j = i + 1; j < numTotal; ++j) {
+    for (auto j = 0; j < numTotal; ++j) {
+      if (j == i) continue;
       Particle &p2 = *bufferParticles[j];
 
       container.forEachInRegion(
         [&](auto &p3) {
           const auto lockCoords = static_cast_copy_array<size_t>((p3.getR() - haloBoxMin) * interactionLengthInv);
-          if constexpr (newton3) {
+          // no newton3 here due to race conditions
+          if (i < numOwnedBufferParticles) f->AoSFunctor(p1, p2, p3, false);
+          // no need to calculate force enacted on a halo
+          if (not p3.isHalo() and i < j) {
             const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-            f->AoSFunctor(p1, p2, p3, true);
-          } else {
-            if (i < numOwnedBufferParticles) f->AoSFunctor(p1, p2, p3, false);
-            if (j < numOwnedBufferParticles) f->AoSFunctor(p2, p1, p3, false);
-            // no need to calculate force enacted on a halo
-            if (not p3.isHalo()) {
-              const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
-              f->AoSFunctor(p3, p1, p2, false);
-            }
+            f->AoSFunctor(p3, p1, p2, false);
           }
         },
         min, max, IteratorBehavior::ownedOrHalo);
@@ -1352,40 +1353,51 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
 #endif
 
   // Step 3: 3-body interactions of 1 buffer particle and 2 container particles
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for shared(bufferParticles)
+#endif
   for (auto i = 0; i < numTotal; ++i) {
     Particle &p1 = *bufferParticles[i];
     const auto pos = p1.getR();
     const auto boxmin = pos - cutoff;
     const auto boxmax = pos + cutoff;
 
-    auto p2Iter = container.getRegionIterator(boxmin, boxmax, IteratorBehavior::ownedOrHalo, nullptr);
+    auto p2Iter = container.getRegionIterator(boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
     for (; p2Iter.isValid(); ++p2Iter) {
       Particle &p2 = *p2Iter;
+      const auto p2ID = p2.getID();
       const auto lockCoordsP2 = static_cast_copy_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
 
       auto p3Iter = p2Iter;
       ++p3Iter;
       for (; p3Iter.isValid(); ++p3Iter) {
         Particle &p3 = *p3Iter;
+        const auto p3ID = p3.getID();
         const auto lockCoordsP3 = static_cast_copy_array<size_t>((p3.getR() - haloBoxMin) * interactionLengthInv);
+        // Take spatial locks in order of particle ID to avoid deadlocks
+        if (p2ID < p3ID) {
+          const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
+          if (lockCoordsP2 != lockCoordsP3)
+            const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
+        } else if (p2ID > p3ID) {
+          const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
+          if (lockCoordsP2 != lockCoordsP3)
+            const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
+        } else {
+          continue;
+        }
 
         if constexpr (newton3) {
-          const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
-          // Todo: How to avoid race condition here ...
-          // Locking 2 locks might lead to thread one locking lock1 first while thread two locks lock2. Thread one wants
-          // to take lock2 next and thread two lock1 --> deadlock
-          // const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
-
           f->AoSFunctor(p1, p2, p3, true);
         } else {
-          if (i < numOwnedBufferParticles) f->AoSFunctor(p1, p2, p3, false);
+          if (i < numOwnedBufferParticles) {
+            f->AoSFunctor(p1, p2, p3, false);
+          }
           // no need to calculate force enacted on a halo
-          if (p2.isHalo()) {
-            const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
+          if (p2.isOwned()) {
             f->AoSFunctor(p2, p1, p3, false);
           }
-          if (not p3.isHalo()) {
-            const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
+          if (p3.isOwned()) {
             f->AoSFunctor(p3, p1, p2, false);
           }
         }
