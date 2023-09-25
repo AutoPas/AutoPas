@@ -613,7 +613,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+        tower.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       }
     }
     for (auto &vector : _particlesToAdd) {
@@ -652,7 +652,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+        tower.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       }
     }
 
@@ -684,7 +684,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+        tower.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
       }
     }
     for (auto &vector : _particlesToAdd) {
@@ -722,7 +722,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+        tower.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
       }
     }
 
