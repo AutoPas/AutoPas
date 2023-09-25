@@ -640,7 +640,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
 
   // Calculate the forces using the reference implementation
   auto [referenceForces, referencePairs] = calculateForcesAndPairs(
-      autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
+      autopas::ContainerOption::directSum, autopas::TraversalOption::ds_sequential, autopas::DataLayoutOption::aos,
       autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff,
       skinPerTimestep, rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
 
