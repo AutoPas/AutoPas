@@ -439,7 +439,8 @@ class VerletClusterListsRebuilder {
       const auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
 
       if (clusterAContainsParticles) {
-        clusterA.getNeighbors()->reserve((towerA.size() + 8 * towerB.size()) * neighborListReserveHeuristicFactor);
+        clusterA.getNeighbors()->reserve((towerA.getNumActualParticles() + 8 * towerB.getNumActualParticles()) *
+                                         neighborListReserveHeuristicFactor);
         for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
              clusterIndexInTowerB++) {
           // a cluster cannot be a neighbor to itself

@@ -227,7 +227,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     for (size_t i = 0; i < _towers.size(); ++i) {
       auto &tower = _towers[i];
-      const auto towerSize = tower.size();
+      const auto towerSize = tower.getNumActualParticles();
       auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies.
       for (size_t j = 0; j < towerSize - numTailDummies;) {
@@ -311,7 +311,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_towers[cellIndex].size() or
+    if (particleIndex >= this->_towers[cellIndex].getNumActualParticles() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -1342,7 +1342,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].size()) {
+      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].getNumActualParticles()) {
         cellIndex += stride;
         particleIndex = 0;
 
