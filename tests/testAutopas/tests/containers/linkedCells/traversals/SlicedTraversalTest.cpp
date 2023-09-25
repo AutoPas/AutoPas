@@ -9,24 +9,26 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopasTools/generators/GridGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
 
 void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
-  autopas::FlopCounterFunctor<autopas::Particle> f(1);
-  std::vector<FPCell> cells;
+  mdLib::LJFunctor<Molecule> ljFunctor(1.);
+  autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> f(ljFunctor, 1.);
+  std::vector<FMCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
   autopasTools::generators::GridGenerator::fillWithParticles(cells, edgeLength, edgeLength,
-                                                             autopas::utils::ParticleTypeTrait<FPCell>::value(),
+                                                             autopas::utils::ParticleTypeTrait<FMCell>::value(),
                                                              {0.99, 0.99, 0.99}, {0.5, 0.5, 0.5}, {1., 1., 1.});
 
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FPCell, autopas::FlopCounterFunctor<autopas::Particle>, autopas::DataLayoutOption::aos,
-                             true>
+  autopas::LCSlicedTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>>,
+                             autopas::DataLayoutOption::aos, true>
       slicedTraversal(edgeLength, &f, 1., {1., 1., 1.});
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
