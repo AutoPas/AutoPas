@@ -153,20 +153,20 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
             utils::ThreeDimensionalMapping::oneToThreeD(offset, cellsPerDimension));
         // origin
         {
-          // check whether cell is within interaction length
+          // check whether cell is within interaction length. distVec is the direction between borders of cells.
           const auto distVec =
               std::array<double, 3>{std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)} *
               _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            // sorting direction is NOT distance vector. Sorting fix:
             std::array<double, 3> baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
                 utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[z], cellsPerDimension));
-            std::array<double, 3> sortingDir = utils::ArrayMath::sub(offsetVec, baseCellVec);
+
+            // Calculate the sorting direction from the base cell to the other cell.
+            std::array<double, 3> sortingDir = offsetVec - baseCellVec;
             if (x == 0 and y == 0 and z == 0) {
               sortingDir = {1., 1., 1.};
             }
-            sortingDir = utils::ArrayMath::normalize(sortingDir);
 
             _cellPairOffsets.push_back(
                 std::make_tuple(cellOffsets[z], offset, utils::ArrayMath::normalize(sortingDir)));
@@ -182,11 +182,12 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
           if (distSquare <= interactionLengthSquare) {
             std::array<double, 3> baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
                 utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[ov1_squared - ov1 + z], cellsPerDimension));
-            std::array<double, 3> sortingDir = utils::ArrayMath::sub(offsetVec, baseCellVec);
+
+            // Calculate the sorting direction from the base cell to the other cell.
+            std::array<double, 3> sortingDir = offsetVec - baseCellVec;
             if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
               sortingDir = {1., 1., 1.};
             }
-            sortingDir = utils::ArrayMath::normalize(sortingDir);
             _cellPairOffsets.emplace_back(cellOffsets[ov1_squared - ov1 + z], offset,
                                           utils::ArrayMath::normalize(sortingDir));
           }
@@ -202,7 +203,9 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
             std::array<double, 3> baseCellVec =
                 utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
                     cellOffsets[ov1_squared * _overlap[0] + z], cellsPerDimension));
-            std::array<double, 3> sortingDir = utils::ArrayMath::sub(offsetVec, baseCellVec);
+
+            // Calculate the sorting direction from the base cell to the other cell.
+            std::array<double, 3> sortingDir = offsetVec - baseCellVec;
             if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
               sortingDir = {1., 1., 1.};
             }
@@ -222,11 +225,12 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
             std::array<double, 3> baseCellVec =
                 utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
                     cellOffsets[ov1_squared * ov1 - ov1 + z], cellsPerDimension));
-            std::array<double, 3> sortingDir = utils::ArrayMath::sub(offsetVec, baseCellVec);
+
+            // Calculate the sorting direction from the base cell to the other cell.
+            std::array<double, 3> sortingDir = offsetVec - baseCellVec;
             if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
               sortingDir = {1., 1., 1.};
             }
-            sortingDir = utils::ArrayMath::normalize(sortingDir);
 
             _cellPairOffsets.emplace_back(cellOffsets[ov1_squared * ov1 - ov1 + z], offset,
                                           utils::ArrayMath::normalize(sortingDir));
