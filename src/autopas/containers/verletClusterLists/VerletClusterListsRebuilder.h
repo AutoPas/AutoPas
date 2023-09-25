@@ -372,7 +372,7 @@ class VerletClusterListsRebuilder {
     for (auto clusterIterA = _newton3 ? towerA.getClusters().begin() : towerA.getFirstOwnedCluster();
          clusterIterA < (_newton3 ? towerA.getClusters().end() : towerA.getFirstTailHaloCluster()); ++clusterIterA) {
       if (not clusterIterA->empty()) {
-        clusterIterA->getNeighbors()->reserve((towerA.numParticles() + 8 * towerB.numParticles()) *
+        clusterIterA->getNeighbors()->reserve((towerA.getNumActualParticles() + 8 * towerB.getNumActualParticles()) *
                                               neighborListReserveHeuristicFactor);
 
         // if we are within one tower depending on newton3 only look at forward neighbors

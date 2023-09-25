@@ -226,7 +226,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
       auto &tower = _towerBlock[i];
-      const auto towerSize = tower.size();
+      const auto towerSize = tower.getNumActualParticles();
       auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies.
       for (size_t j = 0; j < towerSize - numTailDummies;) {
@@ -310,7 +310,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= _towerBlock[cellIndex].size() or
+    if (particleIndex >= _towerBlock[cellIndex].getNumActualParticles() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             _towerBlock[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -609,7 +609,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+        tower.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       }
     }
     for (auto &vector : _particlesToAdd) {
@@ -648,7 +648,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+        tower.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       }
     }
 
@@ -680,7 +680,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+        tower.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
       }
     }
     for (auto &vector : _particlesToAdd) {
@@ -718,7 +718,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+        tower.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
       }
     }
 
@@ -1181,7 +1181,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not towerIsRelevant() or particleIndex >= _towerBlock[cellIndex].size()) {
+      while (not towerIsRelevant() or particleIndex >= _towerBlock[cellIndex].getNumActualParticles()) {
         cellIndex += stride;
         particleIndex = 0;
 
