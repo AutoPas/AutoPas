@@ -226,7 +226,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
       auto &tower = _towerBlock[i];
-      const auto towerSize = tower.getNumAllParticles();
+      const auto towerSize = tower.size();
       auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies.
       for (size_t j = 0; j < towerSize - numTailDummies;) {
@@ -310,7 +310,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= _towerBlock[cellIndex].numParticles() or
+    if (particleIndex >= _towerBlock[cellIndex].size() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             _towerBlock[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -377,7 +377,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     // Here, the towers might not yet be built, hence do not use members like _towerBlock.getTowersPerDim
     const auto boxSizeWithHalo = this->getHaloBoxMax() - this->getHaloBoxMin();
     const auto [towerSideLength, towersPerDim] =
-        _towerBlock.estimateOptimalGridSideLength(this->getNumberOfParticles(), _clusterSize);
+        _towerBlock.estimateOptimalGridSideLength(this->size(), _clusterSize);
     const std::array<double, 3> towerSize = {towerSideLength[0], towerSideLength[1],
                                              this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
     const std::array<unsigned long, 3> towerDimensions = {towersPerDim[0], towersPerDim[1], 1};
@@ -774,11 +774,37 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  [[nodiscard]] unsigned long getNumberOfParticles() const override {
+  /**
+   * Get the number of all particles stored in this container (owned + halo + dummy).
+   * @return number of particles stored in this container (owned + halo + dummy).
+   */
+  [[nodiscard]] size_t size() const override {
     size_t sum = std::accumulate(_towerBlock.begin(), _towerBlock.end(), 0,
-                                 [](size_t acc, const auto &tower) { return acc + tower.getNumActualParticles(); });
+                                 [](size_t acc, const auto &tower) { return acc + tower.size(); });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
                           [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
+    return sum;
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
+   */
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    // sum up all particles in towers that fulfill behavior
+    size_t sum = std::accumulate(_towerBlock.begin(), _towerBlock.end(), 0, [&behavior](size_t acc, const auto &tower) {
+      return acc + tower.getNumberOfParticles(behavior);
+    });
+
+    // Since we can not directly insert particles into towers without a rebuild of the whole data structure,
+    // _particlesToAdd is used to store all these particles temporarily until the next rebuild inserts them into the
+    // towers data structure. However, these particles already belong to the respective tower, so we have to count them
+    // as well.
+    sum = std::accumulate(
+        _particlesToAdd.begin(), _particlesToAdd.end(), sum, [&behavior](size_t acc, const auto &buffer) {
+          return acc +
+                 (std::count_if(buffer.begin(), buffer.end(), [&behavior](auto p) { return behavior.contains(p); }));
+        });
+
     return sum;
   }
 
@@ -1155,7 +1181,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not towerIsRelevant() or particleIndex >= _towerBlock[cellIndex].numParticles()) {
+      while (not towerIsRelevant() or particleIndex >= _towerBlock[cellIndex].size()) {
         cellIndex += stride;
         particleIndex = 0;
 

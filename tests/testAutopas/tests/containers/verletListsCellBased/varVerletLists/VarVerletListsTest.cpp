@@ -38,17 +38,17 @@ TEST_F(VarVerletListsTest, testAddParticleNumParticle) {
   unsigned int rebuildFrequency = 20;
   autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
       min, max, cutoff, skinPerTimestep, rebuildFrequency);
-  EXPECT_EQ(verletLists.getNumberOfParticles(), 0);
+  EXPECT_EQ(verletLists.size(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
-  EXPECT_EQ(verletLists.getNumberOfParticles(), 1);
+  EXPECT_EQ(verletLists.size(), 1);
 
   std::array<double, 3> r2 = {1.5, 2, 2};
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
-  EXPECT_EQ(verletLists.getNumberOfParticles(), 2);
+  EXPECT_EQ(verletLists.size(), 2);
 }
 
 TEST_F(VarVerletListsTest, testDeleteAllParticles) {
@@ -59,7 +59,7 @@ TEST_F(VarVerletListsTest, testDeleteAllParticles) {
   unsigned int rebuildFrequency = 20;
   autopas::VarVerletLists<Particle, autopas::VerletNeighborListAsBuild<Particle>> verletLists(
       min, max, cutoff, skinPerTimestep, rebuildFrequency);
-  EXPECT_EQ(verletLists.getNumberOfParticles(), 0);
+  EXPECT_EQ(verletLists.size(), 0);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -68,10 +68,10 @@ TEST_F(VarVerletListsTest, testDeleteAllParticles) {
   std::array<double, 3> r2 = {1.5, 2, 2};
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
-  EXPECT_EQ(verletLists.getNumberOfParticles(), 2);
+  EXPECT_EQ(verletLists.size(), 2);
 
   verletLists.deleteAllParticles();
-  EXPECT_EQ(verletLists.getNumberOfParticles(), 0);
+  EXPECT_EQ(verletLists.size(), 0);
 }
 
 TEST_F(VarVerletListsTest, testVerletListBuild) {

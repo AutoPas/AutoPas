@@ -67,7 +67,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
    * This SoA Functor does not use any vectorization.
    */
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     double *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
@@ -81,8 +81,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     size_t kernelCallsAcc = 0;
     size_t kernelFlopsAcc = 0;
 
-    for (size_t i = 0; i < soa.getNumberOfParticles(); ++i) {
-      for (size_t j = i + 1; j < soa.getNumberOfParticles(); ++j) {
+    for (size_t i = 0; i < soa.size(); ++i) {
+      for (size_t j = i + 1; j < soa.size(); ++j) {
         ++distanceCalulationsAcc;
 
         const double drx = xPtr[i] - xPtr[j];
@@ -128,8 +128,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     size_t kernelCallsAcc = 0;
     size_t kernelFlopsAcc = 0;
 
-    for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
-      for (size_t j = 0; j < soa2.getNumberOfParticles(); ++j) {
+    for (size_t i = 0; i < soa1.size(); ++i) {
+      for (size_t j = 0; j < soa2.size(); ++j) {
         ++distanceCalulationsAcc;
 
         const double drx = x1ptr[i] - x2ptr[j];
@@ -162,7 +162,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
   // clang-format on
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) override {
-    const auto numParticles = soa.getNumberOfParticles();
+    const auto numParticles = soa.size();
 
     if (numParticles == 0) return;
 

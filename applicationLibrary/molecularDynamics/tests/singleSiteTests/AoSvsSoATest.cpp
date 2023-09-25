@@ -72,7 +72,7 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   ljFunctor.SoAExtractor(cell, cell._particleSoABuffer, 0);
 
   //  ASSERT_EQ(particlesAoS.size(), particlesSoA.size());
-  ASSERT_EQ(particlesAoS.size(), cell.numParticles());
+  ASSERT_EQ(particlesAoS.size(), cell.size());
 
   // compare particle vectors
   for (unsigned int i = 0; i < particlesAoS.size(); ++i) {

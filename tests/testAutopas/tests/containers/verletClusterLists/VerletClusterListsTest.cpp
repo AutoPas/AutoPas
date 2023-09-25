@@ -68,9 +68,9 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   autopas::VCLClusterIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  EXPECT_EQ(verletLists.getNumberOfParticles(), numParticles);
+  EXPECT_EQ(verletLists.size(), numParticles);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  EXPECT_EQ(verletLists.getNumberOfParticles(), numParticles);
+  EXPECT_EQ(verletLists.size(), numParticles);
 }
 
 TEST_F(VerletClusterListsTest, testIterator) {

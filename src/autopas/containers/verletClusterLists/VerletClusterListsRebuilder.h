@@ -74,7 +74,7 @@ class VerletClusterListsRebuilder {
                                                 [](auto acc, const auto &tower) {
                                                   // actually we want only the number of owned or halo particles
                                                   // but dummies were just deleted.
-                                                  return acc + tower.getNumAllParticles();
+                                                  return acc + tower.getNumActualParticles();
                                                 });
 
     // calculate new number of towers and their size
