@@ -207,7 +207,7 @@ class AxilrodTellerFunctor
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not yet implemented.");
+    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
   }
 
   /**
@@ -216,7 +216,7 @@ class AxilrodTellerFunctor
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
     // TODO: should always calculate forces for all particles in soa1, even when newton3 == false
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not yet implemented.");
+    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
 
   }
 
@@ -233,7 +233,7 @@ class AxilrodTellerFunctor
    */
   void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, autopas::SoAView<SoAArraysType> soa3,
                       const bool newton3) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not yet implemented.");
+    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
   }
 
  private:
@@ -246,7 +246,7 @@ class AxilrodTellerFunctor
    */
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPairImpl() is not yet implemented.");
+    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPairImpl() is not implemented.");
   }
 
  public:
@@ -260,7 +260,7 @@ class AxilrodTellerFunctor
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorVerlet() is not yet implemented.");
+    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorVerlet() is not implemented.");
 
   }
 
@@ -406,7 +406,7 @@ class AxilrodTellerFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorVerletImpl() is not yet implemented.");
+    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorVerletImpl() is not implemented.");
   }
 
   /**
