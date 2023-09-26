@@ -202,17 +202,7 @@ class ParticlePropertiesLibrary {
    * @return 24*epsilon_ij
    */
   inline floatType getMixing24Epsilon(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
-  }
-
-  /**
-   * Returns the precomputed mixed epsilon * 24.
-   * @param  i Id of site one.
-   * @param  j Id of site two.
-   * @return 24*epsilon_ij
-   */
-  inline floatType getMixingNu(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
+    return _computedLJMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
   }
 
   /**
@@ -221,7 +211,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  inline auto getMixingData(intType i, intType j) const { return _computedMixingData[i * _numRegisteredSiteTypes + j]; }
+  inline auto getMixingData(intType i, intType j) const { return _computedLJMixingData[i * _numRegisteredSiteTypes + j]; }
 
   /**
    * Get a pointer to Mixing Data for one pair of site types.
@@ -230,7 +220,7 @@ class ParticlePropertiesLibrary {
    * @return
    */
   inline const double *getMixingDataPtr(intType i, intType j) {
-    return reinterpret_cast<const double *>(&_computedMixingData[i * _numRegisteredSiteTypes + j]);
+    return reinterpret_cast<const double *>(&_computedLJMixingData[i * _numRegisteredSiteTypes + j]);
   }
 
   /**
@@ -240,7 +230,7 @@ class ParticlePropertiesLibrary {
    * @return sigma_ij²
    */
   inline floatType getMixingSigmaSquared(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
+    return _computedLJMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
   }
 
   /**
@@ -250,7 +240,7 @@ class ParticlePropertiesLibrary {
    * @return shift * 6
    */
   inline floatType getMixingShift6(intType i, intType j) const {
-    return _computedMixingData[i * _numRegisteredSiteTypes + j].shift6;
+    return _computedLJMixingData[i * _numRegisteredSiteTypes + j].shift6;
   }
 
   /**
@@ -262,6 +252,28 @@ class ParticlePropertiesLibrary {
    * @return shift multiplied by 6
    */
   static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared);
+
+  /**
+   * Returns the precomputed mixed epsilon * 24.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
+   * @param  k Id of site three.
+   * @return nu_ijk
+   */
+  inline floatType getMixingNu(intType i, intType j, intType k) const {
+    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes + k].nu;
+  }
+
+  /**
+   * Get complete mixing data for one triplet of site types.
+   * @param i Id of site one.
+   * @param j Id of site two.
+   * @param k Id of site three.
+   * @return
+   */
+  inline auto getATMixingData(intType i, intType j, intType k) const {
+    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes + k];
+  }
 
  private:
   intType _numRegisteredSiteTypes{0};
@@ -282,14 +294,18 @@ class ParticlePropertiesLibrary {
   std::vector<size_t> _numSites;
   std::vector<floatType> _moleculesLargestSigma;
 
-  struct PackedMixingData {
+  struct PackedLJMixingData {
     floatType epsilon24;
     floatType sigmaSquared;
     floatType shift6;
+  };
+
+  struct PackedATMixingData {
     floatType nu;
   };
 
-  std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
+  std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
+  std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
 };
 
 template <typename floatType, typename intType>
@@ -357,12 +373,14 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
+  // TODO: mixing data for Axilrod Teller?
   if (_numRegisteredSiteTypes == 0) {
     autopas::utils::ExceptionHandler::AutoPasException(
         "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
   }
 
-  _computedMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
+  _computedLJMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
+  _computedATMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
   const auto cutoffSquared = _cutoff * _cutoff;
 
@@ -372,16 +390,23 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
 
       // epsilon
       const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
-      _computedMixingData[globalIndex].epsilon24 = epsilon24;
+      _computedLJMixingData[globalIndex].epsilon24 = epsilon24;
 
       // sigma
       const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
       const floatType sigmaSquared = sigma * sigma;
-      _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
+      _computedLJMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
       // shift6
       const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
-      _computedMixingData[globalIndex].shift6 = shift6;
+      _computedLJMixingData[globalIndex].shift6 = shift6;
+
+      for (size_t thirdIndex = 0ul; thirdIndex < _numRegisteredSiteTypes; ++thirdIndex) {
+        auto globalIndex3B = _numRegisteredSiteTypes * globalIndex + thirdIndex;
+        // geometric mixing as used in e.g. https://doi.org/10.1063/1.3567308
+        const floatType mixedNu = cbrt(_nus[firstIndex] * _nus[secondIndex] * _nus[thirdIndex]);
+        _computedATMixingData[globalIndex3B].nu = mixedNu;
+      }
     }
   }
 }

@@ -127,7 +127,7 @@ class AxilrodTellerFunctor
     }
     auto nu = _nu;
     if constexpr (useMixing) {
-      nu = _PPLibrary->getNu(i.getTypeId());
+      nu = _PPLibrary->getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
     }
     auto drij = j.getR() - i.getR();
     auto drjk = k.getR() - j.getR();
