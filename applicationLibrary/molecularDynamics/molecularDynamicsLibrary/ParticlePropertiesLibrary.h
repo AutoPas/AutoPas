@@ -310,7 +310,7 @@ class ParticlePropertiesLibrary {
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
-                                                                floatType nu, floatType mass) {
+                                                                floatType mass, floatType nu) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
@@ -373,7 +373,6 @@ void ParticlePropertiesLibrary<floatType, intType>::addMolType(const intType mol
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients() {
-  // TODO: mixing data for Axilrod Teller?
   if (_numRegisteredSiteTypes == 0) {
     autopas::utils::ExceptionHandler::AutoPasException(
         "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
