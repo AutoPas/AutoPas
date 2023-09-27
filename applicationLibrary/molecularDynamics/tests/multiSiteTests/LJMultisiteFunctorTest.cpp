@@ -40,7 +40,7 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
         molecules->at(index).setTorque({0, 0, 0});
         molecules->at(index).setV({0, 0, 0});
         molecules->at(index).setAngularVel({0, 0, 0});
-        molecules->at(index).setTypeId(0); // todo correct this before merge
+        molecules->at(index).setTypeId(index % 3);
         if (allOwned) {
           molecules->at(index).setOwnershipState(autopas::OwnershipState::owned);
         } else {
@@ -1319,7 +1319,7 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
   using mdLib::MultisiteMoleculeLJ;
 
-  const double cutoff = 3.;
+  const double cutoff = 3.1;
 
   std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMolecules;
   std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMolecules;
@@ -1441,7 +1441,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
 TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
   using mdLib::MultisiteMoleculeLJ;
 
-  const double cutoff = 5.;
+  const double cutoff = 5.1;
 
   std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMoleculesA;
   std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMoleculesB;
