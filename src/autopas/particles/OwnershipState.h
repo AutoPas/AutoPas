@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <bitset>
 #include <iostream>
 
 namespace autopas {
@@ -44,8 +45,39 @@ enum class OwnershipState : int64_t {
     case OwnershipState::halo:
       os << "halo";
       break;
+    default:
+      os << "unknown state: 0b" << std::bitset<4>(static_cast<int64_t>(ownershipState));
+      break;
   }
   return os;
 }
+
+/**
+ * Bitwise AND operator for OwnershipState
+ * @param a first operand
+ * @param b second operand
+ * @return a & b
+ */
+const inline OwnershipState operator&(const OwnershipState a, const OwnershipState b) {
+  return static_cast<OwnershipState>(static_cast<int64_t>(a) & static_cast<int64_t>(b));
+}
+
+/**
+ * Bitwise OR operator for OwnershipState
+ * @param a first operand
+ * @param b second operand
+ * @return a | b
+ */
+const inline OwnershipState operator|(const OwnershipState a, const OwnershipState b) {
+  return static_cast<OwnershipState>(static_cast<int64_t>(a) | static_cast<int64_t>(b));
+}
+
+/**
+ * Returnes the int64_t value of a given OwnershipState
+ *
+ * @param a OwnershipState
+ * @return const int64_t value of a given OwnershipState
+ */
+const inline int64_t toInt64(const OwnershipState a) { return static_cast<int64_t>(a); }
 
 }  // namespace autopas
