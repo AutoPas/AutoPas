@@ -115,17 +115,18 @@ class LJMultisiteFunctorAVX512
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift, site positions, site types, moment of inertia.
    */
-  explicit LJMultisiteFunctorAVX512(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  LJMultisiteFunctorAVX512(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
 #ifdef __AVX512F__
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useNewton3, calculateGlobals,
-                                                            relevantForTuning>>(cutoff, particlePropertiesLibrary),
+      : autopas::Functor<
+            Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useNewton3, calculateGlobals, relevantForTuning>>(
+            cutoff),
         _cutoffSquared{_mm512_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _postProcessed{false},
-        _PPLibrary{particlePropertiesLibrary} {
+        _PPLibrary{&particlePropertiesLibrary} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -393,7 +394,7 @@ class LJMultisiteFunctorAVX512
       const std::array<double, 3> centerOfMass{xptr[molA], yptr[molA], zptr[molA]};
 
       // Build list of indices
-      const auto sitePairIndicies = buildSitePairIndices(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, siteIndexMolB, soa.getNumberOfParticles(),
+      const auto sitePairIndicies = buildSiteInteractionIndices(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, siteIndexMolB, soa.getNumberOfParticles(),
                                                          noSitesB);
       // Calculate Forces
 
@@ -464,7 +465,7 @@ class LJMultisiteFunctorAVX512
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
 #ifndef __AVX512F__
-#pragma message "SoAFunctorPair functor called without AVX support!"
+#pragma message "SoAFunctorPair functor called without AVX512 support!"
 #endif
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -548,10 +549,9 @@ class LJMultisiteFunctorAVX512
     isSiteOwnedBArr.reserve(siteCountB);
 
     // Fill site-wise std::vectors for SIMD
-    std::vector<std::array<double, 3>> rotatedSitePositions;
-    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
 
-      rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+      const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
 
       size_t localSiteCount = _PPLibrary->getNumSites(typeptrB[mol]);
@@ -588,7 +588,7 @@ class LJMultisiteFunctorAVX512
 
       const auto siteTypesA = _PPLibrary->getSiteTypes(typeptrA[molA]);
 
-      const auto sitePairIndicies = buildSitePairIndices(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, 0, soaB.getNumberOfParticles(),
+      const auto sitePairIndicies = buildSiteInteractionIndices(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, 0, soaB.getNumberOfParticles(),
                                                          siteCountB);
 
       for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
@@ -636,6 +636,177 @@ class LJMultisiteFunctorAVX512
       const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
+      const auto newton3Factor = newton3 ? .5 : 1.;
+
+      _aosThreadData[threadNum].potentialEnergySum += potentialEnergyAccumulator * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += virialAccumulator[0] * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += virialAccumulator[1] * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += virialAccumulator[2] * newton3Factor;
+    }
+  }
+
+  /** @brief Implementation for SoAFunctorVerlet
+   */
+  template <bool newton3>
+  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexPrimary,
+                                  const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+#ifndef __AVX512F__
+#pragma message "SoAFunctorVerlet functor called without AVX512 support!"
+#endif
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // Skip if primary particle is dummy
+    const auto ownedStatePrime = ownedStatePtr[indexPrimary];
+    if (ownedStatePrime == autopas::OwnershipState::dummy) {
+      return;
+    }
+
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    // Get number of molecules in neighbor list
+    const size_t molCountNeighbors = neighborList.size();
+
+    // Count sites of neighbors of primary molecule
+    const size_t siteCountNeighbors = [&]() {
+      size_t siteCountTmp{0};
+      for (size_t neighborMol = 0; neighborMol < molCountNeighbors; ++neighborMol) {
+        siteCountTmp += _PPLibrary->getNumSites(typeptr[neighborList[neighborMol]]);
+      }
+      return siteCountTmp;
+    }();
+
+    // Count sites of primary molecule
+    const size_t siteCountPrimary = _PPLibrary->getNumSites(typeptr[indexPrimary]);
+
+    // Accumulators for global values
+    double potentialEnergyAccumulator = 0;
+    std::array<double, 3> virialAccumulator = {0., 0., 0.};
+
+    // ------------------------------ Setup auxiliary vectors -----------------------------
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedNeighborSitePositionsX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedNeighborSitePositionsY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedNeighborSitePositionsZ;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsZ;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX(siteCountNeighbors, 0.);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceY(siteCountNeighbors, 0.);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ(siteCountNeighbors, 0.);
+
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesNeighbors;
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> isNeighborSiteOwnedArr;
+
+
+    // pre-reserve site std::vectors
+    rotatedNeighborSitePositionsX.reserve(siteCountNeighbors);
+    rotatedNeighborSitePositionsY.reserve(siteCountNeighbors);
+    rotatedNeighborSitePositionsZ.reserve(siteCountNeighbors);
+    exactNeighborSitePositionsX.reserve(siteCountNeighbors);
+    exactNeighborSitePositionsY.reserve(siteCountNeighbors);
+    exactNeighborSitePositionsZ.reserve(siteCountNeighbors);
+
+    siteTypesNeighbors.reserve(siteCountNeighbors);
+    isNeighborSiteOwnedArr.reserve(siteCountNeighbors);
+
+    const auto rotatedSitePositionsInPrimaryMol =
+        autopas::utils::quaternion::rotateVectorOfPositions(
+                        {q0ptr[indexPrimary], q1ptr[indexPrimary], q2ptr[indexPrimary], q3ptr[indexPrimary]},
+                        _PPLibrary->getSitePositions(typeptr[indexPrimary]));
+
+    const auto siteTypesInPrimaryMol = _PPLibrary->getSiteTypes(typeptr[indexPrimary]);
+
+    // Fill site-wise std::vectors for SIMD
+    for (size_t neighborMol = 0; neighborMol < molCountNeighbors; ++neighborMol) {
+      const size_t neighborMolIndex = neighborList[neighborMol];
+      const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+          {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+          _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
+
+      const size_t localSiteCount = _PPLibrary->getNumSites(typeptr[neighborMolIndex]);
+
+      for (size_t site = 0; site < localSiteCount; ++site) {
+        exactNeighborSitePositionsX.push_back(rotatedSitePositions[site][0] + xptr[neighborMolIndex]);
+        exactNeighborSitePositionsY.push_back(rotatedSitePositions[site][1] + yptr[neighborMolIndex]);
+        exactNeighborSitePositionsZ.push_back(rotatedSitePositions[site][2] + zptr[neighborMolIndex]);
+        isNeighborSiteOwnedArr.push_back(ownedStatePtr[neighborMolIndex] == autopas::OwnershipState::owned);
+        siteTypesNeighbors.push_back(_PPLibrary->getSiteTypes(typeptr[neighborMolIndex])[site]);
+      }
+    }
+
+    const std::array<double, 3> centerOfMassPrimary{xptr[indexPrimary], yptr[indexPrimary], zptr[indexPrimary]};
+
+
+    const auto sitePairIndicies = buildSiteInteractionIndicesVerlet(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMassPrimary);
+
+
+    // ------------------- Calculate Forces -------------------
+
+    std::array<double, 3> forceAccumulator = {0., 0., 0.};
+    std::array<double, 3> torqueAccumulator = {0., 0., 0.};
+
+    for (size_t primarySite = 0; primarySite < siteCountPrimary; ++primarySite) {
+      const size_t siteTypePrime = siteTypesInPrimaryMol[primarySite];
+      const std::array<double, 3> rotatedSitePositionPrime = rotatedSitePositionsInPrimaryMol[primarySite];
+      const std::array<double, 3> exactSitePositionPrime =
+          autopas::utils::ArrayMath::add(rotatedSitePositionPrime, centerOfMassPrimary);
+
+      SoAKernelGS<newton3, true>(
+          sitePairIndicies, siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
+          exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ, isNeighborSiteOwnedArr, ownedStatePrime,
+          siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator,
+          potentialEnergyAccumulator, virialAccumulator);
+    }
+    // Add forces to prime mol
+    fxptr[indexPrimary] += forceAccumulator[0];
+    fyptr[indexPrimary] += forceAccumulator[1];
+    fzptr[indexPrimary] += forceAccumulator[2];
+    txptr[indexPrimary] += torqueAccumulator[0];
+    typtr[indexPrimary] += torqueAccumulator[1];
+    tzptr[indexPrimary] += torqueAccumulator[2];
+
+    // ------------------------------ Reduction -----------------------------
+    if constexpr (newton3) {
+      size_t siteIndex = 0;
+      for (size_t neighborMol = 0; neighborMol < molCountNeighbors; ++neighborMol) {
+        const auto neighborMolIndex = neighborList[neighborMol];
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
+          fxptr[neighborMolIndex] += siteForceX[siteIndex];
+          fyptr[neighborMolIndex] += siteForceY[siteIndex];
+          fzptr[neighborMolIndex] += siteForceZ[siteIndex];
+          txptr[neighborMolIndex] += rotatedNeighborSitePositionsY[site] * siteForceZ[siteIndex] -
+                                     rotatedNeighborSitePositionsZ[site] * siteForceY[siteIndex];
+          typtr[neighborMolIndex] += rotatedNeighborSitePositionsZ[site] * siteForceX[siteIndex] -
+                                     rotatedNeighborSitePositionsX[site] * siteForceZ[siteIndex];
+          tzptr[neighborMolIndex] += rotatedNeighborSitePositionsX[site] * siteForceY[siteIndex] -
+                                     rotatedNeighborSitePositionsY[site] * siteForceX[siteIndex];
+          ++siteIndex;
+        }
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      const auto threadNum = autopas::autopas_get_thread_num();
+      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
+      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2here.
       const auto newton3Factor = newton3 ? .5 : 1.;
 
       _aosThreadData[threadNum].potentialEnergySum += potentialEnergyAccumulator * newton3Factor;
@@ -706,7 +877,7 @@ class LJMultisiteFunctorAVX512
       const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(siteTypeA, 0);
 
       if (remainderCase) {
-        const __m512i siteTypeIndicies = _mm512_mask_i64gather_epi64(_zeroI, remainderMask, sitePairIndicesVec, &siteTypesB[0], 8);
+        const auto siteTypeIndicies = _mm512_mask_i64gather_epi64(_zeroI, remainderMask, sitePairIndicesVec, &siteTypesB[0], 8);
         const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndicies, _three);
 
 
@@ -718,7 +889,7 @@ class LJMultisiteFunctorAVX512
         }
 
       } else {
-        const __m512i siteTypeIndicies = _mm512_i64gather_epi64(sitePairIndicesVec, &siteTypesB[0], 8);
+        const auto siteTypeIndicies = _mm512_i64gather_epi64(sitePairIndicesVec, &siteTypesB[0], 8);
         const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndicies, _three);
 
         epsilon24 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr, 8);
@@ -795,27 +966,27 @@ class LJMultisiteFunctorAVX512
       // Newton 3 optimization
       if constexpr (newton3) {
         if (remainderCase) {
-          const __m512d forceSumBX = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceX[0], 8);
+          const auto forceSumBX = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceX[0], 8);
           const __m512d newForceSumBX = _mm512_sub_pd(forceSumBX, forceX);
           _mm512_mask_i64scatter_pd(&siteForceX[0], remainderMask, sitePairIndicesVec, newForceSumBX, 8);
 
-          const __m512d forceSumBY = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceY[0], 8);
+          const auto forceSumBY = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceY[0], 8);
           const __m512d newForceSumBY = _mm512_sub_pd(forceSumBY, forceY);
           _mm512_mask_i64scatter_pd(&siteForceY[0], remainderMask, sitePairIndicesVec, newForceSumBY, 8);
 
-          const __m512d forceSumBZ = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceZ[0], 8);
+          const auto forceSumBZ = _mm512_mask_i64gather_pd(_zero, remainderMask, sitePairIndicesVec, &siteForceZ[0], 8);
           const __m512d newForceSumBZ = _mm512_sub_pd(forceSumBZ, forceZ);
           _mm512_mask_i64scatter_pd(&siteForceZ[0], remainderMask, sitePairIndicesVec, newForceSumBZ, 8);
         } else {
-          const __m512d forceSumBX = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceX[0], 8);
+          const auto forceSumBX = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceX[0], 8);
           const __m512d newForceSumBX = _mm512_sub_pd(forceSumBX, forceX);
           _mm512_i64scatter_pd(&siteForceX[0], sitePairIndicesVec, newForceSumBX, 8);
 
-          const __m512d forceSumBY = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceY[0], 8);
+          const auto forceSumBY = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceY[0], 8);
           const __m512d newForceSumBY = _mm512_sub_pd(forceSumBY, forceY);
           _mm512_i64scatter_pd(&siteForceY[0], sitePairIndicesVec, newForceSumBY, 8);
 
-          const __m512d forceSumBZ = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceZ[0], 8);
+          const auto forceSumBZ = _mm512_i64gather_pd(sitePairIndicesVec, &siteForceZ[0], 8);
           const __m512d newForceSumBZ = _mm512_sub_pd(forceSumBZ, forceZ);
           _mm512_i64scatter_pd(&siteForceZ[0], sitePairIndicesVec, newForceSumBZ, 8);
         }
@@ -875,9 +1046,9 @@ class LJMultisiteFunctorAVX512
   }
 
   /**
-   * build site pair indices for SoASingle & SoAPair
+   * Build site interaction indices for SoASingle & SoAPair.
    */
-  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSitePairIndices(
+  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteInteractionIndices(
       const double *const __restrict xptr, const double *const __restrict yptr, const double *const __restrict zptr,
       const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
       const std::array<double, 3> &centerOfMass, size_t firstMolIndex, size_t firstSiteIndex, size_t noMolecules, size_t noSites) {
@@ -889,6 +1060,57 @@ class LJMultisiteFunctorAVX512
 
     for (size_t molIndex = firstMolIndex; molIndex < noMolecules; molIndex++) {
       const size_t siteCount = _PPLibrary->getNumSites(typeptr[molIndex]);
+
+      const double xPosB = xptr[molIndex];
+      const double yPosB = yptr[molIndex];
+      const double zPosB = zptr[molIndex];
+
+      // calculate displacement
+      const double displacementCoMX = centerOfMass[0] - xPosB;
+      const double displacementCoMY = centerOfMass[1] - yPosB;
+      const double displacementCoMZ = centerOfMass[2] - zPosB;
+
+      // calculate distance squared
+      const double distanceSquaredCoMX = displacementCoMX * displacementCoMX;
+      const double distanceSquaredCoMY = displacementCoMY * displacementCoMY;
+      const double distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
+
+      const double distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
+
+      const bool cutoffCondition = distanceSquaredCoM <= _cutoffSquaredAoS;
+      const bool dummyCondition = ownedStatePtr[molIndex] != autopas::OwnershipState::dummy;
+      const bool condition = cutoffCondition and dummyCondition;
+
+      for (size_t site = 0; site < siteCount; site++) {
+        if (condition) {
+          siteIndices.push_back(siteIndex);
+        }
+        siteIndex++;
+      }
+    }
+    siteIndices.shrink_to_fit();
+    return siteIndices;
+  }
+
+  /**
+   * Build site interaction indices for SoAVerlet.
+   * @return a list of site indices that satisfy the cutoff criterion.
+   * @warning This site indices returned match the site positions generated, i.e. are indicies of the neighbor list's sites
+   * not the SoA's sites.
+   */
+  inline std::vector<size_t, autopas::AlignedAllocator<size_t>> buildSiteInteractionIndicesVerlet(
+      const double *const __restrict xptr, const double *const __restrict yptr, const double *const __restrict zptr,
+      const size_t *const __restrict typeptr, const autopas::OwnershipState *const __restrict ownedStatePtr,
+      const std::array<double, 3> &centerOfMass, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+      const size_t noNeighborMol, const size_t noNeighborSite) {
+
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteIndices;
+    siteIndices.reserve(noNeighborSite); // This is just a guess
+
+    size_t siteIndex = 0;
+
+    for (size_t molIndex = 0; molIndex < noNeighborMol; molIndex++) {
+      const size_t siteCount = _PPLibrary->getNumSites(typeptr[neighborList[molIndex]]);
 
       const double xPosB = xptr[molIndex];
       const double yPosB = yptr[molIndex];
