@@ -515,7 +515,9 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   std::vector<std::tuple<unsigned long, unsigned long, double>> particlePairs;
   bool useNewton3 = newton3Option == Newton3Option::enabled;
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, useNewton3))
-      .Times(testing::AtLeast(1))
+      // For the call with a reference container which may use SortedCellView the functor is maybe not called depending
+      // on the cutoff and particle distribution. But for Octree we check if the functor is called at least once.
+      .Times(testing::AtLeast(containerOption != ContainerOption::octree ? 0 : 1))
       .WillRepeatedly(testing::WithArgs<0, 1>([&](auto &i, auto &j) {
         ++numPairs;
 
@@ -640,7 +642,7 @@ TEST_P(OctreeTest, testCustomParticleDistribution) {
 
   // Calculate the forces using the reference implementation
   auto [referenceForces, referencePairs] = calculateForcesAndPairs(
-      autopas::ContainerOption::directSum, autopas::TraversalOption::ds_sequential, autopas::DataLayoutOption::aos,
+      autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08, autopas::DataLayoutOption::aos,
       autopas::Newton3Option::enabled, numParticles, numHaloParticles, _boxMin, boxMax, cellSizeFactor, _cutoff,
       skinPerTimestep, rebuildFrequency, interactionLength, particlePositions, haloParticlePositions);
 
