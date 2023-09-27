@@ -626,12 +626,12 @@ class LJMultisiteFunctorAVX512
         fxBptr[mol] += siteForceBx[siteIndex];
         fyBptr[mol] += siteForceBy[siteIndex];
         fzBptr[mol] += siteForceBz[siteIndex];
-        txBptr[mol] += rotatedSitePositionBy[site] * siteForceBz[siteIndex] - // todo shouldn't site be siteIndex?
-                       rotatedSitePositionBz[site] * siteForceBy[siteIndex];
-        tyBptr[mol] += rotatedSitePositionBz[site] * siteForceBx[siteIndex] -
-                       rotatedSitePositionBx[site] * siteForceBz[siteIndex];
-        tzBptr[mol] += rotatedSitePositionBx[site] * siteForceBy[siteIndex] -
-                       rotatedSitePositionBy[site] * siteForceBx[siteIndex];
+        txBptr[mol] += rotatedSitePositionBy[siteIndex] * siteForceBz[siteIndex] -
+                       rotatedSitePositionBz[siteIndex] * siteForceBy[siteIndex];
+        tyBptr[mol] += rotatedSitePositionBz[siteIndex] * siteForceBx[siteIndex] -
+                       rotatedSitePositionBx[siteIndex] * siteForceBz[siteIndex];
+        tzBptr[mol] += rotatedSitePositionBx[siteIndex] * siteForceBy[siteIndex] -
+                       rotatedSitePositionBy[siteIndex] * siteForceBx[siteIndex];
         ++siteIndex;
       }
     }
