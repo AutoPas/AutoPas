@@ -28,8 +28,6 @@ namespace mdLib {
  *
  * @tparam Particle The type of particle.
  * @tparam applyShift Flag for the LJ potential to have a truncated shift.
- * @tparam useMixing Flag for if the functor is to be used with multiple particle types. If set to false, _epsilon and
- * _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off, or both. See FunctorN3Nodes for possible
  * values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
@@ -38,12 +36,10 @@ namespace mdLib {
  * 0 if molecules are beyond the cutoff and 1 if molecules are within cutoff). If false, use a Gather/Scatter approach
  * i.e. calculate forces only for
  */
-template <class Particle, bool applyShift = false, bool useMixing = false,
-          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
+template <class Particle, bool applyShift = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true, bool useMasks = true, size_t vecLength = 8>
 class LJMultisiteFunctorAVX512_STS
-    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useMixing, useNewton3,
-                                                              calculateGlobals, relevantForTuning, useMasks, vecLength>> {
+    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useNewton3, calculateGlobals, relevantForTuning, useMasks, vecLength>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -172,59 +168,31 @@ class LJMultisiteFunctorAVX512_STS
    */
   LJMultisiteFunctorAVX512_STS() = delete;
 
- private:
+ public:
   /**
-   * Internal, actual constructor.
-   * @param cutoff
-   * @note param dummy unused, only there to make the signature different from the public constructor.
+   * todo
    */
-  explicit LJMultisiteFunctorAVX512_STS(double cutoff, void * /*dummy*/)
+  LJMultisiteFunctorAVX512_STS(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
 #ifdef __AVX512F__
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                relevantForTuning, useMasks, vecLength>>(cutoff),
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useNewton3, calculateGlobals,
+                                                                relevantForTuning>>(cutoff),
         _cutoffSquared{_mm512_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
-        _postProcessed{false} {
+        _postProcessed{false},
+        _PPLibrary{&particlePropertiesLibrary} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
   }
 #else
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                relevantForTuning, useMasks, vecLength>>(cutoff) {
-    autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useNewton3, calculateGlobals,
+                                                            relevantForTuning>>(cutoff) {
+    autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX512 support!");
   }
 #endif
-
- public:
-  /**
-   * Constructor for Functor with particle mixing disabled. setParticleProperties() must be called.
-   * @note Only to be used with mixing == false
-   * @param cutoff
-   */
-  explicit LJMultisiteFunctorAVX512_STS(double cutoff) : LJMultisiteFunctorAVX512_STS(cutoff, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
-                  "mixing to false.");
-  }
-
-  /**
-   * Constructor for Functor with particle mixing enabled.
-   * Calculating global attributes is done with CoM and overall forces applied
-   * @param cutoff
-   * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
-   * epsilon, shift.
-   */
-  explicit LJMultisiteFunctorAVX512_STS(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJMultisiteFunctorAVX512_STS(cutoff, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
-  }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -246,20 +214,16 @@ class LJMultisiteFunctorAVX512_STS
     }
 
     // get number of sites
-    const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
-    const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsLJ.size();
+    const size_t numSitesA = _PPLibrary->getNumSites(particleA.getTypeId());
+    const size_t numSitesB = _PPLibrary->getNumSites(particleB.getTypeId());
 
     // get siteIds
-    const std::vector<size_t> siteIdsA =
-        useMixing ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : std::vector<unsigned long>();
-    const std::vector<size_t> siteIdsB =
-        useMixing ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : std::vector<unsigned long>();
+    const std::vector<size_t> siteIdsA = _PPLibrary->getSiteTypes(particleA.getTypeId());
+    const std::vector<size_t> siteIdsB = _PPLibrary->getSiteTypes(particleB.getTypeId());
 
     // get unrotated relative site positions
-    const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
-        useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsLJ;
-    const std::vector<std::array<double, 3>> unrotatedSitePositionsB =
-        useMixing ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositionsLJ;
+    const std::vector<std::array<double, 3>> unrotatedSitePositionsA = _PPLibrary->getSitePositions(particleA.getTypeId());
+    const std::vector<std::array<double, 3>> unrotatedSitePositionsB = _PPLibrary->getSitePositions(particleB.getTypeId());
 
     // calculate correctly rotated relative site positions
     const auto rotatedSitePositionsA =
@@ -278,9 +242,8 @@ class LJMultisiteFunctorAVX512_STS
           continue;
         }
 
-        const auto sigmaSquared =
-            useMixing ? _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]) : _sigmaSquaredAoS;
-        const auto epsilon24 = useMixing ? _PPLibrary->getMixing24Epsilon(siteIdsA[i], siteIdsB[j]) : _epsilon24AoS;
+        const auto sigmaSquared = _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]);
+        const auto epsilon24 = _PPLibrary->getMixing24Epsilon(siteIdsA[i], siteIdsB[j]);
         const auto shift6 = applyShift ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6AoS;
 
         // clang-format off
@@ -401,12 +364,8 @@ class LJMultisiteFunctorAVX512_STS
 
     // count number of sites in SoA
     size_t siteCount = 0;
-    if constexpr (useMixing) {
-      for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
-        siteCount += _PPLibrary->getNumSites(typeptr[mol]);
-      }
-    } else {
-      siteCount = _sitePositionsLJ.size() * soa.getNumberOfParticles();
+    for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+      siteCount += _PPLibrary->getNumSites(typeptr[mol]);
     }
 
     // Accumulators for global values
@@ -437,9 +396,7 @@ class LJMultisiteFunctorAVX512_STS
     exactSitePositionY.reserve(siteCount);
     exactSitePositionZ.reserve(siteCount);
 
-    if constexpr (useMixing) {
-      siteTypes.reserve(siteCount);
-    }
+    siteTypes.reserve(siteCount);
 
     siteOwnership.reserve(siteCount);
 
@@ -449,15 +406,10 @@ class LJMultisiteFunctorAVX512_STS
     for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
 
       // todo fix this
-      if constexpr (useMixing) {
-        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
-      } else {
-        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _sitePositionsLJ);
-      }
+      rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+          {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
 
-      size_t localSiteCount = useMixing ? _PPLibrary->getNumSites(typeptr[mol]) : _sitePositionsLJ.size();
+      size_t localSiteCount = _PPLibrary->getNumSites(typeptr[mol]);
 
       for (size_t site = 0; site < localSiteCount; ++site) {
         rotatedSitePositionX.push_back(rotatedSitePositions[site][0]);
@@ -467,9 +419,7 @@ class LJMultisiteFunctorAVX512_STS
         exactSitePositionY.push_back(rotatedSitePositions[site][1] + yptr[mol]);
         exactSitePositionZ.push_back(rotatedSitePositions[site][2] + zptr[mol]);
         siteOwnership.push_back(static_cast<int64_t>(ownedStatePtr[mol]));
-        if constexpr (useMixing) {
-          siteTypes.push_back(_PPLibrary->getSiteTypes(typeptr[mol])[site]);
-        }
+        siteTypes.push_back(_PPLibrary->getSiteTypes(typeptr[mol])[site]);
       }
     }
 
@@ -479,8 +429,7 @@ class LJMultisiteFunctorAVX512_STS
     auto force_start = std::chrono::high_resolution_clock::now();
     size_t siteIndexMolA = 0;  // index of first site in molA
     for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
-      const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
-                                             : _sitePositionsLJ.size();  // Number of sites in molecule A
+      const size_t noSitesInMolA = _PPLibrary->getNumSites(typeptr[molA]);  // Number of sites in molecule A
 
       const auto ownedStateA = ownedStatePtr[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
@@ -525,40 +474,22 @@ class LJMultisiteFunctorAVX512_STS
     // ------------------------------ Reduction -----------------------------
     // i.e. add the "newton3" site forces to add to the molecular force + torque counters
 
-    if constexpr (useMixing) {
-              size_t siteIndex = 0;
-              for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
-        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
-          fxptr[mol] += siteForceX[siteIndex];
-          fyptr[mol] += siteForceY[siteIndex];
-          fzptr[mol] += siteForceZ[siteIndex];
-          txptr[mol] += rotatedSitePositionY[siteIndex] * siteForceZ[siteIndex] -
-                        rotatedSitePositionZ[siteIndex] * siteForceY[siteIndex];
-          typtr[mol] += rotatedSitePositionZ[siteIndex] * siteForceX[siteIndex] -
-                        rotatedSitePositionX[siteIndex] * siteForceZ[siteIndex];
-          tzptr[mol] += rotatedSitePositionX[siteIndex] * siteForceY[siteIndex] -
-                        rotatedSitePositionY[siteIndex] * siteForceX[siteIndex];
-          ++siteIndex;
-        }
-              }
-    } else {
-              size_t siteIndex = 0;
-              for (size_t mol = 0; mol < soa.getNumberOfParticles(); mol++) {
-        for (size_t site = 0; site < _sitePositionsLJ.size(); ++site) {
-          fxptr[mol] += siteForceX[siteIndex];
-          fyptr[mol] += siteForceY[siteIndex];
-          fzptr[mol] += siteForceZ[siteIndex];
-          txptr[mol] += rotatedSitePositionY[siteIndex] * siteForceZ[siteIndex] -
-                        rotatedSitePositionZ[siteIndex] * siteForceY[siteIndex];
-          typtr[mol] += rotatedSitePositionZ[siteIndex] * siteForceX[siteIndex] -
-                        rotatedSitePositionX[siteIndex] * siteForceZ[siteIndex];
-          tzptr[mol] += rotatedSitePositionX[siteIndex] * siteForceY[siteIndex] -
-                        rotatedSitePositionY[siteIndex] * siteForceX[siteIndex];
-          ++siteIndex;
-        }
+    size_t siteIndex = 0;
+    for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+      for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
+        fxptr[mol] += siteForceX[siteIndex];
+        fyptr[mol] += siteForceY[siteIndex];
+        fzptr[mol] += siteForceZ[siteIndex];
+        txptr[mol] += rotatedSitePositionY[siteIndex] * siteForceZ[siteIndex] -
+                      rotatedSitePositionZ[siteIndex] * siteForceY[siteIndex];
+        typtr[mol] += rotatedSitePositionZ[siteIndex] * siteForceX[siteIndex] -
+                      rotatedSitePositionX[siteIndex] * siteForceZ[siteIndex];
+        tzptr[mol] += rotatedSitePositionX[siteIndex] * siteForceY[siteIndex] -
+                      rotatedSitePositionY[siteIndex] * siteForceX[siteIndex];
+        ++siteIndex;
       }
-
     }
+
 
     if constexpr (calculateGlobals) {
       const auto threadNum = autopas::autopas_get_thread_num();
@@ -623,12 +554,8 @@ class LJMultisiteFunctorAVX512_STS
 
     // count number of sites in SoA
     size_t siteCountB = 0;
-    if constexpr (useMixing) {
-      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
-        siteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
-      }
-    } else {
-      siteCountB = _sitePositionsLJ.size() * soaB.getNumberOfParticles();
+    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+      siteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
     }
 
     // Accumulators for global values
@@ -657,24 +584,17 @@ class LJMultisiteFunctorAVX512_STS
     exactSitePositionBy.reserve(siteCountB);
     exactSitePositionBz.reserve(siteCountB);
 
-    if constexpr (useMixing) {
-      siteTypesB.reserve(siteCountB);
-    }
+    siteTypesB.reserve(siteCountB);
 
     siteOwnershipB.reserve(siteCountB);
 
     // Fill site-wise std::vectors for SIMD
     std::vector<std::array<double, 3>> rotatedSitePositions;
     for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
-      if constexpr (useMixing) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
-      } else {
-        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _sitePositionsLJ);
-      }
 
-      size_t localSiteCount = useMixing ? _PPLibrary->getNumSites(typeptrB[mol]) : _sitePositionsLJ.size();
+      size_t localSiteCount = _PPLibrary->getNumSites(typeptrB[mol]);
       for (size_t site = 0; site < localSiteCount; ++site) {
         rotatedSitePositionBx.push_back(rotatedSitePositions[site][0]);
         rotatedSitePositionBy.push_back(rotatedSitePositions[site][1]);
@@ -686,9 +606,7 @@ class LJMultisiteFunctorAVX512_STS
 
         siteOwnershipB.push_back(static_cast<int64_t>(ownedStatePtrB[mol]));
 
-        if constexpr (useMixing) {
-          siteTypesB.push_back(_PPLibrary->getSiteTypes(typeptrB[mol])[site]);
-        }
+        siteTypesB.push_back(_PPLibrary->getSiteTypes(typeptrB[mol])[site]);
       }
     }
     const auto siteTypesBConst = siteTypesB;
@@ -701,8 +619,8 @@ class LJMultisiteFunctorAVX512_STS
         continue;
       }
 
-      const auto noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptrA[molA]) : _sitePositionsLJ.size();
-      const auto unrotatedSitePositionsA = useMixing ? _PPLibrary->getSitePositions(typeptrA[molA]) : _sitePositionsLJ;
+      const auto noSitesInMolA = _PPLibrary->getNumSites(typeptrA[molA]);
+      const auto unrotatedSitePositionsA = _PPLibrary->getSitePositions(typeptrA[molA]);
 
       const std::array<double, 3> centerOfMass{xAptr[molA], yAptr[molA], zAptr[molA]};
       const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
@@ -740,41 +658,21 @@ class LJMultisiteFunctorAVX512_STS
 
     // ------------------------------ Reduction -----------------------------
 
-    if constexpr (useMixing) {
-      size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
-        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
-        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
-          fxBptr[mol] += siteForceBx[siteIndex];
-          fyBptr[mol] += siteForceBy[siteIndex];
-          fzBptr[mol] += siteForceBz[siteIndex];
-          txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
-                         rotatedSitePositions[site][2] * siteForceBy[siteIndex];
-          tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
-                         rotatedSitePositions[site][0] * siteForceBz[siteIndex];
-          tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
-                         rotatedSitePositions[site][1] * siteForceBx[siteIndex];
-          ++siteIndex;
-        }
-      }
-    } else {
-      size_t siteIndex = 0;
-      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
-        rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-            {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _sitePositionsLJ);
-        for (size_t site = 0; site < _sitePositionsLJ.size(); ++site) {
-          fxBptr[mol] += siteForceBx[siteIndex];
-          fyBptr[mol] += siteForceBy[siteIndex];
-          fzBptr[mol] += siteForceBz[siteIndex];
-          txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
-                         rotatedSitePositions[site][2] * siteForceBy[siteIndex];
-          tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
-                         rotatedSitePositions[site][0] * siteForceBz[siteIndex];
-          tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
-                         rotatedSitePositions[site][1] * siteForceBx[siteIndex];
-          ++siteIndex;
-        }
+    size_t siteIndex = 0;
+    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+      rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+          {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
+      for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
+        fxBptr[mol] += siteForceBx[siteIndex];
+        fyBptr[mol] += siteForceBy[siteIndex];
+        fzBptr[mol] += siteForceBz[siteIndex];
+        txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
+                       rotatedSitePositions[site][2] * siteForceBy[siteIndex];
+        tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
+                       rotatedSitePositions[site][0] * siteForceBz[siteIndex];
+        tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
+                       rotatedSitePositions[site][1] * siteForceBx[siteIndex];
+        ++siteIndex;
       }
     }
     if constexpr (calculateGlobals) {
@@ -897,34 +795,33 @@ class LJMultisiteFunctorAVX512_STS
       const __mmask8 combinedMask = _mm512_kand(mask, isNotDummy);
 
       // Load the mixing parameters
-      if constexpr (useMixing) {
-        const double *const __restrict mixingPtr = useMixing ? _PPLibrary->getMixingDataPtr(siteTypeA, 0) : nullptr;
+      const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(siteTypeA, 0);
 
 
-        const __m512i siteTypeIndices = remainderCase ? _mm512_maskz_loadu_epi64(remainderMask, &siteTypesB[siteVectorIndex])
-            : _mm512_loadu_epi64(&siteTypesB[siteVectorIndex]);
+      const __m512i siteTypeIndices = remainderCase ? _mm512_maskz_loadu_epi64(remainderMask, &siteTypesB[siteVectorIndex])
+          : _mm512_loadu_epi64(&siteTypesB[siteVectorIndex]);
 //        const __m512i siteTypeIndicesOffset = _mm512_mullox_epi64(siteTypeIndices, _mm256_set1_epi64x(3));  // This could maybe be problematic!
 
-        // todo this is really silly - just generate different pointers for different mixing data types
-        const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndices, _three);
+      // todo this is really silly - just generate different pointers for different mixing data types
+      const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndices, _three);
 
 
-        // I think this is correct but potentially not
-        if (remainderCase) {
-          epsilon24 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr, 8);
-          sigmaSquared =
-              _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndicesScaled, mixingPtr + 1, 8);  // one used as "filler" in remainder case to avoid dividing by zero
-          if constexpr (applyShift) {
-            shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr + 2, 8);
-          }
-        } else {
-          epsilon24 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr, 8);
-          sigmaSquared = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 1, 8);
-          if constexpr (applyShift) {
-            shift6 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 2, 8);
-          }
+      // I think this is correct but potentially not
+      if (remainderCase) {
+        epsilon24 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr, 8);
+        sigmaSquared =
+            _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndicesScaled, mixingPtr + 1, 8);  // one used as "filler" in remainder case to avoid dividing by zero
+        if constexpr (applyShift) {
+          shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr + 2, 8);
+        }
+      } else {
+        epsilon24 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr, 8);
+        sigmaSquared = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 1, 8);
+        if constexpr (applyShift) {
+          shift6 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 2, 8);
         }
       }
+
 
 
       const __m512d invDistSquared = _mm512_div_pd(_one, distanceSquared);
@@ -1033,21 +930,21 @@ class LJMultisiteFunctorAVX512_STS
 
     // Add up the forces, torques and globals
 
-    forceAccumulator[0] += autopas::utils::avx::horizontalSum(forceSumX);
-    forceAccumulator[1] += autopas::utils::avx::horizontalSum(forceSumY);
-    forceAccumulator[2] += autopas::utils::avx::horizontalSum(forceSumZ);
+    forceAccumulator[0] += _mm512_reduce_add_pd(forceSumX);
+    forceAccumulator[1] += _mm512_reduce_add_pd(forceSumY);
+    forceAccumulator[2] += _mm512_reduce_add_pd(forceSumZ);
 
 
-    torqueAccumulator[0] += autopas::utils::avx::horizontalSum(torqueSumX);
-    torqueAccumulator[1] += autopas::utils::avx::horizontalSum(torqueSumY);
-    torqueAccumulator[2] += autopas::utils::avx::horizontalSum(torqueSumZ);
+    torqueAccumulator[0] += _mm512_reduce_add_pd(torqueSumX);
+    torqueAccumulator[1] += _mm512_reduce_add_pd(torqueSumY);
+    torqueAccumulator[2] += _mm512_reduce_add_pd(torqueSumZ);
 
 
     if constexpr (calculateGlobals) {
-      potentialEnergyAccumulator += autopas::utils::avx::horizontalSum(potentialEnergySum);
-      virialAccumulator[0] += autopas::utils::avx::horizontalSum(virialSumX);
-      virialAccumulator[1] += autopas::utils::avx::horizontalSum(virialSumY);
-      virialAccumulator[2] += autopas::utils::avx::horizontalSum(virialSumZ);
+      potentialEnergyAccumulator += _mm512_reduce_add_pd(potentialEnergySum);
+      virialAccumulator[0] += _mm512_reduce_add_pd(virialSumX);
+      virialAccumulator[1] += _mm512_reduce_add_pd(virialSumY);
+      virialAccumulator[2] += _mm512_reduce_add_pd(virialSumZ);
     }
 #endif
   }
@@ -1112,11 +1009,6 @@ class LJMultisiteFunctorAVX512_STS
         Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
         Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ};
   }
-
-  /**
-   * @return useMixing
-   */
-  constexpr static bool getMixing() { return useMixing; }
 
   /**
    * Get the number of flops used per kernel call - i.e. number of flops to calculate kernel *given* the two particles
