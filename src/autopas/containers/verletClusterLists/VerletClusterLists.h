@@ -781,9 +781,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @return number of particles stored in this container (owned + halo + dummy).
    */
   [[nodiscard]] size_t size() const override {
-    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0, [](size_t acc, const auto &tower) {
-      return acc + tower.size();
-    });
+    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
+                                 [](size_t acc, const auto &tower) { return acc + tower.size(); });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
                           [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
     return sum;
