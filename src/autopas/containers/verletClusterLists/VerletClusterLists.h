@@ -378,7 +378,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     auto boxSizeWithHalo = this->getHaloBoxMax() - this->getHaloBoxMin();
     auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
-        this->size(), boxSizeWithHalo, _clusterSize);
+        this->getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =
         internal::VerletClusterListsRebuilder<Particle>::calculateTowersPerDim(boxSizeWithHalo, 1.0 / towerSideLength);
     const std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
@@ -781,8 +781,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @return number of particles stored in this container (owned + halo + dummy).
    */
   [[nodiscard]] size_t size() const override {
-    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
-                                 [](size_t acc, const auto &tower) { return acc + tower.size(); });
+    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0, [](size_t acc, const auto &tower) {
+      return acc + tower.size();
+    });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
                           [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
     return sum;
