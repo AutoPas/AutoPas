@@ -395,7 +395,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
-    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
       // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
       // the status is not invalid
