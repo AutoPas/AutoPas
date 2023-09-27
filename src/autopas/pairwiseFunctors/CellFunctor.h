@@ -208,7 +208,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     }
   } else {
     for (auto cellIter1 = cell.begin(); cellIter1 != cell.end(); ++cellIter1) {
-      for (auto cellIter2 = std::next(cellIter1); cellIter2 != cell.end(); ++cellIter2) {
+      auto cellIter2 = cellIter1;
+      ++cellIter2;
+      for (; cellIter2 != cell.end(); ++cellIter2) {
         interactParticles(*cellIter1, *cellIter2);
       }
     }
