@@ -58,7 +58,7 @@ enum class OwnershipState : int64_t {
  * @param b second operand
  * @return a & b
  */
-const inline OwnershipState operator&(const OwnershipState a, const OwnershipState b) {
+inline OwnershipState operator&(const OwnershipState a, const OwnershipState b) {
   return static_cast<OwnershipState>(static_cast<int64_t>(a) & static_cast<int64_t>(b));
 }
 
@@ -68,16 +68,16 @@ const inline OwnershipState operator&(const OwnershipState a, const OwnershipSta
  * @param b second operand
  * @return a | b
  */
-const inline OwnershipState operator|(const OwnershipState a, const OwnershipState b) {
+inline OwnershipState operator|(const OwnershipState a, const OwnershipState b) {
   return static_cast<OwnershipState>(static_cast<int64_t>(a) | static_cast<int64_t>(b));
 }
 
 /**
- * Returnes the int64_t value of a given OwnershipState
+ * Returns the int64_t value of a given OwnershipState
  *
  * @param a OwnershipState
  * @return const int64_t value of a given OwnershipState
  */
-const inline int64_t toInt64(const OwnershipState a) { return static_cast<int64_t>(a); }
+inline int64_t toInt64(const OwnershipState a) { return static_cast<int64_t>(a); }
 
 }  // namespace autopas
