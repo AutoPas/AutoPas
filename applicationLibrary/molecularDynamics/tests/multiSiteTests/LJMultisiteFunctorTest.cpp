@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#define PARTICLES_PER_DIM 2
+#define PARTICLES_PER_DIM 7
 #define AOS_VS_SOA_ACCURACY 1e-8
 
 void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
@@ -40,7 +40,7 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
         molecules->at(index).setTorque({0, 0, 0});
         molecules->at(index).setV({0, 0, 0});
         molecules->at(index).setAngularVel({0, 0, 0});
-        molecules->at(index).setTypeId(0);
+        molecules->at(index).setTypeId(0); // todo correct this before merge
         if (allOwned) {
           molecules->at(index).setOwnershipState(autopas::OwnershipState::owned);
         } else {
@@ -1589,7 +1589,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
   testSoAVerletAgainstAoS<mdLib::LJMultisiteFunctor, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 
 
-  // AVX512 with 0/1 Masks Tests
+  // AVX512 with G/S Tests
 
   // tests with only owned molecules
 

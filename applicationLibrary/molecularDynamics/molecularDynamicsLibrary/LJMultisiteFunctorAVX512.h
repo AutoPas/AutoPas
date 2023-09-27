@@ -273,7 +273,11 @@ class LJMultisiteFunctorAVX512
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
-    // Do nothing Todo
+    if (newton3) {
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+    } else {
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+    }
   }
 
  private:
@@ -622,7 +626,7 @@ class LJMultisiteFunctorAVX512
         fxBptr[mol] += siteForceBx[siteIndex];
         fyBptr[mol] += siteForceBy[siteIndex];
         fzBptr[mol] += siteForceBz[siteIndex];
-        txBptr[mol] += rotatedSitePositionBy[site] * siteForceBz[siteIndex] -
+        txBptr[mol] += rotatedSitePositionBy[site] * siteForceBz[siteIndex] - // todo shouldn't site be siteIndex?
                        rotatedSitePositionBz[site] * siteForceBy[siteIndex];
         tyBptr[mol] += rotatedSitePositionBz[site] * siteForceBx[siteIndex] -
                        rotatedSitePositionBx[site] * siteForceBz[siteIndex];
@@ -744,6 +748,9 @@ class LJMultisiteFunctorAVX512
       const size_t localSiteCount = _PPLibrary->getNumSites(typeptr[neighborMolIndex]);
 
       for (size_t site = 0; site < localSiteCount; ++site) {
+        rotatedNeighborSitePositionsX.push_back(rotatedSitePositions[site][0]);
+        rotatedNeighborSitePositionsY.push_back(rotatedSitePositions[site][1]);
+        rotatedNeighborSitePositionsZ.push_back(rotatedSitePositions[site][2]);
         exactNeighborSitePositionsX.push_back(rotatedSitePositions[site][0] + xptr[neighborMolIndex]);
         exactNeighborSitePositionsY.push_back(rotatedSitePositions[site][1] + yptr[neighborMolIndex]);
         exactNeighborSitePositionsZ.push_back(rotatedSitePositions[site][2] + zptr[neighborMolIndex]);
@@ -755,7 +762,7 @@ class LJMultisiteFunctorAVX512
     const std::array<double, 3> centerOfMassPrimary{xptr[indexPrimary], yptr[indexPrimary], zptr[indexPrimary]};
 
 
-    const auto sitePairIndicies = buildSiteInteractionIndicesVerlet(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMassPrimary);
+    const auto sitePairIndicies = buildSiteInteractionIndicesVerlet(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMassPrimary, neighborList, molCountNeighbors, siteCountNeighbors);
 
 
     // ------------------- Calculate Forces -------------------
@@ -769,7 +776,7 @@ class LJMultisiteFunctorAVX512
       const std::array<double, 3> exactSitePositionPrime =
           autopas::utils::ArrayMath::add(rotatedSitePositionPrime, centerOfMassPrimary);
 
-      SoAKernelGS<newton3, true>(
+      SoAKernelGS<newton3>(
           sitePairIndicies, siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
           exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ, isNeighborSiteOwnedArr, ownedStatePrime,
           siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator,
@@ -792,12 +799,12 @@ class LJMultisiteFunctorAVX512
           fxptr[neighborMolIndex] += siteForceX[siteIndex];
           fyptr[neighborMolIndex] += siteForceY[siteIndex];
           fzptr[neighborMolIndex] += siteForceZ[siteIndex];
-          txptr[neighborMolIndex] += rotatedNeighborSitePositionsY[site] * siteForceZ[siteIndex] -
-                                     rotatedNeighborSitePositionsZ[site] * siteForceY[siteIndex];
-          typtr[neighborMolIndex] += rotatedNeighborSitePositionsZ[site] * siteForceX[siteIndex] -
-                                     rotatedNeighborSitePositionsX[site] * siteForceZ[siteIndex];
-          tzptr[neighborMolIndex] += rotatedNeighborSitePositionsX[site] * siteForceY[siteIndex] -
-                                     rotatedNeighborSitePositionsY[site] * siteForceX[siteIndex];
+          txptr[neighborMolIndex] += rotatedNeighborSitePositionsY[siteIndex] * siteForceZ[siteIndex] -
+                                     rotatedNeighborSitePositionsZ[siteIndex] * siteForceY[siteIndex];
+          typtr[neighborMolIndex] += rotatedNeighborSitePositionsZ[siteIndex] * siteForceX[siteIndex] -
+                                     rotatedNeighborSitePositionsX[siteIndex] * siteForceZ[siteIndex];
+          tzptr[neighborMolIndex] += rotatedNeighborSitePositionsX[siteIndex] * siteForceY[siteIndex] -
+                                     rotatedNeighborSitePositionsY[siteIndex] * siteForceX[siteIndex];
           ++siteIndex;
         }
       }
@@ -1112,9 +1119,9 @@ class LJMultisiteFunctorAVX512
     for (size_t molIndex = 0; molIndex < noNeighborMol; molIndex++) {
       const size_t siteCount = _PPLibrary->getNumSites(typeptr[neighborList[molIndex]]);
 
-      const double xPosB = xptr[molIndex];
-      const double yPosB = yptr[molIndex];
-      const double zPosB = zptr[molIndex];
+      const double xPosB = xptr[neighborList[molIndex]];
+      const double yPosB = yptr[neighborList[molIndex]];
+      const double zPosB = zptr[neighborList[molIndex]];
 
       // calculate displacement
       const double displacementCoMX = centerOfMass[0] - xPosB;
@@ -1129,7 +1136,7 @@ class LJMultisiteFunctorAVX512
       const double distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
 
       const bool cutoffCondition = distanceSquaredCoM <= _cutoffSquaredAoS;
-      const bool dummyCondition = ownedStatePtr[molIndex] != autopas::OwnershipState::dummy;
+      const bool dummyCondition = ownedStatePtr[neighborList[molIndex]] != autopas::OwnershipState::dummy;
       const bool condition = cutoffCondition and dummyCondition;
 
       for (size_t site = 0; site < siteCount; site++) {
