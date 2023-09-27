@@ -397,7 +397,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
-      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      // we call particlesToAddEmpty() as a sanity check to ensure there are actually no particles in _particlesToAdd if
       // the status is not invalid
       if (not particlesToAddEmpty(autopas_get_thread_num())) {
         autopas::utils::ExceptionHandler::exception(
