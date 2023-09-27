@@ -376,8 +376,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     using namespace autopas::utils::ArrayMath::literals;
     // Here, the towers might not yet be built, hence do not use members like _towerBlock.getTowersPerDim
     const auto boxSizeWithHalo = this->getHaloBoxMax() - this->getHaloBoxMin();
-    const auto [towerSideLength, towersPerDim] =
-        _towerBlock.estimateOptimalGridSideLength(this->size(), _clusterSize);
+    const auto [towerSideLength, towersPerDim] = _towerBlock.estimateOptimalGridSideLength(
+        this->getNumberOfParticles(IteratorBehavior::ownedOrHalo), _clusterSize);
     const std::array<double, 3> towerSize = {towerSideLength[0], towerSideLength[1],
                                              this->getHaloBoxMax()[2] - this->getHaloBoxMin()[2]};
     const std::array<unsigned long, 3> towerDimensions = {towersPerDim[0], towersPerDim[1], 1};
@@ -391,9 +391,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
-    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
-      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      // we call particlesToAddEmpty() as a sanity check to ensure there are actually no particles in _particlesToAdd if
       // the status is not invalid
       if (not particlesToAddEmpty(autopas_get_thread_num())) {
         autopas::utils::ExceptionHandler::exception(

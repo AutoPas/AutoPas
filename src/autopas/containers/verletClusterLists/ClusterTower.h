@@ -247,7 +247,7 @@ class ClusterTower : public FullParticleCell<Particle> {
    * Get the number of all particles stored in this tower (owned, halo and dummy).
    * @return number of particles stored in this tower (owned, halo and dummy).
    */
-  [[nodiscard]] size_t size() const override { return getNumActualParticles(); }
+  [[nodiscard]] size_t size() const override { return this->_particles.size(); }
 
   /**
    * Get the number of all particles saved in the tower without tailing dummies that are used to fill up clusters
