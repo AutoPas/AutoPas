@@ -208,10 +208,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     }
   } else {
     for (auto cellIter1 = cell.begin(); cellIter1 != cell.end(); ++cellIter1) {
-      auto &[p1Projection, p1] = *cellIter1;
       for (auto cellIter2 = std::next(cellIter1); cellIter2 != cell.end(); ++cellIter2) {
-        auto &[p2Projection, p2] = *cellIter2;
-        interactParticles(p1, p2);
+        interactParticles(*cellIter1, *cellIter2);
       }
     }
   }
@@ -234,8 +232,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
       }
     }
   } else {
-    for (auto &[p1Projection, p1] : cell1) {
-      for (auto &[p2Projection, p2] : cell2) {
+    for (auto &p1 : cell1) {
+      for (auto &p2 : cell2) {
         _functor->AoSFunctor(p1, p2, true);
       }
     }
