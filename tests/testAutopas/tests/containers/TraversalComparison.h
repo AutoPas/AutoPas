@@ -30,7 +30,7 @@ enum DeletionPosition {
 using TestingTuple = std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption,
                                 autopas::Newton3Option, size_t /*numParticles*/, size_t /*numHaloParticles*/,
                                 std::array<double, 3> /*boxMaxVec*/, double /*cellSizeFactor*/, bool /*doSlightShift*/,
-                                DeletionPosition /*particleDeletionPosition*/, bool /*globals*/, bool /*useSorting*/>;
+                                DeletionPosition /*particleDeletionPosition*/, bool /*globals*/>;
 /**
  * The tests in this class compare the calculated forces from all aos and soa traversals with a reference result.
  */
@@ -41,8 +41,7 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
                              std::array<double, 3>,  // boxMax
                              bool,                   // doSlightShift
                              DeletionPosition,       // particleDeletionPosition
-                             bool,                   // globals
-                             bool                    // useSorting
+                             bool                    // globals
                              >;
 
   /**
@@ -66,7 +65,7 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
       size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
-      DeletionPosition particleDeletionPosition, bool useSorting);
+      DeletionPosition particleDeletionPosition, bool useSorting = true);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
   static constexpr double _cutoff{1.};
