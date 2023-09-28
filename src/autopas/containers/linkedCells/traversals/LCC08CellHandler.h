@@ -24,8 +24,10 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  * @tparam useNewton3
+ * @tparam useSorting If the CellFunctor should apply sorting of particles
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool useSorting = true>
 class LCC08CellHandler {
  public:
   /**
@@ -81,7 +83,8 @@ class LCC08CellHandler {
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+                        true, useSorting>
       _cellFunctor;
 
   /**
@@ -95,8 +98,9 @@ class LCC08CellHandler {
   const std::array<double, 3> _cellLength;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool useSorting>
+inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
@@ -113,8 +117,9 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool useSorting>
+inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting>::computeOffsets(
     const std::array<unsigned long, 3> &cellsPerDimension) {
   using namespace autopas::utils::ArrayMath::literals;
   using std::make_pair;

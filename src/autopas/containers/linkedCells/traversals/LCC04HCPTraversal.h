@@ -26,8 +26,10 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam useSoA
  * @tparam useNewton3
+ * @tparam useSorting If the CellFunctor should apply sorting of particles
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool useSorting = true>
 class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
                           public LCTraversalInterface<ParticleCell> {
  public:
@@ -68,13 +70,14 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
 
   void processBasePack6(std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex);
 
-  LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting> _cellHandler;
 
   const std::array<long, 3> _end;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBasePack6(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool useSorting>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting>::processBasePack6(
     std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index{};
@@ -102,8 +105,9 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::p
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool useSorting>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
@@ -132,8 +136,9 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::t
  * @param cells
  * @param color
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSingleColor(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool useSorting>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting>::traverseSingleColor(
     std::vector<ParticleCell> &cells, int color) {
   // determine a starting point of one of the grids
   std::array<long, 3> startOfThisColor{};  // coordinates: {x,y,z}

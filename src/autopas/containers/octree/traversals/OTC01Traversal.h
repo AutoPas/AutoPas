@@ -26,8 +26,10 @@ namespace autopas {
  * @tparam PairwiseFunctor
  * @tparam dataLayout
  * @tparam useNewton3
+ * @tparam useSorting If the CellFunctor should apply sorting of particles
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
+          bool useSorting = true>
 class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                        public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
@@ -109,7 +111,8 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false> _cellFunctor;
+  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false, useSorting>
+      _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal
