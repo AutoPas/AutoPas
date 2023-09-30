@@ -830,7 +830,7 @@ template <class PairwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
     PairwiseFunctor &functor, TraversalInterface &traversal) {
   const bool doListRebuild = not neighborListsAreValid();
-  const auto configuration = _autoTuner.getCurrentConfig();
+  const auto &configuration = _autoTuner.getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;

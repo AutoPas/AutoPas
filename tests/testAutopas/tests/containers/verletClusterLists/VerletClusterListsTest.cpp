@@ -65,9 +65,9 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   autopas::VCLClusterIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
       &emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  EXPECT_EQ(verletLists.size(), numParticles);
+  EXPECT_EQ(verletLists.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), numParticles);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  EXPECT_EQ(verletLists.size(), numParticles);
+  EXPECT_EQ(verletLists.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), numParticles);
 }
 
 TEST_F(VerletClusterListsTest, testIterator) {
@@ -185,7 +185,7 @@ auto getClusterNeighbors(autopas::VerletClusterLists<Particle> &verletLists) {
   std::unordered_map<size_t, std::vector<size_t>> neighbors;
   verletLists.traverseClusters<false>([&neighbors](auto &cluster) {
     auto idFirstParticleInCluster = cluster[0].getID();
-    for (const auto &neighborCluster : cluster.getNeighbors()) {
+    for (const auto &neighborCluster : *cluster.getNeighbors()) {
       neighbors[idFirstParticleInCluster].push_back((*neighborCluster)[0].getID());
     }
   });
