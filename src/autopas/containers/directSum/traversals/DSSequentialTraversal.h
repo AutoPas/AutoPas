@@ -23,20 +23,19 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam dataLayout
  * @tparam useNewton3
- * @tparam useSorting If the CellFunctor should apply sorting of particles
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool useSorting = true>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DSTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
+   * @param useSorting If the CellFunctor should sort particles
    */
-  explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
+  explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff, const bool useSorting = true)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
-        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
+        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, useSorting),
         _dataLayoutConverter(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
@@ -72,7 +71,7 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                        true, useSorting>
+                        true>
       _cellFunctor;
 
   /**
@@ -81,9 +80,8 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
   utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool useSorting>
-void DSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+void DSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);

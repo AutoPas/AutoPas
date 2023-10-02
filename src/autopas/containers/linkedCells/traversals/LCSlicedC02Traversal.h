@@ -29,10 +29,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam DataLayout
  * @tparam useNewton3
- * @tparam useSorting If the CellFunctor should apply sorting of particles
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool useSorting = true>
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class LCSlicedC02Traversal
     : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>,
       public LCTraversalInterface<ParticleCell> {
@@ -44,12 +42,15 @@ class LCSlicedC02Traversal
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param useSorting If the CellFunctor should sort particles
    */
   explicit LCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                const double interactionLength, const std::array<double, 3> &cellLength)
+                                const double interactionLength, const std::array<double, 3> &cellLength,
+                                const bool useSorting = true)
       : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>(
             dims, pairwiseFunctor, interactionLength, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
+                     useSorting) {}
 
   void traverseParticlePairs() override;
 
@@ -60,13 +61,11 @@ class LCSlicedC02Traversal
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_c02; }
 
  private:
-  LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting> _cellHandler;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool useSorting>
-inline void
-LCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, useSorting>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+inline void LCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

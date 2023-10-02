@@ -26,10 +26,8 @@ namespace autopas {
  * @tparam PairwiseFunctor
  * @tparam dataLayout
  * @tparam useNewton3
- * @tparam useSorting If the CellFunctor should apply sorting of particles
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool useSorting = true>
+template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                        public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
@@ -43,11 +41,13 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
+   * @param useSorting If the CellFunctor should sort particles
    */
-  explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength)
+  explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
+                          const bool useSorting = true)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
-        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
+        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, useSorting),
         _dataLayoutConverter(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c01; }
@@ -111,8 +111,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false, useSorting>
-      _cellFunctor;
+  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false> _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal

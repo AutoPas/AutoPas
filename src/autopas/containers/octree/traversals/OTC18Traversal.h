@@ -26,10 +26,8 @@ namespace autopas {
  * @tparam PairwiseFunctor
  * @tparam dataLayout
  * @tparam useNewton3
- * @tparam useSorting If the CellFunctor should apply sorting of particles
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool useSorting = true>
+template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                        public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
@@ -43,13 +41,15 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
    * @param interactionLength The interaction length
+   * @param useSorting If the CellFunctor should sort particles
    */
-  explicit OTC18Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength)
+  explicit OTC18Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
+                          const bool useSorting = true)
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
-        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
+        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, useSorting),
         _dataLayoutConverter(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c18; }
@@ -128,8 +128,7 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false, useSorting>
-      _cellFunctor;
+  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false> _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal
