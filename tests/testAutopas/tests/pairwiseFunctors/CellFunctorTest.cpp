@@ -6,28 +6,65 @@
 
 #include "CellFunctorTest.h"
 
+// Type aliases via inheritance for more readable test names (using declarations do not work for this)
+struct CellFunctor_AoS_NoN3_NoBi
+    : public autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
+                                            autopas::DataLayoutOption::aos, false, false> {
+  CellFunctor_AoS_NoN3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor(f, sortingCutoff) {}
+};
+struct CellFunctor_AoS_NoN3_Bi
+    : public autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
+                                            autopas::DataLayoutOption::aos, false, true> {
+  CellFunctor_AoS_NoN3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+};
+struct CellFunctor_AoS_N3_NoBi
+    : public autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
+                                            autopas::DataLayoutOption::aos, true, false> {
+  CellFunctor_AoS_N3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+};
+struct CellFunctor_AoS_N3_Bi
+    : public autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
+                                            autopas::DataLayoutOption::aos, true, true> {
+  CellFunctor_AoS_N3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+};
+struct CellFunctor_SoA_NoN3_NoBi
+    : public autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
+                                            autopas::DataLayoutOption::soa, false, false> {
+  CellFunctor_SoA_NoN3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor(f, sortingCutoff) {}
+};
+struct CellFunctor_SoA_NoN3_Bi
+    : public autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
+                                            autopas::DataLayoutOption::soa, false, true> {
+  CellFunctor_SoA_NoN3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+};
+struct CellFunctor_SoA_N3_NoBi
+    : public autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
+                                            autopas::DataLayoutOption::soa, true, false> {
+  CellFunctor_SoA_N3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+};
+struct CellFunctor_SoA_N3_Bi
+    : public autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
+                                            autopas::DataLayoutOption::soa, true, true> {
+  CellFunctor_SoA_N3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+};
+
 /**
  * All relevant CellFunctor configurations which are used to instantiate the typed test cases
  * testOwnedAndHaloCellInteractionPair and testOwnedAndHaloCellInteractionSingle
  *
  */
-using CellFTestingTypes = ::testing::Types<
-    autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                   autopas::DataLayoutOption::aos, false, false>,
-    autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                   autopas::DataLayoutOption::aos, false, true>,
-    autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                   autopas::DataLayoutOption::aos, true, false>,
-    autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                   autopas::DataLayoutOption::aos, true, true>,
-    autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                   autopas::DataLayoutOption::soa, false, false>,
-    autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                   autopas::DataLayoutOption::soa, false, true>,
-    autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                   autopas::DataLayoutOption::soa, true, false>,
-    autopas::internal::CellFunctor<Molecule, autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                   autopas::DataLayoutOption::soa, true, true>>;
+// clang-format off
+using CellFTestingTypes = ::testing::Types<CellFunctor_AoS_NoN3_NoBi,
+                                           CellFunctor_AoS_NoN3_Bi,
+                                           CellFunctor_AoS_N3_NoBi,
+                                           CellFunctor_AoS_N3_Bi,
+                                           CellFunctor_SoA_NoN3_NoBi,
+                                           CellFunctor_SoA_NoN3_Bi,
+                                           CellFunctor_SoA_N3_NoBi,
+                                           CellFunctor_SoA_N3_Bi>;
+// clang-format on
 
 /**
  * Helper function for readability
