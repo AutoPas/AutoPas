@@ -19,12 +19,12 @@ namespace autopas::internal {
  * @tparam Particle
  * @tparam ParticleCell
  * @tparam ParticleFunctor the functor which
- * @tparam DataLayout the DataLayout to be used
+ * @tparam dataLayout the dataLayout to be used
  * @tparam useNewton3
  * @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
  * cell1)
  */
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3 = true, bool bidirectional = true>
 class CellFunctor {
  public:
@@ -52,6 +52,29 @@ class CellFunctor {
    */
   void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
+
+  /**
+   * Getter
+   * @return
+   */
+  DataLayoutOption::Value getDataLayout() const {
+    return dataLayout;
+  }
+
+  /**
+   * Getter
+   * @return
+   */
+  bool getNewton3() const {
+    return useNewton3;
+  }
+
+  /**
+   * Getter
+   */
+  bool getBidirectional() const {
+    return bidirectional;
+  }
 
  private:
   /**
@@ -104,12 +127,12 @@ class CellFunctor {
   constexpr static unsigned long _startSorting = std::numeric_limits<unsigned long>::max();
 };
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCell(
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCell(
     ParticleCell &cell) {
-  if ((DataLayout == DataLayoutOption::soa and cell._particleSoABuffer.size() == 0) or
-      (DataLayout == DataLayoutOption::aos and cell.size() == 0)) {
+  if ((dataLayout == DataLayoutOption::soa and cell._particleSoABuffer.size() == 0) or
+      (dataLayout == DataLayoutOption::aos and cell.size() == 0)) {
     return;
   }
 
@@ -119,7 +142,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     return;
   }
 
-  switch (DataLayout) {
+  switch (dataLayout) {
     case DataLayoutOption::aos:
       processCellAoS<useNewton3>(cell);
       break;
@@ -133,14 +156,14 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPair(
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellPair(
 
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  if ((DataLayout == DataLayoutOption::soa and
+  if ((dataLayout == DataLayoutOption::soa and
        (cell1._particleSoABuffer.size() == 0 and cell2._particleSoABuffer.size() == 0)) or
-      (DataLayout == DataLayoutOption::aos and (cell1.size() == 0 and cell2.size() == 0))) {
+      (dataLayout == DataLayoutOption::aos and (cell1.size() == 0 and cell2.size() == 0))) {
     return;
   }
 
@@ -154,7 +177,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
     return;
   }
 
-  switch (DataLayout) {
+  switch (dataLayout) {
     case DataLayoutOption::aos:
       if constexpr (useNewton3) {
         processCellPairAoSN3(cell1, cell2, sortingDirection);
@@ -172,10 +195,10 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
 template <bool newton3>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellAoS(
     ParticleCell &cell) {
   // helper function
   const auto interactParticles = [&](auto &p1, auto &p2) {
@@ -217,9 +240,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if (cell1.size() + cell2.size() > _startSorting and sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
@@ -242,9 +265,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
                                                         const std::array<double, 3> &sortingDirection) {
   // helper function
@@ -278,16 +301,16 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairSoAN3(
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellPairSoAN3(
     ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
                  bidirectional>::processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
   if constexpr (bidirectional) {
@@ -295,16 +318,16 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3
   }
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellSoAN3(
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellSoAN3(
     ParticleCell &cell) {
   _functor->SoAFunctorSingle(cell._particleSoABuffer, true);
 }
 
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellSoANoN3(
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellSoANoN3(
     ParticleCell &cell) {
   _functor->SoAFunctorSingle(cell._particleSoABuffer, false);  // the functor has to enable this...
 }
