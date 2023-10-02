@@ -154,10 +154,12 @@ std::tuple<double, double> ownedHaloInteractionHelper(T &cellFunctor, const auto
 TYPED_TEST_SUITE_P(CellFunctorTest);
 
 /**
- * Tests if pure halo-halo cell interactions or interactions between a halo cell and any other cell with newton3==false
- * and bidirection==false are skipped in the CellFunctor (no forces are calculated). Tests if all other interactions
- * result in force calculations.
  *
+ * Tests if the cell functor skips the cell interactions:
+ *  - halo <-> halo
+ *  - halo  -> any
+ *
+ * All other interaction combinations should be applied.
  */
 TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
   using CellFunctorType = TypeParam;
@@ -171,6 +173,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
   constexpr autopas::OwnershipState halo = autopas::OwnershipState::halo;
   constexpr autopas::OwnershipState ownedOrHalo = autopas::OwnershipState::owned | autopas::OwnershipState::halo;
 
+  // Test all reasonable combinations of owned / halo particles and cells
   for (const auto ownershipParticleA : {owned, halo}) {
     for (const auto ownershipParticleB : {owned, halo}) {
       for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
@@ -232,8 +235,8 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
 }
 
 /**
- * Tests if force calculation is skipped in the CellFunctor with a pure halo cell. Checks if force calculations are done
- * for a cell that can contain owned particles.
+ * Tests if force calculation is skipped in the CellFunctor with a pure halo cell. Checks if force calculations are
+ * done for a cell that can contain owned particles.
  *
  */
 TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
@@ -248,6 +251,7 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
   constexpr autopas::OwnershipState halo = autopas::OwnershipState::halo;
   constexpr autopas::OwnershipState ownedOrHalo = autopas::OwnershipState::owned | autopas::OwnershipState::halo;
 
+  // Test all reasonable combinations of owned / halo particles and cells
   for (const auto ownershipParticleA : {owned, halo}) {
     for (const auto ownershipParticleB : {owned, halo}) {
       for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
