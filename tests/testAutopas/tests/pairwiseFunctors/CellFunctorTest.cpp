@@ -288,12 +288,13 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
                                        << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
                                        << "\nParticle 2 in Cell1: " << ownershipParticleB;
         } else {
-          // in all other cases we expect force on particle in Cell1
-          EXPECT_GT(forceParticleA, 0) << "Particle 1 in Cell1 does not experience force."
-                                          "\nCell1: "
-                                       << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
-                                       << "\nParticle 2 in Cell1: " << ownershipParticleB;
-
+          // in all other cases we expect force on particle A in Cell1 as long as it is owned.
+          if (containsOwned(ownershipParticleA)) {
+            EXPECT_GT(forceParticleA, 0) << "Particle 1 in Cell1 does not experience force."
+                                            "\nCell1: "
+                                         << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
+                                         << "\nParticle 2 in Cell1: " << ownershipParticleB;
+          }
           // if bidirectional or newton3=true we expect also force on particle in Cell2
           if ((cellFunctor.getBidirectional() or cellFunctor.getNewton3()) and containsOwned(ownershipParticleB)) {
             EXPECT_GT(forceParticleB, 0) << "Particle 2 does not experience force."
