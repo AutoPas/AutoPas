@@ -57,24 +57,18 @@ class CellFunctor {
    * Getter
    * @return
    */
-  DataLayoutOption::Value getDataLayout() const {
-    return dataLayout;
-  }
+  DataLayoutOption::Value getDataLayout() const { return dataLayout; }
 
   /**
    * Getter
    * @return
    */
-  bool getNewton3() const {
-    return useNewton3;
-  }
+  bool getNewton3() const { return useNewton3; }
 
   /**
    * Getter
    */
-  bool getBidirectional() const {
-    return bidirectional;
-  }
+  bool getBidirectional() const { return bidirectional; }
 
  private:
   /**
