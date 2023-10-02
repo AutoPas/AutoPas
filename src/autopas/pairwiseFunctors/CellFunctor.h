@@ -34,7 +34,7 @@ class CellFunctor {
    * @param sortingCutoff This paramater indicates the maximal distance the sorted particles are to interact. This
    * parameter is only relevant for optimization (sorting). This parameter normally should be the cutoff, for building
    * verlet lists, this should be cutoff+skin.
-   * @param _useSorting If sorting should be used
+   * @param useSorting If sorting should be used
    */
   explicit CellFunctor(ParticleFunctor *f, const double sortingCutoff, const bool useSorting = true)
       : _functor(f), _sortingCutoff(sortingCutoff), _useSorting(useSorting) {}

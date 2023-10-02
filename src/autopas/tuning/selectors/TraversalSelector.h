@@ -68,6 +68,7 @@ class TraversalSelector {
    * @param traversalType
    * @param pairwiseFunctor
    * @param info
+   * @param useSorting Only for traversals that use the CellFunctor: If the CellFunctor should sort particles
    * @return Smartpointer to the traversal.
    */
   template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
@@ -85,6 +86,7 @@ class TraversalSelector {
    * @param info
    * @param dataLayout
    * @param useNewton3
+   * @param useSorting Only for traversals that use the CellFunctor: If the CellFunctor should sort particles
    * @return Smartpointer to the traversal.
    */
   template <class PairwiseFunctor>
