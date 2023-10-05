@@ -152,8 +152,10 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
       for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
         const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
-        const std::array<double, 3> offsetVec = utils::ArrayUtils::static_cast_copy_array<double>(
-            utils::ThreeDimensionalMapping::oneToThreeD(offset, cellsPerDimension));
+        const std::array<double, 3> offsetVec =
+            utils::ArrayUtils::static_cast_copy_array<double>(
+                utils::ThreeDimensionalMapping::oneToThreeD(offset, cellsPerDimension)) *
+            this->_cellLength;
         // origin
         {
           // check whether cell is within interaction length. distVec is the direction between borders of cells.

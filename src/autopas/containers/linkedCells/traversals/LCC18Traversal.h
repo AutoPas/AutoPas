@@ -147,8 +147,9 @@ inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
                   // Note: We have to calculate the sorting direction separately from pos, since pos is the offset
                   // between the borders of cells. For neighbouring cells this would be 0 and the sorting direction
                   // would be wrong.
-                  std::array<double, 3> sortingDir = {static_cast<double>(x), static_cast<double>(y),
-                                                      static_cast<double>(z)};
+                  std::array<double, 3> sortingDir = {static_cast<double>(x) * this->_cellLength[0],
+                                                      static_cast<double>(y) * this->_cellLength[1],
+                                                      static_cast<double>(z) * this->_cellLength[2]};
                   if (x == 0 and y == 0 and z == 0) {
                     sortingDir = {1., 1., 1.};
                   }

@@ -224,8 +224,9 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
 
             // Calculate the sorting direction from the base cell (x, y, z) and the other cell by use of the offset (ix,
             // y, z).
-            std::array<double, 3> sortingDir = {static_cast<double>(ix), static_cast<double>(y),
-                                                static_cast<double>(z)};
+            std::array<double, 3> sortingDir = {static_cast<double>(ix) * this->_cellLength[0],
+                                                static_cast<double>(y) * this->_cellLength[1],
+                                                static_cast<double>(z) * this->_cellLength[2]};
 
             // the offset to the current cell itself is zero.
             if (ix == 0 and y == 0 and z == 0) {
