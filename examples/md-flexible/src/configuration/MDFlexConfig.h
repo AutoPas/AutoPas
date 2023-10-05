@@ -584,7 +584,7 @@ class MDFlexConfig {
    * nuMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> nuMap{
-      {{0ul, 0.}}, "nu", true, "Mapping from site type to a nu value."};
+      {{0ul, 0.1}}, "nu", true, "Mapping from site type to a nu value."};
   /**
    * massMap
    */

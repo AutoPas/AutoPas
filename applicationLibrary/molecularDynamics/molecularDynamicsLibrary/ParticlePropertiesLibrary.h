@@ -46,17 +46,42 @@ class ParticlePropertiesLibrary {
   ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
 
   /**
-   * Adds the properties of a type of a single LJ site type to the library.
+   * Adds the properties of a type of a single site type to the library.
    *
    * This function also precomputes all possible mixed values with already known particle types.
    * If the type id already exists the values will be overwritten.
    * @param siteId
    * @param epsilon
    * @param sigma
-   * @param mass
    * @param nu
+   * @param mass
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass, const floatType nu = 0.0);
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType nu, const floatType mass);
+
+  /**
+   * Adds the properties of a type of a single LJ site type to the library.
+   *
+   * This function also precomputes all possible mixed values with already known particle types.
+   * If the type id already exists the values will be overwritten.
+   * @note All Axilrod-Teller parameters are set to 0.0
+   * @param siteId
+   * @param epsilon
+   * @param sigma
+   * @param mass
+   */
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
+
+  /**
+   * Adds the properties of a type of a single AT site type to the library.
+   *
+   * This function also precomputes all possible mixed values with already known particle types.
+   * If the type id already exists the values will be overwritten.
+   * @note All Lennard-Jones parameters are set to 0.0
+   * @param siteId
+   * @param nu
+   * @param mass
+   */
+  void addSiteType(const intType siteId, const floatType nu, const floatType mass);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
@@ -310,7 +335,7 @@ class ParticlePropertiesLibrary {
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
-                                                                floatType mass, floatType nu) {
+                                                                floatType nu, floatType mass) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
         "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
@@ -322,6 +347,17 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
   _sigmas.emplace_back(sigma);
   _nus.emplace_back(nu);
   _siteMasses.emplace_back(mass);
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
+                                                                floatType mass) {
+  addSiteType(siteID, epsilon, sigma, /*nu*/ 0.0, mass);
+}
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType nu, floatType mass) {
+  addSiteType(siteID, /*epsilon*/ 0.0, /*sigma*/ 0.0, nu, mass);
 }
 
 template <typename floatType, typename intType>
