@@ -55,12 +55,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _))
       .Times(testing::AtLeast(1))
-      .WillRepeatedly(testing::WithArgs<0, 1>(
-          testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
+      .WillRepeatedly(
+          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
   EXPECT_CALL(functor, SoALoader(::testing::Matcher<FMCell &>(_), _, _))
       .Times(testing::AtLeast(1))
-      .WillRepeatedly(testing::WithArgs<0, 1>(
-          testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
+      .WillRepeatedly(
+          testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
       autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
@@ -239,8 +239,8 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const autopas::AutoTuner::SearchSpaceType searchSpace{
-      _confDs_seq_N3,
       _confDs_seq_noN3,
+      _confDs_seq_N3,
       _confLc_c08_N3,
   };
 
@@ -515,7 +515,6 @@ TEST_F(AutoTunerTest, testConfigSecondInvalid) {
  * All generated configurations are thrown out at runtime.
  */
 TEST_F(AutoTunerTest, testLastConfigThrownOut) {
-  const double cellSizeFactor = 1.;
   const unsigned int verletRebuildFrequency = 20;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
@@ -527,7 +526,7 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
-  const auto searchSpace = {_confLc_c08_N3, _confLc_c08_noN3};
+  const auto searchSpace = {_confLc_c08_noN3, _confLc_c18_noN3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
   logicHandler.initPairwise(&tuner);
@@ -536,8 +535,8 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
 
   testing::NiceMock<MockPairwiseFunctor<Molecule>> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(false));
-  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
   EXPECT_THROW(logicHandler.iteratePairwisePipeline(&functor), autopas::utils::ExceptionHandler::AutoPasException);
 }
@@ -549,7 +548,6 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
  * Expect to choose the first because the second one is worse on average.
  */
 TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
-  const double cellSizeFactor = 1.;
   const unsigned int verletRebuildFrequency = 20;
   const autopas::LogicHandlerInfo logicHandlerInfo{
       .boxMin{0., 0., 0.},
@@ -560,7 +558,8 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
       .maxSamples = 2,
   };
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
-  const auto searchSpace = {_confLc_c08_N3, _confLc_c18_noN3};
+  // Use configurations with N3, otherwise there are more calls to AoSFunctor
+  const auto searchSpace = {_confLc_c08_N3, _confDs_seq_N3};
   autopas::AutoTuner tuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
   logicHandler.initPairwise(&tuner);

@@ -77,7 +77,7 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
              clusterIndex++, clusterCount++) {
           auto &currentCluster = currentTower.getCluster(clusterIndex);
           _clusterFunctor.traverseCluster(currentCluster);
-          for (auto *neighborCluster : currentCluster.getNeighbors()) {
+          for (auto *neighborCluster : *currentCluster.getNeighbors()) {
             _clusterFunctor.traverseClusterPair(currentCluster, *neighborCluster);
           }
         }

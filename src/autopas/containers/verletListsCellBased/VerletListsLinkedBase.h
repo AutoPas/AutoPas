@@ -77,9 +77,16 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   }
 
   /**
+   * @copydoc autopas::ParticleContainerInterface::size()
+   */
+  size_t size() const override { return _linkedCells.size(); }
+
+  /**
    * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
    */
-  unsigned long getNumberOfParticles() const override { return _linkedCells.getNumberOfParticles(); }
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    return _linkedCells.getNumberOfParticles(behavior);
+  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::deleteHaloParticles

@@ -59,13 +59,13 @@ class Configuration {
 
   /**
    * Returns a short string representation of the configuration object, suitable for tabular output.
-   * @param fixedWidth See Option::to_string().
+   * @param fixedLength See Option::to_string().
    * @return A short string representation.
    */
-  [[nodiscard]] std::string toShortString(bool fixedWidth = true) const {
-    return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedWidth) + " , " + std::to_string(cellSizeFactor) + " , " +
-           traversal.to_string(fixedWidth) + " , " + loadEstimator.to_string(fixedWidth) + " , " +
-           dataLayout.to_string(fixedWidth) + " , " + newton3.to_string(fixedWidth) + "}";
+  [[nodiscard]] std::string toShortString(bool fixedLength = true) const {
+    return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedLength) + " , " + std::to_string(cellSizeFactor) + " , " +
+           traversal.to_string(fixedLength) + " , " + loadEstimator.to_string(fixedLength) + " , " +
+           dataLayout.to_string(fixedLength) + " , " + newton3.to_string(fixedLength) + "}";
   }
 
   /**
@@ -90,9 +90,9 @@ class Configuration {
 
   /**
    * Checks if any of the configuration values are incompatible with each other.
-   * @return
+   * @return True if all options are compatible to each other.
    */
-  [[nodiscard]] bool isValid() const;
+  [[nodiscard]] bool hasCompatibleValues() const;
 
   /**
    * Check if all discrete options of the given configuration are equal to this'.
@@ -102,8 +102,8 @@ class Configuration {
   bool equalsDiscreteOptions(const Configuration &rhs) const;
 
   /**
-   * Check if all continuous options of the given configuration are equal to this'.
-   * @param rhs
+   * Check if all continuous options of the given configuration are equal to this configuration.
+   * @param rhs configuration compared against.
    * @param epsilon Maximal allowed absolute difference between two continuous values to be considered equal.
    * @return
    */

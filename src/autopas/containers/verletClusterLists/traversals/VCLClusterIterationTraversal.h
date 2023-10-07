@@ -60,7 +60,7 @@ class VCLClusterIterationTraversal : public TraversalInterface<InteractionTypeOp
 
     const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
       _clusterFunctor.traverseCluster(cluster);
-      for (auto *neighborCluster : cluster.getNeighbors()) {
+      for (auto *neighborCluster : *cluster.getNeighbors()) {
         _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
       }
     };

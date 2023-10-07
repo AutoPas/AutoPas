@@ -134,7 +134,7 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
       for (auto &cluster : currentTower.getClusters()) {
         _clusterFunctor.traverseCluster(cluster);
 
-        for (auto *neighborClusterPtr : cluster.getNeighbors()) {
+        for (auto *neighborClusterPtr : *cluster.getNeighbors()) {
           _clusterFunctor.traverseClusterPair(cluster, *neighborClusterPtr);
         }
       }

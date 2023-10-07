@@ -224,7 +224,7 @@ class LJFunctorAVX
   template <bool newton3>
   inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 #ifdef __AVX__
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -245,7 +245,7 @@ class LJFunctorAVX
 
     // reverse outer loop s.th. inner loop always beginns at aligned array start
     // typecast to detect underflow
-    for (size_t i = soa.getNumberOfParticles() - 1; (long)i >= 0; --i) {
+    for (size_t i = soa.size() - 1; (long)i >= 0; --i) {
       if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
         // If the i-th particle is a dummy, skip this loop iteration.
         continue;
@@ -346,7 +346,7 @@ class LJFunctorAVX
   template <bool newton3>
   inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
 #ifdef __AVX__
-    if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
+    if (soa1.size() == 0 || soa2.size() == 0) return;
 
     const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
@@ -373,7 +373,7 @@ class LJFunctorAVX
     __m256d virialSumZ = _mm256_setzero_pd();
     __m256d potentialEnergySum = _mm256_setzero_pd();
 
-    for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
+    for (unsigned int i = 0; i < soa1.size(); ++i) {
       if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
         // If the i-th particle is a dummy, skip this loop iteration.
         continue;
@@ -395,12 +395,12 @@ class LJFunctorAVX
 
       // floor soa2 numParticles to multiple of vecLength
       unsigned int j = 0;
-      for (; j < (soa2.getNumberOfParticles() & ~(vecLength - 1)); j += 4) {
+      for (; j < (soa2.size() & ~(vecLength - 1)); j += 4) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
                                   y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
                                   &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
-      const int rest = (int)(soa2.getNumberOfParticles() & (vecLength - 1));
+      const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
@@ -647,7 +647,7 @@ class LJFunctorAVX
   inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                                bool newton3) final {
-    if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
+    if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {

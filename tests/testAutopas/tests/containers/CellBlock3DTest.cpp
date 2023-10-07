@@ -146,7 +146,7 @@ size_t getNumberOfParticlesInBox(autopas::internal::CellBlock3D<FMCell> &cellBlo
   autopasTools::generators::GridGenerator::fillWithParticles(vec, cellBlock.getCellsPerDimensionWithHalo(),
                                                              cellBlock.getCellsPerDimensionWithHalo(), defaultParticle);
   cellBlock.clearHaloCells();
-  return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.numParticles(); });
+  return std::accumulate(vec.begin(), vec.end(), 0, [](auto acc, auto &e) { return acc + e.size(); });
 }
 
 TEST_F(CellBlock3DTest, testClearHaloParticles) {
@@ -157,4 +157,22 @@ TEST_F(CellBlock3DTest, testClearHaloParticles) {
   EXPECT_EQ(getNumberOfParticlesInBox(_cells_3x3x3, _vec3), 3 * 3 * 3);
   EXPECT_EQ(getNumberOfParticlesInBox(_cells_11x4x4_nonZeroBoxMin, _vec4), 11 * 4 * 4);
   EXPECT_EQ(getNumberOfParticlesInBox(_cells_19x19x19, _vec19), 19 * 19 * 19);
+}
+
+/**
+ * Checks if the OwnershipState is set correctly, depending on whether it is a cell that can contain only owned
+ * particles, only halo particles, owned and halo particles, or if it is an empty cell.
+ *
+ */
+TEST_F(CellBlock3DTest, testCellOwnership) {
+  std::size_t numCells = _cells_1x1x1.getNumCells();
+  for (int i = 0; i < numCells; i++) {
+    if (_cells_1x1x1.cellCanContainHaloParticles(i)) {
+      EXPECT_TRUE(toInt64(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::halo));
+    } else if (_cells_1x1x1.cellCanContainOwnedParticles(i)) {
+      EXPECT_TRUE(toInt64(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() & autopas::OwnershipState::owned));
+    } else {
+      EXPECT_TRUE(_cells_1x1x1.getCell(i).getPossibleParticleOwnerships() == autopas::OwnershipState::dummy);
+    }
+  }
 }

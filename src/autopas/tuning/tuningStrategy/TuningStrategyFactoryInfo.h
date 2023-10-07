@@ -16,13 +16,13 @@
 namespace autopas {
 
 /**
- * Helper struct encapsulating most information for the tuning factory.
+ * Helper struct encapsulating most information needed to build TuningStrategies by the TuningStrategyFactory.
  * This way if only a specific option should be built, not all arguments have to be specified explicitly.
  */
 struct TuningStrategyFactoryInfo {
   // Used by multiple Strategies
   /**
-   * If the strategy doesn't converge (or not quickly enough) limit the number of evidence to this number.
+   * Strategies that don't converge (or not quickly enough) can be told to limit the number of evidence to this number.
    */
   unsigned int maxEvidence{10};
   /**

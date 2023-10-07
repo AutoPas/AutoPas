@@ -26,7 +26,10 @@
 namespace autopas {
 
 /**
- * TODO
+ * This class manages all logic related to the auto tuning mechanic. This involves:
+ *  - Managing the search space and configQueue.
+ *  - Managing and triggering all active tuning strategies.
+ *  - Managing all collected evidence and passing it to the strategies.
  *
  * The tuner can be in one of two states. If it currently should look for a new optimum, it is in the
  * so-called tuning phase. During a tuning phase, for each Configuration, multiple measurements can be taken,
@@ -52,12 +55,12 @@ class AutoTuner {
    * @param tuningStrategies Vector of object implementing the modelling and exploration of a search space. Will be
    * moved into the tuner.
    * @param searchSpace All possible configurations.
-   * @param info Struct containing more configuration information.
+   * @param autoTunerInfo Struct containing more configuration information.
    * @param rebuildFrequency The number of iterations after which the neighbor lists are rebuilt.
    * @param outputSuffix Suffix for all output files produced by this object.
    */
-  AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace, const AutoTunerInfo &info,
-            unsigned int rebuildFrequency, const std::string &outputSuffix);
+  AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpaceType &searchSpace,
+            const AutoTunerInfo &autoTunerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix);
 
   /**
    * Move assignment operator
@@ -362,7 +365,14 @@ class AutoTuner {
    */
   autopas::utils::Timer _timerCalculateHomogeneity;
 
+  /**
+   * CSV logger for configurations selected at the end of each tuning phase.
+   */
   TuningResultLogger _tuningResultLogger;
+
+  /**
+   * CSV logger for all samples collected during a tuning phase.
+   */
   TuningDataLogger _tuningDataLogger;
 };
 }  // namespace autopas

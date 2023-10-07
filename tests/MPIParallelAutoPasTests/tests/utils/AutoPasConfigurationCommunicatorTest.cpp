@@ -20,15 +20,15 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
 // Test if serializing and deserializing a vector of configurations works as expected.
 TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserializeVector) {
   const std::vector<autopas::Configuration> configurations = {
-      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c01,
+      autopas::Configuration{autopas::ContainerOption::octree, 1., autopas::TraversalOption::ot_c18,
                              autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
                              autopas::Newton3Option::disabled, InteractionTypeOption::pairwise},
-      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c04,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
+      autopas::Configuration{autopas::ContainerOption::verletClusterLists, 1., autopas::TraversalOption::vcl_c06,
+                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::soa,
                              autopas::Newton3Option::disabled, InteractionTypeOption::pairwise},
-      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_c08,
-                             autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos,
-                             autopas::Newton3Option::disabled, InteractionTypeOption::pairwise},
+      autopas::Configuration{autopas::ContainerOption::linkedCells, 1., autopas::TraversalOption::lc_sliced_balanced,
+                             autopas::LoadEstimatorOption::squaredParticlesPerCell, autopas::DataLayoutOption::aos,
+                             autopas::Newton3Option::enabled, InteractionTypeOption::pairwise},
   };
   const auto serializedConfigs = serializeConfigurations(configurations);
   const auto passedConfig = deserializeConfigurations(serializedConfigs);

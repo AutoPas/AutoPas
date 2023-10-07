@@ -70,6 +70,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.iterations,
       config.loadBalancer,
       config.loadBalancingInterval,
+      config.loadEstimatorOptions,
       config.logFileName,
       config.logLevel,
       config.maxTuningPhasesWithoutTest,

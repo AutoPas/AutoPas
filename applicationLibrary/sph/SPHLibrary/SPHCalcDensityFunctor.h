@@ -82,7 +82,7 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -94,7 +94,7 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
-    size_t numParticles = soa.getNumberOfParticles();
+    size_t numParticles = soa.size();
     for (unsigned int i = 0; i < numParticles; ++i) {
       // checks whether particle i is owned.
       if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
@@ -137,7 +137,7 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       bool newton3) override {
-    if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
+    if (soa1.size() == 0 || soa2.size() == 0) return;
 
     double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
@@ -158,7 +158,7 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
     const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
 
-    size_t numParticlesi = soa1.getNumberOfParticles();
+    size_t numParticlesi = soa1.size();
     for (unsigned int i = 0; i < numParticlesi; ++i) {
       // checks whether particle i is in the domain box, unused if calculateGlobals is false!
       if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
@@ -166,7 +166,7 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
       }
 
       double densacc = 0.;
-      size_t numParticlesj = soa2.getNumberOfParticles();
+      size_t numParticlesj = soa2.size();
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : densacc)
@@ -206,7 +206,7 @@ class SPHCalcDensityFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcD
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 

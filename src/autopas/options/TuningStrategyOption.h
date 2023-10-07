@@ -102,6 +102,8 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         TuningStrategyOption::tuningStrategyLogger,
         // Only used to test against randomness, not a truly viable strategy.
         TuningStrategyOption::randomSearch,
+        // Not a valid option anymore. Only exists to tell users not to use it.
+        TuningStrategyOption::fullSearch,
     };
   }
 

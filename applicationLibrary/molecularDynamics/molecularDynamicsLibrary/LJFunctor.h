@@ -188,7 +188,7 @@ class LJFunctor
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -215,11 +215,11 @@ class LJFunctor
     if constexpr (useMixing) {
       // Preload all sigma and epsilons for next vectorized region.
       // Not preloading and directly using the values, will produce worse results.
-      sigmaSquareds.resize(soa.getNumberOfParticles());
-      epsilon24s.resize(soa.getNumberOfParticles());
+      sigmaSquareds.resize(soa.size());
+      epsilon24s.resize(soa.size());
       // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
       if constexpr (applyShift) {
-        shift6s.resize(soa.getNumberOfParticles());
+        shift6s.resize(soa.size());
       }
     }
 
@@ -227,7 +227,7 @@ class LJFunctor
     const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
     const SoAFloatPrecision const_epsilon24 = _epsilon24;
 
-    for (unsigned int i = 0; i < soa.getNumberOfParticles(); ++i) {
+    for (unsigned int i = 0; i < soa.size(); ++i) {
       const auto ownedStateI = ownedStatePtr[i];
       if (ownedStateI == autopas::OwnershipState::dummy) {
         continue;
@@ -238,7 +238,7 @@ class LJFunctor
       SoAFloatPrecision fzacc = 0.;
 
       if constexpr (useMixing) {
-        for (unsigned int j = 0; j < soa.getNumberOfParticles(); ++j) {
+        for (unsigned int j = 0; j < soa.size(); ++j) {
           auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
           sigmaSquareds[j] = mixingData.sigmaSquared;
           epsilon24s[j] = mixingData.epsilon24;
@@ -251,7 +251,7 @@ class LJFunctor
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
-      for (unsigned int j = i + 1; j < soa.getNumberOfParticles(); ++j) {
+      for (unsigned int j = i + 1; j < soa.size(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
         SoAFloatPrecision epsilon24 = const_epsilon24;
@@ -362,7 +362,7 @@ class LJFunctor
    */
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
-    if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
+    if (soa1.size() == 0 || soa2.size() == 0) return;
 
     const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
@@ -398,15 +398,15 @@ class LJFunctor
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
     if constexpr (useMixing) {
-      sigmaSquareds.resize(soa2.getNumberOfParticles());
-      epsilon24s.resize(soa2.getNumberOfParticles());
+      sigmaSquareds.resize(soa2.size());
+      epsilon24s.resize(soa2.size());
       // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
       if constexpr (applyShift) {
-        shift6s.resize(soa2.getNumberOfParticles());
+        shift6s.resize(soa2.size());
       }
     }
 
-    for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
+    for (unsigned int i = 0; i < soa1.size(); ++i) {
       SoAFloatPrecision fxacc = 0;
       SoAFloatPrecision fyacc = 0;
       SoAFloatPrecision fzacc = 0;
@@ -418,7 +418,7 @@ class LJFunctor
 
       // preload all sigma and epsilons for next vectorized region
       if constexpr (useMixing) {
-        for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
+        for (unsigned int j = 0; j < soa2.size(); ++j) {
           sigmaSquareds[j] = _PPLibrary->getMixingSigmaSquared(typeptr1[i], typeptr2[j]);
           epsilon24s[j] = _PPLibrary->getMixing24Epsilon(typeptr1[i], typeptr2[j]);
           if constexpr (applyShift) {
@@ -430,7 +430,7 @@ class LJFunctor
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
-      for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
+      for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
           epsilon24 = epsilon24s[j];
@@ -526,7 +526,7 @@ class LJFunctor
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
-    if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
+    if (soa.size() == 0 or neighborList.empty()) return;
     if (newton3) {
       SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
     } else {

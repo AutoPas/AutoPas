@@ -304,7 +304,13 @@ class MDFlexConfig {
       true,
       "Ordered pipeline of strategies to find the optimal algorithmic configuration. "
       "Leave empty to perform an exhaustive search. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
+          autopas::utils::ArrayUtils::to_string(
+              []() {
+                auto options = autopas::TuningStrategyOption::getAllOptions();
+                options.erase(autopas::TuningStrategyOption::fullSearch);
+                return options;
+              }(),
+              " ", {"(", ")"})};
   /**
    * tuningMetricOption
    */

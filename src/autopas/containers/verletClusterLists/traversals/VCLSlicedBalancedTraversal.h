@@ -38,7 +38,7 @@ class VCLSlicedBalancedTraversal
     auto &currentTower = clusterList.getTowerByIndex(x, y);
     for (auto &cluster : currentTower.getClusters()) {
       _clusterFunctor.traverseCluster(cluster);
-      for (auto *neighborCluster : cluster.getNeighbors()) {
+      for (auto *neighborCluster : *cluster.getNeighbors()) {
         _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
       }
     }
