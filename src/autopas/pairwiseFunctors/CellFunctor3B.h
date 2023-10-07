@@ -132,9 +132,8 @@ class CellFunctor3B {
 
   /**
    * Min. number of particles to start sorting.
-   * @todo Currently, this is disabled because of https://github.com/AutoPas/AutoPas/issues/418
    */
-  constexpr static unsigned long _startSorting = std::numeric_limits<unsigned long>::max();
+  constexpr static unsigned long _sortingThreshold = 8;
 };
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
@@ -224,7 +223,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 template <bool newton3>
 void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
     ParticleCell &cell) {
-  if (cell.numParticles() > _startSorting) {
+  if (cell.numParticles() > _sortingThreshold) {
     SortedCellView<Particle, ParticleCell> cellSorted(
         cell, utils::ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
@@ -258,7 +257,6 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       }
     }
   } else {
-    size_t i = 0;
     for (auto outerOuter = cell.begin(); outerOuter != cell.end(); ++outerOuter) {
       Particle &p1 = *outerOuter;
       auto outer = outerOuter;
@@ -289,7 +287,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool useNewton3, bool bidirectional>
 void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  if (cell1.numParticles() + cell2.numParticles() > _startSorting and
+  if (cell1.numParticles() + cell2.numParticles() > _sortingThreshold and
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
@@ -378,7 +376,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
                                                         const std::array<double, 3> &sortingDirection) {
-  if (cell1.numParticles() + cell2.numParticles() > _startSorting and
+  if (cell1.numParticles() + cell2.numParticles() > _sortingThreshold and
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
@@ -475,7 +473,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool useNewton3, bool bidirectional>
 void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellTripleAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3, const std::array<double, 3> &sortingDirection) {
-  if (cell1.numParticles() + cell2.numParticles() + cell3.numParticles() > _startSorting and
+  if (cell1.numParticles() + cell2.numParticles() + cell3.numParticles() > _sortingThreshold and
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
@@ -527,7 +525,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                    bidirectional>::processCellTripleAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3,
                                                           const std::array<double, 3> &sortingDirection) {
-  if (cell1.numParticles() + cell2.numParticles() + cell3.numParticles() > _startSorting and
+  if (cell1.numParticles() + cell2.numParticles() + cell3.numParticles() > _sortingThreshold and
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);

@@ -237,12 +237,10 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
 
               if (offset2 <= offset1) continue;
               // sorting direction towards middle of cell 1 and cell 2
-              const std::array<double, 3> sortDirection = dist01 + dist02;
-//              auto checkExists = [&](std::tuple<long, long, std::array<double, 3>> offs) -> bool {
-//                auto off1 = std::get<0>(offs);
-//                auto off2 = std::get<1>(offs);
-//                return (off1 == offset1 and off2 == offset2) or (off1 == offset2 and off2 == offset1);
-//              };
+              const std::array<double, 3> sortDirection = {
+                                           (x1 + x2) * this->_cellLength[0],
+                                           (y1 + y2) * this->_cellLength[1],
+                                           (z1 + z2) * this->_cellLength[2]};
               _cellOffsets.emplace_back(offset1, offset2, utils::ArrayMath::normalize(sortDirection));
             }
           }
