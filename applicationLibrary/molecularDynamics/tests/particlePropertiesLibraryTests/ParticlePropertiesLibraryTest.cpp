@@ -23,33 +23,38 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   // Add site 0
   const double epsilon0 = 1.;
   const double sigma0 = 1.;
+  const double nu0 = 0.1;
   const double mass0 = 1.;
-  PPL->addSiteType(0, epsilon0, sigma0, mass0);
+  PPL->addSiteType(0, epsilon0, sigma0, nu0, mass0);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 1);
   EXPECT_EQ(PPL->getEpsilon(0), epsilon0);
   EXPECT_EQ(PPL->getSigma(0), sigma0);
+  EXPECT_EQ(PPL->getNu(0), nu0);
   EXPECT_EQ(PPL->getSiteMass(0), mass0);
 
   // Add site 1
   const double epsilon1 = 0.2;
   const double sigma1 = 0.7;
+  const double nu1 = 0.2;
   const double mass1 = 1.2;
-  PPL->addSiteType(1, epsilon1, sigma1, mass1);
+  PPL->addSiteType(1, epsilon1, sigma1, nu1, mass1);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 2);
   EXPECT_EQ(PPL->getEpsilon(0), epsilon0);
   EXPECT_EQ(PPL->getSigma(0), sigma0);
+  EXPECT_EQ(PPL->getNu(0), nu0);
   EXPECT_EQ(PPL->getSiteMass(0), mass0);
   EXPECT_EQ(PPL->getEpsilon(1), epsilon1);
   EXPECT_EQ(PPL->getSigma(1), sigma1);
+  EXPECT_EQ(PPL->getNu(1), nu1);
   EXPECT_EQ(PPL->getSiteMass(1), mass1);
 
   // Check addSiteType with an inappropriate siteId throws an error.
-  EXPECT_ANY_THROW(PPL->addSiteType(1, 1., 1., 1.));
-  EXPECT_ANY_THROW(PPL->addSiteType(5, 1., 1., 1.));
+  EXPECT_ANY_THROW(PPL->addSiteType(1, 1., 1., 1., 1.));
+  EXPECT_ANY_THROW(PPL->addSiteType(5, 1., 1., 1., 1.));
 }
 
 /**
@@ -268,6 +273,65 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
       EXPECT_DOUBLE_EQ(allMixingData.epsilon24, epsilon24);
       EXPECT_DOUBLE_EQ(allMixingData.sigmaSquared, sigmaSquared);
       EXPECT_DOUBLE_EQ(allMixingData.shift6, shift6);
+    }
+  }
+}
+
+/**
+ * Tests that getting the Axilrod-Teller mixing data works correctly and that the mixing rules applied in PPL are
+ * correct. In addition, tests that the mixing data getters are consistent with each other.
+ */
+TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
+  const double cutoff = 1.1;
+  const double cutoffSquared = cutoff * cutoff;
+  std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
+      std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
+
+  // Add three sites
+  const double nu0 = 0.1;
+  const double nu1 = 0.7;
+  const double nu2 = 0.3;
+
+  PPL->addSiteType(0, nu0, 1.);
+  PPL->addSiteType(1, nu1, 1.);
+  PPL->addSiteType(2, nu2, 1.);
+
+  // Calculate mixing coefficients
+  PPL->calculateMixingCoefficients();
+
+  // Calculate expected values. Mixing rules are commutative so only unique values are calculated.
+  const auto nu001 = std::cbrt(nu0 * nu0 * nu1);
+  const auto nu011 = std::cbrt(nu0 * nu1 * nu1);
+  const auto nu112 = std::cbrt(nu1 * nu1 * nu2);
+  const auto nu122 = std::cbrt(nu1 * nu2 * nu2);
+  const auto nu012 = std::cbrt(nu0 * nu1 * nu2);
+
+  // Compare PPL's calculated mixing coefficients against the expected values
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 0, 0), nu0);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 0, 1), nu001);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 1, 0), nu001);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 0, 0), nu001);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 1, 1), nu011);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 0, 1), nu011);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 1, 0), nu011);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 1, 1), nu1);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 1, 2), nu112);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 2, 1), nu112);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 1, 1), nu112);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 2, 2), nu122);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 1, 2), nu122);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 2, 1), nu122);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 2, 2), nu2);
+
+  // Confirm that PPL's individual get same mixing data functions match PPL's get all mixing data for a site-type pair.
+  for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {
+    for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); j++) {
+      for (unsigned int k = 0; k < PPL->getNumberRegisteredSiteTypes(); k++) {
+        const auto allMixingData = PPL->getMixingData(i, j, k);
+        const auto epsilon24 = PPL->getMixingNu(i, j, k);
+
+        EXPECT_DOUBLE_EQ(allMixingData.nu, epsilon24);
+      }
     }
   }
 }
