@@ -16,11 +16,11 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   std::unique_ptr<FuncType> functor;
 
-  particlePropertiesLibrary.addSiteType(0, 0.0, 0.0, 1.0, this->nu);
+  particlePropertiesLibrary.addSiteType(0, this->nu, 1.0);
   if constexpr (mixing) {
     functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
-    particlePropertiesLibrary.addSiteType(1, 0.0, 0.0, 1.0, this->nu2);
-    particlePropertiesLibrary.addSiteType(2, 0.0, 0.0, 1.0, this->nu3);
+    particlePropertiesLibrary.addSiteType(1, this->nu2, 1.0);
+    particlePropertiesLibrary.addSiteType(2, this->nu3, 1.0);
   } else {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->nu);
@@ -205,9 +205,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     std::unique_ptr<FuncType> functor;
 
     if constexpr (mixing) {
-      particlePropertiesLibrary.addSiteType(0, 0.0, 0.0, 1.0, this->nu);
-      particlePropertiesLibrary.addSiteType(1, 0.0, 0.0, 1.0, this->nu2);
-      particlePropertiesLibrary.addSiteType(2, 0.0, 0.0, 1.0, this->nu3);
+      particlePropertiesLibrary.addSiteType(0, this->nu, 1.0);
+      particlePropertiesLibrary.addSiteType(1, this->nu2, 1.0);
+      particlePropertiesLibrary.addSiteType(2, this->nu3, 1.0);
       particlePropertiesLibrary.calculateMixingCoefficients();
       functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     } else {

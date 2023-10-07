@@ -9,6 +9,7 @@
 #pragma once
 #include "autopas/utils/ConstexprMath.h"
 #include "autopas/utils/ArrayMath.h"
+#include <tuple>
 
 /**
  * Calculates the potential energy between particles i, j and k using the Axilrod Teller potential.
@@ -24,7 +25,7 @@ constexpr double calculateATPotential(const std::array<double, 3> &posI, const s
                                       const std::array<double, 3> &posK, double cutoff, double nu) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  // the vector from particle j to i
+  // the distance vectors
   const auto posIToPosJ = posI - posJ;
   const auto posIToPosK = posI - posK;
   const auto posJToPosK = posJ - posK;
@@ -37,7 +38,7 @@ constexpr double calculateATPotential(const std::array<double, 3> &posI, const s
   const auto distJK =
       autopas::utils::ConstexprMath::sqrt(autopas::utils::ArrayMath::dot(posJToPosK, posJToPosK), 1e-16);
 
-  // if the distance between the two particles is larger then cutoff, we don't
+  // if the distance between the two particles is larger than cutoff, we don't
   // consider this interaction
   if (distIJ > cutoff or distIK > cutoff or distJK > cutoff) {
     return 0;
@@ -60,85 +61,130 @@ constexpr double calculateATPotential(const std::array<double, 3> &posI, const s
 }
 
 /**
- * Calculates the force exerted by particle j on particle i using the 12-6 potential of Lennard Jones.
+ * Calculates the forces exerted on three particles using the Axilrod-Teller potential.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
- * @param cutoff the cutoff distance in wich we consider interactions
- * @param sigma sigma value for particles
- * @param epsilon epsilon value for particles
- * @return The force exerted by particle j on particle i
+ * @param posK coordinate of the third particle
+ * @param cutoff the cutoff distance in which we consider interactions
+ * @param nu Axilrod-Teller Factor
+ * @return The forces exerted on particle i, particle j, particle k
  */
-//constexpr std::array<double, 3> calculateATForce(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-//                                                 double cutoff, double sigma, double epsilon) {
-//  using namespace autopas::utils::ArrayMath::literals;
-//
-//  // the vector from particle j to i
-//  const auto posIMinusPosJ = posI - posJ;
-//
-//  // the distance between both particles
-//  const auto dist =
-//      autopas::utils::ConstexprMath::sqrt(autopas::utils::ArrayMath::dot(posIMinusPosJ, posIMinusPosJ), 1e-16);
-//
-//  // if the distance between the two prticles is larger thn cutoff, we don't
-//  // consider this interaction
-//  if (dist > cutoff) {
-//    return {0, 0, 0};
-//  }
-//
-//  // r^6
-//  const auto r6 = dist * dist * dist * dist * dist * dist;
-//  // sigma^6
-//  const auto sigma6 = sigma * sigma * sigma * sigma * sigma * sigma;
-//  // sigma^6 / r^7
-//  const auto dlj6 = sigma6 / (r6 * dist);
-//  // sigma^12 / r^13
-//  const auto dlj12 = (sigma6 * sigma6) / (r6 * r6 * dist);
-//  // the derivative with respect to r of the lennard jones potential
-//  const auto dUr = 48. * epsilon * (dlj12 - 0.5 * dlj6);
-//
-//  // the forces in x, y and z direction
-//  const auto fx = (posIMinusPosJ[0] / dist) * dUr;
-//  const auto fy = (posIMinusPosJ[1] / dist) * dUr;
-//  const auto fz = (posIMinusPosJ[2] / dist) * dUr;
-//
-//  const auto force = std::array<double, 3>{fx, fy, fz};
-//
-//  return force;
-//}
+constexpr std::array<std::array<double, 3>, 3>
+  calculateATForce(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
+                    const std::array<double, 3> &posK, double cutoff, double nu) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  // the distance vectors
+  const auto posJToPosI = posJ - posI;
+  const auto posIToPosK = posI - posK;
+  const auto posKToPosJ = posK - posJ;
+
+  // distances between particles
+  const auto distJISquared = autopas::utils::ArrayMath::dot(posJToPosI, posJToPosI);
+  const auto distJI = autopas::utils::ConstexprMath::sqrt(distJISquared, 1e-16);
+  const auto distIKSquared = autopas::utils::ArrayMath::dot(posIToPosK, posIToPosK);
+  const auto distIK = autopas::utils::ConstexprMath::sqrt(distIKSquared, 1e-16);
+  const auto distKJSquared = autopas::utils::ArrayMath::dot(posKToPosJ, posKToPosJ);
+  const auto distKJ = autopas::utils::ConstexprMath::sqrt(distKJSquared, 1e-16);
+
+  // if the distance between the two particles is larger than cutoff, we don't
+  // consider this interaction
+  if (distJI > cutoff or distIK > cutoff or distKJ > cutoff) {
+    return {std::array<double, 3>{0.,0.,0.}, std::array<double, 3>{0.,0.,0.}, std::array<double, 3>{0.,0.,0.}};
+  }
+
+  // Dot products that are the numerators of the cosine formula
+  const double cosI = autopas::utils::ArrayMath::dot(posJToPosI, posIToPosK);
+  const double cosJ = autopas::utils::ArrayMath::dot(posKToPosJ, posJToPosI);
+  const double cosK = autopas::utils::ArrayMath::dot(posIToPosK, posKToPosJ);
+
+  const double cos6 = cosI * cosJ * cosK;
+  const double distSquaredAll = distJI * distJI * distIK * distIK * distKJ * distKJ;
+  const double dist5All = distSquaredAll * distSquaredAll * std::sqrt(distSquaredAll);
+
+  auto forceI = std::array<double, 3>{0., 0., 0.};
+  auto forceJ = std::array<double, 3>{0., 0., 0.};
+  auto forceK = std::array<double, 3>{0., 0., 0.};
+
+  // loop over all dimensions
+  for (size_t i = 0; i < 3; i++) {
+    forceI[i] = posIToPosK[i] * cosI * (cosJ - cosK)
+              + posJToPosI[i] * (cosJ * cosK - distKJSquared * distIKSquared + 5.0 * cos6 / distJISquared)
+              + posIToPosK[i] * (- cosJ * cosK + distJISquared * distKJSquared - 5.0 * cos6 / distIKSquared);
+
+    forceJ[i] = posIToPosK[i] * cosJ * (cosK - cosI)
+                + posKToPosJ[i] * (cosI * cosK - distJISquared * distIKSquared + 5.0 * cos6 / distKJSquared)
+                + posJToPosI[i] * (- cosI * cosK + distKJSquared * distIKSquared - 5.0 * cos6 / distJISquared);
+
+    forceK[i] = posJToPosI[i] * cosK * (cosI - cosJ)
+                + posIToPosK[i] * (cosI * cosJ - distJISquared * distKJSquared + 5.0 * cos6 / distIKSquared)
+                + posKToPosJ[i] * (- cosI * cosJ + distJISquared * distIKSquared - 5.0 * cos6 / distKJSquared);
+  }
+  forceI *= 3.0 * nu / dist5All;
+  forceJ *= 3.0 * nu / dist5All;
+  forceK *= 3.0 * nu / dist5All;
+
+  return {forceI, forceJ, forceK};
+}
 
 /**
- * Calculates the virial between particle i and j using the Lennard Jones 12-6 potential.
+ * Calculates the virial between three particles i,j,k from the Axilrod-Teller potential.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
- * @param cutoff the cutoff distance in wich we consider interactions
- * @param sigma sigma value for particles
- * @param epsilon epsilon value for particles
+ * @param posK coordinate of the third particle
+ * @param cutoff the cutoff distance in which we consider interactions
+ * @param nu Axilrod-Teller Factor
  * @return virial
  */
-//constexpr std::array<double, 3> calculateATVirial(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-//                                                  double cutoff, double sigma, double epsilon) {
-//  using namespace autopas::utils::ArrayMath::literals;
-//
-//  // first we need the forces
-//  const auto force = calculateLJForce(posI, posJ, cutoff, sigma, epsilon);
-//  // the vector from particle j to i
-//  const auto posIMinusPosJ = posI - posJ;
-//  const auto virial =
-//      std::array<double, 3>{posIMinusPosJ[0] * force[0], posIMinusPosJ[1] * force[1], posIMinusPosJ[2] * force[2]};
-//  return virial;
-//}
+constexpr std::array<std::array<double, 3>, 3> calculateATVirials(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
+                                                  const std::array<double, 3> &posK, double cutoff, double nu) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  // first we need the forces
+  const auto forces = calculateATForce(posI, posJ, posK, cutoff, nu);
+  const auto forceI = forces[0];
+  const auto forceJ = forces[1];
+  const auto forceK = forces[2];
+
+  const auto virialI = forceI * posI;
+  const auto virialJ = forceJ * posJ;
+  const auto virialK = forceK * posK;
+
+  return {virialI, virialJ, virialK};
+}
 
 /**
- * Calculates the sum of all components of the virial between particle i and j using the Lennard Jones 12-6 potential.
+ * Calculates the sum of all components of the virial between particle i, j, k using the Axilrod-Teller potential.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
- * @param cutoff the cutoff distance in wich we consider interactions
- * @param sigma sigma value for particles
- * @param epsilon epsilon value for particles
+ * @param posK coordinate of the third particle
+ * @param cutoff the cutoff distance in which we consider interactions
+ * @param nu Axilrod-Teller Factor
  * @return sum of all three components of the virial vector
  */
-//constexpr double calculateATVirialTotal(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-//                                        double cutoff, double sigma, double epsilon) {
-//  const auto virial = calculateLJVirial(posI, posJ, cutoff, sigma, epsilon);
-//  return virial[0] + virial[1] + virial[2];
-//}
+constexpr double calculateATVirialTotal(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
+                                          const std::array<double, 3> &posK, double cutoff, double nu) {
+  using namespace autopas::utils::ArrayMath::literals;
+  const auto [virialI, virialJ, virialK] = calculateATVirials(posI, posJ, posK, cutoff, nu);
+  const auto virialSum = virialI + virialJ + virialK;
+  return virialSum[0] + virialSum[1] + virialSum[2];
+}
+
+/**
+ * Returns the sum of all components of the virial for each particle i, j, k individually using the Axilrod-Teller potential.
+ * @param posI coordinate of the first particle
+ * @param posJ coordinate of the second particle
+ * @param posK coordinate of the third particle
+ * @param cutoff the cutoff distance in which we consider interactions
+ * @param nu Axilrod-Teller Factor
+ * @return sum of all three components of the virial vector
+ */
+constexpr std::array<double, 3> calculateATVirialTotalPerParticle(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
+                                        const std::array<double, 3> &posK, double cutoff, double nu) {
+  using namespace autopas::utils::ArrayMath::literals;
+  const auto [virialI, virialJ, virialK] = calculateATVirials(posI, posJ, posK, cutoff, nu);
+  const auto virialSumI = virialI[0] + virialI[1] + virialI[2];
+  const auto virialSumJ = virialJ[0] + virialJ[1] + virialJ[2];
+  const auto virialSumK = virialK[0] + virialK[1] + virialK[2];
+  return {virialSumI, virialSumJ, virialSumK};
+}

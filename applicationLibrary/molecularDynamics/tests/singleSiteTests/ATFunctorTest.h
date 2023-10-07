@@ -18,7 +18,7 @@ class ATFunctorTest : public AutoPasTestBase {
   ATFunctorTest() : AutoPasTestBase() {}
 
   enum InteractionType { own, pair12, pair21, triple, verlet };
-  enum where_type { inside, boundary, outside };
+  enum where_type { inside, ininout, inoutout, outside };
 
   /**
    * Checks if the given function throws an exception containing "not implemented".
