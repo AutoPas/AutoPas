@@ -111,11 +111,11 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison3B::Globals> T
 
   autopasTools::generators::RandomGenerator::fillWithParticles(
       container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numMolecules);
-  EXPECT_EQ(container.getNumberOfParticles(), numMolecules) << "Wrong number of molecules inserted!";
+  EXPECT_EQ(container.size(), numMolecules) << "Wrong number of molecules inserted!";
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
       container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container.getCutoff(),
       numHaloMolecules);
-  EXPECT_EQ(container.getNumberOfParticles(), numMolecules + numHaloMolecules)
+  EXPECT_EQ(container.size(), numMolecules + numHaloMolecules)
       << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {

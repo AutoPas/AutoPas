@@ -151,6 +151,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
       }
     }
     stillTuning = logicHandler.iteratePairwisePipeline(&functor);
+    logicHandler.bumpIterationCounters();
+    autoTuner.bumpIterationCounters();
     ++iterations;
     ++collectedSamples;
     const auto currentConfig = autoTuner.getCurrentConfig();
@@ -204,19 +206,26 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
+  autoTuner.bumpIterationCounters();
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
+  autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
+  autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.iteratePairwisePipeline(&functor);  // optimum
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
@@ -258,14 +267,19 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
+    autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
+    autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC N3
+    autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC N3
+    autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.iteratePairwisePipeline(&functor);  // optimum
+    autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
@@ -302,14 +316,19 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
+    autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
+    autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
+    autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
+    autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.iteratePairwisePipeline(&functor);  // optimum
+    autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
@@ -346,10 +365,12 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
     // since we don't actually do anything doRebuild can always be false.
     EXPECT_TRUE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should still be tuning in iteration " << i;
+    autoTuner.bumpIterationCounters();
   }
   // first iteration after tuning phase
   EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor))
       << "Tuner should be done be tuning in the first iteration after the tuning phase.";
+  autoTuner.bumpIterationCounters();
 
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "No rebuilding expected here.";
   // instead of waiting the full tuning interval restart tuning immediately
@@ -360,9 +381,11 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
     // since we don't actually do anything doRebuild can always be false.
     EXPECT_TRUE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should still be tuning.";
+    autoTuner.bumpIterationCounters();
   }
   // first iteration after tuning phase
   EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should be done be tuning.";
+  autoTuner.bumpIterationCounters();
 }
 
 TEST_F(AutoTunerTest, testForceRetuneInPhase) {
@@ -400,6 +423,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
                                                                    "Phase 1\n"
                                                                    "Iteration "
                                                                 << iteration;
+    autoTuner.bumpIterationCounters();
   }
   // restart the full tuning phase
   autoTuner.forceRetune();
@@ -412,6 +436,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
                                                                    "Phase 2\n"
                                                                    "Iteration "
                                                                 << iteration;
+    autoTuner.bumpIterationCounters();
   }
   // first iteration after tuning phase
   EXPECT_FALSE(logicHandler.iteratePairwisePipeline(&functor)) << "Tuner should be done be tuning.\n"
@@ -582,29 +607,37 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(100ms); }));
   logicHandler.iteratePairwisePipeline(&functor);
+  tuner.bumpIterationCounters();
 
   auto firstConfig = tuner.getCurrentConfig();
 
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
   logicHandler.iteratePairwisePipeline(&functor);
+  tuner.bumpIterationCounters();
+
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(30ms); }));
   logicHandler.iteratePairwisePipeline(&functor);
+  tuner.bumpIterationCounters();
 
   // Here, second config will start to be tuned
 
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(300ms); }));
   logicHandler.iteratePairwisePipeline(&functor);
+  tuner.bumpIterationCounters();
 
   auto secondConfig = tuner.getCurrentConfig();
 
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
   logicHandler.iteratePairwisePipeline(&functor);
+  tuner.bumpIterationCounters();
   EXPECT_CALL(functor, AoSFunctor).WillOnce(::testing::Invoke([]() { std::this_thread::sleep_for(25ms); }));
   logicHandler.iteratePairwisePipeline(&functor);
+  tuner.bumpIterationCounters();
 
   // Here, tuning should be finished and first should have been chosen (100 + 2 * 30 = 160 < 350 = 300 + 2 * 25)
   EXPECT_CALL(functor, AoSFunctor).Times(1);
   logicHandler.iteratePairwisePipeline(&functor);
+  tuner.bumpIterationCounters();
 
   EXPECT_EQ(tuner.getCurrentConfig(), firstConfig);
   EXPECT_NE(tuner.getCurrentConfig(), secondConfig);

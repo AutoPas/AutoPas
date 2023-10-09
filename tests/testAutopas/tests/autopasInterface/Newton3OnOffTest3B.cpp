@@ -105,7 +105,7 @@ void Newton3OnOffTest3B::countFunctorCalls(autopas::ContainerOption containerOpt
       EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
           .Times(testing::AtLeast(1))
           .WillRepeatedly(testing::WithArgs<0, 1>(
-              testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
+              testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
       EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
           .Times(testing::AtLeast(1));
     });

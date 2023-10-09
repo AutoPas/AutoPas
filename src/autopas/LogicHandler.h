@@ -1191,7 +1191,7 @@ template <class TriwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iterateTriwise(
     TriwiseFunctor &functor, TraversalInterface<InteractionTypeOption::threeBody> &traversal) {
   const bool doListRebuild = not neighborListsAreValid();
-  const auto configuration = _autoTuner3B->getCurrentConfig();
+  const auto &configuration = _autoTuner3B->getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;
