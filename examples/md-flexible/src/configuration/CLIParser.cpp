@@ -11,6 +11,21 @@
 #include <any>
 #include <fstream>
 
+// anonymous namespace to hide helper function
+namespace {
+
+/**
+ * Utility function to check if a file behind a given path exists.
+ * @param filename
+ * @return True iff the file exists.
+ */
+bool checkFileExists(const std::string &filename) {
+  struct stat buffer {};
+  return (stat(filename.c_str(), &buffer) == 0);
+}
+
+}  // namespace
+
 MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
 
@@ -53,30 +68,35 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.iterations,
       config.loadBalancer,
       config.loadBalancingInterval,
+      config.loadEstimatorOptions,
       config.logFileName,
       config.logLevel,
       config.maxTuningPhasesWithoutTest,
-      config.mpiStrategyOption,
       config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
+      config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
       config.particlesTotal,
       config.relativeBlacklistRange,
       config.relativeOptimumRange,
+      config.ruleFilename,
       config.selectorStrategy,
       config.traversalOptions,
       config.tuningInterval,
       config.tuningMaxEvidence,
+      config.tuningMetricOption,
       config.tuningPhases,
       config.tuningSamples,
-      config.tuningStrategyOption,
+      config.tuningStrategyOptions,
       config.useThermostat,
+      config.useTuningLogger,
       config.verletClusterSize,
       config.verletRebuildFrequency,
       config.verletSkinRadiusPerTimestep,
       config.vtkFileName,
+      config.vtkOutputFolder,
       config.vtkWriteFrequency,
       config.yamlFilename,
       zshCompletionsOption,
@@ -496,26 +516,27 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.tuningStrategyOption)::getoptChar: {
-        auto parsedOptions = autopas::TuningStrategyOption::parseOptions(strArg);
-        if (parsedOptions.size() != 1) {
-          cerr << "Pass exactly one tuning strategy option." << endl
-               << "Passed: " << strArg << endl
-               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
-          displayHelp = true;
-        }
-        config.tuningStrategyOption.value = *parsedOptions.begin();
+      case decltype(config.tuningStrategyOptions)::getoptChar: {
+        config.tuningStrategyOptions.value =
+            autopas::TuningStrategyOption::parseOptions<std::vector<autopas::TuningStrategyOption>>(strArg);
         break;
       }
-      case decltype(config.mpiStrategyOption)::getoptChar: {
-        auto parsedOptions = autopas::MPIStrategyOption::parseOptions(strArg);
+      case decltype(config.tuningMetricOption)::getoptChar: {
+        auto parsedOptions = autopas::TuningMetricOption::parseOptions(strArg);
         if (parsedOptions.size() != 1) {
-          cerr << "Pass exactly one mpi strategy option. AutoPas cannot switch between several." << endl
+          cerr << "Pass exactly one tuning metric option." << endl
                << "Passed: " << strArg << endl
                << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
           displayHelp = true;
         }
-        config.mpiStrategyOption.value = *parsedOptions.begin();
+        config.tuningMetricOption.value = *parsedOptions.begin();
+        break;
+      }
+      case decltype(config.ruleFilename)::getoptChar: {
+        config.ruleFilename.value = optarg;
+        if (not checkFileExists(optarg)) {
+          throw std::runtime_error("CLIParser::parse(): rule-File " + config.ruleFilename.value + " not found!");
+        }
         break;
       }
       case decltype(config.MPITuningMaxDifferenceForBucket)::getoptChar: {
@@ -551,6 +572,10 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case decltype(config.vtkFileName)::getoptChar: {
         config.vtkFileName.value = strArg;
+        break;
+      }
+      case decltype(config.vtkOutputFolder)::getoptChar: {
+        config.vtkOutputFolder.value = strArg;
         break;
       }
       case decltype(config.vtkWriteFrequency)::getoptChar: {
@@ -604,6 +629,22 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.boundaryOption.value = {parsedOption, parsedOption, parsedOption};
         break;
       }
+      case decltype(config.useTuningLogger)::getoptChar: {
+        if (strArg == "true") {
+          config.useTuningLogger.value = true;
+        } else if (strArg == "false") {
+          config.useTuningLogger.value = false;
+        } else {
+          cerr << "Error parsing 'useTuningLogger': " << optarg << endl;
+          cerr << "Value should be true or false." << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.outputSuffix)::getoptChar: {
+        config.outputSuffix.value = strArg;
+        break;
+      }
       case decltype(config.loadBalancer)::getoptChar: {
         auto parsedOptions = LoadBalancerOption::parseOptions(strArg);
 
@@ -635,29 +676,26 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.cubeUniformObjects.empty() and config.sphereObjects.empty() and config.cubeClosestPackedObjects.empty()) {
     // common settings for any object type:
     unsigned int typeID = 0;
-    double epsilon = 1.;
-    double sigma = 1.;
-    double mass = 1.;
     std::array<double, 3> bottomLeftCorner = {0, 0, 0};
     std::array<double, 3> velocity = {0, 0, 0};
 
     switch (config.generatorOption.value) {
       case MDFlexConfig::GeneratorOption::grid: {
-        CubeGrid grid(velocity, typeID, epsilon, sigma, mass,
+        CubeGrid grid(velocity, typeID,
                       {config.particlesPerDim.value, config.particlesPerDim.value, config.particlesPerDim.value},
                       config.particleSpacing.value, bottomLeftCorner);
         config.cubeGridObjects.push_back(grid);
         break;
       }
       case MDFlexConfig::GeneratorOption::gaussian: {
-        CubeGauss cubeGauss(velocity, typeID, epsilon, sigma, mass, config.particlesTotal.value,
+        CubeGauss cubeGauss(velocity, typeID, config.particlesTotal.value,
                             {config.boxLength.value, config.boxLength.value, config.boxLength.value},
                             config.distributionMean.value, config.distributionStdDev.value, bottomLeftCorner);
         config.cubeGaussObjects.push_back(cubeGauss);
         break;
       }
       case MDFlexConfig::GeneratorOption::uniform: {
-        CubeUniform cubeUniform(velocity, typeID, epsilon, sigma, mass, config.particlesTotal.value,
+        CubeUniform cubeUniform(velocity, typeID, config.particlesTotal.value,
                                 {config.boxLength.value, config.boxLength.value, config.boxLength.value},
                                 bottomLeftCorner);
         config.cubeUniformObjects.push_back(cubeUniform);
@@ -665,13 +703,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       }
       case MDFlexConfig::GeneratorOption::sphere: {
         auto centerOfBox = config.particlesPerDim.value / 2.;
-        Sphere sphere(velocity, typeID, epsilon, sigma, mass, {centerOfBox, centerOfBox, centerOfBox}, centerOfBox,
-                      config.particleSpacing.value);
+        Sphere sphere(
+            velocity, typeID,
+            {static_cast<double>(centerOfBox), static_cast<double>(centerOfBox), static_cast<double>(centerOfBox)},
+            static_cast<int>(centerOfBox), config.particleSpacing.value);
         config.sphereObjects.push_back(sphere);
         break;
       }
       case MDFlexConfig::GeneratorOption::closestPacked: {
-        CubeClosestPacked cubeClosestPacked(velocity, typeID, epsilon, sigma, mass, config.particleSpacing.value,
+        CubeClosestPacked cubeClosestPacked(velocity, typeID, config.particleSpacing.value,
                                             {config.boxLength.value, config.boxLength.value, config.boxLength.value},
                                             bottomLeftCorner);
         config.cubeClosestPackedObjects.push_back(cubeClosestPacked);
@@ -686,21 +726,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   }
   return MDFlexParser::exitCodes::success;
 }
-
-// anonymous namespace to hide helper function
-namespace {
-
-/**
- * Checks if a file with the given path exists.
- * @param filename
- * @return True iff the file exists.
- */
-bool checkFileExists(const std::string &filename) {
-  struct stat buffer;
-  return (stat(filename.c_str(), &buffer) == 0);
-}
-
-}  // namespace
 
 void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   // suppress error messages since we only want to look if the yaml option is there

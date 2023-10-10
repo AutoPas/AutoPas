@@ -101,7 +101,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   bool neighborListsAreValid() override { return true; }
 
-  CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
@@ -347,7 +347,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_cells[cellIndex].numParticles() or
+    if (particleIndex >= this->_cells[cellIndex].size() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -387,7 +387,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       // advance to the next particle
       ++particleIndex;
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
-      while (particleIndex >= this->_cells[cellIndex].numParticles()) {
+      while (particleIndex >= this->_cells[cellIndex].size()) {
         cellIndex += stride;
         particleIndex = 0;
         // If there are no more reasonable cells return invalid indices.

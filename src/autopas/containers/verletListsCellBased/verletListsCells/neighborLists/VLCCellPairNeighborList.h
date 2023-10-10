@@ -131,7 +131,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     // initialize empty lists for every particle-cell pair
     for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
       _aosNeighborList[firstCellIndex].resize(neighborCells);
-      size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
+      size_t numParticlesFirstCell = cells[firstCellIndex].size();
       for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
         // reserve vector of neighbor lists for every particle in cell1
         cellPair.reserve(numParticlesFirstCell);
@@ -156,7 +156,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
     // particle pointer to global index of particle
     std::unordered_map<Particle *, size_t> particleToIndex;
-    particleToIndex.reserve(linkedCells.getNumberOfParticles());
+    particleToIndex.reserve(linkedCells.size());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
       particleToIndex[&(*iter)] = i;

@@ -8,11 +8,22 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleLoadEstimators.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/ContainerSelectorInfo.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/TraversalSelectorInfo.h"
+#include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "autopas/utils/StaticCellSelector.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "testingHelpers/NumThreadGuard.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(autopas::LJFunctor<Molecule, true, false> *);
+using LJFunctorGlobals =
+    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                     /*globals*/ true>;
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(LJFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
 constexpr double skinPerTimestep = 0.2;
@@ -234,8 +245,9 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigne
         << "Called from line: " << line;
   }
 
-  EXPECT_NEAR(functor->getUpot(), 16128.983372449373 * numParticles / 2., 1e-5) << "wrong upot calculated" << std::endl
-                                                                                << "Called from line: " << line;
+  EXPECT_NEAR(functor->getPotentialEnergy(), 16128.983372449373 * numParticles / 2., 1e-5)
+      << "wrong upot calculated" << std::endl
+      << "Called from line: " << line;
   EXPECT_NEAR(functor->getVirial(), 195072. * numParticles / 2., 1e-5) << "wrong virial calculated" << std::endl
                                                                        << "Called from line: " << line;
 }
@@ -261,34 +273,27 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Molecul
         << "wrong force calculated.";
   }
 
-  EXPECT_DOUBLE_EQ(functor1->getUpot() + functor2->getUpot(), 16128.983372449373)
+  EXPECT_DOUBLE_EQ(functor1->getPotentialEnergy() + functor2->getPotentialEnergy(), 16128.983372449373)
       << "wrong upot calculated" << std::endl
       << "Called from line: " << line;
   EXPECT_DOUBLE_EQ(functor1->getVirial() + functor2->getVirial(), 195072.) << "wrong virial calculated" << std::endl
                                                                            << "Called from line: " << line;
 }
 
-void setFromOptions(const testingTuple &options, autopas::AutoPas<Molecule> &autoPas) {
-  auto containerOption = std::get<0>(std::get<0>(options));
-  auto traversalOption = std::get<1>(std::get<0>(options));
-  auto loadEstimatorOption = std::get<2>(std::get<0>(options));
-  auto dataLayoutOption = std::get<1>(options);
-  auto newton3Option = std::get<2>(options);
-  auto cellSizeOption = std::get<3>(options);
-
-  autoPas.setAllowedContainers({containerOption});
-  autoPas.setAllowedTraversals({traversalOption});
-  autoPas.setAllowedLoadEstimators({loadEstimatorOption});
-  autoPas.setAllowedDataLayouts({dataLayoutOption});
-  autoPas.setAllowedNewton3Options({newton3Option});
-  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeOption})));
+void setFromConfig(const autopas::Configuration &conf, autopas::AutoPas<Molecule> &autoPas) {
+  autoPas.setAllowedContainers({conf.container});
+  autoPas.setAllowedTraversals({conf.traversal});
+  autoPas.setAllowedLoadEstimators({conf.loadEstimator});
+  autoPas.setAllowedDataLayouts({conf.dataLayout});
+  autoPas.setAllowedNewton3Options({conf.newton3});
+  autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({conf.cellSizeFactor})));
 }
 
-void testSimulationLoop(testingTuple options) {
+void testSimulationLoop(const autopas::Configuration &conf) {
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
-  setFromOptions(options, autoPas);
+  setFromConfig(conf, autoPas);
 
   defaultInit(autoPas);
 
@@ -330,9 +335,7 @@ void testSimulationLoop(testingTuple options) {
 
   addParticlePair({9.99, 5., 5.});
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /* mixing */ false, autopas::FunctorN3Modes::Both,
-                     /* globals */ true>
-      functor(cutoff);
+  LJFunctorGlobals functor(cutoff);
   functor.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
@@ -374,13 +377,13 @@ void testSimulationLoop(testingTuple options) {
  * No additional halo exchange is simulated in this test.
  * @param options
  */
-void testHaloCalculation(testingTuple options) {
+void testHaloCalculation(const autopas::Configuration &conf) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // create AutoPas object
   autopas::AutoPas<Molecule> autoPas;
 
-  setFromOptions(options, autoPas);
+  setFromConfig(conf, autoPas);
 
   defaultInit(autoPas);
 
@@ -413,9 +416,7 @@ void testHaloCalculation(testingTuple options) {
     }
   }
 
-  autopas::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ true>
-      functor(cutoff);
+  LJFunctorGlobals functor(cutoff);
   functor.setParticleProperties(24, 1);
 
   autoPas.iteratePairwise(&functor);
@@ -425,12 +426,12 @@ void testHaloCalculation(testingTuple options) {
 
 TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
   // this test checks the correct behavior of the autopas interface.
-  auto options = GetParam();
+  auto conf = GetParam();
   try {
-    testSimulationLoop(options);
+    testSimulationLoop(conf);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
-    if (str.find("Trying to execute a traversal that is not applicable") != std::string::npos) {
+    if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
       GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
     } else {
       // rethrow
@@ -444,12 +445,12 @@ TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
  * comments of testHaloCalculation() for a more detailed description.
  */
 TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
-  auto options = GetParam();
+  auto conf = GetParam();
   try {
-    testHaloCalculation(options);
+    testHaloCalculation(conf);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
     std::string str = autoPasException.what();
-    if (str.find("Trying to execute a traversal that is not applicable") != std::string::npos) {
+    if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
       GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
     } else {
       // rethrow
@@ -458,33 +459,57 @@ TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
   }
 }
 
+TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::ceil;
+  using autopas::utils::ArrayUtils::static_cast_copy_array;
+
+  NumThreadGuard numThreadGuard(3);
+  const autopas::Configuration conf = [&]() {
+    const auto [containerOption, traversalOption, loadEstimatorOption, dataLayoutOption, newton3Option,
+                cellSizeOption] = GetParam();
+
+    return autopas::Configuration{containerOption,     cellSizeOption,   traversalOption,
+                                  loadEstimatorOption, dataLayoutOption, newton3Option};
+  }();
+
+  constexpr double cutoffLocal = 1.;
+  constexpr double skinLocal = .1;
+  constexpr double interactionLength = cutoffLocal + skinLocal;
+  constexpr unsigned int clusterSize = 4;
+  const std::array<double, 3> boxMinLocal{0., 0., 0.};
+  const std::array<double, 3> boxMaxLocal{33., 11., 11.};
+  const auto cellsPerDim = static_cast_copy_array<unsigned long>(ceil(boxMaxLocal * (1. / interactionLength)));
+  const autopas::TraversalSelectorInfo traversalSelectorInfo{
+      cellsPerDim, interactionLength, {interactionLength, interactionLength, interactionLength}, clusterSize};
+  LJFunctorGlobals functor(cutoffLocal);
+  const autopas::ContainerSelectorInfo containerSelectorInfo{conf.cellSizeFactor, skinLocal, rebuildFrequency,
+                                                             clusterSize, conf.loadEstimator};
+  autopas::ContainerSelector<Molecule> containerSelector{boxMinLocal, boxMaxLocal, cutoffLocal};
+  containerSelector.selectContainer(conf.container, containerSelectorInfo);
+  auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
+      containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+            conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
+      });
+
+  EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr->isApplicable())
+      << "Either the domain is chosen badly (fix this!) or hasCompatibleValues and isApplicable don't follow the same"
+         "logic anymore.";
+}
+
 using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::ValuesIn;
 
-INSTANTIATE_TEST_SUITE_P(
-    Generated, AutoPasInterfaceTest,
-    // proper indent
-    Combine(ValuesIn([]() -> std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
-                                                    autopas::LoadEstimatorOption>> {
-              std::vector<std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::LoadEstimatorOption>>
-                  tupleVector;
-              for (const auto &containerOption : autopas::ContainerOption::getAllOptions()) {
-                auto compatibleTraversals = autopas::compatibleTraversals::allCompatibleTraversals(containerOption);
-                for (const auto &traversalOption : compatibleTraversals) {
-                  auto compatibleLoadEstimators = autopas::loadEstimators::getApplicableLoadEstimators(
-                      containerOption, traversalOption, autopas::LoadEstimatorOption::getAllOptions());
-                  for (const auto &loadEstimatorOption : compatibleLoadEstimators) {
-                    tupleVector.emplace_back(containerOption, traversalOption, loadEstimatorOption);
-                  }
-                }
-              }
-              return tupleVector;
-            }()),
-            ValuesIn(autopas::DataLayoutOption::getAllOptions()), ValuesIn(autopas::Newton3Option::getAllOptions()),
-            Values(0.5, 1., 1.5)),
-    AutoPasInterfaceTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(Generated, AutoPasInterfaceTest,
+                         ::testing::ValuesIn(autopas::SearchSpaceGenerators::cartesianProduct(
+                             autopas::ContainerOption::getAllOptions(), autopas::TraversalOption::getAllOptions(),
+                             autopas::LoadEstimatorOption::getAllOptions(), autopas::DataLayoutOption::getAllOptions(),
+                             autopas::Newton3Option::getAllOptions(),
+                             std::make_unique<autopas::NumberSetFinite<double>>(std::set<double>{0.5, 1., 1.5}).get())),
+                         AutoPasInterfaceTest::PrintToStringParamName());
 
 ////////////////////////////////////////////// FOR EVERY SINGLE CONTAINER //////////////////////////////////////////////
 
@@ -577,11 +602,9 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
     }
   }
 
-  constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor1(cutoff);
+  LJFunctorGlobals functor1(cutoff);
   functor1.setParticleProperties(24.0, 1);
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor2(cutoff);
+  LJFunctorGlobals functor2(cutoff);
   functor2.setParticleProperties(24.0, 1);
   // do first simulation loop
   doSimulationLoop(autoPas1, autoPas2, &functor1, &functor2);

@@ -56,7 +56,7 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] bool isApplicable() const override {
-    // The cellsize cannot be smaller then the cutoff, if OpenMP is used.
+    // The cellsize cannot be smaller than the cutoff, if OpenMP is used.
     // Also see: https://github.com/AutoPas/AutoPas/issues/464
     const double minLength = *std::min_element(this->_cellLength.cbegin(), this->_cellLength.cend());
 

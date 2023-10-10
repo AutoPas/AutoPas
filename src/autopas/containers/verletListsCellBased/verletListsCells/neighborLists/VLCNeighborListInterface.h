@@ -72,7 +72,7 @@ class VLCNeighborListInterface {
     size_t offset = 0;
     for (auto &cell : _internalLinkedCells->getCells()) {
       f->SoALoader(cell, _soa, offset);
-      offset += cell.numParticles();
+      offset += cell.size();
     }
     return &_soa;
   }
@@ -87,7 +87,7 @@ class VLCNeighborListInterface {
     size_t offset = 0;
     for (auto &cell : _internalLinkedCells->getCells()) {
       f->SoAExtractor(cell, _soa, offset);
-      offset += cell.numParticles();
+      offset += cell.size();
     }
   }
 

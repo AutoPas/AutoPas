@@ -1,0 +1,63 @@
+define_list AllContainers = "DirectSum", "LinkedCells", "LinkedCellsReferences", "VarVerletListsAsBuild", "VerletClusterLists", "VerletLists", "VerletListsCells", "PairwiseVerletLists", "Octree";
+define_list LinkedCellsContainer = "LinkedCells", "LinkedCellsReferences";
+define_list VerletListsContainer = "VerletLists", "VerletClusterLists", "VerletListsCells", "PairwiseVerletLists", "VarVerletListsAsBuild";
+
+# #############################################################################################
+# Make sure overhead of empty cells in the LinkedCells container does not destroy performance
+# Idea: For each empty cell,the LinkedCells implementation has overhead. All containers except VerletClusterLists (and DirectSum) use 
+# this container in their implementation. Thus, if the domain has a lot more empty cells than particles, do not use them, use VerletClusterLists.
+
+# The overhead consists of at least accessing the std::vector 
+define maxFactorOfEmptyCellsOverNumParticles = 100.0;
+define isDomainExtremelyEmpty = numEmptyCells / numParticles > maxFactorOfEmptyCellsOverNumParticles;
+
+if isDomainExtremelyEmpty:
+	define_list AllExceptClusterLists = "LinkedCells", "LinkedCellsReferences", "VarVerletListsAsBuild", "VerletLists", "VerletListsCells", "PairwiseVerletLists", "Octree";
+	[container="VerletClusterLists"] >= [container=AllExceptClusterLists];
+endif
+
+# #############################################################################################
+# Calculate whether skin size makes VerletLists useless in normal scenarios
+# Idea: From a theoretical perspective, Verlet Lists only have the advantage to save some of the neighbor distance calculations compared to LinkedCells.
+#       If the skin is too large, we know for sure that no neighbor distance calculations are saved.
+define PI = 3.1415926;
+define LC_NeighborVolume = cutoff * cutoff * cutoff * 27;
+define interactionLength = cutoff + skin;
+define VL_NeighborVolume = 4.0/3 * PI * interactionLength * interactionLength * interactionLength;
+
+define neighborVolumeRel = VL_NeighborVolume / LC_NeighborVolume;
+
+# Define magic number when it is surely not worth it to use VL over LC in terms of the number of neighbor distance calculations
+define maxReasonableNeighborVolumeRel = 0.9;
+
+# This holds only if the domain is not extremely empty. Does it also hold with not being extremely empty, but numParticlesPerCell << 1?
+if neighborVolumeRel > maxReasonableNeighborVolumeRel and not isDomainExtremelyEmpty:
+	[container="LinkedCells", traversal="lc_c08"] >= [container=VerletListsContainer] with same dataLayout, newton3;
+endif
+
+# #############################################################################################
+# Next Comment
+
+
+# if numParticles > LCVLThreshold and avgParticlesPerCell > LCVLThresholdPerCell:
+# 	[container="LinkedCells", dataLayout="SoA", newton3="enabled", traversal="lc_c08"] >= [container=VerletListsContainer];
+# endif
+
+if numParticles > 1000: [container="LinkedCells"] >= [container="DirectSum"]; endif
+
+if numParticles < 100: [container="DirectSum"] >= [container="LinkedCells"]; endif
+
+# if numCells < numParticles and numParticles > 50000:
+# 	[container="LinkedCells", dataLayout="SoA", newton3="enabled"] >= [container="LinkedCells", dataLayout="AoS", newton3="enabled"] with same traversal;
+# 	[container="LinkedCells", newton3="enabled"] >= [container="LinkedCells", newton3="disabled"] with same traversal;
+# endif
+
+if avgParticlesPerCell < 6:
+    [container="VerletListsCells", dataLayout="AoS"] >= [container="VerletListsCells", dataLayout="SoA"] with same newton3, traversal, loadEstimator;
+endif
+
+[container="VarVerletListsAsBuild", dataLayout="AoS"] >= [container="VarVerletListsAsBuild", dataLayout="SoA"] with same newton3, traversal;
+
+if avgParticlesPerCell < 100:
+    [container="VerletListsCells"] >= [container="PairwiseVerletLists"];
+endif

@@ -2,6 +2,17 @@
 
 This folder contains scripts for executing tests, measurements, and visualizations.
 
+## Scenario generators
+
+### generate-mdflex-configs.py
+
+Requirements:
+* python3 (tested with 3.10.6)
+* yaml (tested with PyYAML 5.4.1)
+* (Optional) tqdm
+
+Creates a number of `yaml` files for md-flex that should be a representative benchmark space.
+
 ## Tuning tests
 
 ### testTuning.py
@@ -86,7 +97,7 @@ Wehere you can define the x-axis by setting the parameter. The parameter "number
 The last input parameter is the folder with one or many output files, produced by testTimePerTraversal.py
 
 ### outToCsvForPandas.py
-Reads *.out files into csv which can by used for data analysis. Hardware has to be specified manually.
+Reads `*.out` files into csv which can by used for data analysis. Hardware has to be specified manually.
 
 Command: `./outToCsvForPandas.py [hardware={name of hardware}] [path/To//Output/*.out ...]`
 

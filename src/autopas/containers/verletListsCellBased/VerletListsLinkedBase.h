@@ -50,7 +50,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getParticleCellTypeEnum()
    */
-  CellType getParticleCellTypeEnum() override { return _linkedCells.getParticleCellTypeEnum(); };
+  CellType getParticleCellTypeEnum() const override { return _linkedCells.getParticleCellTypeEnum(); };
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
@@ -77,9 +77,16 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   }
 
   /**
+   * @copydoc autopas::ParticleContainerInterface::size()
+   */
+  size_t size() const override { return _linkedCells.size(); }
+
+  /**
    * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
    */
-  unsigned long getNumberOfParticles() const override { return _linkedCells.getNumberOfParticles(); }
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    return _linkedCells.getNumberOfParticles(behavior);
+  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::deleteHaloParticles

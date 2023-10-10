@@ -91,6 +91,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     // Create the octree for the halo particles
     this->_cells.push_back(
         OctreeNodeWrapper<Particle>(haloBoxMin, haloBoxMax, treeSplitThreshold, interactionLength, cellSizeFactor));
+
+    // set type of particles in the two cells
+    this->_cells[CellTypes::OWNED].setPossibleParticleOwnerships(OwnershipState::owned);
+    this->_cells[CellTypes::HALO].setPossibleParticleOwnerships(OwnershipState::halo);
   }
 
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListValid) override {
@@ -156,7 +160,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * are an extension of `FullParticleCell`. However, the interface stays the same and the leaves can be treated just
    * like regular `FullParticleCell`s.
    */
-  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     // TODO create a balanced tree and reserve space in the leaves.
@@ -250,7 +254,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
     std::tie(currentCellIndex, currentCellPtr) = getLeafCellByIndex(cellIndex);
     // check the data behind the indices
-    if (particleIndex >= currentCellPtr->getNumberOfParticles() or
+    if (particleIndex >= currentCellPtr->size() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             (*currentCellPtr)[particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -364,12 +368,19 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   /**
-   * Get the number of particles that belong to this octree. (Owned and and halo.)
-   *
-   * @return The integer # of particles in the container
+   * Get the total number of particles saved in the container (owned + halo + dummy).
+   * @return Number of particles saved in the container (owned + halo + dummy).
    */
-  [[nodiscard]] unsigned long getNumberOfParticles() const override {
-    return this->_cells[CellTypes::OWNED].numParticles() + this->_cells[CellTypes::HALO].numParticles();
+  [[nodiscard]] size_t size() const override {
+    return this->_cells[CellTypes::OWNED].size() + this->_cells[CellTypes::HALO].size();
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
+   */
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    return this->_cells[CellTypes::OWNED].getNumberOfParticles(behavior) +
+           this->_cells[CellTypes::HALO].getNumberOfParticles(behavior);
   }
 
   void deleteHaloParticles() override { this->_cells[CellTypes::HALO].clear(); }
@@ -475,7 +486,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
     // helper function:
     auto cellIsRelevant = [&](const OctreeNodeInterface<Particle> *const cellPtr) {
-      bool isRelevant = cellPtr->getNumberOfParticles() > 0;
+      bool isRelevant = cellPtr->size() > 0;
       if constexpr (regionIter) {
         // particles can move over cell borders. Calculate the volume this cell's particles can be.
         const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellPtr->getBoxMin(), this->getVerletSkin() * 0.5);
@@ -494,7 +505,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       // flag for weird corner cases. See further down.
       bool forceJumpToNextCell = false;
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
-      while (particleIndex >= currentCellInterfacePtr->getNumberOfParticles() or forceJumpToNextCell) {
+      while (particleIndex >= currentCellInterfacePtr->size() or forceJumpToNextCell) {
         // CASE: we are at the end of a branch
         // => Move up until there are siblings that were not touched yet
         while (currentCellIndex.back() == 7) {

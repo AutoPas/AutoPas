@@ -68,7 +68,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
-  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _cellBlock.reserve(numParticles + numParticlesHaloEstimate);
@@ -279,7 +279,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_cells[cellIndex].numParticles() or
+    if (particleIndex >= this->_cells[cellIndex].size() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -526,7 +526,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not cellIsRelevant() or particleIndex >= this->_cells[cellIndex].numParticles()) {
+      while (not cellIsRelevant() or particleIndex >= this->_cells[cellIndex].size()) {
         // TODO: can this jump be done more efficient if behavior is only halo or owned?
         // TODO: can this jump be done more efficient for region iters if the cell is outside the region?
         cellIndex += stride;

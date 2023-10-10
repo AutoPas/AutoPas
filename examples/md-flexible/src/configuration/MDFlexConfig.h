@@ -1,6 +1,7 @@
 /**
  * @file MDFlexConfig.h
- * @author F. Gratl * @date 18.10.2019
+ * @author F. Gratl
+ * @date 18.10.2019
  */
 
 #pragma once
@@ -16,11 +17,12 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
-#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/objects/CubeClosestPacked.h"
@@ -124,7 +126,7 @@ class MDFlexConfig {
   void calcSimulationBox();
 
   /**
-   * Returns the particles generated based on the povided configuration file.
+   * Returns the particles generated based on the provided configuration file.
    * @return a vector containing the generated particles.
    */
   std::vector<ParticleType> getParticles() { return _particles; }
@@ -134,14 +136,31 @@ class MDFlexConfig {
    * @return the ParticlePropertiesLibrary
    */
   std::shared_ptr<ParticlePropertiesLibraryType> getParticlePropertiesLibrary() { return _particlePropertiesLibrary; }
+
   /**
-   * Adds parameters to all relevant particle property attributes and checks if the type already exists.
-   * @param typeId
+   * Adds parameters of a LJ site and checks if the siteId already exists.
+   *
+   * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
+   *
+   * @param siteId unique site type id
    * @param epsilon
    * @param sigma
    * @param mass
    */
-  void addParticleType(unsigned long typeId, double epsilon, double sigma, double mass);
+  void addSiteType(unsigned long siteId, double epsilon, double sigma, double mass);
+
+  /**
+   * Adds site positions and types for a given molecule type and checks if the molId already exists
+   *
+   * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
+   *
+   * @param molId unique mol type id
+   * @param siteIds vector of ids of site types
+   * @param relSitePos vector of relative site positions
+   * @param momentOfInertia diagonalized moment of inertia as a length 3 array of double representing diagonal elements
+   */
+  void addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
+                  const std::vector<std::array<double, 3>> &relSitePos, std::array<double, 3> momentOfInertia);
 
   /**
    * Flushes the particles.
@@ -207,7 +226,7 @@ class MDFlexConfig {
       "List of traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllOptions(), " ", {"(", ")"})};
   /**
-   * traversalOptions
+   * loadEstimatorOptions
    */
   MDFlexOption<std::set<autopas::LoadEstimatorOption>, __LINE__> loadEstimatorOptions{
       autopas::LoadEstimatorOption::getMostOptions(), "load-estimator", true,
@@ -239,19 +258,34 @@ class MDFlexConfig {
       "Log level for AutoPas. Set to debug for tuning information. "
       "Possible Values: (trace debug info warn error critical off)"};
   /**
-   * tuningStrategyOption
+   * tuningStrategyOptions
    */
-  MDFlexOption<autopas::TuningStrategyOption, __LINE__> tuningStrategyOption{
-      autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
-      "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
+  MDFlexOption<std::vector<autopas::TuningStrategyOption>, __LINE__> tuningStrategyOptions{
+      {},
+      "tuning-strategies",
+      true,
+      "Ordered pipeline of strategies to find the optimal algorithmic configuration. "
+      "Leave empty to perform an exhaustive search. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(
+              []() {
+                auto options = autopas::TuningStrategyOption::getAllOptions();
+                options.erase(autopas::TuningStrategyOption::fullSearch);
+                return options;
+              }(),
+              " ", {"(", ")"})};
   /**
-   * mpiStrategyOption
+   * tuningMetricOption
    */
-  MDFlexOption<autopas::MPIStrategyOption, __LINE__> mpiStrategyOption{
-      autopas::MPIStrategyOption::noMPI, "mpi-strategy", true,
-      "Whether to tune using with MPI or not. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::MPIStrategyOption::getAllOptions(), " ", {"(", ")"})};
+  MDFlexOption<autopas::TuningMetricOption, __LINE__> tuningMetricOption{
+      autopas::TuningMetricOption::time, "tuning-metric", true,
+      "Metric to use for tuning. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * ruleFilename
+   */
+  MDFlexOption<std::string, __LINE__> ruleFilename{
+      "", "rule-filename", true, "Path to a .rule file containing rules for the rule-based tuning method."};
 
   /**
    * MPITuningMaxDifferenceForBucket
@@ -303,10 +337,9 @@ class MDFlexConfig {
    * relativeBlacklistRange
    */
   MDFlexOption<double, __LINE__> relativeBlacklistRange{
-      0, "relative-blacklist-range", true,
-      "For predictive based tuning strategies: When the first evidence of a configuration is further away from the "
-      "optimum than this relative range, the configuration is ignored for the rest of the simulation. Set to zero to "
-      "disable blacklisting."};
+      3., "relative-blacklist-range", true,
+      "For Slow Config Filter: When the first evidence of a configuration is further away from the "
+      "optimum than this relative range, the configuration is ignored for the rest of the simulation."};
   /**
    * evidenceFirstPrediction
    */
@@ -364,7 +397,7 @@ class MDFlexConfig {
   /**
    * fastParticleWarning
    */
-   MDFlexOption<bool, __LINE__> fastParticleWarn{true, "fast-particle-warn", false, "Decide if particles that move farther than skin/2/rebuildFrequency "
+   MDFlexOption<bool, __LINE__> fastParticlesWarn{true, "fast-particles-warn", false, "Decide if particles that move farther than skin/2/rebuildFrequency "
                                                 "will trigger a console warning during the position update or not."};
 
   /**
@@ -463,21 +496,6 @@ class MDFlexConfig {
    */
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
-  /**
-   * epsilonMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
-      {{0ul, 1.}}, "particle-epsilon", true, "Mapping from particle type to an epsilon value."};
-  /**
-   * sigmaMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
-      {{0ul, 1.}}, "particle-sigma", true, "Mapping from particle type to a sigma value."};
-  /**
-   * massMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> massMap{
-      {{0ul, 1.}}, "particle-mass", true, "Mapping from particle type to a mass value."};
 
   // Options for additional Object Generation on command line
   /**
@@ -520,23 +538,75 @@ class MDFlexConfig {
       GeneratorOption::grid, "particle-generator", true,
       "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
 
+  // Site Type Generation
+  /**
+   * siteStr
+   */
+  static inline const char *const siteStr{"Sites"};
+  /**
+   * epsilonMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
+      {{0ul, 1.}}, "epsilon", true, "Mapping from site type to an epsilon value."};
+  /**
+   * sigmaMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
+      {{0ul, 1.}}, "sigma", true, "Mapping from site type to a sigma value."};
+  /**
+   * massMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> massMap{
+      {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+  // Molecule Type Generation
+  // Strings for parsing yaml files.
+  /**
+   * moleculesStr
+   */
+  static inline const char *const moleculesStr{"Molecules"};
+  /**
+   * moleculeToSiteIdStr
+   */
+  static inline const char *const moleculeToSiteIdStr{"site-types"};
+  /**
+   * moleculeToSitePosStr
+   */
+  static inline const char *const moleculeToSitePosStr{"relative-site-positions"};
+  /**
+   * momentOfInertiaStr
+   */
+  static inline const char *const momentOfInertiaStr{"moment-of-inertia"};
+  // Maps where the molecule type information is actually stored
+  /**
+   * molToSiteIdMap
+   */
+  std::map<unsigned long, std::vector<unsigned long>> molToSiteIdMap{};
+  /**
+   * molToSitePosMap
+   */
+  std::map<unsigned long, std::vector<std::array<double, 3>>> molToSitePosMap{};
+  /**
+   * momentOfInertiaMap
+   */
+  std::map<unsigned long, std::array<double, 3>> momentOfInertiaMap{};
   // Object Generation:
   /**
    * objectsStr
    */
-  static inline const char *objectsStr{"Objects"};
+  static inline const char *const objectsStr{"Objects"};
+  /**
+   * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is
+   * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
+   */
+  static inline const char *const particleTypeStr{"particle-type-id"};
   /**
    * bottomLeftBackCornerStr
    */
-  static inline const char *bottomLeftBackCornerStr{"bottomLeftCorner"};
+  static inline const char *const bottomLeftBackCornerStr{"bottomLeftCorner"};
   /**
    * velocityStr
    */
   static inline const char *const velocityStr{"velocity"};
-  /**
-   * particleTypeStr
-   */
-  static inline const char *const particleTypeStr{"particle-type"};
   /**
    * particlesPerObjectStr
    */
@@ -663,6 +733,20 @@ class MDFlexConfig {
       "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
       "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
+
+  /**
+   * Whether to use the tuning logger or not.
+   *
+   * @see TuningStrategyLoggerProxy
+   */
+  MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true,
+                                               "If tuning information should be logged. Possible Values: (true false)"};
+
+  /**
+   * The suffix for files created by the tuning logger.
+   */
+  MDFlexOption<std::string, __LINE__> outputSuffix{"", "output-suffix", true,
+                                                   "An identifier that is contained in the filename of all log files."};
 
   /**
    * valueOffset used for cli-output alignment

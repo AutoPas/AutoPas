@@ -43,7 +43,7 @@ void LinkedCellsTest<TestingType>::checkParticleIDsInCells(
     if (auto iter = expectedParticleIDsInCells.find(i); iter != expectedParticleIDsInCells.end()) {
       auto expectedIDs = iter->second;
       auto expectedNumParticles = expectedIDs.size();
-      ASSERT_EQ(linkedCells.getCells()[i].numParticles(), expectedNumParticles) << "called from line: " << line;
+      ASSERT_EQ(linkedCells.getCells()[i].size(), expectedNumParticles) << "called from line: " << line;
 
       std::vector<int> foundIDs;
       {
