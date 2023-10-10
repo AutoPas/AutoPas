@@ -235,6 +235,7 @@ class ParticlePropertiesLibrary {
     return _computedMixingData[i * _numRegisteredSiteTypes + j].shift6;
   }
 
+
   /**
    * Calculate the shift multiplied 6 of the lennard jones potential from given cutoff, epsilon, sigma.
    * The shift * 6 is then added to the total potential energy for every pairwise interaction within the cutoff.
@@ -245,10 +246,25 @@ class ParticlePropertiesLibrary {
    */
   static double calcShift6(double epsilon24, double sigmaSquared, double cutoffSquared);
 
+  /**
+   * Calculate the shift multiplied 6 of the mie potential from given cutoff, epsilon, sigma, C, n, m.
+   * The shift * 6 is then added to the total potential energy for every pairwise interaction within the cutoff.
+   * @param epsilon24 epsilon * 24
+   * @param sigmaSquared sigma squared
+   * @param cutoffSquared squared cutoff of the lennard-jones potential
+   * @return shift multiplied by 6
+   */
+  static double calcShiftMie(double cepsilon, double sigmaSquared, double cutoffSquared, size_t n, size_t m);
+
+
+
  private:
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
   const double _cutoff;
+  double _epsilon_coeff = 24;
+  const size_t _n_exp = 12;
+  const size_t _m_exp = 6;
 
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
@@ -350,7 +366,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
       // epsilon
-      const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      const floatType epsilon24 = _epsilon_coeff * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
       _computedMixingData[globalIndex].epsilon24 = epsilon24;
 
       // sigma
@@ -359,6 +375,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
       // shift6
+      //TODO: test for LJ or Mie, and return accordingly!
       const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
       _computedMixingData[globalIndex].shift6 = shift6;
     }
@@ -452,3 +469,30 @@ double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon2
   const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
   return shift6;
 }
+
+
+template <typename floatType, typename intType>
+double ParticlePropertiesLibrary<floatType, intType>::calcShiftMie(double cepsilon, double sigmaSquared,
+                                                                 double cutoffSquared, size_t n, size_t m) {
+  const auto sigmaDivCutoffPow2 = sigmaSquared / cutoffSquared;
+
+  double sigmaDivCutoffPowm = 1;
+  if(m % 2 == 1){
+    sigmaDivCutoffPowm = sqrt(sigmaDivCutoffPow2);
+  }
+
+  for(size_t k = 1; k < m;k+=2) {
+    sigmaDivCutoffPowm *= sigmaDivCutoffPow2;
+  }
+
+  double sigmaDivCutoffPown = 1;
+  if(n % 2 == 1){
+    sigmaDivCutoffPown = sqrt(sigmaDivCutoffPow2);
+  }
+  for(size_t k = 1; k< n;k+=2) {
+    sigmaDivCutoffPown *= sigmaDivCutoffPow2;
+  }
+  const auto shift6 = 6*cepsilon * (sigmaDivCutoffPowm - sigmaDivCutoffPown);
+  return shift6;
+}
+
