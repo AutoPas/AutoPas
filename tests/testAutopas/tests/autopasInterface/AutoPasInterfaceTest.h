@@ -81,6 +81,8 @@ static inline auto getTestableContainerOptions() { return autopas::ContainerOpti
  */
 template <class Container>
 std::vector<typename Container::Particle_t> addParticlesMinMidMax(Container &container) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   constexpr size_t numParticles = 3;
   std::vector<typename Container::Particle_t> addedParticles;
   addedParticles.reserve(numParticles);
@@ -88,7 +90,7 @@ std::vector<typename Container::Particle_t> addParticlesMinMidMax(Container &con
   // helper for Positions
   auto nearBoxMin = autopas::utils::ArrayMath::add(container.getBoxMin(), {0.1, 0.1, 0.1});
   auto nearBoxMax = autopas::utils::ArrayMath::sub(container.getBoxMax(), {0.1, 0.1, 0.1});
-  auto nearBoxLength = autopas::utils::ArrayMath::sub(nearBoxMax, nearBoxMin);
+  auto nearBoxLength = nearBoxMax - nearBoxMin;
 
   for (size_t i = 0; i < numParticles; ++i) {
     // place 3 particles:
@@ -99,8 +101,7 @@ std::vector<typename Container::Particle_t> addParticlesMinMidMax(Container &con
     // factor for relative positioning in the domain of the i-th particle
     constexpr double scalingFactor = 1. / (numParticles - 1);
     // boxMin + i/scalingFactor * boxMax
-    auto pos = autopas::utils::ArrayMath::add(nearBoxMin,
-                                              autopas::utils::ArrayMath::mulScalar(nearBoxLength, i * scalingFactor));
+    auto pos = nearBoxMin + (nearBoxLength * (i * scalingFactor));
     typename Container::Particle_t particle(pos, {0., 0., 0.}, 1);
     container.addParticle(particle);
     addedParticles.push_back(particle);

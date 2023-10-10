@@ -56,13 +56,15 @@ class TraversalTest
     bool allowsNonNewton3() override { return true; }
 
     void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+      using namespace autopas::utils::ArrayMath::literals;
+
       if (i.isDummy() or j.isDummy()) {
         return;
       }
       const auto coordsI = i.getR();
       const auto coordsJ = j.getR();
 
-      std::array<double, 3> dr = autopas::utils::ArrayMath::sub(coordsI, coordsJ);
+      std::array<double, 3> dr = coordsI - coordsJ;
       const double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
       if (dr2 > _cutoffSquare) return;

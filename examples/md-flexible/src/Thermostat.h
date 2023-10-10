@@ -30,13 +30,14 @@ namespace {
 void addMaxwellBoltzmannDistributedVelocity(ParticleType &p, const double averageVelocity,
                                             std::default_random_engine &randomEngine,
                                             std::normal_distribution<double> &normalDistribution) {
+  using namespace autopas::utils::ArrayMath::literals;
   // when adding independent normally distributed values to all velocity components
   // the velocity change is maxwell boltzmann distributed
   std::array<double, 3> randomVelocity{};
   for (double &v : randomVelocity) {
     v = averageVelocity * normalDistribution(randomEngine);
   }
-  p.setV(autopas::utils::ArrayMath::add(p.getV(), randomVelocity));
+  p.setV(p.getV() + randomVelocity);
 }
 }  // namespace
 
@@ -186,6 +187,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
+  using namespace autopas::utils::ArrayMath::literals;
   const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
   // make sure we work with a positive delta
@@ -208,7 +210,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 #pragma omp parallel default(none) shared(autopas, scalingMap)
 #endif
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-    iter->setV(autopas::utils::ArrayMath::mulScalar(iter->getV(), scalingMap[iter->getTypeId()]));
+    iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
   }
 }
 }  // namespace Thermostat

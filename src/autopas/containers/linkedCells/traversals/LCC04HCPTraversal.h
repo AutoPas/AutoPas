@@ -44,7 +44,8 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
-        _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension), 1l)) {}
+        _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
+                                         1l)) {}
 
   void traverseParticlePairs() override;
 
@@ -77,7 +78,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::p
     std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index{};
-  const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_array<long>(this->_cellsPerDimension);
+  const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension);
 
   // go through the six cells
   for (long z = 0; z < 3; ++z) {

@@ -117,6 +117,7 @@ class LJFunctorAVX
   }
 
   inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -130,7 +131,7 @@ class LJFunctorAVX
         shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
       }
     }
-    auto dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    auto dr = i.getR() - j.getR();
     double dr2 = utils::ArrayMath::dot(dr, dr);
 
     if (dr2 > _cutoffsquareAoS) {
@@ -143,30 +144,30 @@ class LJFunctorAVX
     double lj12 = lj6 * lj6;
     double lj12m6 = lj12 - lj6;
     double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = utils::ArrayMath::mulScalar(dr, fac);
+    auto f = dr * fac;
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
     if (calculateGlobals) {
-      auto virial = utils::ArrayMath::mul(dr, f);
+      auto virial = dr * f;
       double upot = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas_get_thread_num();
       // for non-newton3 the division is in the post-processing step.
       if (newton3) {
         upot *= 0.5;
-        virial = utils::ArrayMath::mulScalar(virial, (double)0.5);
+        virial *= (double)0.5;
       }
       if (i.isOwned()) {
         _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+        _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         _aosThreadData[threadnum].upotSum += upot;
-        _aosThreadData[threadnum].virialSum = utils::ArrayMath::add(_aosThreadData[threadnum].virialSum, virial);
+        _aosThreadData[threadnum].virialSum += virial;
       }
     }
   }
@@ -559,7 +560,7 @@ class LJFunctorAVX
     fzacc = _mm256_add_pd(fzacc, fz);
 
     // if newton 3 is used subtract fD from particle j
-    if (newton3) {
+    if constexpr (newton3) {
       const __m256d fx2 =
           remainderIsMasked ? _mm256_maskload_pd(&fx2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&fx2ptr[j]);
       const __m256d fy2 =
@@ -579,7 +580,7 @@ class LJFunctorAVX
                         : _mm256_storeu_pd(&fz2ptr[j], fz2new);
     }
 
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       // Global Virial
       const __m256d virialX = _mm256_mul_pd(fx, drx);
       const __m256d virialY = _mm256_mul_pd(fy, dry);
@@ -675,8 +676,11 @@ class LJFunctorAVX
 
     // load 4 neighbors
     size_t j = 0;
+    // Loop over all neighbors as long as we can fill full vectors
+    // (until `neighborList.size() - neighborList.size() % vecLength`)
+    //
     // If b is a power of 2 the following holds:
-    // a & ~(b -1) == a - (a mod b)
+    // a & ~(b - 1) == a - (a mod b)
     for (; j < (neighborList.size() & ~(vecLength - 1)); j += vecLength) {
       // AVX2 variant:
       // create buffer for 4 interaction particles
@@ -693,9 +697,11 @@ class LJFunctorAVX
         x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
         y2tmp[vecIndex] = yptr[neighborList[j + vecIndex]];
         z2tmp[vecIndex] = zptr[neighborList[j + vecIndex]];
-        fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
-        fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
-        fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        if constexpr (newton3) {
+          fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
+          fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
+          fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        }
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
@@ -705,7 +711,7 @@ class LJFunctorAVX
                                 &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
                                 &virialSumY, &virialSumZ, &upotSum, 0);
 
-      if (newton3) {
+      if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
           fxptr[neighborList[j + vecIndex]] = fx2tmp[vecIndex];
           fyptr[neighborList[j + vecIndex]] = fy2tmp[vecIndex];
@@ -713,9 +719,10 @@ class LJFunctorAVX
         }
       }
     }
+    // Remainder loop
     // If b is a power of 2 the following holds:
-    // a & (b -1) == a mod b
-    const int rest = (int)(neighborList.size() & (vecLength - 1));
+    // a & (b - 1) == a mod b
+    const auto rest = static_cast<int>(neighborList.size() & (vecLength - 1));
     if (rest > 0) {
       // AVX2 variant:
       // create buffer for 4 interaction particles
@@ -733,9 +740,12 @@ class LJFunctorAVX
         x2tmp[vecIndex] = xptr[neighborList[j + vecIndex]];
         y2tmp[vecIndex] = yptr[neighborList[j + vecIndex]];
         z2tmp[vecIndex] = zptr[neighborList[j + vecIndex]];
-        fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
-        fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
-        fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        // if newton3 is used we need to load f of particle j so the kernel can update it too
+        if constexpr (newton3) {
+          fx2tmp[vecIndex] = fxptr[neighborList[j + vecIndex]];
+          fy2tmp[vecIndex] = fyptr[neighborList[j + vecIndex]];
+          fz2tmp[vecIndex] = fzptr[neighborList[j + vecIndex]];
+        }
         typeID2tmp[vecIndex] = typeIDptr[neighborList[j + vecIndex]];
         ownedStates2tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
@@ -745,7 +755,7 @@ class LJFunctorAVX
                                &typeIDptr[indexFirst], typeID2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
                                &virialSumZ, &upotSum, rest);
 
-      if (newton3) {
+      if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
           fxptr[neighborList[j + vecIndex]] = fx2tmp[vecIndex];
           fyptr[neighborList[j + vecIndex]] = fy2tmp[vecIndex];
@@ -873,6 +883,8 @@ class LJFunctorAVX
    * @param newton3
    */
   void endTraversal(bool newton3) final {
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (_postProcessed) {
       throw utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
@@ -881,13 +893,13 @@ class LJFunctorAVX
     if (calculateGlobals) {
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
         _upotSum += _aosThreadData[i].upotSum;
-        _virialSum = utils::ArrayMath::add(_virialSum, _aosThreadData[i].virialSum);
+        _virialSum += _aosThreadData[i].virialSum;
       }
       if (not newton3) {
         // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
         // here.
         _upotSum *= 0.5;
-        _virialSum = utils::ArrayMath::mulScalar(_virialSum, 0.5);
+        _virialSum *= 0.5;
       }
       // we have always calculated 6*upot, so we divide by 6 here!
       _upotSum /= 6.;

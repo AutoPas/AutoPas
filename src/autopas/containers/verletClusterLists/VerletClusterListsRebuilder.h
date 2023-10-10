@@ -80,6 +80,8 @@ class VerletClusterListsRebuilder {
    * }
    */
   auto rebuildTowersAndClusters() {
+    using namespace autopas::utils::ArrayMath::literals;
+
     auto invalidParticles = collectAllParticlesFromTowers();
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
@@ -88,7 +90,7 @@ class VerletClusterListsRebuilder {
     size_t numParticles = std::accumulate(std::begin(invalidParticles), std::end(invalidParticles), 0,
                                           [](auto acc, auto &v) { return acc + v.size(); });
 
-    auto boxSizeWithHalo = utils::ArrayMath::sub(_haloBoxMax, _haloBoxMin);
+    auto boxSizeWithHalo = _haloBoxMax - _haloBoxMin;
 
     _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSizeWithHalo, _clusterSize);
     _towerSideLengthReciprocal = 1 / _towerSideLength;

@@ -133,6 +133,7 @@ template <typename LoopBody>
 inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::cTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
+  using namespace autopas::utils::ArrayMath::literals;
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel
 #endif
@@ -147,8 +148,8 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
         notifyColorChange(col);
         // implicit barrier at end of function.
       }
-      std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
-      std::array<unsigned long, 3> start(utils::ArrayMath::add(startWithoutOffset, offset));
+      const std::array<unsigned long, 3> startWithoutOffset(utils::ThreeDimensionalMapping::oneToThreeD(col, stride));
+      const std::array<unsigned long, 3> start(startWithoutOffset + offset);
 
       // intel compiler demands following:
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];

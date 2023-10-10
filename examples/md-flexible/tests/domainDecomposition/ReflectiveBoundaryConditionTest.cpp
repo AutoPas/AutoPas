@@ -20,6 +20,8 @@ extern template class autopas::AutoPas<ParticleType>;
  * the particle receives the correct force.
  */
 TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   // initialise AutoPas container & domainDecomposition
   MDFlexConfig config(0, nullptr);
   config.epsilonMap.value.clear();
@@ -31,7 +33,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
 
   config.boxMin.value = boxMin;
   config.boxMax.value = boxMax;
-  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
+  const std::array<double, 3> boxLength = boxMax - boxMin;
   config.subdivideDimension.value = {true, true, true};
   const double cutoff = 0.3;
   config.cutoff.value = cutoff;
@@ -62,7 +64,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   const std::array<double, 3> particleVelocity = std::get<1>(GetParam());
 
   // derive expected position
-  auto forceFromReflection = [&](const std::array<double, 3> position, const int dimensionOfBoundary,
+  auto forceFromReflection = [&](const std::array<double, 3> &position, const int dimensionOfBoundary,
                                  const bool isUpper) {
     const auto distanceToBoundary = isUpper ? boxMax[dimensionOfBoundary] - position[dimensionOfBoundary]
                                             : position[dimensionOfBoundary] - boxMin[dimensionOfBoundary];
@@ -173,7 +175,8 @@ INSTANTIATE_TEST_SUITE_P(
  * @param particlePosition
  * @param particleType Must be either 0 or 1. 0 corresponds to a sigma of 0.1, 1 corresponds to a sigma of 0.2.
  */
-void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, int particleTypeID) {
+void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition, int particleTypeID) {
+  using namespace autopas::utils::ArrayMath::literals;
   if (particleTypeID != 0 and particleTypeID != 1) {
     std::cerr << "testReflectiveBoundaryZoning only takes particle types of 0 or 1 only!";
   }
@@ -189,7 +192,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> particlePosition, 
 
   config.boxMin.value = boxMin;
   config.boxMax.value = boxMax;
-  const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
+  const std::array<double, 3> boxLength = boxMax - boxMin;
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = cutoff;
   config.verletSkinRadiusPerTimestep.value = 0.01;

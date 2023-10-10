@@ -206,7 +206,7 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
 }
 
 template <class Container, class Particle>
-bool moveUpdateAndExpectEqual(Container &container, Particle &particle, std::array<double, 3> newPosition) {
+bool moveUpdateAndExpectEqual(Container &container, Particle &particle, const std::array<double, 3> &newPosition) {
   particle.setR(newPosition);
   bool updated = container.updateHaloParticle(particle);
   if (updated) {

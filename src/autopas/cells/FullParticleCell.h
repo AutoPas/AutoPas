@@ -49,7 +49,7 @@ class FullParticleCell : public ParticleCell<Particle> {
   explicit FullParticleCell(const std::array<double, 3> &cellLength) : _cellLength(cellLength) {}
 
   void addParticle(const Particle &p) override {
-    std::lock_guard guard(this->_cellLock);
+    std::lock_guard<AutoPasLock> guard(this->_cellLock);
     _particles.push_back(p);
   }
 

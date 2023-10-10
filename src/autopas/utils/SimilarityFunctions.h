@@ -26,8 +26,8 @@ namespace autopas::utils {
  */
 template <class Container>
 std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container,
-                                                            const std::array<double, 3> startCorner,
-                                                            const std::array<double, 3> endCorner) {
+                                                            const std::array<double, 3> &startCorner,
+                                                            const std::array<double, 3> &endCorner) {
   unsigned int numberOfParticles = static_cast<unsigned int>(container.getNumberOfParticles());
   autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_INT, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);

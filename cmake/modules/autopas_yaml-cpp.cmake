@@ -25,13 +25,13 @@ message(STATUS "yaml-cpp - using bundled version 0.7.0 (release)")
 # Enable FetchContent CMake module
 include(FetchContent)
 
-# Build spdlog and make the cmake targets available
+# Build yaml-cpp and make the cmake targets available
 FetchContent_Declare(
     yaml-cpp
     URL
         # yaml-cpp-master:
-        # https://github.com/jbeder/yaml-cpp/archive/master.zip
-        # commit 72f699f:
+        # https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.7.0.zip
+        # commit 0579ae3:
         ${AUTOPAS_SOURCE_DIR}/libs/yaml-cpp-0.7.0.zip
     URL_HASH MD5=1e8ca0d6ccf99f3ed9506c1f6937d0ec
     # needed to compile with ninja

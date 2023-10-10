@@ -50,7 +50,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
   void processCellListsC08(VLCCellPairNeighborList<typename ParticleCell::ParticleType> &neighborList,
                            unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value layout,
                            SoA<typename ParticleCell::ParticleType::SoAArraysType> *soa,
-                           std::array<unsigned long, 3> dims) {
+                           const std::array<unsigned long, 3> &dims) {
     const auto &aosNeighborList = neighborList.getAoSNeighborList();
     const auto &soaNeighborList = neighborList.getSoANeighborList();
     const auto &globalToLocalIndex = neighborList.getGlobalToLocalMap();

@@ -19,7 +19,7 @@ enum class OwnershipState : int64_t {
   /// Dummy or deleted state, a particle with this state is not an actual particle!
   /// @note LJFunctorAVX requires that the Dummy state should always be the integer zero and the state with the lowest
   /// value.
-  dummy = 0b000,  // 0
+  dummy = 0b0000,  // 0
   /// Owned state, a particle with this state is an actual particle and owned by the current AutoPas object!
   owned = 0b0001,  // 1
   /// Halo state, a particle with this state is an actual particle, but not owned by the current AutoPas object!

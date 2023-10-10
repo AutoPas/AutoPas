@@ -13,8 +13,8 @@
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
   auto autoPas = autopas::AutoPas<Molecule>(std::cout);
-  std::array<double, 3> boxmin = {5., 5., 5.};
-  std::array<double, 3> boxmax = {10., 10., 10.};
+  const std::array<double, 3> boxmin = {5., 5., 5.};
+  const std::array<double, 3> boxmax = {10., 10., 10.};
   autoPas.setBoxMax(boxmax);
   autoPas.setBoxMin(boxmin);
   Molecule dummy;
@@ -53,7 +53,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   int sphereCounter = 0;
   int closestCounter = 0;
 
-  std::array<double, 3> velocity = {0., 0., 0.};
+  const std::array<double, 3> velocity = {0., 0., 0.};
   for (auto &particle : configuration.getParticles()) {
     EXPECT_EQ(velocity, particle.getV());  // velocity set to {0.,0.,0.} in parsingFile
     switch (particle.getTypeId()) {

@@ -122,7 +122,7 @@ class SoA {
    * @param values
    */
   template <int... attributes, size_t N = sizeof...(attributes)>
-  inline void writeMultiple(size_t particleId, std::array<double, N> values) {
+  inline void writeMultiple(size_t particleId, const std::array<double, N> &values) {
     write_impl<attributes...>(particleId, values);
   }
 

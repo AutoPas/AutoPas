@@ -55,10 +55,12 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
    * @copydoc Functor::AoSFunctor()
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto dist = utils::ArrayMath::sub(i.getR(), j.getR());
+    auto dist = i.getR() - j.getR();
     double distsquare = utils::ArrayMath::dot(dist, dist);
     if (distsquare < _cutoffskinsquared) {
       // this is thread safe, only if particle i is accessed by only one

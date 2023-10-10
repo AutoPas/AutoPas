@@ -28,7 +28,7 @@ class MoleculeLJ final : public Particle {
    * @param moleculeId Id of the molecule.
    * @param typeId TypeId of the molecule.
    */
-  explicit MoleculeLJ(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long moleculeId,
+  explicit MoleculeLJ(const std::array<floatType, 3> &pos, const std::array<floatType, 3> &v, unsigned long moleculeId,
                       unsigned long typeId = 0)
       : Particle(pos, v, moleculeId), _typeId(typeId) {}
 
@@ -167,7 +167,7 @@ class MoleculeLJ final : public Particle {
    * Get the old force.
    * @return
    */
-  [[nodiscard]] std::array<double, 3> getOldF() const { return _oldF; }
+  [[nodiscard]] const std::array<double, 3> &getOldF() const { return _oldF; }
 
   /**
    * Set old force.

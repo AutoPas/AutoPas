@@ -91,6 +91,8 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     auto *haloWrapper = this->getHalo();
 
     // Get neighboring cells for each leaf
@@ -108,8 +110,8 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
       }
 
       // Process particles in halo cell that are in range
-      auto min = utils::ArrayMath::subScalar(leaf->getBoxMin(), this->_interactionLength);
-      auto max = utils::ArrayMath::addScalar(leaf->getBoxMax(), this->_interactionLength);
+      auto min = leaf->getBoxMin() - this->_interactionLength;
+      auto max = leaf->getBoxMax() + this->_interactionLength;
       auto haloNeighbors = haloWrapper->getLeavesInRange(min, max);
 
       for (OctreeLeafNode<Particle> *neighborLeaf : haloNeighbors) {

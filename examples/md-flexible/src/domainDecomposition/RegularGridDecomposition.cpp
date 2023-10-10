@@ -348,12 +348,14 @@ std::vector<ParticleType> RegularGridDecomposition::sendAndReceiveParticlesLeftA
 std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(AutoPasType &autoPasContainer,
                                                                                         size_t direction) {
   using autopas::utils::Math::isNear;
+  using namespace autopas::utils::ArrayMath::literals;
+
   std::vector<ParticleType> haloParticles{};
   // Calculate halo box for left neighbor
   const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const std::array<double, _dimensionCount> boxMin = autopas::utils::ArrayMath::subScalar(_localBoxMin, skinWidth);
+  const std::array<double, _dimensionCount> boxMin = _localBoxMin - skinWidth;
   const std::array<double, _dimensionCount> boxMax = [&]() {
-    auto boxMax = autopas::utils::ArrayMath::addScalar(_localBoxMax, skinWidth);
+    auto boxMax = _localBoxMax + skinWidth;
     boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + skinWidth;
     return boxMax;
   }();
@@ -376,12 +378,14 @@ std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForLeftN
 std::vector<ParticleType> RegularGridDecomposition::collectHaloParticlesForRightNeighbor(AutoPasType &autoPasContainer,
                                                                                          size_t direction) {
   using autopas::utils::Math::isNear;
+  using namespace autopas::utils::ArrayMath::literals;
+
   std::vector<ParticleType> haloParticles;
   // Calculate left halo box of right neighbor
   const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const std::array<double, _dimensionCount> boxMax = autopas::utils::ArrayMath::addScalar(_localBoxMax, skinWidth);
+  const std::array<double, _dimensionCount> boxMax = _localBoxMax + skinWidth;
   const std::array<double, _dimensionCount> boxMin = [&]() {
-    auto boxMin = autopas::utils::ArrayMath::subScalar(_localBoxMin, skinWidth);
+    auto boxMin = _localBoxMin - skinWidth;
     boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - skinWidth;
     return boxMin;
   }();
@@ -405,8 +409,8 @@ std::tuple<std::vector<ParticleType>, std::vector<ParticleType>, std::vector<Par
 RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std::vector<ParticleType> &particles,
                                                                       size_t direction) {
   using autopas::utils::Math::isNear;
-  const std::array<double, _dimensionCount> globalBoxLength =
-      autopas::utils::ArrayMath::sub(_globalBoxMax, _globalBoxMin);
+  using namespace autopas::utils::ArrayMath::literals;
+  const std::array<double, _dimensionCount> globalBoxLength = _globalBoxMax - _globalBoxMin;
 
   // The chosen size is the best guess based on the particles vector being distributed into three other vectors.
   const auto sizeEstimate = particles.size() / 3;

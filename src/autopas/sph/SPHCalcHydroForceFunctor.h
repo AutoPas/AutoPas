@@ -42,10 +42,12 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
    * @param newton3 defines whether or whether not to use newton 3
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3 = true) override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    const std::array<double, 3> dr = utils::ArrayMath::sub(i.getR(), j.getR());
+    const std::array<double, 3> dr = i.getR() - j.getR();
     // const PS::F64vec dr = ep_i[i].pos - ep_j[j].pos;
 
     double cutoff = i.getSmoothingLength() * autopas::sph::SPHKernels::getKernelSupportRadius();
@@ -54,7 +56,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       return;
     }
 
-    const std::array<double, 3> dv = utils::ArrayMath::sub(i.getV(), j.getV());
+    const std::array<double, 3> dv = i.getV() - j.getV();
     // const PS::F64vec dv = ep_i[i].vel - ep_j[j].vel;
 
     double dvdr = utils::ArrayMath::dot(dv, dr);
@@ -74,20 +76,18 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
     // ep_j[j].dens));
 
     const std::array<double, 3> gradW_ij =
-        utils::ArrayMath::mulScalar(utils::ArrayMath::add(SPHKernels::gradW(dr, i.getSmoothingLength()),
-                                                          SPHKernels::gradW(dr, j.getSmoothingLength())),
-                                    0.5);
+        (SPHKernels::gradW(dr, i.getSmoothingLength()) + SPHKernels::gradW(dr, j.getSmoothingLength())) * 0.5;
     // const PS::F64vec gradW_ij = 0.5 * (gradW(dr, ep_i[i].smth) + gradW(dr,
     // ep_j[j].smth));
 
     double scale =
         i.getPressure() / (i.getDensity() * i.getDensity()) + j.getPressure() / (j.getDensity() * j.getDensity()) + AV;
-    i.subAcceleration(utils::ArrayMath::mulScalar(gradW_ij, scale * j.getMass()));
+    i.subAcceleration(gradW_ij * (scale * j.getMass()));
     // hydro[i].acc     -= ep_j[j].mass * (ep_i[i].pres / (ep_i[i].dens *
     // ep_i[i].dens) + ep_j[j].pres / (ep_j[j].dens * ep_j[j].dens) + AV) *
     // gradW_ij;
     if (newton3) {
-      j.addAcceleration(utils::ArrayMath::mulScalar(gradW_ij, scale * i.getMass()));
+      j.addAcceleration(gradW_ij * (scale * i.getMass()));
       // Newton3, gradW_ij = -gradW_ji
     }
     double scale2i = j.getMass() * (i.getPressure() / (i.getDensity() * i.getDensity()) + 0.5 * AV);
@@ -107,6 +107,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
+    using namespace autopas::utils::ArrayMath::literals;
     if (soa.getNumberOfParticles() == 0) return;
 
     double *const __restrict massptr = soa.template begin<Particle::AttributeNames::mass>();
@@ -145,6 +146,8 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       // g++ only with -ffast-math or -funsafe-math-optimizations
       //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
       for (unsigned int j = indexFirst + 1; j < soa.getNumberOfParticles(); ++j) {
+        using namespace autopas::utils::ArrayMath::literals;
+
         const double drx = xptr[indexFirst] - xptr[j];
         const double dry = yptr[indexFirst] - yptr[j];
         const double drz = zptr[indexFirst] - zptr[j];
@@ -179,9 +182,8 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
         // ep_j[j].dens));
 
         const std::array<double, 3> gradW_ij =
-            utils::ArrayMath::mulScalar(utils::ArrayMath::add(SPHKernels::gradW({drx, dry, drz}, smthptr[indexFirst]),
-                                                              SPHKernels::gradW({drx, dry, drz}, smthptr[j])),
-                                        0.5);
+            (SPHKernels::gradW({drx, dry, drz}, smthptr[indexFirst]) + SPHKernels::gradW({drx, dry, drz}, smthptr[j])) *
+            0.5;
         // const PS::F64vec gradW_ij = 0.5 * (gradW(dr, ep_i[i].smth) + gradW(dr,
         // ep_j[j].smth));
 
@@ -224,6 +226,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
    * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType>, SoAView<SoAArraysType>, bool)
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) override {
+    using namespace autopas::utils::ArrayMath::literals;
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
 
     double *const __restrict massptr1 = soa1.template begin<Particle::AttributeNames::mass>();
@@ -281,6 +284,8 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       // g++ only with -ffast-math or -funsafe-math-optimizations
       //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
       for (unsigned int j = 0; j < soa2.getNumberOfParticles(); ++j) {
+        using namespace autopas::utils::ArrayMath::literals;
+
         const double drx = xptr1[indexFirst] - xptr2[j];
         const double dry = yptr1[indexFirst] - yptr2[j];
         const double drz = zptr1[indexFirst] - zptr2[j];
@@ -315,10 +320,9 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
         // const PS::F64 AV = - 0.5 * v_sig * w_ij / (0.5 * (ep_i[i].dens +
         // ep_j[j].dens));
 
-        const std::array<double, 3> gradW_ij =
-            utils::ArrayMath::mulScalar(utils::ArrayMath::add(SPHKernels::gradW({drx, dry, drz}, smthptr1[indexFirst]),
-                                                              SPHKernels::gradW({drx, dry, drz}, smthptr2[j])),
-                                        0.5);
+        const std::array<double, 3> gradW_ij = (SPHKernels::gradW({drx, dry, drz}, smthptr1[indexFirst]) +
+                                                SPHKernels::gradW({drx, dry, drz}, smthptr2[j])) *
+                                               0.5;
         // const PS::F64vec gradW_ij = 0.5 * (gradW(dr, ep_i[i].smth) + gradW(dr,
         // ep_j[j].smth));
 
@@ -366,6 +370,7 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
   void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) override {
+    using namespace autopas::utils::ArrayMath::literals;
     if (soa.getNumberOfParticles() == 0) return;
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
@@ -406,6 +411,8 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
     // g++ only with -ffast-math or -funsafe-math-optimizations
     //#pragma omp simd reduction(+ : localengdotsum, localAccX, localAccY, localAccZ), reduction(max : localvsigmax)
     for (unsigned int j = 0; j < listSize; ++j) {
+      using namespace autopas::utils::ArrayMath::literals;
+
       const double drx = xptr[indexFirst] - xptr[currentList[j]];
       const double dry = yptr[indexFirst] - yptr[currentList[j]];
       const double drz = zptr[indexFirst] - zptr[currentList[j]];
@@ -441,10 +448,9 @@ class SPHCalcHydroForceFunctor : public Functor<Particle, SPHCalcHydroForceFunct
       // const PS::F64 AV = - 0.5 * v_sig * w_ij / (0.5 * (ep_i[i].dens +
       // ep_j[currentList[j]].dens));
 
-      const std::array<double, 3> gradW_ij = utils::ArrayMath::mulScalar(
-          utils::ArrayMath::add(SPHKernels::gradW({drx, dry, drz}, smthptr[indexFirst]),
-                                SPHKernels::gradW({drx, dry, drz}, smthptr[currentList[j]])),
-          0.5);
+      const std::array<double, 3> gradW_ij = (SPHKernels::gradW({drx, dry, drz}, smthptr[indexFirst]) +
+                                              SPHKernels::gradW({drx, dry, drz}, smthptr[currentList[j]])) *
+                                             0.5;
       // const PS::F64vec gradW_ij = 0.5 * (gradW(dr, ep_i[i].smth) + gradW(dr,
       // ep_j[currentList[j]].smth));
 

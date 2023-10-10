@@ -72,7 +72,8 @@ class CubeClosestPacked : public Object {
   [[nodiscard]] std::array<double, 3> getBoxMin() const override { return _bottomLeftCorner; }
 
   [[nodiscard]] std::array<double, 3> getBoxMax() const override {
-    return autopas::utils::ArrayMath::add(_bottomLeftCorner, _boxLength);
+    using namespace autopas::utils::ArrayMath::literals;
+    return _bottomLeftCorner + _boxLength;
   }
 
   /**

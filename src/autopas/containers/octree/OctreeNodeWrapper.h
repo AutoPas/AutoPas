@@ -58,7 +58,7 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    * @param cellSizeFactor The cell size factor
    */
-  OctreeNodeWrapper(std::array<double, 3> const &boxMin, std::array<double, 3> const &boxMax,
+  OctreeNodeWrapper(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                     int unsigned const treeSplitThreshold, double const interactionLength,
                     double const cellSizeFactor) {
     _pointer = std::make_unique<OctreeLeafNode<Particle>>(boxMin, boxMax, nullptr, treeSplitThreshold,
@@ -196,7 +196,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @return cell side length
    */
   [[nodiscard]] std::array<double, 3> getCellLength() const override {
-    return utils::ArrayMath::sub(_pointer->getBoxMin(), _pointer->getBoxMax());
+    using namespace autopas::utils::ArrayMath::literals;
+    return _pointer->getBoxMin() - _pointer->getBoxMax();
   }
 
   /**
@@ -249,7 +250,8 @@ class OctreeNodeWrapper : public ParticleCell<Particle> {
    * @param max The maximum coordinate in 3D space of the query area
    * @return A set of all leaf nodes that are in the query region
    */
-  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(std::array<double, 3> min, std::array<double, 3> max) {
+  std::set<OctreeLeafNode<Particle> *> getLeavesInRange(const std::array<double, 3> &min,
+                                                        const std::array<double, 3> &max) {
     return _pointer->getLeavesInRange(min, max);
   }
 

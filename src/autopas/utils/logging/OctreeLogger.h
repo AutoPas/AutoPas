@@ -342,7 +342,7 @@ class OctreeLogger {
    * @param min The minimum coordinate
    * @param max The maximum coordinate
    */
-  static void outLocationArrayJSON(FILE *out, std::array<double, 3> min, std::array<double, 3> max) {
+  static void outLocationArrayJSON(FILE *out, const std::array<double, 3> &min, const std::array<double, 3> &max) {
     fputc('[', out);
     out3(out, min[0], min[1], min[2]);
     fputc(',', out);
@@ -356,8 +356,8 @@ class OctreeLogger {
    * @param node An octree node to obtain the box minimum and maximum coordinates from
    */
   static void outBoxCoordinatesJSON(FILE *out, OctreeNodeInterface<Particle> *node) {
-    std::array<double, 3> min = node->getBoxMin();
-    std::array<double, 3> max = node->getBoxMax();
+    const auto min = node->getBoxMin();
+    const auto max = node->getBoxMax();
     outLocationArrayJSON(out, min, max);
   }
 

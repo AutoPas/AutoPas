@@ -53,7 +53,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @param skinPerTimestep
    * @param verletRebuildFrequency
    */
-  DirectSum(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, double cutoff,
+  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
             double skinPerTimestep, unsigned int verletRebuildFrequency)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * verletRebuildFrequency),
         _cellBorderFlagManager() {
@@ -146,11 +146,13 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @copydoc ParticleContainerInterface::getTraversalSelectorInfo()
    */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // direct sum technically consists of two cells (owned + halo)
     return TraversalSelectorInfo(
         {2, 0, 0},
         this->getCutoff() /*intentionally use cutoff here, as the directsumtraversal should be using the cutoff.*/,
-        utils::ArrayMath::sub(this->getBoxMax(), this->getBoxMin()), 0);
+        this->getBoxMax() - this->getBoxMin(), 0);
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(

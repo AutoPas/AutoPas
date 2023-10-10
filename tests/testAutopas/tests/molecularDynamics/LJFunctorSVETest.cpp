@@ -220,6 +220,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
 }
 
 void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDeleteSomeParticles) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   FMCell cellSVE;
 
   constexpr size_t numParticles = 7;
@@ -242,7 +244,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
       if (i == j) {
         continue;
       }
-      auto dr = autopas::utils::ArrayMath::sub(cellSVE[i].getR(), cellSVE[j].getR());
+      auto dr = cellSVE[i].getR() - cellSVE[j].getR();
       double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
       if (dr2 <= _interactionLengthSquare) {
         neighborLists[i].push_back(j);

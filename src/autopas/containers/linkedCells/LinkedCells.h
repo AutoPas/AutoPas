@@ -59,7 +59,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param loadEstimator the load estimation algorithm for balanced traversals.
    * By default all applicable traversals are allowed.
    */
-  LinkedCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
               const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
@@ -395,10 +395,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    const auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    const auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
+    using namespace autopas::utils::ArrayMath::literals;
+
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     const size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                       (stopIndex3D[2] - startIndex3D[2] + 1);
@@ -435,10 +435,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
-    const auto startIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::subScalar(lowerCorner, this->getVerletSkin()));
-    const auto stopIndex3D =
-        this->_cellBlock.get3DIndexOfPosition(utils::ArrayMath::addScalar(higherCorner, this->getVerletSkin()));
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto startIndex3D = this->_cellBlock.get3DIndexOfPosition(lowerCorner - this->getVerletSkin());
+    const auto stopIndex3D = this->_cellBlock.get3DIndexOfPosition(higherCorner + this->getVerletSkin());
 
     const size_t numCellsOfInterest = (stopIndex3D[0] - startIndex3D[0] + 1) * (stopIndex3D[1] - startIndex3D[1] + 1) *
                                       (stopIndex3D[2] - startIndex3D[2] + 1);

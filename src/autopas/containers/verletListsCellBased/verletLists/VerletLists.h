@@ -58,7 +58,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
-  VerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
+  VerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
               const double skinPerTimestep, const unsigned int rebuildFrequency,
               const BuildVerletListType buildVerletListType = BuildVerletListType::VerletSoA,
               const double cellSizeFactor = 1.0)

@@ -78,11 +78,13 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
   locks.resize((numSlices - 1) * this->_overlapLongestAxis);
 
   // 0) check if applicable
-  std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
-
-  if (not spaciallyForward) {
-    overLapps23 = {0ul, 0ul};
-  }
+  const auto overLapps23 = [&]() -> std::array<size_t, 2> {
+    if constexpr (spaciallyForward) {
+      return {this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
+    } else {
+      return {0ul, 0ul};
+    }
+  }();
 
   std::vector<utils::Timer> timers;
   std::vector<double> threadTimes;

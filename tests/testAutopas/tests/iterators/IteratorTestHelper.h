@@ -130,15 +130,17 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas) {
  */
 template <class AutoPasT>
 auto fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   auto cutoff = autoPas.getCutoff();
   auto skin = autoPas.getVerletSkin();
   auto cellSizeFactor = *(autoPas.getAllowedCellSizeFactors().getAll().begin());
 
-  auto boxLength = autopas::utils::ArrayMath::sub(autoPas.getBoxMax(), autoPas.getBoxMin());
+  auto boxLength = autoPas.getBoxMax() - autoPas.getBoxMin();
 
   auto gridWidth1D = (cutoff + skin) * cellSizeFactor;
-  auto gridEdgesPerDim = autopas::utils::ArrayMath::mulScalar(boxLength, 1 / gridWidth1D);
-  auto gridWidth3D = autopas::utils::ArrayMath::div(boxLength, gridEdgesPerDim);
+  auto gridEdgesPerDim = boxLength * (1 / gridWidth1D);
+  auto gridWidth3D = boxLength / gridEdgesPerDim;
 
   size_t id = 0;
   std::vector<size_t> particleIDs;
@@ -158,10 +160,12 @@ auto fillContainerWithGrid(AutoPasT &autoPas, double sparsity) {
 
 template <class AutoPasT>
 auto getHaloBoxMinMax(AutoPasT &autoPas) {
+  using namespace autopas::utils::ArrayMath::literals;
+
   const auto interactionLength = autoPas.getCutoff() + autoPas.getVerletSkin();
   // halo has width of interactionLength
-  const auto haloBoxMin = autopas::utils::ArrayMath::subScalar(autoPas.getBoxMin(), interactionLength);
-  const auto haloBoxMax = autopas::utils::ArrayMath::addScalar(autoPas.getBoxMax(), interactionLength);
+  const auto haloBoxMin = autoPas.getBoxMin() - interactionLength;
+  const auto haloBoxMax = autoPas.getBoxMax() + interactionLength;
 
   return std::make_tuple(haloBoxMin, haloBoxMax);
 }
