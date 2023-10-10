@@ -37,7 +37,7 @@ class MieFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInt
   /**
    * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
-   * In all comparisons first is AVX2, second non-AVX2
+   * In all comparisons first is MieAVX, second LJ-AVX
    *
    * Checks SoAFunctorPair(soa1, soa2, newton3)
    *
@@ -50,7 +50,7 @@ class MieFunctorAVXTest : public AutoPasTestBase, public ::testing::WithParamInt
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
-   * In all comparisons first is AVX2, second non-AVX2
+* In all comparisons first is MieAVX, second LJ-AVX
    *
    * Checks SoAFunctorSingle(soa, newton3)
    *

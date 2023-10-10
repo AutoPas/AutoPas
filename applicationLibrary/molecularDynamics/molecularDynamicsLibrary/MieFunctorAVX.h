@@ -1,7 +1,3 @@
-//
-// Created by kay on 30.09.23.
-//
-
 #ifndef AUTOPAS_MIEFUNCTORAVX2_H
 #define AUTOPAS_MIEFUNCTORAVX2_H
 
@@ -138,6 +134,8 @@
        * @note Only to be used with mixing == false.
        *
        * @param cutoff
+       * @param n_exp
+       * @param m_exp
        */
       explicit MieFunctorAVX(double cutoff, double n_exp, double m_exp) : MieFunctorAVX(cutoff, n_exp, m_exp, nullptr) {
         static_assert(not useMixing,
@@ -149,6 +147,8 @@
        * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
        * properties like sigma, epsilon and shift.
        * @param cutoff
+       * @param n_exp
+       * @param m_exp
        * @param particlePropertiesLibrary
        */
       explicit MieFunctorAVX(double cutoff, double n_exp, double m_exp,
@@ -221,8 +221,7 @@
         if (dr2 > _cutoffSquaredAoS) {
           return;
         }
-        // for now: m >= 2, n > m, n != m
-
+        // for now inefficient power function
         double invdr2 = 1. / dr2;
         // for schleife
         // m could be 1; but n<=m;
@@ -1070,9 +1069,10 @@
    *
    * This is only necessary if no particlePropertiesLibrary is used.
    *
-   * @param epsilon24
-   * @param sigmaSquared
+   * @param n_exp
+   * @param m_exp
        */
+       //TODO: Delete or also change cepsilon
       void setFunctorProperties(double n_exp, double m_exp) {
 #ifdef __AVX__
         _nexp = _mm256_set1_pd(n_exp);
