@@ -95,6 +95,9 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     return _aosNeighborList.at(cellIndex).at(particleIndexInCell).second.size();
   }
 
+  /**
+   * @copydoc VLCNeighborListInterface::getNumberOfPartners()
+   */
   size_t getNumberOfParticles() const override {
     return _aosNeighborList.size();
   }

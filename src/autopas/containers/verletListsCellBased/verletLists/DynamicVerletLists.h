@@ -23,6 +23,17 @@ class DynamicVerletLists : public VerletLists<Particle> {
 
  public:
 
+  /**
+   * Constructor of the VerletLists class.
+   * The neighbor lists are build using a search radius of cutoff + skinPerTimestep*rebuildFrequency.
+   * @param boxMin The lower corner of the domain.
+   * @param boxMax The upper corner of the domain.
+   * @param cutoff The cutoff radius of the interaction.
+   * @param skinPerTimestep The skin radius per timestep.
+   * @param rebuildFrequency rebuild fequency.
+   * @param buildVerletListType Specifies how the verlet list should be build, see BuildVerletListType
+   * @param cellSizeFactor cell size factor ralative to cutoff
+   */
   DynamicVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
               const double skinPerTimestep, const unsigned int rebuildFrequency,
               const typename VerletLists<Particle>::BuildVerletListType buildVerletListType = VerletLists<Particle>::BuildVerletListType::VerletSoA,

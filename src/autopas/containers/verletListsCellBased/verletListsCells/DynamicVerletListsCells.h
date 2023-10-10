@@ -14,7 +14,18 @@ template <class Particle, class NeighborList>
 class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> {
 
  public:
-
+  /**
+   * Constructor of the VerletListsCells class.
+   * The neighbor lists are build using a search radius of cutoff + skin*rebuildfrequency.
+   * @param boxMin the lower corner of the domain
+   * @param boxMax the upper corner of the domain
+   * @param cutoff the cutoff radius of the interaction
+   * @param rebuildFrequency the rebuild Frequency
+   * @param skinPerTimestep the skin radius per Timestep
+   * @param cellSizeFactor cell size factor relative to cutoff
+   * @param loadEstimator load estimation algorithm for balanced traversals
+   * @param buildType data layout of the particles which are used to generate the neighbor lists
+   */
   DynamicVerletListsCells(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
                           const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2,
                           const double cellSizeFactor = 1.0,

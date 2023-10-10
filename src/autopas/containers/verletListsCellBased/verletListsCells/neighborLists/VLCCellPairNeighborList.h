@@ -46,8 +46,14 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    */
   using SoAListType = typename std::vector<std::vector<std::vector<SoAPairOfParticleAndList>>>;
 
+  /**
+   * @copydoc VLCNeighborListInterface::getContainerType()
+   */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::pairwiseVerletLists; }
 
+  /**
+   * @copydoc VLCNeighborListInterface::getNumberOfPartners()
+   */
   size_t getNumberOfPartners(const Particle *particle) const override {
     size_t listSize = 0;
     const auto &[firstCellIndex, particleInCellIndex] = _particleToCellMap.at(const_cast<Particle *>(particle));
@@ -57,6 +63,9 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     return listSize;
   }
 
+  /**
+   * @copydoc VLCNeighborListInterface::getNumberOfParticles()
+   */
   size_t getNumberOfParticles() const override {
     return _aosNeighborList.size();
   }
