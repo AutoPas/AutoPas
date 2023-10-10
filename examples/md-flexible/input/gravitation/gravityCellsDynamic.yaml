@@ -16,7 +16,7 @@ box-min                          :  [0, 0, 0]
 box-max                          :  [200, 200, 85]
 cell-size                        :  [1]
 deltaT                           :  0.0005
-iterations                       :  10000
+iterations                       :  7000
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-10]
 Objects:
@@ -36,9 +36,9 @@ thermostat:
   targetTemperature              :  1
   deltaTemperature               :  0.25
   thermostatInterval             :  10
-  addBrownianMotion              :  true
+  addBrownianMotion              :  false
 vtk-filename                     :  gravityDynamicCells
-vtk-write-frequency              :  1000000
+vtk-write-frequency              :  1000
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  error
