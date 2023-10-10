@@ -86,34 +86,34 @@ long PredictiveTuning::linePrediction(size_t iteration, size_t tuningPhase, cons
     return predictionOverflowChecked;
 
   } else
-      // if there is enough evidenceVec calculate new prediction function
-      if (evidenceVec.size() >= _minNumberOfEvidence) {
-    const auto &[traversal1Iteration, traversal1TuningPhase, traversal1Time] = evidenceVec[evidenceVec.size() - 1];
-    const auto &[traversal2Iteration, traversal2TuningPhase, traversal2Time] = evidenceVec[evidenceVec.size() - 2];
+    // if there is enough evidenceVec calculate new prediction function
+    if (evidenceVec.size() >= _minNumberOfEvidence) {
+      const auto &[traversal1Iteration, traversal1TuningPhase, traversal1Time] = evidenceVec[evidenceVec.size() - 1];
+      const auto &[traversal2Iteration, traversal2TuningPhase, traversal2Time] = evidenceVec[evidenceVec.size() - 2];
 
-    const auto gradient = static_cast<double>(traversal1Time - traversal2Time) /
-                          static_cast<double>(traversal1Iteration - traversal2Iteration);
-    const auto delta = static_cast<double>(iteration) - static_cast<double>(traversal1Iteration);
+      const auto gradient = static_cast<double>(traversal1Time - traversal2Time) /
+                            static_cast<double>(traversal1Iteration - traversal2Iteration);
+      const auto delta = static_cast<double>(iteration) - static_cast<double>(traversal1Iteration);
 
-    const auto change = static_cast<long>(utils::Math::safeMul(gradient, delta));
+      const auto change = static_cast<long>(utils::Math::safeMul(gradient, delta));
 
-    // this might overflow so use safeAdd.
-    const long prediction =
-        utils::Math::safeAdd(traversal1Time, change, _predictionUnderflowValue, _predictionOverflowValue);
-    // Do not accept values smaller zero.
-    const auto predictionUnderflowChecked = prediction < 0 ? _predictionUnderflowValue : prediction;
+      // this might overflow so use safeAdd.
+      const long prediction =
+          utils::Math::safeAdd(traversal1Time, change, _predictionUnderflowValue, _predictionOverflowValue);
+      // Do not accept values smaller zero.
+      const auto predictionUnderflowChecked = prediction < 0 ? _predictionUnderflowValue : prediction;
 
-    // update _predictionFunctionParameters
-    functionParams.clear();
-    functionParams.emplace_back(gradient);
-    functionParams.emplace_back(traversal1Time);
+      // update _predictionFunctionParameters
+      functionParams.clear();
+      functionParams.emplace_back(gradient);
+      functionParams.emplace_back(traversal1Time);
 
-    return predictionUnderflowChecked;
-  } else {
-    // When a configuration was not yet measured enough to make a prediction insert a placeholder.
-    _tooLongNotTestedSearchSpace.emplace(configuration);
-    return _predictionErrorValue;
-  }
+      return predictionUnderflowChecked;
+    } else {
+      // When a configuration was not yet measured enough to make a prediction insert a placeholder.
+      _tooLongNotTestedSearchSpace.emplace(configuration);
+      return _predictionErrorValue;
+    }
 }
 
 long PredictiveTuning::linearRegression(size_t iteration, size_t tuningPhase, const Configuration &configuration,
@@ -132,65 +132,65 @@ long PredictiveTuning::linearRegression(size_t iteration, size_t tuningPhase, co
     return predictionOverflowChecked;
 
   } else
-      // if there is enough evidenceVec calculate new prediction function
-      if (evidenceVec.size() >= _minNumberOfEvidence) {
-    // we need signed types because calculation of the gradient might have negative result
-    long iterationMultTime = 0;
-    long timeSum = 0;
-    size_t iterationSum = 0;
-    size_t iterationSquareSum = 0;
+    // if there is enough evidenceVec calculate new prediction function
+    if (evidenceVec.size() >= _minNumberOfEvidence) {
+      // we need signed types because calculation of the gradient might have negative result
+      long iterationMultTime = 0;
+      long timeSum = 0;
+      size_t iterationSum = 0;
+      size_t iterationSquareSum = 0;
 
-    bool numericOverflow = false;
-    for (auto i = evidenceVec.size() - _minNumberOfEvidence; i < evidenceVec.size(); i++) {
-      const auto &[evidenceIteration, evidenceTuningPhase, evidenceValue] = evidenceVec[i];
-      const auto iterationMultTimeI = utils::Math::safeMul(static_cast<long>(evidenceIteration), evidenceValue);
-      iterationMultTime = utils::Math::safeAdd(iterationMultTime, iterationMultTimeI);
-      // if any of the safe operations overflow we can directly move to the next config
-      if (iterationMultTime == std::numeric_limits<decltype(iterationMultTime)>::max()) {
-        numericOverflow = true;
-        break;
+      bool numericOverflow = false;
+      for (auto i = evidenceVec.size() - _minNumberOfEvidence; i < evidenceVec.size(); i++) {
+        const auto &[evidenceIteration, evidenceTuningPhase, evidenceValue] = evidenceVec[i];
+        const auto iterationMultTimeI = utils::Math::safeMul(static_cast<long>(evidenceIteration), evidenceValue);
+        iterationMultTime = utils::Math::safeAdd(iterationMultTime, iterationMultTimeI);
+        // if any of the safe operations overflow we can directly move to the next config
+        if (iterationMultTime == std::numeric_limits<decltype(iterationMultTime)>::max()) {
+          numericOverflow = true;
+          break;
+        }
+        iterationSum += evidenceIteration;
+        iterationSquareSum += evidenceIteration * evidenceIteration;
+        timeSum += evidenceValue;
       }
-      iterationSum += evidenceIteration;
-      iterationSquareSum += evidenceIteration * evidenceIteration;
-      timeSum += evidenceValue;
+
+      // if there is an overflow the actual prediction will also overflow so abort and continue.
+      if (numericOverflow) {
+        return _predictionOverflowValue;
+      }
+
+      // cast integer to decimal because this division contains small numbers which would cause precision lose
+      const double iterationMeanValue = static_cast<double>(iterationSum) / static_cast<double>(_minNumberOfEvidence);
+      const long timeMeanValue = timeSum / _minNumberOfEvidence;
+
+      const auto numerator = static_cast<double>(iterationMultTime - static_cast<long>(iterationSum) * timeMeanValue);
+      const double denominator =
+          static_cast<double>(iterationSquareSum) - static_cast<double>(iterationSum) * iterationMeanValue;
+
+      // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n *
+      // iterationMeanValue ^ 2)
+      const auto gradient = numerator / denominator;
+
+      const auto change =
+          static_cast<long>(utils::Math::safeMul(gradient, (static_cast<double>(iteration) - iterationMeanValue)));
+      // check if prediction runs into over or underflow.
+      const long prediction =
+          utils::Math::safeAdd(change, timeMeanValue, _predictionUnderflowValue, _predictionOverflowValue);
+      // Do not accept values smaller zero.
+      const auto predictionUnderflowChecked = prediction < 0 ? _predictionUnderflowValue : prediction;
+
+      functionParams.clear();
+      functionParams.emplace_back(gradient);
+      const auto yIntercept = static_cast<double>(timeMeanValue) - gradient * iterationMeanValue;
+      functionParams.emplace_back(yIntercept);
+
+      return predictionUnderflowChecked;
+    } else {
+      // When a configuration was not yet measured enough to make a prediction insert a placeholder.
+      _tooLongNotTestedSearchSpace.emplace(configuration);
+      return _predictionErrorValue;
     }
-
-    // if there is an overflow the actual prediction will also overflow so abort and continue.
-    if (numericOverflow) {
-      return _predictionOverflowValue;
-    }
-
-    // cast integer to decimal because this division contains small numbers which would cause precision lose
-    const double iterationMeanValue = static_cast<double>(iterationSum) / static_cast<double>(_minNumberOfEvidence);
-    const long timeMeanValue = timeSum / _minNumberOfEvidence;
-
-    const auto numerator = static_cast<double>(iterationMultTime - static_cast<long>(iterationSum) * timeMeanValue);
-    const double denominator =
-        static_cast<double>(iterationSquareSum) - static_cast<double>(iterationSum) * iterationMeanValue;
-
-    // ((Sum iteration_i * time_i) - n * iterationMeanValue * timeMeanValue) / ((Sum iteration_i^2) - n *
-    // iterationMeanValue ^ 2)
-    const auto gradient = numerator / denominator;
-
-    const auto change =
-        static_cast<long>(utils::Math::safeMul(gradient, (static_cast<double>(iteration) - iterationMeanValue)));
-    // check if prediction runs into over or underflow.
-    const long prediction =
-        utils::Math::safeAdd(change, timeMeanValue, _predictionUnderflowValue, _predictionOverflowValue);
-    // Do not accept values smaller zero.
-    const auto predictionUnderflowChecked = prediction < 0 ? _predictionUnderflowValue : prediction;
-
-    functionParams.clear();
-    functionParams.emplace_back(gradient);
-    const auto yIntercept = static_cast<double>(timeMeanValue) - gradient * iterationMeanValue;
-    functionParams.emplace_back(yIntercept);
-
-    return predictionUnderflowChecked;
-  } else {
-    // When a configuration was not yet measured enough to make a prediction insert a placeholder.
-    _tooLongNotTestedSearchSpace.emplace(configuration);
-    return _predictionErrorValue;
-  }
 }
 
 long PredictiveTuning::newtonPolynomial(size_t iteration, size_t tuningPhase, const Configuration &configuration,

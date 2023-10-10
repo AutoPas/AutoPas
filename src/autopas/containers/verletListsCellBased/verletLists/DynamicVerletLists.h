@@ -20,9 +20,7 @@ namespace autopas {
  */
 template <class Particle>
 class DynamicVerletLists : public VerletLists<Particle> {
-
  public:
-
   /**
    * Constructor of the VerletLists class.
    * The neighbor lists are build using a search radius of cutoff + skinPerTimestep*rebuildFrequency.
@@ -35,25 +33,25 @@ class DynamicVerletLists : public VerletLists<Particle> {
    * @param cellSizeFactor cell size factor ralative to cutoff
    */
   DynamicVerletLists(const std::array<double, 3> boxMin, const std::array<double, 3> boxMax, const double cutoff,
-              const double skinPerTimestep, const unsigned int rebuildFrequency,
-              const typename VerletLists<Particle>::BuildVerletListType buildVerletListType = VerletLists<Particle>::BuildVerletListType::VerletSoA,
-              const double cellSizeFactor = 1.0)
-      : VerletLists<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
-                                        buildVerletListType, cellSizeFactor) {}
-  
-  bool neighborListsAreValid() override {
+                     const double skinPerTimestep, const unsigned int rebuildFrequency,
+                     const typename VerletLists<Particle>::BuildVerletListType buildVerletListType =
+                         VerletLists<Particle>::BuildVerletListType::VerletSoA,
+                     const double cellSizeFactor = 1.0)
+      : VerletLists<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, buildVerletListType,
+                              cellSizeFactor) {}
 
+  bool neighborListsAreValid() override {
     auto halfSkinSquare = (this->getVerletSkin() * this->getVerletSkin()) / 4;
     bool listInvalid = false;
 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for reduction(|| : listInvalid) schedule(static, 50)
 #endif
-    for (auto& particlePositionPair : _particlePtr2rebuildPositionBuffer) {
+    for (auto &particlePositionPair : _particlePtr2rebuildPositionBuffer) {
       auto distance = utils::ArrayMath::sub(particlePositionPair.first->getR(), particlePositionPair.second);
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
-      if (distanceSquare >=  halfSkinSquare) {
+      if (distanceSquare >= halfSkinSquare) {
         listInvalid = true;
       }
     }
@@ -67,18 +65,16 @@ class DynamicVerletLists : public VerletLists<Particle> {
   }
 
  private:
-
   void generateRebuildPositionMap() {
     _particlePtr2rebuildPositionBuffer.clear();
     _particlePtr2rebuildPositionBuffer.reserve(this->getVerletListsAoS().size());
 
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
-      std::pair<Particle*, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
+      std::pair<Particle *, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
       _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
     }
   }
-  
-  std::vector<std::pair<Particle*, std::array<double, 3>>> _particlePtr2rebuildPositionBuffer;
-  
+
+  std::vector<std::pair<Particle *, std::array<double, 3>>> _particlePtr2rebuildPositionBuffer;
 };
-}
+}  // namespace autopas

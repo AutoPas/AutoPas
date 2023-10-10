@@ -113,7 +113,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   virtual bool neighborListsAreValid() { return true; }
 
  protected:
-
   /**
    * Update the verlet lists for AoS usage
    * @param useNewton3

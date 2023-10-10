@@ -38,8 +38,8 @@ void autopas::FeatureVectorEncoder::setAllowedOptions(
 
 size_t autopas::FeatureVectorEncoder::getOneHotDims() const { return _oneHotDims; }
 
-const std::array<int, autopas::FeatureVectorEncoder::tunableDiscreteDims>
-    &autopas::FeatureVectorEncoder::getDiscreteRestrictions() const {
+const std::array<int, autopas::FeatureVectorEncoder::tunableDiscreteDims> &
+autopas::FeatureVectorEncoder::getDiscreteRestrictions() const {
   return _discreteRestrictions;
 }
 

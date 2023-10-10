@@ -147,7 +147,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    */
   NeighborList _neighborList;
 
-private:
+ private:
   /**
    * Load estimation algorithm for balanced traversals.
    */

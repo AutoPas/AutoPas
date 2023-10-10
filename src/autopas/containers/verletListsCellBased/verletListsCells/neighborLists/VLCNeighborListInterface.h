@@ -44,7 +44,6 @@ class VLCNeighborListInterface {
    */
   virtual size_t getNumberOfPartners(const Particle *particle) const = 0;
 
-
   /**
    * Gets the number of particles which are stored in this neighbor list
    * @return the number of stored particles in this container

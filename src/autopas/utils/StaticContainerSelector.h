@@ -16,8 +16,8 @@
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/DynamicVerletListsCells.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
 namespace autopas {
 /**
@@ -58,7 +58,7 @@ decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Parti
           dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> &>(container));
     case ContainerOption::dynamicPairwiseVerletLists:
       return function(
-        dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> &>(container));
+          dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> &>(container));
 
     case ContainerOption::varVerletListsAsBuild:
       return function(

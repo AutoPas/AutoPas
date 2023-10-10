@@ -541,8 +541,10 @@ class LogicHandler {
    * Helpful for determining the frequency for the dynamic containers
    * @return value of the mean frequency as double
    */
-  [[nodiscard]] double getMeanRebuildFrequency () const {
-    return _rebuildDistances.empty() ? 0 : (std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0) * 1.0) / _rebuildDistances.size();
+  [[nodiscard]] double getMeanRebuildFrequency() const {
+    return _rebuildDistances.empty() ? 0
+                                     : (std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0) * 1.0) /
+                                           _rebuildDistances.size();
   }
 
  private:
@@ -695,8 +697,8 @@ class LogicHandler {
   /**
    * Checks if in the next iteration the neighbor lists have to be rebuilt.
    *
-   * This can be the case either because we hit the rebuild frequency, the dynamic rebuild criterion or because the auto tuner tests
-   * a new configuration.
+   * This can be the case either because we hit the rebuild frequency, the dynamic rebuild criterion or because the auto
+   * tuner tests a new configuration.
    *
    * stores the value in _neighborListsAreValid
    */
@@ -789,7 +791,8 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 template <typename Particle>
 void LogicHandler<Particle>::neighborListsAreValid() {
   _neighborListsAreValid.store(true, std::memory_order_relaxed);
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or not getContainer().neighborListsAreValid()) {
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
+      not getContainer().neighborListsAreValid()) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 }
@@ -1186,7 +1189,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
           _autoTuner.addMeasurement(measurements.timeTotal, not _neighborListsAreValid.load(std::memory_order_relaxed));
           break;
         case TuningMetricOption::energy:
-          _autoTuner.addMeasurement(measurements.energyTotal, not _neighborListsAreValid.load(std::memory_order_relaxed));
+          _autoTuner.addMeasurement(measurements.energyTotal,
+                                    not _neighborListsAreValid.load(std::memory_order_relaxed));
           break;
       }
     } else {

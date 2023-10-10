@@ -358,7 +358,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     std::vector<Particle> invalidParticles;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp declare reduction(vecMergeParticle : std::vector<Particle> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp declare reduction( \
+        vecMergeParticle : std::vector<Particle> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 #pragma omp parallel reduction(vecMergeParticle : invalidParticles)
 #endif
     {
