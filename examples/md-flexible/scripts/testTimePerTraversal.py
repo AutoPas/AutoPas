@@ -6,6 +6,7 @@ import sys
 import subprocess
 from datetime import datetime
 
+
 # ------------------------------------------------- Preprocessing Functions ------------------------------------
 
 # extract all possible traversals from AllOptions
@@ -24,36 +25,37 @@ def getAllTraversals():
 # ---------------------------------------- Global parameters and input ----------------------------------------
 
 # some definitions for colored text
-GREEN='\033[32m'
-YELLOW='\033[93m'
-RED='\033[31m'
-ENDCOLOR='\033[0m'
+GREEN = '\033[32m'
+YELLOW = '\033[93m'
+RED = '\033[31m'
+ENDCOLOR = '\033[0m'
 
 # Script variables can be overwritten:
 # String to identify the argument identifying...
 # the chosen traversal
-traversalIdentifierString='traversal='
+traversalIdentifierString = 'traversal='
 
 # the chosen amount of tests per traversal
-testsIdentifierString='tests='
+testsIdentifierString = 'tests='
 
 # path to the testing binary. This path is correct after cmake copied this script to the build dir.
-simulation='./md-flexible'
+simulation = './md-flexible'
 # placeholder for used traversal
-traversalArg=[]
+traversalArg = []
 containsTraversalArg = False
 # placeholder for amount of tests
 tests = 0
 containsNumberOfTests = False
 # list of input files or directories
-configsDirs=[]
+configsDirs = []
 # list of all possible traversals
-allTraversals=[]
+allTraversals = []
 
 # parse special args
 for arg in sys.argv[1:]:
     if "help" in arg:
-        print("Usage: ./testTimePerTraversal.py [traversal=chosenTraversal] [tests=iterations of tests] [paths/to/yaml/files or/to/directories]")
+        print(
+            "Usage: ./testTimePerTraversal.py [traversal=chosenTraversal] [tests=iterations of tests] [paths/to/yaml/files or/to/directories]")
         print("Please use at least python 3.8.")
         exit(0)
     elif traversalIdentifierString in arg:
@@ -75,7 +77,7 @@ if not os.path.isfile(simulation):
     print("Not a file: " + simulation)
     exit(1)
 
-simulation=os.path.abspath(simulation)
+simulation = os.path.abspath(simulation)
 
 # default search directory for inputs:
 if not configsDirs:
@@ -87,12 +89,13 @@ for arg in configsDirs:
     dirNames = arg.split('/')
     if os.path.isdir(arg):
         if dirNames[len(dirNames) - 1].__eq__(''):
-            outputDir = outputDir + dirNames[len(dirNames)-2] + '_'
+            outputDir = outputDir + dirNames[len(dirNames) - 2] + '_'
         else:
-            outputDir = outputDir + dirNames[len(dirNames)-1] + '_'
+            outputDir = outputDir + dirNames[len(dirNames) - 1] + '_'
 outputDir = outputDir + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 outputDirName = "outputDir: " + outputDir
 print(outputDirName)
+
 
 # ------------------------------------------------- Functions -------------------------------------------------
 
@@ -104,15 +107,16 @@ def getStringFromFile(filename, regex):
             if match:
                 return match.group(1)
 
+
 # runs a given scenario and checks if the tuning result matches the expectation
 def testScenario(yamlFile):
     # pretty print scenario name
-    scenarioName=os.path.splitext(os.path.basename(yamlFile))[0]
+    scenarioName = os.path.splitext(os.path.basename(yamlFile))[0]
     print("Testing Scenario " + scenarioName)
-    yamlFile=os.path.abspath(yamlFile)
+    yamlFile = os.path.abspath(yamlFile)
 
     # parse what configuration we expect to be optimal
-    expected=getStringFromFile(yamlFile, '.* [eE]xpect.*({.*})')
+    expected = getStringFromFile(yamlFile, '.* [eE]xpect.*({.*})')
 
     # build and execute command for simulation
     # append tuningArg list (if nothing is set this is empty)
@@ -120,15 +124,16 @@ def testScenario(yamlFile):
         for t in allTraversals:
             for test in range(0, tests):
                 localTraversalArg = ["--traversal", t]
-                command=[simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename", yamlFile] + localTraversalArg
+                command = [simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename",
+                           yamlFile] + localTraversalArg
                 print(" ".join(command))
-                outputFile=os.path.join(outputDir, scenarioName + t + '_test' + str(test) + '.out')
+                outputFile = os.path.join(outputDir, scenarioName + t + '_test' + str(test) + '.out')
                 with open(outputFile, 'w+') as outputLocation:
                     subprocess.call(command, stdout=outputLocation, shell=False)
 
                 # parse time of selected config
-                selected=getStringFromFile(outputFile, '.* Selected Configuration +({.*})')
-                selectedTime=int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
+                selected = getStringFromFile(outputFile, '.* Selected Configuration +({.*})')
+                selectedTime = int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
 
                 # print result
                 print("Selected: " + selected + " : " + str(selectedTime))
@@ -136,15 +141,16 @@ def testScenario(yamlFile):
 
     else:
         for test in range(0, tests):
-            command=[simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename", yamlFile] + traversalArg
+            command = [simulation, "--log-level", "debug", "--no-end-config", "--yaml-filename",
+                       yamlFile] + traversalArg
             print(" ".join(command))
-            outputFile=os.path.join(outputDir, scenarioName + traversalArg[1] + '_test' + str(test) + '.out')
+            outputFile = os.path.join(outputDir, scenarioName + traversalArg[1] + '_test' + str(test) + '.out')
             with open(outputFile, 'w+') as outputLocation:
                 subprocess.call(command, stdout=outputLocation, shell=False)
 
             # parse time of selected config
-            selected=getStringFromFile(outputFile, '.* Selected Configuration +({.*})')
-            selectedTime=int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
+            selected = getStringFromFile(outputFile, '.* Selected Configuration +({.*})')
+            selectedTime = int(getStringFromFile(outputFile, selected + ".* Reduced value: ([0-9]+)"))
 
             # print result
             print("Selected: " + selected + " : " + str(selectedTime))
@@ -163,10 +169,10 @@ except OSError:
 # iterate over all inputs and check for yaml files
 for arg in configsDirs:
     if os.path.isdir(arg):
-        inputsFound=False
+        inputsFound = False
         for f in os.listdir(arg):
             if f.endswith('.yaml'):
-                inputsFound=True
+                inputsFound = True
                 testScenario(os.path.join(arg, f))
         if not inputsFound:
             print("No yaml files found in " + arg)
@@ -177,4 +183,3 @@ for arg in configsDirs:
             print("Not a yaml file: " + arg)
     else:
         print("Neither file nor folder: " + arg)
-

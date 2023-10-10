@@ -385,7 +385,8 @@ void Simulation::updatePositions() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value, _configuration.fastParticlesWarn.value);
+      _configuration.globalForce.value, _configuration.fastParticlesThrow.value,
+      _configuration.fastParticlesWarn.value);
   _timers.positionUpdate.stop();
 }
 
@@ -597,7 +598,8 @@ void Simulation::logMeasurements() {
       std::cout << "  GFLOPs/sec                         : "
                 << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
       std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
-      std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << std::endl;
+      std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency()
+                << std::endl;
     }
   }
 }

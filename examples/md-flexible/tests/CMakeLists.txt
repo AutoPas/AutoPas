@@ -5,12 +5,12 @@ endif ()
 message(STATUS "mdflexTests - adding tests.")
 
 file(
-    GLOB_RECURSE
-    MDFlexTest_SRC
-    "../src/*.cpp"
-    "../src/*.h"
-    "./*.cpp"
-    "./*.h"
+        GLOB_RECURSE
+        MDFlexTest_SRC
+        "../src/*.cpp"
+        "../src/*.h"
+        "./*.cpp"
+        "./*.h"
 )
 
 # remove main to avoid duplicate two main functions
@@ -25,27 +25,27 @@ list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*Simulation.((cpp)|h)")
 add_executable(mdFlexTests ${MDFlexTest_SRC})
 
 target_compile_definitions(
-    mdFlexTests PRIVATE
-    YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/examples/md-flexible/tests/yamlTestFiles/\"
+        mdFlexTests PRIVATE
+        YAMLDIRECTORY=\"${PROJECT_SOURCE_DIR}/examples/md-flexible/tests/yamlTestFiles/\"
 )
 
 include(autopas_all)
 
 target_include_directories(
-    mdFlexTests
-    PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible
+        mdFlexTests
+        PUBLIC ${PROJECT_SOURCE_DIR}/tests/testAutopas ${PROJECT_SOURCE_DIR}/examples/md-flexible
 )
 
 target_link_libraries(
-  mdFlexTests
-  PUBLIC
-    autopas
-    autopasTools
-    molecularDynamicsLibrary
-    gmock
-    yaml-cpp
-    ${ALL_LIB} 
-    $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
+        mdFlexTests
+        PUBLIC
+        autopas
+        autopasTools
+        molecularDynamicsLibrary
+        gmock
+        yaml-cpp
+        ${ALL_LIB}
+        $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>
 )
 
 if (MD_FLEXIBLE_USE_MPI)
@@ -59,5 +59,5 @@ include(GoogleTest)
 gtest_discover_tests(
         mdFlexTests TEST_PREFIX "mdFlexTests/"
         PROPERTIES
-            ENVIRONMENT "${LSAN_OPTIONS_STR}"
+        ENVIRONMENT "${LSAN_OPTIONS_STR}"
 )

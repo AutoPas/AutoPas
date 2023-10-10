@@ -3,9 +3,9 @@
 Sites:
   1:
     epsilon: 1.
-    sigma:   1.
-    mass:    1.
+    sigma: 1.
+    mass: 1.
   2:
     epsilon: 1.2
-    sigma:   0.8
-    mass:    0.5
+    sigma: 0.8
+    mass: 0.5

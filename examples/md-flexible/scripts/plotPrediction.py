@@ -65,7 +65,7 @@ for datafile in datafiles:
         for line in file.readlines():
             if (match := re.search(regexIter, line)) is not None:
                 iteration = match.group(1)
-                if (match.group(2) == 'none') :
+                if (match.group(2) == 'none'):
                     continue
             elif (match := re.search(regexConfigurationPrediction, line)) is not None:
                 m = match.group(1)

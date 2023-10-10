@@ -14,7 +14,7 @@ include(autopas_all)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
@@ -35,11 +35,11 @@ string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
 if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     if (MD_FLEXIBLE_FUNCTOR_AVX)
         message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
-    endif()
+    endif ()
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
-    endif()
-endif()
+    endif ()
+endif ()
 
 # --- copy script files to build dir ---
 file(
@@ -134,8 +134,8 @@ if (HAS_AVX)
             CONFIGURATIONS checkExamples
     )
 else ()
-  message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
-  set(TEST_FUNCTOR "Lennard-Jones")
+    message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
+    set(TEST_FUNCTOR "Lennard-Jones")
 endif ()
 
 #stable, periodic particle grid tested with all configurations

@@ -2,7 +2,7 @@
 option_conditional(AUTOPAS_BUILD_EXAMPLES
         "Build examples."
         AUTOPAS_STANDALONE_BUILD
-)
+        )
 
 # do nothing if nothing should be done
 if (NOT AUTOPAS_BUILD_EXAMPLES)
@@ -10,8 +10,8 @@ if (NOT AUTOPAS_BUILD_EXAMPLES)
 endif ()
 
 add_custom_target(
-    checkExamples
-    COMMAND
+        checkExamples
+        COMMAND
         ctest
         -C
         checkExamples

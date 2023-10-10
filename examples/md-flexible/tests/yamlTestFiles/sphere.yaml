@@ -5,8 +5,8 @@
 Objects:
   Sphere:
     0:
-      particle-type-id:  0
-      center: [5.,-10.,0.]
+      particle-type-id: 0
+      center: [ 5.,-10.,0. ]
       radius: 10
       particle-spacing: 1.5
-      velocity: [0.,0.,0.]
+      velocity: [ 0.,0.,0. ]

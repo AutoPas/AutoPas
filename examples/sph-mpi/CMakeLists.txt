@@ -1,8 +1,8 @@
 file(
-    GLOB_RECURSE
-    MY_SRC
-    "*.cpp"
-    "*.h"
+        GLOB_RECURSE
+        MY_SRC
+        "*.cpp"
+        "*.h"
 )
 
 message(STATUS "sph-main-mpi - searching for mpi...")
@@ -23,9 +23,9 @@ target_link_libraries(sph-main-mpi autopas SPHLibrary MPI::MPI_CXX)
 # add check for current target
 # cmake-format: off
 add_test(
-    NAME sph-main-mpi.test
-    COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./sph-main-mpi | grep "time step" | grep -v "the time step" | tail -1 | grep -q "time step 8"
-    CONFIGURATIONS checkExamples checkExamplesMPI
+        NAME sph-main-mpi.test
+        COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ./sph-main-mpi | grep "time step" | grep -v "the time step" | tail -1 | grep -q "time step 8"
+        CONFIGURATIONS checkExamples checkExamplesMPI
 )
 # cmake-format: on
 

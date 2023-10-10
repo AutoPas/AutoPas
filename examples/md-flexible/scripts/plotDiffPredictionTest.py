@@ -71,7 +71,7 @@ for datafile in datafiles:
 
             if (match := re.search(regexIter, line)) is not None:
                 iteration = match.group(1)
-                if (match.group(2) == 'none') :
+                if (match.group(2) == 'none'):
                     continue
             elif (match := re.search(regexConfigurationPrediction, line)) is not None:
                 configurationPrediction[match.group(1)] = (iteration, int(match.group(2)))

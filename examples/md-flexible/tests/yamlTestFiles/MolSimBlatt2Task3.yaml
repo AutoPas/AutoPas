@@ -13,7 +13,7 @@ log-level: debug
 #verlet-skin-radius-per-timestep    #double option
 #no-flops:                          #boolean option
 #log-file:                          #string option
-vtk-filename:  MolSimBlatt2Task3
+vtk-filename: MolSimBlatt2Task3
 vtk-write-frequency: 10              #size_t option
 
 ###Simulation Options=
@@ -22,7 +22,7 @@ vtk-write-frequency: 10              #size_t option
 delta_t: 0.0002                     #double option
 cutoff: 2.5                         #double option
 iterations: 25000
-boundary-type:  [none, none, none]
+boundary-type: [ none, none, none ]
 
 ###Objects generation Options
 Objects:
@@ -32,10 +32,10 @@ Objects:
       particle-epsilon: 5.
       particle-sigma: 1
       particle-mass: 1.
-      particles-per-dimension: [8,8,1]
+      particles-per-dimension: [ 8,8,1 ]
       particle-spacing: 1.12
-      velocity: [0.,-10.,0.]
-      bottomLeftCorner: [19.49,19.49,0.]
+      velocity: [ 0.,-10.,0. ]
+      bottomLeftCorner: [ 19.49,19.49,0. ]
 #    1:
 #      particle-type: 0
 #      particle-epsilon: 5.

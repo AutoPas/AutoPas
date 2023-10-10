@@ -37,9 +37,9 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     if (fastParticlesWarn) {
       const auto distanceMovedSquared = dot(displacement, displacement);
       if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
-  #pragma omp critical
-        std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
-                  << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
+#pragma omp critical
+        std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared)
+                  << " > " << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
                   << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
         if (fastParticlesThrow) {
           throwException = true;
