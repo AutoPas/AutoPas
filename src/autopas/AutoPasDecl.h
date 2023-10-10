@@ -959,6 +959,11 @@ class AutoPas {
    */
   void setOutputSuffix(const std::string &suffix) { _outputSuffix = suffix; }
 
+  /**
+   * Getter for the mean rebuild frequency.
+   * Helpful for analyzing the behaviour of the dynamic containers.
+   * @return Value of the mean rebuild frequency as double
+   */
   double getMeanRebuildFrequency () { return _logicHandler->getMeanRebuildFrequency(); }
   /**
    * Set if the tuning information should be logged to a file. It can then be replayed to test other tuning strategies.

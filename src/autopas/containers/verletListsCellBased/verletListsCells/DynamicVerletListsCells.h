@@ -10,6 +10,12 @@
 
 namespace autopas {
 
+/**
+ * Dynamic variant of the VerletListsCells container
+ * Differs only in the way the necessity of the neighbor lists rebuilds is determined.
+ * @tparam Particle
+ * @tparam NeighborList The neighbor list used by this container.
+ */
 template <class Particle, class NeighborList>
 class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> {
 
