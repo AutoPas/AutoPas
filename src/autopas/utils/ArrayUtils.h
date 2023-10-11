@@ -198,7 +198,8 @@ std::enable_if_t<autopas::utils::ArrayUtils::is_container<Container>::value, std
  */
 template <class OuterContainerT>
 void balanceVectors(OuterContainerT &vecvec) {
-  balanceVectors(vecvec, [](auto &innerContainer) -> auto & { return innerContainer; });
+  balanceVectors(
+      vecvec, [](auto &innerContainer) -> auto & { return innerContainer; });
 }
 
 /**
