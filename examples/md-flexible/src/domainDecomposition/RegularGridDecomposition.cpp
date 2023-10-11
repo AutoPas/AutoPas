@@ -263,7 +263,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
 #pragma omp declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert( \
         omp_out.end(), omp_in.begin(), omp_in.end()))
 // make sure each buffer gets filled equally while not inducing scheduling overhead
-#pragma omp parallel for reduction(vecMergeParticle : emigrants), \
+#pragma omp parallel for reduction(vecMergeParticle \
+                                   : emigrants),    \
     schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / omp_get_max_threads()))
 #endif
       // we can't use range based for loops here because clang accepts this only starting with version 11
