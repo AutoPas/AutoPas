@@ -37,15 +37,12 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param useSorting If the CellFunctor should sort particles
    */
   explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          const double interactionLength, const std::array<double, 3> &cellLength,
-                          const bool useSorting = true)
+                          const double interactionLength, const std::array<double, 3> &cellLength)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
-                     useSorting) {}
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;
 
@@ -60,6 +57,11 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @return
    */
   [[nodiscard]] bool isApplicable() const override { return true; }
+
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
 
  private:
   LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

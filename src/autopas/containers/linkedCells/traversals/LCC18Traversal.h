@@ -40,17 +40,14 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param useSorting If the CellFunctor should sort particles
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
   explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          const double interactionLength, const std::array<double, 3> &cellLength,
-                          const bool useSorting = true)
+                          const double interactionLength, const std::array<double, 3> &cellLength)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
-        _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     useSorting) {
+        _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/) {
     computeOffsets();
   }
 
@@ -78,6 +75,11 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+
  private:
   /**
    * Computes pairs used in processBaseCell()
@@ -88,7 +90,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                        true>
+                        /*bidirectional*/ true>
       _cellFunctor;
 
   /**

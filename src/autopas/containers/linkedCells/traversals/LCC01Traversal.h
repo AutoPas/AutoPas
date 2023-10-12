@@ -89,17 +89,14 @@ class LCC01Traversal
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length in CellBlock3D
-   * @param useSorting If the CellFunctor should sort particles
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
   explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          const double interactionLength, const std::array<double, 3> &cellLength,
-                          const bool useSorting = true)
+                          const double interactionLength, const std::array<double, 3> &cellLength)
       : C01BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, (combineSoA ? 2 : 3)>(
             dims, pairwiseFunctor, interactionLength, cellLength),
-        _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
-                     useSorting),
+        _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
         _pairwiseFunctor(pairwiseFunctor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
     computeOffsets();
@@ -132,6 +129,11 @@ class LCC01Traversal
   [[nodiscard]] TraversalOption getTraversalType() const override {
     return (combineSoA) ? TraversalOption::lc_c01_combined_SoA : TraversalOption::lc_c01;
   }
+
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
 
  private:
   /**
@@ -171,7 +173,8 @@ class LCC01Traversal
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, false, false>
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout,
+                        /*useNewton3*/ false, /*bidirectional*/ false>
       _cellFunctor;
 
   PairwiseFunctor *_pairwiseFunctor;

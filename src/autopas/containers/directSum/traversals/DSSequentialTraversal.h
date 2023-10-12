@@ -31,11 +31,10 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
-   * @param useSorting If the CellFunctor should sort particles
    */
-  explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff, const bool useSorting = true)
+  explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff)
       : CellPairTraversal<ParticleCell>({2, 1, 1}),
-        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, useSorting),
+        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
         _dataLayoutConverter(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
@@ -66,12 +65,17 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    */
   void traverseParticlePairs() override;
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+
  private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                        true>
+                        /*bidirectional*/ true>
       _cellFunctor;
 
   /**

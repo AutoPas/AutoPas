@@ -38,15 +38,12 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
-   * @param useSorting If the CellFunctor should sort particles
    */
   LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                    const double interactionLength, const std::array<double, 3> &cellLength,
-                    const bool useSorting = true)
+                    const double interactionLength, const std::array<double, 3> &cellLength)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
                                                                                  interactionLength, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
-                     useSorting),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
                                          1l)) {}
 
@@ -65,6 +62,11 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
 
     return minLength >= this->_interactionLength;
   }
+
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
 
  private:
   void traverseSingleColor(std::vector<ParticleCell> &cells, int color);
