@@ -64,7 +64,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
-  [[nodiscard]] virtual ContainerOption getContainerType() const { return _neighborList.getContainerType(); }
+  [[nodiscard]] virtual ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
   /**
    * Generates the load estimation function depending on _loadEstimator.

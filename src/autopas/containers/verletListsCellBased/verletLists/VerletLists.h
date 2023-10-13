@@ -110,7 +110,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     }
   }
 
-  virtual bool neighborListsAreValid() { return true; }
+  virtual bool neighborListsAreValid() override { return true; }
 
  protected:
   /**
