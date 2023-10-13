@@ -22,7 +22,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovec *);
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAbsPos *);  //LJFunctorTypeAbsPos defined in TypeDefinitions.h
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
