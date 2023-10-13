@@ -6,12 +6,21 @@
 
 #pragma once
 
+#warning "including typedefinitions"
+
 #if MD_FLEXIBLE_MODE == MULTISITE
 
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
+#warning "AutVec functor included"
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+#endif
+
+//@todo (johnny): what to do if both functors should be initialized?
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#warning "absoluteMultiSiteFunctor included"
+#include "molecularDynamicsLibrary/LJAbsoluteMultiSiteFunctor.h"
 #endif
 
 #else
@@ -61,8 +70,22 @@ using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>
 #else
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 #endif
-
 #endif
+
+//@todo (johnny) considering that we define the functorAbstractType later i have no idea what this is even doing. i am just pattern matching here
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+/**
+ * Type of LJAbsolutePosFunctor used in md-flexible.
+ * Only usable in MultiSite mode since the other option wouldn't really make sense
+ * MD_FLEXIBLE_MODE.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+using LJFunctorTypeAbsPos = mdLib::LJAbsoluteMultiSiteFunctor<ParticleType, true, true>;
+#else
+#error "Absolute MultiSite Position functor cannot be used in Single Site mode"
+#endif
+#endif
+
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 /**
@@ -76,7 +99,6 @@ using LJFunctorTypeAutovecGlobals =
 #else
 using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif
-
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
@@ -121,10 +143,19 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
  * be used in the CMake.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
+#warning "yes, the right mode"
+#if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+#warning "defining LJFunctorTypeAbstract as multfunctor"
 using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
+#elif defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
+#warning "defining LJFunctorTypeAbstract as multfunctorGlobal"
 using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+#elif defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#warning "defining LJFunctorTypeAbstract"
+using LJFunctorTypeAbstract = mdLib::LJAbsoluteMultiSiteFunctor<ParticleType, true, true>;
+#else
+#warning "wtf?"
+
 #endif
 
 #else

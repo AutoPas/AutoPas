@@ -20,6 +20,11 @@ extern template class autopas::AutoPas<ParticleType>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovec *);
 #endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovec *);
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovecGlobals *);
 #endif
@@ -642,6 +647,7 @@ T Simulation::applyWithChosenFunctor(F f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
+      std::cout<<"Choosing LJFunctorTypeAutovec" << std::endl;
       return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
@@ -651,6 +657,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_Globals: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
+      std::cout<<"Choosing LJFunctorTypeAutovecGlobals" << std::endl;
       return f(LJFunctorTypeAutovecGlobals{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
@@ -660,6 +667,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+      std::cout<<"Choosing LJFunctorTypeAVX" << std::endl;
       return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
@@ -669,6 +677,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
+      std::cout<<"Choosing LJFunctorTypeSVE" << std::endl;
       return f(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
