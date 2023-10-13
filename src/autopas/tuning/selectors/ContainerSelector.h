@@ -20,6 +20,7 @@
 #include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/DynamicVerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
