@@ -173,21 +173,11 @@ namespace autopas::compatibleTraversals {
     case ContainerOption::verletClusterLists: {
       return allVCLCompatibleTraversals();
     }
-    case ContainerOption::verletLists: {
-      return allVLCompatibleTraversals();
-    }
+    case ContainerOption::verletLists:
     case ContainerOption::dynamicVerletLists: {
       return allVLCompatibleTraversals();
     }
-    case ContainerOption::experimentalVerletLists: {
-      return allVLCompatibleTraversals();
-    }
-    case ContainerOption::experimentalDynamicVerletLists: {
-      return allVLCompatibleTraversals();
-    }
-    case ContainerOption::verletListsCells: {
-      return allVLCCompatibleTraversals();
-    }
+    case ContainerOption::verletListsCells:
     case ContainerOption::dynamicVerletListsCells: {
       return allVLCCompatibleTraversals();
     }
@@ -197,9 +187,7 @@ namespace autopas::compatibleTraversals {
     case ContainerOption::linkedCellsReferences: {
       return allRLCCompatibleTraversals();
     }
-    case ContainerOption::pairwiseVerletLists: {
-      return allVLPCompatibleTraversals();
-    }
+    case ContainerOption::pairwiseVerletLists:
     case ContainerOption::dynamicPairwiseVerletLists: {
       return allVLPCompatibleTraversals();
     }
