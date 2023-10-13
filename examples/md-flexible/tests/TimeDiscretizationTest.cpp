@@ -482,7 +482,8 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 #else
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, 0));
 #endif
-  EXPECT_NO_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true, true))
+  EXPECT_NO_THROW(
+      TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true, true))
       << "Updating the position of a slow particle should not throw an exception.";
   // fast particle -> exception
   autoPas->begin()->setV({1., 0., 0.});
