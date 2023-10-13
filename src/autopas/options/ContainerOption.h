@@ -52,6 +52,7 @@ class ContainerOption : public Option<ContainerOption> {
      * VerletLists : Built on top of LinkedCells, a neighbor list is generated for every particle and updated in
      * fixed intervals. Memory access, also in SoA mode is scattered but high hit rate of particles in cutoff.
      */
+
     verletLists,
     /**
      * DynamicVerletLists : Similar to VerletLists but neighbor lists are not updated in fixed intervals but based on
@@ -59,25 +60,30 @@ class ContainerOption : public Option<ContainerOption> {
      */
     dynamicVerletLists,
 
-    experimentalVerletLists,
-
-    experimentalDynamicVerletLists,
-
     /**
      * VerletListsCells : Similar to VerletLists but Lists are associated with the underlying cells to achieve location
      * information. Parallelization options similar to LinkedCells.
      */
     verletListsCells,
 
+    /**
+     * DynamicVerletLists : Similar to VerletListsCells but neighbor lists are not updated in fixed intervals but based
+     * on the particles' movements
+     */
     dynamicVerletListsCells,
-
-    dynamicPairwiseVerletLists,
 
     /**
      * PairwiseVerletLists : Also similar to VerletLists but the lists are associated to each pair of neighboring cells.
      * Improves data locality and cache efficiency.
      */
     pairwiseVerletLists,
+
+    /**
+     * DynamicPairwiseVerletLists : Similar to PairwiseVerletLists but neighbor lists are not updated in fixed intervals
+     * but based on the particles' movements
+     */
+    dynamicPairwiseVerletLists,
+
     /**
      * Octree : Particles are put into an octree. This data structure is optimized if the data is non-uniformly
      * distributed since it is space adaptive
