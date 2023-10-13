@@ -125,8 +125,6 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::directSum, "DirectSum"},
         {ContainerOption::linkedCells, "LinkedCells"},
         {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
-        {ContainerOption::experimentalDynamicVerletLists, "ExperimentalDynamicVerletLists"},
-        {ContainerOption::experimentalVerletLists, "ExperimentalVerletLists"},
         {ContainerOption::verletLists, "VerletLists"},
         {ContainerOption::dynamicVerletLists, "DynamicVerletLists"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
