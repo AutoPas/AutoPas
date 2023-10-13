@@ -47,7 +47,8 @@ class DynamicVerletListsCells : public VerletListsCells<Particle, NeighborList> 
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for reduction(|| : listInvalid) schedule(static, 50)
 #endif
-    for (auto iter = _particlePtr2rebuildPositionBuffer.begin(); iter < _particlePtr2rebuildPositionBuffer.end(); ++iter) {
+    for (auto iter = _particlePtr2rebuildPositionBuffer.begin(); iter < _particlePtr2rebuildPositionBuffer.end();
+         ++iter) {
       auto distance = utils::ArrayMath::sub(iter->first->getR(), iter->second);
       double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
