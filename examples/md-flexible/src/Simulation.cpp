@@ -655,6 +655,16 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_AbsSites: {
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+      std::cout<<"Choosing LJFunctorTypeAbsSitePositions" << std::endl;
+      return f(LJFunctorTypeAbsPos{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor Absolute Site Positions. Activate it via `cmake "
+          "-MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS=ON`.");
+#endif
+    }
     case MDFlexConfig::FunctorOption::lj12_6_Globals: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
       std::cout<<"Choosing LJFunctorTypeAutovecGlobals" << std::endl;

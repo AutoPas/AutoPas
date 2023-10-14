@@ -289,6 +289,10 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6)" << endl;
       break;
     }
+    case FunctorOption::lj12_6_AbsSites: {
+      os << "Lennard-Jones (12-6) with absolute site Positions" << endl;
+      break;
+    }
     case FunctorOption::lj12_6_AVX: {
       os << "Lennard-Jones (12-6) AVX intrinsics" << endl;
       break;
