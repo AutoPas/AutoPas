@@ -8,6 +8,10 @@
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
 
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#include "AbsoluteMultiSiteMoleculeInitializer.h"
+#endif
+
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
  */
@@ -91,8 +95,8 @@ class CubeGauss : public Object {
    * Generates the particles based on the configuration of the cube gauss object provided in the yaml file.
    * @param particles The container where the new particles will be stored.
    */
-  void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
+    ParticleType particle = getDummyParticle(particles.size(), ppl);
 
     std::default_random_engine generator(42);
     std::array<std::normal_distribution<double>, 3> distributions = {
@@ -107,6 +111,9 @@ class CubeGauss : public Object {
 
       particles.push_back(particle);
       particle.setID(particle.getID() + 1);
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+      AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
+#endif
     }
   }
 

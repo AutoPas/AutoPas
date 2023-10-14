@@ -27,15 +27,15 @@ public:
 
  /**
   * Constructor of the AbsoluteMultiSiteMoleculeLJ Class
+  * This Constructor does NOT initialize the absolute Site positions. Therefore these need to be initialized later in the program
   * @param r Position of the particle.
-  * @param v Velocity of the particle.
-  * @param q Quaternion defining rotation of particle.
+  * @param v Velocity of the particle.d
   * @param angularVel Rotational velocity of the particle.
   * @param moleculeId Id of the particle.
   * @param typeId Id of the type of the particle. Used in conjunction with ParticlePropertiesLibrary to access
   * molecular information such as site types and relative site positions.
   */
- AbsoluteMultiSiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v, std::array<double, 4> q,
+ AbsoluteMultiSiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v,
                      std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0);
 
  /**
@@ -61,10 +61,13 @@ public:
    oldForceX,
    oldForceY,
    oldForceZ,
-   quaternion0,
-   quaternion1,
-   quaternion2,
-   quaternion3,
+   //quaternion0,
+   //quaternion1,
+   //quaternion2,
+   //quaternion3,
+   absoluteSitePositionsX,
+   absoluteSitePositionsY,
+   absoluteSitePositionsZ,
    angularVelX,
    angularVelY,
    angularVelZ,
@@ -98,10 +101,13 @@ public:
      double, // oldFx
      double, // oldFy
      double, // oldFz
-     double, // q0
-     double, // q1
-     double, // q2
-     double, // q3
+     //double, // q0
+     //double, // q1
+     //double, // q2
+     //double, // q3
+     std::vector<double>, //absSitePosX
+     std::vector<double>, //absSitePosY
+     std::vector<double>, //absSitePosZ
      double, // angVx
      double, // angVy
      double, // angVz
@@ -158,14 +164,20 @@ public:
      return getOldF()[1];
    } else if constexpr (attribute == AttributeNames::oldForceZ) {
      return getOldF()[2];
-   } else if constexpr (attribute == AttributeNames::quaternion0) {
-     return getQuaternion()[0];
-   } else if constexpr (attribute == AttributeNames::quaternion1) {
-     return getQuaternion()[1];
-   } else if constexpr (attribute == AttributeNames::quaternion2) {
-     return getQuaternion()[2];
-   } else if constexpr (attribute == AttributeNames::quaternion3) {
-     return getQuaternion()[3];
+     //}else if constexpr (attribute == AttributeNames::quaternion0) {
+     //  return getQuaternion()[0];
+     //} else if constexpr (attribute == AttributeNames::quaternion1) {
+     //  return getQuaternion()[1];
+     //} else if constexpr (attribute == AttributeNames::quaternion2) {
+     //  return getQuaternion()[2];
+     //} else if constexpr (attribute == AttributeNames::quaternion3) {
+     //  return getQuaternion()[3];
+   }else if constexpr (attribute == AttributeNames::absoluteSitePositionsX){
+     return getAbsoluteSitePositionsX();
+   }else if constexpr (attribute == AttributeNames::absoluteSitePositionsY){
+     return getAbsoluteSitePositionsY();
+   }else if constexpr (attribute == AttributeNames::absoluteSitePositionsZ){
+     return getAbsoluteSitePositionsZ();
    } else if constexpr (attribute == AttributeNames::angularVelX) {
      return getAngularVel()[0];
    } else if constexpr (attribute == AttributeNames::angularVelY) {
@@ -222,14 +234,20 @@ public:
      _oldF[1] = value;
    } else if constexpr (attribute == AttributeNames::oldForceZ) {
      _oldF[2] = value;
-   } else if constexpr (attribute == AttributeNames::quaternion0) {
-     _q[0] = value;
-   } else if constexpr (attribute == AttributeNames::quaternion1) {
-     _q[1] = value;
-   } else if constexpr (attribute == AttributeNames::quaternion2) {
-     _q[2] = value;
-   } else if constexpr (attribute == AttributeNames::quaternion3) {
-     _q[3] = value;
+   //} else if constexpr (attribute == AttributeNames::quaternion0) {
+   //  _q[0] = value;
+   //} else if constexpr (attribute == AttributeNames::quaternion1) {
+   //  _q[1] = value;
+   //} else if constexpr (attribute == AttributeNames::quaternion2) {
+   //  _q[2] = value;
+   //} else if constexpr (attribute == AttributeNames::quaternion3) {
+   //  _q[3] = value;
+   } else if constexpr (attribute == AttributeNames::absoluteSitePositionsX) {
+     _absSitePositionsX = value;
+   } else if constexpr (attribute == AttributeNames::absoluteSitePositionsY) {
+     _absSitePositionsY = value;
+   } else if constexpr (attribute == AttributeNames::absoluteSitePositionsZ) {
+     _absSitePositionsZ = value;
    } else if constexpr (attribute == AttributeNames::angularVelX) {
      _angularVel[0] = value;
    } else if constexpr (attribute == AttributeNames::angularVelY) {
@@ -251,17 +269,50 @@ public:
    }
  }
 
- /**
-  * Get the quaternion defining rotation
-  * @return quaternion defining rotation
-  */
- [[nodiscard]] const std::array<double, 4> &getQuaternion() const;
+ ///**
+ // * Get the quaternion defining rotation
+ // * @return quaternion defining rotation
+ // */
+ //[[nodiscard]] const std::array<double, 4> &getQuaternion() const;
+
+ ///**
+ // * Set the quaternion defining rotation
+ // * @param q quaternion defining rotation
+ // */
+ //void setQuaternion(const std::array<double, 4> &q);
 
  /**
-  * Set the quaternion defining rotation
-  * @param q quaternion defining rotation
+  * Set the x-component of the absoluteSitePositions
   */
- void setQuaternion(const std::array<double, 4> &q);
+ void setAbsoluteSitePositionsX(const std::vector<double> sitesX);
+
+ /**
+  * Set the y-component of the absoluteSitePositions
+  */
+ void setAbsoluteSitePositionsY(const std::vector<double> sitesY);
+
+ /**
+  * Set the z-component of the absoluteSitePositions
+  */
+ void setAbsoluteSitePositionsZ(const std::vector<double> sitesZ);
+
+ /**
+  * Get the x-components of all Sites in that molecule.
+  * @return Vector containing the absolute x-positions of all Sites
+  */
+ [[nodiscard]] const std::vector<double> &getAbsoluteSitePositionsX() const;
+
+ /**
+  * Get the y-components of all Sites in that molecule.
+  * @return Vector containing the absolute y-positions of all Sites
+  */
+ [[nodiscard]] const std::vector<double> &getAbsoluteSitePositionsY() const;
+
+ /**
+  * Get the z-components of all Sites in that molecule.
+  * @return Vector containing the absolute z-positions of all Sites
+  */
+ [[nodiscard]] const std::vector<double> &getAbsoluteSitePositionsZ() const;
 
  /**
   * Get the angular velocity
@@ -312,10 +363,35 @@ public:
  [[nodiscard]] std::string toString() const override;
 
 protected:
+
  /**
-  * Rotational direction of particle as quaternion.
+  * Helper function for toString method
+  * @return
   */
- std::array<double, 4> _q{};
+ template<typename T> std::string  vectorToString(std::vector<T> v) const;
+
+ // /**
+ // * Rotational direction of particle as quaternion.
+ // */
+ //std::array<double, 4> _q{};
+
+ /**
+  * Vector storing the x-component the absolute Site positions.
+  * Since the number of sites in this molecule stay constant the size of this vector will also remain constant after initialization.
+  */
+ std::vector<double> _absSitePositionsX{};
+
+ /**
+  * Vector storing the y-component the absolute Site positions.
+  * Since the number of sites in this molecule stay constant the size of this vector will also remain constant after initialization.
+  */
+
+ std::vector<double> _absSitePositionsY{};
+ /**
+  * Vector storing the z-component the absolute Site positions.
+  * Since the number of sites in this molecule stay constant the size of this vector will also remain constant after initialization.
+  */
+ std::vector<double> _absSitePositionsZ{};
 
  /**
   * Angular velocity of the particle

@@ -201,6 +201,7 @@ MDFlexConfig::MDFlexConfig(int argc, char **argv) {
   initializeParticlePropertiesLibrary();
 
   initializeObjects();
+
 }
 
 std::string MDFlexConfig::to_string() const {
@@ -524,19 +525,19 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 
 void MDFlexConfig::initializeObjects() {
   for (const auto &object : cubeGridObjects) {
-    object.generate(_particles);
+    object.generate(_particles, _particlePropertiesLibrary);
   }
   for (const auto &object : cubeGaussObjects) {
-    object.generate(_particles);
+    object.generate(_particles, _particlePropertiesLibrary);
   }
   for (const auto &object : cubeUniformObjects) {
-    object.generate(_particles);
+    object.generate(_particles, _particlePropertiesLibrary);
   }
   for (const auto &object : sphereObjects) {
-    object.generate(_particles);
+    object.generate(_particles, _particlePropertiesLibrary);
   }
   for (const auto &object : cubeClosestPackedObjects) {
-    object.generate(_particles);
+    object.generate(_particles, _particlePropertiesLibrary);
   }
 }
 

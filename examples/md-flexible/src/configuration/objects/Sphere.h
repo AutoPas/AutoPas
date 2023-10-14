@@ -8,6 +8,10 @@
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
 
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#include "AbsoluteMultiSiteMoleculeInitializer.h"
+#endif
+
 /**
  * Class describing a regular 3D spherical particle grid object.
  */
@@ -134,10 +138,13 @@ class Sphere : public Object {
    * Generates the particles based on the configuration of the sphere object provided in the yaml file.
    * @param particles The container where the generated particles will be stored.
    */
-  void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
+    ParticleType particle = getDummyParticle(particles.size(), ppl);
     iteratePositions([&](const auto &pos) {
       particle.setR(pos);
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+      AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
+#endif
       particles.push_back(particle);
       particle.setID(particle.getID() + 1);
     });

@@ -12,6 +12,10 @@
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
 
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#include "AbsoluteMultiSiteMoleculeInitializer.h"
+#endif
+
 /**
  * Class describing a cube of hexagonally closest packed particles.
  */
@@ -93,8 +97,8 @@ class CubeClosestPacked : public Object {
    * Generates particles based on the parameters provided to the CubeClosestPacked Object in the configuration file.
    * @param particles: The container, where the new particles get stored.
    */
-  void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
+    ParticleType particle = getDummyParticle(particles.size(), ppl);
 
     bool evenLayer = true;
 
@@ -105,6 +109,8 @@ class CubeClosestPacked : public Object {
         double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + _xOffset;
         for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
           particle.setR({x, y, z});
+
+
           particles.push_back(particle);
 
           particle.setID(particle.getID() + 1);

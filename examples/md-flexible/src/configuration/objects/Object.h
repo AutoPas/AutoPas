@@ -32,14 +32,14 @@ class Object {
    * Generate the object in the given AutoPas container.
    * @param particles The container to which the new particles will be appended to.
    */
-  virtual void generate(std::vector<ParticleType> &particles) const = 0;
+  virtual void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const = 0;
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
    * @param particleId: Defines the id of the generated dummy particle.
    * @return a particle initialized with default values.
    */
-  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId) const {
+  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const {
     ParticleType particle{};
     particle.setID(particleId);
     particle.setTypeId(_typeId);
@@ -47,8 +47,11 @@ class Object {
     particle.setV(_velocity);
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
+
 #if MD_FLEXIBLE_MODE == MULTISITE
+#if not defined(MMD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
+#endif
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
 #endif
