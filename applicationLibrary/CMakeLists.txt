@@ -10,7 +10,9 @@ file(
 )
 
 add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC}
-        molecularDynamics/molecularDynamicsLibrary/LJAbsoluteMultiSiteFunctor.h)
+        molecularDynamics/molecularDynamicsLibrary/LJAbsoluteMultiSiteFunctor.h
+        molecularDynamics/molecularDynamicsLibrary/AbsoluteMultiSiteMoleculeLJ.cpp
+        molecularDynamics/molecularDynamicsLibrary/AbsoluteMultiSiteMoleculeLJ.h)
 
 # Set CMake option for md-flexible mode
 set(MD_FLEXIBLE_MODE

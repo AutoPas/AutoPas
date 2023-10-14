@@ -7,7 +7,7 @@
 #pragma once
 
 #include "MoleculeLJ.h"
-#include "MultisiteMoleculeLJ.h"
+#include "AbsoluteMultiSiteMoleculeLJ.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"

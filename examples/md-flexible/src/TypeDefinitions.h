@@ -50,6 +50,7 @@ using FloatPrecision = double;
 #if MD_FLEXIBLE_MODE == MULTISITE
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
 using ParticleType = mdLib::AbsoluteMultiSiteMoleculeLJ;
+//using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #endif
@@ -95,7 +96,7 @@ using LJFunctorTypeAbsPos = mdLib::LJAbsoluteMultiSiteFunctor<ParticleType, true
 using LJFunctorTypeAutovecGlobals =
    mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #else
-using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAutovecGlobals = mdc0a4c58138fa41bb4e727e06c758eb5fe324647eLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #endif

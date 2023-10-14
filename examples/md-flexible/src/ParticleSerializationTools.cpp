@@ -13,6 +13,34 @@ namespace {
  * Stores the AttributeNames of the attributes of ParticleType which have to be communicated using MPI.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::id,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::posX,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::posY,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::posZ,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::velocityX,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::velocityY,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::velocityZ,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::forceX,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::forceY,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::forceZ,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::oldForceX,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::oldForceY,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::oldForceZ,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion0,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion1,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion2,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion3,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::angularVelX,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::angularVelY,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::angularVelZ,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::torqueX,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::torqueY,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::torqueZ,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::typeId,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::ownershipState};
+#else
 constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::id,
     mdLib::MultisiteMoleculeLJ::AttributeNames::posX,
@@ -39,6 +67,7 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::torqueZ,
     mdLib::MultisiteMoleculeLJ::AttributeNames::typeId,
     mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
+#endif
 #else
 constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
     mdLib::MoleculeLJ::AttributeNames::id,
