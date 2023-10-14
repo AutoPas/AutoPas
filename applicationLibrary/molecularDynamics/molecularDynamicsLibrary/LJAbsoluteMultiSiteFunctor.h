@@ -119,7 +119,6 @@ class LJAbsoluteMultiSiteFunctor
         _aosThreadData(),
         _postProcessed{false} {
 
-    std::cout<< "Awooooooo\n";
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
