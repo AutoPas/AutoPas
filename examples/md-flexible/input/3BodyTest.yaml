@@ -1,20 +1,28 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
-container                            :  [DirectSum]
-verlet-rebuild-frequency             :  20
-verlet-skin-radius-per-timestep      :  0.015
-selector-strategy                    :  Fastest-Absolute-Value
+container                            :  [LinkedCells] # DirectSum
+functor-3b                           :  axilrod-teller
+traversal-3b                         :  [lc_c01_3b] # ds_sequential_3b
+newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS]
-traversal-3b                         :  [ds_sequential_3b]
+
+# Uncomment to combine pairwise and 3-body interaction
+#functor                              :  lj-avx
+#traversal                            :  [lc_c01, lc_c08, lc_sliced]
+#newton3                              :  [enabled, disabled]
+#data-layout                          :  [AoS, SoA]
+
+verlet-rebuild-frequency             :  10
+verlet-skin-radius-per-timestep      :  0.02
+selector-strategy                    :  Fastest-Absolute-Value
 tuning-strategies                    :  []
-tuning-interval                      :  5000
+tuning-interval                      :  2000
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
-functor-3b                           :  axilrod-teller
-newton3-3b                           :  [enabled]
-cutoff                               :  4.5
+
+cutoff                               :  2.5
 cell-size                            :  [1]
 deltaT                               :  0.002
-iterations                           :  25
+iterations                           :  100
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 
@@ -23,26 +31,27 @@ Sites:
     epsilon                          :  1.
     sigma                            :  1.
     mass                             :  1.
-    nu                               :  0.072
+    nu                               :  0.073 # Value for Argon
 Objects:
   CubeClosestPacked:
     0:
-      box-length                     :  [6.957877, 11.443702728873611, 10.160125859362071]
+      box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [0, 0, 0]
-      particle-spacing               :  1.2957877812127119 # 0.65
+      particle-spacing               :  1.35
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
 thermostat:
-  initialTemperature                 :  1.033
-  targetTemperature                  :  1.033
+  initialTemperature                 :  1.1
+  targetTemperature                  :  1.1
   deltaTemperature                   :  0.5
   thermostatInterval                 :  25
   addBrownianMotion                  :  true
 
-log-level                            :  debug
+log-level                            :  warn
 no-flops                             :  false
 no-end-config                        :  true
-vtk-filename                         :  3BodyTestSim
+no-progress-bar                      :  false
+vtk-filename                         :  3BodyTest
 vtk-output-folder                    :  3BodyTestOutput
-vtk-write-frequency                  :  1
+vtk-write-frequency                  :  10
 #log-file                            : log.txt
