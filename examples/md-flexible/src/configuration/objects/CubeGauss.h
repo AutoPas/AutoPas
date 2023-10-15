@@ -96,7 +96,7 @@ class CubeGauss : public Object {
    * @param particles The container where the new particles will be stored.
    */
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
-    ParticleType particle = getDummyParticle(particles.size(), ppl);
+    ParticleType particle = getDummyParticle(particles.size());
 
     std::default_random_engine generator(42);
     std::array<std::normal_distribution<double>, 3> distributions = {

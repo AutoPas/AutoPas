@@ -98,7 +98,7 @@ class CubeClosestPacked : public Object {
    * @param particles: The container, where the new particles get stored.
    */
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
-    ParticleType particle = getDummyParticle(particles.size(), ppl);
+    ParticleType particle = getDummyParticle(particles.size());
 
     bool evenLayer = true;
 

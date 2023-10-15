@@ -139,7 +139,7 @@ class Sphere : public Object {
    * @param particles The container where the generated particles will be stored.
    */
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
-    ParticleType particle = getDummyParticle(particles.size(), ppl);
+    ParticleType particle = getDummyParticle(particles.size());
     iteratePositions([&](const auto &pos) {
       particle.setR(pos);
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)

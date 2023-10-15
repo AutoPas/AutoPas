@@ -296,6 +296,12 @@ public:
   */
  void setAbsoluteSitePositionsZ(const std::vector<double> sitesZ);
 
+
+ /**
+  * Returns the number of sites of that molecule.
+  */
+  int getNumberOfSites();
+
  /**
   * Get the x-components of all Sites in that molecule.
   * @return Vector containing the absolute x-positions of all Sites

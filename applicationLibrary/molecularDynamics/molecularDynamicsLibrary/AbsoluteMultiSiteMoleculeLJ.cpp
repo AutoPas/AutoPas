@@ -27,6 +27,10 @@ const std::vector<double> &AbsoluteMultiSiteMoleculeLJ::getAbsoluteSitePositions
   return _absSitePositionsZ;
 }
 
+int AbsoluteMultiSiteMoleculeLJ::getNumberOfSites(){
+  return _absSitePositionsX.size();
+}
+
 const std::array<double, 3> &AbsoluteMultiSiteMoleculeLJ::getAngularVel() const { return _angularVel; }
 void AbsoluteMultiSiteMoleculeLJ::setAngularVel(const std::array<double, 3> &angularVel) { _angularVel = angularVel; }
 void AbsoluteMultiSiteMoleculeLJ::addAngularVel(const std::array<double, 3> &angularVel) {

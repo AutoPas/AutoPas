@@ -99,7 +99,7 @@ class CubeGrid : public Object {
    * @param particles The container in which the generated particles get stored.
    */
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
-    ParticleType particle = getDummyParticle(particles.size(), ppl);
+    ParticleType particle = getDummyParticle(particles.size());
 
     for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
       for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {

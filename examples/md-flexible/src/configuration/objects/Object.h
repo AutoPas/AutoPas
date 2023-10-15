@@ -39,7 +39,7 @@ class Object {
    * @param particleId: Defines the id of the generated dummy particle.
    * @return a particle initialized with default values.
    */
-  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const {
+  [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId) const {
     ParticleType particle{};
     particle.setID(particleId);
     particle.setTypeId(_typeId);
