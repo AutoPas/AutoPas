@@ -1351,9 +1351,10 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
 #endif
 
   // Step 3: 3-body interactions of 1 buffer particle and 2 container particles
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for shared(bufferParticles)
-#endif
+  // todo: parallelize without race conditions
+  //#ifdef AUTOPAS_OPENMP
+  //#pragma omp parallel for shared(bufferParticles)
+  //#endif
   for (auto i = 0; i < numTotal; ++i) {
     Particle &p1 = *bufferParticles[i];
     const auto pos = p1.getR();
@@ -1364,27 +1365,11 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
         boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
     for (; p2Iter.isValid(); ++p2Iter) {
       Particle &p2 = *p2Iter;
-      const auto p2ID = p2.getID();
-      const auto lockCoordsP2 = static_cast_copy_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
 
       auto p3Iter = p2Iter;
       ++p3Iter;
       for (; p3Iter.isValid(); ++p3Iter) {
         Particle &p3 = *p3Iter;
-        const auto p3ID = p3.getID();
-        const auto lockCoordsP3 = static_cast_copy_array<size_t>((p3.getR() - haloBoxMin) * interactionLengthInv);
-        // Take spatial locks in order of particle ID to avoid deadlocks
-        if (p2ID < p3ID) {
-          const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
-          if (lockCoordsP2 != lockCoordsP3)
-            const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
-        } else if (p2ID > p3ID) {
-          const std::lock_guard<std::mutex> lock3(*_spacialLocks[lockCoordsP3[0]][lockCoordsP3[1]][lockCoordsP3[2]]);
-          if (lockCoordsP2 != lockCoordsP3)
-            const std::lock_guard<std::mutex> lock2(*_spacialLocks[lockCoordsP2[0]][lockCoordsP2[1]][lockCoordsP2[2]]);
-        } else {
-          continue;
-        }
 
         if constexpr (newton3) {
           f->AoSFunctor(p1, p2, p3, true);
