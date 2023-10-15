@@ -76,8 +76,8 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
 void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                              std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options, InteractionTypeOption interactionTypeOption,
-                              int rank, int commSize);
+                              std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
+                              InteractionTypeOption interactionTypeOption, int rank, int commSize);
 
 /**
  * Distribute ranks in buckets, which contain only ranks with similar scenarios.

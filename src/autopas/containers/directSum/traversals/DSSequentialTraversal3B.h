@@ -25,7 +25,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class DSSequentialTraversal3B : public CellTraversal<ParticleCell>, public DSTraversalInterface<ParticleCell>, public TraversalInterface<InteractionTypeOption::threeBody> {
+class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
+                                public DSTraversalInterface<ParticleCell>,
+                                public TraversalInterface<InteractionTypeOption::threeBody> {
  public:
   /**
    * Constructor for the DirectSum traversal.
@@ -70,7 +72,7 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>, public DSTra
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor3B<typename ParticleCell::ParticleType, ParticleCell, TriwiseFunctor, dataLayout, useNewton3,
-                        true>
+                          true>
       _cellFunctor;
 
   /**

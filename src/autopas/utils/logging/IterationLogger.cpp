@@ -52,10 +52,11 @@ autopas::IterationLogger::~IterationLogger() {
 #endif
 }
 
-void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration, std::string functorName,
-                                            bool inTuningPhase, long timeIteratePairwise, long timeRemainderTraversal,
-                                            long timeRebuildNeighborLists, long timeIteratePairwiseTotal,
-                                            long timeTuning, double energyPsys, double energyPkg, double energyRam) {
+void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
+                                            std::string functorName, bool inTuningPhase, long timeIteratePairwise,
+                                            long timeRemainderTraversal, long timeRebuildNeighborLists,
+                                            long timeIteratePairwiseTotal, long timeTuning, double energyPsys,
+                                            double energyPkg, double energyRam) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",

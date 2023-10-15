@@ -218,7 +218,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.dataLayoutOptions3B.value.empty()) {
           throw std::runtime_error("Parsed data-layouts-list is empty.");
         }
-      }else if (key == config.functorOption.name) {
+      } else if (key == config.functorOption.name) {
         expected = "One of the possible values.";
         description = config.functorOption.description;
 

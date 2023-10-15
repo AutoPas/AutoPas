@@ -8,9 +8,9 @@
 
 #include <gmock/gmock.h>
 
-#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
+#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
 //#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 
@@ -19,7 +19,7 @@ class MockTriwiseFunctor : public autopas::TriwiseFunctor<Particle, MockTriwiseF
  public:
   MockTriwiseFunctor() : autopas::TriwiseFunctor<Particle, MockTriwiseFunctor<Particle>>(0.){};
   // virtual void AoSFunctor(Particle &i, Particle &j, bool newton3)
-  MOCK_METHOD(void, AoSFunctor, (Particle &i, Particle &j, Particle &k, bool newton3), (override));
+  MOCK_METHOD(void, AoSFunctor, (Particle & i, Particle &j, Particle &k, bool newton3), (override));
 
   // virtual void SoAFunctorSingle(SoAView &soa, bool newton3)
   MOCK_METHOD(void, SoAFunctorSingle, (autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3),

@@ -11,8 +11,9 @@ using namespace autopas;
 
 // Test if serializing and deserializing again works as expected.
 TEST_F(AutoPasConfigurationCommunicatorTest, testSerializeAndDeserialize) {
-  Configuration config = Configuration(ContainerOption::directSum, 1.2, TraversalOption::lc_sliced,
-                                       LoadEstimatorOption::none, DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise);
+  Configuration config =
+      Configuration(ContainerOption::directSum, 1.2, TraversalOption::lc_sliced, LoadEstimatorOption::none,
+                    DataLayoutOption::soa, Newton3Option::disabled, InteractionTypeOption::pairwise);
   Configuration passedConfig = deserializeConfiguration(serializeConfiguration(config));
   EXPECT_EQ(passedConfig, config);
 }
@@ -40,16 +41,16 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testOptimizeConfiguration) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  Configuration config =
-      Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced,
-                    LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise);
+  Configuration config = Configuration(ContainerOption::directSum, 1 + rank, TraversalOption::lc_sliced,
+                                       LoadEstimatorOption::neighborListLength, DataLayoutOption::aos,
+                                       Newton3Option::enabled, InteractionTypeOption::pairwise);
   // provide rank as the time for the config.
   Configuration optimized = findGloballyBestConfiguration(MPI_COMM_WORLD, config, rank);
 
   // CSF should be 1, because rank 0 provided the lowest time.
-  EXPECT_EQ(optimized,
-            Configuration(ContainerOption::directSum, 1, TraversalOption::lc_sliced,
-                          LoadEstimatorOption::neighborListLength, DataLayoutOption::aos, Newton3Option::enabled, InteractionTypeOption::pairwise));
+  EXPECT_EQ(optimized, Configuration(ContainerOption::directSum, 1, TraversalOption::lc_sliced,
+                                     LoadEstimatorOption::neighborListLength, DataLayoutOption::aos,
+                                     Newton3Option::enabled, InteractionTypeOption::pairwise));
 }
 
 // Test if the search space does get reduced.
@@ -65,12 +66,14 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeConfigurationsFiniteC
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &commSize);
 
-  int totalNumConfigsBefore = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions,
-                                                 loadEstimatorOptions, dataLayoutOptions, newton3Options, InteractionTypeOption::pairwise);
+  int totalNumConfigsBefore =
+      getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
+                         newton3Options, InteractionTypeOption::pairwise);
   distributeConfigurations(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
                            newton3Options, InteractionTypeOption::pairwise, rank, commSize);
-  int totalNumConfigsAfter = getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions,
-                                                loadEstimatorOptions, dataLayoutOptions, newton3Options, InteractionTypeOption::pairwise);
+  int totalNumConfigsAfter =
+      getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions,
+                         newton3Options, InteractionTypeOption::pairwise);
 
   // If true, each rank should have several configurations left.
   if (commSize <= totalNumConfigsBefore) {
@@ -208,10 +211,10 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testDistributeOneConfigPerRank) {
   std::set<DataLayoutOption> oneDataLayout{DataLayoutOption::aos};
   std::set<Newton3Option> oneNewton3{Newton3Option::disabled};
 
-  distributeConfigurations(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3, InteractionTypeOption::pairwise,
-                           rank, commSize);
-  size_t size =
-      getSearchSpaceSize(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3, InteractionTypeOption::pairwise);
+  distributeConfigurations(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout, oneNewton3,
+                           InteractionTypeOption::pairwise, rank, commSize);
+  size_t size = getSearchSpaceSize(oneContainer, rankManyCellSizes, oneTraversal, oneLoadEstimator, oneDataLayout,
+                                   oneNewton3, InteractionTypeOption::pairwise);
 
   EXPECT_EQ(size, 1);
   double error = 0.001;
@@ -232,8 +235,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeValid) {
   std::set<DataLayoutOption> oneDataLayout{DataLayoutOption::aos};
   std::set<Newton3Option> oneNewton3{Newton3Option::disabled};
 
-  size_t size =
-      getSearchSpaceSize(threeContainers, twoCellSizes, threeTraversals, twoLoadEstimators, oneDataLayout, oneNewton3, InteractionTypeOption::pairwise);
+  size_t size = getSearchSpaceSize(threeContainers, twoCellSizes, threeTraversals, twoLoadEstimators, oneDataLayout,
+                                   oneNewton3, InteractionTypeOption::pairwise);
 
   // There are 36 configurations in the Cartesian product, but only 6 of them are valid.
   EXPECT_EQ(size, 6);
@@ -248,8 +251,8 @@ TEST_F(AutoPasConfigurationCommunicatorTest, testGetSearchSpaceSizeInvalid) {
   std::set<DataLayoutOption> oneDataLayout{DataLayoutOption::aos};
   std::set<Newton3Option> oneNewton3{Newton3Option::disabled};
 
-  size_t size =
-      getSearchSpaceSize(twoContainers, twoCellSizes, twoTraversals, oneLoadEstimators, oneDataLayout, oneNewton3, InteractionTypeOption::pairwise);
+  size_t size = getSearchSpaceSize(twoContainers, twoCellSizes, twoTraversals, oneLoadEstimators, oneDataLayout,
+                                   oneNewton3, InteractionTypeOption::pairwise);
 
   // There are 8 configurations in the Cartesian product, but none are valid.
   EXPECT_EQ(size, 0);

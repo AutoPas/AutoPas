@@ -24,8 +24,9 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 
-class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
-                                public VLCCellPairTraversalInterface<typename ParticleCell::ParticleType> {
+class VLCCellPairC08Traversal
+    : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
+      public VLCCellPairTraversalInterface<typename ParticleCell::ParticleType> {
  public:
   /**
    * Constructor of the c08 traversal fot VLCCellPairNeighborList.
@@ -37,8 +38,8 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
    */
   explicit VLCCellPairC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                    double interactionLength, const std::array<double, 3> &cellLength)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                 interactionLength, cellLength),
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor),
         _cellHandler(dims, pairwiseFunctor, interactionLength, cellLength, this->_overlap) {}
 

@@ -10,8 +10,8 @@
 
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
-#include "autopas/utils/WrapMPI.h"
 #include "autopas/options/InteractionTypeOption.h"
+#include "autopas/utils/WrapMPI.h"
 
 namespace autopas {
 
@@ -28,7 +28,7 @@ struct TuningStrategyFactoryInfo {
   /**
    * Interaction type for which tuning strategies should be created.
    */
-   InteractionTypeOption interactionType;
+  InteractionTypeOption interactionType;
   // Predictive Tuning Options
   /**
    * Function option used for extrapolating performance from observed evidence.

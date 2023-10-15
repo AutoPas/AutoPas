@@ -132,9 +132,9 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
 
 /**
- * We require access to a version of the force functor for non-computeInteractions purposes, e.g. calculating FLOPs or AoS
- * functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is chosen to
- * be used in the CMake.
+ * We require access to a version of the force functor for non-computeInteractions purposes, e.g. calculating FLOPs or
+ * AoS functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is
+ * chosen to be used in the CMake.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
@@ -157,7 +157,7 @@ using ForceFunctorAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 #endif
 
 #if MD_FLEXIBLE_FUNCTOR_AT
-using ForceFunctorAbstract3B  = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+using ForceFunctorAbstract3B = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 #endif
 
 #endif

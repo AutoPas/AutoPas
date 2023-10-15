@@ -44,8 +44,8 @@ class LCC01Traversal3B
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC01Traversal3B(const std::array<unsigned long, 3> &dims, Functor *functor,
-                          const double interactionLength, const std::array<double, 3> &cellLength)
+  explicit LCC01Traversal3B(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
+                            const std::array<double, 3> &cellLength)
       : C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, dataLayout, useNewton3, 3>(
             dims, functor, interactionLength, cellLength),
         _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
@@ -72,13 +72,9 @@ class LCC01Traversal3B
    *
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override {
-    return not useNewton3;
-  }
+  [[nodiscard]] bool isApplicable() const override { return not useNewton3; }
 
-  [[nodiscard]] TraversalOption getTraversalType() const override {
-    return TraversalOption::lc_c01_3b;
-  }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c01_3b; }
 
  private:
   /**
@@ -123,10 +119,9 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
 
   // Helper function to get minimal distance between two cells
   auto cellDistance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-    return std::array<double, 3>{
-        std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
-        std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
-        std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2] };
+    return std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
+                                 std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
+                                 std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
   };
 
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
@@ -167,9 +162,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
               if (offset2 <= offset1) continue;
               // sorting direction towards middle of cell 1 and cell 2
               const std::array<double, 3> sortDirection = {
-                                           (x1 + x2) * this->_cellLength[0],
-                                           (y1 + y2) * this->_cellLength[1],
-                                           (z1 + z2) * this->_cellLength[2]};
+                  (x1 + x2) * this->_cellLength[0], (y1 + y2) * this->_cellLength[1], (z1 + z2) * this->_cellLength[2]};
               _cellOffsets.emplace_back(offset1, offset2, utils::ArrayMath::normalize(sortDirection));
             }
           }
@@ -177,7 +170,6 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
       }
     }
   }
-
 }
 
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
@@ -210,8 +202,7 @@ template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout,
 inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseParticleTriplets() {
   auto &cells = *(this->_cells);
   if (not this->isApplicable()) {
-    utils::ExceptionHandler::exception(
-        "The C01 traversal cannot work with enabled newton3!");
+    utils::ExceptionHandler::exception("The C01 traversal cannot work with enabled newton3!");
   }
 
   this->c01Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });

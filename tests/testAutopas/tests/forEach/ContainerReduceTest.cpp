@@ -24,7 +24,8 @@ auto ContainerReduceTest::defaultInit(AutoPasT &autoPas, autopas::ContainerOptio
   autoPas.setVerletRebuildFrequency(2);
   autoPas.setNumSamples(2);
   autoPas.setAllowedContainers(std::set<autopas::ContainerOption>{containerOption});
-  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(containerOption, autopas::InteractionTypeOption::pairwise));
+  autoPas.setAllowedTraversals(autopas::compatibleTraversals::allCompatibleTraversals(
+      containerOption, autopas::InteractionTypeOption::pairwise));
   autoPas.setAllowedCellSizeFactors(autopas::NumberSetFinite<double>(std::set<double>({cellSizeFactor})));
 
   autoPas.init();

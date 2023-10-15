@@ -21,7 +21,8 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
+          DataLayoutOption::Value dataLayout, bool useNewton3>
 class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3> {
  public:
   /**
@@ -32,10 +33,10 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                             const double interactionLength, const std::array<double, 3> &cellLength)
-      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(dims, functor, interactionLength,
-                                                                               cellLength) {}
+  explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
+                             const std::array<double, 3> &cellLength)
+      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(
+            dims, functor, interactionLength, cellLength) {}
 
  protected:
   /**
@@ -54,7 +55,8 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
   inline void c18Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
+          DataLayoutOption::Value dataLayout, bool useNewton3>
 template <bool allCells, typename LoopBody>
 inline void C18BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>::c18Traversal(
     LoopBody &&loopBody) {

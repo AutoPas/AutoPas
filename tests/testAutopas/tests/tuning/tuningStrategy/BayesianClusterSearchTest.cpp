@@ -27,10 +27,11 @@ TEST_F(BayesianClusterSearchTest, testMaxEvidence) {
   const autopas::NumberSetFinite<double> cellSizeFactors{1};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
-  autopas::BayesianClusterSearch bayesClusterSearch(autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
-                                                    loadEstimatorOptions, dataLayoutOptions, newton3Options,
-                                                    maxEvidence);
+      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
+      autopas::InteractionTypeOption::pairwise);
+  autopas::BayesianClusterSearch bayesClusterSearch(autopas::InteractionTypeOption::pairwise, containerOptions,
+                                                    cellSizeFactors, traversalOptions, loadEstimatorOptions,
+                                                    dataLayoutOptions, newton3Options, maxEvidence);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
 
@@ -82,10 +83,12 @@ TEST_F(BayesianClusterSearchTest, testFindBestSimilar) {
   const autopas::NumberSetFinite<double> cellSizeFactors{1.};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
+      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
+      autopas::InteractionTypeOption::pairwise);
   autopas::BayesianClusterSearch bayesClusterSearch(
-      autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-      maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
+      autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
+      loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
+      autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
   autopas::EvidenceCollection evidenceCollection{};
@@ -157,10 +160,12 @@ TEST_F(BayesianClusterSearchTest, testFindBestDifferent) {
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
+      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
+      autopas::InteractionTypeOption::pairwise);
   autopas::BayesianClusterSearch bayesClusterSearch(
-      autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-      maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
+      autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
+      loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
+      autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
   autopas::EvidenceCollection evidenceCollection{};
@@ -244,10 +249,12 @@ TEST_F(BayesianClusterSearchTest, testFindBestVeryDifferent) {
   const autopas::NumberSetFinite<double> cellSizeFactors{1., 2.};
 
   const auto searchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
-      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
+      containerOptions, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options, &cellSizeFactors,
+      autopas::InteractionTypeOption::pairwise);
   autopas::BayesianClusterSearch bayesClusterSearch(
-      autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
-      maxEvidence, autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
+      autopas::InteractionTypeOption::pairwise, containerOptions, cellSizeFactors, traversalOptions,
+      loadEstimatorOptions, dataLayoutOptions, newton3Options, maxEvidence,
+      autopas::AcquisitionFunctionOption::upperConfidenceBound, "", predNumLHSamples, seed);
 
   std::vector<autopas::Configuration> configQueue{searchSpace.rbegin(), searchSpace.rend()};
   autopas::EvidenceCollection evidenceCollection{};

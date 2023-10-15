@@ -307,8 +307,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
           cerr << "Unknown 3-body functor: " << strArg << endl;
-          cerr << "Please use 'Axilrod-Teller'"
-               << endl;
+          cerr << "Please use 'Axilrod-Teller'" << endl;
           displayHelp = true;
         }
         config.addInteractionType(autopas::InteractionTypeOption::threeBody);

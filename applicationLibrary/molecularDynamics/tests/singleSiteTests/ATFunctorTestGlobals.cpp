@@ -10,7 +10,8 @@
 TYPED_TEST_SUITE_P(ATFunctorTestGlobals);
 
 template <class FuncType>
-void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestGlobals<FuncType>::where_type where, bool newton3) {
+void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestGlobals<FuncType>::where_type where,
+                                                                  bool newton3) {
   FuncType functor(cutoff);
   functor.setParticleProperties(nu);
 
@@ -70,7 +71,8 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestG
   const auto [virial1, virial2, virial3] = calculateATVirialTotalPerParticle(p1Pos, p2Pos, p3Pos, cutoff, nu);
   const double expectedVirial = virial1 * owned1 + virial2 * owned2 + virial3 * owned3;
 
-  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta) << "where: " << where_str << ", newton3: " << newton3;
+  EXPECT_NEAR(potentialEnergy, whereFactor * expectedEnergy, absDelta)
+      << "where: " << where_str << ", newton3: " << newton3;
   EXPECT_NEAR(virial, expectedVirial, absDelta) << "where: " << where_str << ", newton3: " << newton3;
 }
 
@@ -145,10 +147,8 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobalsOpenMPParallel) {
   const double expectedEnergy = expectedEnergyTriplet1 + expectedEnergyTriplet2;
   const double expectedVirial = expectedVirialTriplet1 + expectedVirialTriplet2;
 
-  EXPECT_NEAR(potentialEnergy, expectedEnergy, this->absDelta)
-      << "newton3: " << newton3;
-  EXPECT_NEAR(virial, expectedVirial, this->absDelta)
-      << "newton3: " << newton3;
+  EXPECT_NEAR(potentialEnergy, expectedEnergy, this->absDelta) << "newton3: " << newton3;
+  EXPECT_NEAR(virial, expectedVirial, this->absDelta) << "newton3: " << newton3;
 }
 
 TYPED_TEST_P(ATFunctorTestGlobals, testATFunctorGlobalsThrowBad) {
@@ -177,16 +177,16 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobals) {
   using FuncType = TypeParam;
   using TestType = ATFunctorTestGlobals<FuncType>;
 
-  for (typename TestType::where_type where :
-       {TestType::where_type::inside, TestType::where_type::ininout, TestType::where_type::inoutout, TestType::where_type::outside}) {
+  for (typename TestType::where_type where : {TestType::where_type::inside, TestType::where_type::ininout,
+                                              TestType::where_type::inoutout, TestType::where_type::outside}) {
     for (bool newton3 : {false, true}) {
-      if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixing(where, newton3); }); msg != "") {
+      if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixing(where, newton3); });
+          msg != "") {
         GTEST_SKIP() << msg;
       }
     }
   }
 }
-
 
 REGISTER_TYPED_TEST_SUITE_P(ATFunctorTestGlobals, testAoSATFunctorGlobals, testATFunctorGlobalsThrowBad,
                             testAoSATFunctorGlobalsOpenMPParallel);
@@ -194,7 +194,7 @@ REGISTER_TYPED_TEST_SUITE_P(ATFunctorTestGlobals, testAoSATFunctorGlobals, testA
 using MyTypes = ::testing::Types<ATFunNoMixGlob
 #ifdef __AVX__
 
-                                 // TODO: Add AVX Functor
+// TODO: Add AVX Functor
 #endif
                                  >;
 

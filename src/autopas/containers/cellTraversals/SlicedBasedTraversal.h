@@ -7,12 +7,12 @@
 
 #pragma once
 
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopas/containers/TraversalInterface.h"
 
 namespace autopas {
 
@@ -30,9 +30,9 @@ namespace autopas {
  * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
  * c08).
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
-class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface<InteractionTypeOption::pairwise> {
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
+class SlicedBasedTraversal : public CellTraversal<ParticleCell>,
+                             public TraversalInterface<InteractionTypeOption::pairwise> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -175,8 +175,7 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public Traversa
   utils::DataLayoutConverter<Functor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
 inline void SlicedBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>::init(
     const std::array<unsigned long, 3> &dims) {
   for (unsigned int d = 0; d < 3; d++) {

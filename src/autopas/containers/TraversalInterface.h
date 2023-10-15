@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/TraversalOption.h"
 
 namespace autopas {
@@ -15,7 +15,7 @@ namespace autopas {
 /**
  * This interface serves as a common parent class for all traversals.
  */
- template <InteractionTypeOption::Value interactionType>
+template <InteractionTypeOption::Value interactionType>
 class TraversalInterface {
  public:
   /**
@@ -61,16 +61,20 @@ class TraversalInterface {
    * Traverses all particle pairs.
    */
   virtual void traverseParticlePairs() {
-    utils::ExceptionHandler::exception("Error: TraversalInterface::traverseParticlePairs() is "
-        "not implemented for this traversal: {}!", typeid(*this).name());
+    utils::ExceptionHandler::exception(
+        "Error: TraversalInterface::traverseParticlePairs() is "
+        "not implemented for this traversal: {}!",
+        typeid(*this).name());
   };
 
   /**
    * Traverses all particle triplets.
    */
   virtual void traverseParticleTriplets() {
-    utils::ExceptionHandler::exception("Error: TraversalInterface::traverseParticleTriplets() is "
-        "not implemented for this traversal: {}!", typeid(*this).name());
+    utils::ExceptionHandler::exception(
+        "Error: TraversalInterface::traverseParticleTriplets() is "
+        "not implemented for this traversal: {}!",
+        typeid(*this).name());
   };
 };
 

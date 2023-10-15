@@ -18,14 +18,14 @@
 #include "autopas/InstanceCounter.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/Version.h"
+#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
+#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactory.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/CompileInfo.h"
-#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
-#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSetFinite.h"
 
@@ -102,10 +102,10 @@ void AutoPas<Particle>::init() {
 
   for (auto &interactionType : _allowedInteractionTypeOptions) {
     switch (interactionType) {
-      case InteractionTypeOption::pairwise : {
-        const auto searchSpace =
-            SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals, _allowedLoadEstimators,
-                                                    _allowedDataLayouts, _allowedNewton3Options, &cellSizeFactors, InteractionTypeOption::pairwise);
+      case InteractionTypeOption::pairwise: {
+        const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
+            _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
+            &cellSizeFactors, InteractionTypeOption::pairwise);
 
         AutoTuner::TuningStrategiesListType tuningStrategies;
         tuningStrategies.reserve(_tuningStrategyOptions.size());
@@ -122,10 +122,10 @@ void AutoPas<Particle>::init() {
         _autoTuners.insert({InteractionTypeOption::pairwise, *_autoTuner});
         break;
       }
-      case InteractionTypeOption::threeBody : {
-        const auto searchSpace3B =
-            SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals3B, _allowedLoadEstimators,
-                                                    _allowedDataLayouts3B, _allowedNewton3Options3B, &cellSizeFactors, InteractionTypeOption::threeBody);
+      case InteractionTypeOption::threeBody: {
+        const auto searchSpace3B = SearchSpaceGenerators::cartesianProduct(
+            _allowedContainers, _allowedTraversals3B, _allowedLoadEstimators, _allowedDataLayouts3B,
+            _allowedNewton3Options3B, &cellSizeFactors, InteractionTypeOption::threeBody);
         AutoTuner::TuningStrategiesListType tuningStrategies3B;
         tuningStrategies3B.reserve(_tuningStrategyOptions.size());
         for (const auto &strategy : _tuningStrategyOptions) {
@@ -142,7 +142,8 @@ void AutoPas<Particle>::init() {
         break;
       }
       default: {
-        utils::ExceptionHandler::exception("Invalid interactionType ({}) that cannot be handled by autopas.", interactionType.to_string());
+        utils::ExceptionHandler::exception("Invalid interactionType ({}) that cannot be handled by autopas.",
+                                           interactionType.to_string());
       }
     }
   }
@@ -151,9 +152,10 @@ void AutoPas<Particle>::init() {
 template <class Particle>
 template <class Functor>
 bool AutoPas<Particle>::computeInteractions(Functor *f) {
-  static_assert(not std::is_same_v<Functor, autopas::Functor<Particle, Functor>>,
-                "The static type of Functor in computeInteractions is not allowed to be autopas::Functor. Please use the "
-                "derived type instead, e.g. by using a dynamic_cast.");
+  static_assert(
+      not std::is_same_v<Functor, autopas::Functor<Particle, Functor>>,
+      "The static type of Functor in computeInteractions is not allowed to be autopas::Functor. Please use the "
+      "derived type instead, e.g. by using a dynamic_cast.");
   if (f->getCutoff() > this->getCutoff()) {
     utils::ExceptionHandler::exception("Functor cutoff ({}) must not be larger than container cutoff ({})",
                                        f->getCutoff(), this->getCutoff());
@@ -161,12 +163,12 @@ bool AutoPas<Particle>::computeInteractions(Functor *f) {
 
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
     return _logicHandler->iteratePairwisePipeline(f);
-  }
-  else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-      return _logicHandler->iterateTriwisePipeline(f);
-  }
-  else{
-      utils::ExceptionHandler::exception("Functor is not valid. Only 2-body and 3-body functors are supported. Please use a functor derived from PairwiseFunctor or TriwiseFunctor.");
+  } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
+    return _logicHandler->iterateTriwisePipeline(f);
+  } else {
+    utils::ExceptionHandler::exception(
+        "Functor is not valid. Only 2-body and 3-body functors are supported. Please use a functor derived from "
+        "PairwiseFunctor or TriwiseFunctor.");
   }
   return false;
 }
@@ -399,6 +401,7 @@ void AutoPas<Particle>::incrementIterationCounters() {
     // Check if we need to synchronize multiple tuners
     bool needToWait = _logicHandler->checkTuningStates(interaction);
     tuner.bumpIterationCounters(needToWait);
-  }}
+  }
+}
 
 }  // namespace autopas

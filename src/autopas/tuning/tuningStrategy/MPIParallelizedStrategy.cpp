@@ -64,10 +64,15 @@ void MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
   }
 }
 
-Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::set<Configuration> &searchSpace, const InteractionTypeOption &interactionType) {
-  Configuration fallBackConfig{ContainerOption::linkedCells, 1.,
-                               TraversalOption::lc_c08,      LoadEstimatorOption::none,
-                               DataLayoutOption::aos,        Newton3Option::disabled, interactionType};
+Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::set<Configuration> &searchSpace,
+                                                                   const InteractionTypeOption &interactionType) {
+  Configuration fallBackConfig{ContainerOption::linkedCells,
+                               1.,
+                               TraversalOption::lc_c08,
+                               LoadEstimatorOption::none,
+                               DataLayoutOption::aos,
+                               Newton3Option::disabled,
+                               interactionType};
 
   // Go through the search space and see if SoA or N3 are allowed.
   bool foundSoA{false};

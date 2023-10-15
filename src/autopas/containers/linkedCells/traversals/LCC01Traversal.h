@@ -78,9 +78,9 @@ the initialized buffer must show the same behavior as a buffer which was updated
  */
 template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           bool combineSoA = false>
-class LCC01Traversal
-    : public C01BasedTraversal<ParticleCell, PairFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3, (combineSoA ? 2 : 3)>,
-      public LCTraversalInterface<ParticleCell> {
+class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairFunctor, InteractionTypeOption::pairwise, dataLayout,
+                                                useNewton3, (combineSoA ? 2 : 3)>,
+                       public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -94,8 +94,8 @@ class LCC01Traversal
    */
   explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, PairFunctor *pairFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength)
-      : C01BasedTraversal<ParticleCell, PairFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3, (combineSoA ? 2 : 3)>(
-            dims, pairFunctor, interactionLength, cellLength),
+      : C01BasedTraversal<ParticleCell, PairFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3,
+                          (combineSoA ? 2 : 3)>(dims, pairFunctor, interactionLength, cellLength),
         _cellFunctor(pairFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
         _pairFunctor(pairFunctor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {
@@ -189,8 +189,7 @@ class LCC01Traversal
   const unsigned int _cacheOffset;
 };
 
-template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool combineSoA>
+template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, PairFunctor, dataLayout, useNewton3, combineSoA>::computeOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
 
@@ -232,8 +231,7 @@ inline void LCC01Traversal<ParticleCell, PairFunctor, dataLayout, useNewton3, co
   }
 }
 
-template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool combineSoA>
+template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, PairFunctor, dataLayout, useNewton3, combineSoA>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
@@ -303,7 +301,7 @@ inline void LCC01Traversal<ParticleCell, PairFunctor, dataLayout, useNewton3, co
         auto startIndex = baseCell.size();
         auto endIndex = combinationSlice[slice]._particleSoABuffer.size();
         _pairFunctor->SoAFunctorPair(baseCell._particleSoABuffer,
-                                         {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
+                                     {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell
         this->_cellFunctor.processCell(baseCell);
       } else {
@@ -326,8 +324,7 @@ inline void LCC01Traversal<ParticleCell, PairFunctor, dataLayout, useNewton3, co
   }
 }
 
-template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool combineSoA>
+template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, PairFunctor, dataLayout, useNewton3, combineSoA>::resizeBuffers() {
   const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
@@ -339,8 +336,7 @@ inline void LCC01Traversal<ParticleCell, PairFunctor, dataLayout, useNewton3, co
   }
 }
 
-template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool combineSoA>
+template <class ParticleCell, class PairFunctor, DataLayoutOption::Value dataLayout, bool useNewton3, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, PairFunctor, dataLayout, useNewton3, combineSoA>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   if (not this->isApplicable()) {

@@ -56,7 +56,8 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Par
 };
 
 #if defined(AUTOPAS_OPENMP)
-class CollectParticlesPerThreadFunctor : public autopas::PairwiseFunctor<autopas::Particle, CollectParticlesPerThreadFunctor> {
+class CollectParticlesPerThreadFunctor
+    : public autopas::PairwiseFunctor<autopas::Particle, CollectParticlesPerThreadFunctor> {
  public:
   int _currentColor{};
 

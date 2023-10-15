@@ -61,8 +61,8 @@ class LJFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle,
-                         LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+      : autopas::PairwiseFunctor<
+            Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -104,8 +104,8 @@ class LJFunctor
   }
 
   /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
-   * using different functors in the logs.
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
+   * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
   virtual std::string getName() { return "LJFunctorAutoVec"; }

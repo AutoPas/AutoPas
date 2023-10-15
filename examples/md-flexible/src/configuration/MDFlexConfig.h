@@ -475,20 +475,16 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption {
-    // Default is a dummy option
-        FunctorOption::none, "functor", true,
-        "Pairwise force functor to use. Possible Values: (lennard-jones "
-        "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
-  };
+  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
+                                                      FunctorOption::none, "functor", true,
+                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
   /**
    * functorOption3B
    */
-  MDFlexOption<FunctorOption3B, __LINE__> functorOption3B {
+  MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-    FunctorOption3B::none, "functor-3b", true,
-        "3-Body force functor to use. Possible Values: (axilrod-teller)"
-  };
+      FunctorOption3B::none, "functor-3b", true, "3-Body force functor to use. Possible Values: (axilrod-teller)"};
   /**
    * iterations
    */
@@ -790,7 +786,6 @@ class MDFlexConfig {
    * valueOffset used for cli-output alignment
    */
   static constexpr int valueOffset{33};
-
 
  private:
   /**

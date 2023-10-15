@@ -27,8 +27,8 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
       : autopas::PairwiseFunctor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
 
   /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
-   * using different functors in the logs.
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
+   * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
   virtual std::string getName() override { return "SPHHydroForceFunctor"; }

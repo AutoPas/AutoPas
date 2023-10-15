@@ -42,16 +42,18 @@ class IterationLogger {
    * @param timeIteratePairwise Time for Container::computeInteractions().
    * @param timeRemainderTraversal Time for LogicHandler::doRemainderTraversal().
    * @param timeRebuildNeighborLists Time for Container::rebuildNeighborLists().
-   * @param timeIteratePairwiseTotal Time for LogicHandler::computeInteractions(). This is slightly more than the sum of the
-   * above. Additional steps, only included in this timer are e.g. Functor::initTraversal() and Functor::endTraversal().
+   * @param timeIteratePairwiseTotal Time for LogicHandler::computeInteractions(). This is slightly more than the sum of
+   * the above. Additional steps, only included in this timer are e.g. Functor::initTraversal() and
+   * Functor::endTraversal().
    * @param timeTuning Time for finding the next configuration.
    * @param energyPsys Energy in Joules for the entire measured system since the last measurement.
    * @param energyPkg Energy in Joules for the CPU package since the last measurement.
    * @param energyRam Energy in Joules for the RAM since the last measurement.
    */
-  void logIteration(const Configuration &configuration, size_t iteration, std::string functorName, bool inTuningPhase, long timeIteratePairwise,
-                    long timeRemainderTraversal, long timeRebuildNeighborLists, long timeIteratePairwiseTotal,
-                    long timeTuning, double energyPsys, double energyPkg, double energyRam);
+  void logIteration(const Configuration &configuration, size_t iteration, std::string functorName, bool inTuningPhase,
+                    long timeIteratePairwise, long timeRemainderTraversal, long timeRebuildNeighborLists,
+                    long timeIteratePairwiseTotal, long timeTuning, double energyPsys, double energyPkg,
+                    double energyRam);
 
  private:
   std::string _loggerName;

@@ -42,7 +42,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           bool relevantForTuning = true>
 class LJMultisiteFunctor
     : public autopas::PairwiseFunctor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
-                                                           calculateGlobals, relevantForTuning>> {
+                                                                   calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -111,8 +111,8 @@ class LJMultisiteFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                      relevantForTuning>>(cutoff),
+      : autopas::PairwiseFunctor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
+                                                              calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},

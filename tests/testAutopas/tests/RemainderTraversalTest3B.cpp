@@ -15,7 +15,8 @@
 #include "testingHelpers/commonTypedefs.h"
 
 /**
- * Can test all individual steps of iterateTriwise. Expects exactly three particles that form an equilateral triangle of side length sqrt(2).
+ * Can test all individual steps of iterateTriwise. Expects exactly three particles that form an equilateral triangle of
+ * side length sqrt(2).
  *
  * @note Tests invoking this function should have AutoPas logger instantiated (e.g. by inheriting from AutoPasTestBase).
  * @note Buffers need to have at least one (empty) cell. They must not be empty.
@@ -26,14 +27,13 @@
  * @param n3 Newton3 on or off
  */
 void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
-                              std::vector<Molecule> &particlesContainerHalo,
-                              std::vector<autopas::FullParticleCell<Molecule>> &particlesBuffers,
-                              std::vector<autopas::FullParticleCell<Molecule>> &particlesHaloBuffers,
-                              autopas::Newton3Option n3) {
+                             std::vector<Molecule> &particlesContainerHalo,
+                             std::vector<autopas::FullParticleCell<Molecule>> &particlesBuffers,
+                             std::vector<autopas::FullParticleCell<Molecule>> &particlesHaloBuffers,
+                             autopas::Newton3Option n3) {
   // sanity check that there are exactly three particles in the test
-  const auto numParticlesInBuffers =
-      std::transform_reduce(particlesBuffers.begin(), particlesBuffers.end(), 0, std::plus<>(),
-                            [](const auto &cell) { return cell.size(); });
+  const auto numParticlesInBuffers = std::transform_reduce(particlesBuffers.begin(), particlesBuffers.end(), 0,
+                                                           std::plus<>(), [](const auto &cell) { return cell.size(); });
   const auto numParticlesHaloBuffers =
       std::transform_reduce(particlesHaloBuffers.begin(), particlesHaloBuffers.end(), 0, std::plus<>(), [](auto &cell) {
         // guarantee that all halo particles are actually tagged as such
@@ -63,7 +63,8 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
 
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01_3b,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3, autopas::InteractionTypeOption::threeBody}});
+        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
+        autopas::InteractionTypeOption::threeBody}});
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
   logicHandler.initTriwise(&autoTuner);
@@ -84,8 +85,8 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
-  mdLib::AxilrodTellerFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>
-      functor(logicHandlerInfo.cutoff);
+  mdLib::AxilrodTellerFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
+      logicHandlerInfo.cutoff);
   constexpr double nu = 1.;
   functor.setParticleProperties(nu);
 
@@ -98,14 +99,14 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   const std::array<double, 3> drki{1., 0., -1.};
   const std::array<double, 3> drjk{0., -1., 1.};
 
-  const double distSquared = 2.; // Distance between every particle pair should be sqrt(2)
-  const double cosNum = -1.; // e.g. dot(drij, drki)
+  const double distSquared = 2.;  // Distance between every particle pair should be sqrt(2)
+  const double cosNum = -1.;      // e.g. dot(drij, drki)
   const double cosAll = cosNum * cosNum * cosNum;
   const double distSix = distSquared * distSquared * distSquared;
   const double invdr5 = nu / (distSix * distSix * std::sqrt(distSix));
 
-  auto expectedFi =  drij * (cosNum * cosNum - distSquared * distSquared + 5.0 * cosAll / distSquared)
-            + drki * (- cosNum * cosNum + distSquared * distSquared - 5.0 * cosAll / distSquared);
+  auto expectedFi = drij * (cosNum * cosNum - distSquared * distSquared + 5.0 * cosAll / distSquared) +
+                    drki * (-cosNum * cosNum + distSquared * distSquared - 5.0 * cosAll / distSquared);
   expectedFi *= 3.0 * invdr5;
 
   // Same absolute force for all three particles if they were placed in an equilateral triangle
@@ -123,7 +124,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   for (auto &particlesBuffer : logicHandlerParticleBuffers) {
     for (const auto &p : particlesBuffer) {
       const auto particleForceL2 = autopas::utils::ArrayMath::L2Norm(p.getF());
-      totalObservedForce +=  p.getF();
+      totalObservedForce += p.getF();
       EXPECT_NEAR(particleForceL2, expectedAbsForce, 1e-12)
           << "Force for particle " << p.getID() << " in the particle buffer is wrong!";
     }
@@ -135,7 +136,8 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
     }
   }
   // if halo particles are involved only expect one or two thirds of Upot
-  const double energyFactor = (3.0 - static_cast<double>(numParticlesHaloBuffers + particlesContainerHalo.size())) / 3.0;
+  const double energyFactor =
+      (3.0 - static_cast<double>(numParticlesHaloBuffers + particlesContainerHalo.size())) / 3.0;
   const double expectedPotentialEnergy = energyFactor * (distSix - 3.0 * cosAll) * invdr5;
 
   EXPECT_NEAR(expectedPotentialEnergy, functor.getPotentialEnergy(), 1e-12);
@@ -151,7 +153,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_container_contai
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   testIterateTriwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+                          autopas::Newton3Option::disabled);
 }
 
 TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_container_containerHalo_NoN3_3B) {
@@ -165,7 +167,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_container_contai
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers{numBuffers};
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   testIterateTriwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+                          autopas::Newton3Option::disabled);
 
   std::vector<Molecule> particlesContainerOwned2{
       Molecule{{1.5, 0.5, 0.5}, {0., 0., 0.}, 0, 0},
@@ -188,7 +190,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBuffer_c
   particlesBuffers[0].addParticle(Molecule{{5., 5., 6.}, {0., 0., 0.}, 2, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   testIterateTriwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+                          autopas::Newton3Option::disabled);
 
   std::vector<Molecule> particlesContainerOwned2{
       Molecule{{6., 5., 5.}, {0., 0., 0.}, 0, 0},
@@ -208,7 +210,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBuffer_c
   particlesBuffers[0].addParticle(Molecule{{0.5, 0.5, 1.5}, {0., 0., 0.}, 2, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   testIterateTriwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+                          autopas::Newton3Option::disabled);
 
   std::vector<Molecule> particlesContainerHalo2{
       Molecule{{-0.5, 0.5, 0.5}, {0., 0., 0.}, 0, 0},
@@ -227,7 +229,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_
   particlesBuffers[0].addParticle(Molecule{{5., 5., 6.}, {0., 0., 0.}, 2, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   testIterateTriwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+                          autopas::Newton3Option::disabled);
 }
 
 // This test is not possible without OpenMP because there only exists one buffer
@@ -242,7 +244,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_
   particlesBuffers[2].addParticle(Molecule{{5., 5., 6.}, {0., 0., 0.}, 2, 0});
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers(3);
   testIterateTriwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+                          autopas::Newton3Option::disabled);
 }
 #endif
 
@@ -256,7 +258,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_haloBuffer_conta
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   particlesHaloBuffers[0].addParticle(Molecule{{0.5, 0.5, -0.5}, {0., 0., 0.}, 2, 0});
   testIterateTriwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+                          autopas::Newton3Option::disabled);
 
   std::vector<Molecule> particlesContainerOwned2{
       Molecule{{1.5, 0.5, 0.5}, {0., 0., 0.}, 0, 0},
@@ -275,7 +277,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_haloBuffer_parti
   std::vector<autopas::FullParticleCell<Molecule>> particlesHaloBuffers{numBuffers};
   particlesHaloBuffers[0].addParticle(Molecule{{0.5, 0.5, -0.5}, {0., 0., 0.}, 2, 0});
   testIterateTriwiseSteps(particlesContainerOwned, particlesContainerHalo, particlesBuffers, particlesHaloBuffers,
-                           autopas::Newton3Option::disabled);
+                          autopas::Newton3Option::disabled);
 
   std::vector<autopas::FullParticleCell<Molecule>> particlesBuffers2{numBuffers};
   particlesBuffers2[0].addParticle(Molecule{{1.5, 0.5, 0.5}, {0., 0., 0.}, 0, 0});
@@ -428,10 +430,9 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_haloBuffer_parti
                           autopas::Newton3Option::disabled);
 }
 
-
 void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std::vector<Molecule> &haloParticles,
-                            std::vector<autopas::FullParticleCell<Molecule>> &particlesBuffer,
-                            std::vector<autopas::FullParticleCell<Molecule>> &haloParticlesBuffer) {
+                              std::vector<autopas::FullParticleCell<Molecule>> &particlesBuffer,
+                              std::vector<autopas::FullParticleCell<Molecule>> &haloParticlesBuffer) {
   /// Setup AutoTuner
   constexpr double cellSizeFactor = 1.;
   constexpr unsigned int verletRebuildFrequency = 10;
@@ -449,7 +450,8 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
 
   const std::set<autopas::Configuration> searchSpace(
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01_3b,
-        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, autopas::InteractionTypeOption::threeBody}});
+        autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
+        autopas::InteractionTypeOption::threeBody}});
   autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
   autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
   logicHandler.initTriwise(&autoTuner);
@@ -552,7 +554,8 @@ INSTANTIATE_TEST_SUITE_P(Generated, RemainderTraversalTest3B,
                          ::testing::ValuesIn(std::vector<std::tuple<ParticleStorage, ParticleStorage, ParticleStorage>>{
                              {ParticleStorage::container, ParticleStorage::container, ParticleStorage::container},
                              {ParticleStorage::container, ParticleStorage::container, ParticleStorage::containerHalo},
-                             {ParticleStorage::container, ParticleStorage::containerHalo, ParticleStorage::containerHalo},
+                             {ParticleStorage::container, ParticleStorage::containerHalo,
+                              ParticleStorage::containerHalo},
                              {ParticleStorage::container, ParticleStorage::container, ParticleStorage::buffer},
                              {ParticleStorage::container, ParticleStorage::buffer, ParticleStorage::buffer},
                              {ParticleStorage::container, ParticleStorage::container, ParticleStorage::bufferHalo},

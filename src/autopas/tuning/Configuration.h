@@ -36,20 +36,22 @@ class Configuration {
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3, InteractionTypeOption _interactionType)
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
+                          InteractionTypeOption _interactionType)
       : container(_container),
         traversal(_traversal),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
         newton3(_newton3),
         cellSizeFactor(_cellSizeFactor),
-        interactionType(_interactionType){}
+        interactionType(_interactionType) {}
 
   /**
    * Constructor taking no arguments. Initializes all properties to an invalid choice or false.
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
-  constexpr Configuration() : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), interactionType() {}
+  constexpr Configuration()
+      : container(), traversal(), loadEstimator(), dataLayout(), newton3(), cellSizeFactor(-1.), interactionType() {}
 
   /**
    * Returns string representation in JSON style of the configuration object.
@@ -63,9 +65,10 @@ class Configuration {
    * @return A short string representation.
    */
   [[nodiscard]] std::string toShortString(bool fixedLength = true) const {
-    return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedLength) + " , " + std::to_string(cellSizeFactor) + " , " +
-           traversal.to_string(fixedLength) + " , " + loadEstimator.to_string(fixedLength) + " , " +
-           dataLayout.to_string(fixedLength) + " , " + newton3.to_string(fixedLength) + "}";
+    return "{" + interactionType.to_string(interactionType) + " , " + container.to_string(fixedLength) + " , " +
+           std::to_string(cellSizeFactor) + " , " + traversal.to_string(fixedLength) + " , " +
+           loadEstimator.to_string(fixedLength) + " , " + dataLayout.to_string(fixedLength) + " , " +
+           newton3.to_string(fixedLength) + "}";
   }
 
   /**

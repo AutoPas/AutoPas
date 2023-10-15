@@ -15,7 +15,8 @@ namespace autopas {
 /**
  * A cell pair traversal.
  * This class handles traversals through the cell structures.
- * Derived classes handle the order through which the cells are traversed and should additional inherit from TraversalInterface
+ * Derived classes handle the order through which the cells are traversed and should additional inherit from
+ * TraversalInterface
  * @tparam ParticleCell type of cells.
  */
 template <class ParticleCell>

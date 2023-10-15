@@ -28,8 +28,9 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           class NeighborList, ContainerOption::Value typeOfList>
-class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
-                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+class VLCC01Traversal
+    : public C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
+      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -41,8 +42,8 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
    */
   explicit VLCC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            double interactionLength, const std::array<double, 3> &cellLength)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                 interactionLength, cellLength),
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;

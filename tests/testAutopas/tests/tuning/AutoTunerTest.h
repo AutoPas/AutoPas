@@ -22,24 +22,31 @@ class AutoTunerTest : public AutoPasTestBase {
   const autopas::Configuration _confDs_seq_N3{
       autopas::ContainerOption::directSum,     _cellSizeFactor,
       autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::aos,          autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise};
+      autopas::DataLayoutOption::aos,          autopas::Newton3Option::enabled,
+      autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confDs_seq_noN3{
       autopas::ContainerOption::directSum,     _cellSizeFactor,
       autopas::TraversalOption::ds_sequential, autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
+      autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+      autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c01_noN3{
-      autopas::ContainerOption::linkedCells, _cellSizeFactor,
-      autopas::TraversalOption::lc_c01,      autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
+      autopas::ContainerOption::linkedCells,   _cellSizeFactor,
+      autopas::TraversalOption::lc_c01,        autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+      autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c18_noN3{
-      autopas::ContainerOption::linkedCells, _cellSizeFactor,
-      autopas::TraversalOption::lc_c18,      autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
-  const autopas::Configuration _confLc_c08_N3{autopas::ContainerOption::linkedCells, _cellSizeFactor,
-                                              autopas::TraversalOption::lc_c08,      autopas::LoadEstimatorOption::none,
-                                              autopas::DataLayoutOption::aos,        autopas::Newton3Option::enabled, autopas::InteractionTypeOption::pairwise};
+      autopas::ContainerOption::linkedCells,   _cellSizeFactor,
+      autopas::TraversalOption::lc_c18,        autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+      autopas::InteractionTypeOption::pairwise};
+  const autopas::Configuration _confLc_c08_N3{
+      autopas::ContainerOption::linkedCells,   _cellSizeFactor,
+      autopas::TraversalOption::lc_c08,        autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::aos,          autopas::Newton3Option::enabled,
+      autopas::InteractionTypeOption::pairwise};
   const autopas::Configuration _confLc_c08_noN3{
-      autopas::ContainerOption::linkedCells, _cellSizeFactor,
-      autopas::TraversalOption::lc_c08,      autopas::LoadEstimatorOption::none,
-      autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
+      autopas::ContainerOption::linkedCells,   _cellSizeFactor,
+      autopas::TraversalOption::lc_c08,        autopas::LoadEstimatorOption::none,
+      autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+      autopas::InteractionTypeOption::pairwise};
 };

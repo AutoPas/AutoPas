@@ -33,8 +33,7 @@ namespace autopas {
  * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
  * c08)
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
 class SlicedC02BasedTraversal
     : public SlicedBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward> {
  public:
@@ -80,8 +79,7 @@ class SlicedC02BasedTraversal
   }
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
 template <typename LoopBody>
 void SlicedC02BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
     LoopBody &&loopBody) {

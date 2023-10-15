@@ -1,7 +1,7 @@
 /**
-* @file AxilrodTellerFunctor.h
-* @author M. Muehlhaeusser
-* @date 25/07/23
+ * @file AxilrodTellerFunctor.h
+ * @author M. Muehlhaeusser
+ * @date 25/07/23
  */
 
 #pragma once
@@ -31,9 +31,8 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, bool useMixing = false,
-          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+          bool calculateGlobals = false, bool relevantForTuning = true>
 class AxilrodTellerFunctor
     : public autopas::TriwiseFunctor<
           Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
@@ -60,8 +59,8 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle,
-                         AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+      : autopas::TriwiseFunctor<
+            Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -103,8 +102,8 @@ class AxilrodTellerFunctor
   }
 
   /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to iterateTriwise
-   * using different functors in the logs.
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
+   * iterateTriwise using different functors in the logs.
    * @return name of functor.
    */
   virtual std::string getName() { return "AxilrodTellerFunctorAutoVec"; }
@@ -153,18 +152,16 @@ class AxilrodTellerFunctor
     double dr5 = dr2 * dr2 * std::sqrt(dr2);
     double invdr5 = nu / dr5;
 
-    auto fi =  drjk * dr2i * (dr2j - dr2k)
-              + drij * (dr2j * dr2k - dr2jk * dr2ki + 5.0 * dr2ijk / dr2ij)
-              + drki * (- dr2j * dr2k + dr2ij * dr2jk - 5.0 * dr2ijk / dr2ki);
+    auto fi = drjk * dr2i * (dr2j - dr2k) + drij * (dr2j * dr2k - dr2jk * dr2ki + 5.0 * dr2ijk / dr2ij) +
+              drki * (-dr2j * dr2k + dr2ij * dr2jk - 5.0 * dr2ijk / dr2ki);
     fi *= 3.0 * invdr5;
     i.addF(fi);
 
     auto fj = fi;
     auto fk = fi;
     if (newton3) {
-      fj = drki * dr2j * (dr2k - dr2i)
-                + drij * (- dr2i * dr2k + dr2jk * dr2ki - 5.0 * dr2ijk / dr2ij)
-                + drjk * (dr2i * dr2k - dr2ij * dr2ki + 5.0 * dr2ijk / dr2jk);
+      fj = drki * dr2j * (dr2k - dr2i) + drij * (-dr2i * dr2k + dr2jk * dr2ki - 5.0 * dr2ijk / dr2ij) +
+           drjk * (dr2i * dr2k - dr2ij * dr2ki + 5.0 * dr2ijk / dr2jk);
       fj *= 3.0 * invdr5;
       j.addF(fj);
 
@@ -217,7 +214,6 @@ class AxilrodTellerFunctor
                       const bool newton3) final {
     // TODO: should always calculate forces for all particles in soa1, even when newton3 == false
     autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
-
   }
 
   /**
@@ -231,8 +227,8 @@ class AxilrodTellerFunctor
    * @param soa3 Third structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */
-  void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, autopas::SoAView<SoAArraysType> soa3,
-                      const bool newton3) {
+  void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                        autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
     autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
   }
 
@@ -261,7 +257,6 @@ class AxilrodTellerFunctor
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
     autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorVerlet() is not implemented.");
-
   }
 
   /**
@@ -271,9 +266,7 @@ class AxilrodTellerFunctor
    *
    * @param nu
    */
-  void setParticleProperties(SoAFloatPrecision nu) {
-    _nu = nu;
-  }
+  void setParticleProperties(SoAFloatPrecision nu) { _nu = nu; }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
@@ -316,8 +309,8 @@ class AxilrodTellerFunctor
    * @param molBType molecule B's type id
    * @param molCType molecule C's type id
    * @param newton3 is newton3 applied.
-   * @note The molecule types make no difference for AxilrodTellerFunctor, but are kept to have a consistent interface for other
-   * functors where they may.
+   * @note The molecule types make no difference for AxilrodTellerFunctor, but are kept to have a consistent interface
+   * for other functors where they may.
    * @return the number of floating point operations
    */
   static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, size_t molCType, bool newton3) {
@@ -414,10 +407,7 @@ class AxilrodTellerFunctor
    */
   class AoSThreadData {
    public:
-    AoSThreadData()
-        : virialSum{0., 0., 0.},
-          potentialEnergySum{0.},
-          __remainingTo64{} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;

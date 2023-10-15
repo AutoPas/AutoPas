@@ -229,7 +229,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
             traversalSelector
                 .template generateTraversal<std::remove_reference_t<decltype(f)>, DataLayoutOption::aos, n3>(
                     buildTraversalOption, f, traversalSelectorInfo);
-        auto pairBuildTraversal = dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
+        auto pairBuildTraversal =
+            dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
         linkedCells.iteratePairwise(pairBuildTraversal);
       });
     }
@@ -238,7 +239,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
       autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
         auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::soa, n3>(
             buildTraversalOption, f, traversalSelectorInfo);
-        auto pairBuildTraversal = dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
+        auto pairBuildTraversal =
+            dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
         linkedCells.iteratePairwise(pairBuildTraversal);
       });
     }

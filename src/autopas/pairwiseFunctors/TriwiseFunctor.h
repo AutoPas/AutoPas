@@ -77,36 +77,37 @@ class TriwiseFunctor : public Functor<Particle, CRTP_T> {
     utils::ExceptionHandler::exception("TriwiseFunctor::SoAFunctorSingle: not yet implemented");
   }
 
-    /**
-     * TriwiseFunctor for structure of arrays (SoA)
-     *
-     * This functor should calculate the forces or any other triwise interaction
-     * between all particles of soa1 and soa2.
-     * This should include a cutoff check if needed!
-     *
-     * @param soa1 First structure of arrays.
-     * @param soa2 Second structure of arrays.
-     * @param newton3 defines whether or whether not to use newton 3
-     */
-    virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
-      utils::ExceptionHandler::exception("TriwiseFunctor::SoAFunctorPair: not yet implemented");
-    }
+  /**
+   * TriwiseFunctor for structure of arrays (SoA)
+   *
+   * This functor should calculate the forces or any other triwise interaction
+   * between all particles of soa1 and soa2.
+   * This should include a cutoff check if needed!
+   *
+   * @param soa1 First structure of arrays.
+   * @param soa2 Second structure of arrays.
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
+    utils::ExceptionHandler::exception("TriwiseFunctor::SoAFunctorPair: not yet implemented");
+  }
 
-    /**
-     * TriwiseFunctor for structure of arrays (SoA)
-     *
-     * This functor should calculate the forces or any other triwise interaction
-     * between all particles of soa1 and soa2 and soa3.
-     * This should include a cutoff check if needed!
-     *
-     * @param soa1 First structure of arrays.
-     * @param soa2 Second structure of arrays.
-     * @param soa3 Third structure of arrays.
-     * @param newton3 defines whether or whether not to use newton 3
-     */
-    virtual void SoAFunctorTriple(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, SoAView<SoAArraysType> soa3, bool newton3) {
-      utils::ExceptionHandler::exception("TriwiseFunctor::SoAFunctorTriple: not yet implemented");
-    }
+  /**
+   * TriwiseFunctor for structure of arrays (SoA)
+   *
+   * This functor should calculate the forces or any other triwise interaction
+   * between all particles of soa1 and soa2 and soa3.
+   * This should include a cutoff check if needed!
+   *
+   * @param soa1 First structure of arrays.
+   * @param soa2 Second structure of arrays.
+   * @param soa3 Third structure of arrays.
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  virtual void SoAFunctorTriple(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, SoAView<SoAArraysType> soa3,
+                                bool newton3) {
+    utils::ExceptionHandler::exception("TriwiseFunctor::SoAFunctorTriple: not yet implemented");
+  }
 
   /**
    * TriwiseFunctor for structure of arrays (SoA) for neighbor lists
@@ -126,8 +127,8 @@ class TriwiseFunctor : public Functor<Particle, CRTP_T> {
   }
 
   /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
-   * using different functors in the logs.
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
+   * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
   virtual std::string getName() { return "TriwiseFunctor"; }

@@ -39,10 +39,10 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
    */
   using SoAArraysType = typename Particle::SoAArraysType;
 
-//  /**
-//   * Make the Implementation type template publicly available.
-//   */
-//  using Functor_T = CRTP_T;
+  //  /**
+  //   * Make the Implementation type template publicly available.
+  //   */
+  //  using Functor_T = CRTP_T;
   /**
    * Constructor
    * @param cutoff
@@ -112,8 +112,8 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
   }
 
   /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
-   * using different functors in the logs.
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
+   * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
   virtual std::string getName() { return "PairwiseFunctor"; }

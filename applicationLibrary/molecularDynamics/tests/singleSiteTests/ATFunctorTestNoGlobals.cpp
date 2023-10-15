@@ -147,9 +147,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   }
 
   // order of second and third particle should not matter
-  p1.setF({0.,0.,0.});
-  p2.setF({0.,0.,0.});
-  p3.setF({0.,0.,0.});
+  p1.setF({0., 0., 0.});
+  p2.setF({0., 0., 0.});
+  p3.setF({0., 0., 0.});
   functor->AoSFunctor(p1, p3, p2, newton3);
 
   auto f1four = p1.getF();
@@ -189,7 +189,6 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
     EXPECT_DOUBLE_EQ(f3one[1], 0);
     EXPECT_DOUBLE_EQ(f3one[2], 0);
   }
-
 }
 
 TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
@@ -200,7 +199,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
   constexpr bool newton3 = TypeParam::newton3;
 
   for (typename TestType::InteractionType interactionType :
-       {TestType::InteractionType::triple, TestType::InteractionType::pair12, TestType::InteractionType::pair21, TestType::InteractionType::verlet, TestType::InteractionType::own}) {
+       {TestType::InteractionType::triple, TestType::InteractionType::pair12, TestType::InteractionType::pair21,
+        TestType::InteractionType::verlet, TestType::InteractionType::own}) {
     ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
     std::unique_ptr<FuncType> functor;
 
@@ -286,7 +286,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
               break;
             case TestType::InteractionType::triple:
               // Interaction of a cell pair
-              functor->SoAFunctorTriple(cell1._particleSoABuffer, cell2._particleSoABuffer, cell3._particleSoABuffer, newton3);
+              functor->SoAFunctorTriple(cell1._particleSoABuffer, cell2._particleSoABuffer, cell3._particleSoABuffer,
+                                        newton3);
               break;
             case TestType::InteractionType::verlet:
               // Build verlet list
@@ -341,8 +342,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     }
 
     // if the interactionType is own, then the forces of the second particle should always be calculated!
-    if (newton3 or interactionType == TestType::InteractionType::own or interactionType == TestType::InteractionType::pair21
-        or interactionType == TestType::InteractionType::verlet) {
+    if (newton3 or interactionType == TestType::InteractionType::own or
+        interactionType == TestType::InteractionType::pair21 or interactionType == TestType::InteractionType::verlet) {
       if (mixing) {
         EXPECT_NEAR(f2[0], this->expectedForceMixingP2[0], this->absDelta);
         EXPECT_NEAR(f2[1], this->expectedForceMixingP2[1], this->absDelta);
@@ -362,10 +363,11 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     std::array<double, 3> f3 = {0., 0., 0.};
     switch (interactionType) {
       case TestType::InteractionType::verlet:
-      case TestType::InteractionType::own:
-      { auto iter = ++cell1.begin();
+      case TestType::InteractionType::own: {
+        auto iter = ++cell1.begin();
         f3 = (++iter)->getF();
-        break; }
+        break;
+      }
       case TestType::InteractionType::pair21:
         f3 = cell2.begin()->getF();
         break;
@@ -378,8 +380,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     }
 
     // if the interactionType is own, then the forces of the third particle should always be calculated!
-    if (newton3 or interactionType == TestType::InteractionType::own
-        or interactionType == TestType::InteractionType::verlet) {
+    if (newton3 or interactionType == TestType::InteractionType::own or
+        interactionType == TestType::InteractionType::verlet) {
       if (mixing) {
         EXPECT_NEAR(f3[0], this->expectedForceMixingP3[0], this->absDelta);
         EXPECT_NEAR(f3[1], this->expectedForceMixingP3[1], this->absDelta);
@@ -411,7 +413,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
           break;
         case TestType::InteractionType::triple:
           // Interaction of a cell triplet
-          functor->SoAFunctorTriple(cell2._particleSoABuffer, cell1._particleSoABuffer, cell3._particleSoABuffer, newton3);
+          functor->SoAFunctorTriple(cell2._particleSoABuffer, cell1._particleSoABuffer, cell3._particleSoABuffer,
+                                    newton3);
           break;
         default:
           break;
@@ -492,7 +495,8 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
         functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
         functor->SoALoader(cell3, cell3._particleSoABuffer, 0);
 
-        functor->SoAFunctorTriple(cell3._particleSoABuffer, cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+        functor->SoAFunctorTriple(cell3._particleSoABuffer, cell1._particleSoABuffer, cell2._particleSoABuffer,
+                                  newton3);
 
         functor->SoAExtractor(cell1, cell1._particleSoABuffer, 0);
         functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);
@@ -524,7 +528,6 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
           EXPECT_NEAR(f3[1], factor * this->expectedForceP3[1], this->absDelta);
           EXPECT_NEAR(f3[2], factor * this->expectedForceP3[2], this->absDelta);
         }
-
       }
     }
 

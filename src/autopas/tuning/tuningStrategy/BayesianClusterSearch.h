@@ -121,7 +121,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * to update encoder and clusters.
    */
   void updateOptions();
-  
+
   const InteractionTypeOption _interactionType;
 
   std::set<ContainerOption> _containerOptionsSet;

@@ -420,20 +420,17 @@ void Simulation::updateForces() {
   long timeIteration = 0;
 
   // Calculate pairwise forces
-  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise))
-  {
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     _timers.forceUpdatePairwise.start();
     isTuningIteration = (isTuningIteration | calculatePairwiseForces());
     timeIteration += _timers.forceUpdatePairwise.stop();
   }
 
-  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody))
-  {
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
     _timers.forceUpdateTriwise.start();
     isTuningIteration = (isTuningIteration | calculateTriwiseForces());
     timeIteration += _timers.forceUpdateTriwise.stop();
   }
-
 
   // count time spent for tuning
   if (isTuningIteration) {
@@ -495,14 +492,14 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->template computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor<bool>(
+      [&](auto functor) { return _autoPasContainer->template computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto functor) { return _autoPasContainer->template computeInteractions(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor3B<bool>(
+      [&](auto functor) { return _autoPasContainer->template computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
@@ -623,32 +620,34 @@ void Simulation::logMeasurements() {
 
     if (_configuration.dontMeasureFlops.value) {
       if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
-              ForceFunctorAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-              autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> flopCounterFunctor(
-                  ljFunctor, _autoPasContainer->getCutoff());
-              _autoPasContainer->computeInteractions(&flopCounterFunctor);
+        ForceFunctorAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+        autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> flopCounterFunctor(
+            ljFunctor, _autoPasContainer->getCutoff());
+        _autoPasContainer->computeInteractions(&flopCounterFunctor);
 
-              const auto flops = flopCounterFunctor.getFlops();
+        const auto flops = flopCounterFunctor.getFlops();
 
-              std::cout << "Statistics for the Pairwise Force Calculation at end of simulation:" << std::endl;
-              std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-              std::cout << "  GFLOPs/sec                         : "
-                        << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdatePairwise) * 1e-9) << std::endl;
-              std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+        std::cout << "Statistics for the Pairwise Force Calculation at end of simulation:" << std::endl;
+        std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+        std::cout << "  GFLOPs/sec                         : "
+                  << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdatePairwise) * 1e-9)
+                  << std::endl;
+        std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
       }
       if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
-              ForceFunctorAbstract3B atFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-              autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> flopCounterFunctor(
-                  atFunctor, _autoPasContainer->getCutoff());
-              _autoPasContainer->computeInteractions(&flopCounterFunctor);
+        ForceFunctorAbstract3B atFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+        autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> flopCounterFunctor(
+            atFunctor, _autoPasContainer->getCutoff());
+        _autoPasContainer->computeInteractions(&flopCounterFunctor);
 
-              const auto flops = flopCounterFunctor.getFlops();
+        const auto flops = flopCounterFunctor.getFlops();
 
-              std::cout << "Statistics for the 3-Body Force Calculation at end of simulation:" << std::endl;
-              std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-              std::cout << "  GFLOPs/sec                         : "
-                        << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdateTriwise) * 1e-9) << std::endl;
-              std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+        std::cout << "Statistics for the 3-Body Force Calculation at end of simulation:" << std::endl;
+        std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+        std::cout << "  GFLOPs/sec                         : "
+                  << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdateTriwise) * 1e-9)
+                  << std::endl;
+        std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
       }
     }
   }
@@ -750,7 +749,7 @@ T Simulation::applyWithChosenFunctor3B(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
 #endif
     }
-    default : {
+    default: {
       throw std::runtime_error("Unknown 3-body functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
     }

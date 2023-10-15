@@ -56,7 +56,8 @@ class ParticlePropertiesLibrary {
    * @param nu
    * @param mass
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType nu, const floatType mass);
+  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType nu,
+                   const floatType mass);
 
   /**
    * Adds the properties of a type of a single LJ site type to the library.
@@ -236,7 +237,9 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  inline auto getMixingData(intType i, intType j) const { return _computedLJMixingData[i * _numRegisteredSiteTypes + j]; }
+  inline auto getMixingData(intType i, intType j) const {
+    return _computedLJMixingData[i * _numRegisteredSiteTypes + j];
+  }
 
   /**
    * Get a pointer to Mixing Data for one pair of site types.
@@ -286,7 +289,9 @@ class ParticlePropertiesLibrary {
    * @return nu_ijk
    */
   inline floatType getMixingNu(intType i, intType j, intType k) const {
-    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes + k].nu;
+    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
+                                 k]
+        .nu;
   }
 
   /**
@@ -297,7 +302,8 @@ class ParticlePropertiesLibrary {
    * @return
    */
   inline auto getMixingData(intType i, intType j, intType k) const {
-    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes + k];
+    return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
+                                 k];
   }
 
  private:
@@ -308,7 +314,7 @@ class ParticlePropertiesLibrary {
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
   std::vector<floatType> _siteMasses;
-  std::vector<floatType> _nus; // Factor for AxilrodTeller potential
+  std::vector<floatType> _nus;  // Factor for AxilrodTeller potential
 
   // Note: this is a vector of site type Ids for the sites of a certain molecular Id
   std::vector<std::vector<intType>> _siteIds;

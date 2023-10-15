@@ -282,8 +282,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(ruleFilename);
   }
 
-  if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise))
-  {
+  if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;
     constexpr int indentWidth = 2;
     const auto indent = std::string(indentWidth, ' ');
@@ -319,8 +318,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(newton3Options, -indentWidth);
   }
 
-  if (getInteractionTypes().count(autopas::InteractionTypeOption::threeBody))
-  {
+  if (getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
     os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
     constexpr int indentWidth = 2;
     const auto indent = std::string(indentWidth, ' ');
@@ -542,8 +540,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   // initialize at site level
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
     _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
-                                            nuMap.value.at(siteTypeId),
-                                            massMap.value.at(siteTypeId));
+                                            nuMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level

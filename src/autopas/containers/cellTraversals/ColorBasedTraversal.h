@@ -6,12 +6,12 @@
 
 #pragma once
 
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
-#include "autopas/options/InteractionTypeOption.h"
-#include "autopas/containers/TraversalInterface.h"
 
 namespace autopas {
 
@@ -24,8 +24,8 @@ namespace autopas {
  * @tparam useNewton3
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth = 3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
+          DataLayoutOption::Value dataLayout, bool useNewton3, int collapseDepth = 3>
 class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface<interactionType> {
  protected:
   /**
@@ -37,7 +37,7 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
    * @param cellLength cell length.
    */
   explicit ColorBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                           const double interactionLength, const std::array<double, 3> &cellLength)
+                               const double interactionLength, const std::array<double, 3> &cellLength)
       : CellTraversal<ParticleCell>(dims),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
@@ -97,8 +97,8 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
    */
   template <typename LoopBody>
   inline void colorTraversal(LoopBody &&loopBody, const std::array<unsigned long, 3> &end,
-                         const std::array<unsigned long, 3> &stride,
-                         const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
+                             const std::array<unsigned long, 3> &stride,
+                             const std::array<unsigned long, 3> &offset = {0ul, 0ul, 0ul});
 
   /**
    * This method is called when the color during the traversal has changed.
@@ -129,12 +129,14 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   utils::DataLayoutConverter<Functor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
+          DataLayoutOption::Value dataLayout, bool useNewton3, int collapseDepth>
 template <typename LoopBody>
-inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth>::colorTraversal(
-    LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
-    const std::array<unsigned long, 3> &offset) {
+inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3,
+                                collapseDepth>::colorTraversal(LoopBody &&loopBody,
+                                                               const std::array<unsigned long, 3> &end,
+                                                               const std::array<unsigned long, 3> &stride,
+                                                               const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;
 #if defined(AUTOPAS_OPENMP)
 #pragma omp parallel

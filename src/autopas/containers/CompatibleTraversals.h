@@ -9,8 +9,8 @@
 #include <set>
 
 #include "autopas/options/ContainerOption.h"
-#include "autopas/options/TraversalOption.h"
 #include "autopas/options/InteractionTypeOption.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 
@@ -140,17 +140,15 @@ namespace autopas::compatibleTraversals {
  * @return
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Disabled() {
-  return {
-      TraversalOption::lc_c01,
-      TraversalOption::lc_c01_combined_SoA,
-      TraversalOption::ot_c01,
-      TraversalOption::vcl_c01_balanced,
-      TraversalOption::vcl_cluster_iteration,
-      TraversalOption::vl_list_iteration,
-      TraversalOption::vlc_c01,
-      TraversalOption::vlp_c01,
-      TraversalOption::lc_c01_3b
-  };
+  return {TraversalOption::lc_c01,
+          TraversalOption::lc_c01_combined_SoA,
+          TraversalOption::ot_c01,
+          TraversalOption::vcl_c01_balanced,
+          TraversalOption::vcl_cluster_iteration,
+          TraversalOption::vl_list_iteration,
+          TraversalOption::vlc_c01,
+          TraversalOption::vlp_c01,
+          TraversalOption::lc_c01_3b};
 };
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
@@ -165,7 +163,7 @@ namespace autopas::compatibleTraversals {
  * Provides a set of all traversals that only support DataLayout AoS.
  * @return
  */
-[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() {return {};};
+[[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyAoS() { return {}; };
 /**
  * Provides a set of all traversals that only support DataLayout SoA.
  * @return
@@ -182,7 +180,8 @@ namespace autopas::compatibleTraversals {
  * @param containerOption ContainerOption
  * @return set of all applicable traversal options.
  */
-[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(ContainerOption containerOption, const InteractionTypeOption interactionTypeOption) {
+[[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(
+    ContainerOption containerOption, const InteractionTypeOption interactionTypeOption) {
   switch (interactionTypeOption) {
     // Check compatible pairwise traversals
     case InteractionTypeOption::pairwise: {
@@ -233,8 +232,9 @@ namespace autopas::compatibleTraversals {
     }
   }
 
-  autopas::utils::ExceptionHandler::exception("CompatibleTraversals: Unknown container option {} or unsupported interaction type {}!",
-                                              containerOption.to_string(), interactionTypeOption.to_string());
+  autopas::utils::ExceptionHandler::exception(
+      "CompatibleTraversals: Unknown container option {} or unsupported interaction type {}!",
+      containerOption.to_string(), interactionTypeOption.to_string());
 
   static const std::set<TraversalOption> s{};
   return s;

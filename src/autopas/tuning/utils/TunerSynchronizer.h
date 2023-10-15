@@ -7,6 +7,7 @@
 #pragma once
 
 #include <set>
+
 #include "autopas/options/InteractionTypeOption.h"
 
 namespace autopas {
@@ -16,8 +17,6 @@ namespace autopas {
  */
 class TunerSynchronizer {
  public:
-
-
   TunerSynchronizer() = default;
 
   /**
@@ -30,7 +29,9 @@ class TunerSynchronizer {
    * @param interactionType interaction type to add for synchronization
    * @param isTuning initial tuning status (default to true)
    */
-  void addInteractionType(InteractionTypeOption::Value interactionType, const bool isTuning = true) {_tuningStates[interactionType] = isTuning;}
+  void addInteractionType(InteractionTypeOption::Value interactionType, const bool isTuning = true) {
+    _tuningStates[interactionType] = isTuning;
+  }
 
   /**
    * To be called after configuration was selected and tuning status determined.

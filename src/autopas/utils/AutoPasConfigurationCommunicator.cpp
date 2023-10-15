@@ -60,7 +60,8 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
                           std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                           std::set<TraversalOption> &traversalOptions,
                           std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                          std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options, const InteractionTypeOption interactionType) {
+                          std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
+                          const InteractionTypeOption interactionType) {
   // ============== setup ======================================================
 
   // These will be set to the Options specific to this rank and will overwrite the input sets.
@@ -84,8 +85,8 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
   // ============== main computation ===========================================
 
   ConfigurationAndRankIteratorHandler iteratorHandler(containerOptions, finiteCellSizeFactors, traversalOptions,
-                                                      loadEstimatorOptions, dataLayoutOptions, newton3Options, interactionType,
-                                                      numConfigs, commSize);
+                                                      loadEstimatorOptions, dataLayoutOptions, newton3Options,
+                                                      interactionType, numConfigs, commSize);
 
   while (iteratorHandler.getRankIterator() < rank) {
     iteratorHandler.advanceIterators(numConfigs, commSize);
@@ -129,10 +130,11 @@ void generateDistribution(const int numConfigs, const int commSize, const int ra
 void distributeConfigurations(std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,
                               std::set<TraversalOption> &traversalOptions,
                               std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                              std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options, InteractionTypeOption interactionType,
-                              const int rank, const int commSize) {
-  const auto numConfigs = static_cast<int>(getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions,
-                                                              loadEstimatorOptions, dataLayoutOptions, newton3Options, interactionType));
+                              std::set<DataLayoutOption> &dataLayoutOptions, std::set<Newton3Option> &newton3Options,
+                              InteractionTypeOption interactionType, const int rank, const int commSize) {
+  const auto numConfigs =
+      static_cast<int>(getSearchSpaceSize(containerOptions, cellSizeFactors, traversalOptions, loadEstimatorOptions,
+                                          dataLayoutOptions, newton3Options, interactionType));
 
   if (numConfigs == 0) {
     utils::ExceptionHandler::exception("Could not generate valid configurations, aborting");
@@ -206,9 +208,10 @@ std::vector<std::byte> serializeConfigurations(const std::vector<Configuration> 
 Configuration deserializeConfiguration(SerializedConfiguration config) {
   double cellSizeFactor{0.};
   std::memcpy(&cellSizeFactor, &config[6], sizeof(double));
-  return {static_cast<ContainerOption::Value>(config[0]),  cellSizeFactor,
-          static_cast<TraversalOption::Value>(config[1]),  static_cast<LoadEstimatorOption::Value>(config[2]),
-          static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4]), static_cast<InteractionTypeOption::Value>(config[5])};
+  return {static_cast<ContainerOption::Value>(config[0]),      cellSizeFactor,
+          static_cast<TraversalOption::Value>(config[1]),      static_cast<LoadEstimatorOption::Value>(config[2]),
+          static_cast<DataLayoutOption::Value>(config[3]),     static_cast<Newton3Option::Value>(config[4]),
+          static_cast<InteractionTypeOption::Value>(config[5])};
 }
 
 std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {

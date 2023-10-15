@@ -8,10 +8,10 @@
 
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/options/InteractionTypeOption.h"
 
 namespace autopas::utils {
 /**
@@ -34,13 +34,11 @@ class ConfigurationAndRankIteratorHandler {
    * @param numConfigs
    * @param commSize
    */
-  ConfigurationAndRankIteratorHandler(const std::set<ContainerOption> &containerOptions,
-                                      const std::set<double> &cellSizeFactors,
-                                      const std::set<TraversalOption> &traversalOptions,
-                                      const std::set<LoadEstimatorOption> &loadEstimatorOptions,
-                                      const std::set<DataLayoutOption> &dataLayoutOptions,
-                                      const std::set<Newton3Option> &newton3Options, const InteractionTypeOption &interactionType, const int numConfigs,
-                                      const int commSize)
+  ConfigurationAndRankIteratorHandler(
+      const std::set<ContainerOption> &containerOptions, const std::set<double> &cellSizeFactors,
+      const std::set<TraversalOption> &traversalOptions, const std::set<LoadEstimatorOption> &loadEstimatorOptions,
+      const std::set<DataLayoutOption> &dataLayoutOptions, const std::set<Newton3Option> &newton3Options,
+      const InteractionTypeOption &interactionType, const int numConfigs, const int commSize)
       : _containers(containerOptions),
         _cellSizeFactors(cellSizeFactors),
         _allowedTraversalOptions(traversalOptions),

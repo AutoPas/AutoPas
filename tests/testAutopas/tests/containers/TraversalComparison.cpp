@@ -120,11 +120,13 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   EXPECT_EQ(container.size(), numMolecules + numHaloMolecules) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::generateTraversal(
-            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::
+            generateTraversal(traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
+                              newton3Option);
       });
 
-  auto pairwiseTraversal = dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise> *>(traversal.get());
+  auto pairwiseTraversal =
+      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise> *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }
@@ -268,7 +270,8 @@ static auto toString = [](const auto &info) {
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> params{};
   for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption, autopas::InteractionTypeOption::pairwise)) {
+    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(
+             containerOption, autopas::InteractionTypeOption::pairwise)) {
       for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
         for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
           for (auto numParticles : {100ul, 2000ul}) {

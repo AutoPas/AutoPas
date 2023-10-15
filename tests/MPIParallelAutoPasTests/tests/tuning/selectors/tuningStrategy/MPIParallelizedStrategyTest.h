@@ -30,19 +30,24 @@ class MPIParallelizedStrategyTest : public AutoPasMPITestBase {
                               const std::array<size_t, numRanksExpected> &expectedNumLocalConfigs,
                               const std::set<autopas::Configuration> &searchSpace);
 
-  autopas::Configuration lc_c01_aos{autopas::ContainerOption::linkedCells, 1.,
-                                    autopas::TraversalOption::lc_c01,      autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
-  autopas::Configuration lc_c04_aos{autopas::ContainerOption::linkedCells, 1.,
-                                    autopas::TraversalOption::lc_c04,      autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
-  autopas::Configuration lc_c08_aos{autopas::ContainerOption::linkedCells, 1.,
-                                    autopas::TraversalOption::lc_c08,      autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::aos,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
-  autopas::Configuration lc_c01_soa{autopas::ContainerOption::linkedCells, 1.,
-                                    autopas::TraversalOption::lc_c01,      autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::soa,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
-  autopas::Configuration lc_c04_soa{autopas::ContainerOption::linkedCells, 1.,
-                                    autopas::TraversalOption::lc_c04,      autopas::LoadEstimatorOption::none,
-                                    autopas::DataLayoutOption::soa,        autopas::Newton3Option::disabled, autopas::InteractionTypeOption::pairwise};
+  autopas::Configuration lc_c01_aos{autopas::ContainerOption::linkedCells,   1.,
+                                    autopas::TraversalOption::lc_c01,        autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+                                    autopas::InteractionTypeOption::pairwise};
+  autopas::Configuration lc_c04_aos{autopas::ContainerOption::linkedCells,   1.,
+                                    autopas::TraversalOption::lc_c04,        autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+                                    autopas::InteractionTypeOption::pairwise};
+  autopas::Configuration lc_c08_aos{autopas::ContainerOption::linkedCells,   1.,
+                                    autopas::TraversalOption::lc_c08,        autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::aos,          autopas::Newton3Option::disabled,
+                                    autopas::InteractionTypeOption::pairwise};
+  autopas::Configuration lc_c01_soa{autopas::ContainerOption::linkedCells,   1.,
+                                    autopas::TraversalOption::lc_c01,        autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::soa,          autopas::Newton3Option::disabled,
+                                    autopas::InteractionTypeOption::pairwise};
+  autopas::Configuration lc_c04_soa{autopas::ContainerOption::linkedCells,   1.,
+                                    autopas::TraversalOption::lc_c04,        autopas::LoadEstimatorOption::none,
+                                    autopas::DataLayoutOption::soa,          autopas::Newton3Option::disabled,
+                                    autopas::InteractionTypeOption::pairwise};
 };

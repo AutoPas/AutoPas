@@ -16,7 +16,8 @@ using namespace autopas;
 
 FeatureVectorTest::FeatureVectorTest() {
   for (const auto &containerOption : ContainerOption::getAllOptions()) {
-    for (const auto &traversalOption : compatibleTraversals::allCompatibleTraversals(containerOption, autopas::InteractionTypeOption::pairwise)) {
+    for (const auto &traversalOption :
+         compatibleTraversals::allCompatibleTraversals(containerOption, autopas::InteractionTypeOption::pairwise)) {
       for (const auto &loadEstimatorOption : loadEstimators::getApplicableLoadEstimators(
                containerOption, traversalOption, LoadEstimatorOption::getAllOptions())) {
         allCompatibleContainerTraversalEstimators.emplace_back(containerOption, traversalOption, loadEstimatorOption);
@@ -135,7 +136,8 @@ TEST_F(FeatureVectorTest, clusterEncode) {
   for (const auto &[container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
     for (const auto &dataLayout : dataLayouts) {
       for (const auto &newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, InteractionTypeOption::pairwise);
+        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
+                             InteractionTypeOption::pairwise);
       }
     }
   }
@@ -177,7 +179,8 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1) {
   for (auto [container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
     for (auto dataLayout : dataLayouts) {
       for (auto newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, InteractionTypeOption::pairwise);
+        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
+                             InteractionTypeOption::pairwise);
       }
     }
   }
@@ -224,7 +227,8 @@ TEST_F(FeatureVectorTest, clusterNeighboursManhattan1Container) {
   for (auto [container, traversal, estimator] : allCompatibleContainerTraversalEstimators) {
     for (auto dataLayout : dataLayouts) {
       for (auto newton3 : newtons) {
-        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, InteractionTypeOption::pairwise);
+        vecList.emplace_back(container, cellSizeFactor, traversal, estimator, dataLayout, newton3,
+                             InteractionTypeOption::pairwise);
       }
     }
   }

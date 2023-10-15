@@ -1,8 +1,8 @@
 /**
-* @file PairwiseTraversalInterface.h
+ * @file PairwiseTraversalInterface.h
  * @author S. Newcome
  * @date 17/07/2023
-*/
+ */
 
 #pragma once
 
@@ -20,4 +20,4 @@ class PairwiseTraversalInterface : public TraversalInterface {
    */
   virtual void traverseParticlePairs() = 0;
 };
-}
+}  // namespace autopas

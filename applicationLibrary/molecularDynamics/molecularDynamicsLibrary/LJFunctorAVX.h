@@ -111,8 +111,8 @@ class LJFunctorAVX
   }
 
   /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
-   * using different functors in the logs.
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
+   * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
   std::string getName() { return "LJFunctorAVX"; }

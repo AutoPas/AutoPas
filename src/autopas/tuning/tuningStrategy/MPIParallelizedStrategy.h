@@ -76,7 +76,8 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * @param searchSpace
    * @return The fall back configuration.
    */
-  static Configuration createFallBackConfiguration(const std::set<Configuration> &searchSpace, const InteractionTypeOption &interactionType);
+  static Configuration createFallBackConfiguration(const std::set<Configuration> &searchSpace,
+                                                   const InteractionTypeOption &interactionType);
 
  private:
   /**

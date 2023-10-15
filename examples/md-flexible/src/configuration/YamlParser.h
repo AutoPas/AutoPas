@@ -91,7 +91,6 @@ const T parseComplexTypeValueSingle(const YAML::Node node, const std::string &ke
     } else {
       return T{};
     }
-
   }
   return value;
 }

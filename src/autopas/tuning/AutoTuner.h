@@ -17,11 +17,11 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
+#include "autopas/tuning/utils/TunerSynchronizer.h"
 #include "autopas/utils/RaplMeter.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
-#include "autopas/tuning/utils/TunerSynchronizer.h"
 
 namespace autopas {
 

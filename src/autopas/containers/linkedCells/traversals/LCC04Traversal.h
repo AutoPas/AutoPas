@@ -29,8 +29,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
-                       public LCTraversalInterface<ParticleCell> {
+class LCC04Traversal
+    : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -42,8 +43,8 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, I
    */
   LCC04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                  const double interactionLength, const std::array<double, 3> &cellLength)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                 interactionLength, cellLength),
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _cellOffsets32Pack(computeOffsets32Pack()),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),

@@ -47,7 +47,8 @@ class TraversalTest
     using ParticleCell = FPCell;
     using floatType = double;
 
-    CountFunctor(floatType cutoff) : autopas::PairwiseFunctor<Particle, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
+    CountFunctor(floatType cutoff)
+        : autopas::PairwiseFunctor<Particle, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
     bool isRelevantForTuning() override { return true; }
 

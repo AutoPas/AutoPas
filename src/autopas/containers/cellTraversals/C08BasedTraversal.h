@@ -22,7 +22,8 @@ namespace autopas {
  * @tparam dataLayout
  * @tparam useNewton3
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
+          DataLayoutOption::Value dataLayout, bool useNewton3>
 class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3> {
  public:
   /**
@@ -33,10 +34,10 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                             const double interactionLength, const std::array<double, 3> &cellLength)
-      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(dims, functor, interactionLength,
-                                                                               cellLength) {}
+  explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
+                             const std::array<double, 3> &cellLength)
+      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(
+            dims, functor, interactionLength, cellLength) {}
 
  protected:
   /**
@@ -47,7 +48,8 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
   inline void c08Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
+          DataLayoutOption::Value dataLayout, bool useNewton3>
 template <typename LoopBody>
 inline void C08BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>::c08Traversal(
     LoopBody &&loopBody) {

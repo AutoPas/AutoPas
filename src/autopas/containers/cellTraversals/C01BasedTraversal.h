@@ -21,9 +21,10 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction of particles.
  * @tparam dataLayout indicates usage of SoA
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth = 3>
-class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth> {
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
+          DataLayoutOption::Value dataLayout, bool useNewton3, int collapseDepth = 3>
+class C01BasedTraversal
+    : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -33,8 +34,8 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                             double interactionLength, const std::array<double, 3> &cellLength)
+  explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, double interactionLength,
+                             const std::array<double, 3> &cellLength)
       : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth>(
             dims, functor, interactionLength, cellLength) {}
 
@@ -50,11 +51,11 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
   inline void c01Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
+          DataLayoutOption::Value dataLayout, bool useNewton3, int collapseDepth>
 template <typename LoopBody>
-inline void C01BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, collapseDepth>::c01Traversal(
-    LoopBody &&loopBody) {
+inline void C01BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3,
+                              collapseDepth>::c01Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto offset = this->_overlap;

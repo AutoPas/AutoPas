@@ -19,10 +19,9 @@
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/checkFunctorType.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
-#include "autopas/utils/checkFunctorType.h"
-
 
 /**
  * NOTICE: This class uses always the MockFunctor, even when the mock functionalities are not needed,
@@ -267,19 +266,19 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS N3
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC N3
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC N3
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.iteratePairwisePipeline(&functor);  // optimum
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
@@ -316,19 +315,19 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // DS NoN3
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.iteratePairwisePipeline(&functor);  // LC NoN3
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.iteratePairwisePipeline(&functor);  // optimum
-    autoTuner.bumpIterationCounters();
+  autoTuner.bumpIterationCounters();
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 

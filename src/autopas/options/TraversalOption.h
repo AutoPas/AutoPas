@@ -38,8 +38,8 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01,
     /**
-     * LCC01Traversal3B : 3-body version of lc_c01. Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
-     * parallel. Good load balancing and no overhead.
+     * LCC01Traversal3B : 3-body version of lc_c01. Every cell interacts with all neighbors. Is not compatible with
+     * Newton3 thus embarrassingly parallel. Good load balancing and no overhead.
      */
     lc_c01_3b,
     /**
@@ -242,9 +242,7 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for 3-body interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllThreeBodyOptions() {
-    return {Value::ds_sequential_3b, Value::lc_c01_3b};
-  }
+  static std::set<TraversalOption> getAllThreeBodyOptions() { return {Value::ds_sequential_3b, Value::lc_c01_3b}; }
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.

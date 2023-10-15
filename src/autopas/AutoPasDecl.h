@@ -531,7 +531,6 @@ class AutoPas {
     });
   }
 
-
   /**
    * Function to iterate over all pairs of particles in the container.
    * This function only handles short-range interactions.
@@ -1128,7 +1127,7 @@ class AutoPas {
    */
   std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
 
-  std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner&> _autoTuners;
+  std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner &> _autoTuners;
 
   /**
    * This is the AutoTuner for pairwise interactions.

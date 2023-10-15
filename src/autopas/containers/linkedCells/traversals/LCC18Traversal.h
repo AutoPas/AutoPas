@@ -30,8 +30,9 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
-                       public LCTraversalInterface<ParticleCell> {
+class LCC18Traversal
+    : public C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -45,8 +46,8 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, I
    */
   explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                 interactionLength, cellLength),
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(
+            dims, pairwiseFunctor, interactionLength, cellLength),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/) {
     computeOffsets();
   }

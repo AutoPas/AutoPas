@@ -16,8 +16,9 @@ enum ParticleStorage {
   bufferHalo,
 };
 
-class RemainderTraversalTest3B : public AutoPasTestBase,
-                               public ::testing::WithParamInterface<std::tuple<ParticleStorage, ParticleStorage, ParticleStorage>> {
+class RemainderTraversalTest3B
+    : public AutoPasTestBase,
+      public ::testing::WithParamInterface<std::tuple<ParticleStorage, ParticleStorage, ParticleStorage>> {
  public:
   RemainderTraversalTest3B() : numBuffers(autopas::autopas_get_max_threads()){};
   ~RemainderTraversalTest3B() override = default;

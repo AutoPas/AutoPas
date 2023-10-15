@@ -106,7 +106,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison3B::Globals> T
                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
   mdLib::AxilrodTellerFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                   globals /*calculateGlobals*/> functor{_cutoff};
+                              globals /*calculateGlobals*/>
+      functor{_cutoff};
   functor.setParticleProperties(_nu);
 
   autopasTools::generators::RandomGenerator::fillWithParticles(
@@ -115,15 +116,16 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison3B::Globals> T
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
       container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container.getCutoff(),
       numHaloMolecules);
-  EXPECT_EQ(container.size(), numMolecules + numHaloMolecules)
-      << "Wrong number of halo molecules inserted!";
+  EXPECT_EQ(container.size(), numMolecules + numHaloMolecules) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::threeBody>::generateTraversal(
-            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::threeBody>::
+            generateTraversal(traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
+                              newton3Option);
       });
 
-  auto triwiseTraversal = dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::threeBody> *>(traversal.get());
+  auto triwiseTraversal =
+      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::threeBody> *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }
@@ -214,7 +216,7 @@ TEST_P(TraversalComparison3B, traversalTest) {
   }
 
   TraversalComparison3B::mykey_t key{numParticles,  numHaloParticles,         boxMax,
-                                   doSlightShift, particleDeletionPosition, globals};
+                                     doSlightShift, particleDeletionPosition, globals};
   if (_forcesReference.count(key) == 0) {
     generateReference(key);
   }
@@ -268,13 +270,14 @@ static auto toString = [](const auto &info) {
 auto TraversalComparison3B::getTestParams() {
   std::vector<TestingTuple> params{};
   for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption, autopas::InteractionTypeOption::threeBody)) {
-      for (auto dataLayoutOption : {autopas::DataLayoutOption::aos}) { // TODO: add soa
+    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(
+             containerOption, autopas::InteractionTypeOption::threeBody)) {
+      for (auto dataLayoutOption : {autopas::DataLayoutOption::aos}) {  // TODO: add soa
         for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
           for (auto numParticles : {100ul, 400ul}) {
             for (auto boxMax : std::vector<std::array<double, 3>>{{3., 3., 3.}, {6., 6., 6.}}) {
               for (double cellSizeFactor : {0.5, 1., 1.5}) {
-                for (auto numHalo : {/*0ul, */200ul}) {
+                for (auto numHalo : {/*0ul, */ 200ul}) {
                   for (bool slightMove : {true, false}) {
                     for (bool globals : {true, /*false*/}) {
                       for (DeletionPosition particleDeletionPosition :

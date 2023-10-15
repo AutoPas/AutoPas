@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "autopas/cells/ParticleCell.h"
-#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/TraversalOption.h"

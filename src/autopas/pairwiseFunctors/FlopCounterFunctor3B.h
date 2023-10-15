@@ -28,8 +28,8 @@ template <class Particle, class ForceFunctorType>
 class FlopCounterFunctor3B : public TriwiseFunctor<Particle, FlopCounterFunctor3B<Particle, ForceFunctorType>> {
  public:
   /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to computeInteractions
-   * using different functors in the logs.
+   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
+   * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
   std::string getName() override { return "FlopCounterFunctor3B"; }
@@ -70,8 +70,9 @@ class FlopCounterFunctor3B : public TriwiseFunctor<Particle, FlopCounterFunctor3
 
     if (dr2ij <= _cutoffSquare and dr2jk <= _cutoffSquare and dr2ki <= _cutoffSquare) {
       _kernelCalls.fetch_add(1, std::memory_order_relaxed);
-      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), k.getTypeId(), newton3),
-                             std::memory_order_relaxed);
+      _kernelFlops.fetch_add(
+          _forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), k.getTypeId(), newton3),
+          std::memory_order_relaxed);
     }
   }
 

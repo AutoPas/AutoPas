@@ -49,9 +49,7 @@ class TraversalOption3B : public Option<TraversalOption3B> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<TraversalOption3B> getDiscouragedOptions() {
-    return {};
-  }
+  static std::set<TraversalOption3B> getDiscouragedOptions() { return {}; }
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.

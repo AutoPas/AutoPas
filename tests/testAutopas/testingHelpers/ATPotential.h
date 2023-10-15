@@ -7,9 +7,10 @@
  */
 
 #pragma once
-#include "autopas/utils/ConstexprMath.h"
-#include "autopas/utils/ArrayMath.h"
 #include <tuple>
+
+#include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/ConstexprMath.h"
 
 /**
  * Calculates the potential energy between particles i, j and k using the Axilrod Teller potential.
@@ -48,7 +49,7 @@ constexpr double calculateATPotential(const std::array<double, 3> &posI, const s
   // cos_i = (r_ki * r_ji) / (|r_ki| |r_ji|)
 
   const auto cosI = autopas::utils::ArrayMath::dot(posIToPosK, posIToPosJ) / (distIK * distIJ);
-  const auto cosJ = - autopas::utils::ArrayMath::dot(posJToPosK, posIToPosJ) / (distJK * distIJ);
+  const auto cosJ = -autopas::utils::ArrayMath::dot(posJToPosK, posIToPosJ) / (distJK * distIJ);
   const auto cosK = autopas::utils::ArrayMath::dot(posIToPosK, posJToPosK) / (distIK * distJK);
 
   const auto rrr = distIJ * distJK * distIK;
@@ -69,9 +70,10 @@ constexpr double calculateATPotential(const std::array<double, 3> &posI, const s
  * @param nu Axilrod-Teller Factor
  * @return The forces exerted on particle i, particle j, particle k
  */
-constexpr std::array<std::array<double, 3>, 3>
-  calculateATForce(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-                    const std::array<double, 3> &posK, double cutoff, double nu) {
+constexpr std::array<std::array<double, 3>, 3> calculateATForce(const std::array<double, 3> &posI,
+                                                                const std::array<double, 3> &posJ,
+                                                                const std::array<double, 3> &posK, double cutoff,
+                                                                double nu) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // the distance vectors
@@ -90,7 +92,7 @@ constexpr std::array<std::array<double, 3>, 3>
   // if the distance between the two particles is larger than cutoff, we don't
   // consider this interaction
   if (distJI > cutoff or distIK > cutoff or distKJ > cutoff) {
-    return {std::array<double, 3>{0.,0.,0.}, std::array<double, 3>{0.,0.,0.}, std::array<double, 3>{0.,0.,0.}};
+    return {std::array<double, 3>{0., 0., 0.}, std::array<double, 3>{0., 0., 0.}, std::array<double, 3>{0., 0., 0.}};
   }
 
   // Dot products that are the numerators of the cosine formula
@@ -108,17 +110,17 @@ constexpr std::array<std::array<double, 3>, 3>
 
   // loop over all dimensions
   for (size_t i = 0; i < 3; i++) {
-    forceI[i] = posIToPosK[i] * cosI * (cosJ - cosK)
-              + posJToPosI[i] * (cosJ * cosK - distKJSquared * distIKSquared + 5.0 * cos6 / distJISquared)
-              + posIToPosK[i] * (- cosJ * cosK + distJISquared * distKJSquared - 5.0 * cos6 / distIKSquared);
+    forceI[i] = posIToPosK[i] * cosI * (cosJ - cosK) +
+                posJToPosI[i] * (cosJ * cosK - distKJSquared * distIKSquared + 5.0 * cos6 / distJISquared) +
+                posIToPosK[i] * (-cosJ * cosK + distJISquared * distKJSquared - 5.0 * cos6 / distIKSquared);
 
-    forceJ[i] = posIToPosK[i] * cosJ * (cosK - cosI)
-                + posKToPosJ[i] * (cosI * cosK - distJISquared * distIKSquared + 5.0 * cos6 / distKJSquared)
-                + posJToPosI[i] * (- cosI * cosK + distKJSquared * distIKSquared - 5.0 * cos6 / distJISquared);
+    forceJ[i] = posIToPosK[i] * cosJ * (cosK - cosI) +
+                posKToPosJ[i] * (cosI * cosK - distJISquared * distIKSquared + 5.0 * cos6 / distKJSquared) +
+                posJToPosI[i] * (-cosI * cosK + distKJSquared * distIKSquared - 5.0 * cos6 / distJISquared);
 
-    forceK[i] = posJToPosI[i] * cosK * (cosI - cosJ)
-                + posIToPosK[i] * (cosI * cosJ - distJISquared * distKJSquared + 5.0 * cos6 / distIKSquared)
-                + posKToPosJ[i] * (- cosI * cosJ + distJISquared * distIKSquared - 5.0 * cos6 / distKJSquared);
+    forceK[i] = posJToPosI[i] * cosK * (cosI - cosJ) +
+                posIToPosK[i] * (cosI * cosJ - distJISquared * distKJSquared + 5.0 * cos6 / distIKSquared) +
+                posKToPosJ[i] * (-cosI * cosJ + distJISquared * distIKSquared - 5.0 * cos6 / distKJSquared);
   }
   forceI *= 3.0 * nu / dist5All;
   forceJ *= 3.0 * nu / dist5All;
@@ -136,8 +138,10 @@ constexpr std::array<std::array<double, 3>, 3>
  * @param nu Axilrod-Teller Factor
  * @return virial
  */
-constexpr std::array<std::array<double, 3>, 3> calculateATVirials(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-                                                  const std::array<double, 3> &posK, double cutoff, double nu) {
+constexpr std::array<std::array<double, 3>, 3> calculateATVirials(const std::array<double, 3> &posI,
+                                                                  const std::array<double, 3> &posJ,
+                                                                  const std::array<double, 3> &posK, double cutoff,
+                                                                  double nu) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // first we need the forces
@@ -163,7 +167,7 @@ constexpr std::array<std::array<double, 3>, 3> calculateATVirials(const std::arr
  * @return sum of all three components of the virial vector
  */
 constexpr double calculateATVirialTotal(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-                                          const std::array<double, 3> &posK, double cutoff, double nu) {
+                                        const std::array<double, 3> &posK, double cutoff, double nu) {
   using namespace autopas::utils::ArrayMath::literals;
   const auto [virialI, virialJ, virialK] = calculateATVirials(posI, posJ, posK, cutoff, nu);
   const auto virialSum = virialI + virialJ + virialK;
@@ -171,7 +175,8 @@ constexpr double calculateATVirialTotal(const std::array<double, 3> &posI, const
 }
 
 /**
- * Returns the sum of all components of the virial for each particle i, j, k individually using the Axilrod-Teller potential.
+ * Returns the sum of all components of the virial for each particle i, j, k individually using the Axilrod-Teller
+ * potential.
  * @param posI coordinate of the first particle
  * @param posJ coordinate of the second particle
  * @param posK coordinate of the third particle
@@ -179,8 +184,10 @@ constexpr double calculateATVirialTotal(const std::array<double, 3> &posI, const
  * @param nu Axilrod-Teller Factor
  * @return sum of all three components of the virial vector
  */
-constexpr std::array<double, 3> calculateATVirialTotalPerParticle(const std::array<double, 3> &posI, const std::array<double, 3> &posJ,
-                                        const std::array<double, 3> &posK, double cutoff, double nu) {
+constexpr std::array<double, 3> calculateATVirialTotalPerParticle(const std::array<double, 3> &posI,
+                                                                  const std::array<double, 3> &posJ,
+                                                                  const std::array<double, 3> &posK, double cutoff,
+                                                                  double nu) {
   using namespace autopas::utils::ArrayMath::literals;
   const auto [virialI, virialJ, virialK] = calculateATVirials(posI, posJ, posK, cutoff, nu);
   const auto virialSumI = virialI[0] + virialI[1] + virialI[2];

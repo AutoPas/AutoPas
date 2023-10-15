@@ -26,7 +26,8 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
+class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise,
+                                                   dataLayout, useNewton3>,
                         public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
@@ -58,7 +59,8 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
    * @param clusterSize Number of particles per cluster.
    */
   explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
-      : ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>({0, 0, 0}, pairwiseFunctor, 0, {}),
+      : ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(
+            {0, 0, 0}, pairwiseFunctor, 0, {}),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize) {}
 
@@ -100,8 +102,8 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 
     // localStride is necessary because stride is constexpr and colorTraversal() wants a const &
     auto localStride = _stride;
-    this->colorTraversal(std::forward<decltype(loopBody)>(loopBody), {coloringCellsPerDim[0], coloringCellsPerDim[1], 1},
-                     localStride);
+    this->colorTraversal(std::forward<decltype(loopBody)>(loopBody),
+                         {coloringCellsPerDim[0], coloringCellsPerDim[1], 1}, localStride);
   }
 
  private:
