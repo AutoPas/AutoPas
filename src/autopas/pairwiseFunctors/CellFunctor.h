@@ -112,6 +112,7 @@ class CellFunctor {
 
   /**
    * Min. number of particles to start sorting.
+   * For details on the chosen threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
   constexpr static unsigned long _sortingThreshold = 8;
 };
