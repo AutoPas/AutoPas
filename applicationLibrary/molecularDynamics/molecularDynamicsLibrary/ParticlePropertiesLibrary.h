@@ -33,6 +33,18 @@ class ParticlePropertiesLibrary {
   explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff(cutoff) {}
 
   /**
+   * Constructor
+   * @param cutoff Cutoff for the Potential
+   * @param n_exp  The n exponent of the Potential
+   * @param m_exp  The m exponent of the Potential
+   * @param coeff  The coefficient of the Potential
+   */
+   //ToDo: add seperate Mixing for Mie-Potential
+  explicit ParticlePropertiesLibrary(const double cutoff, const size_t n_exp, const size_t m_exp, const double coeff)
+      : _cutoff(cutoff), _m_exp(m_exp), _n_exp(n_exp), _epsilon_coeff(coeff){}
+
+
+  /**
    * Copy Constructor.
    * @param particlePropertiesLibrary
    */
@@ -262,9 +274,10 @@ class ParticlePropertiesLibrary {
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
   const double _cutoff;
-  double _epsilon_coeff = 24;
   const size_t _n_exp = 12;
   const size_t _m_exp = 6;
+  const double _epsilon_coeff = 24;
+
 
   std::vector<floatType> _epsilons;
   std::vector<floatType> _sigmas;
@@ -374,10 +387,16 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       const floatType sigmaSquared = sigma * sigma;
       _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
-      // shift6
-      //TODO: test for LJ or Mie, and return accordingly!
+      // shift6 for Mie
+      if(_m_exp != 6 || _n_exp != 12) {
+        const floatType shift6 = calcShiftMie(epsilon24, sigmaSquared, cutoffSquared, _n_exp, _m_exp);
+        _computedMixingData[globalIndex].shift6 = shift6;
+      }
+      // shift6 for LJ
+      else{
       const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
       _computedMixingData[globalIndex].shift6 = shift6;
+    }
     }
   }
 }
@@ -470,7 +489,7 @@ double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon2
   return shift6;
 }
 
-
+//ToDo: add test
 template <typename floatType, typename intType>
 double ParticlePropertiesLibrary<floatType, intType>::calcShiftMie(double cepsilon, double sigmaSquared,
                                                                  double cutoffSquared, size_t n, size_t m) {
