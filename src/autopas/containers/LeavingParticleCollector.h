@@ -22,22 +22,23 @@ namespace LeavingParticleCollector {
  * @tparam ContainerType The type of the container.
  * @param container The container from which particles should be collected.
  * @return Returns a vector of leaving particles.
- * @todo: openmp parallelization, general optimizations (do not iterate over all particles, but only over boundary,
- * eventually merge both loops?
+ * @todo: do not iterate over all particles, but only over boundary
  */
 template <class ContainerType>
 std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwnedAsDummy(ContainerType &container) {
-  // First mark halo particles as dummy!
-  for (auto iter = container.begin(autopas::IteratorBehavior::halo); iter.isValid(); ++iter) {
-    iter->setOwnershipState(OwnershipState::dummy);
-  }
-
-  std::vector<typename ContainerType::ParticleType> leavingParticles;
-  // Collect leaving particles
-  for (auto iter = container.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    if (not utils::inBox(iter->getR(), container.getBoxMin(), container.getBoxMax())) {
-      leavingParticles.push_back(*iter);
-      iter->setOwnershipState(OwnershipState::dummy);
+  std::vector<typename ContainerType::ParticleType> leavingParticles{};
+#pragma omp declare reduction(vecMergeParticle : std::vector<typename ContainerType::ParticleType> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp parallel reduction(vecMergeParticle : leavingParticles)
+  {
+    for (auto iter = container.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+      // Mark halo particles for deletion
+      if (iter->isHalo()) {
+        iter->setOwnershipState(OwnershipState::dummy);
+      // Collect leaving particles and mark them for deletion
+      } else if (not utils::inBox(iter->getR(), container.getBoxMin(), container.getBoxMax())) {
+        leavingParticles.push_back(*iter);
+        iter->setOwnershipState(OwnershipState::dummy);
+      }
     }
   }
   return leavingParticles;
