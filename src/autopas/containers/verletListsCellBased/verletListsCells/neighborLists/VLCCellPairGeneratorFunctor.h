@@ -53,7 +53,7 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
   }
 
   /**
-   * @copydoc Functor::AoSFunctor()
+   * @copydoc PairwiseFunctor::AoSFunctor()
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -85,7 +85,7 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle()
+   * @copydoc PairwiseFunctor::SoAFunctorSingle()
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;

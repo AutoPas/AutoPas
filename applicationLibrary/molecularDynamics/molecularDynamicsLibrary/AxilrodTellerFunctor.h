@@ -199,7 +199,7 @@ class AxilrodTellerFunctor
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::TriwiseFunctor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
@@ -208,7 +208,7 @@ class AxilrodTellerFunctor
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::TriwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
@@ -248,7 +248,7 @@ class AxilrodTellerFunctor
  public:
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::TriwiseFunctor::SoAFunctorVerlet()
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors!
    */

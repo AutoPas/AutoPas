@@ -941,9 +941,10 @@ class AutoPas {
   }
 
   /**
-   * Set the list of allowed newton 3 options.
-   * For possible newton 3 choices see options::Newton3Option::Value.
-   * @param allowedNewton3Options
+   * Set the list of allowed interaction types.
+   * AutoPas will initialize
+   * For possible newton 3 choices see options::interactionTypeOption::Value.
+   * @param allowedInteractionTypeOptions
    */
   void setAllowedInteractionTypeOptions(const std::set<InteractionTypeOption> &allowedInteractionTypeOptions) {
     _allowedInteractionTypeOptions = allowedInteractionTypeOptions;
@@ -1109,7 +1110,8 @@ class AutoPas {
    */
   std::set<Newton3Option> _allowedNewton3Options3B{Newton3Option::getMostOptions()};
   /**
-   * What kind of interactions AutoPas should expect. Default is only pairwise interactions.
+   * What kind of interactions AutoPas should expect.
+   * By default AutoPas is configured to only use pairwise interactions.
    */
   std::set<InteractionTypeOption> _allowedInteractionTypeOptions{InteractionTypeOption::pairwise};
   /**

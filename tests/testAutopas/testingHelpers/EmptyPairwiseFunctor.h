@@ -30,12 +30,12 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle, EmptyPair
   EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle, EmptyPairwiseFunctor<Particle>>(0.){};
 
   /**
-   * @copydoc autopas::Functor::AoSFunctor()
+   * @copydoc autopas::PairwiseFunctor::AoSFunctor()
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    */
   void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
 
@@ -49,7 +49,7 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle, EmptyPair
                       autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   void SoAFunctorVerlet(autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,

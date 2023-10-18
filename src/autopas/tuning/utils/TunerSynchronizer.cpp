@@ -16,7 +16,7 @@ void autopas::TunerSynchronizer::recordTuningState(InteractionTypeOption::Value 
   _tuningStates[interactionType] = stillTuning;
 }
 
-bool autopas::TunerSynchronizer::checkState(autopas::InteractionTypeOption::Value interactionType) {
+bool autopas::TunerSynchronizer::checkTuningState(autopas::InteractionTypeOption::Value interactionType) {
   if (not _tuningStates[interactionType]) {
     for (const auto &[interactionT, isTuning] : _tuningStates) {
       if (interactionT != interactionType and isTuning) {

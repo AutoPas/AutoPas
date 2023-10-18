@@ -60,11 +60,12 @@ class FeatureVectorEncoder {
   FeatureVectorEncoder();
 
   /**
-   * Contructor
+   * Constructor
    * @param containerTraversalEstimatorOptions
    * @param dataLayoutOptions
    * @param newton3Options
    * @param cellSizeFactors
+   * @param interactionType
    */
   FeatureVectorEncoder(
       const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,

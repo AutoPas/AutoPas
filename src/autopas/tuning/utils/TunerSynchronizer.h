@@ -21,6 +21,7 @@ class TunerSynchronizer {
 
   /**
    * Constructor
+   * @param usedInteractionTypes Synchronize autotuners for all used interaction types
    */
   explicit TunerSynchronizer(std::set<InteractionTypeOption::Value> &usedInteractionTypes);
 
@@ -45,7 +46,7 @@ class TunerSynchronizer {
    * @param interactionType
    * @return bool, whether other tuners are still tuning
    */
-  bool checkState(InteractionTypeOption::Value interactionType);
+  bool checkTuningState(InteractionTypeOption::Value interactionType);
 
  private:
   /**

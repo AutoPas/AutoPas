@@ -55,6 +55,7 @@ size_t getSearchSpaceSize(const std::set<ContainerOption> &containerOptions, con
  * @param loadEstimatorOptions inout
  * @param dataLayoutOptions inout
  * @param newton3Options inout
+ * @param interactionType Handle configurations for this interaction type
  */
 void generateDistribution(const int numConfigs, const int commSize, const int rank,
                           std::set<ContainerOption> &containerOptions, NumberSet<double> &cellSizeFactors,

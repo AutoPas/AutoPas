@@ -22,10 +22,18 @@ std::true_type isTriwiseFunctorImpl(autopas::TriwiseFunctor<T, U> const volatile
 
 namespace autopas::utils {
 
-template <typename T>
-using isPairwiseFunctor = decltype(isPairwiseFunctorImpl(std::declval<T &>()));
+/**
+ * Check whether a Functor Type is inheriting from PairwiseFunctor
+ * @tparam FunctorT
+ */
+template <typename FunctorT>
+using isPairwiseFunctor = decltype(isPairwiseFunctorImpl(std::declval<FunctorT &>()));
 
-template <typename T>
-using isTriwiseFunctor = decltype(isTriwiseFunctorImpl(std::declval<T &>()));
+/**
+ * Check whether a Functor Type is inheriting from TriwiseFunctor
+ * @tparam FunctorT
+ */
+template <typename FunctorT>
+using isTriwiseFunctor = decltype(isTriwiseFunctorImpl(std::declval<FunctorT &>()));
 
 }  // namespace autopas::utils

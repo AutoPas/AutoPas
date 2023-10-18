@@ -178,6 +178,7 @@ namespace autopas::compatibleTraversals {
 /**
  * Lists all traversal options applicable for the given container.
  * @param containerOption ContainerOption
+ * @param interactionTypeOption Interaction type for which compatible traversals are collected
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allCompatibleTraversals(

@@ -31,6 +31,7 @@ class ConfigurationAndRankIteratorHandler {
    * @param loadEstimatorOptions
    * @param dataLayoutOptions
    * @param newton3Options
+   * @param interactionType
    * @param numConfigs
    * @param commSize
    */

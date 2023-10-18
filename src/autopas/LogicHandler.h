@@ -71,8 +71,8 @@ class LogicHandler {
   }
 
   /**
-   * Returns a non-const reference to the currently selected particle container.
-   * @return Non-const reference to the container.
+   * Initialize AutoPas for pairwise interactions
+   * @param autotuner Pointer to the autotuner instance that will handle pairwise interactions
    */
   void initPairwise(autopas::AutoTuner *autotuner) {
     _autoTuner = autotuner;
@@ -89,8 +89,8 @@ class LogicHandler {
   }
 
   /**
-   * Returns a non-const reference to the currently selected particle container.
-   * @return Non-const reference to the container.
+   * Intitialize AutoPas for 3-body interactions
+   * @param autotuner3B Pointer to the autotuner instance that will handle 3-body interactions
    */
   void initTriwise(autopas::AutoTuner *autotuner3B) {
     _autoTuner3B = autotuner3B;
@@ -547,10 +547,18 @@ class LogicHandler {
    */
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
+  /**
+   * Check if other autotuners for any other interaction types are still in a tuning phase.
+   * @param interactionType
+   * @return bool whether other tuners are still tuning.
+   */
   bool checkTuningStates(InteractionTypeOption::Value interactionType) {
-    return _synchronizer.checkState(interactionType);
+    return _synchronizer.checkTuningState(interactionType);
   }
 
+  /**
+   * Update the internal iteration counters.
+   */
   void bumpIterationCounters() {
     _stepsSinceLastListRebuild++;
     _iteration++;

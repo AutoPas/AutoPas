@@ -330,6 +330,7 @@ class ParticleContainerInterface {
    *
    * Traversals might still be not applicable for other reasons so call traversal.isApplicable to be safe!
    *
+   * @param interactionType interaction type for which to get all traversals
    * @return Vector of traversal options.
    */
   [[nodiscard]] std::set<TraversalOption> getAllTraversals(const InteractionTypeOption interactionType) const {

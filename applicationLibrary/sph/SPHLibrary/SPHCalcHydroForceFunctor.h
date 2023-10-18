@@ -110,7 +110,7 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
@@ -230,7 +230,7 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       bool newton3) override {
@@ -372,7 +372,7 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
   }
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,

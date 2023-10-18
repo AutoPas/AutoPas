@@ -74,6 +74,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * The idea is to pick some configuration that is basically always applicable (lc_c08) and guess from the search space
    * which options Newton3 and Data Layout options are allowed.
    * @param searchSpace
+   * @param interactionType
    * @return The fall back configuration.
    */
   static Configuration createFallBackConfiguration(const std::set<Configuration> &searchSpace,

@@ -70,7 +70,7 @@ class FlopCounterFunctor : public PairwiseFunctor<Particle, FlopCounterFunctor<P
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle()
+   * @copydoc PairwiseFunctor::SoAFunctorSingle()
    * This SoA Functor does not use any vectorization.
    */
   void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
@@ -115,7 +115,7 @@ class FlopCounterFunctor : public PairwiseFunctor<Particle, FlopCounterFunctor<P
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair()
+   * @copydoc PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
                       bool newton3) override {
@@ -162,7 +162,7 @@ class FlopCounterFunctor : public PairwiseFunctor<Particle, FlopCounterFunctor<P
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorVerlet()
+   * @copydoc PairwiseFunctor::SoAFunctorVerlet()
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors!
    */
