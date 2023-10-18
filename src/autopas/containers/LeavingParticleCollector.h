@@ -11,11 +11,10 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
 /**
  * Namespace to collect leaving particles from a container.
  */
-namespace LeavingParticleCollector {
+namespace autopas::LeavingParticleCollector {
 /**
  * Collects leaving particles and marks halo particles as dummy.
  * @note This function does not move or actually delete any particles!
@@ -34,7 +33,7 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
       // Mark halo particles for deletion
       if (iter->isHalo()) {
         iter->setOwnershipState(OwnershipState::dummy);
-      // Collect leaving particles and mark them for deletion
+        // Collect leaving particles and mark them for deletion
       } else if (not utils::inBox(iter->getR(), container.getBoxMin(), container.getBoxMax())) {
         leavingParticles.push_back(*iter);
         iter->setOwnershipState(OwnershipState::dummy);
@@ -43,5 +42,4 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
   }
   return leavingParticles;
 }
-}  // namespace LeavingParticleCollector
-}  // namespace autopas
+}  // namespace autopas::LeavingParticleCollector
