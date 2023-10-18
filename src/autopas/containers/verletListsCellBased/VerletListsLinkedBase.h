@@ -229,7 +229,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
+      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
@@ -238,7 +238,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
+      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
