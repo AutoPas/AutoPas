@@ -111,7 +111,7 @@ class LogicHandler {
         }
         buffer.clear();
       } else {
-        for (auto iter = buffer.begin(); iter != buffer.end();) {
+        for (auto iter = buffer.begin(); iter < buffer.end();) {
           auto &p = *iter;
 
           auto fastRemoveP = [&]() {
@@ -124,7 +124,9 @@ class LogicHandler {
             // We remove dummies!
             fastRemoveP();
           }
-          if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+          // if p was a dummy a new particle might now be at the memory location of p so we need to check that.
+          // We also just might have deleted the last particle in the buffer in that case the inBox check is meaningless
+          if (not buffer.empty() and utils::notInBox(p.getR(), boxMin, boxMax)) {
             leavingBufferParticles.push_back(p);
             fastRemoveP();
           } else {
