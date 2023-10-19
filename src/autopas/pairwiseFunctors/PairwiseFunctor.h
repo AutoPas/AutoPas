@@ -29,7 +29,7 @@ class VerletListHelpers;
  * overriding allowsNonNewton3 resp. allowsNewton3
  *
  * @tparam Particle the type of Particle
- * @tparam CRTP_T
+ * @tparam CRTP_T the actual type of the functor
  */
 template <class Particle, class CRTP_T>
 class PairwiseFunctor : public Functor<Particle, CRTP_T> {
@@ -39,10 +39,6 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
    */
   using SoAArraysType = typename Particle::SoAArraysType;
 
-  //  /**
-  //   * Make the Implementation type template publicly available.
-  //   */
-  //  using Functor_T = CRTP_T;
   /**
    * Constructor
    * @param cutoff

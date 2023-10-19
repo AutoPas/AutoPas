@@ -67,7 +67,7 @@ class TraversalSelector {
   /**
    * Generates a given Traversal for the given properties.
    * @tparam Functor
-   * @tparam useSoA
+   * @tparam dataLayout
    * @tparam useNewton3
    * @param traversalType
    * @param functor
@@ -323,10 +323,10 @@ TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOpt
 }
 
 template <class ParticleCell, InteractionTypeOption::Value interactionType>
-template <class PairwiseFunctor>
+template <class Functor>
 std::unique_ptr<TraversalInterface<interactionType>>
 TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOption traversalType,
-                                                                    PairwiseFunctor &pairwiseFunctor,
+                                                                    Functor &functor,
                                                                     const TraversalSelectorInfo &traversalInfo,
                                                                     DataLayoutOption dataLayout,
                                                                     Newton3Option newton3) {
@@ -334,19 +334,19 @@ TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOpt
     case DataLayoutOption::aos: {
       if (newton3 == Newton3Option::enabled) {
         return TraversalSelector<ParticleCell, interactionType>::template generateTraversal<
-            PairwiseFunctor, DataLayoutOption::aos, true>(traversalType, pairwiseFunctor, traversalInfo);
+            Functor, DataLayoutOption::aos, true>(traversalType, functor, traversalInfo);
       } else {
         return TraversalSelector<ParticleCell, interactionType>::template generateTraversal<
-            PairwiseFunctor, DataLayoutOption::aos, false>(traversalType, pairwiseFunctor, traversalInfo);
+            Functor, DataLayoutOption::aos, false>(traversalType, functor, traversalInfo);
       }
     }
     case DataLayoutOption::soa: {
       if (newton3 == Newton3Option::enabled) {
         return TraversalSelector<ParticleCell, interactionType>::template generateTraversal<
-            PairwiseFunctor, DataLayoutOption::soa, true>(traversalType, pairwiseFunctor, traversalInfo);
+            Functor, DataLayoutOption::soa, true>(traversalType, functor, traversalInfo);
       } else {
         return TraversalSelector<ParticleCell, interactionType>::template generateTraversal<
-            PairwiseFunctor, DataLayoutOption::soa, false>(traversalType, pairwiseFunctor, traversalInfo);
+            Functor, DataLayoutOption::soa, false>(traversalType, functor, traversalInfo);
       }
     }
   }

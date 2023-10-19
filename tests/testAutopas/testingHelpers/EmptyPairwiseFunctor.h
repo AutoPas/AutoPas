@@ -1,5 +1,5 @@
 /**
- * @file EmptyFunctor.h
+ * @file EmptyPairwiseFunctor.h
  * @author seckler
  * @date 26.03.20
  */

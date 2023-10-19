@@ -218,8 +218,6 @@ class AutoTuner {
    */
   bool inTuningPhase() const;
 
-  void stallCounters();
-
  private:
   /**
    * Measures consumed energy for tuning

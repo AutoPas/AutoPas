@@ -1,5 +1,5 @@
 /**
- * @file TriwiseTraversalOption.h
+ * @file TraversalOption3B.h
  * @author S. Newcome
  * @date 31/05/2023
  */

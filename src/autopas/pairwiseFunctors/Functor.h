@@ -34,7 +34,7 @@ enum class FunctorN3Modes {
  * overriding allowsNonNewton3 resp. allowsNewton3
  *
  * @tparam Particle the type of Particle
- * @tparam CRTP_T the type of the functor
+ * @tparam CRTP_T the actual type of the functor
  */
 template <class Particle, class CRTP_T>
 class Functor {

@@ -11,17 +11,36 @@
 #include "autopas/pairwiseFunctors/TriwiseFunctor.h"
 
 namespace {
+/**
+ * Returns false for any types that are not a PairwiseFunctor
+ * @return false
+ */
 std::false_type isPairwiseFunctorImpl(...);
-template <typename T, typename U>
-std::true_type isPairwiseFunctorImpl(autopas::PairwiseFunctor<T, U> const volatile &);
+/**
+ * Return true for a PairwiseFunctor type
+ * @tparam ParticleT
+ * @tparam FunctorT
+ * @return true
+ */
+template <typename ParticleT, typename FunctorT>
+std::true_type isPairwiseFunctorImpl(autopas::PairwiseFunctor<ParticleT, FunctorT> const volatile &);
 
+/**
+ * Returns false for any types that are not a TriwiseFunctor
+ * @return false
+ */
 std::false_type isTriwiseFunctorImpl(...);
-template <typename T, typename U>
-std::true_type isTriwiseFunctorImpl(autopas::TriwiseFunctor<T, U> const volatile &);
+/**
+ * Return true for a TriwiseFunctor type
+ * @tparam ParticleT
+ * @tparam FunctorT
+ * @return true
+ */
+template <typename ParticleT, typename FunctorT>
+std::true_type isTriwiseFunctorImpl(autopas::TriwiseFunctor<ParticleT, FunctorT> const volatile &);
 }  // namespace
 
 namespace autopas::utils {
-
 /**
  * Check whether a Functor Type is inheriting from PairwiseFunctor
  * @tparam FunctorT

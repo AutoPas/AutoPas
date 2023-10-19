@@ -47,7 +47,6 @@ class BayesianSearch final : public TuningStrategyInterface {
    * @param allowedDataLayoutOptions
    * @param allowedNewton3Options
    * @param allowedCellSizeFactors
-   * @param interactionType
    * @param predAcqFunction acquisition function used for prediction while tuning.
    * @param predNumLHSamples number of samples used for prediction while tuning.
    * @param maxEvidence stop tuning after given number of evidence provided.
