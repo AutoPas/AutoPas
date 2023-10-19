@@ -5,6 +5,7 @@
  */
 
 #include "Quaternion.h"
+#include "../../src/autopas/utils/ArrayMath.h"
 
 #include "ExceptionHandler.h"
 
@@ -115,6 +116,53 @@ std::array<double, 4> qMirror(const std::array<double, 4> &q, const int &dimensi
     autopas::utils::ExceptionHandler::exception("Calling qMirror with dimensionNormalToMirror not 0, 1, or 2!");
     return q;
   }
+}
+
+std::array<double, 4> normalize(const std::array<double, 4>& q){
+  double norm = std::sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
+  return {q[0]/norm, q[1]/norm, q[2]/norm, q[3]/norm};
+}
+
+/**
+ * Returns quaternion describing rotation between the vectors u and v
+ * @param u Vector1
+ * @param v Vector2
+ * @return Quaternion describing the rotation to get from u to v
+ */
+std::array<double, 4> getRotationBetweenVectors(std::array<double, 3> u, std::array<double,3> v){
+  using autopas::utils::ArrayMath::normalize;
+  using autopas::utils::quaternion::normalize;
+  using autopas::utils::ArrayMath::dot;
+  using autopas::utils::ArrayMath::L2Norm;
+  using autopas::utils::ArrayMath::cross;
+
+  //https://stackoverflow.com/questions/1171849/finding-quaternion-representing-the-rotation-from-one-vector-to-another
+  //@todo (johnny) discuss with am how to get rid of this function or put it into util
+  if(u[0]-v[0] < 0.001 && u[1]-v[1] < 0.001 && u[2]-v[2] < 0.001){  //if u == v   //this case will also be chosen if the site position is the same as the center of mass
+    return {1, 0, 0, 0};  //no rotation
+  }else if(u[0]+v[0] < 0.001 && u[1]+v[1] < 0.001 && u[2]+v[2] < 0.001) {    //if u == -v
+    std::array<double, 3> orthogonal =  normalize(getAnyOrthogonalVector(u));
+    return {0, orthogonal[0], orthogonal[1], orthogonal[2]};
+  }
+
+  float k_cos_theta = dot(u, v);
+  float k = sqrt(L2Norm(u) * L2Norm(v));
+
+  std::array<double, 3> orthogonal = cross(u,v);
+  return normalize({k_cos_theta + k, orthogonal[0], orthogonal[1], orthogonal[2]});
+}
+
+std::array<double, 3> getAnyOrthogonalVector(std::array<double, 3> v)
+{
+  using autopas::utils::ArrayMath::cross;
+  using autopas::utils::ArrayMath::L2Norm;
+
+  const std::array<double, 3> hopefully_not_parallel_to_v{v[0] + 1.5, 0, 0};
+  const std::array<double, 3> hopefully_orthogonal = cross(v, hopefully_not_parallel_to_v);
+  if(L2Norm(hopefully_orthogonal) < 0.01){  //if hopefully_not_parallel was parallel (l2 norm might be a little overkill for that)
+    return cross(v, {v[0], v[1]+1.5, v[2]});  //you can't be parallel to v + (1.5, 0,0) and v+(0,1.5,0) at the same time
+  }
+  return hopefully_orthogonal;  //at this point the vector is truly orthogonal
 }
 
 }  // namespace autopas::utils::quaternion

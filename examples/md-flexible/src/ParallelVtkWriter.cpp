@@ -96,7 +96,11 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile
       << "        <DataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)  //@todo (johnny): Talk with sam about what to do in this spot
+    std::array<double, 4> q{0.,0.,0.,0.};
+#else
     auto q = particle->getQuaternion();
+#endif
     timestepFile << "        " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << "\n";
   }
   timestepFile << "        </DataArray>\n";

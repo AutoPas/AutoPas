@@ -321,6 +321,15 @@ public:
  [[nodiscard]] const std::vector<double> &getAbsoluteSitePositionsZ() const;
 
  /**
+  * Get the absolute Site position of the i-th Site in that molecule
+  * @param index site index
+  * @return absolute site position of that molecule
+  */
+ [[nodiscard]] const std::array<double, 3> getAbsoluteSitePosition(size_t index) const;
+
+
+
+ /**
   * Get the angular velocity
   * @return angular velocity
   */

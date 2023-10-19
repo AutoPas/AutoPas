@@ -4,6 +4,7 @@
  * @date 13/05/19
  */
 #include "TimeDiscretization.h"
+#include "../../src/autopas/utils/Quaternion.h"
 
 namespace TimeDiscretization {
 
@@ -66,6 +67,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
   using autopas::utils::quaternion::rotatePosition;
   using autopas::utils::quaternion::rotatePositionBackwards;
   using autopas::utils::quaternion::rotateVectorOfPositions;
+  using autopas::utils::quaternion::getRotationBetweenVectors;
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
@@ -79,7 +81,15 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     // Calculate Quaternions
-    const auto q = iter->getQuaternion();
+    std::array<double, 4> q;
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+    //@todo (johnny) this is extremely ugly. Refactor the code that this is not necessary!!
+    const std::array<double, 3> unrotatedSitePositionNormalized = normalize(particlePropertiesLibrary.getSitePositions(iter->getTypeId())[0]);
+    const std::array<double, 3> relativeSitePositionNormalized = normalize(iter->getAbsoluteSitePosition(0) - iter->getR());
+    q = getRotationBetweenVectors(unrotatedSitePositionNormalized, relativeSitePositionNormalized);
+#else
+    q = iter->getQuaternion();
+#endif
     const auto angVelW = iter->getAngularVel();  // angular velocity in world frame
     const auto angVelM =
         rotatePositionBackwards(q, angVelW);  // angular velocity in molecular frame  (equivalent to (17))
@@ -158,6 +168,8 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::quaternion::rotatePosition;
   using autopas::utils::quaternion::rotatePositionBackwards;
+  using autopas::utils::quaternion::getRotationBetweenVectors;
+  using autopas::utils::ArrayMath::normalize;
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
@@ -166,7 +178,17 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto torqueW = iter->getTorque();
-    const auto q = iter->getQuaternion();
+
+    std::array<double, 4> q;
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+    //@todo (johnny) this is extremely ugly. Refactor the code that this is not necessary!!
+    const std::array<double, 3> unrotatedSitePositionNormalized = normalize(particlePropertiesLibrary.getSitePositions(iter->getTypeId())[0]);
+    const std::array<double, 3> relativeSitePositionNormalized = normalize(iter->getAbsoluteSitePosition(0) - iter->getR());
+    q = getRotationBetweenVectors(unrotatedSitePositionNormalized, relativeSitePositionNormalized);
+#else
+    q = iter->getQuaternion();
+#endif
+
     const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId());  // moment of inertia
 
     // convert torque to molecular-frame

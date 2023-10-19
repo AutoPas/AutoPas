@@ -86,4 +86,10 @@ std::array<double, 3> convertQuaternionTo3DVec(const std::array<double, 4> &q);
  * @return mirrored quaternion.
  */
 std::array<double, 4> qMirror(const std::array<double, 4> &q, const int &dimensionNormalToMirror);
+
+std::array<double, 4> normalize(const std::array<double, 4>& q);
+
+std::array<double, 4> getRotationBetweenVectors(std::array<double, 3> u, std::array<double,3> v);
+
+std::array<double, 3> getAnyOrthogonalVector(std::array<double, 3> v);
 }  // namespace autopas::utils::quaternion

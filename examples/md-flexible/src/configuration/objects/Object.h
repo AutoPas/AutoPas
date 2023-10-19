@@ -49,7 +49,7 @@ class Object {
     particle.setOldF({0.0, 0.0, 0.0});
 
 #if MD_FLEXIBLE_MODE == MULTISITE
-#if not defined(MMD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
 #endif
     particle.setAngularVel({0.0, 0.0, 0.0});

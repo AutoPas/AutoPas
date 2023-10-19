@@ -14,7 +14,7 @@ namespace {
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
+constexpr std::array<typename ParticleType::AttributeNames, 24> Attributes = {
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::id,
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::posX,
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::posY,
@@ -28,10 +28,13 @@ constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::oldForceX,
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::oldForceY,
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::oldForceZ,
-    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion0,
-    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion1,
-    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion2,
-    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion3,
+    //mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion0,
+    //mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion1,
+    //mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion2,
+    //mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::quaternion3,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::absoluteSitePositionsX,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::absoluteSitePositionsY,
+    mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::absoluteSitePositionsZ,
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::angularVelX,
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::angularVelY,
     mdLib::AbsoluteMultiSiteMoleculeLJ::AttributeNames::angularVelZ,

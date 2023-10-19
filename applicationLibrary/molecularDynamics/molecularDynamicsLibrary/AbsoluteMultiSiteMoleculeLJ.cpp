@@ -27,6 +27,10 @@ const std::vector<double> &AbsoluteMultiSiteMoleculeLJ::getAbsoluteSitePositions
   return _absSitePositionsZ;
 }
 
+const std::array<double, 3> AbsoluteMultiSiteMoleculeLJ::getAbsoluteSitePosition(size_t index) const {
+  return {_absSitePositionsX[index], _absSitePositionsY[index], _absSitePositionsZ[index]};
+}
+
 int AbsoluteMultiSiteMoleculeLJ::getNumberOfSites(){
   return _absSitePositionsX.size();
 }
