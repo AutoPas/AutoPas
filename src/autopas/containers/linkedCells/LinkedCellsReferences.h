@@ -351,11 +351,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       }
     }
 
-    // we have to remove halo particles after the above for-loop since removing halo particles changes the undelying
+    // we have to remove halo particles after the above for-loop since removing halo particles changes the underlying
     // datastructure (_particleList) which invalidates the references in the cells.
     // Note: removing halo particles before the loop and do a call to updateDirtyParticleReferences() right after won't
     // work since there are owned particles in _particleList which fall into the halo area (they are not yet filtered
-    // out by the above loop) and can therfore not added to halo cells during particle insert in
+    // out by the above loop) and can therefore not added to halo cells during particle insert in
     // updateDirtyParticleReferences()
     this->deleteHaloParticles();
 
