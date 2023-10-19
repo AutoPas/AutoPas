@@ -290,7 +290,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
-    this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
 #ifdef AUTOPAS_OPENMP
@@ -313,7 +312,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
         auto &particleVec = this->getCells()[cellId]._particles;
         for (auto pIter = particleVec.begin(); pIter != particleVec.end();) {
-          if (utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
+          if ((*pIter)->getOwnershipState() == OwnershipState::owned and
+              utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(**pIter);
 
             // multi layer swap-delete
@@ -350,6 +350,15 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                 myInvalidNotOwnedParticles.end());
       }
     }
+
+    // we have to remove halo particles after the above for-loop since removing halo particles changes the undelying
+    // datastructure (_particleList) which invalidates the references in the cells.
+    // Note: removing halo particles before the loop and do a call to updateDirtyParticleReferences() right after won't
+    // work since there are owned particles in _particleList which fall into the halo area (they are not yet filtered
+    // out by the above loop) and can therfore not added to halo cells during particle insert in
+    // updateDirtyParticleReferences()
+    this->deleteHaloParticles();
+
     _particleList.deleteDummyParticles();
     updateDirtyParticleReferences();
     return invalidParticles;
