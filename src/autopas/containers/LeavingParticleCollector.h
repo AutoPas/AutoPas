@@ -36,20 +36,23 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
   const auto upperInnerCorner = container.getBoxMax() - skin;
 
   // volumes describing the halo regions on the six faces of the cuboid shaped container.
-  // FIXME: currently the corners and edges overlap.
   const std::array<std::tuple<decltype(lowerHaloCorner), decltype(upperHaloCorner)>, 6> haloVolumes{{
-      // left
-      {lowerHaloCorner, {upperHaloCorner[0] - containerDimensions[0], upperHaloCorner[1], upperHaloCorner[2]}},
-      // right
-      {{lowerHaloCorner[0] + containerDimensions[0], lowerHaloCorner[1], lowerHaloCorner[2]}, upperHaloCorner},
-      // top
-      {lowerHaloCorner, {upperHaloCorner[0], upperHaloCorner[1] - containerDimensions[1], upperHaloCorner[2]}},
-      // bottom
-      {{lowerHaloCorner[0], lowerHaloCorner[1] + containerDimensions[1], lowerHaloCorner[2]}, upperHaloCorner},
-      // front
-      {lowerHaloCorner, {upperHaloCorner[0], upperHaloCorner[1], upperHaloCorner[2] - containerDimensions[2]}},
-      // back
-      {{lowerHaloCorner[0], lowerHaloCorner[1], lowerHaloCorner[2] + containerDimensions[2]}, upperHaloCorner},
+      // left + lower edge
+      {{lowerHaloCorner[0], lowerInnerCorner[1], lowerHaloCorner[2]},
+       {lowerInnerCorner[0], upperInnerCorner[1], upperInnerCorner[2]}},
+      // right + upper edge
+      {{upperInnerCorner[0], lowerInnerCorner[1], lowerInnerCorner[2]},
+       {upperHaloCorner[0], upperInnerCorner[1], upperHaloCorner[2]}},
+      // top + left edge
+      {{lowerHaloCorner[0], lowerInnerCorner[1], upperInnerCorner[2]},
+       {upperInnerCorner[0], upperInnerCorner[1], upperHaloCorner[2]}},
+      // bottom + right edge
+      {{lowerInnerCorner[0], lowerInnerCorner[1], lowerHaloCorner[2]},
+       {upperHaloCorner[0], upperInnerCorner[1], lowerInnerCorner[2]}},
+      // front with all edges and corners
+      {lowerHaloCorner, {upperHaloCorner[0], lowerInnerCorner[1], upperHaloCorner[2]}},
+      // back with all edges and corners
+      {{lowerHaloCorner[0], upperInnerCorner[1], lowerHaloCorner[2]}, upperHaloCorner},
   }};
 
   std::vector<typename ContainerType::ParticleType> leavingParticles{};
