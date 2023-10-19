@@ -17,7 +17,7 @@ TEST_F(FullParticleCellTest, testRangeBasedLoop) {
   Particle p2({.5, .2, .2}, {0., 0., 0.}, 1);
   cell.addParticle(p2);
 
-  EXPECT_EQ(cell.numParticles(), 2);
+  EXPECT_EQ(cell.size(), 2);
 
   for (Particle &particle : cell) {
     particle.setF({42., 42., 42.});

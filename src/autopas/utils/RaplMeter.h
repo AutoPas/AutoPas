@@ -34,8 +34,12 @@ class RaplMeter {
 
   /**
    *initialisation may fail, so moved out of constructor
+   Note: This functios returns an error message instead of throwing an exception if initialization is not possible. This
+   way debuggers don't break on the start of every autopas initialization if we are not interested in energy
+   measurement.
+   @return Error message. The error is message is empty on success
    */
-  void init();
+  std::string init();
 
   /**
    * reset perf file descriptors to start new measurement

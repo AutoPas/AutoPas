@@ -104,6 +104,12 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, da
                      localStride);
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setUseSorting(bool useSorting) override {}
+
  private:
   PairwiseFunctor *_functor;
   internal::VCLClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
@@ -134,7 +140,7 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
       for (auto &cluster : currentTower.getClusters()) {
         _clusterFunctor.traverseCluster(cluster);
 
-        for (auto *neighborClusterPtr : cluster.getNeighbors()) {
+        for (auto *neighborClusterPtr : *cluster.getNeighbors()) {
           _clusterFunctor.traverseClusterPair(cluster, *neighborClusterPtr);
         }
       }

@@ -30,6 +30,27 @@ class CellIterator {
   using ParticleType = std::remove_pointer_t<typename StorageType::value_type>;
 
   /**
+   * Type trait to be compatible with std::iterator.
+   */
+  using difference_type = typename IteratorType::difference_type;
+  /**
+   * Type trait to be compatible with std::iterator.
+   */
+  using value_type = typename IteratorType::value_type;
+  /**
+   * Type trait to be compatible with std::iterator.
+   */
+  using pointer = typename IteratorType::pointer;
+  /**
+   * Type trait to be compatible with std::iterator.
+   */
+  using reference = typename IteratorType::reference;
+  /**
+   * Type trait to be compatible with std::iterator.
+   */
+  using iterator_category = typename IteratorType::iterator_category;
+
+  /**
    * Constructor
    * @param iterator
    */
@@ -62,11 +83,20 @@ class CellIterator {
   inline ParticleType *operator->() const { return &operator*(); }
 
   /**
-   * Increments the iterator.
+   * Increment the iterator.
    * @return *this
    */
   inline CellIterator<StorageType, modifiable> &operator++() {
     ++iterator;
+    return *this;
+  }
+
+  /**
+   * Decrement the iterator.
+   * @return *this
+   */
+  inline CellIterator<StorageType, modifiable> &operator--() {
+    --iterator;
     return *this;
   }
 
@@ -83,6 +113,23 @@ class CellIterator {
    */
   bool operator!=(const CellIterator &rhs) const { return not(*this == rhs); }
 
+  /**
+   * Distance between two iterators.
+   * @param rhs
+   * @return Number of elements between two iterators.
+   */
+  difference_type operator-(const CellIterator &rhs) const { return iterator - rhs.iterator; }
+
+  /**
+   * Comparison operator.
+   * @param rhs
+   * @return True if this is before (in -- direction) rhs.
+   */
+  bool operator<(const CellIterator &rhs) const { return iterator < rhs; }
+
  private:
+  /**
+   * Actual underlying iterator.
+   */
   IteratorType iterator;
 };

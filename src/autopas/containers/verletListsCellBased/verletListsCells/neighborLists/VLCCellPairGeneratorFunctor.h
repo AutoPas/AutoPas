@@ -87,7 +87,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
    * @copydoc Functor::SoAFunctorSingle()
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
     double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
@@ -108,7 +108,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     // iterating over particle indices and accessing currentList at index i works
     // because the particles are iterated in the same order they are loaded in
     // which is the same order they were initialized when building the aosNeighborList
-    size_t numPart = soa.getNumberOfParticles();
+    size_t numPart = soa.size();
     for (unsigned int i = 0; i < numPart; ++i) {
       for (unsigned int j = i + 1; j < numPart; ++j) {
         const double drx = xptr[i] - xptr[j];
@@ -143,7 +143,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
    * @param soa2 Second structure of arrays.
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
-    if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
+    if (soa1.size() == 0 || soa2.size() == 0) return;
 
     auto **const __restrict__ ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
     double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
@@ -170,9 +170,9 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
     // iterating over particle indices and accessing currentList at index i works
     // because the particles are iterated in the same order they are loaded in
     // which is the same order they were initialized when building the aosNeighborList
-    size_t numPart1 = soa1.getNumberOfParticles();
+    size_t numPart1 = soa1.size();
     for (unsigned int i = 0; i < numPart1; ++i) {
-      size_t numPart2 = soa2.getNumberOfParticles();
+      size_t numPart2 = soa2.size();
       for (unsigned int j = 0; j < numPart2; ++j) {
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];

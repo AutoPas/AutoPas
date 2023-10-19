@@ -49,7 +49,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       size_t offset = 0;
       for (auto &cell : cells) {
         _functor->SoALoader(cell, _soa, offset);
-        offset += cell.numParticles();
+        offset += cell.size();
       }
     }
   }
@@ -60,7 +60,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       size_t offset = 0;
       for (auto &cell : cells) {
         _functor->SoAExtractor(cell, _soa, offset);
-        offset += cell.numParticles();
+        offset += cell.size();
       }
     }
   }

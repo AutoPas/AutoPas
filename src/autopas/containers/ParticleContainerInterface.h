@@ -16,7 +16,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/selectors/TraversalSelectorInfo.h"
+#include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
 
@@ -172,10 +172,21 @@ class ParticleContainerInterface {
   virtual void deleteAllParticles() = 0;
 
   /**
-   * Get the total number of particles saved in the container (owned and halo but not dummies).
-   * @return Number of particles in the container.
+   * Get the number of particles with respect to the specified IteratorBehavior.
+   * @warning: Since this function counts the number of the respective particles in the internal particle storage, this
+   * is in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
+   * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
+   * the function size() can be used.
+   * @param behavior Behavior of the iterator, see IteratorBehavior.
+   * @return The number of particles with respect to the specified IteratorBehavior.
    */
-  [[nodiscard]] virtual unsigned long getNumberOfParticles() const = 0;
+  [[nodiscard]] virtual size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
+
+  /**
+   * Get the total number of particles saved in the container (owned + halo + dummy).
+   * @return Number of particles saved in the container (owned + halo + dummy).
+   */
+  [[nodiscard]] virtual size_t size() const = 0;
 
   /**
    * Iterate over all particles using

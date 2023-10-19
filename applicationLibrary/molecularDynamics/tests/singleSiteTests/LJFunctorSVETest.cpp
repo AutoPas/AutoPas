@@ -16,8 +16,8 @@
 
 template <class SoAType>
 bool LJFunctorSVETest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
-  EXPECT_GT(soa1.getNumberOfParticles(), 0);
-  EXPECT_EQ(soa1.getNumberOfParticles(), soa2.getNumberOfParticles());
+  EXPECT_GT(soa1.size(), 0);
+  EXPECT_EQ(soa1.size(), soa2.size());
 
   unsigned long *const __restrict idptr1 = soa1.template begin<Particle::AttributeNames::id>();
   unsigned long *const __restrict idptr2 = soa2.template begin<Particle::AttributeNames::id>();
@@ -36,7 +36,7 @@ bool LJFunctorSVETest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
   double *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
   double *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-  for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
+  for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
     double tolerance = 1e-8;
@@ -70,11 +70,11 @@ bool LJFunctorSVETest::particleEqual(Particle &p1, Particle &p2) {
 }
 
 bool LJFunctorSVETest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
-  EXPECT_GT(cell1.numParticles(), 0);
-  EXPECT_EQ(cell1.numParticles(), cell2.numParticles());
+  EXPECT_GT(cell1.size(), 0);
+  EXPECT_EQ(cell1.size(), cell2.size());
 
   bool ret = true;
-  for (size_t i = 0; i < cell1.numParticles(); ++i) {
+  for (size_t i = 0; i < cell1.size(); ++i) {
     ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
   }
 
@@ -131,10 +131,10 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVETwoCells(bool newton3, bool do
       << "Cells 2 not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorNoSVE.SoAFunctorPair(cell1NoSVE._particleSoABuffer.constructView(1, cell1NoSVE.numParticles()),
-                                  cell2NoSVE._particleSoABuffer.constructView(1, cell2NoSVE.numParticles()), newton3);
-    ljFunctorSVE.SoAFunctorPair(cell1SVE._particleSoABuffer.constructView(1, cell1SVE.numParticles()),
-                                cell2SVE._particleSoABuffer.constructView(1, cell2SVE.numParticles()), newton3);
+    ljFunctorNoSVE.SoAFunctorPair(cell1NoSVE._particleSoABuffer.constructView(1, cell1NoSVE.size()),
+                                  cell2NoSVE._particleSoABuffer.constructView(1, cell2NoSVE.size()), newton3);
+    ljFunctorSVE.SoAFunctorPair(cell1SVE._particleSoABuffer.constructView(1, cell1SVE.size()),
+                                cell2SVE._particleSoABuffer.constructView(1, cell2SVE.size()), newton3);
   } else {
     ljFunctorNoSVE.SoAFunctorPair(cell1NoSVE._particleSoABuffer, cell2NoSVE._particleSoABuffer, newton3);
     ljFunctorSVE.SoAFunctorPair(cell1SVE._particleSoABuffer, cell2SVE._particleSoABuffer, newton3);
@@ -197,8 +197,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
       << "Cells not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorNoSVE.SoAFunctorSingle(cellNoSVE._particleSoABuffer.constructView(1, cellNoSVE.numParticles()), newton3);
-    ljFunctorSVE.SoAFunctorSingle(cellSVE._particleSoABuffer.constructView(1, cellSVE.numParticles()), newton3);
+    ljFunctorNoSVE.SoAFunctorSingle(cellNoSVE._particleSoABuffer.constructView(1, cellNoSVE.size()), newton3);
+    ljFunctorSVE.SoAFunctorSingle(cellSVE._particleSoABuffer.constructView(1, cellSVE.size()), newton3);
   } else {
     ljFunctorNoSVE.SoAFunctorSingle(cellNoSVE._particleSoABuffer, newton3);
     ljFunctorSVE.SoAFunctorSingle(cellSVE._particleSoABuffer, newton3);
