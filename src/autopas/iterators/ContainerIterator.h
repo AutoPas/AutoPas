@@ -413,7 +413,7 @@ class ContainerIterator {
    * This is always either a valid particle satisfying all iterator requirements or nullptr.
    */
   ParticleType *_currentParticle = nullptr;
-  
+
   /**
    * Vector of pointers to additional Particle Vectors this ParticleIterator will iterate over.
    */
