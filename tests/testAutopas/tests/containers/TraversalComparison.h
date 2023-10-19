@@ -65,7 +65,7 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
       size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
-      DeletionPosition particleDeletionPosition);
+      DeletionPosition particleDeletionPosition, bool useSorting = true);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
   static constexpr double _cutoff{1.};

@@ -12,9 +12,11 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
+#include "autopas/containers/NeighborListsBuffer.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/verletClusterLists/Cluster.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
@@ -121,7 +123,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
               unsigned long cellLoad = 0;
               auto &tower = getTowerByIndex(x, y);
               for (auto &cluster : tower.getClusters()) {
-                cellLoad += cluster.getNeighbors().size();
+                cellLoad += cluster.getNeighbors()->size();
               }
               sum += cellLoad;
             }
@@ -225,7 +227,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     for (size_t i = 0; i < _towers.size(); ++i) {
       auto &tower = _towers[i];
-      const auto towerSize = tower.getNumAllParticles();
+      const auto towerSize = tower.getNumActualParticles();
       auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies.
       for (size_t j = 0; j < towerSize - numTailDummies;) {
@@ -309,7 +311,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_towers[cellIndex].numParticles() or
+    if (particleIndex >= this->_towers[cellIndex].getNumActualParticles() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_towers[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -376,7 +378,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     auto boxSizeWithHalo = this->getHaloBoxMax() - this->getHaloBoxMin();
     auto towerSideLength = internal::VerletClusterListsRebuilder<Particle>::estimateOptimalGridSideLength(
-        this->getNumberOfParticles(), boxSizeWithHalo, _clusterSize);
+        this->getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo, _clusterSize);
     auto towersPerDim =
         internal::VerletClusterListsRebuilder<Particle>::calculateTowersPerDim(boxSizeWithHalo, 1.0 / towerSideLength);
     const std::array<double, 3> towerSize = {towerSideLength, towerSideLength,
@@ -393,9 +395,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
-    // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
+    // invalid, we do writing operations on _particlesToAdd and can not read from it without race conditions.
     if (_isValid != ValidityState::invalid) {
-      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      // we call particlesToAddEmpty() as a sanity check to ensure there are actually no particles in _particlesToAdd if
       // the status is not invalid
       if (not particlesToAddEmpty(autopas_get_thread_num())) {
         autopas::utils::ExceptionHandler::exception(
@@ -611,7 +613,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+        tower.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       }
     }
     for (auto &vector : _particlesToAdd) {
@@ -650,7 +652,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+        tower.forEach(forEachLambda, lowerCorner, higherCorner, behavior);
       }
     }
 
@@ -682,7 +684,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+        tower.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
       }
     }
     for (auto &vector : _particlesToAdd) {
@@ -720,7 +722,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
       const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
       if (utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, lowerCorner, higherCorner)) {
-        tower.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+        tower.reduce(reduceLambda, result, lowerCorner, higherCorner, behavior);
       }
     }
 
@@ -740,6 +742,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::invalid) {
+      // clear the lists buffer because clusters will be recreated
+      _neighborLists.clear();
       rebuildTowersAndClusters();
     }
     _builder->rebuildNeighborListsAndFillClusters(traversal->getUseNewton3());
@@ -772,11 +776,37 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  [[nodiscard]] unsigned long getNumberOfParticles() const override {
+  /**
+   * Get the number of all particles stored in this container (owned + halo + dummy).
+   * @return number of particles stored in this container (owned + halo + dummy).
+   */
+  [[nodiscard]] size_t size() const override {
     size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0,
-                                 [](size_t acc, const auto &tower) { return acc + tower.getNumActualParticles(); });
+                                 [](size_t acc, const auto &tower) { return acc + tower.size(); });
     sum = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), sum,
                           [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
+    return sum;
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
+   */
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    // sum up all particles in towers that fulfill behavior
+    size_t sum = std::accumulate(_towers.begin(), _towers.end(), 0, [&behavior](size_t acc, const auto &tower) {
+      return acc + tower.getNumberOfParticles(behavior);
+    });
+
+    // Since we can not directly insert particles into towers without a rebuild of the whole data structure,
+    // _particlesToAdd is used to store all these particles temporarily until the next rebuild inserts them into the
+    // towers data structure. However, these particles already belong to the respective tower, so we have to count them
+    // as well.
+    sum = std::accumulate(
+        _particlesToAdd.begin(), _particlesToAdd.end(), sum, [&behavior](size_t acc, const auto &buffer) {
+          return acc +
+                 (std::count_if(buffer.begin(), buffer.end(), [&behavior](auto p) { return behavior.contains(p); }));
+        });
+
     return sum;
   }
 
@@ -873,6 +903,39 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
+   * Calculates the low and high corner of a tower given by its 2D grid index. Static version.
+   *
+   * @param index2D
+   * @param towersPerDim
+   * @param towerSideLength
+   * @param boxMin
+   * @param boxMax
+   * @param haloBoxMin
+   * @param haloBoxMax
+   * @return
+   */
+  static std::tuple<std::array<double, 3>, std::array<double, 3>> getTowerBoundingBox(
+      const std::array<size_t, 2> &index2D, const std::array<size_t, 2> &towersPerDim, double towerSideLength,
+      const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const std::array<double, 3> &haloBoxMin,
+      const std::array<double, 3> &haloBoxMax) {
+    // case: towers are not built yet.
+    if (towersPerDim[0] == 0) {
+      return {boxMin, boxMax};
+    }
+    const std::array<double, 3> towerBoxMin{
+        haloBoxMin[0] + towerSideLength * static_cast<double>(index2D[0]),
+        haloBoxMin[1] + towerSideLength * static_cast<double>(index2D[1]),
+        haloBoxMin[2],
+    };
+    const std::array<double, 3> towerBoxMax{
+        boxMin[0] + towerSideLength,
+        boxMin[1] + towerSideLength,
+        haloBoxMax[2],
+    };
+    return {towerBoxMin, towerBoxMax};
+  }
+
+  /**
    * Calculates the low and high corner of a tower given by its 2D grid index.
    *
    * @note If towers are not built yet the corners of the full container are returned.
@@ -882,21 +945,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getTowerBoundingBox(
       const std::array<size_t, 2> &index2D) const {
-    // case: towers are not built yet.
-    if (_towersPerDim[0] == 0) {
-      return {_boxMin, _boxMax};
-    }
-    const std::array<double, 3> boxMin{
-        _haloBoxMin[0] + _towerSideLength * static_cast<double>(index2D[0]),
-        _haloBoxMin[1] + _towerSideLength * static_cast<double>(index2D[1]),
-        _haloBoxMin[2],
-    };
-    const std::array<double, 3> boxMax{
-        boxMin[0] + _towerSideLength,
-        boxMin[1] + _towerSideLength,
-        _haloBoxMax[2],
-    };
-    return {boxMin, boxMax};
+    return getTowerBoundingBox(index2D, _towersPerDim, _towerSideLength, _boxMin, _boxMax, _haloBoxMin, _haloBoxMax);
   }
 
   /**
@@ -963,7 +1012,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Returns the 1D index for the given tower grid coordinates of a tower.
+   * Returns the 1D index for the given tower grid coordinates of a tower. Static version.
    *
    * @param x The x-coordinate of the tower.
    * @param y The y-coordinate of the tower.
@@ -986,17 +1035,28 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
+   * Returns the 2D index for the given 1D index of a tower. Static version.
+   *
+   * @param index
+   * @param towersPerDim0
+   * @return the 2D index for the given 1D index of a tower.
+   */
+  static std::array<size_t, 2> towerIndex1DTo2D(size_t index, size_t towersPerDim0) {
+    if (towersPerDim0 == 0) {
+      return {0, 0};
+    } else {
+      return {index % towersPerDim0, index / towersPerDim0};
+    }
+  }
+
+  /**
    * Returns the 2D index for the given 1D index of a tower.
    *
    * @param index
    * @return the 2D index for the given 1D index of a tower.
    */
   [[nodiscard]] std::array<size_t, 2> towerIndex1DTo2D(size_t index) const {
-    if (_towersPerDim[0] == 0) {
-      return {0, 0};
-    } else {
-      return {index % _towersPerDim[0], index / _towersPerDim[0]};
-    }
+    return towerIndex1DTo2D(index, _towersPerDim[0]);
   }
 
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const override { return _boxMax; }
@@ -1051,6 +1111,14 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     std::for_each(_towers.begin(), _towers.end(), [](auto &tower) { tower.clear(); });
   }
 
+  /**
+   * Get the neighbor lists buffer object.
+   * @return
+   */
+  const typename internal::VerletClusterListsRebuilder<Particle>::NeighborListsBuffer_T &getNeighborLists() const {
+    return _neighborLists;
+  }
+
  protected:
   /**
    * Rebuild the towers and the clusters.
@@ -1059,16 +1127,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void rebuildTowersAndClusters() {
     // collect all particles to add from across the thread buffers
     typename decltype(_particlesToAdd)::value_type particlesToAdd;
-    size_t numParticlesToAdd = std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), 0,
-                                               [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
+    const size_t numParticlesToAdd =
+        std::accumulate(_particlesToAdd.begin(), _particlesToAdd.end(), 0,
+                        [](size_t acc, const auto &buffer) { return acc + buffer.size(); });
     particlesToAdd.reserve(numParticlesToAdd);
     std::for_each(_particlesToAdd.begin(), _particlesToAdd.end(), [&](auto &particlesBuffer) {
       particlesToAdd.insert(particlesToAdd.end(), particlesBuffer.begin(), particlesBuffer.end());
       particlesBuffer.clear();
     });
 
-    _builder =
-        std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, particlesToAdd, _clusterSize);
+    _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(*this, _towers, particlesToAdd,
+                                                                                 _neighborLists, _clusterSize);
 
     std::tie(_towerSideLength, _numTowersPerInteractionLength, _towersPerDim, _numClusters) =
         _builder->rebuildTowersAndClusters();
@@ -1132,7 +1201,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void calculateClusterThreadPartition() {
     size_t numClusterPairs = 0;
     this->template traverseClusters<false>(
-        [&numClusterPairs](auto &cluster) { numClusterPairs += cluster.getNeighbors().size(); });
+        [&numClusterPairs](auto &cluster) { numClusterPairs += cluster.getNeighbors()->size(); });
 
     constexpr int minNumClusterPairsPerThread = 1000;
     auto numThreads =
@@ -1184,7 +1253,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         }
 
         currentNumClustersToAdd++;
-        numClusterPairsTotal += currentCluster.getNeighbors().size();
+        numClusterPairsTotal += currentCluster.getNeighbors()->size();
 
         // If the thread is finished, write number of clusters and start new thread.
         if (numClusterPairsTotal >= numClusterPairsPerThread * (currentThread + 1)) {
@@ -1273,7 +1342,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].numParticles()) {
+      while (not towerIsRelevant() or particleIndex >= this->_towers[cellIndex].getNumActualParticles()) {
         cellIndex += stride;
         particleIndex = 0;
 
@@ -1433,6 +1502,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * The builder for the verlet cluster lists.
    */
   std::unique_ptr<internal::VerletClusterListsRebuilder<Particle>> _builder;
+
+  /**
+   * Structure to provide persistent memory for neighbor lists. Will be filled by the builder.
+   */
+  typename internal::VerletClusterListsRebuilder<Particle>::NeighborListsBuffer_T _neighborLists{};
 };
 
 }  // namespace autopas

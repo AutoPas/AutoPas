@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "autopas/options/IteratorBehavior.h"
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
@@ -82,10 +84,21 @@ class ParticleCell {
   virtual void addParticle(const Particle &p) = 0;
 
   /**
-   * Get the number of particles stored in this cell.
-   * @return number of particles stored in this cell
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
    */
-  [[nodiscard]] virtual unsigned long numParticles() const = 0;
+  [[nodiscard]] virtual size_t size() const = 0;
+
+  /**
+   * Get the number of particles with respect to the specified IteratorBehavior.
+   * @warning: Since this function counts the number of the respective particles in the internal particle storage, this
+   * is in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
+   * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
+   * the function size() can be used.
+   * @param behavior Behavior of the iterator, see IteratorBehavior.
+   * @return The number of particles with respect to the specified IteratorBehavior.
+   */
+  [[nodiscard]] virtual size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
 
   /**
    * Check if the cell is empty.
@@ -128,9 +141,56 @@ class ParticleCell {
   [[nodiscard]] virtual std::array<double, 3> getCellLength() const = 0;
 
   /**
-   * Lock object for exclusive access to this cell.
+   * Get the type of particles contained in this cell. Possible values:
+   * dummy: this cell is empty
+   * owned: this cell can ONLY contain owned particles
+   * halo: this cell can ONLY contain halo particles
+   * ownedOrHalo: this cell can contain owned or halo particles
+   * @return type of particles inside this cell
    */
-  AutoPasLock _cellLock{};
+  OwnershipState getPossibleParticleOwnerships() const { return _ownershipState; }
+
+  /**
+   * Set the type of particles contained in this cell. Possible values:
+   * dummy: this cell is empty
+   * owned: this cell can ONLY contain owned particles
+   * halo: this cell can ONLY contain halo particles
+   * ownedOrHalo: this cell can contain owned or halo particles
+   * @note: At the moment an ownership of a cell can only be set once.
+   * @param state type of particles inside this cell
+   */
+  void setPossibleParticleOwnerships(OwnershipState state) {
+    std::lock_guard<AutoPasLock> guard(this->_cellLock);
+    if (_ownershipStateDefined) {
+      autopas::utils::ExceptionHandler::exception(
+          "ParticleCell::setPossibleParticleOwnerships() can not set OwnershipState of a cell after "
+          "it has been set");
+    }
+    _ownershipState = state;
+    _ownershipStateDefined = true;
+  }
+
+  /**
+   * Get a reference to the lock object for exclusive access to this cell
+   * @return reference to the cell lock
+   */
+  AutoPasLock &getCellLock() const { return _cellLock; }
+
+ protected:
+  /**
+   * Lock object for exclusive access to this cell. This lock has to be mutable since it is set in
+   * getNumberOfParticles() const.
+   */
+  mutable AutoPasLock _cellLock{};
+
+  /**
+   * The particles which can be contained in this cell are determined by the OwnershipState
+   */
+  OwnershipState _ownershipState{autopas::OwnershipState::owned | autopas::OwnershipState::halo};
+  /**
+   * Flag that is set to true once OwnershipState has been set to avoid resetting the OwnershipState
+   */
+  bool _ownershipStateDefined{false};
 };
 
 }  // namespace autopas

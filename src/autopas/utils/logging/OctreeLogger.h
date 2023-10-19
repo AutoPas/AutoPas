@@ -280,7 +280,7 @@ class OctreeLogger {
       for (int leafIndex = 0; leafIndex < leaves.size(); ++leafIndex) {
         OctreeLeafNode<Particle> *leaf = leaves[leafIndex];
 
-        auto n = leaf->numParticles();
+        auto n = leaf->size();
         for (int particleIndex = 0; particleIndex < n; ++particleIndex) {
           Particle &particle = leaf->at(particleIndex);
           auto p = particle.getR();

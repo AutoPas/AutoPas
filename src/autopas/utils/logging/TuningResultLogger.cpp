@@ -11,7 +11,9 @@
 autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix)
     : _loggerName("TuningResultLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGRESULTS
-  auto outputFileName("AutoPas_tuningResults_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
+  const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
+  auto outputFileName("AutoPas_tuningResults_" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() +
+                      ".csv");
   // create and register the actual logger
   auto logger = spdlog::basic_logger_mt(_loggerName, outputFileName);
   // since this logger only writes rarely flush instantly in order to not lose any information if autopas is killed
@@ -19,7 +21,7 @@ autopas::TuningResultLogger::TuningResultLogger(const std::string &outputSuffix)
   // set the pattern to the message only
   logger->set_pattern("%v");
   // print csv header
-  logger->info("Date,Iteration,{},tuning[ns]", Configuration().getCSVHeader());
+  logger->info("Date,Iteration,{},tuning[ns],optimumPerformance[ns]", Configuration().getCSVHeader());
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
 #endif
@@ -32,8 +34,8 @@ autopas::TuningResultLogger::~TuningResultLogger() {
 }
 
 void autopas::TuningResultLogger::logTuningResult(const autopas::Configuration &configuration, size_t iteration,
-                                                  long timeTuning) {
+                                                  long timeTuning, long optimumPerformance) {
 #ifdef AUTOPAS_LOG_TUNINGRESULTS
-  spdlog::get(_loggerName)->info("{},{},{}", iteration, configuration.getCSVLine(), timeTuning);
+  spdlog::get(_loggerName)->info("{},{},{},{}", iteration, configuration.getCSVLine(), timeTuning, optimumPerformance);
 #endif
 }
