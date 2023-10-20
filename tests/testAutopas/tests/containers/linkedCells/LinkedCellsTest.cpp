@@ -6,6 +6,8 @@
 
 #include "LinkedCellsTest.h"
 
+#include "autopas/utils/ArrayUtils.h"
+
 TYPED_TEST_SUITE_P(LinkedCellsTest);
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
@@ -57,7 +59,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
     }
   }
   std::set<unsigned long> movedIDs;
-  // we move particles that are close to the boundary to outside of the container and remember the id's we moved
+  // we move particles that are close to the boundary to the outside of the container and remember the id's we moved
   for (auto iter = this->_linkedCells.begin(); iter.isValid(); ++iter) {
     for (unsigned short dim = 0; dim < 3; ++dim) {
       if (iter->getR()[dim] < 0.5) {
@@ -78,16 +80,19 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
 
   // now update the container!
   auto invalidParticles = this->_linkedCells.updateContainer(this->_keepListsValid);
-
   // the particles should no longer be in the inner cells!
   for (auto iter = this->_linkedCells.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    EXPECT_EQ(movedIDs.count(iter->getID()), 0);
+    EXPECT_EQ(movedIDs.count(iter->getID()), 0)
+        << "Particle " << iter->getID() << " at " << autopas::utils::ArrayUtils::to_string(iter->getR())
+        << " is still in an inner cell although it was moved!";
   }
 
-  // the particles should now be inside of invalidParticles vector!
+  // the particles should now be inside the invalidParticles vector!
   EXPECT_EQ(movedIDs.size(), invalidParticles.size());
   for (auto &particle : invalidParticles) {
-    EXPECT_EQ(movedIDs.count(particle.getID()), 1);
+    EXPECT_EQ(movedIDs.count(particle.getID()), 1)
+        << "Particle " << particle.getID() << " at " << autopas::utils::ArrayUtils::to_string(particle.getR())
+        << " was not returned by updateContainer()!";
   }
 }
 
@@ -104,12 +109,13 @@ struct two_values {
 };
 
 // defines the types of _linkedCells and _keepListsValid
-using LC_true = two_values<autopas::LinkedCells<Particle>, std::true_type>;
-using LC_false = two_values<autopas::LinkedCells<Particle>, std::false_type>;
-using LCRef_true = two_values<autopas::LinkedCellsReferences<Particle>, std::true_type>;
-using LCRef_false = two_values<autopas::LinkedCellsReferences<Particle>, std::false_type>;
+struct LC_KeepListsValid : two_values<autopas::LinkedCells<Particle>, std::true_type> {};
+struct LC_DontKeepListsValid : two_values<autopas::LinkedCells<Particle>, std::false_type> {};
+struct LCRef_KeepListsValid : two_values<autopas::LinkedCellsReferences<Particle>, std::true_type> {};
+struct LCRef_DontKeepListsValid : two_values<autopas::LinkedCellsReferences<Particle>, std::false_type> {};
 
-using MyTypes = ::testing::Types<LC_true, LC_false, LCRef_true, LCRef_false>;
+using MyTypes =
+    ::testing::Types<LC_KeepListsValid, LC_DontKeepListsValid, LCRef_KeepListsValid, LCRef_DontKeepListsValid>;
 
 /// @todo c++20: replace with:
 // using MyTypes = ::testing::Types<std::tuple<autopas::LinkedCells<Particle>, std::true_type>,
