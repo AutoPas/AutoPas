@@ -1,14 +1,19 @@
 /**
-* @file AbsoluteMultiSiteMoleculeLJ.h
+* @file PositionStoringMultiSiteMolecule.h
 * @date 10/10/2023
 * @author Johannes Riemenschneider
  */
 
 #pragma once
 
+//#include "../../../examples/md-flexible/src/TypeDefinitions.h"  //necessary for ParticlePropertiesLibraryType
 #include "MoleculeLJ.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/particles/ParticleBase.h"
+#include "../../../examples/md-flexible/src/TypeDefinitions.h"
+
+//@todo (johnny): how do i get rid of this? this is doubling TypeDefinitions.h ...
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
 
 namespace mdLib {
 /**
@@ -19,14 +24,14 @@ namespace mdLib {
 * mass and angular direction.
 *
 */
-class AbsoluteMultiSiteMoleculeLJ : public mdLib::MoleculeLJ {
+class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
  using idType = size_t;
 
 public:
- AbsoluteMultiSiteMoleculeLJ() = default;
+ PositionStoringMultiSiteMolecule() = default;
 
  /**
-  * Constructor of the AbsoluteMultiSiteMoleculeLJ Class
+  * Constructor of the PositionStoringMultiSiteMolecule Class
   * This Constructor does NOT initialize the absolute Site positions. Therefore these need to be initialized later in the program
   * @param r Position of the particle.
   * @param v Velocity of the particle.d
@@ -35,13 +40,13 @@ public:
   * @param typeId Id of the type of the particle. Used in conjunction with ParticlePropertiesLibrary to access
   * molecular information such as site types and relative site positions.
   */
- AbsoluteMultiSiteMoleculeLJ(std::array<double, 3> r, std::array<double, 3> v,
+ PositionStoringMultiSiteMolecule(std::array<double, 3> r, std::array<double, 3> v,
                      std::array<double, 3> angularVel, unsigned long moleculeId, unsigned long typeId = 0);
 
  /**
-  * Destructor of the AbsoluteMultiSiteMoleculeLJ class.
+  * Destructor of the PositionStoringMultiSiteMolecule class.
   */
- ~AbsoluteMultiSiteMoleculeLJ() override = default;
+ ~PositionStoringMultiSiteMolecule() override = default;
 
  /**
   * Enums used as ids for accessing and creating a dynamically sized SoA.
@@ -61,10 +66,10 @@ public:
    oldForceX,
    oldForceY,
    oldForceZ,
-   //quaternion0,
-   //quaternion1,
-   //quaternion2,
-   //quaternion3,
+   quaternion0,
+   quaternion1,
+   quaternion2,
+   quaternion3,
    absoluteSitePositionsX,
    absoluteSitePositionsY,
    absoluteSitePositionsZ,
@@ -87,7 +92,7 @@ public:
   */
  // clang-format off
  using SoAArraysType = typename autopas::utils::SoAType<
-     AbsoluteMultiSiteMoleculeLJ *,
+     PositionStoringMultiSiteMolecule *,
      size_t, // id
      double, // x
      double, // y
@@ -101,10 +106,10 @@ public:
      double, // oldFx
      double, // oldFy
      double, // oldFz
-     //double, // q0
-     //double, // q1
-     //double, // q2
-     //double, // q3
+     double, // q0
+     double, // q1
+     double, // q2
+     double, // q3
      std::vector<double>, //absSitePosX
      std::vector<double>, //absSitePosY
      std::vector<double>, //absSitePosZ
@@ -164,14 +169,14 @@ public:
      return getOldF()[1];
    } else if constexpr (attribute == AttributeNames::oldForceZ) {
      return getOldF()[2];
-     //}else if constexpr (attribute == AttributeNames::quaternion0) {
-     //  return getQuaternion()[0];
-     //} else if constexpr (attribute == AttributeNames::quaternion1) {
-     //  return getQuaternion()[1];
-     //} else if constexpr (attribute == AttributeNames::quaternion2) {
-     //  return getQuaternion()[2];
-     //} else if constexpr (attribute == AttributeNames::quaternion3) {
-     //  return getQuaternion()[3];
+     }else if constexpr (attribute == AttributeNames::quaternion0) {
+       return getQuaternion()[0];
+     } else if constexpr (attribute == AttributeNames::quaternion1) {
+       return getQuaternion()[1];
+     } else if constexpr (attribute == AttributeNames::quaternion2) {
+       return getQuaternion()[2];
+     } else if constexpr (attribute == AttributeNames::quaternion3) {
+       return getQuaternion()[3];
    }else if constexpr (attribute == AttributeNames::absoluteSitePositionsX){
      return getAbsoluteSitePositionsX();
    }else if constexpr (attribute == AttributeNames::absoluteSitePositionsY){
@@ -195,7 +200,7 @@ public:
    } else if constexpr (attribute == AttributeNames::ownershipState) {
      return this->_ownershipState;
    } else {
-     autopas::utils::ExceptionHandler::exception("AbsoluteMultiSiteMoleculeLJ::get() unknown attribute {}", attribute);
+     autopas::utils::ExceptionHandler::exception("PositionStoringMultiSiteMolecule::get() unknown attribute {}", attribute);
    }
  }
 
@@ -265,21 +270,23 @@ public:
    } else if constexpr (attribute == AttributeNames::ownershipState) {
      this->_ownershipState = value;
    } else {
-     autopas::utils::ExceptionHandler::exception("AbsoluteMultiSiteMoleculeLJ::set() unknown attribute {}", attribute);
+     autopas::utils::ExceptionHandler::exception("PositionStoringMultiSiteMolecule::set() unknown attribute {}", attribute);
    }
  }
 
- ///**
- // * Get the quaternion defining rotation
- // * @return quaternion defining rotation
- // */
- //[[nodiscard]] const std::array<double, 4> &getQuaternion() const;
+ /**
+  * Get the quaternion defining rotation
+  * @return quaternion defining rotation
+  */
+ [[nodiscard]] const std::array<double, 4> &getQuaternion() const;
 
- ///**
- // * Set the quaternion defining rotation
- // * @param q quaternion defining rotation
- // */
- //void setQuaternion(const std::array<double, 4> &q);
+ /**
+  * Set the quaternion defining rotation.
+  * When the quaternion gets set the site positions get updated automatically aswell.
+  * @param q quaternion defining rotation
+  * @param ppl ParticlePropertiesLibrary (necessary to update the site positions)
+  */
+ void setQuaternion(const std::array<double, 4> &q, const ParticlePropertiesLibraryType& ppl);
 
  /**
   * Set the x-component of the absoluteSitePositions
@@ -385,10 +392,10 @@ protected:
   */
  template<typename T> std::string  vectorToString(std::vector<T> v) const;
 
- // /**
- // * Rotational direction of particle as quaternion.
- // */
- //std::array<double, 4> _q{};
+ /**
+ * Rotational direction of particle as quaternion.
+ */
+ std::array<double, 4> _q{};
 
  /**
   * Vector storing the x-component the absolute Site positions.

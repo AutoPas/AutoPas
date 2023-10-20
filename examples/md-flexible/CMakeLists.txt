@@ -7,7 +7,7 @@ file(
 
 add_executable(md-flexible ${MDFlex_SRC}
         src/templateInstantiations/iteratePairwiseLJFunctorAbsoluteSites.cpp
-        src/configuration/objects/AbsoluteMultiSiteMoleculeInitializer.h)
+        )
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

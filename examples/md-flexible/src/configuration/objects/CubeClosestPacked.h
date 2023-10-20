@@ -109,6 +109,9 @@ class CubeClosestPacked : public Object {
         double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + _xOffset;
         for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
           particle.setR({x, y, z});
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+          AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
+#endif
 
 
           particles.push_back(particle);

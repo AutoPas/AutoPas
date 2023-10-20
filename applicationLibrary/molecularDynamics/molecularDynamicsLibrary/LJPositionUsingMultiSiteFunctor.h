@@ -7,8 +7,8 @@
 #pragma once
 
 #include "MoleculeLJ.h"
-#include "AbsoluteMultiSiteMoleculeLJ.h"
 #include "ParticlePropertiesLibrary.h"
+#include "PositionStoringMultiSiteMolecule.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -40,8 +40,8 @@ namespace mdLib {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJAbsoluteMultiSiteFunctor
-    : public autopas::Functor<Particle, LJAbsoluteMultiSiteFunctor<Particle, applyShift, useMixing, useNewton3,
+class LJPositionUsingMultiSiteFunctor
+    : public autopas::Functor<Particle, LJPositionUsingMultiSiteFunctor<Particle, applyShift, useMixing, useNewton3,
                                                            calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -102,7 +102,7 @@ class LJAbsoluteMultiSiteFunctor
   /**
    * Delete Default constructor
    */
-  LJAbsoluteMultiSiteFunctor() = delete;
+  LJPositionUsingMultiSiteFunctor() = delete;
 
  private:
   /**
@@ -110,8 +110,8 @@ class LJAbsoluteMultiSiteFunctor
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJAbsoluteMultiSiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle, LJAbsoluteMultiSiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+  explicit LJPositionUsingMultiSiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
+      : autopas::Functor<Particle, LJPositionUsingMultiSiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
                                                       relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -130,7 +130,7 @@ class LJAbsoluteMultiSiteFunctor
    * @note Only to be used with mixing == false
    * @param cutoff
    */
-  explicit LJAbsoluteMultiSiteFunctor(double cutoff) : LJAbsoluteMultiSiteFunctor(cutoff, nullptr) {
+  explicit LJPositionUsingMultiSiteFunctor(double cutoff) : LJPositionUsingMultiSiteFunctor(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -144,8 +144,8 @@ class LJAbsoluteMultiSiteFunctor
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift.
    */
-  explicit LJAbsoluteMultiSiteFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJAbsoluteMultiSiteFunctor(cutoff, nullptr) {
+  explicit LJPositionUsingMultiSiteFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJPositionUsingMultiSiteFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -201,6 +201,7 @@ class LJAbsoluteMultiSiteFunctor
 //
     //// calculate correctly rotated relative site positions
     //const auto rotatedSitePositionsA =
+    //    autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
     //    autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
     //const auto rotatedSitePositionsB =
     //    autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), unrotatedSitePositionsB);

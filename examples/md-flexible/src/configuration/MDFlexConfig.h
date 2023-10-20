@@ -779,7 +779,7 @@ class MDFlexConfig {
 
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
   /**
-   * Helper function initializing the absolute position of AbsoluteMultiSiteMoleculeLJ at the start of the simulation.
+   * Helper function initializing the absolute position of PositionStoringMultiSiteMolecule at the start of the simulation.
    * This cannot be done when constructing the AbsoluteMultiSiteMolecule since it doesn't have access to the
    * ParticlePropertyLibrary therefore it doesn't know where its sites are relative to its center of mass.
    */

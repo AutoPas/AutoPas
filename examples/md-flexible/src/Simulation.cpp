@@ -22,7 +22,8 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAbsPos *);  //LJFunctorTypeAbsPos defined in TypeDefinitions.h
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+    LJFunctorTypeUsingPos *);  //LJFunctorTypeUsingPos defined in TypeDefinitions.h
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
@@ -658,7 +659,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     case MDFlexConfig::FunctorOption::lj12_6_AbsSites: {
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
       std::cout<<"Choosing LJFunctorTypeAbsSitePositions" << std::endl;
-      return f(LJFunctorTypeAbsPos{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeUsingPos{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor Absolute Site Positions. Activate it via `cmake "

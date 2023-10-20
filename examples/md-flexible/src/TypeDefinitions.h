@@ -13,7 +13,7 @@
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #elif defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-#include "molecularDynamicsLibrary/LJAbsoluteMultiSiteFunctor.h"
+#include "molecularDynamicsLibrary/LJPositionUsingMultiSiteFunctor.h"
 #endif
 
 
@@ -49,7 +49,7 @@ using FloatPrecision = double;
 */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-using ParticleType = mdLib::AbsoluteMultiSiteMoleculeLJ;
+using ParticleType = mdLib::PositionStoringMultiSiteMolecule;
 //using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
 using ParticleType = mdLib::MultisiteMoleculeLJ;
@@ -76,10 +76,10 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
 /**
 * Type of LJFunctorTypeAutovec used in md-flexible.
-* Can only be LJAbsoluteMultiSiteFunctor for MultiSite molecules. A corresponding functor for single site molecules wouldn't really make sense
+* Can only be LJPositionUsingMultiSiteFunctor for MultiSite molecules. A corresponding functor for single site molecules wouldn't really make sense
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAbsPos = mdLib::LJAbsoluteMultiSiteFunctor<ParticleType, true, true>;
+using LJFunctorTypeUsingPos = mdLib::LJPositionUsingMultiSiteFunctor<ParticleType, true, true>;
 #else
 #error "Single site simulation can't use absolute position multisite functor."
 #endif
@@ -146,7 +146,7 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
 using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS
-using LJFunctorTypeAbstract = mdLib::LJAbsoluteMultiSiteFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJPositionUsingMultiSiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
 using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif

@@ -81,15 +81,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     // Calculate Quaternions
-    std::array<double, 4> q;
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-    //@todo (johnny) this is extremely ugly. Refactor the code that this is not necessary!!
-    const std::array<double, 3> unrotatedSitePositionNormalized = normalize(particlePropertiesLibrary.getSitePositions(iter->getTypeId())[0]);
-    const std::array<double, 3> relativeSitePositionNormalized = normalize(iter->getAbsoluteSitePosition(0) - iter->getR());
-    q = getRotationBetweenVectors(unrotatedSitePositionNormalized, relativeSitePositionNormalized);
-#else
-    q = iter->getQuaternion();
-#endif
+    const auto q = iter->getQuaternion();
     const auto angVelW = iter->getAngularVel();  // angular velocity in world frame
     const auto angVelM =
         rotatePositionBackwards(q, angVelW);  // angular velocity in molecular frame  (equivalent to (17))
@@ -124,7 +116,12 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
     const auto qFullStep = normalize(q + derivativeQHalfStep * deltaT);  // (26)
 
+#if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     iter->setQuaternion(qFullStep);
+#else
+    iter->setQuaternion(qFullStep, particlePropertiesLibrary);
+#endif
+
     iter->setAngularVel(angVelWHalfStep);  // save angular velocity half step, to be used by calculateAngularVelocities
 
     // Reset torque
