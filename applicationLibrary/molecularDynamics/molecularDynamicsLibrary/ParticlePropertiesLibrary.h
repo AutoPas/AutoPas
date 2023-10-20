@@ -158,6 +158,17 @@ class ParticlePropertiesLibrary {
   std::vector<std::array<floatType, 3>> getSitePositions(intType i) const;
 
   /**
+   * Get a const reference to the relative site positions to a multi-site molecule. These site positions must be appropriately
+   * translated and rotated to be used.
+   *
+   * Throws an error if support for multi-site molecules has not been compiled.
+   *
+   * @param i Type Id of a multi-site molecule.
+   * @return untranslated, non-rotated site positions
+   */
+  const std::vector<std::array<floatType, 3>>& getConstSitePositions(intType i) const;
+
+  /**
    * Get site types of a multi-site molecule.
    *
    * Throws an error if support for multi-site molecules has not been compiled.
@@ -392,6 +403,17 @@ std::array<floatType, 3> ParticlePropertiesLibrary<floatType, intType>::getMomen
 
 template <typename floatType, typename intType>
 std::vector<std::array<floatType, 3>> ParticlePropertiesLibrary<floatType, intType>::getSitePositions(intType i) const {
+#if MD_FLEXIBLE_MODE == SINGLESITE
+  AutoPasLog(WARN,
+             "ParticlePropertiesLibrary::getSitePositions(): trying to get the site positions of a multi-site molecule "
+             "type when md-flexible has been compiled without support for multi-site molecules. Please compile with "
+             "the CMake argument '-DMD_FLEXIBLE_MODE=MULTISITE'.");
+#endif
+  return _relativeSitePositions[i];
+}
+
+template <typename floatType, typename intType>
+const std::vector<std::array<floatType, 3>>& ParticlePropertiesLibrary<floatType, intType>::getConstSitePositions(intType i) const {
 #if MD_FLEXIBLE_MODE == SINGLESITE
   AutoPasLog(WARN,
              "ParticlePropertiesLibrary::getSitePositions(): trying to get the site positions of a multi-site molecule "

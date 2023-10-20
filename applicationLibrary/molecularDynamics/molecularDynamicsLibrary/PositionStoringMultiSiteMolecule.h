@@ -6,14 +6,14 @@
 
 #pragma once
 
-//#include "../../../examples/md-flexible/src/TypeDefinitions.h"  //necessary for ParticlePropertiesLibraryType
+#include "../../../examples/md-flexible/src/TypeDefinitions.h"  //necessary for ParticlePropertiesLibraryType
 #include "MoleculeLJ.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/particles/ParticleBase.h"
 //#include "../../../examples/md-flexible/src/TypeDefinitions.h"
 //
-////@todo (johnny): how do i get rid of this? this is doubling TypeDefinitions.h ...
-//using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
+//@todo (johnny): how do i get rid of this? this is doubling TypeDefinitions.h ...
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<double, size_t>;
 
 namespace mdLib {
 /**
@@ -286,7 +286,8 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
   * @param q quaternion defining rotation
   * @param ppl ParticlePropertiesLibrary (necessary to update the site positions)
    */
-  void setQuaternion(const std::array<double, 4> &q, const std::vector<std::array<double, 3>>& unrotated_site_positions);
+  void setQuaternion(const std::array<double, 4> &q, const ParticlePropertiesLibraryType& ppl);
+  //void setQuaternion(const std::array<double, 4> &q, const std::vector<std::array<double, 3>>& unrotated_site_positions);
 
   /**
   * Set the x-component of the absoluteSitePositions

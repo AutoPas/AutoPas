@@ -6,7 +6,9 @@
 
 #include "PositionStoringMultiSiteMolecule.h"
 
-//#include "autopas/utils/Quaternion.h" //needed to update Sites automatically
+#include "autopas/utils/Quaternion.h"
+
+// #include "autopas/utils/Quaternion.h" //needed to update Sites automatically
 
 namespace mdLib {
 PositionStoringMultiSiteMolecule::PositionStoringMultiSiteMolecule(std::array<double, 3> r, std::array<double, 3> v,
@@ -16,11 +18,12 @@ PositionStoringMultiSiteMolecule::PositionStoringMultiSiteMolecule(std::array<do
 
 const std::array<double, 4> &PositionStoringMultiSiteMolecule::getQuaternion() const { return _q; }
 
-void PositionStoringMultiSiteMolecule::setQuaternion(const std::array<double, 4> &q, const std::vector<std::array<double, 3>>& unrotated_site_positions) {
+//void PositionStoringMultiSiteMolecule::setQuaternion(const std::array<double, 4> &q, const std::vector<std::array<double, 3>>& unrotated_site_positions) {
+void PositionStoringMultiSiteMolecule::setQuaternion(const std::array<double, 4> &q, const ParticlePropertiesLibraryType& ppl){
   _q = q;
   //set sites based on rotation
-  //const std::vector<std::array<double, 3>> rotated_site_positions = autopas::utils::quaternion::rotateVectorOfPositions(_q, unrotated_site_positions);
-  const std::vector<std::array<double, 3>> rotated_site_positions = unrotated_site_positions;
+  const std::vector<std::array<double, 3>> rotated_site_positions = autopas::utils::quaternion::rotateVectorOfPositions(_q, ppl.getSitePositions(_typeId));
+  //const std::vector<std::array<double, 3>> rotated_site_positions = unrotated_site_positions;
   for(int i=0; i < _absSitePositionsX.size(); i++){
     _absSitePositionsX[i] = _r[0] + rotated_site_positions[i][0];
     _absSitePositionsY[i] = _r[1] + rotated_site_positions[i][1];

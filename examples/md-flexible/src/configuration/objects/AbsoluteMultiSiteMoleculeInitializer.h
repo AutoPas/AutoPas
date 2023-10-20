@@ -18,23 +18,6 @@ namespace AbsoluteMultiSiteMoleculeInitializer {
  * @param p Particle (must be of type PositionStoringMultiSiteMolecule) that gets its absolute Site Positions initialized
  * @param ppl particlePropertiesLibrary
  */
-void setAbsoluteSites(ParticleType &p, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) {
-  // determine and initialize absolute Site positions
-  std::vector<std::array<double, 3>> unrotated_site_positions = ppl->getSitePositions(p.getTypeId());
-  const auto q = p.getQuaternion();
-  std::vector<std::array<double, 3>> rotated_site_positions = autopas::utils::quaternion::rotateVectorOfPositions(q, unrotated_site_positions);
-  std::vector<double> absPositionsX{};
-  std::vector<double> absPositionsY{};
-  std::vector<double> absPositionsZ{};
-  for (int i = 0; i < rotated_site_positions.size(); i++) {
-    std::array<double, 3> relativeSitePosition = rotated_site_positions[i];
-    absPositionsX.push_back(relativeSitePosition[0] + p.getR()[0]);
-    absPositionsY.push_back(relativeSitePosition[1] + p.getR()[1]);
-    absPositionsZ.push_back(relativeSitePosition[2] + p.getR()[2]);
-  }
-  p.setAbsoluteSitePositionsX(absPositionsX);
-  p.setAbsoluteSitePositionsY(absPositionsY);
-  p.setAbsoluteSitePositionsZ(absPositionsZ);
-}
+void setAbsoluteSites(ParticleType &p, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl);
 }
 #endif
