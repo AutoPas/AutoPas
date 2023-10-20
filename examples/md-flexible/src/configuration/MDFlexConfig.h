@@ -768,23 +768,10 @@ class MDFlexConfig {
   void initializeParticlePropertiesLibrary();
 
   /**
-   * Helper function if initializeObjects.
-   */
-  void inline initializeObject(const Object& object);
-
-  /**
    * Initializes all particles present at the start of the simulation.
    */
   void initializeObjects();
 
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-  /**
-   * Helper function initializing the absolute position of PositionStoringMultiSiteMolecule at the start of the simulation.
-   * This cannot be done when constructing the AbsoluteMultiSiteMolecule since it doesn't have access to the
-   * ParticlePropertyLibrary therefore it doesn't know where its sites are relative to its center of mass.
-   */
-   void initializeAbsPosOfMolecules();
-#endif
 };
 
 /**

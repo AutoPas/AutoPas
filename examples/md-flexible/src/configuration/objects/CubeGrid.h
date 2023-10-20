@@ -11,9 +11,9 @@
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
 
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-#include "AbsoluteMultiSiteMoleculeInitializer.h"
-#endif
+//#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+//#include "AbsoluteMultiSiteMoleculeInitializer.h"
+//#endif
 
 /**
  * Class describing a regular 3D particle grid object.
@@ -109,9 +109,9 @@ class CubeGrid : public Object {
                          _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing});
           particles.push_back(particle);
           particle.setID(particle.getID() + 1);
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-          AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
-#endif
+//#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+//          AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
+//#endif
         }
       }
     }

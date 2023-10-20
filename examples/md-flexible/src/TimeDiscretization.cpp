@@ -119,7 +119,8 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     iter->setQuaternion(qFullStep);
 #else
-    iter->setQuaternion(qFullStep, particlePropertiesLibrary);
+    //iter->setQuaternion(qFullStep, particlePropertiesLibrary);
+    iter->setQuaternion(qFullStep, particlePropertiesLibrary.getSitePositions(iter->getTypeId()));
 #endif
 
     iter->setAngularVel(angVelWHalfStep);  // save angular velocity half step, to be used by calculateAngularVelocities

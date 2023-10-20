@@ -8,9 +8,9 @@
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
 
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-#include "AbsoluteMultiSiteMoleculeInitializer.h"
-#endif
+//#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+//#include "AbsoluteMultiSiteMoleculeInitializer.h"
+//#endif
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
@@ -111,9 +111,9 @@ class CubeGauss : public Object {
 
       particles.push_back(particle);
       particle.setID(particle.getID() + 1);
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-      AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
-#endif
+//#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+//      AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
+//#endif
     }
   }
 

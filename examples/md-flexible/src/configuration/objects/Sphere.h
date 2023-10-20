@@ -8,9 +8,9 @@
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
 
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-#include "AbsoluteMultiSiteMoleculeInitializer.h"
-#endif
+//#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+//#include "AbsoluteMultiSiteMoleculeInitializer.h"
+//#endif
 
 /**
  * Class describing a regular 3D spherical particle grid object.
@@ -142,11 +142,12 @@ class Sphere : public Object {
     ParticleType particle = getDummyParticle(particles.size());
     iteratePositions([&](const auto &pos) {
       particle.setR(pos);
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-      AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
-#endif
+//#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+//      AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
+//#endif
       particles.push_back(particle);
       particle.setID(particle.getID() + 1);
+
     });
   }
 
