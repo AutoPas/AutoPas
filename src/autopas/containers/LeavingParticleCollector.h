@@ -28,12 +28,14 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto interactionLength = container.getInteractionLength();
-  const auto skin = container.getVerletSkin();
   const auto containerDimensions = container.getBoxMax() - container.getBoxMin();
   const auto lowerHaloCorner = container.getBoxMin() - interactionLength;
   const auto upperHaloCorner = container.getBoxMax() + interactionLength;
-  const auto lowerInnerCorner = container.getBoxMin() + skin;
-  const auto upperInnerCorner = container.getBoxMax() - skin;
+  // We need to extend these boundaries into the container because we need to find particles that are stored in the
+  // container but have since moved out. Extending by skin is not enough since we are interested in particles that have
+  // travelled beyond that and skin can be 0.
+  const auto lowerInnerCorner = container.getBoxMin() + interactionLength;
+  const auto upperInnerCorner = container.getBoxMax() - interactionLength;
 
   // volumes describing the halo regions on the six faces of the cuboid shaped container.
   const std::array<std::tuple<decltype(lowerHaloCorner), decltype(upperHaloCorner)>, 6> haloVolumes{{
