@@ -106,6 +106,12 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
                          {coloringCellsPerDim[0], coloringCellsPerDim[1], 1}, localStride);
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setUseSorting(bool useSorting) override {}
+
  private:
   PairwiseFunctor *_functor;
   internal::VCLClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;

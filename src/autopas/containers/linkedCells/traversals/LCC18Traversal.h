@@ -76,6 +76,11 @@ class LCC18Traversal
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+
  private:
   /**
    * Computes pairs used in processBaseCell()
@@ -85,7 +90,8 @@ class LCC18Traversal
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+                        /*bidirectional*/ true>
       _cellFunctor;
 
   /**
@@ -135,12 +141,24 @@ inline void LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
                     std::max(0l, (std::abs(y) - 1l)) * this->_cellLength[1],
                     std::max(0l, (std::abs(z) - 1l)) * this->_cellLength[2],
                 };
-                // calculate distance between base cell and other cell
+                // calculate distance between the borders of the base cell and the other cell
                 const double distSquare = utils::ArrayMath::dot(pos, pos);
                 // only add cell offset if cell is within cutoff radius
                 if (distSquare <= interactionLengthSquare) {
+                  // Calculate the sorting direction from the base cell and the other cell by use of the offset (x, y,
+                  // z).
+                  // Note: We have to calculate the sorting direction separately from pos, since pos is the offset
+                  // between the borders of cells. For neighbouring cells this would be 0 and the sorting direction
+                  // would be wrong.
+                  std::array<double, 3> sortingDir = {static_cast<double>(x) * this->_cellLength[0],
+                                                      static_cast<double>(y) * this->_cellLength[1],
+                                                      static_cast<double>(z) * this->_cellLength[2]};
+                  if (x == 0 and y == 0 and z == 0) {
+                    sortingDir = {1., 1., 1.};
+                  }
+
                   _cellOffsets[yArray + _overlap_s[1]][xArray + _overlap_s[0]].push_back(
-                      std::make_pair(offset, utils::ArrayMath::normalize(pos)));
+                      std::make_pair(offset, utils::ArrayMath::normalize(sortingDir)));
                 }
               }
             }

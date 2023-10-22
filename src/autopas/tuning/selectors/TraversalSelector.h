@@ -134,7 +134,7 @@ TraversalSelector<ParticleCell, interactionType>::generatePairwiseTraversal(Trav
           info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::lc_c01: {
-      return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+      return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>>(
           info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::lc_c01_combined_SoA: {

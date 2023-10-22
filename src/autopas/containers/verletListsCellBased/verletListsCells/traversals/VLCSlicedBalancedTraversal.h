@@ -76,6 +76,12 @@ class VLCSlicedBalancedTraversal
     return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setUseSorting(bool useSorting) override {}
+
  private:
   PairwiseFunctor *_functor;
 };

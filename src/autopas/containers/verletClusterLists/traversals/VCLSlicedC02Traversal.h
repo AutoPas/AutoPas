@@ -83,5 +83,11 @@ class VCLSlicedC02Traversal
   void traverseParticlePairs() override {
     this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
   }
+
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setUseSorting(bool useSorting) override {}
 };
 }  // namespace autopas

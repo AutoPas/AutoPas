@@ -105,11 +105,17 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
     }
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+
  private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false> _cellFunctor;
+  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, /*bidirectional*/ false>
+      _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal

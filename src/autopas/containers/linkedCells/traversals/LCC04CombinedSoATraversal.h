@@ -63,6 +63,12 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
            (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setUseSorting(bool useSorting) override {}
+
  private:
   LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
 };

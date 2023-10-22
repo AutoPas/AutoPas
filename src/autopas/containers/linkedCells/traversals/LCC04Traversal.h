@@ -71,6 +71,11 @@ class LCC04Traversal
     return minLength >= this->_interactionLength and minDim > 3;
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
+
  private:
   void traverseSingleColor(std::vector<ParticleCell> &cells, int color);
 
