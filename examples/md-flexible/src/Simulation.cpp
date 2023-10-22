@@ -471,6 +471,13 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
+  _autoPasContainer->forEach([&](const auto& p){
+    std::cout << "num sites molecule" << p.getAbsoluteSitePositionsX().size() << std::endl;
+    if(p.getAbsoluteSitePositionsX().size() == 0){
+      std::cout<< "absSitePositionsX is already empty" << std::endl;
+    }
+  });
+
   const auto wasTuningIteration =
       applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->template iteratePairwise(&functor); });
   return wasTuningIteration;

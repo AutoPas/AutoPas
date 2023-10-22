@@ -23,12 +23,20 @@ void PositionStoringMultiSiteMolecule::setQuaternion(const std::array<double, 4>
   _q = q;
   //set sites based on rotation
   const std::vector<std::array<double, 3>> rotated_site_positions = autopas::utils::quaternion::rotateVectorOfPositions(_q, ppl.getSitePositions(_typeId));
+  _absSitePositionsX.resize(rotated_site_positions.size());
+  _absSitePositionsY.resize(rotated_site_positions.size());
+  _absSitePositionsZ.resize(rotated_site_positions.size());
+
   //const std::vector<std::array<double, 3>> rotated_site_positions = unrotated_site_positions;
-  for(int i=0; i < _absSitePositionsX.size(); i++){
+  for(int i=0; i < rotated_site_positions.size(); i++){
     _absSitePositionsX[i] = _r[0] + rotated_site_positions[i][0];
     _absSitePositionsY[i] = _r[1] + rotated_site_positions[i][1];
     _absSitePositionsZ[i] = _r[2] + rotated_site_positions[i][2];
   }
+}
+
+void PositionStoringMultiSiteMolecule::setOnlyQuaternion(const std::array<double, 4> &q){
+  _q = q;
 }
 
 const std::vector<double> &PositionStoringMultiSiteMolecule::getAbsoluteSitePositionsX() const {
@@ -43,7 +51,7 @@ const std::vector<double> &PositionStoringMultiSiteMolecule::getAbsoluteSitePosi
   return _absSitePositionsZ;
 }
 
-const std::array<double, 3> PositionStoringMultiSiteMolecule::getAbsoluteSitePosition(size_t index) const {
+std::array<double, 3> PositionStoringMultiSiteMolecule::getAbsoluteSitePosition(size_t index) const {
   return {_absSitePositionsX[index], _absSitePositionsY[index], _absSitePositionsZ[index]};
 }
 

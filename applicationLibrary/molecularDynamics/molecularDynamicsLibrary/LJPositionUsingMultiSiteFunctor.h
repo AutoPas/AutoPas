@@ -423,14 +423,17 @@ we have 2 seperate site indices
 
     // count number of sites in SoA
     size_t siteCount = absSitePositionsXFlattened.size();
-    //size_t siteCount = 0;
-    //if constexpr (useMixing) {
-    //  for (size_t mol = 0; mol < soa.size(); ++mol) {
-    //    siteCount += _PPLibrary->getNumSites(typeptr[mol]);
-    //  }
-    //} else {
-    //  siteCount = const_unrotatedSitePositions.size() * soa.size();
-    //}
+    size_t oldSiteCount = 0;
+    if constexpr (useMixing) {
+      for (size_t mol = 0; mol < soa.size(); ++mol) {
+        oldSiteCount += _PPLibrary->getNumSites(typeptr[mol]);
+      }
+    } else {
+      oldSiteCount = const_unrotatedSitePositions.size() * soa.size();
+    }
+    if(oldSiteCount != siteCount){
+      std::cout<<"SoAFunctor Single oldSiteCount " << oldSiteCount << " is unequal to newSiteCount " << siteCount << std::endl;
+    }
 
     // // pre-reserve site std::vectors
     // exactSitePositionX.reserve(siteCount);
@@ -978,14 +981,17 @@ we have 2 seperate site indices
 
     // count number of sites in both SoAs
     const size_t siteCountB = absSitePosXB.size();
-    //size_t siteCountB = 0;
-    //if constexpr (useMixing) {
-    //  for (size_t mol = 0; mol < soaB.size(); ++mol) {
-    //    siteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
-    //  }
-    //} else {
-    //  siteCountB = const_unrotatedSitePositions.size() * soaB.size();
-    //}
+    size_t oldSiteCountB = 0;
+    if constexpr (useMixing) {
+      for (size_t mol = 0; mol < soaB.size(); ++mol) {
+        oldSiteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
+      }
+    } else {
+      oldSiteCountB = const_unrotatedSitePositions.size() * soaB.size();
+    }
+    if(oldSiteCountB != siteCountB){
+      std::cout<<"SoAFunctor Pair oldSiteCountB " << oldSiteCountB << " is unequal to newSiteCountB " << siteCountB << std::endl;
+    }
 
     // pre-reserve std::vectors
     //exactSitePositionBx.reserve(siteCountB);

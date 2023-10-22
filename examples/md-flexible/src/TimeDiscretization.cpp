@@ -177,15 +177,7 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto torqueW = iter->getTorque();
 
-    std::array<double, 4> q;
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-    //@todo (johnny) this is extremely ugly. Refactor the code that this is not necessary!!
-    const std::array<double, 3> unrotatedSitePositionNormalized = normalize(particlePropertiesLibrary.getSitePositions(iter->getTypeId())[0]);
-    const std::array<double, 3> relativeSitePositionNormalized = normalize(iter->getAbsoluteSitePosition(0) - iter->getR());
-    q = getRotationBetweenVectors(unrotatedSitePositionNormalized, relativeSitePositionNormalized);
-#else
-    q = iter->getQuaternion();
-#endif
+    const auto q = iter->getQuaternion();
 
     const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId());  // moment of inertia
 

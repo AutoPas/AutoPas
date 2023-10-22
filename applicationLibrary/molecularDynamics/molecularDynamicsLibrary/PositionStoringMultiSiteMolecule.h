@@ -289,20 +289,22 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
   void setQuaternion(const std::array<double, 4> &q, const ParticlePropertiesLibraryType& ppl);
   //void setQuaternion(const std::array<double, 4> &q, const std::vector<std::array<double, 3>>& unrotated_site_positions);
 
+  void setOnlyQuaternion(const std::array<double, 4> &q);
+
   /**
   * Set the x-component of the absoluteSitePositions
    */
-  void setAbsoluteSitePositionsX(const std::vector<double> sitesX);
+  void setAbsoluteSitePositionsX(const std::vector<double>& sitesX);
 
   /**
   * Set the y-component of the absoluteSitePositions
    */
-  void setAbsoluteSitePositionsY(const std::vector<double> sitesY);
+  void setAbsoluteSitePositionsY(const std::vector<double>& sitesY);
 
   /**
   * Set the z-component of the absoluteSitePositions
    */
-  void setAbsoluteSitePositionsZ(const std::vector<double> sitesZ);
+  void setAbsoluteSitePositionsZ(const std::vector<double>& sitesZ);
 
 
   /**
@@ -333,7 +335,7 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
   * @param index site index
   * @return absolute site position of that molecule
    */
-  [[nodiscard]] const std::array<double, 3> getAbsoluteSitePosition(size_t index) const;
+  [[nodiscard]] std::array<double, 3> getAbsoluteSitePosition(size_t index) const;
 
 
 

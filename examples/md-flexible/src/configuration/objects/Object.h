@@ -51,6 +51,8 @@ class Object {
 #if MD_FLEXIBLE_MODE == MULTISITE
 #if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
+#else
+    particle.setOnlyQuaternion({1.0, 0.0, 0.0, 0.0});
 #endif
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
