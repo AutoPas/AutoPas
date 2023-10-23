@@ -39,7 +39,7 @@ class ParticlePropertiesLibrary {
    * @param m_exp  The m exponent of the Potential
    * @param coeff  The coefficient of the Potential
    */
-   //ToDo: add seperate Mixing for Mie-Potential
+
   explicit ParticlePropertiesLibrary(const double cutoff, const size_t n_exp, const size_t m_exp, const double coeff)
       : _cutoff(cutoff), _m_exp(m_exp), _n_exp(n_exp), _epsilon_coeff(coeff){}
 
@@ -88,6 +88,11 @@ class ParticlePropertiesLibrary {
    * Calculates the actual mixing coefficients.
    */
   void calculateMixingCoefficients();
+
+  /**
+   * Calculates the actual mixing coefficients if the Mie Potential is used.
+   */
+  void calculateMixingCoefficientsMie();
 
   ~ParticlePropertiesLibrary() = default;
 
@@ -210,12 +215,51 @@ class ParticlePropertiesLibrary {
   }
 
   /**
+   * Returns the precomputed mixed epsilon * c.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
+   * @return c*epsilon_ij
+   */
+  inline floatType getMixingCEpsilonMie(intType i, intType j) const {
+    return _computedMixingDataMie[i * _numRegisteredSiteTypes + j].cepsilon;
+  }
+
+  /**
+   * Returns the precomputed mixed epsilon * c * n.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
+   * @return c*n*epsilon_ij
+   */
+  inline floatType getMixingCNEpsilonMie(intType i, intType j) const {
+    return _computedMixingDataMie[i * _numRegisteredSiteTypes + j].cnepsilon;
+  }
+
+
+  /**
+   * Returns the precomputed mixed epsilon * c * m.
+   * @param  i Id of site one.
+   * @param  j Id of site two.
+   * @return c*m*epsilon_ij
+   */
+  inline floatType getMixingCMEpsilonMie(intType i, intType j) const {
+    return _computedMixingDataMie[i * _numRegisteredSiteTypes + j].cmepsilon;
+  }
+
+  /**
    * Get complete mixing data for one pair of site types.
    * @param i Id of site one.
    * @param j Id of site two.
    * @return
    */
   inline auto getMixingData(intType i, intType j) const { return _computedMixingData[i * _numRegisteredSiteTypes + j]; }
+
+  /**
+   * Get complete mixing data for one pair of site types for the Mie-potential.
+   * @param i Id of site one.
+   * @param j Id of site two.
+   * @return
+   */
+  inline auto getMixingDataMie(intType i, intType j) const { return _computedMixingDataMie[i * _numRegisteredSiteTypes + j]; }
 
   /**
    * Get a pointer to Mixing Data for one pair of site types.
@@ -225,6 +269,16 @@ class ParticlePropertiesLibrary {
    */
   inline const double *getMixingDataPtr(intType i, intType j) {
     return reinterpret_cast<const double *>(&_computedMixingData[i * _numRegisteredSiteTypes + j]);
+  }
+
+  /**
+   * Get a pointer to Mixing Data for one pair of site types for the Mie Potential.
+   * @param i Id of site one.
+   * @param j Id of site two.
+   * @return
+   */
+  inline const double *getMixingDataPtrMie(intType i, intType j) {
+    return reinterpret_cast<const double *>(&_computedMixingDataMie[i * _numRegisteredSiteTypes + j]);
   }
 
   /**
@@ -238,6 +292,16 @@ class ParticlePropertiesLibrary {
   }
 
   /**
+   * Returns precomputed mixed squared sigma for one pair of site types for the Mie Potential.
+   * @param i Id of site one.
+   * @param j Id of site two.
+   * @return sigma_ij²
+   */
+  inline floatType getMixingSigmaSquaredMie(intType i, intType j) const {
+    return _computedMixingDataMie[i * _numRegisteredSiteTypes + j].sigmaSquared;
+  }
+
+  /**
    * Returns precomputed mixed shift * 6 for one pair of site types.
    * @param i siteId of site one.
    * @param j siteId of site two.
@@ -247,6 +311,15 @@ class ParticlePropertiesLibrary {
     return _computedMixingData[i * _numRegisteredSiteTypes + j].shift6;
   }
 
+  /**
+   * Returns precomputed mixed shift * 6 for one pair of site types for the Mie Potential.
+   * @param i siteId of site one.
+   * @param j siteId of site two.
+   * @return shift * 6
+   */
+  inline floatType getMixingShift6Mie(intType i, intType j) const {
+    return _computedMixingDataMie[i * _numRegisteredSiteTypes + j].shift6;
+  }
 
   /**
    * Calculate the shift multiplied 6 of the lennard jones potential from given cutoff, epsilon, sigma.
@@ -297,6 +370,15 @@ class ParticlePropertiesLibrary {
     floatType sigmaSquared;
     floatType shift6;
   };
+
+  struct PackedMixingDataMie {
+    floatType cepsilon;
+    floatType cnepsilon;
+    floatType cmepsilon;
+    floatType sigmaSquared;
+    floatType shift6;
+  };
+  std::vector<PackedMixingDataMie, autopas::AlignedAllocator<PackedMixingDataMie>> _computedMixingDataMie;
 
   std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
 };
@@ -397,6 +479,45 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
       _computedMixingData[globalIndex].shift6 = shift6;
     }
+    }
+  }
+}
+
+
+template <typename floatType, typename intType>
+void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficientsMie() {
+  if (_numRegisteredSiteTypes == 0) {
+    autopas::utils::ExceptionHandler::AutoPasException(
+        "ParticlePropertiesLibrary::calculateMixingCoefficientsMie was called without any site types being registered!");
+  }
+
+  _computedMixingDataMie.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
+
+  const auto cutoffSquared = _cutoff * _cutoff;
+
+  for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
+    for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
+    auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
+
+    // cepsilon
+    const floatType cepsilon = _epsilon_coeff * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+    _computedMixingDataMie[globalIndex].cepsilon = cepsilon;
+
+    const floatType cnepsilon = _n_exp * cepsilon;
+    _computedMixingDataMie[globalIndex].cnepsilon = cnepsilon;
+
+    const floatType cmepsilon = _m_exp * cepsilon;
+    _computedMixingDataMie[globalIndex].cmepsilon = cmepsilon;
+
+    // sigma
+    const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
+    const floatType sigmaSquared = sigma * sigma;
+    _computedMixingDataMie[globalIndex].sigmaSquared = sigmaSquared;
+
+    // shift6 for Mie
+      const floatType shift6 = calcShiftMie(cepsilon, sigmaSquared, cutoffSquared, _n_exp, _m_exp);
+      _computedMixingDataMie[globalIndex].shift6 = shift6;
+
     }
   }
 }

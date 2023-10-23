@@ -68,10 +68,16 @@
        */
       void setParticleProperties(double epsilon, double sigmaSquared) {
         double c = (_nexpAoS / (_nexpAoS - _mexpAoS)) * pow((_nexpAoS / _mexpAoS), (_mexpAoS / (_nexpAoS - _mexpAoS)));
-        auto cepsilon = c * epsilon;
+        double cepsilon = c * epsilon;
+        double cnepsilon = _nexpAoS*cepsilon;
+        double cmepsilon = _mexpAoS*cepsilon;
 #ifdef __AVX__
-        _cepsilon = _mm256_set1_pd(c*epsilon);
+        _cepsilon = _mm256_set1_pd(cepsilon);
+        _cnepsilon = _mm256_set1_pd(cnepsilon);
+        _cmepsilon = _mm256_set1_pd(cmepsilon);
+
         _sigmaSquared = _mm256_set1_pd(sigmaSquared);
+
 
         if constexpr (applyShift) {
           _shift6 = _mm256_set1_pd(
@@ -82,6 +88,9 @@
 #endif
 
         _cepsilonAoS = cepsilon;
+        _cnepsilonAoS = cnepsilon;
+        _cmepsilonAoS = cmepsilon;
+
         _sigmaSquaredAoS = sigmaSquared;
             if constexpr (applyShift) {
           _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(cepsilon, sigmaSquared, _cutoffSquaredAoS, _nexpAoS, _mexpAoS);
@@ -204,15 +213,21 @@
         }
         auto sigmaSquared = _sigmaSquaredAoS;
         auto cepsilon = _cepsilonAoS;
+        auto cnepsilon = _cnepsilonAoS;
+        auto cmepsilon = _cmepsilonAoS;
+
         auto shift6 = _shift6AoS;
         auto m_exp = _mexpAoS;
         auto n_exp = _nexpAoS;
 
         if constexpr (useMixing) {
-          sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-          cepsilon = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+          sigmaSquared = _PPLibrary->getMixingSigmaSquaredMie(i.getTypeId(), j.getTypeId());
+          cepsilon = _PPLibrary->getMixingCEpsilonMie(i.getTypeId(), j.getTypeId());
+          cnepsilon = _PPLibrary->getMixingCNEpsilonMie(i.getTypeId(), j.getTypeId());
+          cmepsilon = _PPLibrary->getMixingCMEpsilonMie(i.getTypeId(), j.getTypeId());
+
           if constexpr (applyShift) {
-            shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
+            shift6 = _PPLibrary->getMixingShift6Mie(i.getTypeId(), j.getTypeId());
           }
         }
         auto dr = i.getR() - j.getR();
@@ -228,6 +243,7 @@
         double fract = sigmaSquared * invdr2;
 
         double Mie_m = 1;
+
         if (m_exp % 2 == 1) {
           Mie_m = sqrt(fract);
         }
@@ -244,7 +260,7 @@
           Mie_n = Mie_n * fract;
         }
 
-        double Mie = cepsilon * (n_exp * Mie_n - m_exp * Mie_m);
+        double Mie =  (cnepsilon * Mie_n - cmepsilon * Mie_m);
         auto f = dr * (invdr2 * Mie);
         i.addF(f);
         if (newton3) {
@@ -595,27 +611,39 @@
                             double *const __restrict fz2ptr, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
                             __m256d &fxacc, __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY,
                             __m256d *virialSumZ, __m256d *potentialEnergySum, const unsigned int rest = 0) {
-        __m256d epsilon24s = _cepsilon;
+        __m256d cepsilons = _cepsilon;
+        __m256d cnepsilons = _cnepsilon;
+        __m256d cmepsilons = _cmepsilon;
         __m256d sigmaSquareds = _sigmaSquared;
         __m256d shift6s = _shift6;
         if (useMixing) {
           // the first argument for set lands in the last bits of the register
-          epsilon24s = _mm256_set_pd(
-              not remainderIsMasked or rest > 3 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-              not remainderIsMasked or rest > 2 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-              not remainderIsMasked or rest > 1 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-              _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
+          cepsilons = _mm256_set_pd(
+              not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingCEpsilonMie(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+              not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingCEpsilonMie(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+              not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingCEpsilonMie(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+              _PPLibrary->getMixingCEpsilonMie(*typeID1ptr, *(typeID2ptr + 0)));
+          cnepsilons = _mm256_set_pd(
+              not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingCNEpsilonMie(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+              not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingCNEpsilonMie(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+              not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingCNEpsilonMie(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+              _PPLibrary->getMixingCNEpsilonMie(*typeID1ptr, *(typeID2ptr + 0)));
+          cmepsilons = _mm256_set_pd(
+              not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingCMEpsilonMie(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+              not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingCMEpsilonMie(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+              not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingCMEpsilonMie(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+              _PPLibrary->getMixingCMEpsilonMie(*typeID1ptr, *(typeID2ptr + 0)));
           sigmaSquareds = _mm256_set_pd(
-              not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-              not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-              not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-              _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
+              not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingSigmaSquaredMie(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+              not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquaredMie(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+              not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquaredMie(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+              _PPLibrary->getMixingSigmaSquaredMie(*typeID1ptr, *(typeID2ptr + 0)));
           if constexpr (applyShift) {
             shift6s = _mm256_set_pd(
-                (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-                (not remainderIsMasked or rest > 2) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                (not remainderIsMasked or rest > 1) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
+                (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6Mie(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                (not remainderIsMasked or rest > 2) ? _PPLibrary->getMixingShift6Mie(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                (not remainderIsMasked or rest > 1) ? _PPLibrary->getMixingShift6Mie(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                _PPLibrary->getMixingShift6Mie(*typeID1ptr, *(typeID2ptr + 0)));
           }
         }
 
@@ -666,11 +694,10 @@
           mien = _mm256_mul_pd(mien, mie2);
         }
         // ToDo: this can be optimized!
-        const __m256d nmien = _mm256_mul_pd(_nexp, mien);
-        const __m256d mmiem = _mm256_mul_pd(_mexp, miem);
+        const __m256d nmien = _mm256_mul_pd(_cnepsilon, mien);
+        const __m256d mmiem = _mm256_mul_pd(_cmepsilon, miem);
         const __m256d miensubmiem = _mm256_sub_pd(nmien, mmiem);
-        const __m256d cmie = _mm256_mul_pd(_cepsilon, miensubmiem);
-        const __m256d fac = _mm256_mul_pd(cmie, invdr2);
+        const __m256d fac = _mm256_mul_pd(miensubmiem, invdr2);
 
         const __m256d facMasked =
             remainderIsMasked ? _mm256_and_pd(fac, _mm256_and_pd(cutoffDummyMask, _mm256_castsi256_pd(_masks[rest - 1])))
@@ -711,6 +738,7 @@
           const __m256d virialY = _mm256_mul_pd(fy, dry);
           const __m256d virialZ = _mm256_mul_pd(fz, drz);
           // Global Potential
+          //ToDo: Maybe/store _cepsilon*_six
           const __m256d potentialEnergy = wrapperFMA(_mm256_mul_pd(_cepsilon, _six), _mm256_sub_pd(mien, miem), shift6s);
 
           const __m256d potentialEnergyMasked =
@@ -1162,14 +1190,16 @@
     __m256d _mexp{};
     __m256d _shift6 = _mm256_setzero_pd();
     __m256d _cepsilon{};
+    __m256d _cnepsilon{};
+    __m256d _cmepsilon{};
     __m256d _sigmaSquared{};
 
 
   #endif
 
     const double _cutoffSquaredAoS = 0;
-    double _cepsilonAoS, _sigmaSquaredAoS, _shift6AoS = 0;
-    size_t _nexpAoS,_mexpAoS = 0;
+    double _cepsilonAoS, _cnepsilonAoS, _cmepsilonAoS, _sigmaSquaredAoS, _shift6AoS = 0;
+    unsigned  _nexpAoS,_mexpAoS = 0;
 
     ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
