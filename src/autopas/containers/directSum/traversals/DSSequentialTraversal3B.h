@@ -67,6 +67,11 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
    */
   void traverseParticleTriplets() override;
 
+  /**
+   * @copydoc autopas::CellTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+
  private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.

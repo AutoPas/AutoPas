@@ -35,6 +35,10 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #endif
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
     autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> *);
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
+    autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> *);
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -634,6 +638,8 @@ void Simulation::logMeasurements() {
                   << std::endl;
         std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
       }
+
+#ifdef MD_FLEXIBLE_FUNCTOR_AT
       if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
         ForceFunctorAbstract3B atFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
         autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> flopCounterFunctor(
@@ -649,6 +655,7 @@ void Simulation::logMeasurements() {
                   << std::endl;
         std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
       }
+#endif
     }
   }
 }

@@ -7,6 +7,8 @@
  * only declare, but not instantiate this template.
  */
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+
 #include "autopas/AutoPasImpl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor3B.h"
 #include "src/TypeDefinitions.h"
@@ -15,3 +17,5 @@
 template bool autopas::AutoPas<ParticleType>::computeInteractions(
     autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> *);
 //! @endcond
+
+#endif

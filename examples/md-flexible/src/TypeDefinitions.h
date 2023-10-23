@@ -152,11 +152,9 @@ using ForceFunctorAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas:
 using ForceFunctorAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
 using ForceFunctorAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AT
-using ForceFunctorAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 #endif
 
-#if MD_FLEXIBLE_FUNCTOR_AT
+#ifdef MD_FLEXIBLE_FUNCTOR_AT
 using ForceFunctorAbstract3B = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 #endif
 

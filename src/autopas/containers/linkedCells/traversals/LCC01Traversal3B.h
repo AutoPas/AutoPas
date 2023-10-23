@@ -76,6 +76,11 @@ class LCC01Traversal3B
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c01_3b; }
 
+  /**
+   * @copydoc autopas::CellTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+
  private:
   /**
    * Computes all interactions between the base
