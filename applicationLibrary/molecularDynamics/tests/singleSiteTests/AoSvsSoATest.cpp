@@ -7,6 +7,7 @@
 #include "AoSvsSoATest.h"
 
 #include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/MieFunctorAVX.h"
 
 #define PARTICLES_PER_DIM 16
 
@@ -70,6 +71,61 @@ TEST_F(AoSvsSoATest, testAoSvsSoA) {
   particlesSoA.clear();
 
   ljFunctor.SoAExtractor(cell, cell._particleSoABuffer, 0);
+
+  //  ASSERT_EQ(particlesAoS.size(), particlesSoA.size());
+  ASSERT_EQ(particlesAoS.size(), cell.numParticles());
+
+  // compare particle vectors
+  for (unsigned int i = 0; i < particlesAoS.size(); ++i) {
+    ASSERT_NEAR(particlesAoS[i].getF()[0], cell._particles[i].getF()[0], 1.0e-13);
+    ASSERT_NEAR(particlesAoS[i].getF()[1], cell._particles[i].getF()[1], 1.0e-13);
+    ASSERT_NEAR(particlesAoS[i].getF()[2], cell._particles[i].getF()[2], 1.0e-13);
+  }
+}
+
+/**
+ * Compares the result of the MieFunctor on a AoS and an SoA which contain the
+ * same set of particles.
+ */
+TEST_F(AoSvsSoATest, testAoSvsSoAMie) {
+  auto particlesAoS = std::vector<Molecule>();
+  generateParticles(&particlesAoS);
+  auto particlesSoA = particlesAoS;
+  mdLib::MieFunctorAVX<Molecule> mieFunctor(PARTICLES_PER_DIM * 10,6,12);
+  mieFunctor.setParticleProperties(1., 1.);
+  // AoS
+  std::chrono::high_resolution_clock::time_point start, stop;
+  start = std::chrono::high_resolution_clock::now();
+  for (unsigned int i = 0; i < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++i) {
+    for (unsigned int j = i + 1; j < PARTICLES_PER_DIM * PARTICLES_PER_DIM; ++j) {
+      if (i != j) {
+        mieFunctor.AoSFunctor(particlesAoS[i], particlesAoS[j], true);
+      }
+    }
+  }
+  stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+
+  std::cout << "AoS : " << duration << " \u03bcs" << std::endl;
+
+  // SoA
+  FMCell cell;
+  for (auto &&p : particlesSoA) {
+    cell.addParticle(p);
+  }
+
+  mieFunctor.SoALoader(cell, cell._particleSoABuffer, 0);
+  start = std::chrono::high_resolution_clock::now();
+  mieFunctor.SoAFunctorSingle(cell._particleSoABuffer, true);
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+
+  std::cout << "SoA : " << duration << " \u03bcs" << std::endl;
+
+  // copy back to particle array
+  particlesSoA.clear();
+
+  mieFunctor.SoAExtractor(cell, cell._particleSoABuffer, 0);
 
   //  ASSERT_EQ(particlesAoS.size(), particlesSoA.size());
   ASSERT_EQ(particlesAoS.size(), cell.numParticles());
