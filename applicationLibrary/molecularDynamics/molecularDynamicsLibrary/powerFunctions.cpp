@@ -15,7 +15,14 @@ struct AdditionChain{
   std::vector<unsigned> additionChain;
 };
 
-// best case is that the result b^m and b^n is already computed in the loop
+struct AdditionSequence{
+  std::vector<std::pair<unsigned, unsigned >> sequence;
+};
+
+//ToDO: https://link.springer.com/chapter/10.1007/978-3-642-00862-7_31
+AdditionSequence computeAdditionSequence(unsigned m, unsigned n){
+
+}
 
 double additionExpo(const AdditionChain& chain, double b){
   std::map<unsigned, double> computedChain{};
@@ -66,8 +73,6 @@ void exponentationBySquaringSIMD(unsigned m, unsigned n, const double * d) {
   for (int i = 0; i < 4; i++) {
     std::cout << "result[" << i << "] = " << "result_n: "<< d1[i] <<"result_m: " << d2[i] <<std::endl;
   }
-
-
 }
 
 // exponentationBySquaring
@@ -110,7 +115,7 @@ void exponentationBySquaringSIMD2(unsigned m, unsigned n, const double * d) {
 
 
 
-std::pair<double ,double > exponentationBySquaring(size_t m, size_t n, double base){
+std::pair<double ,double > exponentationBySquaring(unsigned m, unsigned n, double base){
 
   double result_m = 1.0;
   double result_n = 1.0;
@@ -136,13 +141,11 @@ std::pair<double ,double > exponentationBySquaring(size_t m, size_t n, double ba
 
 }
 // probably a bit faster, uses one loop
-std::pair<double ,double > exponentationBySquaring2(size_t m, size_t n, double base){
+std::pair<double ,double > exponentationBySquaring2(unsigned m, unsigned n, double base){
 
   double result_m = 1.0;
   double result_n = 1.0;
   double b = base;
-  // option 1 compute bigger and save smaller when computing
-  // option 2 compute smaller and then compute bigger
 
   while (m > 0) {
     if (m & 1) {
