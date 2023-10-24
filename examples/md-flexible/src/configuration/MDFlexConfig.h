@@ -145,6 +145,7 @@ class MDFlexConfig {
 
   /**
    * Add interaction type after recognizing a certain functor.
+   * @param interactionType
    */
   void addInteractionType(autopas::InteractionTypeOption interactionType) { _interactionTypes.insert(interactionType); }
 
