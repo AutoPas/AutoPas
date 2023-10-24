@@ -1591,8 +1591,8 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
     std::stringstream ss;
     size_t sum = 0;
     for (const auto &buffer : buffers) {
-      ss << buffer.numParticles() << ", ";
-      sum += buffer.numParticles();
+      ss << buffer.size() << ", ";
+      sum += buffer.size();
     }
     ss << " Total: " << sum;
     return ss.str();
