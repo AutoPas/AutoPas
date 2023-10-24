@@ -13,7 +13,7 @@
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {

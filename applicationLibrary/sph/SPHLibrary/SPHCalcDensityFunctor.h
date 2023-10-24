@@ -7,7 +7,7 @@
 #pragma once
 
 #include "SPHKernels.h"
-#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 
 namespace sphLib {

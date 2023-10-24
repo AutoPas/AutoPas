@@ -10,7 +10,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/cells/ReferenceParticleCell.h"
-#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
+#include "autopas/baseFunctors/TriwiseFunctor.h"
 //#include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
 

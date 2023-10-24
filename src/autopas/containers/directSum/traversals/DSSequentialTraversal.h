@@ -12,7 +12,7 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {

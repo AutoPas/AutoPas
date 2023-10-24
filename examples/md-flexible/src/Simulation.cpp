@@ -9,8 +9,8 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor3B.h"
+#include "autopas/baseFunctors/FlopCounterFunctor.h"
+#include "autopas/baseFunctors/FlopCounterFunctor3B.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 

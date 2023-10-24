@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
+#include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {

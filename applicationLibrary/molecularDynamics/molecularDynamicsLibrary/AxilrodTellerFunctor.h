@@ -7,8 +7,7 @@
 #pragma once
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
-#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
+#include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"

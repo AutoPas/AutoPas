@@ -8,7 +8,7 @@
 
 #include <atomic>
 
-#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 namespace autopas {

@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "autopas/pairwiseFunctors/Functor.h"
-#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
+#include "autopas/baseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas {

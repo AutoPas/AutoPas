@@ -10,7 +10,7 @@
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 
 #include "autopas/AutoPasImpl.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor3B.h"
+#include "autopas/baseFunctors/FlopCounterFunctor3B.h"
 #include "src/TypeDefinitions.h"
 
 //! @cond Doxygen_Suppress

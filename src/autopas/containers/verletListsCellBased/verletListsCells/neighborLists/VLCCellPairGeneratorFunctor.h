@@ -5,8 +5,8 @@
  */
 
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/pairwiseFunctors/Functor.h"
-#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
+#include "autopas/baseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 
 #pragma once
 

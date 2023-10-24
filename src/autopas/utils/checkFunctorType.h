@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "autopas/pairwiseFunctors/PairwiseFunctor.h"
-#include "autopas/pairwiseFunctors/TriwiseFunctor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
+#include "autopas/baseFunctors/TriwiseFunctor.h"
 
 namespace {
 /**

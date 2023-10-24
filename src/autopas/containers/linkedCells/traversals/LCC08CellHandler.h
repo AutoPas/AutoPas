@@ -7,7 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellTraversals/CellTraversal.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {

@@ -11,7 +11,7 @@
 #include "DSTraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor3B.h"
+#include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {

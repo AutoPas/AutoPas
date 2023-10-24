@@ -7,7 +7,7 @@
 #include "FlopCounterTest.h"
 
 #include "autopas/AutoPasDecl.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "autopas/baseFunctors/FlopCounterFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

@@ -8,7 +8,7 @@
  */
 
 #include "autopas/AutoPasImpl.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "autopas/baseFunctors/FlopCounterFunctor.h"
 #include "src/TypeDefinitions.h"
 
 //! @cond Doxygen_Suppress
