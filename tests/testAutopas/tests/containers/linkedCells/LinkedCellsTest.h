@@ -45,7 +45,7 @@ void LinkedCellsTest<TestingType>::checkParticleIDsInCells(
     if (auto iter = expectedParticleIDsInCells.find(i); iter != expectedParticleIDsInCells.end()) {
       auto expectedParticles = iter->second;
       auto expectedNumParticles = expectedParticles.size();
-      ASSERT_EQ(linkedCells.getCells()[i].size(), expectedNumParticles) << "i is " << i << "called from line: " << line;
+      ASSERT_EQ(linkedCells.getCells()[i].size(), expectedNumParticles) << "called from line: " << line;
 
       std::vector<std::tuple<int, autopas::OwnershipState>> foundParticles;
       {
