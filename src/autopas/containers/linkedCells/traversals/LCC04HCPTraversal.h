@@ -65,7 +65,7 @@ class LCC04HCPTraversal
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    */
   void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
 

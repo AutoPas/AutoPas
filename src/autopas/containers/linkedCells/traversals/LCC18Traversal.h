@@ -77,7 +77,7 @@ class LCC18Traversal
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    */
   void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
 

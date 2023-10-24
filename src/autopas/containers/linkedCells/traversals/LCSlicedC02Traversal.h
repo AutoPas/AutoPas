@@ -58,7 +58,7 @@ class LCSlicedC02Traversal
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_c02; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    */
   void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
 

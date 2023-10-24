@@ -58,7 +58,7 @@ class LCC08CellHandler {
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    */
   void setUseSorting(bool useSorting) { _cellFunctor.setUseSorting(useSorting); }
 

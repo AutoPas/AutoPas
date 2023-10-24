@@ -106,7 +106,7 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    */
   void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
 

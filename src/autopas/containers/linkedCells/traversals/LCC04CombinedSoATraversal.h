@@ -64,7 +64,7 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setUseSorting(bool useSorting) override {}

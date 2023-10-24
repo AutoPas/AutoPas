@@ -60,7 +60,7 @@ class LCC08Traversal
   [[nodiscard]] bool isApplicable() const override { return true; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    */
   void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
 

@@ -59,7 +59,7 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    */
   void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
 

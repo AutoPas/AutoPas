@@ -56,7 +56,7 @@ class VLCCellPairC08Traversal
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlp_c08; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setUseSorting()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setUseSorting(bool useSorting) override {}
