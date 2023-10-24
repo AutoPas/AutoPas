@@ -7,10 +7,10 @@
 
 #pragma once
 
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
-#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"

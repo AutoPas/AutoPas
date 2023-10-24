@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include "autopas/baseFunctors/Functor.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/baseFunctors/Functor.h"
 
 /**
  * Empty Functor, this functor is empty and can be used for testing purposes.

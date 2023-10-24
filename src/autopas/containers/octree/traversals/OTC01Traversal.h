@@ -7,13 +7,13 @@
 
 #pragma once
 
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/logging/OctreeLogger.h"
 

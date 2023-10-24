@@ -7,10 +7,10 @@
 
 #pragma once
 
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {

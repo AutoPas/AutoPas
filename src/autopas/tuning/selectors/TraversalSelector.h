@@ -11,6 +11,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal3B.h"
@@ -46,8 +48,6 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"

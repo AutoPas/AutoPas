@@ -5,9 +5,8 @@
  */
 
 #include "SlicedTraversalTest.h"
-
-#include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopas/baseFunctors/FlopCounterFunctor.h"
+#include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"

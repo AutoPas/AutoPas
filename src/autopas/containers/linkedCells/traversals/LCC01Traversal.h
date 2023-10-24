@@ -7,9 +7,9 @@
 #pragma once
 
 #include "LCTraversalInterface.h"
+#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
