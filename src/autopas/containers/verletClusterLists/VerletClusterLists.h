@@ -192,16 +192,17 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   bool updateHaloParticle(const Particle &haloParticle) override {
     using namespace autopas::utils::ArrayMath::literals;
 
-    Particle pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-
+    const auto &haloPos = haloParticle.getR();
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it =
-             getRegionIterator(pCopy.getR() - (this->getVerletSkin() / 2), pCopy.getR() + (this->getVerletSkin() / 2),
-                               IteratorBehavior::halo | IteratorBehavior::forceSequential, nullptr);
+    for (auto it = getRegionIterator(haloPos - (this->getVerletSkin() / 2.), haloPos + (this->getVerletSkin() / 2.),
+                                     IteratorBehavior::halo | IteratorBehavior::forceSequential, nullptr);
          it.isValid(); ++it) {
-      if (pCopy.getID() == it->getID()) {
-        *it = pCopy;
+      if (haloParticle.getID() == it->getID()) {
+        // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that
+        // overlap with this region.
+        it->setR(haloPos);
+        it->setV(haloParticle.getV());
+        it->setF(haloParticle.getF());
         return true;
       }
     }
