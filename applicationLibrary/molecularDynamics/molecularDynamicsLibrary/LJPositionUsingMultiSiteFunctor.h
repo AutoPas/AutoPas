@@ -313,6 +313,46 @@ class LJPositionUsingMultiSiteFunctor
   }
 
   std::vector<double> flattenAbsPosVector(const autopas::SoAView<SoAArraysType> soa, const char dimension){
+
+    //---------------------start temporary solution to problem that needs to be discussed next tuesday
+    auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    std::vector<double> returnvalue{};
+    for(int mol=0; mol<soa.size(); mol++){
+      const std::vector<std::array<double, 3>> unrotated_site_pos = _PPLibrary->getSitePositions(typeptr[mol]);
+      const std::vector<std::array<double, 3>> rotated_site_pos = autopas::utils::quaternion::rotateVectorOfPositions(
+          {q0ptr[mol], q1ptr[mol],q2ptr[mol],q3ptr[mol]} ,unrotated_site_pos);
+      if(dimension == 'X'){
+        for(int siteIndex =0; siteIndex < rotated_site_pos.size(); siteIndex++){
+          returnvalue.push_back(xptr[mol] + rotated_site_pos[siteIndex][0]);
+        }
+      }else if(dimension == 'Y'){
+        for(int siteIndex =0; siteIndex < rotated_site_pos.size(); siteIndex++){
+          returnvalue.push_back(yptr[mol] + rotated_site_pos[siteIndex][1]);
+        }
+      }else{
+        for(int siteIndex =0; siteIndex < rotated_site_pos.size(); siteIndex++){
+          returnvalue.push_back(zptr[mol] + rotated_site_pos[siteIndex][2]);
+        }
+      }
+    }
+
+    for(int i=0; i < returnvalue.size(); i++){
+      if(std::isnan(returnvalue[i])) {
+        std::cout << "flattenAbsPosVector detected nan" << std::endl;
+      }
+    }
+    return returnvalue;
+    //---------------------end temporary solution to problem that needs to be discussed next tuesday
+
+    /*
     std::vector<double> flattened_vector{};
     const std::vector<double> * absSitePosPtrUnflattened;
 
@@ -330,6 +370,7 @@ class LJPositionUsingMultiSiteFunctor
       }
     }
     return std::move(flattened_vector);
+     */
   }
 
   /**
@@ -1002,9 +1043,9 @@ we have 2 seperate site indices
       siteTypesB.reserve(siteCountB);
     }
 
-    siteForceBx.reserve(siteCountB);
-    siteForceBy.reserve(siteCountB);
-    siteForceBz.reserve(siteCountB);
+    siteForceBx.resize(siteCountB);
+    siteForceBy.resize(siteCountB);
+    siteForceBz.resize(siteCountB);
 
     if constexpr (calculateGlobals) {
       // this is only needed for vectorization when calculating globals
@@ -1152,9 +1193,9 @@ we have 2 seperate site indices
 
           const auto isSiteOwnedB = !calculateGlobals || isSiteOwnedBArr[siteB];
 
-          const auto displacementX = absSitePosXA[siteA] - absSitePosXA[siteB];
-          const auto displacementY = absSitePosYA[siteA] - absSitePosYA[siteB];
-          const auto displacementZ = absSitePosZA[siteA] - absSitePosZA[siteB];
+          const auto displacementX = absSitePosXA[siteA] - absSitePosXB[siteB];
+          const auto displacementY = absSitePosYA[siteA] - absSitePosYB[siteB];
+          const auto displacementZ = absSitePosZA[siteA] - absSitePosZB[siteB];
 
           const auto distanceSquaredX = displacementX * displacementX;
           const auto distanceSquaredY = displacementY * displacementY;
@@ -1226,7 +1267,7 @@ we have 2 seperate site indices
       const auto relativeSitePositions = relativeSitePositionFromAbsSitePosition(
           &absSitePosXB[siteIndex], &absSitePosYB[siteIndex], &absSitePosZB[siteIndex],
           {xBptr[mol], yBptr[mol], zBptr[mol]},noSitesInMolB);
-      for (size_t site = 0; noSitesInMolB; ++site) {
+      for (size_t site = 0; site<noSitesInMolB; ++site) {
         fxBptr[mol] += siteForceBx[siteIndex];
         fyBptr[mol] += siteForceBy[siteIndex];
         fzBptr[mol] += siteForceBz[siteIndex];

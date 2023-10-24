@@ -239,14 +239,14 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
       _oldF[1] = value;
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       _oldF[2] = value;
-      //} else if constexpr (attribute == AttributeNames::quaternion0) {
-      //  _q[0] = value;
-      //} else if constexpr (attribute == AttributeNames::quaternion1) {
-      //  _q[1] = value;
-      //} else if constexpr (attribute == AttributeNames::quaternion2) {
-      //  _q[2] = value;
-      //} else if constexpr (attribute == AttributeNames::quaternion3) {
-      //  _q[3] = value;
+    } else if constexpr (attribute == AttributeNames::quaternion0) {
+      _q[0] = value;
+    } else if constexpr (attribute == AttributeNames::quaternion1) {
+      _q[1] = value;
+    } else if constexpr (attribute == AttributeNames::quaternion2) {
+      _q[2] = value;
+    } else if constexpr (attribute == AttributeNames::quaternion3) {
+      _q[3] = value;
     } else if constexpr (attribute == AttributeNames::absoluteSitePositionsX) {
       _absSitePositionsX = value;
     } else if constexpr (attribute == AttributeNames::absoluteSitePositionsY) {
