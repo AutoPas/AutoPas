@@ -1,5 +1,5 @@
 /**
- * @file iteratePairwiseLJFunctorGlobals.cpp
+ * @file computeInteractionsLJFunctorGlobals.cpp
  *
  * Contains an explicit template instantiation for the computeInteractions() method with the appropriate auto-vectorized
  * Lennard-Jones Functor with globals and Particle Type, as determined by whether md-flexible is compiled with or

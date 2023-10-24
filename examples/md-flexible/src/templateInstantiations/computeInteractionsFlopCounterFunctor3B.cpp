@@ -1,5 +1,5 @@
 /**
- * @file iteratePairwiseFlopCounterFunctor3B.cpp
+ * @file computeInteractionsFlopCounterFunctor3B.cpp
  *
  * Contains a explicit template instantiation for the computeInteractions() method with the FlopCounterFunctor3B of the
  * main AutoPas class and the particle type used by md-flexible, as determined by whether md-flexible is compiled with

@@ -325,8 +325,7 @@ TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOpt
 template <class ParticleCell, InteractionTypeOption::Value interactionType>
 template <class Functor>
 std::unique_ptr<TraversalInterface<interactionType>>
-TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOption traversalType,
-                                                                    Functor &functor,
+TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOption traversalType, Functor &functor,
                                                                     const TraversalSelectorInfo &traversalInfo,
                                                                     DataLayoutOption dataLayout,
                                                                     Newton3Option newton3) {

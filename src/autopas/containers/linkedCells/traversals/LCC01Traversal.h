@@ -78,8 +78,8 @@ the initialized buffer must show the same behavior as a buffer which was updated
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
           bool combineSoA = false>
-class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout,
-                                                useNewton3, (combineSoA ? 2 : 3)>,
+class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise,
+                                                dataLayout, useNewton3, (combineSoA ? 2 : 3)>,
                        public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -94,8 +94,8 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, I
    */
   explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3, (combineSoA ? 2 : 3)>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3,
+                          (combineSoA ? 2 : 3)>(dims, pairwiseFunctor, interactionLength, cellLength),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
         _pairwiseFunctor(pairwiseFunctor),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)) {

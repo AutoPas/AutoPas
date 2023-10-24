@@ -121,8 +121,9 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   EXPECT_EQ(container.size(), numMolecules + numHaloMolecules) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        auto traversalUniquePtr = autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::generateTraversal(
-            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+        auto traversalUniquePtr = autopas::
+            TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::generateTraversal(
+                traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
 
         // set useSorting of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
         if (auto *cellPairTraversalPtr =
