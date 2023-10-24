@@ -121,8 +121,9 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
    * Estimates the optimal 2D tower grid side length.
    *
    * sideLength = (clusterSize / (numParticles / volume))^(1/3)
-   * The side length is then fitted to exactly fill the (non-halo) box with the same number of towers
-   * as the formula above.
+   *
+   * The side length is then adjusted such that towers exactly fill the (non-halo) box by increasing
+   * the side length such that the number of towers does not change.
    *
    * @param numParticles The number of particles in the container.
    * @param clusterSize the number of particles per cluster.
