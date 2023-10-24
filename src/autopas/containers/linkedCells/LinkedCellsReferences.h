@@ -292,6 +292,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     std::vector<ParticleType> invalidParticles;
+
+    // for exception handling in parallel region
+    bool exceptionCatched{false};
+    std::string exceptionMsg{""};
+
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif  // AUTOPAS_OPENMP
@@ -312,8 +317,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
         auto &particleVec = this->getCells()[cellId]._particles;
         for (auto pIter = particleVec.begin(); pIter != particleVec.end();) {
-          if ((*pIter)->getOwnershipState() == OwnershipState::owned and
-              utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
+          if ((*pIter)->isOwned() and utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(**pIter);
 
             // multi layer swap-delete
@@ -333,13 +337,22 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       // the barrier is needed because iterators are not thread safe w.r.t. addParticle()
 
       // this loop is executed for every thread and thus parallel. Don't use #pragma omp for here!
-      for (auto &&p : myInvalidParticles) {
-        // if not in halo
-        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-          this->template addParticle<false>(p);
-        } else {
-          myInvalidNotOwnedParticles.push_back(p);
+      // addParticle might throw. Set exceptionCatched to true, so we can handle that after the OpenMP region
+      try {
+        for (auto &&p : myInvalidParticles) {
+          // if not in halo
+          if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+            this->template addParticle<false>(p);
+          } else {
+            myInvalidNotOwnedParticles.push_back(p);
+          }
         }
+      } catch (const std::exception &e) {
+        exceptionCatched = true;
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+        exceptionMsg.append(e.what());
       }
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
@@ -349,6 +362,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
                                 myInvalidNotOwnedParticles.end());
       }
+    }
+
+    if (exceptionCatched) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(exceptionMsg);
     }
 
     // we have to remove halo particles after the above for-loop since removing halo particles changes the underlying
