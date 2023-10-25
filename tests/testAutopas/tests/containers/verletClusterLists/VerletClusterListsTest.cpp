@@ -292,8 +292,8 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
   const Particle p3{boxMax, {0., 0., 0.}, numParticles++};
   verletLists.addHaloParticle(p3);
 
-  // we need 256 to 500 Particles for a 5x5 grid (= tower side length of 2)
-  // so we add as man as we are missing
+  // we need 256 to 500 Particles for a 5x5 grid of towers with side length 2
+  // so we add as many as we are missing
   for (; numParticles < 257;) {
     const Particle pDummy{(boxMax - boxMin) / 2., {0., 0., 0.}, numParticles++};
     verletLists.addParticle(pDummy);
