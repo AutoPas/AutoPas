@@ -58,7 +58,7 @@ template <bool regionIter, class Particle, class Arr>
                                                         const Arr &regionMin, const Arr &regionMax) {
   // If this is a region iterator check box condition first, otherwise race conditions can occur
   // if multiple region iterator overlap and ownership state is touched.
-  // (e.g. during collection of leavein particles)
+  // (e.g. during collection of leaving particles)
   if constexpr (regionIter) {
     if (not utils::inBox(p.getR(), regionMin, regionMax)) {
       return false;
