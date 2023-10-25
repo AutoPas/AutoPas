@@ -294,7 +294,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     std::vector<ParticleType> invalidParticles;
 
     // for exception handling in parallel region
-    bool exceptionCatched{false};
+    bool exceptionCaught{false};
     std::string exceptionMsg{""};
 
 #ifdef AUTOPAS_OPENMP
@@ -337,7 +337,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       // the barrier is needed because iterators are not thread safe w.r.t. addParticle()
 
       // this loop is executed for every thread and thus parallel. Don't use #pragma omp for here!
-      // addParticle might throw. Set exceptionCatched to true, so we can handle that after the OpenMP region
+      // addParticle might throw. Set exceptionCaught to true, so we can handle that after the OpenMP region
       try {
         for (auto &&p : myInvalidParticles) {
           // if not in halo
@@ -348,7 +348,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
           }
         }
       } catch (const std::exception &e) {
-        exceptionCatched = true;
+        exceptionCaught = true;
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
 #endif
@@ -364,7 +364,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       }
     }
 
-    if (exceptionCatched) {
+    if (exceptionCaught) {
       throw autopas::utils::ExceptionHandler::AutoPasException(exceptionMsg);
     }
 
