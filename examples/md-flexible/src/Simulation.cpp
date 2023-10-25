@@ -33,8 +33,10 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
+
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
     autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> *);
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
     autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> *);
