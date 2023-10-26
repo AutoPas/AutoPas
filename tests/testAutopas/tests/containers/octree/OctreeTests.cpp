@@ -506,7 +506,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   // Obtain a compatible traversal
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+        return autopas::TraversalSelector<decltype(particleCellDummy), InteractionTypeOption::pairwise>::generateTraversal(
             traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
       });
 

@@ -470,9 +470,9 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   config.cutoff.value = cutoff;
   config.verletSkinRadiusPerTimestep.value = 0.01;
   config.verletRebuildFrequency.value = 10;
-  config.addSiteType(0, 0.1, 0.2, 1.);
-  config.addSiteType(1, 1000., 0.4, 1.);
-  config.addSiteType(2, 0.0001, 0.4, 1.);
+  config.addSiteType(0, 0.1, 0.2, 0.1, 1.);
+  config.addSiteType(1, 1000., 0.4, 0.1, 1.);
+  config.addSiteType(2, 0.0001, 0.4, 0.1, 1.);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
