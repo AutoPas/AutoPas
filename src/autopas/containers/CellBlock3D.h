@@ -42,7 +42,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param cellSizeFactor cell size factor relative to interactionLength
    */
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
-              double interactionLength, double cellSizeFactor = 1.0) {
+              double interactionLength, double cellSizeFactor = 1.0)
+      : _cells(vec), _boxMin(bMin), _boxMax(bMax), _interactionLength(interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
 
     for (int i = 0; i < 3; ++i) {
@@ -68,9 +69,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
     if (index1d < _firstOwnedCellIndex or index1d > _lastOwnedCellIndex) {
       return true;
     }
-    auto index3d = index3D(index1d);
+    const auto index3d = index3D(index1d);
     bool isHaloCell = false;
-    for (size_t i = 0; i < 3; i++) {
+    for (size_t i = 0; i < index3d.size(); ++i) {
       if (index3d[i] < _cellsPerInteractionLength or
           index3d[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
         isHaloCell = true;
@@ -285,23 +286,23 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * Number of cells to be checked in each direction where we can find valid interaction partners.
    * This is also the number of Halo cells per direction (always symmetric in each dimension).
    */
-  std::array<index_t, 3> _cellsPerDimensionWithHalo;
-  index_t _firstOwnedCellIndex;
-  index_t _lastOwnedCellIndex;
+  std::array<index_t, 3> _cellsPerDimensionWithHalo{};
+  index_t _firstOwnedCellIndex{};
+  index_t _lastOwnedCellIndex{};
   std::vector<ParticleCell> *_cells;
 
   std::array<double, 3> _boxMin, _boxMax;
-  std::array<double, 3> _haloBoxMin, _haloBoxMax;
+  std::array<double, 3> _haloBoxMin{}, _haloBoxMax{};
 
-  double _interactionLength;
+  double _interactionLength{};
 
-  unsigned long _cellsPerInteractionLength;
+  unsigned long _cellsPerInteractionLength{};
 
-  std::array<double, 3> _cellLength;
+  std::array<double, 3> _cellLength{};
 
   // 1 over above. Since this value is needed for sorting particles in cells, it
   // is computed quite often
-  std::array<double, 3> _cellLengthReciprocal;
+  std::array<double, 3> _cellLengthReciprocal{};
 };
 
 template <class ParticleCell>
