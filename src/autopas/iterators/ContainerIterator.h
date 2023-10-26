@@ -240,8 +240,8 @@ class ContainerIterator {
                     ParticleVecType *additionalVectorsToIterate, const std::array<double, 3> &regionMin,
                     const std::array<double, 3> &regionMax)
       : _container(&container),
-        _behavior(behavior),
         _currentVectorIndex(0),
+        _behavior(behavior),
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
     if (additionalVectorsToIterate) {
       // store pointers to all additional vectors
@@ -396,6 +396,30 @@ class ContainerIterator {
   ContainerType *_container;
 
   /**
+   * Index within the current vector.
+   * If the Iterator is currently invalid, the state of this index is undefined.
+   */
+  size_t _currentParticleIndex{0};
+
+  /**
+   * Index of the Vector where the current particle is found.
+   * "Vector" typically refers to either a cell in the particle container or one of the additional vectors.
+   * If the Iterator is currently invalid, the state of this index is undefined.
+   */
+  size_t _currentVectorIndex{};
+
+  /**
+   * The particle the iterator currently points to.
+   * This is always either a valid particle satisfying all iterator requirements or nullptr.
+   */
+  ParticleType *_currentParticle = nullptr;
+
+  /**
+   * Vector of pointers to additional Particle Vectors this ParticleIterator will iterate over.
+   */
+  ParticleVecType _additionalVectors;
+
+  /**
    * Indicator which type of particles this iterator covers.
    */
   IteratorBehavior _behavior;
@@ -407,33 +431,9 @@ class ContainerIterator {
   bool _iteratingAdditionalVectors{false};
 
   /**
-   * Vector of pointers to additional Particle Vectors this ParticleIterator will iterate over.
-   */
-  ParticleVecType _additionalVectors;
-
-  /**
-   * The particle the iterator currently points to.
-   * This is always either a valid particle satisfying all iterator requirements or nullptr.
-   */
-  ParticleType *_currentParticle = nullptr;
-
-  /**
-   * Index of the Vector where the current particle is found.
-   * "Vector" typically refers to either a cell in the particle container or one of the additional vectors.
-   * If the Iterator is currently invalid, the state of this index is undefined.
-   */
-  size_t _currentVectorIndex{};
-
-  /**
    * Offset with which to iterate over vectors. Determined through number of threads used for iterating.
    */
   size_t _vectorIndexOffset{};
-
-  /**
-   * Index within the current vector.
-   * If the Iterator is currently invalid, the state of this index is undefined.
-   */
-  size_t _currentParticleIndex{0};
 
   /**
    * Dummy type for a data type of size zero.
