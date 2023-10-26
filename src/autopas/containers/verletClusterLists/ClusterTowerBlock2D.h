@@ -103,6 +103,11 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
         *std::max_element(numTowersPerInteractionLength2D.begin(), numTowersPerInteractionLength2D.end());
     _towersPerDim = towersPerDim;
     _towers.resize(_towersPerDim[0] * _towersPerDim[1]);
+
+    // converting indices relies on _towersPerDim to already have the new values.
+    _firstOwnedTowerIndex = towerIndex2DTo1D(_numTowersPerInteractionLength, _numTowersPerInteractionLength);
+    _lastOwnedTowerIndex = towerIndex2DTo1D(_towersPerDim[0] - _numTowersPerInteractionLength,
+                                            _towersPerDim[1] - _numTowersPerInteractionLength);
   }
 
   /**
@@ -349,24 +354,34 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
   const std::array<double, 2> &getTowerSideLengthReciprocal() const { return _towerSideLengthReciprocal; }
 
   bool cellCanContainHaloParticles(index_t index1d) const override {
-    // TODO
+    // Always true because towers cover the whole z dimension
     return true;
   }
 
   bool cellCanContainOwnedParticles(index_t index1d) const override {
-    // TODO
-    return true;
+    // check if the tower is strictly in the halo region
+    if (index1d < _firstOwnedTowerIndex or index1d > _lastOwnedTowerIndex) {
+      return false;
+    }
+    const auto index2D = towerIndex1DTo2D(index1d);
+    bool isHaloTower = false;
+    for (size_t i = 0; i < index2D.size(); ++i) {
+      if (index2D[i] < _numTowersPerInteractionLength or
+          index2D[i] >= _towersPerDim[i] - _numTowersPerInteractionLength) {
+        isHaloTower = true;
+        break;
+      }
+    }
+    return not isHaloTower;
   }
 
  private:
   /**
    * Index of the first tower in _towers that can contain owned particles.
-   * TODO: INITIALIZE AND USE THIS
    */
   size_t _firstOwnedTowerIndex{};
   /**
    * Index of the last tower in _towers that can contain owned particles.
-   * TODO: INITIALIZE AND USE THIS
    */
   size_t _lastOwnedTowerIndex{};
   /**

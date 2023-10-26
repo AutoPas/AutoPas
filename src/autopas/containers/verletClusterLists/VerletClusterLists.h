@@ -295,8 +295,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       if constexpr (regionIter) {
         return {_towerBlock.getTowerIndex1DAtPosition(boxMin), _towerBlock.getTowerIndex1DAtPosition(boxMax)};
       } else {
-        // whole range of cells
-        return {0, _towerBlock.size() - 1};
+        if (not(iteratorBehavior & IteratorBehavior::halo)) {
+          // only potentially owned region
+          return {_towerBlock.getFirstOwnedTowerIndex(), _towerBlock.getLastOwnedTowerIndex()};
+        } else {
+          // whole range of cells
+          return {0, _towerBlock.size() - 1};
+        }
       }
     }();
 
