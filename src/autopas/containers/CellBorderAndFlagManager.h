@@ -6,6 +6,7 @@
 
 #pragma once
 #include <cstdlib>
+#include "autopas/options/IteratorBehavior.h"
 
 namespace autopas::internal {
 /**
