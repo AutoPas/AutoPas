@@ -118,12 +118,15 @@ class ClusterTower : public FullParticleCell<Particle> {
     for (size_t index = 0; index < numClusters; index++) {
       _clusters[index].reset(&(this->_particles[_clusterSize * index]));
 
+      const bool clusterContainsOwnedParticles =
+          not foundFirstTailHaloCluster and isAnyOfClusterOwned(_clusters[index]);
+
       // identify the range of owned clusters
-      if (not foundFirstOwnedCluster and isAnyOfClusterOwned(_clusters[index])) {
+      if (not foundFirstOwnedCluster and clusterContainsOwnedParticles) {
         _firstOwnedCluster = _clusters.begin() + index;
         foundFirstOwnedCluster = true;
       }
-      if (not foundFirstTailHaloCluster and foundFirstOwnedCluster and not isAnyOfClusterOwned(_clusters[index])) {
+      if (not foundFirstTailHaloCluster and foundFirstOwnedCluster and not clusterContainsOwnedParticles) {
         _firstTailHaloCluster = _clusters.begin() + index;
         foundFirstTailHaloCluster = true;
       }
