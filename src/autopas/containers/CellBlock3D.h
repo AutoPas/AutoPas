@@ -43,7 +43,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
    */
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
               double interactionLength, double cellSizeFactor = 1.0)
-      : _cells(vec), _boxMin(bMin), _boxMax(bMax), _interactionLength(interactionLength) {
+      : _cells(&vec), _boxMin(bMin), _boxMax(bMax), _interactionLength(interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
 
     for (int i = 0; i < 3; ++i) {
