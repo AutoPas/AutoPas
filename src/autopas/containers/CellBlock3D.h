@@ -85,25 +85,6 @@ class CellBlock3D : public CellBorderAndFlagManager {
   }
 
   /**
-   * Checks if cell with index1d can be ignored for iteration with currently selected behavior.
-   * @param index1d 1d index of checked cell
-   * @param behavior @see IteratorBehavior
-   * @return false if this cell can contain particles that would be affected by current behavior
-   */
-  [[nodiscard]] bool ignoreCellForIteration(index_t index1d, IteratorBehavior behavior) const {
-    if ((behavior & IteratorBehavior::halo) and cellCanContainHaloParticles(index1d)) {
-      return false;
-    }
-    if ((behavior & IteratorBehavior::owned) and cellCanContainOwnedParticles(index1d)) {
-      return false;
-    }
-    if (behavior & IteratorBehavior::dummy) {
-      return false;
-    }
-    return true;
-  }
-
-  /**
    * get the ParticleCell of a specified 1d index
    * @param index1d the index of the cell
    * @return the specified cell

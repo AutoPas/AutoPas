@@ -608,6 +608,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                        const std::array<double, 3> &higherCorner,
                        IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
+      if (_towerBlock.ignoreCellForIteration(i, behavior)) {
+        continue;
+      }
       auto &tower = _towerBlock[i];
       const auto [towerLowCorner, towerHighCorner] = _towerBlock.getTowerBoundingBox(i);
       // particles can move over cell borders. Calculate the volume this cell's particles can be.
@@ -647,6 +650,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
     // If the particles are sorted into the towers, we can simply use the iteration over towers.
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
+      if (_towerBlock.ignoreCellForIteration(i, behavior)) {
+        continue;
+      }
       auto &tower = _towerBlock[i];
       const auto [towerLowCorner, towerHighCorner] = _towerBlock.getTowerBoundingBox(i);
       // particles can move over cell borders. Calculate the volume this cell's particles can be.
@@ -679,6 +685,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                       const std::array<double, 3> &higherCorner,
                       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo) {
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
+      if (_towerBlock.ignoreCellForIteration(i, behavior)) {
+        continue;
+      }
       auto &tower = _towerBlock[i];
       const auto [towerLowCorner, towerHighCorner] = _towerBlock.getTowerBoundingBox(i);
       // particles can move over cell borders. Calculate the volume this cell's particles can be.
@@ -717,6 +726,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
     // If the particles are sorted into the towers, we can simply use the iteration over towers.
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
+      if (_towerBlock.ignoreCellForIteration(i, behavior)) {
+        continue;
+      }
       auto &tower = _towerBlock[i];
       const auto [towerLowCorner, towerHighCorner] = _towerBlock.getTowerBoundingBox(i);
       // particles can move over cell borders. Calculate the volume this cell's particles can be.
