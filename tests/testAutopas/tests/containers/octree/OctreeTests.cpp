@@ -515,7 +515,9 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   std::vector<std::tuple<unsigned long, unsigned long, double>> particlePairs;
   bool useNewton3 = newton3Option == Newton3Option::enabled;
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, useNewton3))
-      .Times(testing::AtLeast(1))
+      // For the call with a reference container which may use SortedCellView the functor is maybe not called depending
+      // on the cutoff and particle distribution. But for Octree we check if the functor is called at least once.
+      .Times(testing::AtLeast(containerOption != ContainerOption::octree ? 0 : 1))
       .WillRepeatedly(testing::WithArgs<0, 1>([&](auto &i, auto &j) {
         ++numPairs;
 

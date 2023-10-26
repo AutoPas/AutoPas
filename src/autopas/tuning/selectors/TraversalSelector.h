@@ -118,7 +118,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
           info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::lc_c01: {
-      return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+      return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>>(
           info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::lc_c01_combined_SoA: {
@@ -274,6 +274,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
         return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::aos,
                                                                            true>(traversalType, pairwiseFunctor,
                                                                                  traversalInfo);
+
       } else {
         return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::aos,
                                                                            false>(traversalType, pairwiseFunctor,
@@ -285,6 +286,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
         return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::soa,
                                                                            true>(traversalType, pairwiseFunctor,
                                                                                  traversalInfo);
+
       } else {
         return TraversalSelector<ParticleCell>::template generateTraversal<PairwiseFunctor, DataLayoutOption::soa,
                                                                            false>(traversalType, pairwiseFunctor,
