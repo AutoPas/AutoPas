@@ -202,9 +202,8 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
     std::normal_distribution<double> normalDistribution{0, 1};
     for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
-      const std::array<double, 3> normal3DVecTranslational = {normalDistribution(randomEngine),
-                                                              normalDistribution(randomEngine),
-                                                              normalDistribution(randomEngine)};
+      const std::array<double, 3> normal3DVecTranslational = {
+          normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
       iter->addV(normal3DVecTranslational * translationalVelocityScale[iter->getTypeId()]);
 #if MD_FLEXIBLE_MODE == MULTISITE
       const std::array<double, 3> normal3DVecRotational = {
