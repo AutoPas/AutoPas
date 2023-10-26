@@ -227,7 +227,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #endif
     for (size_t i = 0; i < _towers.size(); ++i) {
       auto &tower = _towers[i];
-      const auto towerSize = tower.getNumActualParticles();
+      const auto towerSize = tower.size();
       auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies.
       for (size_t j = 0; j < towerSize - numTailDummies;) {
