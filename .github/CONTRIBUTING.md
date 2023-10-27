@@ -106,10 +106,11 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 
 ### Adding a new Traversal
 * Create a new traversal class under `src/autopas/containers/[Container]/traversals` for the container the traversal is intended.
-* Think about inheriting from a similar traversal. At least derive your new traversal from `src/autopas/containers/cellPairTraversals/TraversalInterface.h`.
+* Think about inheriting from a similar traversal. At least derive your new traversal from `src/autopas/containers/TraversalInterface.h`.
 * Go to `src/autopas/options/TraversalOption.h`.
   * Add a new enum in `TraversalOption::Value`.
   * Add a new string representation in the `map` of `TraversalOption::getOptionNames()`.
+  * If the new traversal is a triwise traversal, add it to `TraversalOption::getAllTriwiseTraversals()`.
 * Add the enum to every compatible container in `src/autopas/containers/CompatibleTraversals.h`.
   * If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals (E.g. `CompatibleTraversals::allTraversalsSupportingOnlySoA()`).
 * Add a case for the new traversal in `src/autopas/tuning/selectors/TraversalSelector.h::generateTraversal()`.
