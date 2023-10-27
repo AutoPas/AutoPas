@@ -55,12 +55,6 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlp_c08; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
-   * This traversal does not use the CellFunctor, so the function has no effect here
-   */
-  void setUseSorting(bool useSorting) override {}
-
-  /**
    * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */

@@ -59,11 +59,6 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
   [[nodiscard]] bool isApplicable() const override { return true; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
-   */
-  void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
-
-  /**
    * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }

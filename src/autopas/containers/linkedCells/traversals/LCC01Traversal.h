@@ -131,11 +131,6 @@ class LCC01Traversal
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
-   */
-  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
-
-  /**
    * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }

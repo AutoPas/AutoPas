@@ -54,14 +54,6 @@ class CellFunctor {
                        const std::array<double, 3> &sortingDirection = {0., 0., 0.});
 
   /**
-   * Sets a boolean value that indicates whether the CellFunctor should apply sorting or not.
-   * By default sorting is enabled
-   *
-   * @param useSorting If the CellFunctor should apply sorting when processing cells
-   */
-  void setUseSorting(bool useSorting);
-
-  /**
    * Set the sorting-threshold
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
@@ -114,22 +106,10 @@ class CellFunctor {
   const double _sortingCutoff;
 
   /**
-   * This value is used to switch on and off the sorting functionality of the CellFunctor. Sorting is enabled by default
-   */
-  bool _useSorting{true};
-
-  /**
    * Min. number of particles to start sorting. This is the sum of the number of particles in two cells.
    */
   size_t _sortingThreshold{8};
 };
-
-template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
-          bool useNewton3, bool bidirectional>
-void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::setUseSorting(
-    bool useSorting) {
-  _useSorting = useSorting;
-}
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
           bool useNewton3, bool bidirectional>
@@ -211,7 +191,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 template <bool newton3>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellAoS(
     ParticleCell &cell) {
-  if (_useSorting and cell.size() > _sortingThreshold) {
+  if (cell.size() > _sortingThreshold) {
     SortedCellView<Particle, ParticleCell> cellSorted(
         cell, utils::ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
 
@@ -259,8 +239,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
           bool useNewton3, bool bidirectional>
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
-  if (_useSorting and (cell1.size() + cell2.size() > _sortingThreshold) and
-      (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
+  if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
     SortedCellView<Particle, ParticleCell> baseSorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> outerSorted(cell2, sortingDirection);
 
@@ -296,8 +275,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                  bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
                                                         const std::array<double, 3> &sortingDirection) {
-  if (_useSorting and (cell1.size() + cell2.size() > _sortingThreshold) and
-      (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
+  if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
     SortedCellView<Particle, ParticleCell> baseSorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> outerSorted(cell2, sortingDirection);
 

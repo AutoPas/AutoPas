@@ -85,12 +85,6 @@ class VCLSlicedBalancedTraversal
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
-   * This traversal does not use the CellFunctor, so the function has no effect here
-   */
-  void setUseSorting(bool useSorting) override {}
-
-  /**
    * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */

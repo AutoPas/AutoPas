@@ -66,11 +66,6 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
   void traverseParticlePairs() override;
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
-   */
-  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
-
-  /**
    * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }

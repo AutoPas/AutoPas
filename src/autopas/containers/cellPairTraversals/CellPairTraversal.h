@@ -41,14 +41,6 @@ class CellPairTraversal : public TraversalInterface {
   virtual void setCellsToTraverse(std::vector<ParticleCell> &cells) { _cells = &cells; }
 
   /**
-   * Sets a boolean value that indicates whether the CellFunctor should apply sorting or not. This value only affects
-   * traversals that use the CellFunctor.
-   *
-   * @param useSorting If the CellFunctor should apply sorting when processing cells
-   */
-  virtual void setUseSorting(bool useSorting) = 0;
-
-  /**
    * Set the sorting-threshold for traversals that use the CellFunctor
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
