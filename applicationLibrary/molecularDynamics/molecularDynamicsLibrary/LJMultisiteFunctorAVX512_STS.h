@@ -37,9 +37,9 @@ namespace mdLib {
  * i.e. calculate forces only for
  */
 template <class Particle, bool applyShift = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true, bool useMasks = true, size_t vecLength = 8>
+          bool relevantForTuning = true>
 class LJMultisiteFunctorAVX512_STS
-    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useNewton3, calculateGlobals, relevantForTuning, useMasks, vecLength>> {
+    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -188,7 +188,7 @@ class LJMultisiteFunctorAVX512_STS
     }
   }
 #else
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useNewton3, calculateGlobals,
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useNewton3, calculateGlobals,
                                                             relevantForTuning>>(cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX512 support!");
   }
@@ -327,7 +327,11 @@ class LJMultisiteFunctorAVX512_STS
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
-    // Do nothing Todo
+    if (newton3) {
+      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+    } else {
+      SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+    }
   }
 
  private:
@@ -688,6 +692,173 @@ class LJMultisiteFunctorAVX512_STS
     }
   }
 
+  /**
+   * @brief Implementation for SoAFunctorVerlet
+   */
+   template <bool newton3>
+   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexPrimary,
+                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+#ifndef __AVX512F__
+#pragma message "SoAFunctorVerlet functor called without AVX512 support!"
+#endif
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    // Skip if primary particle is dummy
+    const auto ownedStatePrime = ownedStatePtr[indexPrimary];
+    if (ownedStatePrime == autopas::OwnershipState::dummy) {
+      return;
+    }
+
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+
+    const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
+    const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
+    const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
+    const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+
+    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
+    SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
+    SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    // Get number of molecules in neighbor list
+    const size_t molCountNeighbors = neighborList.size();
+
+    // Count sites of neighbors of primary molecule
+    const size_t siteCountNeighbors = [&]() {
+      size_t siteCountTmp{0};
+      for (size_t neighborMol = 0; neighborMol < molCountNeighbors; ++neighborMol) {
+        siteCountTmp += _PPLibrary->getNumSites(typeptr[neighborList[neighborMol]]);
+      }
+      return siteCountTmp;
+    }();
+
+    // Count sites of primary molecule
+    const size_t siteCountPrimary = _PPLibrary->getNumSites(typeptr[indexPrimary]);
+
+    // Accumulators for global values
+    double potentialEnergyAccumulator = 0;
+    std::array<double, 3> virialAccumulator = {0., 0., 0.};
+
+    // ------------------------------ Setup auxiliary vectors -----------------------------
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedNeighborSitePositionsX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedNeighborSitePositionsY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedNeighborSitePositionsZ;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionsZ;
+
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX(siteCountNeighbors, 0.);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceY(siteCountNeighbors, 0.);
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ(siteCountNeighbors, 0.);
+
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesNeighbors;
+    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteOwnershipNeighbors;
+
+
+    // pre-reserve site std::vectors
+    rotatedNeighborSitePositionsX.reserve(siteCountNeighbors);
+    rotatedNeighborSitePositionsY.reserve(siteCountNeighbors);
+    rotatedNeighborSitePositionsZ.reserve(siteCountNeighbors);
+    exactNeighborSitePositionsX.reserve(siteCountNeighbors);
+    exactNeighborSitePositionsY.reserve(siteCountNeighbors);
+    exactNeighborSitePositionsZ.reserve(siteCountNeighbors);
+
+    siteTypesNeighbors.reserve(siteCountNeighbors);
+    siteOwnershipNeighbors.reserve(siteCountNeighbors);
+
+    const auto rotatedSitePositionsInPrimaryMol =
+        autopas::utils::quaternion::rotateVectorOfPositions(
+            {q0ptr[indexPrimary], q1ptr[indexPrimary], q2ptr[indexPrimary], q3ptr[indexPrimary]},
+            _PPLibrary->getSitePositions(typeptr[indexPrimary]));
+
+    const auto siteTypesInPrimaryMol = _PPLibrary->getSiteTypes(typeptr[indexPrimary]);
+
+    // Fill site-wise std::vectors for SIMD
+    for (size_t neighborMol = 0; neighborMol < molCountNeighbors; ++neighborMol) {
+      const size_t neighborMolIndex = neighborList[neighborMol];
+      const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+          {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+          _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
+
+      const size_t localSiteCount = _PPLibrary->getNumSites(typeptr[neighborMolIndex]);
+
+      for (size_t site = 0; site < localSiteCount; ++site) {
+        rotatedNeighborSitePositionsX.push_back(rotatedSitePositions[site][0]);
+        rotatedNeighborSitePositionsY.push_back(rotatedSitePositions[site][1]);
+        rotatedNeighborSitePositionsZ.push_back(rotatedSitePositions[site][2]);
+        exactNeighborSitePositionsX.push_back(rotatedSitePositions[site][0] + xptr[neighborMolIndex]);
+        exactNeighborSitePositionsY.push_back(rotatedSitePositions[site][1] + yptr[neighborMolIndex]);
+        exactNeighborSitePositionsZ.push_back(rotatedSitePositions[site][2] + zptr[neighborMolIndex]);
+        siteOwnershipNeighbors.push_back(static_cast<int64_t>(ownedStatePtr[neighborMolIndex]));
+        siteTypesNeighbors.push_back(_PPLibrary->getSiteTypes(typeptr[neighborMolIndex])[site]);
+      }
+    }
+
+    const std::array<double, 3> centerOfMassPrimary{xptr[indexPrimary], yptr[indexPrimary], zptr[indexPrimary]};
+
+    std::array<double, 3> forceAccumulator = {0., 0., 0.};
+    std::array<double, 3> torqueAccumulator = {0., 0., 0.};
+
+    for (size_t primarySite = 0; primarySite < siteCountPrimary; ++primarySite) {
+      const size_t siteTypePrime = siteTypesInPrimaryMol[primarySite];
+      const std::array<double, 3> rotatedSitePositionPrime = rotatedSitePositionsInPrimaryMol[primarySite];
+      const std::array<double, 3> exactSitePositionPrime =
+          autopas::utils::ArrayMath::add(rotatedSitePositionPrime, centerOfMassPrimary);
+
+      SoAKernel<newton3>(siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
+          exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ, siteOwnershipNeighbors, ownedStatePrime,
+          siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator,
+          potentialEnergyAccumulator, virialAccumulator);
+    }
+    // Add forces to prime mol
+    fxptr[indexPrimary] += forceAccumulator[0];
+    fyptr[indexPrimary] += forceAccumulator[1];
+    fzptr[indexPrimary] += forceAccumulator[2];
+    txptr[indexPrimary] += torqueAccumulator[0];
+    typtr[indexPrimary] += torqueAccumulator[1];
+    tzptr[indexPrimary] += torqueAccumulator[2];
+
+    // ------------------------------ Reduction -----------------------------
+    if constexpr (newton3) {
+      size_t siteIndex = 0;
+      for (size_t neighborMol = 0; neighborMol < molCountNeighbors; ++neighborMol) {
+        const auto neighborMolIndex = neighborList[neighborMol];
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
+          fxptr[neighborMolIndex] += siteForceX[siteIndex];
+          fyptr[neighborMolIndex] += siteForceY[siteIndex];
+          fzptr[neighborMolIndex] += siteForceZ[siteIndex];
+          txptr[neighborMolIndex] += rotatedNeighborSitePositionsY[siteIndex] * siteForceZ[siteIndex] -
+                                     rotatedNeighborSitePositionsZ[siteIndex] * siteForceY[siteIndex];
+          typtr[neighborMolIndex] += rotatedNeighborSitePositionsZ[siteIndex] * siteForceX[siteIndex] -
+                                     rotatedNeighborSitePositionsX[siteIndex] * siteForceZ[siteIndex];
+          tzptr[neighborMolIndex] += rotatedNeighborSitePositionsX[siteIndex] * siteForceY[siteIndex] -
+                                     rotatedNeighborSitePositionsY[siteIndex] * siteForceX[siteIndex];
+          ++siteIndex;
+        }
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      const auto threadNum = autopas::autopas_get_thread_num();
+      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
+      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2here.
+      const auto newton3Factor = newton3 ? .5 : 1.;
+
+      _aosThreadData[threadNum].potentialEnergySum += potentialEnergyAccumulator * newton3Factor;
+      _aosThreadData[threadNum].virialSum[0] += virialAccumulator[0] * newton3Factor;
+      _aosThreadData[threadNum].virialSum[1] += virialAccumulator[1] * newton3Factor;
+      _aosThreadData[threadNum].virialSum[2] += virialAccumulator[2] * newton3Factor;
+    }
+   }
 
   /**
    * @brief Force kernel for the SoA version of the LJFunctor using masks.
@@ -762,9 +933,9 @@ class LJMultisiteFunctorAVX512_STS
     // This variable either contains the local mask or the indices of the sites, depending on the template parameter
     __m512i sites = _mm512_setzero_si512();
 
-    for (size_t siteVectorIndex = offset; siteVectorIndex < siteTypesB.size(); siteVectorIndex += vecLength) {
+    for (size_t siteVectorIndex = offset; siteVectorIndex < siteTypesB.size(); siteVectorIndex += 8) {
       const size_t remainder = siteTypesB.size() - siteVectorIndex;
-      const bool remainderCase = remainder < vecLength;
+      const bool remainderCase = remainder < 8;
       const __mmask8 remainderMask = remainderCase ? _remainderMasks[8-remainder] : __mmask8(255);
 
       // Load the exact site positions of particle B // todo is it faster to just use _mm512_maskz_load_pd?
