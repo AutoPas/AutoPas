@@ -12,7 +12,7 @@ using ::testing::Return;
  * Check if the only allowed traversal is returned
  */
 TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
-  MFunctor functor;
+  MPairwiseFunctor functor;
 
   // this should be high enough so that sliced is still valid for the current processors thread count.
   constexpr size_t domainSize = 900;
@@ -21,7 +21,7 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   for (const auto &traversalOption : autopas::TraversalOption::getAllPairwiseOptions()) {
     auto traversal =
         autopas::TraversalSelector<FPCell, autopas::InteractionTypeOption::pairwise>::template generateTraversal<
-            MFunctor, autopas::DataLayoutOption::aos, false>(traversalOption, functor, traversalSelectorInfo);
+            MPairwiseFunctor, autopas::DataLayoutOption::aos, false>(traversalOption, functor, traversalSelectorInfo);
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())

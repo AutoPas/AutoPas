@@ -1,7 +1,7 @@
 /**
- * @file Newton3OnOffTest.h
- * @author seckler
- * @date 18.04.18
+ * @file Newton3OnOffTest3B.h
+ * @author muehlhaeusser
+ * @date 26.10.23
  */
 
 #pragma once
@@ -13,7 +13,6 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "mocks/MockTriwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -46,7 +45,7 @@ class Newton3OnOffTest3B
   template <class Container, class Traversal>
   void iterate(Container &container, Traversal traversal);
 
-  MockTriwiseFunctor<Particle> mockFunctor;
+  MTriwiseFunctor mockFunctor;
 
   /**
    * Determines how often the functor is called for single cells and pairs of cells und run additional checks.
@@ -59,7 +58,8 @@ class Newton3OnOffTest3B
    * @return [#calls single cell, #calls pair of cells]
    */
   template <bool useNewton3, class Container, class Traversal>
-  std::pair<size_t, size_t> eval(autopas::DataLayoutOption dataLayout, Container &container, Traversal traversalOption);
+  std::tuple<size_t, size_t, size_t> eval(autopas::DataLayoutOption dataLayout, Container &container,
+                                          Traversal traversalOption);
 
   struct PrintToStringParamName {
     template <class ParamType>

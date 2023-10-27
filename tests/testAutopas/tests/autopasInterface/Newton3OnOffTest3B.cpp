@@ -1,7 +1,7 @@
 /**
- * @file Newton3OnOffTest.cpp
- * @author seckler
- * @date 18.04.18
+ * @file Newton3OnOffTest3B.cpp
+ * @author muehlhaeusser
+ * @date 26.10.23
  */
 
 #include "Newton3OnOffTest3B.h"
@@ -50,7 +50,7 @@ INSTANTIATE_TEST_SUITE_P(
             for (auto traversalOption : container.getAllTraversals(autopas::InteractionTypeOption::threeBody)) {
               for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
                 // this is the functor that will be used in the test.
-                MockTriwiseFunctor<Particle> f;
+                MTriwiseFunctor f;
                 // generate both newton3 versions of the same traversal and check that both are applicable
                 bool configOk = autopas::utils::withStaticCellType<Particle>(
                     container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
@@ -91,7 +91,7 @@ void Newton3OnOffTest3B::countFunctorCalls(autopas::ContainerOption containerOpt
 
   autopas::ParticleContainerInterface<Particle> &container = containerSelector.getCurrentContainer();
 
-  Molecule defaultParticle;
+  Particle defaultParticle;
   autopasTools::generators::RandomGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(),
                                                                container.getBoxMax(), 80);
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(container, defaultParticle, container.getCutoff(),
@@ -111,17 +111,21 @@ void Newton3OnOffTest3B::countFunctorCalls(autopas::ContainerOption containerOpt
     });
   }
 
-  const auto [callsNewton3SC, callsNewton3Pair] = eval<true>(dataLayout, container, traversalOption);
-  const auto [callsNonNewton3SC, callsNonNewton3Pair] = eval<false>(dataLayout, container, traversalOption);
+  const auto [callsNewton3SC, callsNewton3Pair, callsNewton3Triple] =
+      eval<true>(dataLayout, container, traversalOption);
+  const auto [callsNonNewton3SC, callsNonNewton3Pair, callsNonNewton3Triple] =
+      eval<false>(dataLayout, container, traversalOption);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
     // within one cell no N3 optimization
     EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
     // two times the calls for no N3, once for each "owning" cell
     EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
+    // three times the calls for no N3, once for each "owning" cell
+    EXPECT_EQ(callsNewton3Triple * 3, callsNonNewton3Triple) << "for containeroption: " << containerOption;
   } else {  // aos
     // should be called exactly three times
-    EXPECT_EQ(callsNewton3Pair * 3, callsNonNewton3Pair) << "for containeroption: " << containerOption;
+    EXPECT_EQ(callsNewton3Triple * 3, callsNonNewton3Triple) << "for containeroption: " << containerOption;
   }
 
   if (::testing::Test::HasFailure()) {
@@ -140,8 +144,8 @@ void Newton3OnOffTest3B::iterate(Container &container, Traversal traversal) {
 }
 
 template <bool useNewton3, class Container, class Traversal>
-std::pair<size_t, size_t> Newton3OnOffTest3B::eval(autopas::DataLayoutOption dataLayout, Container &container,
-                                                   Traversal traversalOption) {
+std::tuple<size_t, size_t, size_t> Newton3OnOffTest3B::eval(autopas::DataLayoutOption dataLayout, Container &container,
+                                                            Traversal traversalOption) {
   std::atomic<unsigned int> callsSC(0ul);
   std::atomic<unsigned int> callsPair(0ul);
   std::atomic<unsigned int> callsTriple(0ul);
@@ -191,7 +195,7 @@ std::pair<size_t, size_t> Newton3OnOffTest3B::eval(autopas::DataLayoutOption dat
     case autopas::DataLayoutOption::aos: {
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, _, useNewton3))
           .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsTriple++; }));
 
       // non useNewton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, _, not useNewton3)).Times(0);
@@ -210,9 +214,9 @@ std::pair<size_t, size_t> Newton3OnOffTest3B::eval(autopas::DataLayoutOption dat
   autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
     iterate(container,
             autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::threeBody>::
-                template generateTraversal<MockTriwiseFunctor<Particle>>(traversalOption, mockFunctor,
-                                                                         traversalSelectorInfo, dataLayout, n3Option));
+                template generateTraversal<MTriwiseFunctor>(traversalOption, mockFunctor, traversalSelectorInfo,
+                                                            dataLayout, n3Option));
   });
 
-  return std::make_pair(callsSC.load(), callsPair.load());
+  return std::make_tuple(callsSC.load(), callsPair.load(), callsTriple.load());
 }

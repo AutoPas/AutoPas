@@ -9,6 +9,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockPairwiseFunctor.h"
+#include "mocks/MockTriwiseFunctor.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 // a place for usings that are commonly used in tests
@@ -33,6 +34,10 @@ using FMCell = autopas::FullParticleCell<Molecule>;
 
 // M prefix for mocks
 /**
- * Short for Mock Functor
+ * Short for Mock Pairwise Functor
  */
-using MFunctor = MockPairwiseFunctor<autopas::Particle>;
+using MPairwiseFunctor = MockPairwiseFunctor<autopas::Particle>;
+/**
+ * Short for Mock Triwise Functor
+ */
+using MTriwiseFunctor = MockTriwiseFunctor<autopas::Particle>;

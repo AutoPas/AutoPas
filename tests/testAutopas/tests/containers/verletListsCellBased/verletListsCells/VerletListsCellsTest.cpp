@@ -37,7 +37,7 @@ void applyFunctor(MockPairwiseFunctor<Particle> &functor, const double cellSizef
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true,
                            autopas::VLCAllCellsNeighborList<Particle>, autopas::ContainerOption::verletListsCells>
       traversal(verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(),
                 verletLists.getCellLength());

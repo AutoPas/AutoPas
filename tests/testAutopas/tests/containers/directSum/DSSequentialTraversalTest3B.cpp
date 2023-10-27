@@ -1,26 +1,26 @@
 /**
- * @file DSSequentialTraversalTest.cpp
- * @author F. Gratl
- * @date 11/23/18
+ * @file DSSequentialTraversalTest3B.cpp
+ * @author muehlhaeusser
+ * @date 26.10.23
  */
 
-#include "DSSequentialTraversalTest.h"
+#include "DSSequentialTraversalTest3B.h"
 
-#include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
+#include "autopas/containers/directSum/traversals/DSSequentialTraversal3B.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
 
-TEST_F(DSSequentialTraversalTest, testTraversalAoS) { testTraversal(false); }
+TEST_F(DSSequentialTraversalTest3B, testTraversalAoS) { testTraversal(false); }
 
-TEST_F(DSSequentialTraversalTest, testTraversalSoA) { testTraversal(true); }
+TEST_F(DSSequentialTraversalTest3B, testTraversalSoA) { testTraversal(true); }
 
-void DSSequentialTraversalTest::testTraversal(bool useSoA) {
-  size_t numParticles = 20;
-  size_t numHaloParticles = 10;
+void DSSequentialTraversalTest3B::testTraversal(bool useSoA) {
+  size_t numParticles = 10;
+  size_t numHaloParticles = 5;
 
-  MPairwiseFunctor functor;
+  MTriwiseFunctor functor;
   std::vector<FPCell> cells;
   cells.resize(2);
   autopas::Particle defaultParticle;
@@ -39,7 +39,7 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
   }
 
   if (useSoA) {
-    autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::soa, true> traversal(
+    autopas::DSSequentialTraversal3B<FPCell, MTriwiseFunctor, autopas::DataLayoutOption::soa, true> traversal(
         &functor, std::numeric_limits<double>::max());
     // domain SoA with itself
     EXPECT_CALL(functor, SoAFunctorSingle(_, true)).Times(1);
@@ -47,14 +47,14 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
     EXPECT_CALL(functor, SoAFunctorPair(_, _, true)).Times(1);
     std::for_each(cells.begin(), cells.end(), [](auto &c) { c._particleSoABuffer.resizeArrays(2); });
     traversal.setCellsToTraverse(cells);
-    traversal.traverseParticlePairs();
+    traversal.traverseParticleTriplets();
   } else {
-    autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true> traversal(
+    autopas::DSSequentialTraversal3B<FPCell, MTriwiseFunctor, autopas::DataLayoutOption::aos, true> traversal(
         &functor, std::numeric_limits<double>::max());
     // interactions in main cell + interactions with halo.
-    size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;
-    EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((int)expectedFunctorCalls);
+    size_t expectedFunctorCalls = numParticles * (numParticles - 1) * (numParticles - 2) / 6 + numParticles * (numParticles - 1) * numHaloParticles / 2 + numParticles * numHaloParticles * (numHaloParticles - 1) / 2;
+    EXPECT_CALL(functor, AoSFunctor(_, _, _, true)).Times((int)expectedFunctorCalls);
     traversal.setCellsToTraverse(cells);
-    traversal.traverseParticlePairs();
+    traversal.traverseParticleTriplets();
   }
 }

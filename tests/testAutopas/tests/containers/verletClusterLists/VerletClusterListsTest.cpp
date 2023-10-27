@@ -42,8 +42,8 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
 
   MockPairwiseFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
-  autopas::VCLClusterIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
-      &emptyFunctor, clusterSize);
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false>
+      verletTraversal(&emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 }
@@ -62,8 +62,8 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockPairwiseFunctor<Particle> emptyFunctor;
-  autopas::VCLClusterIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
-      &emptyFunctor, clusterSize);
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false>
+      verletTraversal(&emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
   EXPECT_EQ(verletLists.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), numParticles);
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -84,8 +84,8 @@ TEST_F(VerletClusterListsTest, testIterator) {
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockPairwiseFunctor<Particle> emptyFunctor;
-  autopas::VCLClusterIterationTraversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> verletTraversal(
-      &emptyFunctor, clusterSize);
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false>
+      verletTraversal(&emptyFunctor, clusterSize);
   verletLists.rebuildNeighborLists(&verletTraversal);
 
   int numParticlesInIterator = 0;
@@ -214,12 +214,13 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockPairwiseFunctor<Particle> functor;
-  autopas::VCLC06Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(&functor,
-                                                                                                  clusterSize);
+  autopas::VCLC06Traversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(&functor,
+                                                                                                          clusterSize);
   verletLists.rebuildNeighborLists(&traversalNoN3);
   auto neighborsNoN3 = getClusterNeighbors(verletLists);
 
-  autopas::VCLC06Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true> traversalN3(&functor, clusterSize);
+  autopas::VCLC06Traversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true> traversalN3(&functor,
+                                                                                                       clusterSize);
   verletLists.rebuildNeighborLists(&traversalN3);
   auto neighborsN3 = getClusterNeighbors(verletLists);
 

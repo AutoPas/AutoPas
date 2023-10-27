@@ -10,6 +10,7 @@
 
 #include "DSTraversalInterface.h"
 #include "autopas/baseFunctors/CellFunctor3B.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/DataLayoutConverter.h"
