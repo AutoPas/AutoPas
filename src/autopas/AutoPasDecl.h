@@ -19,7 +19,6 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/options/TraversalOption3B.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/AutoTuner.h"
