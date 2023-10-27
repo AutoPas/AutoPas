@@ -48,6 +48,14 @@ class CellPairTraversal : public TraversalInterface {
    */
   virtual void setUseSorting(bool useSorting) = 0;
 
+  /**
+   * Set the sorting-threshold for traversals that use the CellFunctor
+   * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
+   * sorted view of the particles to avoid unnecessary distance checks.
+   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
+   */
+  virtual void setSortingThreshold(size_t sortingThreshold) = 0;
+
  protected:
   /**
    * The dimensions of the cellblock.

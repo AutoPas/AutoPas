@@ -80,6 +80,11 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
    */
   void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
+
  private:
   /**
    * Computes pairs used in processBaseCell()

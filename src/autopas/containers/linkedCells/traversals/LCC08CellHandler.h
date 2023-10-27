@@ -62,6 +62,11 @@ class LCC08CellHandler {
    */
   void setUseSorting(bool useSorting) { _cellFunctor.setUseSorting(useSorting); }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) { _cellFunctor.setSortingThreshold(sortingThreshold); }
+
  protected:
   /**
    * Pair sets for processBaseCell().

@@ -61,6 +61,14 @@ class CellFunctor {
    */
   void setUseSorting(bool useSorting);
 
+  /**
+   * Set the sorting-threshold
+   * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
+   * sorted view of the particles to avoid unnecessary distance checks.
+   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
+   */
+  void setSortingThreshold(size_t sortingThreshold);
+
  private:
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of
@@ -111,10 +119,9 @@ class CellFunctor {
   bool _useSorting{true};
 
   /**
-   * Min. number of particles to start sorting.
-   * For details on the chosen threshold see: https://github.com/AutoPas/AutoPas/pull/619
+   * Min. number of particles to start sorting. This is the sum of the number of particles in two cells.
    */
-  constexpr static unsigned long _sortingThreshold = 8;
+  size_t _sortingThreshold{8};
 };
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
@@ -122,6 +129,13 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::setUseSorting(
     bool useSorting) {
   _useSorting = useSorting;
+}
+
+template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
+          bool useNewton3, bool bidirectional>
+void CellFunctor<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::setSortingThreshold(
+    size_t sortingThreshold) {
+  _sortingThreshold = sortingThreshold;
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,

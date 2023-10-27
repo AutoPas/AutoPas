@@ -60,6 +60,12 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
    */
   void setUseSorting(bool useSorting) override {}
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setSortingThreshold(size_t sortingThreshold) override {}
+
  private:
   PairwiseFunctor *_functor;
   VLCCellPairC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

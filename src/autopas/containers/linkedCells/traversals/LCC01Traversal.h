@@ -135,6 +135,11 @@ class LCC01Traversal
    */
   void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
+
  private:
   /**
    * Computes all interactions between the base

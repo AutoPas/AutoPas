@@ -274,6 +274,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.deltaT.description;
 
         config.deltaT.value = node[key].as<double>();
+      } else if (key == config.sortingThreshold.name) {
+        expected = "Unsigned Integer >= 0.";
+        description = config.sortingThreshold.description;
+
+        config.sortingThreshold.value = node[key].as<size_t>();
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;
