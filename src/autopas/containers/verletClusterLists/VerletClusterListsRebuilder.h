@@ -26,8 +26,16 @@ namespace internal {
  */
 template <class Particle>
 class VerletClusterListsRebuilder {
+ public:
+  /**
+   * Type alias for the neighbor list buffer.
+   */
+  using NeighborListsBuffer_T = NeighborListsBuffer<const internal::Cluster<Particle> *, internal::Cluster<Particle> *>;
+
  private:
   size_t _clusterSize;
+
+  NeighborListsBuffer_T &_neighborListsBuffer;
 
   std::vector<Particle> &_particlesToAdd;
   std::vector<ClusterTower<Particle>> &_towers;
@@ -49,12 +57,14 @@ class VerletClusterListsRebuilder {
    * @param clusterList The cluster list to rebuild the neighbor lists for.
    * @param towers The towers from the cluster list to rebuild.
    * @param particlesToAdd New particles to add.
+   * @param neighborListsBuffer Buffer structure to hold all neighbor lists.
    * @param clusterSize Size of the clusters in particles.
    */
   VerletClusterListsRebuilder(const VerletClusterLists<Particle> &clusterList,
                               std::vector<ClusterTower<Particle>> &towers, std::vector<Particle> &particlesToAdd,
-                              size_t clusterSize)
+                              NeighborListsBuffer_T &neighborListsBuffer, size_t clusterSize)
       : _clusterSize(clusterSize),
+        _neighborListsBuffer(neighborListsBuffer),
         _particlesToAdd(particlesToAdd),
         _towers(towers),
         _towerSideLength(clusterList.getTowerSideLength()),
@@ -81,43 +91,66 @@ class VerletClusterListsRebuilder {
    */
   auto rebuildTowersAndClusters() {
     using namespace autopas::utils::ArrayMath::literals;
-
-    auto invalidParticles = collectAllParticlesFromTowers();
-    invalidParticles.push_back(std::move(_particlesToAdd));
-    _particlesToAdd.clear();
+    // get rid of dummies
+    for (auto &tower : _towers) {
+      tower.deleteDummyParticles();
+    }
 
     // count particles by accumulating tower sizes
-    size_t numParticles = std::accumulate(std::begin(invalidParticles), std::end(invalidParticles), 0,
-                                          [](auto acc, auto &v) { return acc + v.size(); });
+    const size_t numParticles =
+        std::accumulate(_towers.begin(), _towers.end(), _particlesToAdd.size(), [](auto acc, const auto &tower) {
+          // actually we want only the number of owned or halo particles but dummies were just deleted.
+          return acc + tower.getNumActualParticles();
+        });
 
-    auto boxSizeWithHalo = _haloBoxMax - _haloBoxMin;
-
+    // calculate new number of towers and their size
+    const auto boxSizeWithHalo = _haloBoxMax - _haloBoxMin;
     _towerSideLength = estimateOptimalGridSideLength(numParticles, boxSizeWithHalo, _clusterSize);
     _towerSideLengthReciprocal = 1 / _towerSideLength;
     _interactionLengthInTowers = static_cast<int>(std::ceil(_interactionLength * _towerSideLengthReciprocal));
-
     _towersPerDim = calculateTowersPerDim(boxSizeWithHalo, _towerSideLengthReciprocal);
-    size_t numTowers = _towersPerDim[0] * _towersPerDim[1];
+    const size_t numTowersNew = _towersPerDim[0] * _towersPerDim[1];
 
-    // resize to number of towers. Cannot use resize since towers are not default constructable.
-    _towers.clear();
-    _towers.reserve(numTowers);
+    // collect all particles that are now not in the right tower anymore
+    auto invalidParticles = collectOutOfBoundsParticlesFromTowers();
+    // collect all remaining particles that are not yet assigned to towers
+    invalidParticles.push_back(std::move(_particlesToAdd));
+    _particlesToAdd.clear();
+    const auto numTowersOld = _towers.size();
+    // if we have less towers than before, collect all particles from the unused towers.
+    for (size_t i = numTowersNew; i < numTowersOld; ++i) {
+      invalidParticles.push_back(std::move(_towers[i].particleVector()));
+    }
 
-    // create towers and make an estimate for how many particles memory needs to be allocated
-    // 2.7 seems high but gave the best performance when testing
+    // resize to number of towers.
+    // Attention! This uses the dummy constructor so we still need to set the desired cluster size.
+    _towers.resize(numTowersNew);
+
+    // create more towers if needed and make an estimate for how many particles memory needs to be allocated
+    // Factor is more or less a random guess.
+    // Historically 2.7 used to be good but in other tests there was no significant difference to lower values.
     const auto sizeEstimation =
-        static_cast<size_t>((static_cast<double>(numParticles) / static_cast<double>(numTowers)) * 2.7);
-    for (int i = 0; i < numTowers; ++i) {
-      _towers.emplace_back(ClusterTower<Particle>(_clusterSize));
-      _towers[i].reserve(sizeEstimation);
+        static_cast<size_t>((static_cast<double>(numParticles) / static_cast<double>(numTowersNew)) * 1.2);
+    for (auto &tower : _towers) {
+      // Set potentially new towers to the desired cluster size
+      tower.setClusterSize(_clusterSize);
+      tower.reserve(sizeEstimation);
     }
 
     sortParticlesIntoTowers(invalidParticles);
 
+    // estimate the number of clusters by particles divided by cluster size + one extra per tower.
+    _neighborListsBuffer.reserveNeighborLists(numParticles / _clusterSize + numTowersNew);
     // generate clusters and count them
     size_t numClusters = 0;
     for (auto &tower : _towers) {
       numClusters += tower.generateClusters();
+      for (auto &cluster : tower.getClusters()) {
+        // VCL stores the references to the lists in the clusters, therefore there is no need to create a
+        // cluster -> list lookup structure in the buffer structure
+        const auto listID = _neighborListsBuffer.getNewNeighborList();
+        cluster.setNeighborList(&(_neighborListsBuffer.template getNeighborListRef<false>(listID)));
+      }
     }
 
     return std::make_tuple(_towerSideLength, _interactionLengthInTowers, _towersPerDim, numClusters);
@@ -132,7 +165,7 @@ class VerletClusterListsRebuilder {
    * false)
    */
   void rebuildNeighborListsAndFillClusters(bool useNewton3) {
-    clearNeighborListsAndResetDummies();
+    clearNeighborListsAndMoveDummiesIntoClusters();
     updateNeighborLists(useNewton3);
 
     double dummyParticleDistance = _interactionLength * 2;
@@ -180,10 +213,10 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Removes previously saved neighbors from clusters and sets the positions of the dummy particles to inside of the
-   * cluster. The latter reduces the amount of calculated interaction partners.
+   * Clears previously saved neighbors from clusters and sets the 3D positions of the dummy particles to inside of the
+   * cluster to avoid all dummies being in one place and potentially trigger cluster-cluster distance evaluations.
    */
-  void clearNeighborListsAndResetDummies() {
+  void clearNeighborListsAndMoveDummiesIntoClusters() {
     for (auto &tower : _towers) {
       tower.setDummyParticlesToLastActualParticle();
       for (auto &cluster : tower.getClusters()) {
@@ -204,6 +237,26 @@ class VerletClusterListsRebuilder {
       _towers[towerIndex].clear();
     }
     return invalidParticles;
+  }
+
+  /**
+   * Collect all particles that are stored in the wrong towers.
+   * The particles are deleted from their towers.
+   *
+   * @return
+   */
+  std::vector<std::vector<Particle>> collectOutOfBoundsParticlesFromTowers() {
+    std::vector<std::vector<Particle>> outOfBoundsParticles;
+    outOfBoundsParticles.resize(_towers.size());
+    for (size_t towerIndex = 0; towerIndex < _towers.size(); towerIndex++) {
+      const auto towerIndex2D = towerIndex1DTo2D(towerIndex);
+      // we have to use the static version because we have no VCL object and the passed values are the most up-to-date
+      // ones.
+      const auto &[towerBoxMin, towerBoxMax] = VerletClusterLists<Particle>::getTowerBoundingBox(
+          towerIndex2D, _towersPerDim, _towerSideLength, _boxMin, _boxMax, _haloBoxMin, _haloBoxMax);
+      outOfBoundsParticles[towerIndex] = _towers[towerIndex].collectOutOfBoundsParticles(towerBoxMin, towerBoxMax);
+    }
+    return outOfBoundsParticles;
   }
 
   /**
@@ -374,14 +427,20 @@ class VerletClusterListsRebuilder {
   void calculateNeighborsBetweenTowers(internal::ClusterTower<Particle> &towerA,
                                        internal::ClusterTower<Particle> &towerB, double distBetweenTowersXYsqr,
                                        bool useNewton3) {
+    const auto interactionLengthFracOfDomainZ = _interactionLength / (_haloBoxMax[2] - _haloBoxMin[2]);
+    // Seems to find a good middle ground between not too much memory allocated and no additional allocations
+    // when calling clusterA.addNeighbor(clusterB)
+    const auto neighborListReserveHeuristicFactor = (interactionLengthFracOfDomainZ * 2.1) / _clusterSize;
     const bool isSameTower = (&towerA == &towerB);
     for (size_t clusterIndexInTowerA = 0; clusterIndexInTowerA < towerA.getNumClusters(); clusterIndexInTowerA++) {
       // if we are within one tower depending on newton3 only look at forward neighbors
-      auto startClusterIndexInTowerB = isSameTower and useNewton3 ? clusterIndexInTowerA + 1 : 0;
+      const auto startClusterIndexInTowerB = isSameTower and useNewton3 ? clusterIndexInTowerA + 1ul : 0ul;
       auto &clusterA = towerA.getCluster(clusterIndexInTowerA);
-      auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
+      const auto [clusterABoxBottom, clusterABoxTop, clusterAContainsParticles] = clusterA.getZMinMax();
 
       if (clusterAContainsParticles) {
+        clusterA.getNeighbors()->reserve((towerA.getNumActualParticles() + 8 * towerB.getNumActualParticles()) *
+                                         neighborListReserveHeuristicFactor);
         for (size_t clusterIndexInTowerB = startClusterIndexInTowerB; clusterIndexInTowerB < towerB.getNumClusters();
              clusterIndexInTowerB++) {
           // a cluster cannot be a neighbor to itself
@@ -389,10 +448,11 @@ class VerletClusterListsRebuilder {
           if (not useNewton3 and isSameTower and clusterIndexInTowerA == clusterIndexInTowerB) {
             continue;
           }
+          // can't be const because it will potentially be added as a non-const neighbor
           auto &clusterB = towerB.getCluster(clusterIndexInTowerB);
-          auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterB.getZMinMax();
+          const auto [clusterBBoxBottom, clusterBBoxTop, clusterBcontainsParticles] = clusterB.getZMinMax();
           if (clusterBcontainsParticles) {
-            double distZ = bboxDistance(clusterABoxBottom, clusterABoxTop, clusterBBoxBottom, clusterBBoxTop);
+            const double distZ = bboxDistance(clusterABoxBottom, clusterABoxTop, clusterBBoxBottom, clusterBBoxTop);
             if (distBetweenTowersXYsqr + distZ * distZ <= _interactionLengthSqr) {
               clusterA.addNeighbor(clusterB);
             }
@@ -434,11 +494,11 @@ class VerletClusterListsRebuilder {
   }
 
   /**
-   * Returns the coordinates of the tower in the tower grid the given 3D coordinates are in.
+   * Returns the 2D index of the tower in the tower grid the given 3D coordinates are in.
    * If the location is outside of the domain, the tower nearest tower is returned.
    *
    * @param location The 3D coordinates.
-   * @return Tower reference.
+   * @return 2D tower index.
    */
   [[nodiscard]] std::array<size_t, 2> getTowerCoordinates(const std::array<double, 3> &location) const {
     std::array<size_t, 2> towerIndex2D{};
@@ -472,6 +532,18 @@ class VerletClusterListsRebuilder {
     // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
     // _towersPerDim does not have the new value yet in the container.
     return VerletClusterLists<Particle>::towerIndex2DTo1D(x, y, _towersPerDim);
+  }
+
+  /**
+   * Returns the 2D index for the given 1D index of a tower. Static version.
+   *
+   * @param index
+   * @return the 2D index for the given 1D index of a tower.
+   */
+  [[nodiscard]] std::array<size_t, 2> towerIndex1DTo2D(const size_t index) const {
+    // It is necessary to use the static method in VerletClusterLists here instead of the member method, because
+    // _towersPerDim does not have the new value yet in the container.
+    return VerletClusterLists<Particle>::towerIndex1DTo2D(index, _towersPerDim[0]);
   }
 
   /**

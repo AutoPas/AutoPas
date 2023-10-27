@@ -38,7 +38,7 @@ class VCLSlicedTraversal
     auto &currentTower = clusterList.getTowerByIndex(x, y);
     for (auto &cluster : currentTower.getClusters()) {
       _clusterFunctor.traverseCluster(cluster);
-      for (auto *neighborCluster : cluster.getNeighbors()) {
+      for (auto *neighborCluster : *cluster.getNeighbors()) {
         _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
       }
     }
@@ -83,5 +83,11 @@ class VCLSlicedTraversal
   void traverseParticlePairs() override {
     this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
   }
+
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setUseSorting(bool useSorting) override {}
 };
 }  // namespace autopas

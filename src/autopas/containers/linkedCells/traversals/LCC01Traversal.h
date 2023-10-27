@@ -130,6 +130,11 @@ class LCC01Traversal
     return (combineSoA) ? TraversalOption::lc_c01_combined_SoA : TraversalOption::lc_c01;
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   */
+  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+
  private:
   /**
    * Computes all interactions between the base
@@ -168,7 +173,8 @@ class LCC01Traversal
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, false, false>
+  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout,
+                        /*useNewton3*/ false, /*bidirectional*/ false>
       _cellFunctor;
 
   PairwiseFunctor *_pairwiseFunctor;
@@ -218,12 +224,24 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
             const long offset = utils::ThreeDimensionalMapping::threeToOneD(
                 ix, y, z, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
             const size_t index = ix + this->_overlap[0];
+
+            // Calculate the sorting direction from the base cell (x, y, z) and the other cell by use of the offset (ix,
+            // y, z).
+            std::array<double, 3> sortingDir = {static_cast<double>(ix) * this->_cellLength[0],
+                                                static_cast<double>(y) * this->_cellLength[1],
+                                                static_cast<double>(z) * this->_cellLength[2]};
+
+            // the offset to the current cell itself is zero.
+            if (ix == 0 and y == 0 and z == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+            sortingDir = utils::ArrayMath::normalize(sortingDir);
+
             if (y == 0l and z == 0l) {
               // make sure center of slice is always at the beginning
-              _cellOffsets[index].insert(_cellOffsets[index].cbegin(),
-                                         std::make_pair(offset, utils::ArrayMath::normalize(pos)));
+              _cellOffsets[index].insert(_cellOffsets[index].cbegin(), std::make_pair(offset, sortingDir));
             } else {
-              _cellOffsets[index].emplace_back(offset, utils::ArrayMath::normalize(pos));
+              _cellOffsets[index].emplace_back(offset, sortingDir);
             }
           }
         }
@@ -268,7 +286,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
         for (const auto &offset : _cellOffsets[i]) {
           const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
-          newSize += otherCell.numParticles();
+          newSize += otherCell.size();
         }
         combinationSlice[slice]._particleSoABuffer.resizeArrays(newSize);
       }
@@ -300,8 +318,8 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3
       if (slice == (currentSlice + this->_overlap[0]) % cOffSize) {
         // slice contains base cell -> skip particles of base cell. This is not supported by CellFunctor, so call
         // pairwise functor directly.
-        auto startIndex = baseCell.numParticles();
-        auto endIndex = combinationSlice[slice]._particleSoABuffer.getNumberOfParticles();
+        auto startIndex = baseCell.size();
+        auto endIndex = combinationSlice[slice]._particleSoABuffer.size();
         _pairwiseFunctor->SoAFunctorPair(baseCell._particleSoABuffer,
                                          {&(combinationSlice[slice]._particleSoABuffer), startIndex, endIndex}, false);
         // compute base cell

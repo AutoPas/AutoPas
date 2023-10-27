@@ -8,7 +8,7 @@
 
 #include <spdlog/async.h>
 
-#include "autopas/selectors/Configuration.h"
+#include "autopas/tuning/Configuration.h"
 
 namespace autopas {
 
@@ -38,8 +38,10 @@ class TuningResultLogger {
    * @param configuration
    * @param iteration
    * @param timeTuning
+   * @param optimumPerformance Performance of the best configuration
    */
-  void logTuningResult(const autopas::Configuration &configuration, size_t iteration, long timeTuning);
+  void logTuningResult(const autopas::Configuration &configuration, size_t iteration, long timeTuning,
+                       long optimumPerformance);
 
  private:
   std::string _loggerName;

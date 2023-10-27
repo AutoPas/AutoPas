@@ -30,7 +30,7 @@ class SoAView {
   /**
    * Constructs a view on \p soa that starts at \p startIndex (inclusive) and ends at \p endIndex (exclusive).
    *
-   * \p startIndex and \p endIndex have to be between 0 (inclusive) and `soa->getNumberOfParticles()` (inclusive). \p
+   * \p startIndex and \p endIndex have to be between 0 (inclusive) and `soa->size()` (inclusive). \p
    * endIndex has to be greater or equal to \p startIndex.
    * @param soa The SoA to view.
    * @param startIndex The index of the first entry to view of the SoA.
@@ -38,7 +38,7 @@ class SoAView {
    */
   SoAView(SoA<SoAArraysType> *soa, size_t startIndex, size_t endIndex)
       : _soa(soa), _startIndex(startIndex), _endIndex(endIndex) {
-    if (not(soa->getNumberOfParticles() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
+    if (not(soa->size() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
       utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
     }
   }
@@ -47,13 +47,13 @@ class SoAView {
    * Constructs a SoAView on the whole content of \p soa.
    * @param soa The SoA to view.
    */
-  explicit SoAView(SoA<SoAArraysType> *soa) : _soa(soa), _startIndex(0), _endIndex(soa->getNumberOfParticles()) {}
+  explicit SoAView(SoA<SoAArraysType> *soa) : _soa(soa), _startIndex(0), _endIndex(soa->size()) {}
 
   /**
    * Implicit constructor that converts a SoA to SoAView.
    * @param soa The SoA to view.
    */
-  SoAView(SoA<SoAArraysType> &soa) : _soa(&soa), _startIndex(0), _endIndex(soa.getNumberOfParticles()) {}
+  SoAView(SoA<SoAArraysType> &soa) : _soa(&soa), _startIndex(0), _endIndex(soa.size()) {}
 
   /**
    * Returns a pointer to the given attribute vector.
@@ -80,7 +80,7 @@ class SoAView {
    *
    * @return Number of particles.
    */
-  [[nodiscard]] size_t getNumberOfParticles() const { return _endIndex - _startIndex; }
+  [[nodiscard]] size_t size() const { return _endIndex - _startIndex; }
 
  private:
   /**

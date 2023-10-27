@@ -8,8 +8,8 @@
 
 #include <string>
 
-#include "autopas/selectors/ContainerSelector.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -90,6 +90,7 @@ void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles,
  * @param cellSizeFactor The cell size factor.
  * @param doSlightShift Specifies whether to add random shifts of size skin/2 to all particles after the neighbor list
  * generation.
+ * @param useSorting For traversals that use the CellFunctor: if the CellFunctor should apply sorting of particles
  * @return Tuple of forces for all particles, ordered by particle id, and global values.
  */
 template <bool globals>
@@ -97,7 +98,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
     size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
-    DeletionPosition particleDeletionPosition) {
+    DeletionPosition particleDeletionPosition, bool useSorting) {
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
   constexpr double skinPerTimestep = _cutoff * 0.1;
@@ -113,16 +114,23 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
 
   autopasTools::generators::RandomGenerator::fillWithParticles(
       container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numMolecules);
-  EXPECT_EQ(container.getNumberOfParticles(), numMolecules) << "Wrong number of molecules inserted!";
+  EXPECT_EQ(container.size(), numMolecules) << "Wrong number of molecules inserted!";
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
       container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container.getCutoff(),
       numHaloMolecules);
-  EXPECT_EQ(container.getNumberOfParticles(), numMolecules + numHaloMolecules)
-      << "Wrong number of halo molecules inserted!";
+  EXPECT_EQ(container.size(), numMolecules + numHaloMolecules) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+        auto traversalUniquePtr = autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
             traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+
+        // set useSorting of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+        if (auto *cellPairTraversalPtr =
+                dynamic_cast<autopas::CellPairTraversal<decltype(particleCellDummy)> *>(traversalUniquePtr.get())) {
+          cellPairTraversalPtr->setUseSorting(useSorting);
+        }
+
+        return traversalUniquePtr;
       });
 
   if (not traversal->isApplicable()) {
@@ -162,24 +170,25 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
 
 /**
  * Generates the reference for a simulation configuration that is specified by the given key.
- * For the reference a linked cells algorithm is used.
+ * For the reference a linked cells algorithm and c08 traversal without sorting particles is used.
  * @param key The key that specifies the simulation.
  */
 void TraversalComparison::generateReference(mykey_t key) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals] = key;
-  // Calculate reference forces
+  // Calculate reference forces. For the reference forces we switch off sorting. For the forces that are calculated in
+  // tests and compared against the reference, sorting is enabled.
   if (globals) {
     auto [calculatedForces, calculatedGlobals] =
         calculateForces<true>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
                               autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
-                              numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
+                              numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition, false);
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
   } else {
     auto [calculatedForces, calculatedGlobals] =
         calculateForces<false>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
-                               numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
+                               numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition, false);
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
   }

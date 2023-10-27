@@ -257,7 +257,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_cells[cellIndex].numParticles() or
+    if (particleIndex >= this->_cells[cellIndex].size() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -290,9 +290,13 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     if (keepNeighborListsValid) {
       return autopas::LeavingParticleCollector::collectParticlesAndMarkNonOwnedAsDummy(*this);
     }
-    this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
+
+    // for exception handling in parallel region
+    bool exceptionCaught{false};
+    std::string exceptionMsg{""};
+
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel
 #endif  // AUTOPAS_OPENMP
@@ -313,7 +317,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
         auto &particleVec = this->getCells()[cellId]._particles;
         for (auto pIter = particleVec.begin(); pIter != particleVec.end();) {
-          if (utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
+          if ((*pIter)->isOwned() and utils::notInBox((*pIter)->getR(), cellLowerCorner, cellUpperCorner)) {
             myInvalidParticles.push_back(**pIter);
 
             // multi layer swap-delete
@@ -333,13 +337,22 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       // the barrier is needed because iterators are not thread safe w.r.t. addParticle()
 
       // this loop is executed for every thread and thus parallel. Don't use #pragma omp for here!
-      for (auto &&p : myInvalidParticles) {
-        // if not in halo
-        if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
-          this->template addParticle<false>(p);
-        } else {
-          myInvalidNotOwnedParticles.push_back(p);
+      // addParticle might throw. Set exceptionCaught to true, so we can handle that after the OpenMP region
+      try {
+        for (auto &&p : myInvalidParticles) {
+          // if not in halo
+          if (utils::inBox(p.getR(), this->getBoxMin(), this->getBoxMax())) {
+            this->template addParticle<false>(p);
+          } else {
+            myInvalidNotOwnedParticles.push_back(p);
+          }
         }
+      } catch (const std::exception &e) {
+        exceptionCaught = true;
+#ifdef AUTOPAS_OPENMP
+#pragma omp critical
+#endif
+        exceptionMsg.append(e.what());
       }
 #ifdef AUTOPAS_OPENMP
 #pragma omp critical
@@ -350,6 +363,19 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                 myInvalidNotOwnedParticles.end());
       }
     }
+
+    if (exceptionCaught) {
+      throw autopas::utils::ExceptionHandler::AutoPasException(exceptionMsg);
+    }
+
+    // we have to remove halo particles after the above for-loop since removing halo particles changes the underlying
+    // datastructure (_particleList) which invalidates the references in the cells.
+    // Note: removing halo particles before the loop and do a call to updateDirtyParticleReferences() right after won't
+    // work since there are owned particles in _particleList which fall into the halo area (they are not yet filtered
+    // out by the above loop) and can therefore not added to halo cells during particle insert in
+    // updateDirtyParticleReferences()
+    this->deleteHaloParticles();
+
     _particleList.deleteDummyParticles();
     updateDirtyParticleReferences();
     return invalidParticles;
@@ -553,7 +579,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not cellIsRelevant() or particleIndex >= this->_cells[cellIndex].numParticles()) {
+      while (not cellIsRelevant() or particleIndex >= this->_cells[cellIndex].size()) {
         // TODO: can this jump be done more efficient if behavior is only halo or owned?
         // TODO: can this jump be done more efficient for region iters if the cell is outside the region?
         cellIndex += stride;

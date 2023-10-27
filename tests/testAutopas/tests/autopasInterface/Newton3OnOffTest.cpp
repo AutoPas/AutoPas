@@ -6,8 +6,8 @@
 
 #include "Newton3OnOffTest.h"
 
-#include "autopas/selectors/ContainerSelector.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -103,8 +103,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
     autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
       EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
           .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::WithArgs<0, 1>(
-              testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.numParticles()); })));
+          .WillRepeatedly(
+              testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
       EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
           .Times(testing::AtLeast(1));
     });

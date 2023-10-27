@@ -482,7 +482,7 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteM
   functorSoA.endTraversal(newton3);
 
   // compare for consistency
-  EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
+  EXPECT_EQ(moleculesAoS.size(), cellSoA.size());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
     EXPECT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY)
@@ -577,8 +577,8 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::Multis
   functorSoA.endTraversal(newton3);
 
   // compare for consistency
-  EXPECT_EQ(moleculesAoSA.size(), cellSoAA.numParticles());
-  EXPECT_EQ(moleculesAoSB.size(), cellSoAB.numParticles());
+  EXPECT_EQ(moleculesAoSA.size(), cellSoAA.size());
+  EXPECT_EQ(moleculesAoSB.size(), cellSoAB.size());
 
   for (size_t i = 0; i < numberMoleculesA; ++i) {
     EXPECT_NEAR(moleculesAoSA[i].getF()[0], cellSoAA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY)
@@ -699,7 +699,7 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
   functorSoA.endTraversal(newton3);
 
   // compare for consistency
-  EXPECT_EQ(moleculesAoS.size(), cellSoA.numParticles());
+  EXPECT_EQ(moleculesAoS.size(), cellSoA.size());
 
   for (size_t i = 0; i < numberMolecules; ++i) {
     EXPECT_NEAR(moleculesAoS[i].getF()[0], cellSoA._particles[i].getF()[0], AOS_VS_SOA_ACCURACY)

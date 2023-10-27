@@ -17,7 +17,6 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/options/LoadEstimatorOption.h"
-#include "autopas/options/MPIStrategyOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
@@ -259,12 +258,21 @@ class MDFlexConfig {
       "Log level for AutoPas. Set to debug for tuning information. "
       "Possible Values: (trace debug info warn error critical off)"};
   /**
-   * tuningStrategyOption
+   * tuningStrategyOptions
    */
-  MDFlexOption<autopas::TuningStrategyOption, __LINE__> tuningStrategyOption{
-      autopas::TuningStrategyOption::fullSearch, "tuning-strategy", true,
-      "Strategy how to reduce the sample measurements to a single value. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::TuningStrategyOption::getAllOptions(), " ", {"(", ")"})};
+  MDFlexOption<std::vector<autopas::TuningStrategyOption>, __LINE__> tuningStrategyOptions{
+      {},
+      "tuning-strategies",
+      true,
+      "Ordered pipeline of strategies to find the optimal algorithmic configuration. "
+      "Leave empty to perform an exhaustive search. Possible Values: " +
+          autopas::utils::ArrayUtils::to_string(
+              []() {
+                auto options = autopas::TuningStrategyOption::getAllOptions();
+                options.erase(autopas::TuningStrategyOption::fullSearch);
+                return options;
+              }(),
+              " ", {"(", ")"})};
   /**
    * tuningMetricOption
    */
@@ -272,13 +280,12 @@ class MDFlexConfig {
       autopas::TuningMetricOption::time, "tuning-metric", true,
       "Metric to use for tuning. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
+
   /**
-   * mpiStrategyOption
+   * ruleFilename
    */
-  MDFlexOption<autopas::MPIStrategyOption, __LINE__> mpiStrategyOption{
-      autopas::MPIStrategyOption::noMPI, "mpi-strategy", true,
-      "Whether to tune using with MPI or not. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::MPIStrategyOption::getAllOptions(), " ", {"(", ")"})};
+  MDFlexOption<std::string, __LINE__> ruleFilename{
+      "", "rule-filename", true, "Path to a .rule file containing rules for the rule-based tuning method."};
 
   /**
    * MPITuningMaxDifferenceForBucket
@@ -330,10 +337,9 @@ class MDFlexConfig {
    * relativeBlacklistRange
    */
   MDFlexOption<double, __LINE__> relativeBlacklistRange{
-      0, "relative-blacklist-range", true,
-      "For predictive based tuning strategies: When the first evidence of a configuration is further away from the "
-      "optimum than this relative range, the configuration is ignored for the rest of the simulation. Set to zero to "
-      "disable blacklisting."};
+      3., "relative-blacklist-range", true,
+      "For Slow Config Filter: When the first evidence of a configuration is further away from the "
+      "optimum than this relative range, the configuration is ignored for the rest of the simulation."};
   /**
    * evidenceFirstPrediction
    */
@@ -530,7 +536,7 @@ class MDFlexConfig {
   /**
    * siteStr
    */
-  static inline const char *siteStr{"Sites"};
+  static inline const char *const siteStr{"Sites"};
   /**
    * epsilonMap
    */
@@ -551,19 +557,19 @@ class MDFlexConfig {
   /**
    * moleculesStr
    */
-  static inline const char *moleculesStr{"Molecules"};
+  static inline const char *const moleculesStr{"Molecules"};
   /**
    * moleculeToSiteIdStr
    */
-  static inline const char *moleculeToSiteIdStr{"site-types"};
+  static inline const char *const moleculeToSiteIdStr{"site-types"};
   /**
    * moleculeToSitePosStr
    */
-  static inline const char *moleculeToSitePosStr{"relative-site-positions"};
+  static inline const char *const moleculeToSitePosStr{"relative-site-positions"};
   /**
    * momentOfInertiaStr
    */
-  static inline const char *momentOfInertiaStr{"moment-of-inertia"};
+  static inline const char *const momentOfInertiaStr{"moment-of-inertia"};
   // Maps where the molecule type information is actually stored
   /**
    * molToSiteIdMap
@@ -581,16 +587,16 @@ class MDFlexConfig {
   /**
    * objectsStr
    */
-  static inline const char *objectsStr{"Objects"};
+  static inline const char *const objectsStr{"Objects"};
   /**
    * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is
    * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
    */
-  static inline const char *particleTypeStr{"particle-type-id"};
+  static inline const char *const particleTypeStr{"particle-type-id"};
   /**
    * bottomLeftBackCornerStr
    */
-  static inline const char *bottomLeftBackCornerStr{"bottomLeftCorner"};
+  static inline const char *const bottomLeftBackCornerStr{"bottomLeftCorner"};
   /**
    * velocityStr
    */
@@ -728,15 +734,13 @@ class MDFlexConfig {
    * @see TuningStrategyLoggerProxy
    */
   MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true,
-                                               "If tuning information should be logged"};
+                                               "If tuning information should be logged. Possible Values: (true false)"};
 
   /**
    * The suffix for files created by the tuning logger.
    */
-  MDFlexOption<std::string, __LINE__> outputSuffix{"default", "output-suffix", true,
-                                                   "An identifier that is contained in the filename "
-                                                   "of the logged tuning information (e.g. if setting "
-                                                   "--use-tuning-logger=true"};
+  MDFlexOption<std::string, __LINE__> outputSuffix{"", "output-suffix", true,
+                                                   "An identifier that is contained in the filename of all log files."};
 
   /**
    * valueOffset used for cli-output alignment
