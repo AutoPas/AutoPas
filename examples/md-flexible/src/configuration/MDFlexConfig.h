@@ -247,16 +247,16 @@ class MDFlexConfig {
    * traversalOptions
    */
   MDFlexOption<std::set<autopas::TraversalOption>, __LINE__> traversalOptions{
-      autopas::TraversalOption::getMostOptions(), "traversal", true,
+      autopas::TraversalOption::getMostPairwiseOptions(), "traversal", true,
       "List of pairwise traversal options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllPairwiseOptions(), " ", {"(", ")"})};
   /**
    * traversalOptions3B
    */
   MDFlexOption<std::set<autopas::TraversalOption>, __LINE__> traversalOptions3B{
-      autopas::TraversalOption::getMostOptions(), "traversal-3b", true,
+      autopas::TraversalOption::getMostTriwiseOptions(), "traversal-3b", true,
       "List of triwise traversal options to use. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllThreeBodyOptions(), " ", {"(", ")"})};
+          autopas::utils::ArrayUtils::to_string(autopas::TraversalOption::getAllTriwiseOptions(), " ", {"(", ")"})};
   /**
    * loadEstimatorOptions
    */

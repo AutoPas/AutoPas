@@ -133,7 +133,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedDataLayouts3B(_configuration.dataLayoutOptions3B.value);
   _autoPasContainer->setAllowedNewton3Options3B(_configuration.newton3Options3B.value);
   _autoPasContainer->setAllowedTraversals3B(_configuration.traversalOptions3B.value);
-
+  // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);

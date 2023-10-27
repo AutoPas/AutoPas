@@ -222,7 +222,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getDiscouragedOptions() {
-    return {Value::ds_sequential, Value::vcl_cluster_iteration};
+    return {Value::ds_sequential, Value::vcl_cluster_iteration, Value::ds_sequential_3b};
   }
 
   /**
@@ -232,8 +232,8 @@ class TraversalOption : public Option<TraversalOption> {
   static std::set<TraversalOption> getAllPairwiseOptions() {
     std::set<TraversalOption> pairwiseOptions;
     auto allOptions = getAllOptions();
-    auto threebodyOptions = getAllThreeBodyOptions();
-    std::set_difference(allOptions.begin(), allOptions.end(), threebodyOptions.begin(), threebodyOptions.end(),
+    auto triwiseOptions = getAllTriwiseOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), triwiseOptions.begin(), triwiseOptions.end(),
                         std::inserter(pairwiseOptions, pairwiseOptions.begin()));
     return pairwiseOptions;
   }
@@ -242,7 +242,33 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for 3-body interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllThreeBodyOptions() { return {Value::ds_sequential_3b, Value::lc_c01_3b}; }
+  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b, Value::lc_c01_3b}; }
+
+  /**
+   * Set of all pairwise traversals without discouraged options.
+   * @return
+   */
+  static std::set<TraversalOption> getMostPairwiseOptions() {
+    std::set<TraversalOption> mostPairwiseOptions;
+    auto allOptions = getAllOptions();
+    auto discouragedOptions = getDiscouragedOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
+                        std::inserter(mostPairwiseOptions, mostPairwiseOptions.begin()));
+    return mostPairwiseOptions;
+  }
+
+  /**
+   * Set of all triwise traversals without discouraged options.
+   * @return
+   */
+  static std::set<TraversalOption> getMostTriwiseOptions() {
+    std::set<TraversalOption> mostTriwiseOptions;
+    auto allOptions = getAllTriwiseOptions();
+    auto discouragedOptions = getDiscouragedOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
+                        std::inserter(mostTriwiseOptions, mostTriwiseOptions.begin()));
+    return mostTriwiseOptions;
+  }
 
   /**
    * Provides a way to iterate over the possible choices of TraversalOption.
