@@ -52,7 +52,9 @@ void DSSequentialTraversalTest3B::testTraversal(bool useSoA) {
     autopas::DSSequentialTraversal3B<FPCell, MTriwiseFunctor, autopas::DataLayoutOption::aos, true> traversal(
         &functor, std::numeric_limits<double>::max());
     // interactions in main cell + interactions with halo.
-    size_t expectedFunctorCalls = numParticles * (numParticles - 1) * (numParticles - 2) / 6 + numParticles * (numParticles - 1) * numHaloParticles / 2 + numParticles * numHaloParticles * (numHaloParticles - 1) / 2;
+    size_t expectedFunctorCalls = numParticles * (numParticles - 1) * (numParticles - 2) / 6 +
+                                  numParticles * (numParticles - 1) * numHaloParticles / 2 +
+                                  numParticles * numHaloParticles * (numHaloParticles - 1) / 2;
     EXPECT_CALL(functor, AoSFunctor(_, _, _, true)).Times((int)expectedFunctorCalls);
     traversal.setCellsToTraverse(cells);
     traversal.traverseParticleTriplets();
