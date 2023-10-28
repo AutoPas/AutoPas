@@ -31,7 +31,7 @@ class LCC08CellHandler3B {
  public:
   /**
   * Constructor of the LCC08CellHandler3B.
-  * @param functor The functor that defines the interaction of two particles.
+  * @param pairwiseFunctor The functor that defines the interaction of two particles.
   * @param cellsPerDimension The number of cells per dimension.
   * @param interactionLength Interaction length (cutoff + skin).
   * @param cellLength cell length.
@@ -58,24 +58,18 @@ class LCC08CellHandler3B {
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
-
- /**
-  * @copydoc autopas::CellTraversal::setSortingThreshold()
-  */
-  void setSortingThreshold(size_t sortingThreshold) { _cellFunctor.setSortingThreshold(sortingThreshold); }
-
-protected:
+ protected:
 
   /**
     * Combination of triplets for processBaseCell().
    */
-  std::vector<std::tuple<long, long, long, std::array<double, 3>>> _cellOffsets;
+  std::vector<std::tuple<long, long, std::array<double, 3>>> _cellOffsets;
 
   /**
    * Computes triplets used in processBaseCell()
+   * @param cellsPerDimension
    */
   void computeOffsets(const std::array<unsigned long, 3> &cellsPerDimension);
-
 
   /**
   * Overlap of interacting cells. Array allows asymmetric cell sizes.
@@ -86,7 +80,7 @@ protected:
   /**
    * CellFunctor to be used for the traversal defining the interaction between three cells.
    */
-  internal::CellFunctor3B<typename ParticleCell::ParticleType, ParticleCell, Functor, dataLayout, useNewton3, true>
+  internal::CellFunctor3B<typename ParticleCell::ParticleType, ParticleCell, Functor, dataLayout, false, false>
       _cellFunctor;
 
   Functor *_functor;
@@ -102,28 +96,20 @@ protected:
   const std::array<double, 3> _cellLength;
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::processBaseCell(
+template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+inline void LCC08CellHandler3B<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
-  for (auto const &[offset1, offset2, offset3, r] : _cellOffsets) {
-    const unsigned long index1 = baseIndex + offset1;
-    const unsigned long index2 = baseIndex + offset2;
-    const unsigned long index3 = baseIndex + offset3;
+  for (auto const &[offset1, offset2, r] : _cellOffsets) {
+    const unsigned long cellIndex1 = baseIndex + offset1;
+    const unsigned long cellIndex2 = baseIndex + offset2;
 
-    ParticleCell &cell1 = cells[index1];
-    ParticleCell &cell2 = cells[index2];
-    ParticleCell &cell3 = cells[index3];
+    ParticleCell &cell1 = cells[cellIndex1];
+    ParticleCell &cell2 = cells[cellIndex2];
 
-    if (index1 == index2 && index1 == index3 && index2 == index3) {
+    if (cellIndex1 == cellIndex2) {
       this->_cellFunctor.processCell(cell1);
-    } else if (index1 == index2 && index1 != index3) {
-      this->_cellFunctor.processCellPair(cell1, cell3);
-    } else if (index1 != index2 && index1 == index3) {
-      this->_cellFunctor.processCellPair(cell1, cell2);
-    } else if (index1 != index2 && index2 == index3) {
-      this->_cellFunctor.processCellPair(cell1, cell2);
     } else {
-      this->_cellFunctor.processCellTriple(cell1, cell2, cell3);
+      this->_cellFunctor.processCellPair(cell1, cell2, r);
     }
   }
 }
@@ -131,78 +117,6 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::p
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::computeOffsets(
     const std::array<unsigned long, 3> &cellsPerDimension) {
-  using namespace utils::ArrayMath::literals;
-
-  // Helper function to get minimal distance between two cells
-  auto cellDistance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-    return std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
-                                 std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
-                                 std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
-  };
-
-  auto is_valid_distance = [&] (long x1, long y1, long z1, long x2, long y2, long z2, auto interactionlengthsq) {
-    auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
-    return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
-  };
-
-  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
-  _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
-
-  // offsets for the first cell
-  for (long x1 = 0; x1 <= static_cast<long>(this->_overlap[0]); ++x1) {
-    for (long y1 = 0; y1 <= static_cast<long>(this->_overlap[1]); ++y1) {
-      for (long z1 = 0; z1 <= static_cast<long>(this->_overlap[2]); ++z1) {
-
-        // offsets for the second cell
-        for (long x2 = 0; x2 <= static_cast<long>(this->_overlap[0]); ++x2) {
-          for (long y2 = 0; y2 <= static_cast<long>(this->_overlap[1]); ++y2) {
-            for (long z2 = 0; z2 <= static_cast<long>(this->_overlap[2]); ++z2) {
-              // check distance between cell 1 and cell 2
-              const auto dist12 = cellDistance(x1, y1, z1, x2, y2, z2);
-              const double dist12Square = utils::ArrayMath::dot(dist12, dist12);
-              if (dist12Square > interactionLengthSquare) continue;
-
-              // offsets for the third cell
-              for (long x3 = 0; x3 <= static_cast<long>(this->_overlap[0]); ++x3) {
-                for (long y3 = 0; y3 <= static_cast<long>(this->_overlap[1]); ++y3) {
-                  for (long z3 = 0; z3 <= static_cast<long>(this->_overlap[2]); ++z3) {
-                    // check distance between cell 1 and cell 3
-                    const auto dist13 = cellDistance(x1, y1, z1, x3, y3, z3);
-                    const double dist13Square = utils::ArrayMath::dot(dist13, dist13);
-                    if (dist13Square > interactionLengthSquare) continue;
-
-                    // check distance between cell 2 and cell 3
-                    const auto dist23 = cellDistance(x2, y2, z2, x3, y3, z3);
-                    const double dist23Squared = utils::ArrayMath::dot(dist23, dist23);
-                    if (dist23Squared > interactionLengthSquare) continue;
-
-                    const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-
-                    const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x2, y2, z2, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-
-                    const long offset3 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x3, y3, z3, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-
-                    if (offset1 > offset2 or offset2 >= offset3) continue;
-
-                    if ((x1 == 0 or x2 == 0 or x3 == 0) and(y1 == 0 or y2 == 0 or y3 == 0) and (z1 == 0 or z2 == 0 or z3 == 0)) {
-
-                      const std::array<double, 3> sortDirection = {(x1 + x2) * this->_cellLength[0],
-                                                                   (y1 + y2) * this->_cellLength[1],
-                                                                   (z1 + z2) * this->_cellLength[2]};
-                      _cellOffsets.emplace_back(offset1, offset2, offset3, utils::ArrayMath::normalize(sortDirection));
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 
 }
 
