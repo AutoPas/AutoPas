@@ -1067,8 +1067,7 @@ class AutoPas {
    */
   std::string _outputSuffix{""};
   /**
-   * description
-   *
+   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t _sortingThreshold{8};
   /**

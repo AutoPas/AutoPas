@@ -107,6 +107,7 @@ class CellFunctor {
 
   /**
    * Min. number of particles to start sorting. This is the sum of the number of particles in two cells.
+   * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
    */
   size_t _sortingThreshold{8};
 };
