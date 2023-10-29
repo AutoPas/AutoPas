@@ -717,8 +717,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.thermostatInterval.description;
         try {
           config.thermostatInterval.value = node[key][config.thermostatInterval.name].as<size_t>();
-          if (config.thermostatInterval.value <= 1) {
-            throw std::runtime_error("thermostatInterval has to be > 0!");
+          if (config.thermostatInterval.value < 1) {
+            throw std::runtime_error("thermostatInterval has to be > 0");
           }
         } catch (const std::exception &e) {
           errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));
