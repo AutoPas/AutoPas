@@ -187,7 +187,7 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Divides two array's element-wise and returns the result.
+ * Divides an array element-wise by a given scalar and returns the result.
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a dividend.
@@ -204,12 +204,12 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Divides two array's element-wise and returns the result.
+ * Divides a scalar with by every element of an array to create an array of fractions.
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a dividend.
  * @param s divisor.
- * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/s`
+ * @return element-wise quotient of s and a, i.e., `result[i] = s/a[i]`
  */
 template <class T, std::size_t SIZE>
 [[nodiscard]] constexpr std::array<T, SIZE> divScalar(T s, const std::array<T, SIZE> &a) {

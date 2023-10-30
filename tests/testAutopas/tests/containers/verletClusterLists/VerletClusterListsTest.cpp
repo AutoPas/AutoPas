@@ -129,7 +129,7 @@ void compareParticlePairs(const std::vector<std::pair<autopas::Particle *, autop
 }
 
 /**
- * Fill a VLC container with randomly placed particles and compare pairwise interactions before and after
+ * Fill a VCL container with randomly placed particles and compare pairwise interactions before and after
  * random movement to N^2 calculated interactions.
  */
 TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin) {

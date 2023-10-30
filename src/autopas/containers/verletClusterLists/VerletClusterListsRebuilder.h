@@ -134,7 +134,7 @@ class VerletClusterListsRebuilder {
    *
    * @note Here, _newton3 decides, whether neighbor lists should use newton3. This changes what the lists contain.
    * For two interacting clusters A and B, if _newton3 == false, the interaction A->B is in the list of cluster B, and
-   * B->A is in cluster A. If newton3 == true, the two-way interaction A<->B will only be in the cluster that comes
+   * B->A is in cluster A. If _newton3 == true, the two-way interaction A<->B will only be in the cluster that comes
    * first when iterating through towers.
    */
   void rebuildNeighborListsAndFillClusters() {

@@ -53,7 +53,7 @@ class Cluster {
 
   /**
    * Indicates if the cluster contains any non-dummy particles.
-   * @return True if non-dummy particles are present in the cluster.
+   * @return True if only dummy particles are present in the cluster.
    */
   bool empty() const {
     const auto firstNonDummy = std::find_if(_firstParticle, _firstParticle + _clusterSize,
