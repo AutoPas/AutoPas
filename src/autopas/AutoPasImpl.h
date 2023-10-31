@@ -109,6 +109,7 @@ void AutoPas<Particle>::init() {
   _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
                                                     _verletRebuildFrequency, _outputSuffix);
 
+  _logicHandlerInfo.sortingThreshold = _sortingThreshold;
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
       *_autoTuner, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }

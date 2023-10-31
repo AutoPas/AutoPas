@@ -86,9 +86,9 @@ class VCLSlicedC02Traversal
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
-  void setUseSorting(bool useSorting) override {}
+  void setSortingThreshold(size_t sortingThreshold) override {}
 };
 }  // namespace autopas

@@ -61,9 +61,9 @@ class LCSlicedBalancedTraversal
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_balanced; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    */
-  void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
+  void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
   LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;

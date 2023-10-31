@@ -64,9 +64,9 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    */
-  void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
+  void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
   void traverseSingleColor(std::vector<ParticleCell> &cells, int color);

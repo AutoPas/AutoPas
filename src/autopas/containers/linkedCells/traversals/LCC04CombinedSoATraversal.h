@@ -63,10 +63,10 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
-  void setUseSorting(bool useSorting) override {}
+  void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
   LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
