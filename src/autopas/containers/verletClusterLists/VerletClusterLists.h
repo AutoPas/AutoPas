@@ -999,7 +999,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   }
 
   /**
-   * Helper method to sequentially iterate over all clusters.
+   * Helper method to sequentially iterate over all owned clusters.
    * @tparam LoopBody The type of the lambda to execute for all clusters.
    * @param loopBody The lambda to execute for all clusters. Parameters given is internal::Cluster& cluster.
    */
