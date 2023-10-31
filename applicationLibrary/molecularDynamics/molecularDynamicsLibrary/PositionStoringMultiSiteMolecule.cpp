@@ -23,15 +23,15 @@ void PositionStoringMultiSiteMolecule::setQuaternion(const std::array<double, 4>
   _q = q;
   //set sites based on rotation
   const std::vector<std::array<double, 3>> rotated_site_positions = autopas::utils::quaternion::rotateVectorOfPositions(_q, ppl.getSitePositions(_typeId));
-  _absSitePositionsX.resize(rotated_site_positions.size());
-  _absSitePositionsY.resize(rotated_site_positions.size());
-  _absSitePositionsZ.resize(rotated_site_positions.size());
+  _relSitePositionsX.resize(rotated_site_positions.size());
+  _relSitePositionsY.resize(rotated_site_positions.size());
+  _relSitePositionsZ.resize(rotated_site_positions.size());
 
   //const std::vector<std::array<double, 3>> rotated_site_positions = unrotated_site_positions;
   for(int i=0; i < rotated_site_positions.size(); i++){
-    _absSitePositionsX[i] = _r[0] + rotated_site_positions[i][0];
-    _absSitePositionsY[i] = _r[1] + rotated_site_positions[i][1];
-    _absSitePositionsZ[i] = _r[2] + rotated_site_positions[i][2];
+    _relSitePositionsX[i] = rotated_site_positions[i][0];
+    _relSitePositionsY[i] = rotated_site_positions[i][1];
+    _relSitePositionsZ[i] = rotated_site_positions[i][2];
   }
 }
 
@@ -39,24 +39,24 @@ void PositionStoringMultiSiteMolecule::setOnlyQuaternion(const std::array<double
   _q = q;
 }
 
-const std::vector<double> &PositionStoringMultiSiteMolecule::getAbsoluteSitePositionsX() const {
-  return _absSitePositionsX;
+const std::vector<double> &PositionStoringMultiSiteMolecule::getRelativeSitePositionsX() const {
+  return _relSitePositionsX;
 }
 
-const std::vector<double> &PositionStoringMultiSiteMolecule::getAbsoluteSitePositionsY() const {
-  return _absSitePositionsY;
+const std::vector<double> &PositionStoringMultiSiteMolecule::getRelativeSitePositionsY() const {
+  return _relSitePositionsY;
 }
 
-const std::vector<double> &PositionStoringMultiSiteMolecule::getAbsoluteSitePositionsZ() const {
-  return _absSitePositionsZ;
+const std::vector<double> &PositionStoringMultiSiteMolecule::getRelativeSitePositionsZ() const {
+  return _relSitePositionsZ;
 }
 
-std::array<double, 3> PositionStoringMultiSiteMolecule::getAbsoluteSitePosition(size_t index) const {
-  return {_absSitePositionsX[index], _absSitePositionsY[index], _absSitePositionsZ[index]};
+std::array<double, 3> PositionStoringMultiSiteMolecule::getRelativeSitePosition(size_t index) const {
+  return {_relSitePositionsX[index], _relSitePositionsY[index], _relSitePositionsZ[index]};
 }
 
 int PositionStoringMultiSiteMolecule::getNumberOfSites(){
-  return _absSitePositionsX.size();
+  return _relSitePositionsX.size();
 }
 
 const std::array<double, 3> &PositionStoringMultiSiteMolecule::getAngularVel() const { return _angularVel; }
@@ -85,9 +85,9 @@ std::string PositionStoringMultiSiteMolecule::toString() const {
         << "\nForce              : " << _f
         << "\nOld Force          : " << _oldF
         //<< "\nQuaternion         : " << _q
-        << "\nSite Positions X   :" << vectorToString<double>(_absSitePositionsX)
-        << "\nSite Positions Y>  :" << vectorToString<double>(_absSitePositionsY)
-        << "\nSite Positions  Z  :" << vectorToString<double>(_absSitePositionsZ)
+        << "\nSite Positions X   :" << vectorToString<double>(_relSitePositionsX)
+        << "\nSite Positions Y>  :" << vectorToString<double>(_relSitePositionsY)
+        << "\nSite Positions  Z  :" << vectorToString<double>(_relSitePositionsZ)
         << "\nRotational Velocity: " << _angularVel
         << "\nTorque             : " << _torque
         << "\nType ID            : " << _typeId

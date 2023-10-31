@@ -407,6 +407,17 @@ void Simulation::updateForces() {
   _timers.forceUpdateTotal.start();
 
   _timers.forceUpdatePairwise.start();
+  //_autoPasContainer->forEach([&](const auto& p){
+  //  const std::array<double, 3> absSitePosArray= p.getAbsoluteSitePosition(0);
+  //  const std::array<double, 3> Rarray= p.getR();
+  //  const std::vector<double> absSitePos(std::begin(absSitePosArray), std::end(absSitePosArray));
+  //  const std::vector<double> R(std::begin(Rarray), std::end(Rarray));
+  //  if(!autopas::utils::ArrayMath::isEqual( R, absSitePos)){
+  //    std::cout << "[" << p.getR()[0] << ", " << p.getR()[1] << ", " << p.getR()[2] << "]" << "unequal to" <<
+  //        "[" << p.getAbsoluteSitePosition(0)[0] << ", " << p.getAbsoluteSitePosition(0)[1] << ", " << p.getAbsoluteSitePosition(0)[2] << "]" << std::endl;
+  //  }
+  //});
+
   const bool isTuningIteration = calculatePairwiseForces();
 
   const auto timeIteration = _timers.forceUpdatePairwise.stop();

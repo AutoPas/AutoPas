@@ -7,6 +7,7 @@
 #pragma once
 
 #include "../../../examples/md-flexible/src/TypeDefinitions.h"  //necessary for ParticlePropertiesLibraryType
+#include "ParticlePropertiesLibrary.h"
 #include "MoleculeLJ.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/particles/ParticleBase.h"
@@ -70,9 +71,9 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
     quaternion1,
     quaternion2,
     quaternion3,
-    absoluteSitePositionsX,
-    absoluteSitePositionsY,
-    absoluteSitePositionsZ,
+    relativeSitePositionsX,
+    relativeSitePositionsY,
+    relativeSitePositionsZ,
     angularVelX,
     angularVelY,
     angularVelZ,
@@ -110,9 +111,9 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
      double, // q1
      double, // q2
      double, // q3
-     std::vector<double>, //absSitePosX
-     std::vector<double>, //absSitePosY
-     std::vector<double>, //absSitePosZ
+     std::vector<double>, //relSitePosX
+     std::vector<double>, //relSitePosY
+     std::vector<double>, //relSitePosZ
      double, // angVx
      double, // angVy
      double, // angVz
@@ -177,12 +178,12 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
       return getQuaternion()[2];
     } else if constexpr (attribute == AttributeNames::quaternion3) {
       return getQuaternion()[3];
-    }else if constexpr (attribute == AttributeNames::absoluteSitePositionsX){
-      return getAbsoluteSitePositionsX();
-    }else if constexpr (attribute == AttributeNames::absoluteSitePositionsY){
-      return getAbsoluteSitePositionsY();
-    }else if constexpr (attribute == AttributeNames::absoluteSitePositionsZ){
-      return getAbsoluteSitePositionsZ();
+    }else if constexpr (attribute == AttributeNames::relativeSitePositionsX){
+      return getRelativeSitePositionsX();
+    }else if constexpr (attribute == AttributeNames::relativeSitePositionsY){
+      return getRelativeSitePositionsY();
+    }else if constexpr (attribute == AttributeNames::relativeSitePositionsZ){
+      return getRelativeSitePositionsZ();
     } else if constexpr (attribute == AttributeNames::angularVelX) {
       return getAngularVel()[0];
     } else if constexpr (attribute == AttributeNames::angularVelY) {
@@ -240,19 +241,19 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       _oldF[2] = value;
     } else if constexpr (attribute == AttributeNames::quaternion0) {
-      _q[0] = value;
+      _q[0] = value;    //this can be problematic since the internal data structure doesn't get updated
     } else if constexpr (attribute == AttributeNames::quaternion1) {
       _q[1] = value;
     } else if constexpr (attribute == AttributeNames::quaternion2) {
       _q[2] = value;
     } else if constexpr (attribute == AttributeNames::quaternion3) {
       _q[3] = value;
-    } else if constexpr (attribute == AttributeNames::absoluteSitePositionsX) {
-      _absSitePositionsX = value;
-    } else if constexpr (attribute == AttributeNames::absoluteSitePositionsY) {
-      _absSitePositionsY = value;
-    } else if constexpr (attribute == AttributeNames::absoluteSitePositionsZ) {
-      _absSitePositionsZ = value;
+    } else if constexpr (attribute == AttributeNames::relativeSitePositionsX) {
+      _relSitePositionsX = value;   //this can be problematic since the quaternion doesn't get updated
+    } else if constexpr (attribute == AttributeNames::relativeSitePositionsY) {
+      _relSitePositionsY = value;
+    } else if constexpr (attribute == AttributeNames::relativeSitePositionsZ) {
+      _relSitePositionsZ = value;
     } else if constexpr (attribute == AttributeNames::angularVelX) {
       _angularVel[0] = value;
     } else if constexpr (attribute == AttributeNames::angularVelY) {
@@ -294,17 +295,17 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
   /**
   * Set the x-component of the absoluteSitePositions
    */
-  void setAbsoluteSitePositionsX(const std::vector<double>& sitesX);
+  void setRelativeSitePositionsX(const std::vector<double>& sitesX);
 
   /**
   * Set the y-component of the absoluteSitePositions
    */
-  void setAbsoluteSitePositionsY(const std::vector<double>& sitesY);
+  void setRelativeSitePositionsY(const std::vector<double>& sitesY);
 
   /**
   * Set the z-component of the absoluteSitePositions
    */
-  void setAbsoluteSitePositionsZ(const std::vector<double>& sitesZ);
+  void setRelativeSitePositionsZ(const std::vector<double>& sitesZ);
 
 
   /**
@@ -316,26 +317,26 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
   * Get the x-components of all Sites in that molecule.
   * @return Vector containing the absolute x-positions of all Sites
    */
-  [[nodiscard]] const std::vector<double> &getAbsoluteSitePositionsX() const;
+  [[nodiscard]] const std::vector<double> &getRelativeSitePositionsX() const;
 
   /**
   * Get the y-components of all Sites in that molecule.
   * @return Vector containing the absolute y-positions of all Sites
    */
-  [[nodiscard]] const std::vector<double> &getAbsoluteSitePositionsY() const;
+  [[nodiscard]] const std::vector<double> &getRelativeSitePositionsY() const;
 
   /**
   * Get the z-components of all Sites in that molecule.
   * @return Vector containing the absolute z-positions of all Sites
    */
-  [[nodiscard]] const std::vector<double> &getAbsoluteSitePositionsZ() const;
+  [[nodiscard]] const std::vector<double> &getRelativeSitePositionsZ() const;
 
   /**
   * Get the absolute Site position of the i-th Site in that molecule
   * @param index site index
   * @return absolute site position of that molecule
    */
-  [[nodiscard]] std::array<double, 3> getAbsoluteSitePosition(size_t index) const;
+  [[nodiscard]] std::array<double, 3> getRelativeSitePosition(size_t index) const;
 
 
 
@@ -404,19 +405,19 @@ class PositionStoringMultiSiteMolecule : public mdLib::MoleculeLJ {
   * Vector storing the x-component the absolute Site positions.
   * Since the number of sites in this molecule stay constant the size of this vector will also remain constant after initialization.
    */
-  std::vector<double> _absSitePositionsX{};
+  std::vector<double> _relSitePositionsX{};
 
   /**
   * Vector storing the y-component the absolute Site positions.
   * Since the number of sites in this molecule stay constant the size of this vector will also remain constant after initialization.
    */
 
-  std::vector<double> _absSitePositionsY{};
+  std::vector<double> _relSitePositionsY{};
   /**
   * Vector storing the z-component the absolute Site positions.
   * Since the number of sites in this molecule stay constant the size of this vector will also remain constant after initialization.
    */
-  std::vector<double> _absSitePositionsZ{};
+  std::vector<double> _relSitePositionsZ{};
 
   /**
   * Angular velocity of the particle
