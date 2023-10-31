@@ -94,9 +94,12 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     _towerSideLengthReciprocal = 1. / towerSideLength;
     const auto numTowersPerInteractionLength2D =
         static_cast_copy_array<int>(ceil(_interactionLength / _towerSideLength));
-    // sanity check
+    // Sanity check. This is not necessarily a problem with the method but potentially with the way the code is written.
     if (numTowersPerInteractionLength2D[0] != numTowersPerInteractionLength2D[1]) {
-      AutoPasLog(WARN, "Number of towers per interaction length differs in X vs Y direction! {}",
+      AutoPasLog(WARN,
+                 "Number of towers per interaction length differs in X vs Y direction! "
+                 "The container is built on the assumption that they are the same, "
+                 "so from here on the behavior might be undefined. Values: {}",
                  utils::ArrayUtils::to_string(numTowersPerInteractionLength2D));
     }
     _numTowersPerInteractionLength =
