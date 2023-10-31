@@ -160,11 +160,9 @@ using LJFunctorTypeAbstract =
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
         mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
-        mdLib::LJMultisiteFunctorAVX<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, true, vecLength>;
-#elif MD_FLEXIBLE_FUNCTOR_AVX_GS
-        mdLib::LJMultisiteFunctorAVX<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, false, vecLength>;
+        mdLib::LJMultisiteFunctorAVX512<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX_STS
-        mdLib::LJMultisiteFunctorAVX_STS<ParticleType, false, true, autopas::FunctorN3Modes::Both, false, true, true, vecLength>;
+        mdLib::LJMultisiteFunctorAV512X_STS<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
 #endif
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
