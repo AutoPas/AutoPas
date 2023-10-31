@@ -77,7 +77,8 @@ class CellFunctor3B {
    * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
    * The value of newton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or not:
    * - if newton3 is true: the aos functor will be applied once for each triplet (only i,j,k), passing newton3=true.
-   * - if newton3 is false: the aos functor will be applied three times for each triplet (i,j,k and j,i,k and k,i,j), passing newton3=false.
+   * - if newton3 is false: the aos functor will be applied three times for each triplet (i,j,k and j,i,k and k,i,j),
+   * passing newton3=false.
    * @tparam newton3 defines whether or not to use newton3
    * @param cell
    */
@@ -307,8 +308,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                    bidirectional>::processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2,
                                                         const std::array<double, 3> &sortingDirection) {
-  if ((cell1.size() + cell2.size() > _sortingThreshold) and
-      sortingDirection != std::array<double, 3>{0., 0., 0.}) {
+  if ((cell1.size() + cell2.size() > _sortingThreshold) and sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
 
@@ -392,8 +392,7 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                    bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
                                                           const std::array<double, 3> &sortingDirection) {
-  if ((cell1.size() + cell2.size() > _sortingThreshold) and
-      sortingDirection != std::array<double, 3>{0., 0., 0.}) {
+  if ((cell1.size() + cell2.size() > _sortingThreshold) and sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
 

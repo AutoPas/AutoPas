@@ -1694,8 +1694,7 @@ LogicHandler<Particle>::isConfigurationApplicable(const Configuration &conf, Fun
 
         // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
         if (auto *cellTraversalPtr =
-                dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
-                    traversalPtr.get())) {
+                dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(traversalPtr.get())) {
           cellTraversalPtr->setSortingThreshold(_sortingThreshold);
         }
         if (traversalPtr->isApplicable()) {
