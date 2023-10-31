@@ -77,9 +77,9 @@ class LCC01Traversal3B
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c01_3b; }
 
   /**
-   * @copydoc autopas::CellTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
-  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  private:
   /**
