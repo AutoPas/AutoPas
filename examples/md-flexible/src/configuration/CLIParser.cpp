@@ -265,9 +265,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.functorOption)::getoptChar: {
-        if (strArg.find("gs") != string::npos or strArg.find("gather") != string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX_GS;
-        } else if (strArg.find("sts") != string::npos or strArg.find("site-to-site") != string::npos) {
+        if (strArg.find("sts") != string::npos or strArg.find("site-to-site") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX_STS;
         } else if (strArg.find("avx") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;

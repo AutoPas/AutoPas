@@ -289,7 +289,7 @@ class LJMultisiteFunctorAVX512
 #ifndef __AVX512F__
 #pragma message "SoAFunctorCTS called without AVX support!"
 #endif
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -316,7 +316,7 @@ class LJMultisiteFunctorAVX512
     // todo this could be vectorized
     const size_t siteCount = [&]() {
       size_t siteCountTmp{0};
-      for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+      for (size_t mol = 0; mol < soa.size(); ++mol) {
         siteCountTmp += _PPLibrary->getNumSites(typeptr[mol]);
       }
       return siteCountTmp;
@@ -360,7 +360,7 @@ class LJMultisiteFunctorAVX512
     // Fill site-wise std::vectors for SIMD
     std::vector<std::array<double, 3>> rotatedSitePositions;
 
-    for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soa.size(); ++mol) {
       rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
 
@@ -383,7 +383,7 @@ class LJMultisiteFunctorAVX512
     // ------------------------------ Main force calculation loop -----------------------------
 
     size_t siteIndexMolA = 0;  // index of site vectors that represent the first site in molA
-    for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
+    for (size_t molA = 0; molA < soa.size(); ++molA) {
       const size_t noSitesInMolA = _PPLibrary->getNumSites(typeptr[molA]);  // Number of sites in molecule A
 
       const auto ownedStateA = ownedStatePtr[molA];
@@ -398,7 +398,7 @@ class LJMultisiteFunctorAVX512
       const std::array<double, 3> centerOfMass{xptr[molA], yptr[molA], zptr[molA]};
 
       // Build list of indices
-      const auto sitePairIndicies = buildSiteInteractionIndices(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, siteIndexMolB, soa.getNumberOfParticles(),
+      const auto sitePairIndicies = buildSiteInteractionIndices(xptr, yptr, zptr, typeptr, ownedStatePtr, centerOfMass, molA+1, siteIndexMolB, soa.size(),
                                                          noSitesB);
       // Calculate Forces
 
@@ -434,7 +434,7 @@ class LJMultisiteFunctorAVX512
 
 
     size_t siteIndex = 0;
-    for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soa.size(); ++mol) {
       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
         fxptr[mol] += siteForceX[siteIndex];
         fyptr[mol] += siteForceY[siteIndex];
@@ -473,7 +473,7 @@ class LJMultisiteFunctorAVX512
 #endif
     using namespace autopas::utils::ArrayMath::literals;
 
-    if (soaA.getNumberOfParticles() == 0 || soaB.getNumberOfParticles() == 0) return;
+    if (soaA.size() == 0 || soaB.size() == 0) return;
 
     const auto *const __restrict xAptr = soaA.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yAptr = soaA.template begin<Particle::AttributeNames::posY>();
@@ -515,7 +515,7 @@ class LJMultisiteFunctorAVX512
     // todo this could be vectorized
     const size_t siteCountB = [&]() {
       size_t siteCountTmp{0};
-      for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+      for (size_t mol = 0; mol < soaB.size(); ++mol) {
         siteCountTmp += _PPLibrary->getNumSites(typeptrB[mol]);
       }
       return siteCountTmp;
@@ -554,7 +554,7 @@ class LJMultisiteFunctorAVX512
 
     // Fill site-wise std::vectors for SIMD
 
-    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soaB.size(); ++mol) {
       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
 
@@ -577,7 +577,7 @@ class LJMultisiteFunctorAVX512
 
     // ------------------------------ Main force calculation loop -----------------------------
 
-    for (size_t molA = 0; molA < soaA.getNumberOfParticles(); ++molA) {
+    for (size_t molA = 0; molA < soaA.size(); ++molA) {
       const auto ownedStateA = ownedStatePtrA[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
         continue;
@@ -592,7 +592,7 @@ class LJMultisiteFunctorAVX512
 
       const auto siteTypesA = _PPLibrary->getSiteTypes(typeptrA[molA]);
 
-      const auto sitePairIndicies = buildSiteInteractionIndices(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, 0, soaB.getNumberOfParticles(),
+      const auto sitePairIndicies = buildSiteInteractionIndices(xBptr, yBptr, zBptr, typeptrB, ownedStatePtrB, centerOfMass, 0, 0, soaB.size(),
                                                          siteCountB);
 
       for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
@@ -621,7 +621,7 @@ class LJMultisiteFunctorAVX512
     // ------------------------------ Reduction -----------------------------
 
     size_t siteIndex = 0;
-    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soaB.size(); ++mol) {
       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
         fxBptr[mol] += siteForceBx[siteIndex];
         fyBptr[mol] += siteForceBy[siteIndex];

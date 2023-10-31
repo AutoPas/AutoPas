@@ -343,7 +343,7 @@ class LJMultisiteFunctorAVX512_STS
 #ifndef __AVX512F__
 #pragma message "SoAFunctorCTS called without AVX support!"
 #endif
-    if (soa.getNumberOfParticles() == 0) return;
+    if (soa.size() == 0) return;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -368,7 +368,7 @@ class LJMultisiteFunctorAVX512_STS
 
     // count number of sites in SoA
     size_t siteCount = 0;
-    for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soa.size(); ++mol) {
       siteCount += _PPLibrary->getNumSites(typeptr[mol]);
     }
 
@@ -407,7 +407,7 @@ class LJMultisiteFunctorAVX512_STS
     // Fill site-wise std::vectors for SIMD
     std::vector<std::array<double, 3>> rotatedSitePositions;
 
-    for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soa.size(); ++mol) {
 
       // todo fix this
       rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
@@ -432,7 +432,7 @@ class LJMultisiteFunctorAVX512_STS
     // ------------------------------ Main force calculation loop -----------------------------
     auto force_start = std::chrono::high_resolution_clock::now();
     size_t siteIndexMolA = 0;  // index of first site in molA
-    for (size_t molA = 0; molA < soa.getNumberOfParticles(); ++molA) {
+    for (size_t molA = 0; molA < soa.size(); ++molA) {
       const size_t noSitesInMolA = _PPLibrary->getNumSites(typeptr[molA]);  // Number of sites in molecule A
 
       const auto ownedStateA = ownedStatePtr[molA];
@@ -479,7 +479,7 @@ class LJMultisiteFunctorAVX512_STS
     // i.e. add the "newton3" site forces to add to the molecular force + torque counters
 
     size_t siteIndex = 0;
-    for (size_t mol = 0; mol < soa.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soa.size(); ++mol) {
       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
         fxptr[mol] += siteForceX[siteIndex];
         fyptr[mol] += siteForceY[siteIndex];
@@ -518,7 +518,7 @@ class LJMultisiteFunctorAVX512_STS
 #endif
     using namespace autopas::utils::ArrayMath::literals;
 
-    if (soaA.getNumberOfParticles() == 0 || soaB.getNumberOfParticles() == 0) return;
+    if (soaA.size() == 0 || soaB.size() == 0) return;
 
     const auto *const __restrict xAptr = soaA.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yAptr = soaA.template begin<Particle::AttributeNames::posY>();
@@ -558,7 +558,7 @@ class LJMultisiteFunctorAVX512_STS
 
     // count number of sites in SoA
     size_t siteCountB = 0;
-    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soaB.size(); ++mol) {
       siteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
     }
 
@@ -594,7 +594,7 @@ class LJMultisiteFunctorAVX512_STS
 
     // Fill site-wise std::vectors for SIMD
     std::vector<std::array<double, 3>> rotatedSitePositions;
-    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soaB.size(); ++mol) {
         rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
 
@@ -617,7 +617,7 @@ class LJMultisiteFunctorAVX512_STS
 
     // ------------------------------ Main force calculation loop -----------------------------
 
-    for (size_t molA = 0; molA < soaA.getNumberOfParticles(); ++molA) {
+    for (size_t molA = 0; molA < soaA.size(); ++molA) {
       const auto ownedStateA = ownedStatePtrA[molA];
       if (ownedStateA == autopas::OwnershipState::dummy) {
         continue;
@@ -663,7 +663,7 @@ class LJMultisiteFunctorAVX512_STS
     // ------------------------------ Reduction -----------------------------
 
     size_t siteIndex = 0;
-    for (size_t mol = 0; mol < soaB.getNumberOfParticles(); ++mol) {
+    for (size_t mol = 0; mol < soaB.size(); ++mol) {
       rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {

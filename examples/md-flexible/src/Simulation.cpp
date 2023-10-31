@@ -29,9 +29,6 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeSVE *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX_GS) && defined(__AVX__)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAVXGS *);
-#endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX_STS) && defined(__AVX__)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAVXSTS *);
 #endif
@@ -680,15 +677,6 @@ T Simulation::applyWithChosenFunctor(F f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
-#endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_AVX_GS: {
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX_GS) && defined(__AVX__)
-      return f(LJFunctorTypeAVXGS{cutoff, particlePropertiesLibrary});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor AVX with Gather/Scatter. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AVX_GS=ON`.");
 #endif
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX_STS: {

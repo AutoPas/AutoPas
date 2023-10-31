@@ -301,10 +301,6 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;
     }
-    case FunctorOption::lj12_6_AVX_GS: {
-      os << "Lennard-Jones (12-6) AVX intrinsics using Gather/Scatter" << endl;
-      break;
-    }
     case FunctorOption::lj12_6_AVX_STS: {
       os << "Lennard-Jones (12-6) AVX intrinsics using 0/1-Masks and a Site-to-Site cutoff criterion" << endl;
       break;

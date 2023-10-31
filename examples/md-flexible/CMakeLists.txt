@@ -22,8 +22,7 @@ option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Fun
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
 
 # todo clean this up
-option(MD_FLEXIBLE_FUNCTOR_AVX_GS "If instruction set is available and Multi-site mode is activated, compile AVX Multisite Functor with Gather Scatter Instructions" OFF)
-option(MD_FLEXIBLE_FUNCTOR_AVX_STS "If instruction set is available and Multi-site mode is activated, compile AVX Multisite Functor with Site-to-Site cutoffs" OFF)
+option(MD_FLEXIBLE_FUNCTOR_AVX_STS "If instruction set is available and Multi-site mode is activated, compile AVX512 Multisite Functor with Site-to-Site cutoffs" OFF)
 
 target_compile_definitions(
         md-flexible
@@ -32,7 +31,6 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX_GS}>:MD_FLEXIBLE_FUNCTOR_AVX_GS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX_STS}>:MD_FLEXIBLE_FUNCTOR_AVX_STS>
 )
 
