@@ -131,9 +131,9 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, I
   }
 
   /**
-   * @copydoc autopas::CellTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
-  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  private:
   /**

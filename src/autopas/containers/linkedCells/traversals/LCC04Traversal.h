@@ -72,9 +72,9 @@ class LCC04Traversal
   }
 
   /**
-   * @copydoc autopas::CellTraversal::setUseSorting()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
-  void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
+  void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
   void traverseSingleColor(std::vector<ParticleCell> &cells, int color);

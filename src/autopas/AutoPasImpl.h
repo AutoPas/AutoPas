@@ -83,6 +83,7 @@ void AutoPas<Particle>::init() {
     _tuningStrategyFactoryInfo.mpiDivideAndConquer = true;
   }
 
+  _logicHandlerInfo.sortingThreshold = _sortingThreshold;
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
       _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 
