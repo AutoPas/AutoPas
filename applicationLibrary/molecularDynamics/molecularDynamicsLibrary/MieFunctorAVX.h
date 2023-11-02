@@ -237,30 +237,58 @@
           return;
         }
         // for now inefficient power function
+
+
+
         double invdr2 = 1. / dr2;
-        // for schleife
-        // m could be 1; but n<=m;
         double fract = sigmaSquared * invdr2;
 
-        double Mie_m = 1;
-
-        if (m_exp % 2 == 1) {
-          Mie_m = sqrt(fract);
-        }
-
-        for (size_t k = 1; k < m_exp; k += 2) {
-          Mie_m = Mie_m * fract;
-        }
-
+        double Mie_m =1;
         double Mie_n = 1;
-        if (n_exp % 2 == 1) {
-          Mie_n = sqrt(fract);
-        }
-        for (size_t k = 1; k < n_exp; k += 2) {
-          Mie_n = Mie_n * fract;
+
+        if(mode==0) {
+
+          if (m_exp % 2 == 1) {
+            Mie_m = sqrt(fract);
+          }
+
+          for (int k = 1; k < m_exp; k += 2) {
+            Mie_m = Mie_m * fract;
+          }
+
+          if (n_exp % 2 == 1) {
+            Mie_n = sqrt(fract);
+          }
+          for (int k = 1; k < n_exp; k += 2) {
+            Mie_n = Mie_n * fract;
+          }
+
         }
 
-        double Mie =  (cnepsilon * Mie_n - cmepsilon * Mie_m);
+        else if(mode==1) {
+
+           if(m_exp&1) {
+            Mie_m = sqrt(fract);
+           }
+           if(n_exp&1) {
+            Mie_n = sqrt(fract);
+           }
+           m_exp>>=1;
+           n_exp>>=1;
+
+           while(m_exp||n_exp) {
+            if(m_exp&1)
+              Mie_m*=fract;
+            if(n_exp&1)
+              Mie_n*=fract;
+            fract*=fract;
+            m_exp>>=1;
+            n_exp>>=1;
+           }
+
+        }
+       double Mie = (cnepsilon * Mie_n - cmepsilon * Mie_m);
+
         auto f = dr * (invdr2 * Mie);
         i.addF(f);
         if (newton3) {
@@ -680,20 +708,43 @@
         if (_mm256_movemask_pd(cutoffDummyMask) == 0) {
           return;
         }
+        uint16_t m_exp = _mexpAoS;
+        uint16_t n_exp = _nexpAoS;
         const __m256d invdr2 = _mm256_div_pd(_one, dr2);
-
+        __m256d miem, mien;
         const __m256d mie2 = _mm256_mul_pd(sigmaSquareds, invdr2);
 
-        __m256d miem = (_mexpAoS % 2 == 1) ? _mm256_sqrt_pd(mie2) : _one;
-        __m256d mien = (_nexpAoS % 2 == 1) ? _mm256_sqrt_pd(mie2) : _one;
+        if(mode==0) {
+          miem = m_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
+          mien = n_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
 
-        for (size_t k = 1; k < _mexpAoS; k += 2) {
-          miem = _mm256_mul_pd(miem, mie2);
+          for (size_t k = 1; k < n_exp; k += 2) {
+            miem = _mm256_mul_pd(miem, mie2);
+          }
+          for (size_t k = 1; k < n_exp; k += 2) {
+            mien = _mm256_mul_pd(mien, mie2);
+          }
         }
-        for (size_t k = 1; k < _nexpAoS; k += 2) {
-          mien = _mm256_mul_pd(mien, mie2);
+        else if(mode==1) {
+
+          miem = m_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
+          mien = n_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
+
+          m_exp>>=1;
+          n_exp>>=1;
+          __m256d fact = mie2;
+          while (m_exp||n_exp) {
+            if (m_exp & 1) {
+              miem = _mm256_mul_pd(miem,fact);
+            }
+            if (n_exp & 1) {
+              mien = _mm256_mul_pd(mien,fact);
+            }
+            fact = _mm256_mul_pd(fact,fact);
+            m_exp >>= 1;
+            n_exp >>= 1;
+          }
         }
-        // ToDo: this can be optimized!
         const __m256d nmien = _mm256_mul_pd(_cnepsilon, mien);
         const __m256d mmiem = _mm256_mul_pd(_cmepsilon, miem);
         const __m256d miensubmiem = _mm256_sub_pd(nmien, mmiem);
@@ -1196,7 +1247,7 @@
 
 
   #endif
-
+    const uint8_t mode = 1;
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS, _cnepsilonAoS, _cmepsilonAoS, _sigmaSquaredAoS, _shift6AoS = 0;
     unsigned  _nexpAoS,_mexpAoS = 0;
