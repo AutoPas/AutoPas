@@ -127,7 +127,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
         // set useSorting of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
         if (auto *cellPairTraversalPtr =
                 dynamic_cast<autopas::CellPairTraversal<decltype(particleCellDummy)> *>(traversalUniquePtr.get())) {
-          cellPairTraversalPtr->setUseSorting(useSorting);
+          cellPairTraversalPtr->setSortingThreshold(useSorting ? 8 : std::numeric_limits<size_t>::max());
         }
 
         return traversalUniquePtr;

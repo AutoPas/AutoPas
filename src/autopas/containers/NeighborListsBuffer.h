@@ -78,7 +78,9 @@ class NeighborListsBuffer {
       _neighborLists.resize(std::max(10ul, static_cast<size_t>(_neighborLists.size() * _growthFactor)),
                             std::vector<Value>(_defaultListLength));
     }
-    return ++_lastValidListIndex;
+    ++_lastValidListIndex;
+    _neighborLists[_lastValidListIndex].clear();
+    return _lastValidListIndex;
   }
 
   /**

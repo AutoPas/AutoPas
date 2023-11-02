@@ -58,6 +58,7 @@ class LogicHandler {
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
+        _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
@@ -708,6 +709,11 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
+   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
+   */
+  size_t _sortingThreshold;
+
+  /**
    * Reference to the AutoTuner that owns the container, ...
    */
   autopas::AutoTuner &_autoTuner;
@@ -1087,6 +1093,14 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
               TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
                   configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
                   configuration.newton3);
+
+          // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+          if (auto *cellPairTraversalPtr =
+                  dynamic_cast<autopas::CellPairTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
+                      traversalPtr.get())) {
+            cellPairTraversalPtr->setSortingThreshold(_sortingThreshold);
+          }
+
           if (traversalPtr->isApplicable()) {
             return std::optional{std::move(traversalPtr)};
           } else {
@@ -1236,6 +1250,14 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
         auto traversalPtr =
             TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<PairwiseFunctor>(
                 conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3);
+
+        // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+        if (auto *cellPairTraversalPtr =
+                dynamic_cast<autopas::CellPairTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
+                    traversalPtr.get())) {
+          cellPairTraversalPtr->setSortingThreshold(_sortingThreshold);
+        }
+
         if (traversalPtr->isApplicable()) {
           return std::optional{std::move(traversalPtr)};
         } else {

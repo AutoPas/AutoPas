@@ -13,37 +13,75 @@ TYPED_TEST_SUITE_P(LinkedCellsTest);
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   decltype(this->_linkedCells) linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
 
+  // create owned particles
   autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
   autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
   autopas::Particle p3({1.6, 1.5, 1.5}, {0, 0, 0}, 2);
   autopas::Particle p4({2.5, 1.5, 1.5}, {0, 0, 0}, 3);
   autopas::Particle p5({2.5, 2.5, 2.5}, {0, 0, 0}, 4);
 
+  // These are going to be halo particles
+  autopas::Particle p6({-0.5, 1.5, 1.5}, {0, 0, 0}, 5);
+  autopas::Particle p7({3.5, 1.5, 1.5}, {0, 0, 0}, 6);
+  autopas::Particle p8({1.5, -0.5, 1.5}, {0, 0, 0}, 7);
+  autopas::Particle p9({1.5, 1.5, -0.5}, {0, 0, 0}, 8);
+
+  // we insert owned and halo particles alternating. This way we can check if references are updated correctly when
+  // using LinkedCellsReferences
   linkedCells.addParticle(p1);
+  linkedCells.addHaloParticle(p6);
   linkedCells.addParticle(p2);
+  linkedCells.addHaloParticle(p7);
   linkedCells.addParticle(p3);
+  linkedCells.addHaloParticle(p8);
   linkedCells.addParticle(p4);
+  linkedCells.addHaloParticle(p9);
   linkedCells.addParticle(p5);
 
-  this->checkParticleIDsInCells(linkedCells, {{31ul, {0}}, {62ul, {1, 2}}, {63ul, {3}}, {93ul, {4}}}, true, __LINE__);
+  this->checkParticleIDsInCells(linkedCells,
+                                {{12ul, {{8, autopas::OwnershipState::halo}}},
+                                 {31ul, {{0, autopas::OwnershipState::owned}}},
+                                 {52ul, {{7, autopas::OwnershipState::halo}}},
+                                 {60ul, {{5, autopas::OwnershipState::halo}}},
+                                 {62ul, {{1, autopas::OwnershipState::owned}, {2, autopas::OwnershipState::owned}}},
+                                 {63ul, {{3, autopas::OwnershipState::owned}}},
+                                 {64ul, {{6, autopas::OwnershipState::halo}}},
+                                 {93ul, {{4, autopas::OwnershipState::owned}}}},
+                                true, __LINE__);
 
-  // new locations for particles
+  // // new locations for owned particles
   linkedCells.getCells()[31].begin()->setR({1.5, 0.5, 0.5});
   linkedCells.getCells()[62].begin()->setR({2.5, 1.5, 0.5});
   linkedCells.getCells()[63].begin()->setR({-0.5, -0.5, -0.5});
   linkedCells.getCells()[93].begin()->setR({1.6, 0.5, 0.5});
 
-  auto invalidParticles = linkedCells.updateContainer(this->_keepListsValid);
+  std::vector<Particle> invalidParticles;
+  EXPECT_NO_THROW(invalidParticles = linkedCells.updateContainer(this->_keepListsValid));
 
   ASSERT_EQ(invalidParticles.size(), 1);
   EXPECT_EQ(invalidParticles[0].getID(), 3);
 
   if (this->_keepListsValid) {
     // if the lists are kept valid, particles are NOT moved between cells!
-    this->checkParticleIDsInCells(linkedCells, {{31ul, {0}}, {62ul, {1, 2}}, {93ul, {4}}}, true, __LINE__);
+    // halo particles should now be dummies
+    // particle 3 should be a leaving particle and therefore a dummy
+    this->checkParticleIDsInCells(linkedCells,
+                                  {{12ul, {{8, autopas::OwnershipState::dummy}}},
+                                   {31ul, {{0, autopas::OwnershipState::owned}}},
+                                   {52ul, {{7, autopas::OwnershipState::dummy}}},
+                                   {60ul, {{5, autopas::OwnershipState::dummy}}},
+                                   {62ul, {{1, autopas::OwnershipState::owned}, {2, autopas::OwnershipState::owned}}},
+                                   {63ul, {{3, autopas::OwnershipState::dummy}}},
+                                   {64ul, {{6, autopas::OwnershipState::dummy}}},
+                                   {93ul, {{4, autopas::OwnershipState::owned}}}},
+                                  true, __LINE__);
   } else {
     // if the lists are not kept valid, particles should be moved between cells, so update the cells!
-    this->checkParticleIDsInCells(linkedCells, {{32ul, {0, 4}}, {38ul, {1}}, {62ul, {2}}},
+    // halo particles should be removed by updateContainer() at this point
+    this->checkParticleIDsInCells(linkedCells,
+                                  {{32ul, {{0, autopas::OwnershipState::owned}, {4, autopas::OwnershipState::owned}}},
+                                   {38ul, {{1, autopas::OwnershipState::owned}}},
+                                   {62ul, {{2, autopas::OwnershipState::owned}}}},
                                   false /*here, we do not know the order!*/, __LINE__);
   }
 }

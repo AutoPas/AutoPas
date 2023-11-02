@@ -7,18 +7,20 @@
 #pragma once
 #include <cstdlib>
 
+#include "autopas/options/IteratorBehavior.h"
+
 namespace autopas::internal {
 /**
  * Interface class to handle cell borders and cell types of cells.
  * @todo: add cell border handling
  */
 class CellBorderAndFlagManager {
+ public:
   /**
    * The index type to access the particle cells.
    */
   using index_t = std::size_t;
 
- public:
   /**
    * Cestructor
    */
@@ -37,5 +39,24 @@ class CellBorderAndFlagManager {
    * @return true if the cell can contain owned particles
    */
   [[nodiscard]] virtual bool cellCanContainOwnedParticles(index_t index1d) const = 0;
+
+  /**
+   * Checks if cell with index1d can be ignored for iteration with currently selected behavior.
+   * @param index1d 1d index of checked cell
+   * @param behavior @see IteratorBehavior
+   * @return false if this cell can contain particles that would be affected by current behavior
+   */
+  [[nodiscard]] bool ignoreCellForIteration(index_t index1d, IteratorBehavior behavior) const {
+    if ((behavior & IteratorBehavior::halo) and cellCanContainHaloParticles(index1d)) {
+      return false;
+    }
+    if ((behavior & IteratorBehavior::owned) and cellCanContainOwnedParticles(index1d)) {
+      return false;
+    }
+    if (behavior & IteratorBehavior::dummy) {
+      return false;
+    }
+    return true;
+  }
 };
 }  // namespace autopas::internal

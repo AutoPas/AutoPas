@@ -76,9 +76,9 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, d
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setUseSorting()
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    */
-  void setUseSorting(bool useSorting) override { _cellFunctor.setUseSorting(useSorting); }
+  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  private:
   /**
