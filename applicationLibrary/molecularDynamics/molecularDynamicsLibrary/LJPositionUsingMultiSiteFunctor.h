@@ -169,7 +169,6 @@ public:
   * @param newton3 Flag for if newton3 is used.
   */
 
- /*
  void AoSFunctor(Particle &particleA, Particle &particleB, bool newton3) final {
    using namespace autopas::utils::ArrayMath::literals;
    if (particleA.isDummy() or particleB.isDummy()) {
@@ -289,112 +288,6 @@ public:
      }
    }
  }
- */
-
- void AoSFunctor(Particle &particleA, Particle &particleB, bool newton3) final {
-   using namespace autopas::utils::ArrayMath::literals;
-   if (particleA.isDummy() or particleB.isDummy()) {
-     return;
-   }
-
-   // Don't calculate force if particleB outside cutoff of particleA
-   const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
-   const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
-
-   if (distanceSquaredCoM > _cutoffSquared) {
-     return;
-   }
-
-   // get number of sites
-   const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
-   const size_t numSitesB = useMixing ? _PPLibrary->getNumSites(particleB.getTypeId()) : _sitePositionsLJ.size();
-
-   // get siteIds
-   const std::vector<size_t> siteIdsA =
-       useMixing ? _PPLibrary->getSiteTypes(particleA.getTypeId()) : std::vector<unsigned long>();
-   const std::vector<size_t> siteIdsB =
-       useMixing ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : std::vector<unsigned long>();
-
-   // get unrotated relative site positions
-   const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
-       useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsLJ;
-   const std::vector<std::array<double, 3>> unrotatedSitePositionsB =
-       useMixing ? _PPLibrary->getSitePositions(particleB.getTypeId()) : _sitePositionsLJ;
-
-   // calculate correctly rotated relative site positions
-   const auto rotatedSitePositionsA =
-       autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
-   const auto rotatedSitePositionsB =
-       autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), unrotatedSitePositionsB);
-
-   for (int i = 0; i < numSitesA; i++) {
-     for (int j = 0; j < numSitesB; j++) {
-       const auto displacement = autopas::utils::ArrayMath::add(
-           autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
-       const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
-
-       const auto sigmaSquared =
-           useMixing ? _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]) : _sigmaSquared;
-       const auto epsilon24 = useMixing ? _PPLibrary->getMixing24Epsilon(siteIdsA[i], siteIdsB[j]) : _epsilon24;
-       const auto shift6 =
-           applyShift ? (useMixing ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6) : 0;
-
-       // clang-format off
-        // Calculate potential between sites and thus force
-        // Force = 24 * epsilon * (2*(sigma/distance)^12 - (sigma/distance)^6) * (1/distance)^2 * [x_displacement, y_displacement, z_displacement]
-        //         {                         scalarMultiple                                   } * {                     displacement             }
-       // clang-format on
-       const auto invDistSquared = 1. / distanceSquared;
-       const auto lj2 = sigmaSquared * invDistSquared;
-       const auto lj6 = lj2 * lj2 * lj2;
-       const auto lj12 = lj6 * lj6;
-       const auto lj12m6 = lj12 - lj6;  // = LJ potential / (4x epsilon)
-       const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * invDistSquared;
-       const auto force = autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
-
-       // Add force on site to net force
-       particleA.addF(force);
-       if (newton3) {
-         particleB.subF(force);
-       }
-
-       // Add torque applied by force
-       particleA.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[i], force));
-       if (newton3) {
-         particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[j], force));
-       }
-
-       if (calculateGlobals) {
-         // Here we calculate the potential energy * 6.
-         // For newton3, this potential energy contribution is distributed evenly to the two molecules.
-         // For non-newton3, the full potential energy is added to the one molecule.
-         // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
-         // There is a similar handling of the virial, but without the mutliplication/division by 6.
-         const auto potentialEnergy6 = epsilon24 * lj12m6 + shift6;
-         const auto virial = displacement * force;
-
-         const auto threadNum = autopas::autopas_get_thread_num();
-
-         if (particleA.isOwned()) {
-           if (newton3) {
-             _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-             _aosThreadData[threadNum].virialSumN3 += virial * 0.5;
-           } else {
-             // for non-newton3 the division is in the post-processing step.
-             _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergy6;
-             _aosThreadData[threadNum].virialSumNoN3 += virial;
-           }
-         }
-         // for non-newton3 the second particle will be considered in a separate calculation
-         if (newton3 and particleB.isOwned()) {
-           _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-           _aosThreadData[threadNum].virialSumN3 += virial * 0.5;
-         }
-       }
-     }
-   }
- }
-
 
  /**
   * @copydoc autopas::Functor::SoAFunctorSingle()
@@ -701,329 +594,6 @@ public:
    }
  }
 
- /*
- void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-   if (soa.size() == 0) return;
-
-   const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-   const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-   const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-
-   const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-
-   const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
-   const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
-   const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
-   const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
-
-   SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-   SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-   SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-   SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
-   SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
-   SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
-
-   [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
-
-   SoAFloatPrecision potentialEnergySum = 0.;
-   SoAFloatPrecision virialSumX = 0.;
-   SoAFloatPrecision virialSumY = 0.;
-   SoAFloatPrecision virialSumZ = 0.;
-
-   // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
-   const SoAFloatPrecision cutoffSquared = _cutoffSquared;
-
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
-
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionX;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionY;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionZ;
-
-   // we require arrays for forces for sites to maintain SIMD in site-site calculations
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceX;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceY;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ;
-
-   std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypes;
-   std::vector<char, autopas::AlignedAllocator<char>> isSiteOwned;
-
-   const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
-   const SoAFloatPrecision const_epsilon24 = _epsilon24;
-   const SoAFloatPrecision const_shift6 = _shift6;
-
-   const auto const_unrotatedSitePositions = _sitePositionsLJ;
-
-   // count number of sites in SoA
-   size_t siteCount = 0;
-   if constexpr (useMixing) {
-     for (size_t mol = 0; mol < soa.size(); ++mol) {
-       siteCount += _PPLibrary->getNumSites(typeptr[mol]);
-     }
-   } else {
-     siteCount = const_unrotatedSitePositions.size() * soa.size();
-   }
-
-   // pre-reserve site std::vectors
-   exactSitePositionX.reserve(siteCount);
-   exactSitePositionY.reserve(siteCount);
-   exactSitePositionZ.reserve(siteCount);
-
-   if constexpr (useMixing) {
-     siteTypes.reserve(siteCount);
-   }
-
-   siteForceX.reserve((siteCount));
-   siteForceY.reserve((siteCount));
-   siteForceZ.reserve((siteCount));
-
-   if constexpr (calculateGlobals) {
-     // this is only needed for vectorization when calculating globals
-     isSiteOwned.reserve(siteCount);
-   }
-
-   // Fill site-wise std::vectors for SIMD
-   if constexpr (useMixing) {
-     size_t siteIndex = 0;
-     for (size_t mol = 0; mol < soa.size(); ++mol) {
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
-       const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptr[mol]);
-
-       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
-         exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
-         exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
-         exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[mol];
-         siteTypes[siteIndex] = siteTypesOfMol[site];
-         siteForceX[siteIndex] = 0.;
-         siteForceY[siteIndex] = 0.;
-         siteForceZ[siteIndex] = 0.;
-         if (calculateGlobals) {
-           isSiteOwned[siteIndex] = ownedStatePtr[mol] == autopas::OwnershipState::owned;
-         }
-         ++siteIndex;
-       }
-     }
-   } else {
-     size_t siteIndex = 0;
-     for (size_t mol = 0; mol < soa.size(); mol++) {
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
-       for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-         exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
-         exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
-         exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[mol];
-         siteForceX[siteIndex] = 0.;
-         siteForceY[siteIndex] = 0.;
-         siteForceZ[siteIndex] = 0.;
-         if (calculateGlobals) {
-           isSiteOwned[siteIndex] = ownedStatePtr[mol] == autopas::OwnershipState::owned;
-         }
-         ++siteIndex;
-       }
-     }
-   }
-
-   // main force calculation loop
-   size_t siteIndexMolA = 0;  // index of first site in molA
-   for (size_t molA = 0; molA < soa.size(); ++molA) {
-     const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
-                                            : const_unrotatedSitePositions.size();  // Number of sites in molecule A
-
-     const auto ownedStateA = ownedStatePtr[molA];
-     if (ownedStateA == autopas::OwnershipState::dummy) {
-       siteIndexMolA += noSitesInMolA;
-       continue;
-     }
-
-     const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;  // index of first site in molB
-     const size_t noSitesB = (siteCount - siteIndexMolB);         // Number of sites in molecules that A interacts with
-
-     // create mask over every mol 'above' molA  (char to keep arrays aligned)
-     std::vector<char, autopas::AlignedAllocator<char>> molMask;
-     molMask.reserve(soa.size() - (molA + 1));
-
-#pragma omp simd
-     for (size_t molB = molA + 1; molB < soa.size(); ++molB) {
-       const auto ownedStateB = ownedStatePtr[molB];
-
-       const auto displacementCoMX = xptr[molA] - xptr[molB];
-       const auto displacementCoMY = yptr[molA] - yptr[molB];
-       const auto displacementCoMZ = zptr[molA] - zptr[molB];
-
-       const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-       const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-       const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-
-       const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-
-       // mask sites of molecules beyond cutoff or if molecule is a dummy
-       molMask[molB - (molA + 1)] =
-           distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
-     }
-
-     // generate mask for each site in the mols 'above' molA from molecular mask
-     std::vector<char, autopas::AlignedAllocator<char>> siteMask;
-     siteMask.reserve(noSitesB);
-
-     for (size_t molB = molA + 1; molB < soa.size(); ++molB) {
-       for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
-         siteMask.emplace_back(molMask[molB - (molA + 1)]);
-       }
-     }
-
-     // calculate LJ forces
-     for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
-       if (useMixing) {
-         // preload sigmas, epsilons, and shifts
-         sigmaSquareds.reserve(noSitesB);
-         epsilon24s.reserve(noSitesB);
-         if constexpr (applyShift) {
-           shift6s.reserve(noSitesB);
-         }
-
-         for (size_t siteB = 0; siteB < siteCount - (siteIndexMolB); ++siteB) {
-           const auto mixingData = _PPLibrary->getMixingData(siteTypes[siteA], siteTypes[siteIndexMolB + siteB]);
-           sigmaSquareds[siteB] = mixingData.sigmaSquared;
-           epsilon24s[siteB] = mixingData.epsilon24;
-           if (applyShift) {
-             shift6s[siteB] = mixingData.shift6;
-           }
-         }
-       }
-       // sums used for siteA
-       SoAFloatPrecision forceSumX = 0.;
-       SoAFloatPrecision forceSumY = 0.;
-       SoAFloatPrecision forceSumZ = 0.;
-       SoAFloatPrecision torqueSumX = 0.;
-       SoAFloatPrecision torqueSumY = 0.;
-       SoAFloatPrecision torqueSumZ = 0.;
-
-#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
-       for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
-         const size_t globalSiteBIndex = siteB + siteIndexMolB;
-
-         const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
-         const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
-         const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
-
-         const auto isSiteBOwned = !calculateGlobals || isSiteOwned[globalSiteBIndex];
-
-         const auto displacementX = exactSitePositionX[siteA] - exactSitePositionX[globalSiteBIndex];
-         const auto displacementY = exactSitePositionY[siteA] - exactSitePositionY[globalSiteBIndex];
-         const auto displacementZ = exactSitePositionZ[siteA] - exactSitePositionZ[globalSiteBIndex];
-
-         const auto distanceSquaredX = displacementX * displacementX;
-         const auto distanceSquaredY = displacementY * displacementY;
-         const auto distanceSquaredZ = displacementZ * displacementZ;
-
-         const auto distanceSquared = distanceSquaredX + distanceSquaredY + distanceSquaredZ;
-
-         const auto invDistSquared = 1. / distanceSquared;
-         const auto lj2 = sigmaSquared * invDistSquared;
-         const auto lj6 = lj2 * lj2 * lj2;
-         const auto lj12 = lj6 * lj6;
-         const auto lj12m6 = lj12 - lj6;
-         const auto scalarMultiple = siteMask[siteB] ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
-
-         // calculate forces
-         const auto forceX = scalarMultiple * displacementX;
-         const auto forceY = scalarMultiple * displacementY;
-         const auto forceZ = scalarMultiple * displacementZ;
-
-         forceSumX += forceX;
-         forceSumY += forceY;
-         forceSumZ += forceZ;
-
-         // newton's third law
-         siteForceX[globalSiteBIndex] -= forceX;
-         siteForceY[globalSiteBIndex] -= forceY;
-         siteForceZ[globalSiteBIndex] -= forceZ;
-
-         if constexpr (calculateGlobals) {
-           const auto virialX = displacementX * forceX;
-           const auto virialY = displacementY * forceY;
-           const auto virialZ = displacementZ * forceZ;
-           const auto potentialEnergy6 = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
-
-           // Add to the potential energy sum for each particle which is owned.
-           // This results in obtaining 12 * the potential energy for the SoA.
-           const auto ownershipMask =
-               (ownedStateA == autopas::OwnershipState::owned ? 1. : 0.) + (isSiteBOwned ? 1. : 0.);
-           potentialEnergySum += potentialEnergy6 * ownershipMask;
-           virialSumX += virialX * ownershipMask;
-           virialSumY += virialY * ownershipMask;
-           virialSumZ += virialZ * ownershipMask;
-         }
-       }
-       // sum forces on single site in mol A
-       siteForceX[siteA] += forceSumX;
-       siteForceY[siteA] += forceSumY;
-       siteForceZ[siteA] += forceSumZ;
-     }
-     siteIndexMolA += noSitesInMolA;
-   }
-
-   // reduce the forces on individual sites to forces & torques on whole molecules.
-   if constexpr (useMixing) {
-     size_t siteIndex = 0;
-     for (size_t mol = 0; mol < soa.size(); ++mol) {
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
-       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
-         fxptr[mol] += siteForceX[siteIndex];
-         fyptr[mol] += siteForceY[siteIndex];
-         fzptr[mol] += siteForceZ[siteIndex];
-         txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                       rotatedSitePositions[site][2] * siteForceY[siteIndex];
-         typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                       rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-         tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                       rotatedSitePositions[site][1] * siteForceX[siteIndex];
-         ++siteIndex;
-       }
-     }
-   } else {
-     size_t siteIndex = 0;
-     for (size_t mol = 0; mol < soa.size(); mol++) {
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
-       for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-         fxptr[mol] += siteForceX[siteIndex];
-         fyptr[mol] += siteForceY[siteIndex];
-         fzptr[mol] += siteForceZ[siteIndex];
-         txptr[mol] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                       rotatedSitePositions[site][2] * siteForceY[siteIndex];
-         typtr[mol] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                       rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-         tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                       rotatedSitePositions[site][1] * siteForceX[siteIndex];
-         ++siteIndex;
-       }
-     }
-   }
-
-   if constexpr (calculateGlobals) {
-     const auto threadNum = autopas::autopas_get_thread_num();
-     // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-     // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-     if (newton3) {
-       _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-       _aosThreadData[threadNum].virialSumN3[0] += virialSumX * 0.5;
-       _aosThreadData[threadNum].virialSumN3[1] += virialSumY * 0.5;
-       _aosThreadData[threadNum].virialSumN3[2] += virialSumZ * 0.5;
-     } else {
-       _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergySum;
-       _aosThreadData[threadNum].virialSumNoN3[0] += virialSumX;
-       _aosThreadData[threadNum].virialSumNoN3[1] += virialSumY;
-       _aosThreadData[threadNum].virialSumNoN3[2] += virialSumZ;
-     }
-   }
- }
- */
-
  /**
   * @copydoc autopas::Functor::SoAFunctorPair()
   */
@@ -1046,7 +616,7 @@ public:
  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                        bool newton3) final {
-   std::cout << "SoaFunctorVerlet called "<< std::endl;
+   //std::cout << "SoaFunctorVerlet called "<< std::endl;
    if (soa.size() == 0 or neighborList.empty()) return;
    if (newton3) {
      SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
@@ -1242,7 +812,7 @@ private:
   * @param soaA structure of arrays A
   * @param soaB structure of arrays B
   */
- /*
+
  template <bool newton3>
  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
    if (soaA.size() == 0 || soaB.size() == 0) return;
@@ -1256,15 +826,6 @@ private:
 
    const auto *const __restrict ownedStatePtrA = soaA.template begin<Particle::AttributeNames::ownershipState>();
    const auto *const __restrict ownedStatePtrB = soaB.template begin<Particle::AttributeNames::ownershipState>();
-
-   //const auto *const __restrict q0Aptr = soaA.template begin<Particle::AttributeNames::quaternion0>();
-   //const auto *const __restrict q1Aptr = soaA.template begin<Particle::AttributeNames::quaternion1>();
-   //const auto *const __restrict q2Aptr = soaA.template begin<Particle::AttributeNames::quaternion2>();
-   //const auto *const __restrict q3Aptr = soaA.template begin<Particle::AttributeNames::quaternion3>();
-   //const auto *const __restrict q0Bptr = soaB.template begin<Particle::AttributeNames::quaternion0>();
-   //const auto *const __restrict q1Bptr = soaB.template begin<Particle::AttributeNames::quaternion1>();
-   //const auto *const __restrict q2Bptr = soaB.template begin<Particle::AttributeNames::quaternion2>();
-   //const auto *const __restrict q3Bptr = soaB.template begin<Particle::AttributeNames::quaternion3>();
 
    const auto *const __restrict relSitePosXAptr = soaA.template begin<Particle::AttributeNames::relativeSitePositionsX>();
    const auto *const __restrict relSitePosYAptr = soaA.template begin<Particle::AttributeNames::relativeSitePositionsY>();
@@ -1318,8 +879,6 @@ private:
    const SoAFloatPrecision const_epsilon24 = _epsilon24;
    const SoAFloatPrecision const_shift6 = _shift6;
 
-   //const auto const_unrotatedSitePositions = _sitePositionsLJ;
-
    // count number of sites in both SoAs
    size_t siteCountB = 0;
    if constexpr (useMixing) {
@@ -1333,29 +892,29 @@ private:
    }
 
    // pre-reserve std::vectors
-   absoluteSitePositionBx.resize(siteCountB);
-   absoluteSitePositionBy.resize(siteCountB);
-   absoluteSitePositionBz.resize(siteCountB);
+   absoluteSitePositionBx.reserve(siteCountB);
+   absoluteSitePositionBy.reserve(siteCountB);
+   absoluteSitePositionBz.reserve(siteCountB);
 
    if constexpr (useMixing) {
-     siteTypesB.resize(siteCountB);
+     siteTypesB.reserve(siteCountB);
    }
 
-   siteForceBx.resize(siteCountB);
-   siteForceBy.resize(siteCountB);
-   siteForceBz.resize(siteCountB);
+   siteForceBx.reserve(siteCountB);
+   siteForceBy.reserve(siteCountB);
+   siteForceBz.reserve(siteCountB);
 
    if constexpr (calculateGlobals) {
      // this is only needed for vectorization when calculating globals
-     isSiteOwnedBArr.resize(siteCountB);
+     isSiteOwnedBArr.reserve(siteCountB);
    }
 
    if constexpr (useMixing) {
-     siteTypesB.resize(siteCountB);
-     sigmaSquareds.resize(siteCountB);
-     epsilon24s.resize(siteCountB);
+     siteTypesB.reserve(siteCountB);
+     sigmaSquareds.reserve(siteCountB);
+     epsilon24s.reserve(siteCountB);
      if constexpr (applyShift) {
-       shift6s.resize(siteCountB);
+       shift6s.reserve(siteCountB);
      }
    }
 
@@ -1393,17 +952,10 @@ private:
        continue;
      }
 
-     //const auto noSitesInMolA =
-     //    useMixing ? _PPLibrary->getNumSites(typeptrA[molA]) : const_unrotatedSitePositions.size();
      const auto noSitesInMolA = relSitePosXAptr[molA].size();
      const auto relativeSitePositionsXA = relSitePosXAptr[molA];
      const auto relativeSitePositionsYA = relSitePosYAptr[molA];
      const auto relativeSitePositionsZA = relSitePosZAptr[molA];
-     //const auto unrotatedSitePositionsA =
-     //    useMixing ? _PPLibrary->getSitePositions(typeptrA[molA]) : const_unrotatedSitePositions;
-
-     //const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
-     //    {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, unrotatedSitePositionsA);
 
      // create mask over every mol in cell B (char to keep arrays aligned)
      std::vector<char, autopas::AlignedAllocator<char>> molMask;
@@ -1429,10 +981,10 @@ private:
 
      // generate mask for each site in cell B from molecular mask
      std::vector<char, autopas::AlignedAllocator<char>> siteMask;
-     siteMask.resize(siteCountB);
+     siteMask.reserve(siteCountB);
 
      for (size_t molB = 0; molB < soaB.size(); ++molB) {
-       for (size_t siteB = 0; siteB < relSitePosXBptr[molB].size(); ++siteB) {
+       for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptrB[molB]); ++siteB) {
          siteMask.emplace_back(molMask[molB]);
        }
      }
@@ -1459,16 +1011,10 @@ private:
          }
        }
 
-       //const auto rotatedSitePositionAx = rotatedSitePositionsA[siteA][0];
-       //const auto rotatedSitePositionAy = rotatedSitePositionsA[siteA][1];
-       //const auto rotatedSitePositionAz = rotatedSitePositionsA[siteA][2];
        const auto relativeSitePositionAx = relativeSitePositionsXA[siteA];
        const auto relativeSitePositionAy = relativeSitePositionsYA[siteA];
        const auto relativeSitePositionAz = relativeSitePositionsZA[siteA];
 
-       //const auto exactSitePositionAx = rotatedSitePositionAx + xAptr[molA];
-       //const auto exactSitePositionAy = rotatedSitePositionAy + yAptr[molA];
-       //const auto exactSitePositionAz = rotatedSitePositionAz + zAptr[molA];
        const auto absoluteSitePositionAx = relativeSitePositionAx + xAptr[molA];
        const auto absoluteSitePositionAy = relativeSitePositionAy + yAptr[molA];
        const auto absoluteSitePositionAz = relativeSitePositionAz + zAptr[molA];
@@ -1569,362 +1115,6 @@ private:
        }
      }
    }
-
-   if constexpr (calculateGlobals) {
-     const auto threadNum = autopas::autopas_get_thread_num();
-     // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-     // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-     if constexpr (newton3) {
-       _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-       _aosThreadData[threadNum].virialSumN3[0] += virialSumX * 0.5;
-       _aosThreadData[threadNum].virialSumN3[1] += virialSumY * 0.5;
-       _aosThreadData[threadNum].virialSumN3[2] += virialSumZ * 0.5;
-     } else {
-       _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergySum;
-       _aosThreadData[threadNum].virialSumNoN3[0] += virialSumX;
-       _aosThreadData[threadNum].virialSumNoN3[1] += virialSumY;
-       _aosThreadData[threadNum].virialSumNoN3[2] += virialSumZ;
-     }
-   }
- }
- */
-
- template <bool newton3>
- void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
-   if (soaA.size() == 0 || soaB.size() == 0) return;
-
-   const auto *const __restrict xAptr = soaA.template begin<Particle::AttributeNames::posX>();
-   const auto *const __restrict yAptr = soaA.template begin<Particle::AttributeNames::posY>();
-   const auto *const __restrict zAptr = soaA.template begin<Particle::AttributeNames::posZ>();
-   const auto *const __restrict xBptr = soaB.template begin<Particle::AttributeNames::posX>();
-   const auto *const __restrict yBptr = soaB.template begin<Particle::AttributeNames::posY>();
-   const auto *const __restrict zBptr = soaB.template begin<Particle::AttributeNames::posZ>();
-
-   const auto *const __restrict ownedStatePtrA = soaA.template begin<Particle::AttributeNames::ownershipState>();
-   const auto *const __restrict ownedStatePtrB = soaB.template begin<Particle::AttributeNames::ownershipState>();
-
-   const auto *const __restrict q0Aptr = soaA.template begin<Particle::AttributeNames::quaternion0>();
-   const auto *const __restrict q1Aptr = soaA.template begin<Particle::AttributeNames::quaternion1>();
-   const auto *const __restrict q2Aptr = soaA.template begin<Particle::AttributeNames::quaternion2>();
-   const auto *const __restrict q3Aptr = soaA.template begin<Particle::AttributeNames::quaternion3>();
-   const auto *const __restrict q0Bptr = soaB.template begin<Particle::AttributeNames::quaternion0>();
-   const auto *const __restrict q1Bptr = soaB.template begin<Particle::AttributeNames::quaternion1>();
-   const auto *const __restrict q2Bptr = soaB.template begin<Particle::AttributeNames::quaternion2>();
-   const auto *const __restrict q3Bptr = soaB.template begin<Particle::AttributeNames::quaternion3>();
-
-   SoAFloatPrecision *const __restrict fxAptr = soaA.template begin<Particle::AttributeNames::forceX>();
-   SoAFloatPrecision *const __restrict fyAptr = soaA.template begin<Particle::AttributeNames::forceY>();
-   SoAFloatPrecision *const __restrict fzAptr = soaA.template begin<Particle::AttributeNames::forceZ>();
-   SoAFloatPrecision *const __restrict fxBptr = soaB.template begin<Particle::AttributeNames::forceX>();
-   SoAFloatPrecision *const __restrict fyBptr = soaB.template begin<Particle::AttributeNames::forceY>();
-   SoAFloatPrecision *const __restrict fzBptr = soaB.template begin<Particle::AttributeNames::forceZ>();
-
-   SoAFloatPrecision *const __restrict txAptr = soaA.template begin<Particle::AttributeNames::torqueX>();
-   SoAFloatPrecision *const __restrict tyAptr = soaA.template begin<Particle::AttributeNames::torqueY>();
-   SoAFloatPrecision *const __restrict tzAptr = soaA.template begin<Particle::AttributeNames::torqueZ>();
-   SoAFloatPrecision *const __restrict txBptr = soaB.template begin<Particle::AttributeNames::torqueX>();
-   SoAFloatPrecision *const __restrict tyBptr = soaB.template begin<Particle::AttributeNames::torqueY>();
-   SoAFloatPrecision *const __restrict tzBptr = soaB.template begin<Particle::AttributeNames::torqueZ>();
-
-   [[maybe_unused]] auto *const __restrict typeptrA = soaA.template begin<Particle::AttributeNames::typeId>();
-   [[maybe_unused]] auto *const __restrict typeptrB = soaB.template begin<Particle::AttributeNames::typeId>();
-
-   SoAFloatPrecision potentialEnergySum = 0.;
-   SoAFloatPrecision virialSumX = 0.;
-   SoAFloatPrecision virialSumY = 0.;
-   SoAFloatPrecision virialSumZ = 0.;
-
-   // local redeclarations to help compilers
-   const SoAFloatPrecision cutoffSquared = _cutoffSquared;
-
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
-
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBx;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBy;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactSitePositionBz;
-
-   // we require arrays for forces for sites to maintain SIMD in site-site calculations
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBx;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBy;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceBz;
-
-   std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesB;
-   std::vector<char, autopas::AlignedAllocator<char>> isSiteOwnedBArr;
-
-   const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
-   const SoAFloatPrecision const_epsilon24 = _epsilon24;
-   const SoAFloatPrecision const_shift6 = _shift6;
-
-   const auto const_unrotatedSitePositions = _sitePositionsLJ;
-
-   // count number of sites in both SoAs
-   size_t siteCountB = 0;
-   if constexpr (useMixing) {
-     for (size_t mol = 0; mol < soaB.size(); ++mol) {
-       siteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
-     }
-   } else {
-     siteCountB = const_unrotatedSitePositions.size() * soaB.size();
-   }
-
-   // pre-reserve std::vectors
-   exactSitePositionBx.reserve(siteCountB);
-   exactSitePositionBy.reserve(siteCountB);
-   exactSitePositionBz.reserve(siteCountB);
-
-   if constexpr (useMixing) {
-     siteTypesB.reserve(siteCountB);
-   }
-
-   siteForceBx.reserve(siteCountB);
-   siteForceBy.reserve(siteCountB);
-   siteForceBz.reserve(siteCountB);
-
-   if constexpr (calculateGlobals) {
-     // this is only needed for vectorization when calculating globals
-     isSiteOwnedBArr.reserve(siteCountB);
-   }
-
-   if constexpr (useMixing) {
-     siteTypesB.reserve(siteCountB);
-     sigmaSquareds.reserve(siteCountB);
-     epsilon24s.reserve(siteCountB);
-     if constexpr (applyShift) {
-       shift6s.reserve(siteCountB);
-     }
-   }
-
-   // Fill site-wise std::vectors for SIMD
-   if constexpr (useMixing) {
-     size_t siteIndex = 0;
-     for (size_t mol = 0; mol < soaB.size(); ++mol) {
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
-       const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptrB[mol]);
-
-       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
-         exactSitePositionBx[siteIndex] = rotatedSitePositions[site][0] + xBptr[mol];
-         exactSitePositionBy[siteIndex] = rotatedSitePositions[site][1] + yBptr[mol];
-         exactSitePositionBz[siteIndex] = rotatedSitePositions[site][2] + zBptr[mol];
-         siteTypesB[siteIndex] = siteTypesOfMol[site];
-         siteForceBx[siteIndex] = 0.;
-         siteForceBy[siteIndex] = 0.;
-         siteForceBz[siteIndex] = 0.;
-         if (calculateGlobals) {
-           isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == autopas::OwnershipState::owned;
-         }
-         ++siteIndex;
-       }
-     }
-   } else {
-     size_t siteIndex = 0;
-     for (size_t mol = 0; mol < soaB.size(); mol++) {
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
-       for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-         exactSitePositionBx[siteIndex] = rotatedSitePositions[site][0] + xBptr[mol];
-         exactSitePositionBy[siteIndex] = rotatedSitePositions[site][1] + yBptr[mol];
-         exactSitePositionBz[siteIndex] = rotatedSitePositions[site][2] + zBptr[mol];
-         siteForceBx[siteIndex] = 0.;
-         siteForceBy[siteIndex] = 0.;
-         siteForceBz[siteIndex] = 0.;
-         if (calculateGlobals) {
-           isSiteOwnedBArr[siteIndex] = ownedStatePtrB[mol] == autopas::OwnershipState::owned;
-         }
-         ++siteIndex;
-       }
-     }
-   }
-
-   // main force calculation loop
-   for (size_t molA = 0; molA < soaA.size(); ++molA) {
-     const auto ownedStateA = ownedStatePtrA[molA];
-     if (ownedStateA == autopas::OwnershipState::dummy) {
-       continue;
-     }
-
-     const auto noSitesInMolA =
-         useMixing ? _PPLibrary->getNumSites(typeptrA[molA]) : const_unrotatedSitePositions.size();
-     const auto unrotatedSitePositionsA =
-         useMixing ? _PPLibrary->getSitePositions(typeptrA[molA]) : const_unrotatedSitePositions;
-
-     const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
-         {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, unrotatedSitePositionsA);
-
-     // create mask over every mol in cell B (char to keep arrays aligned)
-     std::vector<char, autopas::AlignedAllocator<char>> molMask;
-     molMask.reserve(soaB.size());
-
-#pragma omp simd
-     for (size_t molB = 0; molB < soaB.size(); ++molB) {
-       const auto ownedStateB = ownedStatePtrB[molB];
-
-       const auto displacementCoMX = xAptr[molA] - xBptr[molB];
-       const auto displacementCoMY = yAptr[molA] - yBptr[molB];
-       const auto displacementCoMZ = zAptr[molA] - zBptr[molB];
-
-       const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-       const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-       const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-
-       const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-
-       // mask sites of molecules beyond cutoff or if molecule is a dummy
-       molMask[molB] = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
-     }
-
-     // generate mask for each site in cell B from molecular mask
-     std::vector<char, autopas::AlignedAllocator<char>> siteMask;
-     siteMask.reserve(siteCountB);
-
-     for (size_t molB = 0; molB < soaB.size(); ++molB) {
-       for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptrB[molB]); ++siteB) {
-         siteMask.emplace_back(molMask[molB]);
-       }
-     }
-
-     // sums used for molA
-     SoAFloatPrecision forceSumX = 0.;
-     SoAFloatPrecision forceSumY = 0.;
-     SoAFloatPrecision forceSumZ = 0.;
-     SoAFloatPrecision torqueSumX = 0.;
-     SoAFloatPrecision torqueSumY = 0.;
-     SoAFloatPrecision torqueSumZ = 0.;
-
-     for (size_t siteA = 0; siteA < noSitesInMolA; ++siteA) {
-       if (useMixing) {
-         // preload sigmas, epsilons, and shifts
-         for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
-           const auto mixingData =
-               _PPLibrary->getMixingData(_PPLibrary->getSiteTypes(typeptrA[molA])[siteA], siteTypesB[siteB]);
-           sigmaSquareds[siteB] = mixingData.sigmaSquared;
-           epsilon24s[siteB] = mixingData.epsilon24;
-           if (applyShift) {
-             shift6s[siteB] = mixingData.shift6;
-           }
-         }
-       }
-
-       const auto rotatedSitePositionAx = rotatedSitePositionsA[siteA][0];
-       const auto rotatedSitePositionAy = rotatedSitePositionsA[siteA][1];
-       const auto rotatedSitePositionAz = rotatedSitePositionsA[siteA][2];
-
-       const auto exactSitePositionAx = rotatedSitePositionAx + xAptr[molA];
-       const auto exactSitePositionAy = rotatedSitePositionAy + yAptr[molA];
-       const auto exactSitePositionAz = rotatedSitePositionAz + zAptr[molA];
-
-#pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
-       for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
-         const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
-         const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
-         const SoAFloatPrecision shift6 = applyShift ? (useMixing ? shift6s[siteB] : const_shift6) : 0;
-
-         const auto isSiteOwnedB = !calculateGlobals || isSiteOwnedBArr[siteB];
-
-         const auto displacementX = exactSitePositionAx - exactSitePositionBx[siteB];
-         const auto displacementY = exactSitePositionAy - exactSitePositionBy[siteB];
-         const auto displacementZ = exactSitePositionAz - exactSitePositionBz[siteB];
-
-         const auto distanceSquaredX = displacementX * displacementX;
-         const auto distanceSquaredY = displacementY * displacementY;
-         const auto distanceSquaredZ = displacementZ * displacementZ;
-
-         const auto distanceSquared = distanceSquaredX + distanceSquaredY + distanceSquaredZ;
-
-         const auto invDistSquared = 1. / distanceSquared;
-         const auto lj2 = sigmaSquared * invDistSquared;
-         const auto lj6 = lj2 * lj2 * lj2;
-         const auto lj12 = lj6 * lj6;
-         const auto lj12m6 = lj12 - lj6;
-         const auto scalarMultiple = siteMask[siteB] ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
-
-         // calculate forces
-         const auto forceX = scalarMultiple * displacementX;
-         const auto forceY = scalarMultiple * displacementY;
-         const auto forceZ = scalarMultiple * displacementZ;
-
-         forceSumX += forceX;
-         forceSumY += forceY;
-         forceSumZ += forceZ;
-
-         torqueSumX += rotatedSitePositionAy * forceZ - rotatedSitePositionAz * forceY;
-         torqueSumY += rotatedSitePositionAz * forceX - rotatedSitePositionAx * forceZ;
-         torqueSumZ += rotatedSitePositionAx * forceY - rotatedSitePositionAy * forceX;
-
-         // N3L ( total molecular forces + torques to be determined later )
-         if constexpr (newton3) {
-           siteForceBx[siteB] -= forceX;
-           siteForceBy[siteB] -= forceY;
-           siteForceBz[siteB] -= forceZ;
-         }
-
-         // globals
-         if constexpr (calculateGlobals) {
-           const auto potentialEnergy6 = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
-           const auto virialX = displacementX * forceX;
-           const auto virialY = displacementY * forceY;
-           const auto virialZ = displacementZ * forceZ;
-
-           // Add to the potential energy sum for each particle which is owned.
-           // This results in obtaining 12 * the potential energy for the SoA.
-           const auto ownershipFactor =
-               newton3 ? (ownedStateA == autopas::OwnershipState::owned ? 1. : 0.) + (isSiteOwnedB ? 1. : 0.)
-                       : (ownedStateA == autopas::OwnershipState::owned ? 1. : 0.);
-           potentialEnergySum += potentialEnergy6 * ownershipFactor;
-           virialSumX += virialX * ownershipFactor;
-           virialSumY += virialY * ownershipFactor;
-           virialSumZ += virialZ * ownershipFactor;
-         }
-       }
-     }
-     fxAptr[molA] += forceSumX;
-     fyAptr[molA] += forceSumY;
-     fzAptr[molA] += forceSumZ;
-     txAptr[molA] += torqueSumX;
-     tyAptr[molA] += torqueSumY;
-     tzAptr[molA] += torqueSumZ;
-   }
-
-   // reduce the forces on individual sites in SoA B to total forces & torques on whole molecules
-   if constexpr (useMixing) {
-     size_t siteIndex = 0;
-     for (size_t mol = 0; mol < soaB.size(); ++mol) {
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
-       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
-         fxBptr[mol] += siteForceBx[siteIndex];
-         fyBptr[mol] += siteForceBy[siteIndex];
-         fzBptr[mol] += siteForceBz[siteIndex];
-         txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
-                        rotatedSitePositions[site][2] * siteForceBy[siteIndex];
-         tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
-                        rotatedSitePositions[site][0] * siteForceBz[siteIndex];
-         tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
-                        rotatedSitePositions[site][1] * siteForceBx[siteIndex];
-         ++siteIndex;
-       }
-     }
-   } else {
-     size_t siteIndex = 0;
-     for (size_t mol = 0; mol < soaB.size(); ++mol) {
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
-       for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-         fxBptr[mol] += siteForceBx[siteIndex];
-         fyBptr[mol] += siteForceBy[siteIndex];
-         fzBptr[mol] += siteForceBz[siteIndex];
-         txBptr[mol] += rotatedSitePositions[site][1] * siteForceBz[siteIndex] -
-                        rotatedSitePositions[site][2] * siteForceBy[siteIndex];
-         tyBptr[mol] += rotatedSitePositions[site][2] * siteForceBx[siteIndex] -
-                        rotatedSitePositions[site][0] * siteForceBz[siteIndex];
-         tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
-                        rotatedSitePositions[site][1] * siteForceBx[siteIndex];
-         ++siteIndex;
-       }
-     }
-   }
    if constexpr (calculateGlobals) {
      const auto threadNum = autopas::autopas_get_thread_num();
      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
@@ -1955,14 +1145,24 @@ private:
      return;
    }
 
+   const size_t neighborListSize = neighborList.size();
+   const size_t *const __restrict neighborListPtr = neighborList.data();
+   if(neighborListSize == 0){
+     return;
+   }
+
+
    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-   const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
-   const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
-   const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
-   const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+   //const auto *const __restrict q0ptr = soa.template begin<Particle::AttributeNames::quaternion0>();
+   //const auto *const __restrict q1ptr = soa.template begin<Particle::AttributeNames::quaternion1>();
+   //const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
+   //const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
+   const auto *const __restrict relSitePosXptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsX>();
+   const auto *const __restrict relSitePosYptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsY>();
+   const auto *const __restrict relSitePosZptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsZ>();
 
    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
@@ -1981,7 +1181,7 @@ private:
 
    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
-   const auto const_unrotatedSitePositions = _sitePositionsLJ;
+   //const auto const_unrotatedSitePositions = _sitePositionsLJ;
 
    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
@@ -1991,26 +1191,27 @@ private:
    const auto const_epsilon24 = _epsilon24;
    const auto const_shift6 = _shift6;
 
-   const size_t neighborListSize = neighborList.size();
-   const size_t *const __restrict neighborListPtr = neighborList.data();
-
    // Count sites
-   const size_t siteCountMolPrime =
-       useMixing ? _PPLibrary->getNumSites(typeptr[indexPrime]) : const_unrotatedSitePositions.size();
+   //const size_t siteCountMolPrime =
+   //    useMixing ? _PPLibrary->getNumSites(typeptr[indexPrime]) : const_unrotatedSitePositions.size();
+   const size_t siteCountMolPrime = relSitePosXptr[indexPrime].size();
 
    size_t siteCountNeighbors = 0;  // site count of neighbours of primary molecule
    if constexpr (useMixing) {
      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-       siteCountNeighbors += _PPLibrary->getNumSites(typeptr[neighborList[neighborMol]]);
+       //siteCountNeighbors += _PPLibrary->getNumSites(typeptr[neighborList[neighborMol]]);
+       siteCountNeighbors += relSitePosXptr[neighborList[neighborMol]].size();
      }
    } else {
-     siteCountNeighbors = const_unrotatedSitePositions.size() * neighborListSize;
+     //siteCountNeighbors = const_unrotatedSitePositions.size() * neighborListSize;
+     //would have returned sooner if list was empty
+     siteCountNeighbors = relSitePosXptr[neighborList[0]].size() * neighborListSize;
    }
 
    // initialize site-wise arrays for neighbors
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionX;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionY;
-   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> exactNeighborSitePositionZ;
+   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteNeighborSitePositionX;
+   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteNeighborSitePositionY;
+   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteNeighborSitePositionZ;
 
    std::vector<size_t, autopas::AlignedAllocator<size_t>> siteTypesNeighbors;
    std::vector<char, autopas::AlignedAllocator<char>> isNeighborSiteOwnedArr;
@@ -2021,9 +1222,9 @@ private:
    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> siteForceZ;
 
    // pre-reserve arrays
-   exactNeighborSitePositionX.reserve(siteCountNeighbors);
-   exactNeighborSitePositionY.reserve(siteCountNeighbors);
-   exactNeighborSitePositionZ.reserve(siteCountNeighbors);
+   absoluteNeighborSitePositionX.reserve(siteCountNeighbors);
+   absoluteNeighborSitePositionY.reserve(siteCountNeighbors);
+   absoluteNeighborSitePositionZ.reserve(siteCountNeighbors);
 
    if constexpr (useMixing) {
      siteTypesNeighbors.reserve(siteCountNeighbors);
@@ -2045,30 +1246,37 @@ private:
      }
    }
 
-   const auto rotatedSitePositionsPrime =
-       useMixing ? autopas::utils::quaternion::rotateVectorOfPositions(
-                       {q0ptr[indexPrime], q1ptr[indexPrime], q2ptr[indexPrime], q3ptr[indexPrime]},
-                       _PPLibrary->getSitePositions(typeptr[indexPrime]))
-                 : autopas::utils::quaternion::rotateVectorOfPositions(
-                       {q0ptr[indexPrime], q1ptr[indexPrime], q2ptr[indexPrime], q3ptr[indexPrime]},
-                       const_unrotatedSitePositions);
+   //const auto rotatedSitePositionsPrime =
+   //    useMixing ? autopas::utils::quaternion::rotateVectorOfPositions(
+   //                    {q0ptr[indexPrime], q1ptr[indexPrime], q2ptr[indexPrime], q3ptr[indexPrime]},
+   //                    _PPLibrary->getSitePositions(typeptr[indexPrime]))
+   //              : autopas::utils::quaternion::rotateVectorOfPositions(
+   //                    {q0ptr[indexPrime], q1ptr[indexPrime], q2ptr[indexPrime], q3ptr[indexPrime]},
+   //                    const_unrotatedSitePositions);
+
+   const auto relativeSitePositionsXPrime = relSitePosXptr[indexPrime];
+   const auto relativeSitePositionsYPrime = relSitePosYptr[indexPrime];
+   const auto relativeSitePositionsZPrime = relSitePosZptr[indexPrime];
 
    const auto siteTypesPrime = _PPLibrary->getSiteTypes(typeptr[indexPrime]);  // this is not used if non-mixing
 
    // generate site-wise arrays for neighbors of primary mol
-   if constexpr (useMixing) {
+   {
      size_t siteIndex = 0;
      for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
        const auto neighborMolIndex = neighborList[neighborMol];
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
-           _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
+       //const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+       //    {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+       //    _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
+       const auto relativeSitePositionsX = relSitePosXptr[neighborMolIndex];
+       const auto relativeSitePositionsY = relSitePosYptr[neighborMolIndex];
+       const auto relativeSitePositionsZ = relSitePosZptr[neighborMolIndex];
        const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptr[neighborMolIndex]);
 
-       for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
-         exactNeighborSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[neighborMolIndex];
-         exactNeighborSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[neighborMolIndex];
-         exactNeighborSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[neighborMolIndex];
+       for (size_t site = 0; site < relativeSitePositionsX.size(); ++site) {
+         absoluteNeighborSitePositionX[siteIndex] = relativeSitePositionsX[site] + xptr[neighborMolIndex];
+         absoluteNeighborSitePositionY[siteIndex] = relativeSitePositionsY[site] + yptr[neighborMolIndex];
+         absoluteNeighborSitePositionZ[siteIndex] = relativeSitePositionsZ[site] + zptr[neighborMolIndex];
          siteTypesNeighbors[siteIndex] = siteTypesOfMol[site];
          siteForceX[siteIndex] = 0.;
          siteForceY[siteIndex] = 0.;
@@ -2079,28 +1287,7 @@ private:
          ++siteIndex;
        }
      }
-   } else {
-     size_t siteIndex = 0;
-     for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-       const auto neighborMolIndex = neighborList[neighborMol];
-       const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-           {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
-           const_unrotatedSitePositions);
-       for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-         exactNeighborSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[neighborMolIndex];
-         exactNeighborSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[neighborMolIndex];
-         exactNeighborSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[neighborMolIndex];
-         siteForceX[siteIndex] = 0.;
-         siteForceY[siteIndex] = 0.;
-         siteForceZ[siteIndex] = 0.;
-         if (calculateGlobals) {
-           isNeighborSiteOwnedArr[siteIndex] = ownedStatePtr[neighborMolIndex] == autopas::OwnershipState::owned;
-         }
-         ++siteIndex;
-       }
-     }
    }
-
    // -- main force calculation --
 
    // - calculate mol mask -
@@ -2149,13 +1336,13 @@ private:
    // - actual LJ calculation -
 
    for (size_t primeSite = 0; primeSite < siteCountMolPrime; ++primeSite) {
-     const auto rotatedPrimeSitePositionX = rotatedSitePositionsPrime[primeSite][0];
-     const auto rotatedPrimeSitePositionY = rotatedSitePositionsPrime[primeSite][1];
-     const auto rotatedPrimeSitePositionZ = rotatedSitePositionsPrime[primeSite][2];
+     //const auto rotatedPrimeSitePositionX = relativeSitePositionsXPrime[primeSite];
+     //const auto rotatedPrimeSitePositionY = relativeSitePositionsYPrime[primeSite];
+     //const auto rotatedPrimeSitePositionZ = relativeSitePositionsZPrime[primeSite];
 
-     const auto exactPrimeSitePositionX = rotatedPrimeSitePositionX + xptr[indexPrime];
-     const auto exactPrimeSitePositionY = rotatedPrimeSitePositionY + yptr[indexPrime];
-     const auto exactPrimeSitePositionZ = rotatedPrimeSitePositionZ + zptr[indexPrime];
+     const auto absolutePrimeSitePositionX = relativeSitePositionsXPrime[primeSite] + xptr[indexPrime];
+     const auto absolutePrimeSitePositionY = relativeSitePositionsYPrime[primeSite] + yptr[indexPrime];
+     const auto absolutePrimeSitePositionZ = relativeSitePositionsZPrime[primeSite] + zptr[indexPrime];
 
      // generate parameter data for chosen site
      if constexpr (useMixing) {
@@ -2166,7 +1353,7 @@ private:
          const auto neighborMolIndex = neighborList[neighborMol];
          const auto siteTypesOfNeighborMol = _PPLibrary->getSiteTypes(typeptr[neighborMolIndex]);
 
-         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
+         for (size_t site = 0; site < relSitePosXptr[neighborMolIndex].size(); ++site) {
            const auto mixingData = _PPLibrary->getMixingData(primeSiteType, siteTypesOfNeighborMol[site]);
            sigmaSquareds[siteIndex] = mixingData.sigmaSquared;
            epsilon24s[siteIndex] = mixingData.epsilon24;
@@ -2186,9 +1373,9 @@ private:
 
        const bool isNeighborSiteOwned = !calculateGlobals || isNeighborSiteOwnedArr[neighborSite];
 
-       const auto displacementX = exactPrimeSitePositionX - exactNeighborSitePositionX[neighborSite];
-       const auto displacementY = exactPrimeSitePositionY - exactNeighborSitePositionY[neighborSite];
-       const auto displacementZ = exactPrimeSitePositionZ - exactNeighborSitePositionZ[neighborSite];
+       const auto displacementX = absolutePrimeSitePositionX - absoluteNeighborSitePositionX[neighborSite];
+       const auto displacementY = absolutePrimeSitePositionY - absoluteNeighborSitePositionY[neighborSite];
+       const auto displacementZ = absolutePrimeSitePositionZ - absoluteNeighborSitePositionZ[neighborSite];
 
        const auto distanceSquaredX = displacementX * displacementX;
        const auto distanceSquaredY = displacementY * displacementY;
@@ -2212,9 +1399,9 @@ private:
        forceSumY += forceY;
        forceSumZ += forceZ;
 
-       torqueSumX += rotatedPrimeSitePositionY * forceZ - rotatedPrimeSitePositionZ * forceY;
-       torqueSumY += rotatedPrimeSitePositionZ * forceX - rotatedPrimeSitePositionX * forceZ;
-       torqueSumZ += rotatedPrimeSitePositionX * forceY - rotatedPrimeSitePositionY * forceX;
+       torqueSumX += relativeSitePositionsYPrime[primeSite] * forceZ - relativeSitePositionsZPrime[primeSite] * forceY;
+       torqueSumY += relativeSitePositionsZPrime[primeSite] * forceX - relativeSitePositionsXPrime[primeSite] * forceZ;
+       torqueSumZ += relativeSitePositionsXPrime[primeSite] * forceY - relativeSitePositionsYPrime[primeSite] * forceX;
 
        // N3L
        if (newton3) {
@@ -2252,43 +1439,27 @@ private:
 
    // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
    if constexpr (newton3) {
-     if constexpr (useMixing) {
+     {
        size_t siteIndex = 0;
        for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
          const auto neighborMolIndex = neighborList[neighborMol];
-         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-             {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
-             _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
+         //const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+         //    {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
+         //    _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
+         const auto relativeSitePositionsX = relSitePosXptr[neighborMolIndex];
+         const auto relativeSitePositionsY = relSitePosYptr[neighborMolIndex];
+         const auto relativeSitePositionsZ = relSitePosZptr[neighborMolIndex];
+
          for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
            fxptr[neighborMolIndex] += siteForceX[siteIndex];
            fyptr[neighborMolIndex] += siteForceY[siteIndex];
            fzptr[neighborMolIndex] += siteForceZ[siteIndex];
-           txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                                      rotatedSitePositions[site][2] * siteForceY[siteIndex];
-           typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                                      rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-           tzptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                                      rotatedSitePositions[site][1] * siteForceX[siteIndex];
-           ++siteIndex;
-         }
-       }
-     } else {
-       size_t siteIndex = 0;
-       for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-         const auto neighborMolIndex = neighborList[neighborMol];
-         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
-             {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
-             const_unrotatedSitePositions);
-         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-           fxptr[neighborMolIndex] += siteForceX[siteIndex];
-           fyptr[neighborMolIndex] += siteForceY[siteIndex];
-           fzptr[neighborMolIndex] += siteForceZ[siteIndex];
-           txptr[neighborMolIndex] += rotatedSitePositions[site][1] * siteForceZ[siteIndex] -
-                                      rotatedSitePositions[site][2] * siteForceY[siteIndex];
-           typtr[neighborMolIndex] += rotatedSitePositions[site][2] * siteForceX[siteIndex] -
-                                      rotatedSitePositions[site][0] * siteForceZ[siteIndex];
-           txptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
-                                      rotatedSitePositions[site][1] * siteForceX[siteIndex];
+           txptr[neighborMolIndex] += relativeSitePositionsY[site] * siteForceZ[siteIndex] -
+                                      relativeSitePositionsZ[site] * siteForceY[siteIndex];
+           typtr[neighborMolIndex] += relativeSitePositionsZ[site] * siteForceX[siteIndex] -
+                                      relativeSitePositionsX[site] * siteForceZ[siteIndex];
+           tzptr[neighborMolIndex] += relativeSitePositionsX[site] * siteForceY[siteIndex] -
+                                      relativeSitePositionsY[site] * siteForceX[siteIndex];
            ++siteIndex;
          }
        }
