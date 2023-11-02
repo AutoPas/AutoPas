@@ -516,7 +516,7 @@ constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, const std:
 }
 
 /**
- * Divides two array's element-wise and returns the result.
+ * Divides an array element-wise by a given scalar and returns the result.
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a dividend.
@@ -529,7 +529,7 @@ constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, T b) {
 }
 
 /**
- * Divides two array's element-wise and returns the result.
+ * Divides a scalar by every element of an array to create an array of fractions.
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a dividend.
