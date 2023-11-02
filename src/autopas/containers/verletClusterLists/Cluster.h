@@ -52,6 +52,16 @@ class Cluster {
   const Particle &operator[](size_t index) const { return *(_firstParticle + index); }
 
   /**
+   * Indicates if the cluster contains any non-dummy particles.
+   * @return True if only dummy particles are present in the cluster.
+   */
+  bool empty() const {
+    const auto firstNonDummy = std::find_if(_firstParticle, _firstParticle + _clusterSize,
+                                            [](const auto &particle) { return not particle.isDummy(); });
+    return firstNonDummy > &_firstParticle[_clusterSize - 1];
+  }
+
+  /**
    * Get Minimum and Maximum of the particles in z-direction.
    * @note This assumes that the particles are sorted along the z-direction!
    * @return Tuple of minimum and maximum in z-direction and bool indicating whether this cluster contains at least one
@@ -106,13 +116,37 @@ class Cluster {
   /**
    * Remove all neighbors.
    */
-  void clearNeighbors() { _neighborClusters->clear(); }
+  void clearNeighbors() {
+    if (_neighborClusters) {
+      _neighborClusters->clear();
+    }
+  }
 
   /**
    *
    * @param firstParticle
    */
   void reset(Particle *firstParticle) { _firstParticle = firstParticle; }
+
+  /**
+   * Get the bounding box of this cluster
+   * @return tuple<lowerCorner, upperCorner>
+   */
+  [[nodiscard]] std::tuple<std::array<double, 3>, std::array<double, 3>> getBoundingBox() const {
+    auto lowerCorner = _firstParticle->getR();
+    auto upperCorner = _firstParticle[_clusterSize - 1].getR();
+
+    for (size_t i = 0; i < _clusterSize; ++i) {
+      const auto &pos = _firstParticle[i].getR();
+      // no need to check z direction, this is already correct by initialization thanks to the particles being sorted in
+      // z dimension.
+      for (size_t dim = 0; dim < 2; ++dim) {
+        lowerCorner[dim] = std::min(lowerCorner[dim], pos[dim]);
+        upperCorner[dim] = std::max(upperCorner[dim], pos[dim]);
+      }
+    }
+    return {lowerCorner, upperCorner};
+  }
 
  private:
   /**
@@ -123,7 +157,7 @@ class Cluster {
   /**
    * A pointer to the first particle of the cluster.
    */
-  Particle *_firstParticle;
+  Particle *_firstParticle = nullptr;
   /**
    * The SoAView for this cluster.
    */
@@ -131,7 +165,7 @@ class Cluster {
   /**
    * The list of neighbor clusters of this cluster.
    */
-  std::vector<Cluster *> *_neighborClusters;
+  std::vector<Cluster *> *_neighborClusters = nullptr;
 };
 
 }  // namespace autopas::internal
