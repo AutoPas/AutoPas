@@ -1,17 +1,15 @@
-/**
- * @file LJMultisiteFunctorTest.cpp
- * @author S. Newcome
- * @date 16/05/2022
- */
+//
+// Created by johnny on 03.11.23.
+//
 
-#include "LJMultisiteFunctorTest.h"
+#include "LJPositionUsingMultisiteFunctorTest.h"
 
 #include <gtest/gtest.h>
 
 #define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
 
-void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
+void LJPositionUsingMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
   PPL->addSiteType(0, 1, 1, 1);
   PPL->addSiteType(1, 0.5, 0.5, 0.7);
   PPL->addMolType(0, {0}, {{0, 0, 0}}, {1, 1, 1});
@@ -22,7 +20,8 @@ void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_
   PPL->calculateMixingCoefficients();
 }
 
-void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules,
+void LJPositionUsingMultisiteFunctorTest::generateMolecules(std::vector<mdLib::PositionStoringMultiSiteMolecule> *molecules,
+                                                            ParticlePropertiesLibrary<double, size_t>& ppl,
                                                std::array<double, 3> offset = {0, 0, 0}, bool allOwned = true) {
   molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
@@ -35,12 +34,12 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
         // Generate quaternion deterministically but arbitrarily with fair variation
         const std::array<double, 4> qNonNormalized{1., (double)i + offset[0], (double)j + offset[1],
                                                    (double)k + offset[2]};
-        molecules->at(index).setQuaternion(autopas::utils::ArrayMath::normalize(qNonNormalized));
         molecules->at(index).setF({0, 0, 0});
         molecules->at(index).setTorque({0, 0, 0});
         molecules->at(index).setV({0, 0, 0});
         molecules->at(index).setAngularVel({0, 0, 0});
         molecules->at(index).setTypeId(index % 3);
+        molecules->at(index).setQuaternion(autopas::utils::ArrayMath::normalize(qNonNormalized), ppl);
         if (allOwned) {
           molecules->at(index).setOwnershipState(autopas::OwnershipState::owned);
         } else {
@@ -58,7 +57,7 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+void LJPositionUsingMultisiteFunctorTest::testAoSForceCalculation(mdLib::PositionStoringMultiSiteMolecule molA, mdLib::PositionStoringMultiSiteMolecule molB,
                                                      ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::cross;
@@ -152,7 +151,7 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
   // calculate forces and torques using AoS functor
 
   // create functor
-  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
+  mdLib::LJPositionUsingMultiSiteFunctor<mdLib::PositionStoringMultiSiteMolecule, applyShift, true, autopas::FunctorN3Modes::Both,
                             calculateGlobals, true>
       functor(cutoff, PPL);
 
@@ -197,8 +196,8 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
   }
 }
 
-void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA,
-                                                          mdLib::MultisiteMoleculeLJ molB,
+void LJPositionUsingMultisiteFunctorTest::testSuiteAoSForceCalculation(mdLib::PositionStoringMultiSiteMolecule molA,
+                                                          mdLib::PositionStoringMultiSiteMolecule molB,
                                                           ParticlePropertiesLibrary<double, size_t> PPL,
                                                           double cutoff) {
   // N3L Disabled, No Calculating Globals
@@ -221,12 +220,12 @@ void LJMultisiteFunctorTest::testSuiteAoSForceCalculation(mdLib::MultisiteMolecu
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+void LJPositionUsingMultisiteFunctorTest::singleSiteSanityCheck(mdLib::PositionStoringMultiSiteMolecule molA, mdLib::PositionStoringMultiSiteMolecule molB,
                                                    ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MoleculeLJ;
 
   // create functors
-  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
+  mdLib::LJPositionUsingMultiSiteFunctor<mdLib::PositionStoringMultiSiteMolecule, applyShift, true, autopas::FunctorN3Modes::Both,
                             calculateGlobals, true>
       multiSiteFunctor(cutoff, PPL);
   mdLib::LJFunctor<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
@@ -277,14 +276,14 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ mo
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
+void LJPositionUsingMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::PositionStoringMultiSiteMolecule> molecules,
                                                    ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
-  using mdLib::MultisiteMoleculeLJ;
+  using mdLib::PositionStoringMultiSiteMolecule;
 
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+  mdLib::LJPositionUsingMultiSiteFunctor<PositionStoringMultiSiteMolecule, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                             true>
       functorAoS(cutoff, PPL);
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+  mdLib::LJPositionUsingMultiSiteFunctor<PositionStoringMultiSiteMolecule, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                             true>
       functorSoA(cutoff, PPL);
 
@@ -307,7 +306,7 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteM
   functorAoS.endTraversal(newton3);
 
   // generate SoA Cell
-  autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoA;
+  autopas::FullParticleCell<PositionStoringMultiSiteMolecule> cellSoA;
   for (auto &&mol : moleculesSoA) {
     cellSoA.addParticle(mol);
   }
@@ -363,15 +362,15 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteM
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> moleculesA,
-                                                       std::vector<mdLib::MultisiteMoleculeLJ> moleculesB,
+void LJPositionUsingMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::PositionStoringMultiSiteMolecule> moleculesA,
+                                                       std::vector<mdLib::PositionStoringMultiSiteMolecule> moleculesB,
                                                        ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
-  using mdLib::MultisiteMoleculeLJ;
+  using mdLib::PositionStoringMultiSiteMolecule;
 
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+  mdLib::LJPositionUsingMultiSiteFunctor<PositionStoringMultiSiteMolecule, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                             true>
       functorAoS(cutoff, PPL);
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+  mdLib::LJPositionUsingMultiSiteFunctor<PositionStoringMultiSiteMolecule, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                             true>
       functorSoA(cutoff, PPL);
 
@@ -397,11 +396,11 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::Multis
   functorAoS.endTraversal(newton3);
 
   // generate SoA Cells
-  autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoAA;
+  autopas::FullParticleCell<PositionStoringMultiSiteMolecule> cellSoAA;
   for (auto &&mol : moleculesSoAA) {
     cellSoAA.addParticle(mol);
   }
-  autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoAB;
+  autopas::FullParticleCell<PositionStoringMultiSiteMolecule> cellSoAB;
   for (auto &&mol : moleculesSoAB) {
     cellSoAB.addParticle(mol);
   }
@@ -477,14 +476,14 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::Multis
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
-void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
+void LJPositionUsingMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::PositionStoringMultiSiteMolecule> molecules,
                                                      ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
-  using mdLib::MultisiteMoleculeLJ;
+  using mdLib::PositionStoringMultiSiteMolecule;
 
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+  mdLib::LJPositionUsingMultiSiteFunctor<PositionStoringMultiSiteMolecule, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                             true>
       functorAoS(cutoff, PPL);
-  mdLib::LJMultisiteFunctor<MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
+  mdLib::LJPositionUsingMultiSiteFunctor<PositionStoringMultiSiteMolecule, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
                             true>
       functorSoA(cutoff, PPL);
 
@@ -526,7 +525,7 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
   }
 
   // generate SoA Cell
-  autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoA;
+  autopas::FullParticleCell<PositionStoringMultiSiteMolecule> cellSoA;
   for (auto &&mol : moleculesSoA) {
     cellSoA.addParticle(mol);
   }
@@ -586,8 +585,8 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
 /**
  * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
  */
-TEST_F(LJMultisiteFunctorTest, AoSTest) {
-  using mdLib::MultisiteMoleculeLJ;
+TEST_F(LJPositionUsingMultisiteFunctorTest, AoSTest) {
+  using mdLib::PositionStoringMultiSiteMolecule;
 
   const double cutoff = 2.5;
 
@@ -597,77 +596,77 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 
   // Molecules to be used in the tests (explanation of choices documented when tests are run).
   // For ease of readability, each molecule has its own molType, even when duplicated.
-  MultisiteMoleculeLJ mol0;
+  PositionStoringMultiSiteMolecule mol0;
+  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   mol0.setR({0., 0., 0.});
-  mol0.setQuaternion({0., 0., 0., 1.});
   mol0.setF({0., 0., 0.});
   mol0.setTorque({0., 0., 0.});
   mol0.setTypeId(0);
-  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+  mol0.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol1;
+  PositionStoringMultiSiteMolecule mol1;
+  PPL.addMolType(1, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
   mol1.setR({1., 0., 0.});
-  mol1.setQuaternion({0., 0., 0., 1.});
   mol1.setF({0., 0., 0.});
   mol1.setTorque({0., 0., 0.});
   mol1.setTypeId(1);
-  PPL.addMolType(1, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
+  mol1.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol2;
+  PositionStoringMultiSiteMolecule mol2;
+  PPL.addMolType(2, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
   mol2.setR({0., 1., 0.});
-  mol2.setQuaternion({0., 0., 0., 1.});
   mol2.setF({0., 0., 0.});
   mol2.setTorque({0., 0., 0.});
   mol2.setTypeId(2);
-  PPL.addMolType(2, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
+  mol2.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol3;
+  PositionStoringMultiSiteMolecule mol3;
+  PPL.addMolType(3, {0, 0, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
   mol3.setR({0., 0., 0.});
-  mol3.setQuaternion({0., 0., 0., 1.});
   mol3.setF({0., 0., 0.});
   mol3.setTorque({0., 0., 0.});
   mol3.setTypeId(3);
-  PPL.addMolType(3, {0, 0, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
+  mol3.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol4;
+  PositionStoringMultiSiteMolecule mol4;
+  PPL.addMolType(4, {0, 0, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
   mol4.setR({0., 0., 1.});
-  mol4.setQuaternion({0.7071067811865475, 0.7071067811865475, 0., 0.});
   mol4.setF({0., 0., 0.});
   mol4.setTorque({0., 0., 0.});
   mol4.setTypeId(4);
-  PPL.addMolType(4, {0, 0, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
+  mol4.setQuaternion({0.7071067811865475, 0.7071067811865475, 0., 0.}, PPL);
 
-  MultisiteMoleculeLJ mol5;
+  PositionStoringMultiSiteMolecule mol5;
+  PPL.addMolType(5, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
   mol5.setR({2.5, 2.5, 2.5});
-  mol5.setQuaternion({0., 0., 0., 1.});
   mol5.setF({0., 0., 0.});
   mol5.setTorque({0., 0., 0.});
   mol5.setTypeId(5);
-  PPL.addMolType(5, {0, 0}, {{0., 0.01, 0.}, {0., -0.01, 0.}}, {1., 1., 1.});
+  mol5.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol6;
+  PositionStoringMultiSiteMolecule mol6;
+  PPL.addMolType(6, {0, 0}, {{0., 0.1, 0.}, {0., -0.1, 0.}}, {1., 1., 1.});
   mol6.setR({0., 2.55, 0.});
-  mol6.setQuaternion({0., 0., 0., 1.});
   mol6.setF({0., 0., 0.});
   mol6.setTorque({0., 0., 0.});
   mol6.setTypeId(6);
-  PPL.addMolType(6, {0, 0}, {{0., 0.1, 0.}, {0., -0.1, 0.}}, {1., 1., 1.});
+  mol6.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol7;
+  PositionStoringMultiSiteMolecule mol7;
+  PPL.addMolType(7, {0, 0}, {{0., 0.1, 0.}, {0., -0.1, 0.}}, {1., 1., 1.});
   mol7.setR({0., 2.45, 0.});
-  mol7.setQuaternion({0., 0., 0., 1.});
   mol7.setF({0., 0., 0.});
   mol7.setTorque({0., 0., 0.});
   mol7.setTypeId(7);
-  PPL.addMolType(7, {0, 0}, {{0., 0.1, 0.}, {0., -0.1, 0.}}, {1., 1., 1.});
+  mol7.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol8;
+  PositionStoringMultiSiteMolecule mol8;
+  PPL.addMolType(8, {1, 1, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
   mol8.setR({0., 0., 0.});
-  mol8.setQuaternion({0., 0., 0., 1.});
   mol8.setF({0., 0., 0.});
   mol8.setTorque({0., 0., 0.});
   mol8.setTypeId(8);
-  PPL.addMolType(8, {1, 1, 0}, {{-0.05, -0.05, 0.}, {0., 0.1, 0.}, {0.05, -0.05, 0.}}, {1., 1., 1.});
+  mol8.setQuaternion({0., 0., 0., 1.}, PPL);
 
   PPL.calculateMixingCoefficients();
 
@@ -699,8 +698,8 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
 /**
  * Tests that the AoS functor bypasses molecules that are dummies.
  */
-TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
-  using mdLib::MultisiteMoleculeLJ;
+TEST_F(LJPositionUsingMultisiteFunctorTest, AoSDummyTest) {
+  using mdLib::PositionStoringMultiSiteMolecule;
 
   const double cutoff = 2.5;
 
@@ -709,33 +708,33 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
   PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   PPL.calculateMixingCoefficients();
 
-  MultisiteMoleculeLJ mol0;
+  PositionStoringMultiSiteMolecule mol0;
   mol0.setR({0., 0., 0.});
-  mol0.setQuaternion({0., 0., 0., 1.});
   mol0.setF({0., 0., 0.});
   mol0.setTorque({0., 0., 0.});
   mol0.setTypeId(0);
   mol0.setOwnershipState(autopas::OwnershipState::owned);
+  mol0.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol1;
+  PositionStoringMultiSiteMolecule mol1;
   mol1.setR({-1., 0., 0.});
-  mol1.setQuaternion({0., 0., 0., 1.});
   mol1.setF({0., 0., 0.});
   mol1.setTorque({0., 0., 0.});
   mol1.setTypeId(0);
   mol1.setOwnershipState(autopas::OwnershipState::dummy);
+  mol1.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol2;
+  PositionStoringMultiSiteMolecule mol2;
   mol2.setR({1., 0., 0.});
-  mol2.setQuaternion({0., 0., 0., 1.});
   mol2.setF({0., 0., 0.});
   mol2.setTorque({0., 0., 0.});
   mol2.setTypeId(0);
   mol2.setOwnershipState(autopas::OwnershipState::dummy);
+  mol2.setQuaternion({0., 0., 0., 1.}, PPL);
 
   // Interact molecules together with newton3 on and off
   // create functor
-  mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, true, true, autopas::FunctorN3Modes::Both, true, true> functor(
+  mdLib::LJPositionUsingMultiSiteFunctor<mdLib::PositionStoringMultiSiteMolecule, true, true, autopas::FunctorN3Modes::Both, true, true> functor(
       cutoff, PPL);
 
   // newton3 on
@@ -776,8 +775,8 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
 /**
  * Tests for correctness of AoS functor by comparing the force with FunctorLJ for a single-site molecule.
  */
-TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
-  using mdLib::MultisiteMoleculeLJ;
+TEST_F(LJPositionUsingMultisiteFunctorTest, singleSiteSanityCheck) {
+  using mdLib::PositionStoringMultiSiteMolecule;
 
   const double cutoff = 3.;
 
@@ -785,21 +784,21 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   PPL.addSiteType(0, 1., 1., 1.);
   PPL.addSiteType(1, 0.5, 0.5, 0.5);
 
-  MultisiteMoleculeLJ mol0;
+  PositionStoringMultiSiteMolecule mol0;
+  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   mol0.setR({0., 0., 0.});
-  mol0.setQuaternion({0., 0., 0., 1.});
   mol0.setF({0., 0., 0.});
   mol0.setTorque({0., 0., 0.});
   mol0.setTypeId(0);
-  PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
+  mol0.setQuaternion({0., 0., 0., 1.}, PPL);
 
-  MultisiteMoleculeLJ mol1;
+  PositionStoringMultiSiteMolecule mol1;
+  PPL.addMolType(1, {1}, {{0., 0., 0.}}, {1., 1., 1.});
   mol1.setR({0.5, 0., 0.});
-  mol1.setQuaternion({0., 0., 0., 1.});
   mol1.setF({0., 0., 0.});
   mol1.setTorque({0., 0., 0.});
   mol1.setTypeId(1);
-  PPL.addMolType(1, {1}, {{0., 0., 0.}}, {1., 1., 1.});
+  mol1.setQuaternion({0., 0., 0., 1.}, PPL);
 
   PPL.calculateMixingCoefficients();
 
@@ -825,18 +824,19 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
 /**
  * Tests SoAFunctorSingle using AoS functor as a reference.
  */
-TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
-  using mdLib::MultisiteMoleculeLJ;
+TEST_F(LJPositionUsingMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
+  using mdLib::PositionStoringMultiSiteMolecule;
 
   const double cutoff = 3.;
 
-  std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMolecules;
-  std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMolecules;
+  std::vector<mdLib::PositionStoringMultiSiteMolecule> allOwnedMolecules;
+  std::vector<mdLib::PositionStoringMultiSiteMolecule> mixedOwnershipMolecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
-  generateMolecules(&allOwnedMolecules);
-  generateMolecules(&mixedOwnershipMolecules, {0, 0, 0}, false);
+  generateMolecules(&allOwnedMolecules, PPL);
+  generateMolecules(&mixedOwnershipMolecules, PPL, {0, 0, 0}, false);
+
 
   // tests with only owned molecules
 
@@ -860,6 +860,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
 
   // tests with a mix of ownership states
 
+
   // N3L optimization disabled, global calculation disabled.
   testSoACellAgainstAoS<false, false, false>(mixedOwnershipMolecules, PPL, cutoff);
 
@@ -877,27 +878,28 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
 
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoACellAgainstAoS<true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
+
 }
 
 /**
  * Tests SoAFunctorPair using AoS functor as a reference.
  */
-TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
-  using mdLib::MultisiteMoleculeLJ;
+TEST_F(LJPositionUsingMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
+  using mdLib::PositionStoringMultiSiteMolecule;
 
   const double cutoff = 5.;
 
-  std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMoleculesA;
-  std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMoleculesB;
-  std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMoleculesA;
-  std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMoleculesB;
+  std::vector<mdLib::PositionStoringMultiSiteMolecule> allOwnedMoleculesA;
+  std::vector<mdLib::PositionStoringMultiSiteMolecule> allOwnedMoleculesB;
+  std::vector<mdLib::PositionStoringMultiSiteMolecule> mixedOwnershipMoleculesA;
+  std::vector<mdLib::PositionStoringMultiSiteMolecule> mixedOwnershipMoleculesB;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
-  generateMolecules(&allOwnedMoleculesA, {0, 0, 0});
-  generateMolecules(&allOwnedMoleculesB, {0, 0, 9});
-  generateMolecules(&mixedOwnershipMoleculesA, {0, 0, 0}, false);
-  generateMolecules(&mixedOwnershipMoleculesB, {0, 0, 9}, false);
+  generateMolecules(&allOwnedMoleculesA, PPL, {0, 0, 0});
+  generateMolecules(&allOwnedMoleculesB, PPL, {0, 0, 9});
+  generateMolecules(&mixedOwnershipMoleculesA, PPL, {0, 0, 0}, false);
+  generateMolecules(&mixedOwnershipMoleculesB, PPL, {0, 0, 9}, false);
 
   // tests with only owned molecules
 
@@ -943,18 +945,18 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
 /**
  * Tests SoAFunctorVerlet using AoS functor as a reference.
  */
-TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
-  using mdLib::MultisiteMoleculeLJ;
+TEST_F(LJPositionUsingMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
+  using mdLib::PositionStoringMultiSiteMolecule;
 
   const double cutoff = 3.1;
 
-  std::vector<mdLib::MultisiteMoleculeLJ> allOwnedMolecules;
-  std::vector<mdLib::MultisiteMoleculeLJ> mixedOwnershipMolecules;
+  std::vector<mdLib::PositionStoringMultiSiteMolecule> allOwnedMolecules;
+  std::vector<mdLib::PositionStoringMultiSiteMolecule> mixedOwnershipMolecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
-  generateMolecules(&allOwnedMolecules);
-  generateMolecules(&mixedOwnershipMolecules, {0, 0, 0}, false);
+  generateMolecules(&allOwnedMolecules, PPL);
+  generateMolecules(&mixedOwnershipMolecules, PPL, {0, 0, 0}, false);
 
   // tests with only owned molecules
 

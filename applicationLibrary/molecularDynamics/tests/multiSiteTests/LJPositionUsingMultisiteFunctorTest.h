@@ -1,29 +1,26 @@
-/**
- * @file LJMultisiteFunctorTest.h
- * @author S. Newcome
- * @date 12/05/2022
- */
+//
+// Created by johnny on 03.11.23.
+//
 
 #pragma once
-
 #include <gtest/gtest.h>
 
 #include "AutoPasTestBase.h"
 #include "autopas/AutoPasDecl.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
-#include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
+#include "molecularDynamicsLibrary/LJPositionUsingMultiSiteFunctor.h"
+#include "molecularDynamicsLibrary/PositionStoringMultiSiteMolecule.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
  * Test class for LJMultisiteFunctor
  */
-class LJMultisiteFunctorTest : public AutoPasTestBase {
+class LJPositionUsingMultisiteFunctorTest : public AutoPasTestBase {
  public:
   /**
    * Constructor
    */
-  LJMultisiteFunctorTest() = default;
+  LJPositionUsingMultisiteFunctorTest() = default;
 
   /**
    * Generates a particle properties library for use with ::generateMolecules
@@ -37,8 +34,8 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param allOwned true if all generated molecules are owned. If false, molecule ownership will alternate in the order
    * owned -> halo -> dummy -> owned -> ...
    */
-  void generateMolecules(std::vector<mdLib::MultisiteMoleculeLJ> *molecules, std::array<double, 3> offset,
-                         bool allOwned);
+  void generateMolecules(std::vector<mdLib::PositionStoringMultiSiteMolecule> *molecules, ParticlePropertiesLibrary<double, size_t>& ppl,
+      std::array<double, 3> offset, bool allOwned);
 
   /**
    * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff.
@@ -53,7 +50,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+  void testAoSForceCalculation(mdLib::PositionStoringMultiSiteMolecule molA, mdLib::PositionStoringMultiSiteMolecule molB,
                                ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
@@ -67,7 +64,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param PPL
    * @param cutoff
    */
-  void testSuiteAoSForceCalculation(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+  void testSuiteAoSForceCalculation(mdLib::PositionStoringMultiSiteMolecule molA, mdLib::PositionStoringMultiSiteMolecule molB,
                                     ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
@@ -86,7 +83,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGobals, bool applyShift>
-  void singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
+  void singleSiteSanityCheck(mdLib::PositionStoringMultiSiteMolecule molA, mdLib::PositionStoringMultiSiteMolecule molB,
                              ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
@@ -100,7 +97,7 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoACellAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
+  void testSoACellAgainstAoS(std::vector<mdLib::PositionStoringMultiSiteMolecule> molecules,
                              ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
@@ -115,8 +112,8 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoACellPairAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> moleculesA,
-                                 std::vector<mdLib::MultisiteMoleculeLJ> moleculesB,
+  void testSoACellPairAgainstAoS(std::vector<mdLib::PositionStoringMultiSiteMolecule> moleculesA,
+                                 std::vector<mdLib::PositionStoringMultiSiteMolecule> moleculesB,
                                  ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 
   /**
@@ -130,6 +127,6 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param cutoff
    */
   template <bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoAVerletAgainstAoS(std::vector<mdLib::MultisiteMoleculeLJ> molecules,
+  void testSoAVerletAgainstAoS(std::vector<mdLib::PositionStoringMultiSiteMolecule> molecules,
                                ParticlePropertiesLibrary<double, size_t> PPL, double cutoff);
 };
