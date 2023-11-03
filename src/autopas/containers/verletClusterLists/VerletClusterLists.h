@@ -225,7 +225,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for reduction(|| : deletedSomething)
 #endif
-    for (auto &tower : _towerBlock) {
+    // Thanks to clang 13 this has to be a index based loop instead of a range based
+    for (size_t i = 0; i < _towerBlock.size(); ++i) {
+      auto &tower = _towerBlock[i];
       const auto towerSize = tower.getNumActualParticles();
       auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies. Avoid underflows.
