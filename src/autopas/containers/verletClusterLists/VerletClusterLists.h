@@ -225,12 +225,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for reduction(|| : deletedSomething)
 #endif
-    for (size_t i = 0; i < _towerBlock.size(); ++i) {
-      auto &tower = _towerBlock[i];
+    for (auto &tower : _towerBlock) {
       const auto towerSize = tower.getNumActualParticles();
       auto numTailDummies = tower.getNumTailDummyParticles();
-      // iterate over all non-tail dummies.
-      for (size_t j = 0; j < towerSize - numTailDummies;) {
+      // iterate over all non-tail dummies. Avoid underflows.
+      for (size_t j = 0; numTailDummies < towerSize and j < towerSize - numTailDummies;) {
         if (tower[j].isHalo()) {
           // swap-"delete"
           tower[j] = tower[towerSize - 1 - numTailDummies];
