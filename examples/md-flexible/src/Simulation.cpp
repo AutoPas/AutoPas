@@ -666,7 +666,7 @@ T Simulation::applyWithChosenFunctor(F f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      std::cout<<"Choosing LJFunctorTypeAutovec" << std::endl;
+      //std::cout<<"Choosing LJFunctorTypeAutovec" << std::endl;
       return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
@@ -676,7 +676,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_AbsSites: {
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-      std::cout<<"Choosing LJFunctorTypeAbsSitePositions" << std::endl;
+      //std::cout<<"Choosing LJFunctorTypeAbsSitePositions" << std::endl;
       return f(LJFunctorTypeUsingPos{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
