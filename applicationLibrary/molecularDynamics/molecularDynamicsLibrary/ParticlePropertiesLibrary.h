@@ -40,7 +40,7 @@ class ParticlePropertiesLibrary {
    * @param coeff  The coefficient of the Potential
    */
 
-  explicit ParticlePropertiesLibrary(const double cutoff, const size_t n_exp, const size_t m_exp, const double coeff)
+  explicit ParticlePropertiesLibrary(const double cutoff, const uint16_t n_exp, const uint16_t m_exp, const double coeff)
       : _cutoff(cutoff), _m_exp(m_exp), _n_exp(n_exp), _epsilon_coeff(coeff){}
 
 
@@ -339,7 +339,7 @@ class ParticlePropertiesLibrary {
    * @param cutoffSquared squared cutoff of the lennard-jones potential
    * @return shift multiplied by 6
    */
-  static double calcShiftMie(double cepsilon, double sigmaSquared, double cutoffSquared, size_t n, size_t m);
+  static double calcShiftMie(double cepsilon, double sigmaSquared, double cutoffSquared, uint16_t n, uint16_t m);
 
 
 
@@ -347,8 +347,8 @@ class ParticlePropertiesLibrary {
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
   const double _cutoff;
-  const size_t _n_exp = 12;
-  const size_t _m_exp = 6;
+  const uint16_t _n_exp = 12;
+  const uint16_t _m_exp = 6;
   const double _epsilon_coeff = 24;
 
 
@@ -381,6 +381,8 @@ class ParticlePropertiesLibrary {
   std::vector<PackedMixingDataMie, autopas::AlignedAllocator<PackedMixingDataMie>> _computedMixingDataMie;
 
   std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
+
+  bool mie = 1;
 };
 
 template <typename floatType, typename intType>
@@ -450,6 +452,9 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
   if (_numRegisteredSiteTypes == 0) {
     autopas::utils::ExceptionHandler::AutoPasException(
         "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
+  }
+  if(mie){
+    calculateMixingCoefficientsMie();
   }
 
   _computedMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
@@ -610,10 +615,9 @@ double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon2
   return shift6;
 }
 
-//ToDo: add test
 template <typename floatType, typename intType>
 double ParticlePropertiesLibrary<floatType, intType>::calcShiftMie(double cepsilon, double sigmaSquared,
-                                                                 double cutoffSquared, size_t n, size_t m) {
+                                                                 double cutoffSquared, uint16_t n, uint16_t m) {
   const auto sigmaDivCutoffPow2 = sigmaSquared / cutoffSquared;
 
   double sigmaDivCutoffPowm = 1;
@@ -621,7 +625,7 @@ double ParticlePropertiesLibrary<floatType, intType>::calcShiftMie(double cepsil
     sigmaDivCutoffPowm = sqrt(sigmaDivCutoffPow2);
   }
 
-  for(size_t k = 1; k < m;k+=2) {
+  for(int k = 1; k < m;k+=2) {
     sigmaDivCutoffPowm *= sigmaDivCutoffPow2;
   }
 
@@ -629,7 +633,7 @@ double ParticlePropertiesLibrary<floatType, intType>::calcShiftMie(double cepsil
   if(n % 2 == 1){
     sigmaDivCutoffPown = sqrt(sigmaDivCutoffPow2);
   }
-  for(size_t k = 1; k< n;k+=2) {
+  for(int k = 1; k< n;k+=2) {
     sigmaDivCutoffPown *= sigmaDivCutoffPow2;
   }
   const auto shift6 = 6*cepsilon * (sigmaDivCutoffPowm - sigmaDivCutoffPown);
