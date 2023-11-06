@@ -67,6 +67,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c08,
     /**
+     * LCC08Traversal : More compact form of LCC18Traversal. Eight-way domain coloring in minimally small interaction
+     * blocks. High degree of parallelism and good load balancing due to fine granularity.
+     */
+    lc_c08_3b,
+    /**
      * LCC18Traversal : More compact form of LCC01Traversal supporting Newton3 by only accessing forward neighbors.
      */
     lc_c18,
@@ -242,7 +247,7 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for 3-body interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b, Value::lc_c01_3b}; }
+  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b, Value::lc_c01_3b, Value::lc_c08_3b}; }
 
   /**
    * Set of all pairwise traversals without discouraged options.
@@ -291,6 +296,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
+        {TraversalOption::lc_c08_3b, "lc_c08_3b"},
         {TraversalOption::lc_c18, "lc_c18"},
 
         // VerletClusterLists Traversals:
