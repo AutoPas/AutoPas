@@ -34,7 +34,7 @@ class LCC08Traversal3B
       public LCTraversalInterface<ParticleCell> {
 public:
  /**
-  * Constructor of the lc_c08 traversal.
+  * Constructor of the lc_c08_3b traversal.
   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
   * y and z direction.
   * @param functor The functor that defines the interaction of three particles.
@@ -49,7 +49,7 @@ public:
 
  void traverseParticleTriplets() override;
 
- [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
+ [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08_3b; }
 
  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
@@ -61,12 +61,18 @@ public:
   */
  [[nodiscard]] bool isApplicable() const override { return true; }
 
+ /**
+   * @copydoc autopas::CellTraversal::setUseSorting()
+  */
+ void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
+
+
 private:
  LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08Traversal3B<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticleTriplets() {
+template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
+inline void LCC08Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseParticleTriplets() {
  auto &cells = *(this->_cells);
  this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

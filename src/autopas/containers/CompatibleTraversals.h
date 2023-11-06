@@ -59,7 +59,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allLCCompatibleTraversals3B() {
-  static const std::set<TraversalOption> s{TraversalOption::lc_c01_3b};
+  static const std::set<TraversalOption> s{TraversalOption::lc_c01_3b, TraversalOption::lc_c08_3b};
   return s;
 }
 
@@ -149,7 +149,7 @@ namespace autopas::compatibleTraversals {
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01,
           TraversalOption::lc_c01_3b};
-};
+}
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
  * @return
