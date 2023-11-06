@@ -52,6 +52,50 @@
               Particle, MieFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
       using SoAArraysType = typename Particle::SoAArraysType;
 
+     private:
+      /**
+       * Computes and sets the DoubbleAdditionChain for th eexponents
+       */
+       void computeDoubleAdditionChain(){
+         uint16_t  a,b;
+
+         if(_mexpAoS>_nexpAoS){
+           a = _nexpAoS;
+           b = _mexpAoS;
+         }
+         else{
+           a = _mexpAoS;
+           b = _nexpAoS;
+         }
+         int chain = 0;
+         int pointer = 1;
+         int i = 0;
+         while(a || b != 1) {
+           i++;
+           if (a <= b / 2) {
+             i++;
+             if (b & 1) {
+               chain |= pointer;
+             }
+             pointer <<= 1;
+             b = b / 2;
+           } else {
+             auto diff = b - a;
+             b = a;
+             a = diff;
+             chain |= pointer;
+           }
+           pointer <<= 1;
+         }
+
+         int rev_chain = 0;
+
+         for (int k = 0; k < i; k++,chain >>= 1) {
+           rev_chain = (rev_chain<<1) | (chain & 1);
+         }
+         chain_len = i;
+         doubleAdditionChain = rev_chain;
+       }
      public:
       /**
        * Deleted default constructor
@@ -63,11 +107,12 @@
        *
        * This is only necessary if no particlePropertiesLibrary is used.
        *
-       * @param epsilon24
+       * @param epsilon
        * @param sigmaSquared
        */
       void setParticleProperties(double epsilon, double sigmaSquared) {
-        double c = (_nexpAoS / (_nexpAoS - _mexpAoS)) * pow((_nexpAoS / _mexpAoS), (_mexpAoS / (_nexpAoS - _mexpAoS)));
+        double c = ((double) _nexpAoS / (double) (_nexpAoS - _mexpAoS)) * pow(( (double) _nexpAoS / (double) _mexpAoS), ( (double) _mexpAoS / (_nexpAoS - _mexpAoS)));
+        std::cout<< c << std::endl;
         double cepsilon = c * epsilon;
         double cnepsilon = _nexpAoS*cepsilon;
         double cmepsilon = _mexpAoS*cepsilon;
@@ -107,7 +152,7 @@
        * @param m_exp
        * @note param dummy unused, only there to make the signature different from the public constructor.
        */
-      explicit MieFunctorAVX(double cutoff, double n_exp, double m_exp, void * /*dummy*/)
+      explicit MieFunctorAVX(double cutoff, uint16_t n_exp, uint16_t m_exp, void * /*dummy*/)
     #ifdef __AVX__
           : autopas::Functor<
                 Particle, MieFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
@@ -126,6 +171,9 @@
         if (calculateGlobals) {
           _aosThreadData.resize(autopas::autopas_get_max_threads());
         }
+        computeDoubleAdditionChain();
+
+
       }
 
     #else
@@ -243,26 +291,21 @@
         double invdr2 = 1. / dr2;
         double fract = sigmaSquared * invdr2;
 
-        double Mie_m =1;
+        double Mie_m = 1;
         double Mie_n = 1;
 
         if(mode==0) {
 
-          if (m_exp % 2 == 1) {
-            Mie_m = sqrt(fract);
-          }
+          Mie_m = m_exp & 1 ? sqrt(fract) : 1;
+          Mie_n = n_exp & 1 ? sqrt(fract) : 1;
 
-          for (int k = 1; k < m_exp; k += 2) {
+          for (size_t k = 1; k < m_exp; k += 2) {
             Mie_m = Mie_m * fract;
           }
 
-          if (n_exp % 2 == 1) {
-            Mie_n = sqrt(fract);
-          }
-          for (int k = 1; k < n_exp; k += 2) {
+          for (size_t k = 1; k < n_exp; k += 2) {
             Mie_n = Mie_n * fract;
           }
-
         }
 
         else if(mode==1) {
@@ -273,6 +316,7 @@
            if(n_exp&1) {
             Mie_n = sqrt(fract);
            }
+
            m_exp>>=1;
            n_exp>>=1;
 
@@ -285,8 +329,36 @@
             m_exp>>=1;
             n_exp>>=1;
            }
+        }
+
+        else if(mode==2) {
+           auto chain = doubleAdditionChain;
+           auto base = sqrt(fract);
+           double a = 1.0, b = base;
+           for(uint16_t k=0;k<chain_len;k++,chain>>=1){
+
+            if(chain&1){
+              auto tmp = b*a;
+              a = b;
+              b = tmp;
+            }
+            else{
+              chain>>=1;
+              k++;
+              b *=b;
+              if(chain&1){
+                b *=base;
+              }
+            }
+           }
+        Mie_m = a;
+        Mie_n = b;
 
         }
+        else if(mode==3) {
+        }
+           
+
        double Mie = (cnepsilon * Mie_n - cmepsilon * Mie_m);
 
         auto f = dr * (invdr2 * Mie);
@@ -718,7 +790,7 @@
           miem = m_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
           mien = n_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
 
-          for (size_t k = 1; k < n_exp; k += 2) {
+          for (size_t k = 1; k < m_exp; k += 2) {
             miem = _mm256_mul_pd(miem, mie2);
           }
           for (size_t k = 1; k < n_exp; k += 2) {
@@ -744,6 +816,30 @@
             m_exp >>= 1;
             n_exp >>= 1;
           }
+        }
+        else if(mode==2) {
+          auto chain = doubleAdditionChain;
+          __m256d base =  _mm256_sqrt_pd(mie2);
+          __m256d a = _one, b = base;
+          for(size_t k=0;k<chain_len;k++,chain>>=1){
+
+            if(chain&1){
+              auto tmp = b*a;
+              a = b;
+              b = tmp;
+            }
+            else{
+              chain>>=1;
+              k++;
+              b *=b;
+              if(chain&1){
+                b *=base;
+              }
+            }
+          }
+          miem = a;
+          mien = b;
+
         }
         const __m256d nmien = _mm256_mul_pd(_cnepsilon, mien);
         const __m256d mmiem = _mm256_mul_pd(_cmepsilon, miem);
@@ -1247,10 +1343,12 @@
 
 
   #endif
-    const uint8_t mode = 1;
+    const uint8_t mode = 2;
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS, _cnepsilonAoS, _cmepsilonAoS, _sigmaSquaredAoS, _shift6AoS = 0;
-    unsigned  _nexpAoS,_mexpAoS = 0;
+    uint16_t _nexpAoS,_mexpAoS = 0;
+    int doubleAdditionChain;
+    uint16_t chain_len;
 
     ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
