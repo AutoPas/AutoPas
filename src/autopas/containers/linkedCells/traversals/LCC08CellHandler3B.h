@@ -137,8 +137,12 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
                                  std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
   };
 
+  auto is_valid_distance = [&] (long x1, long y1, long z1, long x2, long y2, long z2, auto interactionlengthsq) {
+    auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
+    return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
+  };
+
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
-  _cellOffsets.emplace_back(0, 0, std::array<double, 3>{1., 1., 1.});
 
   // offsets for the first cell
   for (long x1 = 0; x1 <= static_cast<long>(this->_overlap[0]); ++x1) {
@@ -151,8 +155,8 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
             for (long z2 = 0; z2 <= static_cast<long>(this->_overlap[2]); ++z2) {
               // check distance between cell 1 and cell 2
               const auto dist12 = cellDistance(x1, y1, z1, x2, y2, z2);
-              const double distSquare = utils::ArrayMath::dot(dist12, dist12);
-              if (distSquare > interactionLengthSquare) continue;
+              const double dist12Square = utils::ArrayMath::dot(dist12, dist12);
+              if (dist12Square > interactionLengthSquare) continue;
 
               // offsets for the third cell
               for (long x3 = 0; x3 <= static_cast<long>(this->_overlap[0]); ++x3) {
