@@ -123,6 +123,16 @@ private:
    }
  }
 
+ std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> flatten2DimVector(const std::vector<SoAFloatPrecision> *const __restrict unflattened_vector, size_t size_unflattened_vector){
+   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> returnvalue{};
+   for(size_t i{0}; i<size_unflattened_vector; i++){
+     for(size_t j{0}; j< unflattened_vector[i].size(); j++){
+       returnvalue.push_back(unflattened_vector[i][j]);
+     }
+   }
+   return std::move(returnvalue);
+ }
+
 public:
  /**
   * Constructor for Functor with particle mixing disabled. setParticleProperties() must be called.
@@ -310,9 +320,15 @@ public:
    //const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
    //const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
 
+#if not defined(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING)
    const auto *const __restrict relSitePosXptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsX>();
    const auto *const __restrict relSitePosYptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsY>();
    const auto *const __restrict relSitePosZptr = soa.template begin<Particle::AttributeNames::relativeSitePositionsZ>();
+#else
+   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> relSitePosXptrFlattened = flatten2DimVector(soa.template begin<Particle::AttributeNames::relativeSitePositionsX>(), soa.size());
+   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> relSitePosYptrFlattened = flatten2DimVector(soa.template begin<Particle::AttributeNames::relativeSitePositionsY>(), soa.size());
+   std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> relSitePosZptrFlattened = flatten2DimVector(soa.template begin<Particle::AttributeNames::relativeSitePositionsZ>(), soa.size());
+#endif
 
    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteSitePositionsX;
    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteSitePositionsY;
@@ -362,7 +378,9 @@ public:
      }
    } else {
      //we would have returned earlier if this array was empty
-     siteCount = relSitePosXptr[0].size() * soa.size();
+     std::cout << "Johnny, you still have to rewrite this case!" << std::endl; //@TODO
+     exit(0);
+     //siteCount = relSitePosXptr[0].size() * soa.size();
    }
 
    // pre-reserve site std::vectors
@@ -384,6 +402,30 @@ public:
    }
 
    // Fill site-wise std::vectors for SIMD
+#if defined(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING)
+   {
+     size_t siteIndex = 0;
+     for (size_t mol = 0; mol < soa.size(); ++mol) {
+       // const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+       //     {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
+       const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptr[mol]);
+
+       for (size_t site = 0; site < siteTypesOfMol.size(); ++site) {
+         absoluteSitePositionsX[siteIndex] = relSitePosXptrFlattened[siteIndex] + xptr[mol];
+         absoluteSitePositionsY[siteIndex] = relSitePosXptrFlattened[siteIndex] + yptr[mol];
+         absoluteSitePositionsZ[siteIndex] = relSitePosXptrFlattened[siteIndex] + zptr[mol];
+         siteTypes[siteIndex] = siteTypesOfMol[site];
+         siteForceX[siteIndex] = 0.;
+         siteForceY[siteIndex] = 0.;
+         siteForceZ[siteIndex] = 0.;
+         if (calculateGlobals) {
+           isSiteOwned[siteIndex] = ownedStatePtr[mol] == autopas::OwnershipState::owned;
+         }
+         ++siteIndex;
+       }
+     }
+   }
+#else
    {
      size_t siteIndex = 0;
      for (size_t mol = 0; mol < soa.size(); ++mol) {
@@ -410,13 +452,17 @@ public:
        }
      }
    }
+#endif
 
    // main force calculation loop
    size_t siteIndexMolA = 0;  // index of first site in molA
    for (size_t molA = 0; molA < soa.size(); ++molA) {
-     //const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
-     //                                       : const_unrotatedSitePositions.size();  // Number of sites in molecule A
+#if defined(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING)
+     const size_t noSitesInMolA = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
+                                            : const_unrotatedSitePositions.size();  // Number of sites in molecule A
+#else
      const size_t noSitesInMolA = relSitePosXptr[molA].size();
+#endif
 
      const auto ownedStateA = ownedStatePtr[molA];
      if (ownedStateA == autopas::OwnershipState::dummy) {
@@ -455,7 +501,13 @@ public:
      siteMask.reserve(noSitesB);
 
      for (size_t molB = molA + 1; molB < soa.size(); ++molB) {
-       for (size_t siteB = 0; siteB < relSitePosXptr[molB].size(); ++siteB) {
+#if defined(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING)
+       const size_t noSitesInMolB = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
+                                              : const_unrotatedSitePositions.size();  // Number of sites in molecule A
+#else
+       const size_t noSitesInMolB = relSitePosXptr[molA].size();
+#endif
+       for (size_t siteB = 0; siteB < noSitesInMolB; ++siteB) {
          siteMask.emplace_back(molMask[molB - (molA + 1)]);
        }
      }
@@ -553,6 +605,29 @@ public:
    }
 
    // reduce the forces on individual sites to forces & torques on whole molecules.
+#if defined(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING)
+   {
+     size_t siteIndex = 0;
+     for (size_t mol = 0; mol < soa.size(); mol++) {
+       //const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
+       //    {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
+       const size_t noSitesInMol = useMixing ? _PPLibrary->getNumSites(typeptr[mol])
+                                              : const_unrotatedSitePositions.size();  // Number of sites in molecule A
+       for (size_t site = 0; site < noSitesInMol; ++site) {
+         fxptr[mol] += siteForceX[siteIndex];
+         fyptr[mol] += siteForceY[siteIndex];
+         fzptr[mol] += siteForceZ[siteIndex];
+         txptr[mol] += relSitePosYptrFlattened[siteIndex] * siteForceZ[siteIndex] -
+                       relSitePosZptrFlattened[siteIndex] * siteForceY[siteIndex];
+         typtr[mol] += relSitePosZptrFlattened[siteIndex] * siteForceX[siteIndex] -
+                       relSitePosXptrFlattened[siteIndex] * siteForceZ[siteIndex];
+         tzptr[mol] += relSitePosXptrFlattened[siteIndex] * siteForceY[siteIndex] -
+                       relSitePosYptrFlattened[siteIndex] * siteForceX[siteIndex];
+         ++siteIndex;
+       }
+     }
+   }
+#else
    {
      size_t siteIndex = 0;
      for (size_t mol = 0; mol < soa.size(); mol++) {
@@ -575,6 +650,7 @@ public:
        }
      }
    }
+#endif
 
    if constexpr (calculateGlobals) {
      const auto threadNum = autopas::autopas_get_thread_num();
