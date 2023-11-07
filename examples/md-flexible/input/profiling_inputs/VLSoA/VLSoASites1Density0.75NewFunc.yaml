@@ -38,10 +38,10 @@ Objects:
       particle-type-id           :  0
       box-length                 :  [8, 8, 8]
       bottomLeftCorner           :  [0.5, 0.5, 0.5]
-      particle-spacing           :  2
+      particle-spacing           :  1.3333
       velocity                   :  [0, 0, 0]
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  true
-vtk-filename                     :  VLSoASites1Density0.5NewFunc.yaml
+vtk-filename                     :  VLSoASites1Density1NewFunc.yaml
 vtk-write-frequency              :  100
