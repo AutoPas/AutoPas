@@ -368,7 +368,7 @@ public:
    const SoAFloatPrecision const_epsilon24 = _epsilon24;
    const SoAFloatPrecision const_shift6 = _shift6;
 
-   //const auto const_unrotatedSitePositions = _sitePositionsLJ;
+   const auto const_unrotatedSitePositions = _sitePositionsLJ;
 
    // count number of sites in SoA
    size_t siteCount = 0;
@@ -502,10 +502,10 @@ public:
 
      for (size_t molB = molA + 1; molB < soa.size(); ++molB) {
 #if defined(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING)
-       const size_t noSitesInMolB = useMixing ? _PPLibrary->getNumSites(typeptr[molA])
+       const size_t noSitesInMolB = useMixing ? _PPLibrary->getNumSites(typeptr[molB])
                                               : const_unrotatedSitePositions.size();  // Number of sites in molecule A
 #else
-       const size_t noSitesInMolB = relSitePosXptr[molA].size();
+       const size_t noSitesInMolB = relSitePosXptr[molB].size();
 #endif
        for (size_t siteB = 0; siteB < noSitesInMolB; ++siteB) {
          siteMask.emplace_back(molMask[molB - (molA + 1)]);
