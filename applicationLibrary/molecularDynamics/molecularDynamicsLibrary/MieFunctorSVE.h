@@ -1,9 +1,8 @@
 /**
-    * @file mieFunctorSVE.h
-         *
-             * @date 11.10.2023
-    * @author K. Cole
-          */
+* @file mieFunctorSVE.h
+* @date 11.10.2023
+* @author K. Cole
+*/
 #pragma once
 
 #ifndef __ARM_FEATURE_SVE
@@ -59,13 +58,17 @@
    * @param cutoff
    * @note param dummy unused, only there to make the signature different from the public constructor.
      */
-    explicit mieFunctorSVE(double cutoff, size_t n_exp, size_t m_exp, void * /*dummy*/)
+    explicit mieFunctorSVE(double cutoff, uint16_t n_exp, uint16_t m_exp, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
         : autopas::Functor<
               Particle, mieFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
               cutoff),
           _cutoffSquared{cutoff * cutoff},
           _cutoffSquaredAoS(cutoff * cutoff),
+          _nexp{n_exp},
+          _nexpAoS(n_exp),
+          _mexp{m_exp},
+          _mexpAoS(m_exp),
           _potentialEnergySum{0.},
           _virialSum{0., 0., 0.},
           _aosThreadData(),
@@ -90,7 +93,7 @@
    *
    * @param cutoff
      */
-    explicit mieFunctorSVE(double cutoff,size_t n_exp, size_t m_exp) : mieFunctorSVE(cutoff,  n_exp,  m_exp, nullptr) {
+    explicit mieFunctorSVE(double cutoff,uint16_t n_exp, uint16_t m_exp) : mieFunctorSVE(cutoff,  n_exp,  m_exp, nullptr) {
       static_assert(not useMixing,
                     "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                     "mixing to false.");
@@ -102,7 +105,7 @@
    * @param cutoff
    * @param particlePropertiesLibrary
      */
-    explicit mieFunctorSVE(double cutoff, double n_exp, double m_exp, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+    explicit mieFunctorSVE(double cutoff, uint16_t n_exp, uint16_t m_exp, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
         : mieFunctorSVE(cutoff,  n_exp,  m_exp, nullptr) {
       static_assert(useMixing,
                     "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
@@ -120,23 +123,28 @@
       return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
     }
 
-   inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+    inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
       using namespace autopas::utils::ArrayMath::literals;
-
       if (i.isDummy() or j.isDummy()) {
         return;
       }
       auto sigmaSquared = _sigmaSquaredAoS;
       auto cepsilon = _cepsilonAoS;
+      auto cnepsilon = _cnepsilonAoS;
+      auto cmepsilon = _cmepsilonAoS;
+
       auto shift6 = _shift6AoS;
       auto m_exp = _mexpAoS;
       auto n_exp = _nexpAoS;
 
       if constexpr (useMixing) {
-        sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-        cepsilon = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
+        sigmaSquared = _PPLibrary->getMixingSigmaSquaredMie(i.getTypeId(), j.getTypeId());
+        cepsilon = _PPLibrary->getMixingCEpsilonMie(i.getTypeId(), j.getTypeId());
+        cnepsilon = _PPLibrary->getMixingCNEpsilonMie(i.getTypeId(), j.getTypeId());
+        cmepsilon = _PPLibrary->getMixingCMEpsilonMie(i.getTypeId(), j.getTypeId());
+
         if constexpr (applyShift) {
-          shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
+          shift6 = _PPLibrary->getMixingShift6Mie(i.getTypeId(), j.getTypeId());
         }
       }
       auto dr = i.getR() - j.getR();
@@ -146,29 +154,82 @@
         return;
       }
       // for now inefficient power function
+
+
+
       double invdr2 = 1. / dr2;
-      // for schleife
-      // m could be 1; but n<=m;
       double fract = sigmaSquared * invdr2;
 
       double Mie_m = 1;
-      if (m_exp % 2 == 1) {
-        Mie_m = sqrt(fract);
-      }
-
-      for (size_t k = 1; k < m_exp; k += 2) {
-        Mie_m = Mie_m * fract;
-      }
-
       double Mie_n = 1;
-      if (n_exp % 2 == 1) {
-        Mie_n = sqrt(fract);
-      }
-      for (size_t k = 1; k < n_exp; k += 2) {
-        Mie_n = Mie_n * fract;
+
+      if(mode==0) {
+
+        Mie_m = m_exp & 1 ? sqrt(fract) : 1;
+        Mie_n = n_exp & 1 ? sqrt(fract) : 1;
+
+        for (size_t k = 1; k < m_exp; k += 2) {
+          Mie_m = Mie_m * fract;
+        }
+
+        for (size_t k = 1; k < n_exp; k += 2) {
+          Mie_n = Mie_n * fract;
+        }
       }
 
-      double Mie = cepsilon * (n_exp * Mie_n - m_exp * Mie_m);
+      else if(mode==1) {
+
+        if(m_exp&1) {
+          Mie_m = sqrt(fract);
+        }
+        if(n_exp&1) {
+          Mie_n = sqrt(fract);
+        }
+
+        m_exp>>=1;
+        n_exp>>=1;
+
+        while(m_exp||n_exp) {
+          if(m_exp&1)
+            Mie_m*=fract;
+          if(n_exp&1)
+            Mie_n*=fract;
+          fract*=fract;
+          m_exp>>=1;
+          n_exp>>=1;
+        }
+      }
+
+      else if(mode==2) {
+        auto chain = doubleAdditionChain;
+        auto base = sqrt(fract);
+        double a = 1.0, b = base;
+        for(uint16_t k=0;k<chain_len;k++,chain>>=1){
+
+          if(chain&1){
+            auto tmp = b*a;
+            a = b;
+            b = tmp;
+          }
+          else{
+            chain>>=1;
+            k++;
+            b *=b;
+            if(chain&1){
+              b *=base;
+            }
+          }
+        }
+        Mie_m = a;
+        Mie_n = b;
+
+      }
+      else if(mode==3) {
+      }
+
+
+      double Mie = (cnepsilon * Mie_n - cmepsilon * Mie_m);
+
       auto f = dr * (invdr2 * Mie);
       i.addF(f);
       if (newton3) {
@@ -177,6 +238,10 @@
       }
       if (calculateGlobals) {
         auto virial = dr * f;
+        // Here we calculate either the potential energy * 6 or the potential energy * 12.
+        // For newton3, this potential energy contribution is distributed evenly to the two molecules.
+        // For non-newton3, the full potential energy is added to the one molecule.
+        // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
         double potentialEnergy6 = 6 * cepsilon * (Mie_n - Mie_m) + shift6;
 
         const int threadnum = autopas::autopas_get_thread_num();
@@ -440,7 +505,7 @@
       const svuint64_t typeIds =
           useMixing ? svmul_m(pgC, (indexed) ? svld1_gather_index(pgC, typeID2ptr, index) : svld1_u64(pgC, typeID2ptr), 3)
                     : svundef_u64();
-      const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtr(*typeID1ptr, 0) : nullptr;
+      const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtrMie(*typeID1ptr, 0) : nullptr;
 
       const svfloat64_t sigmaSquareds =
           useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_sigmaSquared);
@@ -457,7 +522,7 @@
       const svfloat64_t mie4 = svmul_x(pgC, mie2, mie2);
       mie6 = svmul_x(pgC, mie2, mie4);
       const svfloat64_t mie12 = svmul_x(pgC, mie6, mie6);
-
+      //TODO: Mie
       //(2*mie12 - mie6) * epsilon24 * invdr2 = -(mie6 - 2*mie12) * epsilon24 * invdr2
 
       const svfloat64_t mie12m6amie12 = svnmls_x(pgC, mie6, mie12, 2);
@@ -882,8 +947,9 @@
    * @param sigmaSquared
      */
     void setParticleProperties(double epsilon, double sigmaSquared) {
-      double c = (_nexpAoS / (_nexpAoS - _mexpAoS)) * pow((_nexpAoS / _mexpAoS), (_mexpAoS / (_nexpAoS - _mexpAoS)));
-      auto cepsilon = c * epsilon;
+      double c = static_cast<double>(_nexpAoS) / static_cast<double>(_nexpAoS - _mexpAoS);
+      c = c * pow(static_cast<double>(_nexpAoS) / static_cast<double>(_mexpAoS), static_cast<double>(_mexpAoS) / (_nexpAoS - _mexpAoS));
+
 #ifdef __ARM_FEATURE_SVE
       _epsilon24 = cepsilon;
       _sigmaSquared = sigmaSquared;
@@ -894,10 +960,10 @@
       }
 #endif
 
-      _cepsilonAoS = cepsilon;
+      _cepsilonAoS = c*epsilon;
       _sigmaSquaredAoS = sigmaSquared;
       if constexpr (applyShift) {
-        _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(cepsilon, sigmaSquared, _cutoffSquaredAoS,_nexpAoS,_mexpAoS);
+        _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(_cepsilonAoS, sigmaSquared, _cutoffSquaredAoS,_nexpAoS,_mexpAoS);
       } else {
         _shift6AoS = 0.;
       }
@@ -938,13 +1004,17 @@
 #ifdef __ARM_FEATURE_SVE
     const double _cutoffSquared{};
     double _shift6{0.};
-    double cepsilon{0.};
+    double _cepsilon{0.};
+    double _cnepsilon{0.};
+    double _cmepsilon{0.}
     double _sigmaSquared{0.};
 #endif
 
-    const double _cutoffSquaredAoS;
-    double _cepsilonAoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
-    size_t _nexpAoS, _mexpAoS;
+
+    const uint8_t mode = 1;
+    const double _cutoffSquaredAoS = 0;
+    double _cepsilonAoS{0.}, _cnepsilonAoS{0.}, _cmepsilonAoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
+    uint16_t _nexpAoS,_mexpAoS = 0;
 
     ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 

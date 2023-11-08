@@ -40,8 +40,11 @@ class ParticlePropertiesLibrary {
    * @param coeff  The coefficient of the Potential
    */
 
-  explicit ParticlePropertiesLibrary(const double cutoff, const uint16_t n_exp, const uint16_t m_exp, const double coeff)
-      : _cutoff(cutoff), _m_exp(m_exp), _n_exp(n_exp), _epsilon_coeff(coeff){}
+  explicit ParticlePropertiesLibrary(const double cutoff, const uint16_t n_exp, const uint16_t m_exp)
+      : _cutoff(cutoff), _m_exp(m_exp), _n_exp(n_exp){
+   const double c = static_cast<double>(n_exp) / static_cast<double>(n_exp - _m_exp);
+    _epsilon_coeff = c * pow(static_cast<double>(n_exp) / static_cast<double>(_m_exp), static_cast<double>(_m_exp) / (n_exp - _m_exp));
+  }
 
 
   /**
@@ -349,7 +352,7 @@ class ParticlePropertiesLibrary {
   const double _cutoff;
   const uint16_t _n_exp = 12;
   const uint16_t _m_exp = 6;
-  const double _epsilon_coeff = 24;
+  double _epsilon_coeff;
 
 
   std::vector<floatType> _epsilons;
@@ -382,7 +385,7 @@ class ParticlePropertiesLibrary {
 
   std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
 
-  bool mie = 1;
+  bool mie = true;
 };
 
 template <typename floatType, typename intType>
@@ -474,16 +477,9 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       const floatType sigmaSquared = sigma * sigma;
       _computedMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
-      // shift6 for Mie
-      if(_m_exp != 6 || _n_exp != 12) {
-        const floatType shift6 = calcShiftMie(epsilon24, sigmaSquared, cutoffSquared, _n_exp, _m_exp);
-        _computedMixingData[globalIndex].shift6 = shift6;
-      }
-      // shift6 for LJ
-      else{
       const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
       _computedMixingData[globalIndex].shift6 = shift6;
-    }
+
     }
   }
 }

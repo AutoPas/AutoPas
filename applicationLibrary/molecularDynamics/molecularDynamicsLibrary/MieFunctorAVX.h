@@ -93,8 +93,8 @@
          for (int k = 0; k < i; k++,chain >>= 1) {
            rev_chain = (rev_chain<<1) | (chain & 1);
          }
-         chain_len = i;
          doubleAdditionChain = rev_chain;
+         chain_len = i;
        }
      public:
       /**
@@ -111,16 +111,17 @@
        * @param sigmaSquared
        */
       void setParticleProperties(double epsilon, double sigmaSquared) {
-        double c = ((double) _nexpAoS / (double) (_nexpAoS - _mexpAoS)) * pow(( (double) _nexpAoS / (double) _mexpAoS), ( (double) _mexpAoS / (_nexpAoS - _mexpAoS)));
-        std::cout<< c << std::endl;
-        double cepsilon = c * epsilon;
-        double cnepsilon = _nexpAoS*cepsilon;
-        double cmepsilon = _mexpAoS*cepsilon;
+         double c = static_cast<double>(_nexpAoS) / static_cast<double>(_nexpAoS - _mexpAoS);
+         c = c * pow(static_cast<double>(_nexpAoS) / static_cast<double>(_mexpAoS), static_cast<double>(_mexpAoS) / (_nexpAoS - _mexpAoS));
+
+         double cepsilon = c * epsilon;
+         double cnepsilon = _nexpAoS * cepsilon;
+         double cmepsilon = _mexpAoS * cepsilon;
+
 #ifdef __AVX__
         _cepsilon = _mm256_set1_pd(cepsilon);
         _cnepsilon = _mm256_set1_pd(cnepsilon);
         _cmepsilon = _mm256_set1_pd(cmepsilon);
-
         _sigmaSquared = _mm256_set1_pd(sigmaSquared);
 
 
@@ -135,12 +136,12 @@
         _cepsilonAoS = cepsilon;
         _cnepsilonAoS = cnepsilon;
         _cmepsilonAoS = cmepsilon;
-
         _sigmaSquaredAoS = sigmaSquared;
+
             if constexpr (applyShift) {
           _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(cepsilon, sigmaSquared, _cutoffSquaredAoS, _nexpAoS, _mexpAoS);
         } else {
-          _shift6AoS = 0.;
+          _shift6AoS = 0.0;
         }
       }
 
@@ -1247,7 +1248,6 @@
    * @param n_exp
    * @param m_exp
        */
-       //TODO: Delete or also change cepsilon
       void setFunctorProperties(double n_exp, double m_exp) {
 #ifdef __AVX__
         _nexp = _mm256_set1_pd(n_exp);
@@ -1343,7 +1343,7 @@
 
 
   #endif
-    const uint8_t mode = 2;
+    const uint8_t mode = 1;
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS, _cnepsilonAoS, _cmepsilonAoS, _sigmaSquaredAoS, _shift6AoS = 0;
     uint16_t _nexpAoS,_mexpAoS = 0;
