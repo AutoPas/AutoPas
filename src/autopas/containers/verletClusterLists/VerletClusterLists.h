@@ -228,7 +228,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     // Thanks to clang 13 this has to be a index based loop instead of a range based
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
       auto &tower = _towerBlock[i];
-      const auto towerSize = tower.getNumActualParticles();
+      const auto towerSize = tower.size();
       auto numTailDummies = tower.getNumTailDummyParticles();
       // iterate over all non-tail dummies. Avoid underflows.
       for (size_t j = 0; numTailDummies < towerSize and j < towerSize - numTailDummies;) {
