@@ -31,8 +31,8 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
   const auto containerDimensions = container.getBoxMax() - container.getBoxMin();
   const auto lowerHaloCorner = container.getBoxMin() - upperBoundForMisplacement;
   const auto upperHaloCorner = container.getBoxMax() + upperBoundForMisplacement;
-  // We need to extend these boundaries into the container because we need to find particles that are stored in the
-  // container but have since moved out. Extending by skin is not enough since we are interested in particles that have
+  // We need to extend these boundaries into the container because we need to include cells that still hold particles,
+  // which now have left the cells region towards the outside of the container.
   // travelled beyond that and skin can be 0.
   const auto lowerInnerCorner = container.getBoxMin() + upperBoundForMisplacement;
   const auto upperInnerCorner = container.getBoxMax() - upperBoundForMisplacement;
