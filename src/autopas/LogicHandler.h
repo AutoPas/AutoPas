@@ -124,6 +124,8 @@ class LogicHandler {
           if (p.isDummy()) {
             // We remove dummies!
             fastRemoveP();
+            // In case we swapped a dummy here, don't increment the iterator and do another iteration to check again.
+            continue;
           }
           // if p was a dummy a new particle might now be at the memory location of p so we need to check that.
           // We also just might have deleted the last particle in the buffer in that case the inBox check is meaningless
