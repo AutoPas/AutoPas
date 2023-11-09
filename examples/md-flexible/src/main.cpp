@@ -43,6 +43,16 @@ int main(int argc, char **argv) {
     }
 
     Simulation simulation(configuration, domainDecomposition);
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+    std::cout<<"MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS defined" << std::endl;
+#else
+    std::cout<<"MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS not defined" << std::endl;
+#endif
+    #if defined(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING)
+    std::cout<<"MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING defined"<< std::endl;
+    #else
+    std::cout<<"MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING not defined"<< std::endl;
+    #endif
     simulation.run();
     simulation.finalize();
 

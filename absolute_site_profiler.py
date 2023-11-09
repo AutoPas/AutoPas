@@ -5,7 +5,7 @@ container_prefixes = ["LC"] #["VL","LC"]
 data_layouts = ["SoA"] #,"AoS"]
 site_counts = ["1", "2", "5"]
 densities = ["1", "0.75", "0.5"]
-functors = ["OldFunc"] #["NewFunc","OldFunc"]
+functors = ["NewFunc"] #["NewFunc","OldFunc"]
 
 #files_to_sample = ["smallscaleExplodingLiquidSites1", "smallscaleExplodingLiquidSites2", "smallscaleExplodingLiquidSites5", "smallscaleExplodingLiquidSites10"]
 #files_to_sample = ["smallscaleExplodingLiquidSites5"]
