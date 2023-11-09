@@ -105,22 +105,24 @@ template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout,
 inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
   for (auto const &[offset1, offset2, offset3, r] : _cellOffsets) {
-    const unsigned long cellIndex1 = baseIndex + offset1;
-    const unsigned long cellIndex2 = baseIndex + offset2;
-    const unsigned long cellIndex3 = baseIndex + offset3;
+    const unsigned long index1 = baseIndex + offset1;
+    const unsigned long index2 = baseIndex + offset2;
+    const unsigned long index3 = baseIndex + offset3;
 
-    ParticleCell &cell1 = cells[cellIndex1];
-    ParticleCell &cell2 = cells[cellIndex2];
-    ParticleCell &cell3 = cells[cellIndex3];
+    ParticleCell &cell1 = cells[index1];
+    ParticleCell &cell2 = cells[index2];
+    ParticleCell &cell3 = cells[index3];
 
-    if (cellIndex1 != cellIndex2 and cellIndex1 != cellIndex3 and cellIndex2 != cellIndex3) {
-      this->_cellFunctor.processCellTriple(cell1, cell2, cell3);
-    } else if ((cellIndex1 == cellIndex2 and cellIndex1 != cellIndex3) or (cellIndex1 != cellIndex2 and cellIndex2 == cellIndex3)) {
-      this->_cellFunctor.processCellPair(cell1,  cell3);
-    } else if (cellIndex1 != cellIndex2 and cellIndex1 == cellIndex3) {
-      this->_cellFunctor.processCellPair(cell1,  cell2);
-    } else {
+    if (index1 == index2 && index1 == index3 && index2 == index3) {
       this->_cellFunctor.processCell(cell1);
+    } else if (index1 == index2 && index1 != index3) {
+      this->_cellFunctor.processCellPair(cell1, cell3);
+    } else if (index1 != index2 && index1 == index3) {
+      this->_cellFunctor.processCellPair(cell1, cell2);
+    } else if (index1 != index2 && index2 == index3) {
+      this->_cellFunctor.processCellPair(cell1, cell2);
+    } else {
+      this->_cellFunctor.processCellTriple(cell1, cell2, cell3);
     }
   }
 }
