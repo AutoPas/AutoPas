@@ -27,11 +27,11 @@ Sites:
     sigma                        :  1.
     mass                         :  1.
 # Uncomment below to run a multi-site simulation.
-Molecules:
-  0:
-    site-types                   :  [ 0 ]
-    relative-site-positions      :  [ [0, 0, 0 ] ]
-    moment-of-inertia            :  [ 1., 1., 1. ]
+#Molecules:
+#  0:
+#    site-types                   :  [ 0 ]
+#    relative-site-positions      :  [ [0, 0, 0 ] ]
+#    moment-of-inertia            :  [ 1., 1., 1. ]
 Objects:                         
   CubeClosestPacked:
     0:
