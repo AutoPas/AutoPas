@@ -147,8 +147,7 @@ namespace autopas::compatibleTraversals {
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vl_list_iteration,
           TraversalOption::vlc_c01,
-          TraversalOption::vlp_c01,
-          TraversalOption::lc_c01_3b};
+          TraversalOption::vlp_c01};
 }
 /**
  * Provides a set of all traversals that only support Newton3 mode enabled.
