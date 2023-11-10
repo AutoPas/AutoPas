@@ -1,18 +1,24 @@
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 ## md-flexible compiled for multi-site molecules.
-container                        :  [LinkedCells, VerletLists, VerletListsCells]
+container                        :  [LinkedCells]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.1
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
-data-layout                      :  [AoS, SoA]
-traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ] # Please see AllOptions.yaml for a comprehensive list of traversals
+# data-layout                      :  [AoS, SoA]
+data-layout-3b                   :  [AoS]
+# traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ] # Please see AllOptions.yaml for a comprehensive list of traversals
+traversal-3b                     :  [lc_c08_3b] # ds_sequential_3b
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
-functor                          :  Lennard-Jones AVX
-newton3                          :  [disabled, enabled]
+# functor                          :  Lennard-Jones AVX
+functor-3b                       :  axilrod-teller
+
+# newton3                          :  [disabled, enabled]
+newton3-3b                       :  [enabled]
+
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
