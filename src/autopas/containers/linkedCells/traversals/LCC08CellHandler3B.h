@@ -85,7 +85,7 @@ class LCC08CellHandler3B {
   /**
    * CellFunctor to be used for the traversal defining the interaction between three cells.
    */
-  internal::CellFunctor3B<typename ParticleCell::ParticleType, ParticleCell, Functor, dataLayout, true, true>
+  internal::CellFunctor3B<typename ParticleCell::ParticleType, ParticleCell, Functor, dataLayout, useNewton3, true>
       _cellFunctor;
 
   Functor *_functor;
