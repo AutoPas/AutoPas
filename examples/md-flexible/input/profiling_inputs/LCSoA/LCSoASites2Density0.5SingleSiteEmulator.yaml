@@ -36,14 +36,13 @@ Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0
-      box-length                 :  [4, 4, 4]
+      box-length                 :  [8, 8, 8]
       bottomLeftCorner           :  [0.5, 0.5, 0.5]
       particle-spacing           :  2
       velocity                   :  [0, 0, 0]
-  CubeClosestPacked:
-    0:
+    1:
       particle-type-id           :  0
-      box-length                 :  [4, 4, 4]
+      box-length                 :  [8, 8, 8]
       bottomLeftCorner           :  [0.5, 0.5, 0.5]
       particle-spacing           :  2
       velocity                   :  [0, 0, 0]
