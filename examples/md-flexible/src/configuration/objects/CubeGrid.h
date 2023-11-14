@@ -98,19 +98,24 @@ class CubeGrid : public Object {
    * Generates the particles based on the configuration of the CubeGrid object provided in the yaml file.
    * @param particles The container in which the generated particles get stored.
    */
+#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
+#else
+  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl,
+                MoleculeContainer& moleculeContainer) const override{
+#endif
     ParticleType particle = getDummyParticle(particles.size());
 
     for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
       for (unsigned long y = 0; y < _particlesPerDim[1]; ++y) {
         for (unsigned long x = 0; x < _particlesPerDim[0]; ++x) {
-          particle.setR({_bottomLeftCorner[0] + static_cast<double>(x) * _particleSpacing,
-                         _bottomLeftCorner[1] + static_cast<double>(y) * _particleSpacing,
-                         _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing});
-          particles.push_back(particle);
-          particle.setID(particle.getID() + 1);
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-          AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
+          const std::array<double, 3> position{_bottomLeftCorner[0] + static_cast<double>(x) * _particleSpacing,
+                _bottomLeftCorner[1] + static_cast<double>(y) * _particleSpacing,
+                _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing};
+#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+          insertMolecule(position, ppl, particles, moleculeContainer);
+#else
+          insertMolecule(position, ppl, particles, moleculeContainer);
 #endif
         }
       }

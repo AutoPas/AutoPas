@@ -51,7 +51,7 @@ class Sphere : public Object {
    * Call f for every point on the sphere where a particle should be.
    * @param f Function called for every point.
    */
-  void iteratePositions(const std::function<void(std::array<double, 3>)> &f) const {
+  void iteratePositions(const std::function<void(const std::array<double, 3>&)> &f) const{
     using namespace autopas::utils::ArrayMath::literals;
 
     // generate regular grid for 1/8th of the sphere
@@ -138,17 +138,22 @@ class Sphere : public Object {
    * Generates the particles based on the configuration of the sphere object provided in the yaml file.
    * @param particles The container where the generated particles will be stored.
    */
+#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
-    ParticleType particle = getDummyParticle(particles.size());
-    iteratePositions([&](const auto &pos) {
-      particle.setR(pos);
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-      AbsoluteMultiSiteMoleculeInitializer::setAbsoluteSites(particle, ppl);
+#else
+void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl,
+    MoleculeContainer& moleculeContainer) const override {
 #endif
-      particles.push_back(particle);
-      particle.setID(particle.getID() + 1);
+    //ParticleType particle = getDummyParticle(particles.size());
+    const std::function<void(const std::array<double, 3>&)> insertMolAtPos = [&](const auto &pos) {
+#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+      insertMolecule(pos, ppl, particles);
+#else
+      insertMolecule(pos, ppl, particles, moleculeContainer);
+#endif
+    };
 
-    });
+    iteratePositions(insertMolAtPos);
   }
 
  private:

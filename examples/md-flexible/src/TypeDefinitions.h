@@ -8,7 +8,15 @@
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#error "MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS can not be set at the same time with this version"
+#endif
+
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
+
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+#include "molecularDynamicsLibrary/Site.h"
+#endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
@@ -16,8 +24,8 @@
 #include "molecularDynamicsLibrary/LJPositionUsingMultiSiteFunctor.h"
 #endif
 
-
 #else
+
 
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
@@ -48,7 +56,10 @@ using FloatPrecision = double;
 * MD_FLEXIBLE_MODE.
 */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+using ParticleType = mdLib::MoleculeLJ;
+using MoleculeType = mdLib::MultisiteMoleculeLJ;
+#elif defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
 using ParticleType = mdLib::PositionStoringMultiSiteMolecule;
 //using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
@@ -72,8 +83,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 
 #endif
 
-//@todo (johnny) considering we are defining LJFunctorTypeAbstract further down i don't even know why we are doing this, i am just pattern matching
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS) and (not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH))
 /**
 * Type of LJFunctorTypeAutovec used in md-flexible.
 * Can only be LJPositionUsingMultiSiteFunctor for MultiSite molecules. A corresponding functor for single site molecules wouldn't really make sense

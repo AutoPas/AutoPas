@@ -43,6 +43,23 @@ constexpr std::array<typename ParticleType::AttributeNames, 24> Attributes = {
     mdLib::PositionStoringMultiSiteMolecule::AttributeNames::torqueZ,
     mdLib::PositionStoringMultiSiteMolecule::AttributeNames::typeId,
     mdLib::PositionStoringMultiSiteMolecule::AttributeNames::ownershipState};
+#elif defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes ={
+                                                                mdLib::MoleculeLJ::AttributeNames::id,
+                                                                mdLib::MoleculeLJ::AttributeNames::posX,
+                                                                mdLib::MoleculeLJ::AttributeNames::posY,
+                                                                mdLib::MoleculeLJ::AttributeNames::posZ,
+                                                                mdLib::MoleculeLJ::AttributeNames::velocityX,
+                                                                mdLib::MoleculeLJ::AttributeNames::velocityY,
+                                                                mdLib::MoleculeLJ::AttributeNames::velocityZ,
+                                                                mdLib::MoleculeLJ::AttributeNames::forceX,
+                                                                mdLib::MoleculeLJ::AttributeNames::forceY,
+                                                                mdLib::MoleculeLJ::AttributeNames::forceZ,
+                                                                mdLib::MoleculeLJ::AttributeNames::oldForceX,
+                                                                mdLib::MoleculeLJ::AttributeNames::oldForceY,
+                                                                mdLib::MoleculeLJ::AttributeNames::oldForceZ,
+                                                                mdLib::MoleculeLJ::AttributeNames::typeId,
+                                                                mdLib::MoleculeLJ::AttributeNames::ownershipState};
 #else
 constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::id,

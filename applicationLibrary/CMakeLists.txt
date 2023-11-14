@@ -12,7 +12,8 @@ file(
 add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC}
         molecularDynamics/molecularDynamicsLibrary/LJPositionUsingMultiSiteFunctor.h
         molecularDynamics/molecularDynamicsLibrary/PositionStoringMultiSiteMolecule.cpp
-        molecularDynamics/molecularDynamicsLibrary/PositionStoringMultiSiteMolecule.h)
+        molecularDynamics/molecularDynamicsLibrary/PositionStoringMultiSiteMolecule.h
+        molecularDynamics/molecularDynamicsLibrary/Site.h)
 
 # Set CMake option for md-flexible mode
 set(MD_FLEXIBLE_MODE
