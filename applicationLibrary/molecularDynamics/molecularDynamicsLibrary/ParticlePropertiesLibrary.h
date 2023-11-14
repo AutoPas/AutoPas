@@ -352,7 +352,7 @@ class ParticlePropertiesLibrary {
   const double _cutoff;
   const uint16_t _n_exp = 12;
   const uint16_t _m_exp = 6;
-  double _epsilon_coeff;
+  double _epsilon_coeff = 24;
 
 
   std::vector<floatType> _epsilons;

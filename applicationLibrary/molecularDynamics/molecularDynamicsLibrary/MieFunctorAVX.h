@@ -310,7 +310,6 @@
         }
 
         else if(mode==1) {
-
            if(m_exp&1) {
             Mie_m = sqrt(fract);
            }
@@ -356,12 +355,10 @@
         Mie_n = b;
 
         }
-        else if(mode==3) {
-        }
+
            
 
        double Mie = (cnepsilon * Mie_n - cmepsilon * Mie_m);
-
         auto f = dr * (invdr2 * Mie);
         i.addF(f);
         if (newton3) {
@@ -842,8 +839,8 @@
           mien = b;
 
         }
-        const __m256d nmien = _mm256_mul_pd(_cnepsilon, mien);
-        const __m256d mmiem = _mm256_mul_pd(_cmepsilon, miem);
+        const __m256d nmien = _mm256_mul_pd(cnepsilons, mien);
+        const __m256d mmiem = _mm256_mul_pd(cmepsilons, miem);
         const __m256d miensubmiem = _mm256_sub_pd(nmien, mmiem);
         const __m256d fac = _mm256_mul_pd(miensubmiem, invdr2);
 
