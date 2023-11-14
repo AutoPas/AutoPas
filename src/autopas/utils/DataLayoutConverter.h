@@ -38,7 +38,7 @@ class DataLayoutConverter {
         return;
       }
       case DataLayoutOption::soa: {
-        _functor->SoALoader(cell, cell._particleSoABuffer, 0);
+        _functor->SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
         return;
       }
     }

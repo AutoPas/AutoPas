@@ -203,9 +203,16 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   template <class TFunctor>
   auto *loadSoA(TFunctor *f) {
     _soa.clear();
+
+    // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
+    // SoALoader.
+    size_t totalSizeOfAllCells{_baseLinkedCells->size()};
+    _soa.resizeArrays(totalSizeOfAllCells);
+
     size_t offset = 0;
     for (auto &cell : _baseLinkedCells->getCells()) {
-      f->SoALoader(cell, _soa, offset);
+      // Skip SoA resize, since this was done above
+      f->SoALoader(cell, _soa, offset, /*skipSoAResize*/ true);
       offset += cell.size();
     }
 

@@ -46,9 +46,19 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   void initTraversal() override {
     auto &cells = *(this->_cells);
     if (dataLayout == DataLayoutOption::soa) {
+      // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
+      // SoALoader.
+      size_t totalSizeOfAllCells{0};
+      for (auto &cell : cells) {
+        totalSizeOfAllCells += cell.size();
+      }
+
+      _soa.resizeArrays(totalSizeOfAllCells);
+
       size_t offset = 0;
       for (auto &cell : cells) {
-        _functor->SoALoader(cell, _soa, offset);
+        // Skip SoA resize, since this was done above
+        _functor->SoALoader(cell, _soa, offset, /*skipSoAResize*/ true);
         offset += cell.size();
       }
     }
