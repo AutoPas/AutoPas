@@ -38,22 +38,27 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
   const auto upperInnerCorner = container.getBoxMax() - upperBoundForMisplacement;
 
   // volumes describing the halo regions on the six faces of the cuboid shaped container.
+  // The total volume can be thought of as:
+  // 6 faces
+  // 8 corners
+  // 12 edges
+  // These 26 pieces are combined to six volumes, the minimal number to cover it with region iterators.
   const std::array<std::tuple<decltype(lowerHaloCorner), decltype(upperHaloCorner)>, 6> haloVolumes{{
-      // left + lower edge
+      // left face + edge shared by left and bottom faces
       {{lowerHaloCorner[0], lowerInnerCorner[1], lowerHaloCorner[2]},
        {lowerInnerCorner[0], upperInnerCorner[1], upperInnerCorner[2]}},
-      // right + upper edge
+      // right face + edge shared by right and upper faces
       {{upperInnerCorner[0], lowerInnerCorner[1], lowerInnerCorner[2]},
        {upperHaloCorner[0], upperInnerCorner[1], upperHaloCorner[2]}},
-      // top + left edge
+      // top face + edge shared by left and top faces
       {{lowerHaloCorner[0], lowerInnerCorner[1], upperInnerCorner[2]},
        {upperInnerCorner[0], upperInnerCorner[1], upperHaloCorner[2]}},
-      // bottom + right edge
+      // bottom face + edge shared by right and bottom faces
       {{lowerInnerCorner[0], lowerInnerCorner[1], lowerHaloCorner[2]},
        {upperHaloCorner[0], upperInnerCorner[1], lowerInnerCorner[2]}},
-      // front with all edges and corners
+      // front face with the all adjacent four edges and four corners
       {lowerHaloCorner, {upperHaloCorner[0], lowerInnerCorner[1], upperHaloCorner[2]}},
-      // back with all edges and corners
+      // back face with the all adjacent four edges and four corners
       {{lowerHaloCorner[0], upperInnerCorner[1], lowerHaloCorner[2]}, upperHaloCorner},
   }};
 
