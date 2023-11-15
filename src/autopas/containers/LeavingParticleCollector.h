@@ -64,6 +64,7 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
 
   std::vector<typename ContainerType::ParticleType> leavingParticles{};
 #ifdef AUTOPAS_OPENMP
+  // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
 #pragma omp declare reduction(vecMergeParticle : std::vector<typename ContainerType::ParticleType> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
   // this has to be a `parallel` and not `parallel for` because we are actually interested in parallelizing the inner
   // loops without having a barrier between outer loop iterations.
