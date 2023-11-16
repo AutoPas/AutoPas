@@ -66,6 +66,8 @@ class ClusterTower : public FullParticleCell<Particle> {
   void clear() override {
     _clusters.clear();
     FullParticleCell<Particle>::clear();
+    _firstOwnedCluster = _clusters.end();
+    _firstTailHaloCluster = _clusters.end();
     _numDummyParticles = 0;
   }
 
@@ -81,6 +83,8 @@ class ClusterTower : public FullParticleCell<Particle> {
   size_t generateClusters() {
     if (getNumActualParticles() == 0) {
       _clusters.resize(0, Cluster<Particle>(nullptr, _clusterSize));
+      _firstOwnedCluster = _clusters.end();
+      _firstTailHaloCluster = _clusters.end();
       return 0;
     }
     this->sortByDim(2);
@@ -99,9 +103,42 @@ class ClusterTower : public FullParticleCell<Particle> {
     // Mark start of the different clusters by adding pointers to _particles
     const size_t numClusters = this->_particles.size() / _clusterSize;
     _clusters.resize(numClusters, Cluster<Particle>(nullptr, _clusterSize));
+    bool foundFirstOwnedCluster = false;
+    bool foundFirstTailHaloCluster = false;
+
+    const auto isAnyOfClusterOwned = [&](const auto &cluster) {
+      for (size_t i = 0; i < _clusterSize; ++i) {
+        if (cluster[i].isOwned()) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     for (size_t index = 0; index < numClusters; index++) {
       _clusters[index].reset(&(this->_particles[_clusterSize * index]));
+
+      const bool clusterContainsOwnedParticles =
+          not foundFirstTailHaloCluster and isAnyOfClusterOwned(_clusters[index]);
+
+      // identify the range of owned clusters
+      if (not foundFirstOwnedCluster and clusterContainsOwnedParticles) {
+        _firstOwnedCluster = _clusters.begin() + index;
+        foundFirstOwnedCluster = true;
+      }
+      if (not foundFirstTailHaloCluster and foundFirstOwnedCluster and not clusterContainsOwnedParticles) {
+        _firstTailHaloCluster = _clusters.begin() + index;
+        foundFirstTailHaloCluster = true;
+      }
     }
+    // for safety, make sure that worst case (e.g. no particles) the iterators point to reasonable positions
+    if (not foundFirstOwnedCluster) {
+      _firstOwnedCluster = _clusters.end();
+    }
+    if (not foundFirstTailHaloCluster) {
+      _firstTailHaloCluster = _clusters.end();
+    }
+
     return getNumClusters();
   }
 
@@ -216,10 +253,9 @@ class ClusterTower : public FullParticleCell<Particle> {
   [[nodiscard]] size_t size() const override { return this->_particles.size(); }
 
   /**
-   * Get the number of all particles saved in the tower without tailing dummies that are used to fill up clusters (owned
-   * + halo + dummies excuding tailing dummies).
-   * @return Number of all particles saved in the tower without tailing dummies that are used to fill up clusters (owned
-   * + halo + dummies excuding tailing dummies).
+   * Get the number of all particles saved in the tower without tailing dummies that are used to fill up clusters
+   * (owned + halo + dummies excluding tailing dummies).
+   * @return
    */
   [[nodiscard]] unsigned long getNumActualParticles() const {
     return this->_particles.size() - getNumTailDummyParticles();
@@ -236,6 +272,40 @@ class ClusterTower : public FullParticleCell<Particle> {
    * @return a reference to the std::vector holding the clusters of this container.
    */
   [[nodiscard]] auto &getClusters() { return _clusters; }
+
+  /**
+   * Returns an iterator to the first cluster that contains at least one owned particle.
+   * @return
+   */
+  [[nodiscard]] const typename std::vector<autopas::internal::Cluster<Particle>>::iterator &getFirstOwnedCluster()
+      const {
+    return _firstOwnedCluster;
+  }
+
+  /**
+   * Returns the index of the first cluster that contains at least one owned particle.
+   * @return
+   */
+  [[nodiscard]] size_t getFirstOwnedClusterIndex() const {
+    return std::distance(_clusters.cbegin(), decltype(_clusters.cbegin()){_firstOwnedCluster});
+  }
+
+  /**
+   * Returns an iterator to the first particle after the owned clusters, that contains no owned particles anymore.
+   * @return
+   */
+  [[nodiscard]] const typename std::vector<autopas::internal::Cluster<Particle>>::iterator &getFirstTailHaloCluster()
+      const {
+    return _firstTailHaloCluster;
+  }
+
+  /**
+   * Returns the index of the first particle after the owned clusters, that contains no owned particles anymore.
+   * @return
+   */
+  [[nodiscard]] size_t getFirstTailHaloClusterIndex() const {
+    return std::distance(_clusters.cbegin(), decltype(_clusters.cbegin()){_firstTailHaloCluster});
+  }
 
   /**
    * Returns the cluster at position index.
@@ -321,6 +391,18 @@ class ClusterTower : public FullParticleCell<Particle> {
    * The clusters that are contained in this tower.
    */
   std::vector<Cluster<Particle>> _clusters;
+
+  /**
+   * Iterator pointing to the first cluster that contains at least one owned particle.
+   * This cluster might consist of owned, halo, and, if the number of particles in the tower is smaller
+   * than the cluster size, dummy particles.
+   */
+  typename decltype(_clusters)::iterator _firstOwnedCluster{_clusters.end()};
+  /**
+   * Iterator pointing to the first cluster after the owned clusters that contains no owned particles anymore.
+   * This cluster might consist of halo and dummy particles.
+   */
+  typename decltype(_clusters)::iterator _firstTailHaloCluster{_clusters.end()};
 
   /**
    * The number of dummy particles in this tower.

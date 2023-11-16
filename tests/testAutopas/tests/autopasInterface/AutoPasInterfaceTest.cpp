@@ -26,8 +26,8 @@ using LJFunctorGlobals =
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(LJFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
-constexpr double skinPerTimestep = 0.2;
-constexpr unsigned int rebuildFrequency = 3;
+constexpr double skinPerTimestep = 0.1;
+constexpr unsigned int rebuildFrequency = 4;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
 
@@ -188,6 +188,7 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
 
   // 5. updateCounters
   autoPas.incrementIterationCounters();
+  std::cout << "--------------------------------" << std::endl;
 }
 
 template <typename Functor>
@@ -246,7 +247,7 @@ void doAssertions(autopas::AutoPas<Molecule> &autoPas, Functor *functor, unsigne
       << "The container should own exactly " << numParticlesExpected << " particles!" << std::endl
       << "Called from line: " << line;
 
-  for (auto &mol : molecules) {
+  for (const auto &mol : molecules) {
     EXPECT_NEAR(autopas::utils::ArrayMath::dot(mol.getF(), mol.getF()), 390144. * 390144., 1.)
         << "wrong force calculated for particle: " << mol.toString() << std::endl
         << "Called from line: " << line;
@@ -376,12 +377,13 @@ void testSimulationLoop(const autopas::Configuration &conf) {
 }
 
 /**
- * This test checks the correct calculation of an AutoPas container, where:
- * The container owns 26 particles, that lie with a distance of 0.25 away from the centers of the faces and edges, as
- * well as from the corners of the box. They always lie on a straight line `a` from these points to the center of the
- * box. Additionally, the container owns 26 halo particles that lie outside of the container on the same line `a` with a
- * distance of 0.5 from the owned particle.
- * No additional halo exchange is simulated in this test.
+ * This test checks the correct force calculation of an AutoPas container, where:
+ * There are 26 owned particles. They are placed at all faces, edges, and corners of the box offset by 0.25 towards the
+ * center of the box.
+ * For each owned particle, there is a halo particle on the other side of the boxes feature with a distance of 0.5
+ * from the owned particle.
+ * Only these owned-halo pairs interact, because all other particles are too far apart.
+ *
  * @param options
  */
 void testHaloCalculation(const autopas::Configuration &conf) {
@@ -395,29 +397,28 @@ void testHaloCalculation(const autopas::Configuration &conf) {
   defaultInit(autoPas);
 
   // create particle pairs with distance .5
-  double distance = .5;
+  const double distance = .5;
   unsigned long id = 0;
-  for (int x_diff : {-1, 0, 1}) {
-    for (int y_diff : {-1, 0, 1}) {
-      //    for (int y_diff : {0}) {
-      for (int z_diff : {-1, 0, 1}) {
-        //      for (int z_diff : {0}) {
+  for (const int x_diff : {-1, 0, 1}) {
+    for (const int y_diff : {-1, 0, 1}) {
+      for (const int z_diff : {-1, 0, 1}) {
         if (x_diff == 0 and y_diff == 0 and z_diff == 0) {
           continue;
         }
-        double mul = 5.;
-        double mid = 5.;
-        std::array<double, 3> edge{x_diff * mul + mid, y_diff * mul + mid, z_diff * mul + mid};
+        const double mul = 5.;
+        const double mid = 5.;
+        const std::array<double, 3> edge{x_diff * mul + mid, y_diff * mul + mid, z_diff * mul + mid};
 
-        std::array<double, 3> diff = {x_diff * 1., y_diff * 1., z_diff * 1.};
-        diff = autopas::utils::ArrayMath::normalize(diff) * (distance / 2.);
+        const auto diff =
+            autopas::utils::ArrayMath::normalize(std::array<double, 3>{x_diff * 1., y_diff * 1., z_diff * 1.}) *
+            (distance / 2.);
 
-        auto pos1 = edge - diff;
-        auto pos2 = edge + diff;
+        const auto pos1 = edge - diff;
+        const auto pos2 = edge + diff;
 
-        Molecule particle1(pos1, {0., 0., 0.}, id++);
+        const Molecule particle1(pos1, {0., 0., 0.}, id++);
         autoPas.addParticle(particle1);
-        Molecule particle2(pos2, {0., 0., 0.}, id++);
+        const Molecule particle2(pos2, {0., 0., 0.}, id++);
         autoPas.addHaloParticle(particle2);
       }
     }

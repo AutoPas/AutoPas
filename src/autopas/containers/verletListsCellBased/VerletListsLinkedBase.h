@@ -229,7 +229,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
+      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
@@ -238,7 +238,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
+      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
     return _linkedCells.getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
   }
 
@@ -283,19 +283,9 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const final { return _linkedCells.getBoxMax(); }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::setBoxMax()
-   */
-  void setBoxMax(const std::array<double, 3> &boxMax) final { _linkedCells.setBoxMax(boxMax); }
-
-  /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
   [[nodiscard]] const std::array<double, 3> &getBoxMin() const final { return _linkedCells.getBoxMin(); }
-
-  /**
-   * @copydoc autopas::ParticleContainerInterface::setBoxMin()
-   */
-  void setBoxMin(const std::array<double, 3> &boxMin) final { _linkedCells.setBoxMin(boxMin); }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()

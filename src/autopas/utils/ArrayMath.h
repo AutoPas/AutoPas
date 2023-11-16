@@ -187,6 +187,40 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * Divides an array element-wise by a given scalar and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param s divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/s`
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> divScalar(const std::array<T, SIZE> &a, T s) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = a[d] / s;
+  }
+  return result;
+}
+
+/**
+ * Divides a scalar with by every element of an array to create an array of fractions.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param s divisor.
+ * @return element-wise quotient of s and a, i.e., `result[i] = s/a[i]`
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> divScalar(T s, const std::array<T, SIZE> &a) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = s / a[d];
+  }
+  return result;
+}
+
+/**
  * Generates the dot product of two arrays.
  * Returns the sum of a[i]*b[i] summed over all i, where i is in [0, SIZE)
  * @tparam T floating point type
@@ -482,6 +516,32 @@ constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, const std:
 }
 
 /**
+ * Divides an array element-wise by a given scalar and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param b divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/b`
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, T b) {
+  return divScalar(a, b);
+}
+
+/**
+ * Divides a scalar by every element of an array to create an array of fractions.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param b divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a/b[i]`
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator/(T a, const std::array<T, SIZE> &b) {
+  return divScalar(a, b);
+}
+
+/**
  * Assignment operator to divide two arrays
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
@@ -586,4 +646,25 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
 
 }  // namespace literals
 
+/**
+ * Calculate the squared minimum distance between two boxes, which are aligned to the Cartesian grid.
+ * The boxes are given by their lower and upper corners.
+ * @param aMin
+ * @param aMax
+ * @param bMin
+ * @param bMax
+ * @return squared minimum distance
+ */
+template <class T, std::size_t SIZE>
+double boxDistanceSquared(const std::array<T, SIZE> &aMin, const std::array<T, SIZE> &aMax,
+                          const std::array<T, SIZE> &bMin, const std::array<T, SIZE> &bMax) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::dot;
+  using autopas::utils::ArrayMath::max;
+
+  const auto aToB = max(std::array<T, SIZE>{}, aMin - bMax);
+  const auto bToA = max(std::array<T, SIZE>{}, bMin - aMax);
+
+  return dot(aToB, aToB) + dot(bToA, bToA);
+}
 }  // namespace autopas::utils::ArrayMath

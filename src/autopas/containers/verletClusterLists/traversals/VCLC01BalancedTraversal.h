@@ -72,15 +72,15 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
       for (size_t towerIndex = clusterRange.startTowerIndex;
            clusterCount < clusterRange.numClusters and towerIndex < towers.size(); towerIndex++) {
         auto &currentTower = towers[towerIndex];
-        auto startIndexInTower = clusterCount == 0 ? clusterRange.startIndexInTower : 0;
+        auto startIndexInTower =
+            clusterCount == 0 ? clusterRange.startIndexInTower : currentTower.getFirstOwnedClusterIndex();
         for (size_t clusterIndex = startIndexInTower;
-             clusterIndex < currentTower.getNumClusters() && clusterCount < clusterRange.numClusters;
+             clusterIndex < clusterRange.numClusters and clusterCount < clusterRange.numClusters and
+             clusterIndex < currentTower.getFirstTailHaloClusterIndex();
              clusterIndex++, clusterCount++) {
-          auto &currentCluster = currentTower.getCluster(clusterIndex);
-          _clusterFunctor.traverseCluster(currentCluster);
-          for (auto *neighborCluster : *currentCluster.getNeighbors()) {
-            _clusterFunctor.traverseClusterPair(currentCluster, *neighborCluster);
-          }
+          const auto isHaloCluster = clusterIndex < currentTower.getFirstOwnedClusterIndex() or
+                                     clusterIndex >= currentTower.getFirstTailHaloClusterIndex();
+          _clusterFunctor.processCluster(currentTower.getCluster(clusterIndex), isHaloCluster);
         }
       }
       if (clusterCount != clusterRange.numClusters) {
