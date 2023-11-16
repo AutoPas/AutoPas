@@ -34,7 +34,6 @@ namespace autopas {
  * therefore short-range interactions only need to be calculated between
  * particles in neighboring cells.
  * @tparam ParticleCell type of the ParticleCells that are used to store the particles
- * @tparam SoAArraysType type of the SoA, needed for verlet lists
  */
 template <class Particle>
 class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticleCell<Particle>> {
@@ -438,13 +437,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
 
   [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+          nullptr) const override {
     return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 

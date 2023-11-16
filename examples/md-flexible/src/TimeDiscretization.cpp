@@ -32,17 +32,19 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
-    // sanity check that particles are not too fast for the Verlet skin technique.
-    // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
-    // the whole rebuild frequency is farther than the skin we lose interactions.
-    const auto distanceMovedSquared = dot(displacement, displacement);
-    if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
+    // sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
+    if (maxAllowedDistanceMoved > 0) {
+      // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
+      // the whole rebuild frequency is farther than the skin we lose interactions.
+      const auto distanceMovedSquared = dot(displacement, displacement);
+      if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
 #pragma omp critical
-      std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
-                << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
-                << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
-      if (fastParticlesThrow) {
-        throwException = true;
+        std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared)
+                  << " > " << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
+                  << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
+        if (fastParticlesThrow) {
+          throwException = true;
+        }
       }
     }
     iter->addR(displacement);
