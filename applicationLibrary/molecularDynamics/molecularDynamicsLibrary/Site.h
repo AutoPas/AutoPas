@@ -6,7 +6,7 @@
 #include "MoleculeLJ.h"
 
 namespace mdLib {
-class Site : MoleculeLJ {
+class Site : public MoleculeLJ {
  public:
  /**
  * Constructor initializing Site completely
@@ -27,6 +27,6 @@ class Site : MoleculeLJ {
   /**
    * The moleculeId identifies the MultiSite Molecule this Site belongs to. It corresponds to the moleculeId of MultiSiteMoleculeLJ
    */
-  unsigned long _moleculeId;
+  unsigned long _moleculeID;
 };
 }

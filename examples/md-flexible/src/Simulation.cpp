@@ -177,6 +177,10 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                       _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }
 
+  #if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
+  _moleculeContainer = _configuration.moveAwayMoleculeContainer();
+  #endif
+
   _timers.initialization.stop();
 }
 

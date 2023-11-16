@@ -59,7 +59,8 @@ class Object {
   void insertMolecule(const std::array<double, 3>& position, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl,
                                     std::vector<ParticleType> &particles, MoleculeContainer& moleculeContainer) const {
     //insert molecule by inserting individual sites at their respective place and inserting the bundled molecule in moleculeContainer
-    MoleculeType molecule = getDummyMolecule(moleculeContainer.size());
+    const auto moleculeID = moleculeContainer.size();
+    MoleculeType molecule = getDummyMolecule(moleculeID);
     molecule.setR(position);
     moleculeContainer.add(std::move(molecule));
 
@@ -76,8 +77,9 @@ class Object {
       const auto siteType = siteTypes[siteIndex];
 
       particle.setR(autopas::utils::ArrayMath::add(position, relSitePos));
-      particle.setTypeId(siteType); //overwrite previously stored moleculeID with the actual SiteID
+      particle.setTypeId(siteType); //overwrite previously stored moleculeID with the actual SiteID //when i am actually storing the siteType here then i don't have  a place to store the reference to the molecule. That's why i am using the typeID as moleculeID instead
       particle.setID(particle.getID() + 1);
+      particle.setMoleculeId(moleculeID);
       particles.push_back(particle);
     }
   }

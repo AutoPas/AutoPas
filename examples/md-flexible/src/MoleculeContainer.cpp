@@ -14,4 +14,8 @@ void MoleculeContainer::add(mdLib::MultisiteMoleculeLJ &&multisiteMoleculeLj) {
 size_t MoleculeContainer::size() {
   return _molecules.size();
 }
+MoleculeType &MoleculeContainer::get(size_t moleculeID) {
+  //assert moleculeID == _molecules[moleculeID].getID();
+  return _molecules[moleculeID];
+}
 #endif

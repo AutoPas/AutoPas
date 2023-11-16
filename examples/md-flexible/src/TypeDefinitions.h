@@ -57,7 +57,7 @@ using FloatPrecision = double;
 */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-using ParticleType = mdLib::MoleculeLJ;
+using ParticleType = mdLib::Site;
 using MoleculeType = mdLib::MultisiteMoleculeLJ;
 #elif defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
 using ParticleType = mdLib::PositionStoringMultiSiteMolecule;

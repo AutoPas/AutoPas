@@ -8,14 +8,14 @@ namespace mdLib {
 Site::Site(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long siteId,
            unsigned long typeId, unsigned long moleculeId)
 : MoleculeLJ(pos, v, siteId, typeId){
-  _moleculeId = moleculeId;
+  _moleculeID = moleculeId;
 }
 
 void Site::setMoleculeId(unsigned long moleculeId) {
-  _moleculeId = moleculeId;
+  _moleculeID = moleculeId;
 }
 
 unsigned long Site::getMoleculeId() {
-  return _moleculeId;
+  return _moleculeID;
 }
 }

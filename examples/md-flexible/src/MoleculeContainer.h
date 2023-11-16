@@ -14,6 +14,8 @@ class MoleculeContainer {
 
   size_t size();
 
+  MoleculeType& get(size_t index);
+
  private:
   std::vector<MoleculeType> _molecules;
 };

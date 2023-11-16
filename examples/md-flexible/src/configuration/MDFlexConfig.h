@@ -752,6 +752,10 @@ class MDFlexConfig {
    */
   static constexpr int valueOffset{33};
 
+  MoleculeContainer moveAwayMoleculeContainer(){
+    return std::move(_moleculeContainer);
+  }
+
  private:
   /**
    * Stores the particles generated based on the provided configuration file

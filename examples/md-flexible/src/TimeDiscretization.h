@@ -31,10 +31,17 @@ namespace TimeDiscretization {
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/2/rebuildFrequency).
  */
+#if not defined MD_FLEXIBLE_US<E_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
                                       bool fastParticlesThrow);
+#else
+void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
+                                      const ParticlePropertiesLibraryType &particlePropertiesLibrary,
+                                      const double &deltaT, const std::array<double, 3> &globalForce,
+                                      bool fastParticlesThrow);
+#endif
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
@@ -51,9 +58,15 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
  * @param deltaT
  * @param globalForce
  */
+#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                          const double &deltaT, const std::array<double, 3> &globalForce);
+#else
+void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
+                                         const ParticlePropertiesLibraryType &particlePropertiesLibrary,
+                                         const double &deltaT, const std::array<double, 3> &globalForce);
+#endif
 
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
@@ -65,8 +78,13 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  */
+#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+#else
+void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
+                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+#endif
 
 /**
  * Calculate and update the angular velocity for every particle.
@@ -77,7 +95,12 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param particlePropertiesLibrary
  * @param deltaT
  */
+#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+#else
+void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
+                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+#endif
 
 }  // namespace TimeDiscretization
