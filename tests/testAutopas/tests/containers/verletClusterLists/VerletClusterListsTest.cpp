@@ -241,13 +241,13 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
 
     MockPairwiseFunctor<Particle> functor;
     if (newton3) {
-      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(&functor,
-                                                                                                          clusterSize);
+      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, false> traversalNoN3(
+          &functor, clusterSize);
       verletLists.rebuildNeighborLists(&traversalNoN3);
       neighborsNoN3 = getClusterNeighbors(verletLists);
     } else {
       autopas::VCLC06Traversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true> traversalN3(&functor,
-                                                                                                       clusterSize);
+                                                                                                           clusterSize);
       verletLists.rebuildNeighborLists(&traversalN3);
       neighborsN3 = getClusterNeighbors(verletLists);
     }
