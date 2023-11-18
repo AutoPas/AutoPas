@@ -199,7 +199,7 @@
           n_exp>>=1;
         }
       }
-
+     /*
       else if(mode==2) {
         auto chain = doubleAdditionChain;
         auto base = sqrt(fract);
@@ -224,8 +224,7 @@
         Mie_n = b;
 
       }
-      else if(mode==3) {
-      }
+      */
 
 
       double Mie = (cnepsilon * Mie_n - cmepsilon * Mie_m);
@@ -338,7 +337,7 @@
         const svfloat64_t x1 = svdup_f64(xptr[i]);
         const svfloat64_t y1 = svdup_f64(yptr[i]);
         const svfloat64_t z1 = svdup_f64(zptr[i]);
-
+        // pg1.. etc. are booleans that are true if i > j j_2
         svbool_t pg_1, pg_2, pg_3, pg_4;
         size_t j = 0;
         for (; j < i; j += vecLength * 4) {
@@ -500,7 +499,7 @@
 
     template <bool indexed>
     inline void mie(const svuint64_t &index, const size_t *const typeID1ptr, const size_t *const typeID2ptr,
-                             const svbool_t &pgC, const svfloat64_t &dr2, svfloat64_t &epsilon24s, svfloat64_t &shift6s,
+                             const svbool_t &pgC, const svfloat64_t &dr2, svfloat64_t &cepsilons,svfloat64_t &cnepsilons,svfloat64_t &cmepsilons, svfloat64_t &shift6s,
                              svfloat64_t &mie6, svfloat64_t &fac) {
       const svuint64_t typeIds =
           useMixing ? svmul_m(pgC, (indexed) ? svld1_gather_index(pgC, typeID2ptr, index) : svld1_u64(pgC, typeID2ptr), 3)
@@ -508,9 +507,15 @@
       const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtrMie(*typeID1ptr, 0) : nullptr;
 
       const svfloat64_t sigmaSquareds =
-          useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_sigmaSquared);
-      epsilon24s = useMixing ? svld1_gather_index(pgC, mixingDataPtr, typeIds) : svdup_f64(_epsilon24);
-      shift6s = (useMixing && applyShift) ? svld1_gather_index(pgC, mixingDataPtr + 2, typeIds) : svdup_f64(_shift6);
+          useMixing ? svld1_gather_index(pgC, mixingDataPtr + 3, typeIds) : svdup_f64(_sigmaSquared);
+      cepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr, typeIds) : svdup_f64(_cepsilons);
+      cnepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_cnepsilons);
+      cmepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr + 2, typeIds) : svdup_f64(_cmepsilons);
+
+      shift6s = (useMixing && applyShift) ? svld1_gather_index(pgC, mixingDataPtr + 4, typeIds) : svdup_f64(_shift6);
+
+      uint16_t m_exp = _mexpAoS;
+      uint16_t n_exp = _nexpAoS;
 
       svfloat64_t invdr2 = svrecpe(dr2);
       invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
@@ -518,17 +523,44 @@
       invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
       invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
       const svfloat64_t mie2 = svmul_x(pgC, sigmaSquareds, invdr2);
+      svfloat64_t miem, mien;
+      if(mode==0) {
+        miem = m_exp & 1 ? svsqrt_x(pgC, mie2) : svdup_f64(_one);
+        mien = n_exp & 1 ? svsqrt_x(pgC, mie2) : svdup_f64(_one);
 
-      const svfloat64_t mie4 = svmul_x(pgC, mie2, mie2);
-      mie6 = svmul_x(pgC, mie2, mie4);
-      const svfloat64_t mie12 = svmul_x(pgC, mie6, mie6);
-      //TODO: Mie
-      //(2*mie12 - mie6) * epsilon24 * invdr2 = -(mie6 - 2*mie12) * epsilon24 * invdr2
+        for (size_t k = 1; k < m_exp; k += 2) {
+          miem = svmul_x(pgC, miem, mie2);
+        }
+        for (size_t k = 1; k < n_exp; k += 2) {
+          mien = svmul_x(pgC,mien, mie2);
+        }
+      }
+      else if(mode==1) {
 
-      const svfloat64_t mie12m6amie12 = svnmls_x(pgC, mie6, mie12, 2);
+        miem = m_exp & 1 ? svsqrt_x(pgC, mie2) : svdup_f64(_one);
+        mien = n_exp & 1 ? svsqrt_x(pgC, mie2) : svdup_f64(_one);
 
-      const svfloat64_t mie12m6amie12e = svmul_x(pgC, mie12m6amie12, epsilon24s);
-      fac = svmul_x(pgC, mie12m6amie12e, invdr2);
+        m_exp>>=1;
+        n_exp>>=1;
+        svfloat64_t fact = mie2;
+        while (m_exp||n_exp) {
+          if (m_exp & 1) {
+            miem = svmul_x(pgC,miem,fact);
+          }
+          if (n_exp & 1) {
+            mien = svmul_x(pgC,mien,fact);
+          }
+          fact = svmul_x(pgC,fact,fact);
+          m_exp >>= 1;
+          n_exp >>= 1;
+        }
+      }
+
+      const svfloat64_t nmien = svmul_x(pgC, cnepsilons, mien);
+      const svfloat64_t mmiem = svmul_x(pgC, cmepsilons, miem);
+      const svfloat64_t miensubmiem = svmul_x(pgC, nmien, mmiem);
+      fac = _mm256_mul_pd(miensubmiem, invdr2);
+      //TODO: mie6 for Globals in applyForces!!
     }
 
     template <bool newton3, bool indexed>
@@ -950,8 +982,14 @@
       double c = static_cast<double>(_nexpAoS) / static_cast<double>(_nexpAoS - _mexpAoS);
       c = c * pow(static_cast<double>(_nexpAoS) / static_cast<double>(_mexpAoS), static_cast<double>(_mexpAoS) / (_nexpAoS - _mexpAoS));
 
+      double cepsilon = c * epsilon;
+      double cnepsilon = _nexpAoS * cepsilon;
+      double cmepsilon = _mexpAoS * cepsilon;
+
 #ifdef __ARM_FEATURE_SVE
-      _epsilon24 = cepsilon;
+      _cepsilon = cepsilon;
+      _cnepsilon = cnepsilon;
+      _cmepsilon = cmepsilon;
       _sigmaSquared = sigmaSquared;
       if constexpr (applyShift) {
         _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(cepsilon, sigmaSquared, _cutoffSquaredAoS,_nexpAoS,_mexpAoS);
@@ -960,12 +998,15 @@
       }
 #endif
 
-      _cepsilonAoS = c*epsilon;
+      _cepsilonAoS = cepsilon;
+      _cnepsilonAoS = cnepsilon;
+      _cmepsilonAoS = cmepsilon;
       _sigmaSquaredAoS = sigmaSquared;
+
       if constexpr (applyShift) {
-        _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(_cepsilonAoS, sigmaSquared, _cutoffSquaredAoS,_nexpAoS,_mexpAoS);
+        _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(cepsilon, sigmaSquared, _cutoffSquaredAoS, _nexpAoS, _mexpAoS);
       } else {
-        _shift6AoS = 0.;
+        _shift6AoS = 0.0;
       }
     }
 
@@ -1008,6 +1049,7 @@
     double _cnepsilon{0.};
     double _cmepsilon{0.}
     double _sigmaSquared{0.};
+    double _one{1.};
 #endif
 
 
