@@ -89,6 +89,9 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
  * @param particles Container for the particles recorded in the respective vts file.
  */
 void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles) {
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
+  throw std::runtime_error("loadParticlesFromRankRecord for MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH not implemented yet\n");
+#else
   const size_t endOfPath = filename.find_last_of('/');
   const auto filePath = filename.substr(0ul, endOfPath);
   const auto fileBasename = filename.substr(endOfPath + 1);
@@ -179,6 +182,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
 
     particles.push_back(particle);
   }
+#endif //MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH
 }
 }  // namespace
 
@@ -524,6 +528,7 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 }
 
 void MDFlexConfig::initializeObjects() {
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or (MD_FLEXIBLE_MODE!=MULTISITE)
   for (const auto &object : cubeGridObjects) {
     object.generate(_particles, _particlePropertiesLibrary);
   }
@@ -539,6 +544,23 @@ void MDFlexConfig::initializeObjects() {
   for (const auto &object : cubeClosestPackedObjects) {
     object.generate(_particles, _particlePropertiesLibrary);
   }
+#else
+  for (const auto &object : cubeGridObjects) {
+    object.generate(_particles, _particlePropertiesLibrary, _moleculeContainer);
+  }
+  for (const auto &object : cubeGaussObjects) {
+    object.generate(_particles, _particlePropertiesLibrary, _moleculeContainer);
+  }
+  for (const auto &object : cubeUniformObjects) {
+    object.generate(_particles, _particlePropertiesLibrary, _moleculeContainer);
+  }
+  for (const auto &object : sphereObjects) {
+    object.generate(_particles, _particlePropertiesLibrary, _moleculeContainer);
+  }
+  for (const auto &object : cubeClosestPackedObjects) {
+    object.generate(_particles, _particlePropertiesLibrary, _moleculeContainer);
+  }
+#endif
 }
 
 void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize) {

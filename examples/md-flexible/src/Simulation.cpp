@@ -202,7 +202,11 @@ void Simulation::run() {
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+#else
+      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _moleculeContainer, *_domainDecomposition);
+#endif
       _timers.vtk.stop();
     }
 
@@ -248,8 +252,13 @@ void Simulation::run() {
       _timers.migratingParticleExchange.stop();
 
       _timers.reflectParticlesAtBoundaries.start();
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
       _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
                                                          *_configuration.getParticlePropertiesLibrary());
+#else
+      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer, _moleculeContainer,
+                                                         *_configuration.getParticlePropertiesLibrary());
+#endif
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();
@@ -288,7 +297,11 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+#else
+    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _moleculeContainer, *_domainDecomposition);
+#endif
   }
 }
 
@@ -393,17 +406,29 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 
 void Simulation::updatePositions() {
   _timers.positionUpdate.start();
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or (MD_FLEXIBLE_MODE!=MULTISITE)
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
       _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+#else
+  TimeDiscretization::calculatePositionsAndResetForces(
+      *_autoPasContainer, _moleculeContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
+      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+#endif
   _timers.positionUpdate.stop();
 }
 
 void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.start();
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or (MD_FLEXIBLE_MODE!=MULTISITE)
   TimeDiscretization::calculateQuaternionsAndResetTorques(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
       _configuration.globalForce.value);
+#else
+  TimeDiscretization::calculateQuaternionsAndResetTorques(
+      *_autoPasContainer, _moleculeContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
+      _configuration.globalForce.value);
+#endif
   _timers.quaternionUpdate.stop();
 }
 
@@ -454,8 +479,13 @@ void Simulation::updateVelocities() {
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
     TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                             deltaT);
+#else
+    TimeDiscretization::calculateVelocities(*_autoPasContainer, _moleculeContainer,
+                                            *(_configuration.getParticlePropertiesLibrary()), deltaT);
+#endif
     _timers.velocityUpdate.stop();
   }
 }
@@ -464,8 +494,13 @@ void Simulation::updateAngularVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
   _timers.angularVelocityUpdate.start();
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or (MD_FLEXIBLE_MODE != MULTISITE)
   TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                                  deltaT);
+#else
+  TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, _moleculeContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                                 deltaT);
+#endif
   _timers.angularVelocityUpdate.stop();
 }
 

@@ -6,6 +6,7 @@
 #include "TimeDiscretization.h"
 #include "../../src/autopas/utils/Quaternion.h"
 #include "autopas/utils/ArrayMath.h"
+#include <stdexcept>
 
 namespace TimeDiscretization {
 
@@ -83,31 +84,18 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   for(size_t i=0; i < moleculeContainer.size(); i++) {
     auto molecule = moleculeContainer.get(i);
     molecule.setOldF(molecule.getF());
-    molecule.setF({0,0,0});
+    //molecule.setF({0,0,0}); //we still need the force in this implementation for later torque calculation. After that we can reset
   }
 
-  //accumulate all forces working on molecules rn (i am sure there is a prettier way to this that doesn't involve all this SoA-, AoS-juggling)
-  std::vector<std::array<double, 3>> forceAccumulator = std::vector<std::array<double, 3>>(moleculeContainer.size(), {0., 0., 0.});
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(vec_of_arrays_plus : forceAccumulator) shared(autoPasContainer, globalForce) default(none)
-#endif
   //accumulate all forces acting on sites of a molecule in that molecule
   for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    //MoleculeType molecule = moleculeContainer.get(iter->getMoleculeId());
-    //molecule.addF(iter->getF());    //@TODO considering that acting force shouldn't just be translated as a translational force there should be some factor based on the angle between the relative site position and the force vector
-    forceAccumulator[iter->getMoleculeId()] = autopas::utils::ArrayMath::add(forceAccumulator[iter->getMoleculeId()], iter->getF());
+    MoleculeType molecule = moleculeContainer.get(iter->getMoleculeId());
+    molecule.addF(iter->getF());    //@TODO considering that acting force shouldn't just be translated as a translational force there should be some factor based on the angle between the relative site position and the force vector
     iter->setF(globalForce);
   }
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel for shared(forceAccumulator, moleculeContainer) default(none)
-  for(size_t i=0; i < moleculeContainer.size(); i++) {
-    moleculeContainer.get(i).setF(forceAccumulator[i]);
-  }
-#endif
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for shared(moleculeContainer, particlePropertiesLibrary, deltaT, maxAllowedDistanceMoved, maxAllowedDistanceMovedSquared, autoPasContainer, fastParticlesThrow, throwException) default(none)
+#pragma omp parallel for shared(std::cerr, moleculeContainer, particlePropertiesLibrary, deltaT, maxAllowedDistanceMoved, maxAllowedDistanceMovedSquared, autoPasContainer, fastParticlesThrow, throwException) default(none)
 #endif
   //compute velocity and new position based on that info
   for(size_t i=0; i < moleculeContainer.size(); i++) {
@@ -125,9 +113,11 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     const auto distanceMovedSquared = dot(displacement, displacement);
     if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
 #pragma omp critical
+      {
       std::cerr << "A molecule moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
                 << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
                 << molecule << "\nNew Position: " << molecule.getR() + displacement << std::endl;
+      }
       if (fastParticlesThrow) {
         throwException = true;
       }
@@ -289,28 +279,28 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
   const double tol = 1e-13;  // tolerance given in paper
   const double tolSquared = tol * tol;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for shared(autoPasContainer) default(none)
-  for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-  }
-#endif
   //gather total torque acting on molecules
+  for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    MoleculeType molecule = moleculeContainer.get(iter->getMoleculeId());
+    const auto q = molecule.getQuaternion();
+    const auto rotatedSitePosition = rotatePosition(q,particlePropertiesLibrary.getSitePositions(iter->getMoleculeId())[iter->getIndexInsideMolecule()]);
+    const auto torqueOnSite = autopas::utils::ArrayMath::cross(rotatedSitePosition, iter->getF());
+    molecule.addTorque(torqueOnSite);
+  }
 
   //do actual quaternion-calculations
-
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel for
+#pragma omp parallel for shared(moleculeContainer, particlePropertiesLibrary, halfDeltaT, tol, tolSquared, globalForce, deltaT) default(none)
 #endif
-  for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    // Calculate Quaternions
-    const auto q = iter->getQuaternion();
-    const auto angVelW = iter->getAngularVel();  // angular velocity in world frame
+  for(size_t i=0; i < moleculeContainer.size(); i++){
+    MoleculeType molecule = moleculeContainer.get(i);
+    const auto q = molecule.getQuaternion();
+    const auto angVelW = molecule.getAngularVel();// angular velocity in world frame
     const auto angVelM =
         rotatePositionBackwards(q, angVelW);  // angular velocity in molecular frame  (equivalent to (17))
-    const auto torqueW = iter->getTorque();
+    const auto torqueW = molecule.getTorque();
     const auto torqueM = rotatePositionBackwards(q, torqueW);  // (18)
-
-    const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId());  // moment of inertia
+    const auto I = particlePropertiesLibrary.getMomentOfInertia(molecule.getTypeId());  // moment of inertia
 
     const auto angMomentumM = I * angVelM;                                                 // equivalent to (19)
     const auto derivativeAngMomentumM = torqueM - cross(angVelM, angMomentumM);            // (20)
@@ -321,43 +311,38 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
     auto qHalfStep = normalize(q + derivativeQHalfStep * halfDeltaT);  // (23)
 
     const auto angVelWHalfStep = angVelW + rotatePosition(q, torqueM / I) * halfDeltaT;  // equivalent to (24)
+   // (25) start
+   // initialise qHalfStepOld to be outside tolerable distance from qHalfStep to satisfy while statement
+   auto qHalfStepOld = qHalfStep;
+   qHalfStepOld[0] += 2 * tol;
 
-    // (25) start
-    // initialise qHalfStepOld to be outside tolerable distance from qHalfStep to satisfy while statement
-    auto qHalfStepOld = qHalfStep;
-    qHalfStepOld[0] += 2 * tol;
+   while (dot(qHalfStep - qHalfStepOld, qHalfStep - qHalfStepOld) > tolSquared) {
+     qHalfStepOld = qHalfStep;
+     const auto angVelMHalfStep =
+         rotatePositionBackwards(qHalfStepOld, angVelWHalfStep);  // equivalent to first two lines of (25)
+     derivativeQHalfStep = qMul(qHalfStepOld, angVelMHalfStep) * 0.5;
+     qHalfStep = normalize(q + derivativeQHalfStep * halfDeltaT);
+   }
+   // (25) end
 
-    while (dot(qHalfStep - qHalfStepOld, qHalfStep - qHalfStepOld) > tolSquared) {
-      qHalfStepOld = qHalfStep;
-      const auto angVelMHalfStep =
-          rotatePositionBackwards(qHalfStepOld, angVelWHalfStep);  // equivalent to first two lines of (25)
-      derivativeQHalfStep = qMul(qHalfStepOld, angVelMHalfStep) * 0.5;
-      qHalfStep = normalize(q + derivativeQHalfStep * halfDeltaT);
-    }
-    // (25) end
+   const auto qFullStep = normalize(q + derivativeQHalfStep * deltaT);  // (26)
 
-    const auto qFullStep = normalize(q + derivativeQHalfStep * deltaT);  // (26)
+   molecule.setQuaternion(qFullStep);
 
-#if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-    iter->setQuaternion(qFullStep);
-#else
-    iter->setQuaternion(qFullStep, particlePropertiesLibrary);
-    //iter->setQuaternion(qFullStep, particlePropertiesLibrary.getSitePositions(iter->getTypeId()));
-#endif
+   molecule.setAngularVel(angVelWHalfStep);  // save angular velocity half step, to be used by calculateAngularVelocities
 
-    iter->setAngularVel(angVelWHalfStep);  // save angular velocity half step, to be used by calculateAngularVelocities
+   // Reset torque
+   molecule.setTorque({0., 0., 0.});
 
-    // Reset torque
-    iter->setTorque({0., 0., 0.});
-    if (std::any_of(globalForce.begin(), globalForce.end(),
-                    [](double i) { return std::abs(i) > std::numeric_limits<double>::epsilon(); })) {
-      // Get torque from global force
-      const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
-      const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
-      for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(iter->getTypeId()); site++) {
-        iter->addTorque(cross(rotatedSitePositions[site], globalForce));
-      }
-    }
+   if (std::any_of(globalForce.begin(), globalForce.end(),
+                   [](double i) { return std::abs(i) > std::numeric_limits<double>::epsilon(); })) {
+     // Get torque from global force (this part would be unnecessary if every site simply took the global force)
+     const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(molecule.getTypeId());
+     const auto rotatedSitePositions = rotateVectorOfPositions(qFullStep, unrotatedSitePositions);
+     for (size_t site = 0; site < particlePropertiesLibrary.getNumSites(molecule.getTypeId()); site++) {
+        molecule.addTorque(cross(rotatedSitePositions[site], globalForce));
+     }
+   }
   }
 
 #else
@@ -367,6 +352,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 }
 #endif
 
+#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   // helper declarations for operations with vector
@@ -383,7 +369,14 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
     iter->addV(changeInVel);
   }
 }
+#else
+void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
+                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+  throw std::runtime_error( "calculateVelocities for bundling Molecule approach not implemented" );
+}
+#endif
 
+#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
   using namespace autopas::utils::ArrayMath::literals;
@@ -394,9 +387,13 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  //you cannot parallelize loops using iters that easily with openmp. #pragma omp parallel (without the "for") will only
+  // lead to the whole loop being executed by all threads instead of the workload being distributed
+  //adding #pragma omp parallel for won't work since openmp doesn't know at the start of the iteration whether there will
+  // be a next iteration
+//#ifdef AUTOPAS_OPENMP
+//#pragma omp parallel
+//#endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto torqueW = iter->getTorque();
 
@@ -421,5 +418,38 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
       "Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
 #endif
 }
+#else
+void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
+                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::quaternion::rotatePosition;
+  using autopas::utils::quaternion::rotatePositionBackwards;
+  using autopas::utils::quaternion::getRotationBetweenVectors;
+  using autopas::utils::ArrayMath::normalize;
 
+#if MD_FLEXIBLE_MODE == MULTISITE
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for shared(moleculeContainer, particlePropertiesLibrary, deltaT) default(none)
+#endif
+  for(size_t i = 0; i < moleculeContainer.size(); i++) {
+    MoleculeType molecule = moleculeContainer.get(i);
+    const auto torqueW = molecule.getTorque();
+    const auto q = molecule.getQuaternion();
+    const auto I = particlePropertiesLibrary.getMomentOfInertia(molecule.getTypeId());
+
+    // convert torque to molecular-frame
+    const auto torqueM = rotatePositionBackwards(q, torqueW);
+    // get I^-1 T in molecular-frame
+    const auto torqueDivMoIM = torqueM / I;
+
+    molecule.addAngularVel(torqueDivMoIM * 0.5 * deltaT);  // (28)
+  }
+
+#else
+  autopas::utils::ExceptionHandler::exception(
+      "Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
+#endif
+}
+#endif
 }  // namespace TimeDiscretization

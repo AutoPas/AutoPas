@@ -36,9 +36,9 @@ class Object {
    * @param particles The container to which the new particles will be appended to.
    */
 #if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-  virtual void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const = 0;
+  virtual void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const = 0;
 #else
-  virtual void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl,
+  virtual void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
                         MoleculeContainer& moleculeContainer) const = 0;
 #endif
 
@@ -56,13 +56,13 @@ class Object {
     particles.push_back(particle);
   }
 #else
-  void insertMolecule(const std::array<double, 3>& position, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl,
+  void insertMolecule(const std::array<double, 3>& position, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
                                     std::vector<ParticleType> &particles, MoleculeContainer& moleculeContainer) const {
     //insert molecule by inserting individual sites at their respective place and inserting the bundled molecule in moleculeContainer
     const auto moleculeID = moleculeContainer.size();
     MoleculeType molecule = getDummyMolecule(moleculeID);
     molecule.setR(position);
-    moleculeContainer.add(std::move(molecule));
+    moleculeContainer.push_back(std::move(molecule));
 
     //the typeID set in getDummyParticle is the ID of the MOLECULE. Since in this configuration a Particle is just a single
     //site we need to overwrite this typeID with the proper siteID
@@ -72,7 +72,7 @@ class Object {
     const auto rotatedRelativeSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(molecule.getQuaternion(), unrotatedRelativeSitePositions);
 
     //insert individual sites
-    for(size_t siteIndex=0; siteIndex<siteTypes.size(); siteIndex++) {
+    for(size_t siteIndex=0; siteIndex < siteTypes.size(); siteIndex++) {
       const auto& relSitePos = rotatedRelativeSitePositions[siteIndex];
       const auto siteType = siteTypes[siteIndex];
 
@@ -80,6 +80,7 @@ class Object {
       particle.setTypeId(siteType); //overwrite previously stored moleculeID with the actual SiteID //when i am actually storing the siteType here then i don't have  a place to store the reference to the molecule. That's why i am using the typeID as moleculeID instead
       particle.setID(particle.getID() + 1);
       particle.setMoleculeId(moleculeID);
+      particle.setIndexInsideMolecule(siteIndex);
       particles.push_back(particle);
     }
   }

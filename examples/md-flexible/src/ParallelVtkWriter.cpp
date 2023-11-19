@@ -39,12 +39,22 @@ ParallelVtkWriter::ParallelVtkWriter(std::string sessionName, const std::string 
   autopas::AutoPas_MPI_Bcast(_dataFolderPath.data(), dataFolderPathLength, AUTOPAS_MPI_CHAR, 0, AUTOPAS_MPI_COMM_WORLD);
 }
 
+#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
                                        const RegularGridDecomposition &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
   recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
 }
+#else
+void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
+                                       const MoleculeContainer& moleculeContainer,
+                                       const RegularGridDecomposition &decomposition) {
+  recordParticleStates(currentIteration, moleculeContainer);
+  recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
+}
+#endif
 
+#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 /**
  * @todo: Currently this function runs over all the particles for each property separately.
  * This can be improved by using multiple string streams (one for each property).
@@ -155,6 +165,120 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 
   timestepFile.close();
 }
+#else
+void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
+                                             const MoleculeContainer &moleculeContainer) {
+  if (_mpiRank == 0) {
+    createPvtuFile(currentIteration);
+  }
+
+  std::ostringstream timestepFileName;
+  generateFilename("vtu", currentIteration, timestepFileName);
+
+  std::ofstream timestepFile;
+  timestepFile.open(timestepFileName.str(), std::ios::out | std::ios::binary);
+
+  if (not timestepFile.is_open()) {
+    throw std::runtime_error("Simulation::writeVTKFile(): Failed to open file \"" + timestepFileName.str() + "\"");
+  }
+
+  const auto numberOfParticles = moleculeContainer.size();
+
+  timestepFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  timestepFile << "<VTKFile byte_order=\"LittleEndian\" type=\"UnstructuredGrid\" version=\"0.1\">\n";
+  timestepFile << "  <UnstructuredGrid>\n";
+  timestepFile << "    <Piece NumberOfCells=\"0\" NumberOfPoints=\"" << numberOfParticles << "\">\n";
+  timestepFile << "      <PointData>\n";
+
+  // print velocities
+  timestepFile
+      << "        <DataArray Name=\"velocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for(size_t moleculeIndex = 0; moleculeIndex < moleculeContainer.size(); moleculeIndex++){
+    const auto& molecule = moleculeContainer.getConst(moleculeIndex);
+    const auto v = molecule.getV();
+    timestepFile << "        " << v[0] << " " << v[1] << " " << v[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print forces
+  timestepFile << "        <DataArray Name=\"forces\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for(size_t moleculeIndex = 0; moleculeIndex < moleculeContainer.size(); moleculeIndex++){
+    const auto& molecule = moleculeContainer.getConst(moleculeIndex);
+    auto f = molecule.getF();
+    timestepFile << "        " << f[0] << " " << f[1] << " " << f[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print quaternions
+  timestepFile
+      << "        <DataArray Name=\"quaternions\" NumberOfComponents=\"4\" format=\"ascii\" type=\"Float32\">\n";
+  for(size_t moleculeIndex = 0; moleculeIndex < moleculeContainer.size(); moleculeIndex++){
+    const auto& molecule = moleculeContainer.getConst(moleculeIndex);
+    auto q = molecule.getQuaternion();
+    timestepFile << "        " << q[0] << " " << q[1] << " " << q[2] << " " << q[3] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print angular velocities
+  timestepFile
+      << "        <DataArray Name=\"angularVelocities\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for(size_t moleculeIndex = 0; moleculeIndex < moleculeContainer.size(); moleculeIndex++){
+    const auto& molecule = moleculeContainer.getConst(moleculeIndex);
+    auto angVel = molecule.getAngularVel();
+    timestepFile << "        " << angVel[0] << " " << angVel[1] << " " << angVel[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print torques
+  timestepFile << "        <DataArray Name=\"torques\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for(size_t moleculeIndex = 0; moleculeIndex < moleculeContainer.size(); moleculeIndex++){
+    const auto& molecule = moleculeContainer.getConst(moleculeIndex);
+    auto torque = molecule.getTorque();
+    timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+
+  // print type ids
+  timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
+  for(size_t moleculeIndex = 0; moleculeIndex < moleculeContainer.size(); moleculeIndex++){
+  const auto& molecule = moleculeContainer.getConst(moleculeIndex);
+  timestepFile << "        " << molecule.getTypeId() << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  // print ids
+  timestepFile << "        <DataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
+  for(size_t moleculeIndex = 0; moleculeIndex < moleculeContainer.size(); moleculeIndex++){
+    const auto& molecule = moleculeContainer.getConst(moleculeIndex);
+    timestepFile << "        " << molecule.getID() << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  timestepFile << "      </PointData>\n";
+  timestepFile << "      <CellData/>\n";
+  timestepFile << "      <Points>\n";
+
+  // print positions
+  timestepFile << "        <DataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  for(size_t moleculeIndex = 0; moleculeIndex < moleculeContainer.size(); moleculeIndex++){
+  const auto& molecule = moleculeContainer.getConst(moleculeIndex);
+  auto pos = molecule.getR();
+    timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
+
+  timestepFile << "      </Points>\n";
+  timestepFile << "      <Cells>\n";
+  timestepFile << "        <DataArray Name=\"types\" NumberOfComponents=\"0\" format=\"ascii\" type=\"Float32\"/>\n";
+  timestepFile << "      </Cells>\n";
+  timestepFile << "    </Piece>\n";
+  timestepFile << "  </UnstructuredGrid>\n";
+  timestepFile << "</VTKFile>\n";
+
+  timestepFile.close();
+}
+#endif
 
 void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
                                                 const autopas::Configuration &autoPasConfiguration,

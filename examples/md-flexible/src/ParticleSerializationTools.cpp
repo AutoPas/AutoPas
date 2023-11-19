@@ -44,22 +44,23 @@ constexpr std::array<typename ParticleType::AttributeNames, 24> Attributes = {
     mdLib::PositionStoringMultiSiteMolecule::AttributeNames::typeId,
     mdLib::PositionStoringMultiSiteMolecule::AttributeNames::ownershipState};
 #elif defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes ={
-                                                                mdLib::MoleculeLJ::AttributeNames::id,
-                                                                mdLib::MoleculeLJ::AttributeNames::posX,
-                                                                mdLib::MoleculeLJ::AttributeNames::posY,
-                                                                mdLib::MoleculeLJ::AttributeNames::posZ,
-                                                                mdLib::MoleculeLJ::AttributeNames::velocityX,
-                                                                mdLib::MoleculeLJ::AttributeNames::velocityY,
-                                                                mdLib::MoleculeLJ::AttributeNames::velocityZ,
-                                                                mdLib::MoleculeLJ::AttributeNames::forceX,
-                                                                mdLib::MoleculeLJ::AttributeNames::forceY,
-                                                                mdLib::MoleculeLJ::AttributeNames::forceZ,
-                                                                mdLib::MoleculeLJ::AttributeNames::oldForceX,
-                                                                mdLib::MoleculeLJ::AttributeNames::oldForceY,
-                                                                mdLib::MoleculeLJ::AttributeNames::oldForceZ,
-                                                                mdLib::MoleculeLJ::AttributeNames::typeId,
-                                                                mdLib::MoleculeLJ::AttributeNames::ownershipState};
+constexpr std::array<typename ParticleType::AttributeNames, 16> Attributes ={
+                                                                mdLib::Site::AttributeNames::id,
+                                                                mdLib::Site::AttributeNames::owningMoleculeId,
+                                                                mdLib::Site::AttributeNames::posX,
+                                                                mdLib::Site::AttributeNames::posY,
+                                                                mdLib::Site::AttributeNames::posZ,
+                                                                mdLib::Site::AttributeNames::velocityX,
+                                                                mdLib::Site::AttributeNames::velocityY,
+                                                                mdLib::Site::AttributeNames::velocityZ,
+                                                                mdLib::Site::AttributeNames::forceX,
+                                                                mdLib::Site::AttributeNames::forceY,
+                                                                mdLib::Site::AttributeNames::forceZ,
+                                                                mdLib::Site::AttributeNames::oldForceX,
+                                                                mdLib::Site::AttributeNames::oldForceY,
+                                                                mdLib::Site::AttributeNames::oldForceZ,
+                                                                mdLib::Site::AttributeNames::typeId,
+                                                                mdLib::Site::AttributeNames::ownershipState};
 #else
 constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
     mdLib::MultisiteMoleculeLJ::AttributeNames::id,
@@ -110,6 +111,7 @@ constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
 /**
  * The combined size in byte of the simple attributes which need to be communicated using MPI.
  */
+ //@TODO: (Johnny) I am almost certain i need to adapt this value in some cases! Not entirely sure how though
 #if MD_FLEXIBLE_MODE == MULTISITE
 constexpr size_t AttributesSize = 200;
 #else

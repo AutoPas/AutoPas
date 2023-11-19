@@ -176,6 +176,9 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
                        const double targetTemperature) {
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
+  throw std::runtime_error("addBrownianMotion not implemented yet for MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH\n");
+#else
   using namespace autopas::utils::ArrayMath::literals;
   // Generate map(s) of molecule type Id to scaling factors
   std::map<size_t, double> translationalVelocityScale;
@@ -193,6 +196,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #endif
   }
 
+  //@TODO: (Johnny) again- this for-loop doesn't get distributed but rather executed multiple times
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
 #endif
@@ -212,6 +216,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #endif
     }
   }
+#endif //defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
 }
 
 /**
@@ -227,6 +232,9 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary,
            const double targetTemperature, const double deltaTemperature) {
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
+  throw std::runtime_error("Thermostat::apply not implemented yet for MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH\n");
+#else
   using namespace autopas::utils::ArrayMath::literals;
   const auto currentTemperatureMap = calcTemperatureComponent(autopas, particlePropertiesLibrary);
 
@@ -260,5 +268,6 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
     iter->setAngularVel(iter->getAngularVel() * scalingMap[iter->getTypeId()]);
 #endif
   }
+#endif //defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
 }
 }  // namespace Thermostat

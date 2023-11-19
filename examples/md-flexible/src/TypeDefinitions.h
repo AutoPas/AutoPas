@@ -16,6 +16,7 @@
 
 #if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
 #include "molecularDynamicsLibrary/Site.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
@@ -153,7 +154,9 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
 * be used in the CMake.
 */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
+#ifdef MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC
 using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS
 using LJFunctorTypeAbstract = mdLib::LJPositionUsingMultiSiteFunctor<ParticleType, true, true>;

@@ -10,11 +10,13 @@ class MoleculeContainer {
  public:
   MoleculeContainer();
 
-  void add(MoleculeType && multisiteMoleculeLj);
+  void push_back(MoleculeType && multisiteMoleculeLj);
 
-  size_t size();
+  size_t size() const;
 
   MoleculeType& get(size_t index);
+
+  [[nodiscard]] const MoleculeType & getConst(size_t moleculeID) const;
 
  private:
   std::vector<MoleculeType> _molecules;
