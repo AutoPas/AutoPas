@@ -120,10 +120,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   ASSERT_TRUE(AoSParticlesEqual(cell1AVX, cell1NoAVX)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2AVX, cell2NoAVX)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoAVX.SoALoader(cell1NoAVX, cell1NoAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctorNoAVX.SoALoader(cell2NoAVX, cell2NoAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctorAVX.SoALoader(cell1AVX, cell1AVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctorAVX.SoALoader(cell2AVX, cell2AVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorNoAVX.SoALoader(cell1NoAVX, cell1NoAVX._particleSoABuffer, 0);
+  ljFunctorNoAVX.SoALoader(cell2NoAVX, cell2NoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cell1AVX, cell1AVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cell2AVX, cell2AVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1AVX._particleSoABuffer, cell1NoAVX._particleSoABuffer))
       << "Cells 1 not equal after loading.";
@@ -190,8 +190,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
 
-  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after loading.";
@@ -268,8 +268,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   ljFunctorAVX.initTraversal();
   ljFunctorNoAVX.initTraversal();
 
-  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorNoAVX.SoALoader(cellNoAVX, cellNoAVX._particleSoABuffer, 0);
+  ljFunctorAVX.SoALoader(cellAVX, cellAVX._particleSoABuffer, 0);
 
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellNoAVX._particleSoABuffer))
       << "Cells not equal after loading.";

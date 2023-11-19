@@ -286,7 +286,7 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
       &mockFunctor);
   const size_t dimWithHalo = 10 / ((cutoff + skinPerTimestep * rebuildFrequency) * cellSizeFactor) + 2ul;
   const size_t numCells = dimWithHalo * dimWithHalo * dimWithHalo;
-  EXPECT_CALL(mockFunctor, SoALoader(testing::An<autopas::FullParticleCell<Particle> &>(), _, _, _)).Times(numCells);
+  EXPECT_CALL(mockFunctor, SoALoader(testing::An<autopas::FullParticleCell<Particle> &>(), _, _)).Times(numCells);
   EXPECT_CALL(mockFunctor, SoAExtractor(testing::An<autopas::FullParticleCell<Particle> &>(), _, _)).Times(numCells);
   EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _)).Times(1);
 

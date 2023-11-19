@@ -70,13 +70,12 @@ class VLCNeighborListInterface {
 
     // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
     // SoALoader.
-    size_t totalSizeOfAllCells{_internalLinkedCells->size()};
-    _soa.resizeArrays(totalSizeOfAllCells);
+    size_t numParticles{_internalLinkedCells->size()};
+    _soa.resizeArrays(numParticles);
 
     size_t offset = 0;
     for (auto &cell : _internalLinkedCells->getCells()) {
-      // Skip SoA resize, since this was done above
-      f->SoALoader(cell, _soa, offset, /*skipSoAResize*/ true);
+      f->SoALoader(cell, _soa, offset);
       offset += cell.size();
     }
     return &_soa;

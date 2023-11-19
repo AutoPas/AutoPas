@@ -133,10 +133,10 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
   cell3.addParticle(p7);
   cell3.addParticle(p8);
 
-  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell4, cell4._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0);
+  functor.SoALoader(cell3, cell3._particleSoABuffer, 0);
+  functor.SoALoader(cell4, cell4._particleSoABuffer, 0);
 
   // This is a basic check for the accumulated values, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.

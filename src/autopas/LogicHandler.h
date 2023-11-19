@@ -1018,10 +1018,10 @@ void LogicHandler<Particle>::remainderHelperBufferBuffer(PairwiseFunctor *f,
                                                          std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
   for (auto &buffer : particleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
   }
   for (auto &buffer : haloParticleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
   }
 
 #ifdef AUTOPAS_OPENMP

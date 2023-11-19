@@ -270,10 +270,10 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
 
   functor.initTraversal();
 
-  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell4, cell4._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0);
+  functor.SoALoader(cell3, cell3._particleSoABuffer, 0);
+  functor.SoALoader(cell4, cell4._particleSoABuffer, 0);
 
   switch (interactionType) {
     case InteractionType::verlet: {
