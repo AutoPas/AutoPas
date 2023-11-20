@@ -315,7 +315,7 @@ void LJMultisiteFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MultisiteM
   // init traversal for functor
   functorSoA.initTraversal();
 
-  functorSoA.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
+  functorSoA.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // apply functor
   functorSoA.SoAFunctorSingle(cellSoA._particleSoABuffer, newton3);
@@ -409,8 +409,8 @@ void LJMultisiteFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::Multis
   // init traversal for functor
   functorSoA.initTraversal();
 
-  functorSoA.SoALoader(cellSoAA, cellSoAA._particleSoABuffer, 0);
-  functorSoA.SoALoader(cellSoAB, cellSoAB._particleSoABuffer, 0);
+  functorSoA.SoALoader(cellSoAA, cellSoAA._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functorSoA.SoALoader(cellSoAB, cellSoAB._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // apply functor
   functorSoA.SoAFunctorPair(cellSoAA._particleSoABuffer, cellSoAB._particleSoABuffer, newton3);
@@ -534,7 +534,7 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
   // init traversal for functor
   functorSoA.initTraversal();
 
-  functorSoA.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0);
+  functorSoA.SoALoader(cellSoA, cellSoA._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // apply functor
   for (size_t i = 0; i < numberMolecules; ++i) {

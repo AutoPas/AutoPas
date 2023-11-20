@@ -199,8 +199,8 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
         _haloBoxMin[2],
     };
     const std::array<double, 3> towerBoxMax{
-        towerBoxMin[0] + _towerSideLength[0],
-        towerBoxMin[1] + _towerSideLength[1],
+        _boxMin[0] + _towerSideLength[0],
+        _boxMin[1] + _towerSideLength[1],
         _haloBoxMax[2],
     };
     return {towerBoxMin, towerBoxMax};

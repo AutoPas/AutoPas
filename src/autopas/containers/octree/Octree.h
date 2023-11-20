@@ -343,13 +343,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
   [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
     return ContainerIterator<Particle, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
+      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
     return ContainerIterator<Particle, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 

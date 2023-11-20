@@ -260,7 +260,6 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
       sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor,
                                           _receivedParticlesBuffer, leftNeighbor, rightNeighbor);
 #ifdef AUTOPAS_OPENMP
-// custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
 #pragma omp declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 // make sure each buffer gets filled equally while not inducing scheduling overhead
 #pragma omp parallel for reduction(vecMergeParticle \

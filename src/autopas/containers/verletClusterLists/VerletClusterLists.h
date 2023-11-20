@@ -191,17 +191,16 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   bool updateHaloParticle(const Particle &haloParticle) override {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const auto &haloPos = haloParticle.getR();
+    Particle pCopy = haloParticle;
+    pCopy.setOwnershipState(OwnershipState::halo);
+
     // this might be called from a parallel region so force this iterator to be sequential
-    for (auto it = getRegionIterator(haloPos - (this->getVerletSkin() / 2.), haloPos + (this->getVerletSkin() / 2.),
-                                     IteratorBehavior::halo | IteratorBehavior::forceSequential, nullptr);
+    for (auto it =
+             getRegionIterator(pCopy.getR() - (this->getVerletSkin() / 2), pCopy.getR() + (this->getVerletSkin() / 2),
+                               IteratorBehavior::halo | IteratorBehavior::forceSequential, nullptr);
          it.isValid(); ++it) {
-      if (haloParticle.getID() == it->getID()) {
-        // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that
-        // overlap with this region.
-        it->setR(haloPos);
-        it->setV(haloParticle.getV());
-        it->setF(haloParticle.getF());
+      if (pCopy.getID() == it->getID()) {
+        *it = pCopy;
         return true;
       }
     }
@@ -225,13 +224,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for reduction(|| : deletedSomething)
 #endif
-    // Thanks to clang 13 this has to be a index based loop instead of a range based
     for (size_t i = 0; i < _towerBlock.size(); ++i) {
       auto &tower = _towerBlock[i];
-      const auto towerSize = tower.size();
+      const auto towerSize = tower.getNumActualParticles();
       auto numTailDummies = tower.getNumTailDummyParticles();
-      // iterate over all non-tail dummies. Avoid underflows.
-      for (size_t j = 0; numTailDummies < towerSize and j < towerSize - numTailDummies;) {
+      // iterate over all non-tail dummies.
+      for (size_t j = 0; j < towerSize - numTailDummies;) {
         if (tower[j].isHalo()) {
           // swap-"delete"
           tower[j] = tower[towerSize - 1 - numTailDummies];
@@ -364,7 +362,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     std::vector<Particle> invalidParticles;
 
 #ifdef AUTOPAS_OPENMP
-    // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
 #pragma omp declare reduction(vecMergeParticle : std::vector<Particle> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 #pragma omp parallel reduction(vecMergeParticle : invalidParticles)
 #endif
@@ -550,7 +547,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors = nullptr) override {
+      typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors) override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
@@ -579,7 +576,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
+      typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors) const override {
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {

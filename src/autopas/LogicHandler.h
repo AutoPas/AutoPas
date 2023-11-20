@@ -112,7 +112,7 @@ class LogicHandler {
         }
         buffer.clear();
       } else {
-        for (auto iter = buffer.begin(); iter < buffer.end();) {
+        for (auto iter = buffer.begin(); iter != buffer.end();) {
           auto &p = *iter;
 
           auto fastRemoveP = [&]() {
@@ -124,12 +124,8 @@ class LogicHandler {
           if (p.isDummy()) {
             // We remove dummies!
             fastRemoveP();
-            // In case we swapped a dummy here, don't increment the iterator and do another iteration to check again.
-            continue;
           }
-          // if p was a dummy a new particle might now be at the memory location of p so we need to check that.
-          // We also just might have deleted the last particle in the buffer in that case the inBox check is meaningless
-          if (not buffer.empty() and utils::notInBox(p.getR(), boxMin, boxMax)) {
+          if (utils::notInBox(p.getR(), boxMin, boxMax)) {
             leavingBufferParticles.push_back(p);
             fastRemoveP();
           } else {
@@ -1022,10 +1018,10 @@ void LogicHandler<Particle>::remainderHelperBufferBuffer(PairwiseFunctor *f,
                                                          std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
   for (auto &buffer : particleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
   for (auto &buffer : haloParticleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
 
 #ifdef AUTOPAS_OPENMP
