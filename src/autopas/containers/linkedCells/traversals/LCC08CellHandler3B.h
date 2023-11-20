@@ -145,6 +145,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   };
 
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
+  _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
 
   // offsets for the first cell
   for (long x1 = 0; x1 <= static_cast<long>(this->_overlap[0]); ++x1) {
