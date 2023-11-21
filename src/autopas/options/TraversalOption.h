@@ -53,6 +53,11 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c04,
     /**
+     * LCC04Traversal : Four-way domain coloring using plus-shaped clusters of cells that are processed with the c08
+     * base-step. Less scheduling overhead than LCC08Traversal because of fewer barriers but more coarse-grained.
+     */
+    lc_c04_3b,
+    /**
      * LCC04HCPTraversal : Same as LCC04Traversal but with only one block shape.
      */
     lc_c04_HCP,
@@ -255,7 +260,7 @@ class TraversalOption : public Option<TraversalOption> {
   static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b,
                                                                     Value::lc_c01_3b,
                                                                     Value::lc_c08_3b,
-                                                                    Value::lc_sliced_3b}; }
+                                                                    Value::lc_c04_3b}; }
 
   /**
    * Set of all pairwise traversals without discouraged options.
@@ -295,13 +300,13 @@ class TraversalOption : public Option<TraversalOption> {
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
-        {TraversalOption::lc_sliced_3b, "lc_sliced_3b"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
         {TraversalOption::lc_c01_3b, "lc_c01_3b"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
+        {TraversalOption::lc_c04, "lc_c04_3b"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
