@@ -58,12 +58,13 @@ class LCC08CellHandler3B {
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
-  /**
-   * @copydoc autopas::CellTraversal::setUseSorting()
-   */
-  void setUseSorting(bool useSorting) { _cellFunctor.setUseSorting(useSorting); }
 
- protected:
+ /**
+  * @copydoc autopas::CellTraversal::setSortingThreshold()
+  */
+  void setSortingThreshold(size_t sortingThreshold) { _cellFunctor.setSortingThreshold(sortingThreshold); }
+
+protected:
 
   /**
     * Combination of triplets for processBaseCell().
