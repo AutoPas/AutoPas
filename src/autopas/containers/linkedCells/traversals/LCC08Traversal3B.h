@@ -8,7 +8,6 @@
 
 #include "LCC08CellHandler3B.h"
 #include "LCTraversalInterface.h"
-#include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/WrapOpenMP.h"
