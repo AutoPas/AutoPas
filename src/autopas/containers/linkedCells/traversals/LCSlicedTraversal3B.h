@@ -11,7 +11,7 @@
 
 #include "LCTraversalInterface.h"
 #include "autopas/containers/cellTraversals/SlicedLockBasedTraversal.h"
-#include "autopa"
+#include "autopas/containers/linkedCells/traversals/LCC08CellHandler3B.h"
 //#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"

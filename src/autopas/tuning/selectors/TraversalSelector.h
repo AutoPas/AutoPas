@@ -21,13 +21,13 @@
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04Traversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC04Traversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC18Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedBalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
-#include "autopas/containers/linkedCells/traversals/LCSlicedTraversal3B.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
@@ -307,8 +307,8 @@ TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(Trave
       return std::make_unique<LCC08Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
           info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
     }
-    case TraversalOption::lc_sliced_3b: {
-        return std::make_unique<LCSlicedTraversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
+    case TraversalOption::lc_c04_3b: {
+        return std::make_unique<LCC04Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
           info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
     }
     default: {
