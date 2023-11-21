@@ -35,7 +35,7 @@ Sites:
 Objects:
   CubeClosestPacked:
     0:
-      box-length                     :  [10, 10, 10]
+      box-length                     :  [30, 30, 30]
       bottomLeftCorner               :  [0, 0, 0]
       particle-spacing               :  1.35
       velocity                       :  [0, 0, 0]

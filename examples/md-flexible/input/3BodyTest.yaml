@@ -37,7 +37,7 @@ Objects:
     0:
       box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [0, 0, 0]
-      particle-spacing               :  1.35
+      particle-spacing               :  1
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
 thermostat:
