@@ -313,14 +313,14 @@ TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(Trave
         return std::make_unique<LCC04Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
           info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
     }
-  /*  case TraversalOption::lc_sliced_3b: {
+    case TraversalOption::lc_sliced_3b: {
         return std::make_unique<LCSlicedTraversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
             info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
     }
     case TraversalOption::lc_sliced_c02_3b: {
         return std::make_unique<LCSlicedC02Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
             info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
-    }*/
+    }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known 3-body traversal type!",
                                                   traversalType.to_string());
