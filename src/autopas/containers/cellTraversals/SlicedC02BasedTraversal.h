@@ -33,22 +33,22 @@ namespace autopas {
  * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
  * c08)
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
 class SlicedC02BasedTraversal
-    : public SlicedBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward> {
+    : public SlicedBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward> {
  public:
   /**
    * Constructor of the colored sliced traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction between particles.
+   * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *pairwiseFunctor,
+  explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                                    const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>(
-            dims, pairwiseFunctor, interactionLength, cellLength) {}
+      : SlicedBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward>(
+            dims, functor, interactionLength, cellLength) {}
 
   /**
    * The main traversal of the colored sliced traversal.
@@ -79,9 +79,9 @@ class SlicedC02BasedTraversal
   }
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
 template <typename LoopBody>
-void SlicedC02BasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
+void SlicedC02BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
     LoopBody &&loopBody) {
   using std::array;
 
