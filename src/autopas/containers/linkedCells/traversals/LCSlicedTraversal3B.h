@@ -58,12 +58,6 @@ namespace autopas {
 
         [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_3b; }
 
-
-        /**
-         * C08 traversals are always usable.
-         * @return
-         */
-        [[nodiscard]] bool isApplicable() const override { return true; }
         /**
          * @copydoc autopas::CellTraversal::setSortingThreshold()
          */
