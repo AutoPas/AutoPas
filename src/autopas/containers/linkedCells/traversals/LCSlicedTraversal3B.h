@@ -33,7 +33,7 @@ namespace autopas {
  * @tparam useNewton3
  */
     template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-    class LCSlicedTraversal3B : public SlicedLockBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, true>,
+    class LCSlicedTraversal3B : public SlicedLockBasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, dataLayout, useNewton3, true>,
                               public LCTraversalInterface<ParticleCell> {
     public:
         /**
@@ -46,7 +46,7 @@ namespace autopas {
          */
         explicit LCSlicedTraversal3B(const std::array<unsigned long, 3> &dims, Functor *functor,
                                    const double interactionLength, const std::array<double, 3> &cellLength)
-                : SlicedLockBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, true>(
+                : SlicedLockBasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, dataLayout, useNewton3, true>(
                 dims, functor, interactionLength, cellLength),
                   _cellHandler(functor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 

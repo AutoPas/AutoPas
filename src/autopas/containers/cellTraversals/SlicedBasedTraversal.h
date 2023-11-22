@@ -30,9 +30,9 @@ namespace autopas {
  * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
  * c08).
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
 class SlicedBasedTraversal : public CellTraversal<ParticleCell>,
-                             public TraversalInterface<InteractionTypeOption::pairwise> {
+                             public TraversalInterface<interactionType> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -175,8 +175,8 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>,
   utils::DataLayoutConverter<Functor, dataLayout> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
-inline void SlicedBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>::init(
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
+inline void SlicedBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3, spaciallyForward>::init(
     const std::array<unsigned long, 3> &dims) {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);

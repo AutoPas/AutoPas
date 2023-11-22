@@ -86,9 +86,9 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_sliced,
     /**
-    * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
-    * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
-    */
+     * LCSlicedTraversal : 1D equidistant slicing of the domain with one slice per thread. One lock per slice interface.
+     * Uses c08 base-step per cell. Minimal scheduling overhead at the cost of no load balancing at all.
+     */
     lc_sliced_3b,
     /**
      * LCSlicedBalancedTraversal : Same as lc_sliced but tries to balance slice thickness according to a given
@@ -257,10 +257,13 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for 3-body interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b,
-                                                                    Value::lc_c01_3b,
-                                                                    Value::lc_c08_3b,
-                                                                    Value::lc_c04_3b}; }
+  static std::set<TraversalOption> getAllTriwiseOptions() { return {
+      Value::ds_sequential_3b,
+      Value::lc_c01_3b,
+      Value::lc_c08_3b,
+      Value::lc_c04_3b,
+      Value::lc_sliced_3b
+  }; }
 
   /**
    * Set of all pairwise traversals without discouraged options.
@@ -300,6 +303,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
+        {TraversalOption::lc_sliced_3b, "lc_sliced_3b"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
