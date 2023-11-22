@@ -316,7 +316,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_c01_3b, "lc_c01_3b"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
-        {TraversalOption::lc_c04, "lc_c04_3b"},
+        {TraversalOption::lc_c04_3b, "lc_c04_3b"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
