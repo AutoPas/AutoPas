@@ -266,8 +266,8 @@ class TraversalOption : public Option<TraversalOption> {
       Value::ds_sequential_3b,
       Value::lc_c01_3b,
       Value::lc_c08_3b,
-      Value::lc_c04_3b,
-      Value::lc_sliced_3b
+      Value::lc_c04_3b
+      //Value::lc_sliced_3b
   }; }
 
   /**
@@ -308,10 +308,10 @@ class TraversalOption : public Option<TraversalOption> {
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
-        {TraversalOption::lc_sliced_3b, "lc_sliced_3b"},
+        //{TraversalOption::lc_sliced_3b, "lc_sliced_3b"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
-        {TraversalOption::lc_sliced_c02_3b, "lc_sliced_c02_3b"},
+        // {TraversalOption::lc_sliced_c02_3b, "lc_sliced_c02_3b"},
         {TraversalOption::lc_c01, "lc_c01"},
         {TraversalOption::lc_c01_3b, "lc_c01_3b"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
