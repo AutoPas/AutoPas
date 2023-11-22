@@ -1,8 +1,8 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
 container                            :  [LinkedCells] # DirectSum
 functor-3b                           :  axilrod-teller
-traversal-3b                         :  [lc_c01_3b] # ds_sequential_3b
-newton3-3b                           :  [enabled, disabled]
+traversal-3b                         :  [lc_c08_3b] # ds_sequential_3b
+newton3-3b                           :  [enabled]
 data-layout-3b                       :  [AoS]
 
 # Uncomment to combine pairwise and 3-body interaction
@@ -35,9 +35,9 @@ Sites:
 Objects:
   CubeClosestPacked:
     0:
-      box-length                     :  [30, 30, 30]
+      box-length                     :  [10, 10, 10]
       bottomLeftCorner               :  [0, 0, 0]
-      particle-spacing               :  1.35
+      particle-spacing               :  1.05
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
 thermostat:

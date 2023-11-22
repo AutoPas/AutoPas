@@ -28,6 +28,7 @@
 #include "autopas/containers/linkedCells/traversals/LCSlicedBalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedC02Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
+#include "autopas/containers/linkedCells/traversals/LCSlicedTraversal3B.h"
 #include "autopas/containers/octree/traversals/OTC01Traversal.h"
 #include "autopas/containers/octree/traversals/OTC18Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC01BalancedTraversal.h"
@@ -310,6 +311,10 @@ TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(Trave
     case TraversalOption::lc_c04_3b: {
         return std::make_unique<LCC04Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
           info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    case TraversalOption::lc_sliced_3b: {
+        return std::make_unique<LCSlicedTraversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
+            info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known 3-body traversal type!",
