@@ -30,7 +30,7 @@ namespace autopas {
  */
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward>
 class SlicedBalancedBasedTraversal
-    : public SlicedLockBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>,
+    : public SlicedLockBasedTraversal<ParticleCell, Functor, InteractionTypeOption::pairwise, dataLayout, useNewton3, spaciallyForward>,
       public BalancedTraversal {
  public:
   /**
@@ -39,7 +39,7 @@ class SlicedBalancedBasedTraversal
    */
   explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                                         const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedLockBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spaciallyForward>(
+      : SlicedLockBasedTraversal<ParticleCell, Functor, InteractionTypeOption::pairwise, dataLayout, useNewton3, spaciallyForward>(
             dims, functor, interactionLength, cellLength) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
     this->_dynamic = false;

@@ -1,0 +1,57 @@
+# This yaml file creates a simple simulation box to be run with 3-body functors.
+container                            :  [LinkedCells] # DirectSum
+functor-3b                           :  axilrod-teller
+traversal-3b                         :  [lc_sliced_c02_3b] # ds_sequential_3b
+newton3-3b                           :  [enabled]
+data-layout-3b                       :  [AoS]
+
+# Uncomment to combine pairwise and 3-body interaction
+#functor                              :  lj-avx
+#traversal                            :  [lc_c01, lc_c08, lc_sliced]
+#newton3                              :  [enabled, disabled]
+#data-layout                          :  [AoS, SoA]
+
+verlet-rebuild-frequency             :  10
+verlet-skin-radius-per-timestep      :  0.02
+selector-strategy                    :  Fastest-Absolute-Value
+tuning-strategies                    :  []
+tuning-interval                      :  2000
+tuning-samples                       :  3
+tuning-max-evidence                  :  10
+
+cutoff                               :  2.5
+cell-size                            :  [1]
+deltaT                               :  0.002
+iterations                           :  100
+boundary-type                        :  [periodic, periodic, periodic]
+fastParticlesThrow                   :  false
+
+Sites:
+  0:
+    epsilon                          :  1.
+    sigma                            :  1.
+    mass                             :  1.
+    nu                               :  0.073 # Value for Argon
+Objects:
+  CubeClosestPacked:
+    0:
+      box-length                     :  [10, 10, 10]
+      bottomLeftCorner               :  [0, 0, 0]
+      particle-spacing               :  1.05
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
+thermostat:
+  initialTemperature                 :  1.1
+  targetTemperature                  :  1.1
+  deltaTemperature                   :  0.5
+  thermostatInterval                 :  25
+  addBrownianMotion                  :  true
+
+log-level                            :  warn
+no-flops                             :  false
+no-end-config                        :  true
+no-progress-bar                      :  false
+vtk-filename                         :  3BodyTest
+vtk-output-folder                    :  3BodyTestOutput
+vtk-write-frequency                  :  10
+#log-file                            : log.txt
