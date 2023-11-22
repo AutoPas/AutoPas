@@ -203,7 +203,177 @@ class AxilrodTellerFunctor
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
+    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
+    //  TODO
+    if (soa.size() == 0) {
+      return;
+    }
+
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    for (size_t i = 0; i < soa.size(); ++i) {
+      SoAFloatPrecision fxacc = 0;
+      SoAFloatPrecision fyacc = 0;
+      SoAFloatPrecision fzacc = 0;
+      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      for (size_t j = i + 1; j < soa.size(); ++j) {
+        if (ownedStatePtr[j] == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        const SoAFloatPrecision drxij = xptr[j] - xptr[i];
+        const SoAFloatPrecision dryij = yptr[j] - yptr[i];
+        const SoAFloatPrecision drzij = zptr[j] - zptr[i];
+
+        const SoAFloatPrecision drxij2 = drxij * drxij;
+        const SoAFloatPrecision dryij2 = dryij * dryij;
+        const SoAFloatPrecision drzij2 = drzij * drzij;
+
+        const SoAFloatPrecision drij2 = drxij2 + dryij2 + drzij2;
+        if (drij2 > _cutoffSquared) {
+          continue;
+        }
+
+        std::vector<unsigned int> indicesK;
+        for (size_t k = j + 1; k < soa.size(); ++k) {
+          if (ownedStatePtr[k] == autopas::OwnershipState::dummy) {
+            continue;
+          }
+
+          const SoAFloatPrecision drxjk = xptr[k] - xptr[j];
+          const SoAFloatPrecision dryjk = yptr[k] - yptr[j];
+          const SoAFloatPrecision drzjk = zptr[k] - zptr[j];
+
+          const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+          const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+          const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+          const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+          const SoAFloatPrecision drxki = xptr[i] - xptr[k];
+          const SoAFloatPrecision dryki = yptr[i] - yptr[k];
+          const SoAFloatPrecision drzki = zptr[i] - zptr[k];
+
+          const SoAFloatPrecision drxki2 = drxki * drxki;
+          const SoAFloatPrecision dryki2 = dryki * dryki;
+          const SoAFloatPrecision drzki2 = drzki * drzki;
+
+          const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+          if (drjk2 > _cutoffSquared or drki2 > _cutoffSquared) {
+            continue;
+          }
+
+          indicesK.push_back(k);
+        }
+        for (auto &k : indicesK) {
+          const SoAFloatPrecision drxjk = xptr[k] - xptr[j];
+          const SoAFloatPrecision dryjk = yptr[k] - yptr[j];
+          const SoAFloatPrecision drzjk = zptr[k] - zptr[j];
+
+          const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+          const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+          const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+          const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+          const SoAFloatPrecision drxki = xptr[i] - xptr[k];
+          const SoAFloatPrecision dryki = yptr[i] - yptr[k];
+          const SoAFloatPrecision drzki = zptr[i] - zptr[k];
+
+          const SoAFloatPrecision drxki2 = drxki * drxki;
+          const SoAFloatPrecision dryki2 = dryki * dryki;
+          const SoAFloatPrecision drzki2 = drzki * drzki;
+
+          const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+          const SoAFloatPrecision drxi2 = drxij * drxki;
+          const SoAFloatPrecision dryi2 = dryij * dryki;
+          const SoAFloatPrecision drzi2 = drzij * drzki;
+
+          const SoAFloatPrecision dri2 = drxi2 + dryi2 + drzi2;
+
+          const SoAFloatPrecision drxj2 = drxij * drxjk;
+          const SoAFloatPrecision dryj2 = dryij * dryjk;
+          const SoAFloatPrecision drzj2 = drzij * drzjk;
+
+          const SoAFloatPrecision drj2 = drxj2 + dryj2 + drzj2;
+
+          const SoAFloatPrecision drxk2 = drxjk * drxki;
+          const SoAFloatPrecision dryk2 = dryjk * dryki;
+          const SoAFloatPrecision drzk2 = drzjk * drzki;
+
+          const SoAFloatPrecision drk2 = drxk2 + dryk2 + drzk2;
+
+          const SoAFloatPrecision drijk2 = dri2 * drj2 * drk2;
+
+          const SoAFloatPrecision dr2 = drij2 * drjk2 * drki2;
+          const SoAFloatPrecision dr5 = dr2 * dr2 * std::sqrt(dr2);
+
+          auto nu = _nu;
+          if constexpr (useMixing) {
+            nu = _PPLibrary->getMixingNu(typeptr[i], typeptr[j], typeptr[k]);
+          }
+          const SoAFloatPrecision invdr5 = nu / dr5;
+
+          const auto fxi = drxjk * dri2 * (drj2 - drk2) + drxij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           drxki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fxacc += fxi * 3.0 * invdr5;
+          const auto fyi = dryjk * dri2 * (drj2 - drk2) + dryij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           dryki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fyacc += fyi * 3.0 * invdr5;
+          const auto fzi = drzjk * dri2 * (drj2 - drk2) + drzij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           drzki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fzacc += fzi * 3.0 * invdr5;
+
+          const auto fxj = drxki * drj2 * (drk2 - dri2) +
+                           drxij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                           drxjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+          const auto fyj = dryki * drj2 * (drk2 - dri2) +
+                           dryij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                           dryjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+          const auto fzj = drzki * drj2 * (drk2 - dri2) +
+                           drzij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                           drzjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+
+          fxptr[j] += fxj * 3.0 * invdr5;
+          fyptr[j] += fyj * 3.0 * invdr5;
+          fzptr[j] += fzj * 3.0 * invdr5;
+
+          /*const auto fxk = drxij * drk2 * (dri2 - drj2) +
+                           drxjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                           drxki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+          const auto fyk = dryij * drk2 * (dri2 - drj2) +
+                           dryjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                           dryki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+          const auto fzk = drzij * drk2 * (dri2 - drj2) +
+                           drzjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                           drzki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);*/
+          const auto fxk = (fxi + fxj) * (-1.0);
+          const auto fyk = (fyi + fyj) * (-1.0);
+          const auto fzk = (fzi + fzj) * (-1.0);
+
+          fxptr[k] += fxk * 3.0 * invdr5;
+          fyptr[k] += fyk * 3.0 * invdr5;
+          fzptr[k] += fzk * 3.0 * invdr5;
+        }
+      }
+      fxptr[i] += fxacc;
+      fyptr[i] += fyacc;
+      fzptr[i] += fzacc;
+    }
   }
 
   /**
@@ -212,7 +382,473 @@ class AxilrodTellerFunctor
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
     // TODO: should always calculate forces for all particles in soa1, even when newton3 == false
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
+    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
+    // TODO
+    if (soa1.size() == 0 or soa2.size() == 0) {
+      return;
+    }
+
+    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedState1ptr = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedState2ptr = soa2.template begin<Particle::AttributeNames::ownershipState>();
+
+    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict type1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict type2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+
+    for (size_t i = 0; i < soa1.size(); ++i) {
+      SoAFloatPrecision fxacc = 0;
+      SoAFloatPrecision fyacc = 0;
+      SoAFloatPrecision fzacc = 0;
+      if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      // particle 2 from soa1 and 3 from soa2
+
+      for (size_t j = i + 1; j < soa1.size(); ++j) {
+        if (ownedState1ptr[j] == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        const SoAFloatPrecision drxij = x1ptr[j] - x1ptr[i];
+        const SoAFloatPrecision dryij = y1ptr[j] - y1ptr[i];
+        const SoAFloatPrecision drzij = z1ptr[j] - z1ptr[i];
+
+        const SoAFloatPrecision drxij2 = drxij * drxij;
+        const SoAFloatPrecision dryij2 = dryij * dryij;
+        const SoAFloatPrecision drzij2 = drzij * drzij;
+
+        const SoAFloatPrecision drij2 = drxij2 + dryij2 + drzij2;
+        if (drij2 > _cutoffSquared) {
+          continue;
+        }
+
+        std::vector<unsigned int> indicesK;
+        for (size_t k = 0; k < soa2.size(); ++k) {
+          if (ownedState2ptr[k] == autopas::OwnershipState::dummy) {
+            continue;
+          }
+
+          const SoAFloatPrecision drxjk = x2ptr[k] - x1ptr[j];
+          const SoAFloatPrecision dryjk = y2ptr[k] - y1ptr[j];
+          const SoAFloatPrecision drzjk = z2ptr[k] - z1ptr[j];
+
+          const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+          const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+          const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+          const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+          const SoAFloatPrecision drxki = x1ptr[i] - x2ptr[k];
+          const SoAFloatPrecision dryki = y1ptr[i] - y2ptr[k];
+          const SoAFloatPrecision drzki = z1ptr[i] - z2ptr[k];
+
+          const SoAFloatPrecision drxki2 = drxki * drxki;
+          const SoAFloatPrecision dryki2 = dryki * dryki;
+          const SoAFloatPrecision drzki2 = drzki * drzki;
+
+          const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+          if (drjk2 > _cutoffSquared or drki2 > _cutoffSquared) {
+            continue;
+          }
+
+          indicesK.push_back(k);
+        }
+        for (auto &k : indicesK) {
+          const SoAFloatPrecision drxjk = x2ptr[k] - x1ptr[j];
+          const SoAFloatPrecision dryjk = y2ptr[k] - y1ptr[j];
+          const SoAFloatPrecision drzjk = z2ptr[k] - z1ptr[j];
+
+          const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+          const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+          const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+          const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+          const SoAFloatPrecision drxki = x1ptr[i] - x2ptr[k];
+          const SoAFloatPrecision dryki = y1ptr[i] - y2ptr[k];
+          const SoAFloatPrecision drzki = z1ptr[i] - z2ptr[k];
+
+          const SoAFloatPrecision drxki2 = drxki * drxki;
+          const SoAFloatPrecision dryki2 = dryki * dryki;
+          const SoAFloatPrecision drzki2 = drzki * drzki;
+
+          const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+          const SoAFloatPrecision drxi2 = drxij * drxki;
+          const SoAFloatPrecision dryi2 = dryij * dryki;
+          const SoAFloatPrecision drzi2 = drzij * drzki;
+
+          const SoAFloatPrecision dri2 = drxi2 + dryi2 + drzi2;
+
+          const SoAFloatPrecision drxj2 = drxij * drxjk;
+          const SoAFloatPrecision dryj2 = dryij * dryjk;
+          const SoAFloatPrecision drzj2 = drzij * drzjk;
+
+          const SoAFloatPrecision drj2 = drxj2 + dryj2 + drzj2;
+
+          const SoAFloatPrecision drxk2 = drxjk * drxki;
+          const SoAFloatPrecision dryk2 = dryjk * dryki;
+          const SoAFloatPrecision drzk2 = drzjk * drzki;
+
+          const SoAFloatPrecision drk2 = drxk2 + dryk2 + drzk2;
+
+          const SoAFloatPrecision drijk2 = dri2 * drj2 * drk2;
+
+          const SoAFloatPrecision dr2 = drij2 * drjk2 * drki2;
+          const SoAFloatPrecision dr5 = dr2 * dr2 * std::sqrt(dr2);
+
+          auto nu = _nu;
+          if constexpr (useMixing) {
+            nu = _PPLibrary->getMixingNu(type1ptr[i], type1ptr[j], type2ptr[k]);
+          }
+          const SoAFloatPrecision invdr5 = nu / dr5;
+
+          const auto fxi = drxjk * dri2 * (drj2 - drk2) + drxij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           drxki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fxacc += fxi * 3.0 * invdr5;
+          const auto fyi = dryjk * dri2 * (drj2 - drk2) + dryij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           dryki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fyacc += fyi * 3.0 * invdr5;
+          const auto fzi = drzjk * dri2 * (drj2 - drk2) + drzij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           drzki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fzacc += fzi * 3.0 * invdr5;
+
+          const auto fxj = drxki * drj2 * (drk2 - dri2) +
+                           drxij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                           drxjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+          const auto fyj = dryki * drj2 * (drk2 - dri2) +
+                           dryij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                           dryjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+          const auto fzj = drzki * drj2 * (drk2 - dri2) +
+                           drzij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                           drzjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+
+          fx1ptr[j] += fxj * 3.0 * invdr5;
+          fy1ptr[j] += fyj * 3.0 * invdr5;
+          fz1ptr[j] += fzj * 3.0 * invdr5;
+
+          if (newton3) {
+            /*const auto fxk = drxij * drk2 * (dri2 - drj2) +
+                             drxjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                             drxki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+            const auto fyk = dryij * drk2 * (dri2 - drj2) +
+                             dryjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                             dryki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+            const auto fzk = drzij * drk2 * (dri2 - drj2) +
+                             drzjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                             drzki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);*/
+            const auto fxk = (fxi + fxj) * (-1.0);
+            const auto fyk = (fyi + fyj) * (-1.0);
+            const auto fzk = (fzi + fzj) * (-1.0);
+
+            fx2ptr[k] += fxk * 3.0 * invdr5;
+            fy2ptr[k] += fyk * 3.0 * invdr5;
+            fz2ptr[k] += fzk * 3.0 * invdr5;
+          }
+        }
+      }
+
+      // both particles 2 and 3 from soa2
+
+      for (size_t j = 0; j < soa2.size(); ++j) {
+        if (ownedState2ptr[j] == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        const SoAFloatPrecision drxij = x2ptr[j] - x1ptr[i];
+        const SoAFloatPrecision dryij = y2ptr[j] - y1ptr[i];
+        const SoAFloatPrecision drzij = z2ptr[j] - z1ptr[i];
+
+        const SoAFloatPrecision drxij2 = drxij * drxij;
+        const SoAFloatPrecision dryij2 = dryij * dryij;
+        const SoAFloatPrecision drzij2 = drzij * drzij;
+
+        const SoAFloatPrecision drij2 = drxij2 + dryij2 + drzij2;
+        if (drij2 > _cutoffSquared) {
+          continue;
+        }
+        // particle 3 from soa 1
+        {
+          std::vector<unsigned int> indicesK;
+          for (size_t k = j + 1; k < soa2.size(); ++k) {
+            if (ownedState2ptr[k] == autopas::OwnershipState::dummy) {
+              continue;
+            }
+
+            const SoAFloatPrecision drxjk = x2ptr[k] - x2ptr[j];
+            const SoAFloatPrecision dryjk = y2ptr[k] - y2ptr[j];
+            const SoAFloatPrecision drzjk = z2ptr[k] - z2ptr[j];
+
+            const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+            const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+            const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+            const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+            const SoAFloatPrecision drxki = x1ptr[i] - x2ptr[k];
+            const SoAFloatPrecision dryki = y1ptr[i] - y2ptr[k];
+            const SoAFloatPrecision drzki = z1ptr[i] - z2ptr[k];
+
+            const SoAFloatPrecision drxki2 = drxki * drxki;
+            const SoAFloatPrecision dryki2 = dryki * dryki;
+            const SoAFloatPrecision drzki2 = drzki * drzki;
+
+            const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+            if (drjk2 > _cutoffSquared or drki2 > _cutoffSquared) {
+              continue;
+            }
+
+            indicesK.push_back(k);
+          }
+          for (auto &k : indicesK) {
+            const SoAFloatPrecision drxjk = x2ptr[k] - x2ptr[j];
+            const SoAFloatPrecision dryjk = y2ptr[k] - y2ptr[j];
+            const SoAFloatPrecision drzjk = z2ptr[k] - z2ptr[j];
+
+            const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+            const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+            const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+            const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+            const SoAFloatPrecision drxki = x1ptr[i] - x2ptr[k];
+            const SoAFloatPrecision dryki = y1ptr[i] - y2ptr[k];
+            const SoAFloatPrecision drzki = z1ptr[i] - z2ptr[k];
+
+            const SoAFloatPrecision drxki2 = drxki * drxki;
+            const SoAFloatPrecision dryki2 = dryki * dryki;
+            const SoAFloatPrecision drzki2 = drzki * drzki;
+
+            const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+            const SoAFloatPrecision drxi2 = drxij * drxki;
+            const SoAFloatPrecision dryi2 = dryij * dryki;
+            const SoAFloatPrecision drzi2 = drzij * drzki;
+
+            const SoAFloatPrecision dri2 = drxi2 + dryi2 + drzi2;
+
+            const SoAFloatPrecision drxj2 = drxij * drxjk;
+            const SoAFloatPrecision dryj2 = dryij * dryjk;
+            const SoAFloatPrecision drzj2 = drzij * drzjk;
+
+            const SoAFloatPrecision drj2 = drxj2 + dryj2 + drzj2;
+
+            const SoAFloatPrecision drxk2 = drxjk * drxki;
+            const SoAFloatPrecision dryk2 = dryjk * dryki;
+            const SoAFloatPrecision drzk2 = drzjk * drzki;
+
+            const SoAFloatPrecision drk2 = drxk2 + dryk2 + drzk2;
+
+            const SoAFloatPrecision drijk2 = dri2 * drj2 * drk2;
+
+            const SoAFloatPrecision dr2 = drij2 * drjk2 * drki2;
+            const SoAFloatPrecision dr5 = dr2 * dr2 * std::sqrt(dr2);
+
+            auto nu = _nu;
+            if constexpr (useMixing) {
+              nu = _PPLibrary->getMixingNu(type1ptr[i], type2ptr[j], type2ptr[k]);
+            }
+            const SoAFloatPrecision invdr5 = nu / dr5;
+
+            const auto fxi = drxjk * dri2 * (drj2 - drk2) +
+                             drxij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                             drxki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+            fxacc += fxi * 3.0 * invdr5;
+            const auto fyi = dryjk * dri2 * (drj2 - drk2) +
+                             dryij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                             dryki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+            fyacc += fyi * 3.0 * invdr5;
+            const auto fzi = drzjk * dri2 * (drj2 - drk2) +
+                             drzij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                             drzki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+            fzacc += fzi * 3.0 * invdr5;
+
+            if (newton3) {
+              const auto fxj = drxki * drj2 * (drk2 - dri2) +
+                               drxij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                               drxjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+              const auto fyj = dryki * drj2 * (drk2 - dri2) +
+                               dryij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                               dryjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+              const auto fzj = drzki * drj2 * (drk2 - dri2) +
+                               drzij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                               drzjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+
+              fx2ptr[j] += fxj * 3.0 * invdr5;
+              fy2ptr[j] += fyj * 3.0 * invdr5;
+              fz2ptr[j] += fzj * 3.0 * invdr5;
+
+              /*const auto fxk = drxij * drk2 * (dri2 - drj2) +
+                               drxjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                               drxki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+              const auto fyk = dryij * drk2 * (dri2 - drj2) +
+                               dryjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                               dryki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+              const auto fzk = drzij * drk2 * (dri2 - drj2) +
+                               drzjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                               drzki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);*/
+              const auto fxk = (fxi + fxj) * (-1.0);
+              const auto fyk = (fyi + fyj) * (-1.0);
+              const auto fzk = (fzi + fzj) * (-1.0);
+
+              fx2ptr[k] += fxk * 3.0 * invdr5;
+              fy2ptr[k] += fyk * 3.0 * invdr5;
+              fz2ptr[k] += fzk * 3.0 * invdr5;
+            }
+          }
+        }
+        // particle 3 from soa 2
+        {
+          std::vector<unsigned int> indicesK;
+          for (size_t k = j + 1; k < soa2.size(); ++k) {
+            if (ownedState2ptr[k] == autopas::OwnershipState::dummy) {
+              continue;
+            }
+
+            const SoAFloatPrecision drxjk = x2ptr[k] - x2ptr[j];
+            const SoAFloatPrecision dryjk = y2ptr[k] - y2ptr[j];
+            const SoAFloatPrecision drzjk = z2ptr[k] - z2ptr[j];
+
+            const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+            const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+            const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+            const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+            const SoAFloatPrecision drxki = x1ptr[i] - x2ptr[k];
+            const SoAFloatPrecision dryki = y1ptr[i] - y2ptr[k];
+            const SoAFloatPrecision drzki = z1ptr[i] - z2ptr[k];
+
+            const SoAFloatPrecision drxki2 = drxki * drxki;
+            const SoAFloatPrecision dryki2 = dryki * dryki;
+            const SoAFloatPrecision drzki2 = drzki * drzki;
+
+            const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+            if (drjk2 > _cutoffSquared or drki2 > _cutoffSquared) {
+              continue;
+            }
+
+            indicesK.push_back(k);
+          }
+          for (auto &k : indicesK) {
+            const SoAFloatPrecision drxjk = x2ptr[k] - x2ptr[j];
+            const SoAFloatPrecision dryjk = y2ptr[k] - y2ptr[j];
+            const SoAFloatPrecision drzjk = z2ptr[k] - z2ptr[j];
+
+            const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+            const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+            const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+            const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+            const SoAFloatPrecision drxki = x1ptr[i] - x2ptr[k];
+            const SoAFloatPrecision dryki = y1ptr[i] - y2ptr[k];
+            const SoAFloatPrecision drzki = z1ptr[i] - z2ptr[k];
+
+            const SoAFloatPrecision drxki2 = drxki * drxki;
+            const SoAFloatPrecision dryki2 = dryki * dryki;
+            const SoAFloatPrecision drzki2 = drzki * drzki;
+
+            const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+            const SoAFloatPrecision drxi2 = drxij * drxki;
+            const SoAFloatPrecision dryi2 = dryij * dryki;
+            const SoAFloatPrecision drzi2 = drzij * drzki;
+
+            const SoAFloatPrecision dri2 = drxi2 + dryi2 + drzi2;
+
+            const SoAFloatPrecision drxj2 = drxij * drxjk;
+            const SoAFloatPrecision dryj2 = dryij * dryjk;
+            const SoAFloatPrecision drzj2 = drzij * drzjk;
+
+            const SoAFloatPrecision drj2 = drxj2 + dryj2 + drzj2;
+
+            const SoAFloatPrecision drxk2 = drxjk * drxki;
+            const SoAFloatPrecision dryk2 = dryjk * dryki;
+            const SoAFloatPrecision drzk2 = drzjk * drzki;
+
+            const SoAFloatPrecision drk2 = drxk2 + dryk2 + drzk2;
+
+            const SoAFloatPrecision drijk2 = dri2 * drj2 * drk2;
+
+            const SoAFloatPrecision dr2 = drij2 * drjk2 * drki2;
+            const SoAFloatPrecision dr5 = dr2 * dr2 * std::sqrt(dr2);
+
+            auto nu = _nu;
+            if constexpr (useMixing) {
+              nu = _PPLibrary->getMixingNu(type1ptr[i], type2ptr[j], type2ptr[k]);
+            }
+            const SoAFloatPrecision invdr5 = nu / dr5;
+
+            const auto fxi = drxjk * dri2 * (drj2 - drk2) +
+                             drxij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                             drxki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+            fxacc += fxi * 3.0 * invdr5;
+            const auto fyi = dryjk * dri2 * (drj2 - drk2) +
+                             dryij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                             dryki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+            fyacc += fyi * 3.0 * invdr5;
+            const auto fzi = drzjk * dri2 * (drj2 - drk2) +
+                             drzij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                             drzki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+            fzacc += fzi * 3.0 * invdr5;
+
+            if (newton3) {
+              const auto fxj = drxki * drj2 * (drk2 - dri2) +
+                               drxij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                               drxjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+              const auto fyj = dryki * drj2 * (drk2 - dri2) +
+                               dryij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                               dryjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+              const auto fzj = drzki * drj2 * (drk2 - dri2) +
+                               drzij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                               drzjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+
+              fx2ptr[j] += fxj * 3.0 * invdr5;
+              fy2ptr[j] += fyj * 3.0 * invdr5;
+              fz2ptr[j] += fzj * 3.0 * invdr5;
+
+              /*const auto fxk = drxij * drk2 * (dri2 - drj2) +
+                               drxjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                               drxki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+              const auto fyk = dryij * drk2 * (dri2 - drj2) +
+                               dryjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                               dryki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+              const auto fzk = drzij * drk2 * (dri2 - drj2) +
+                               drzjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                               drzki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);*/
+              const auto fxk = (fxi + fxj) * (-1.0);
+              const auto fyk = (fyi + fyj) * (-1.0);
+              const auto fzk = (fzi + fzj) * (-1.0);
+
+              fx2ptr[k] += fxk * 3.0 * invdr5;
+              fy2ptr[k] += fyk * 3.0 * invdr5;
+              fz2ptr[k] += fzk * 3.0 * invdr5;
+            }
+          }
+        }
+      }
+
+      fx1ptr[i] += fxacc;
+      fy1ptr[i] += fyacc;
+      fz1ptr[i] += fzacc;
+    }
   }
 
   /**
@@ -228,7 +864,195 @@ class AxilrodTellerFunctor
    */
   void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                         autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
+    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
+    //   TODO
+    if (soa1.size() == 0 or soa2.size() == 0 or soa3.size() == 0) {
+      return;
+    }
+
+    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x3ptr = soa3.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y3ptr = soa3.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z3ptr = soa3.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedState1ptr = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedState2ptr = soa2.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedState3ptr = soa3.template begin<Particle::AttributeNames::ownershipState>();
+
+    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx3ptr = soa3.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy3ptr = soa3.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz3ptr = soa3.template begin<Particle::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict type1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict type2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict type3ptr = soa3.template begin<Particle::AttributeNames::typeId>();
+
+    for (size_t i = 0; i < soa1.size(); ++i) {
+      SoAFloatPrecision fxacc = 0;
+      SoAFloatPrecision fyacc = 0;
+      SoAFloatPrecision fzacc = 0;
+      if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      for (size_t j = 0; j < soa2.size(); ++j) {
+        if (ownedState2ptr[j] == autopas::OwnershipState::dummy) {
+          continue;
+        }
+
+        const SoAFloatPrecision drxij = x2ptr[j] - x1ptr[i];
+        const SoAFloatPrecision dryij = y2ptr[j] - y1ptr[i];
+        const SoAFloatPrecision drzij = z2ptr[j] - z1ptr[i];
+
+        const SoAFloatPrecision drxij2 = drxij * drxij;
+        const SoAFloatPrecision dryij2 = dryij * dryij;
+        const SoAFloatPrecision drzij2 = drzij * drzij;
+
+        const SoAFloatPrecision drij2 = drxij2 + dryij2 + drzij2;
+        if (drij2 > _cutoffSquared) {
+          continue;
+        }
+
+        std::vector<unsigned int> indicesK;
+        for (size_t k = 0; k < soa3.size(); ++k) {
+          if (ownedState3ptr[k] == autopas::OwnershipState::dummy) {
+            continue;
+          }
+
+          const SoAFloatPrecision drxjk = x3ptr[k] - x2ptr[j];
+          const SoAFloatPrecision dryjk = y3ptr[k] - y2ptr[j];
+          const SoAFloatPrecision drzjk = z3ptr[k] - z2ptr[j];
+
+          const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+          const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+          const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+          const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+          const SoAFloatPrecision drxki = x1ptr[i] - x3ptr[k];
+          const SoAFloatPrecision dryki = y1ptr[i] - y3ptr[k];
+          const SoAFloatPrecision drzki = z1ptr[i] - z3ptr[k];
+
+          const SoAFloatPrecision drxki2 = drxki * drxki;
+          const SoAFloatPrecision dryki2 = dryki * dryki;
+          const SoAFloatPrecision drzki2 = drzki * drzki;
+
+          const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+          if (drjk2 > _cutoffSquared or drki2 > _cutoffSquared) {
+            continue;
+          }
+
+          indicesK.push_back(k);
+        }
+        for (auto &k : indicesK) {
+          const SoAFloatPrecision drxjk = x3ptr[k] - x2ptr[j];
+          const SoAFloatPrecision dryjk = y3ptr[k] - y2ptr[j];
+          const SoAFloatPrecision drzjk = z3ptr[k] - z2ptr[j];
+
+          const SoAFloatPrecision drxjk2 = drxjk * drxjk;
+          const SoAFloatPrecision dryjk2 = dryjk * dryjk;
+          const SoAFloatPrecision drzjk2 = drzjk * drzjk;
+
+          const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
+
+          const SoAFloatPrecision drxki = x1ptr[i] - x3ptr[k];
+          const SoAFloatPrecision dryki = y1ptr[i] - y3ptr[k];
+          const SoAFloatPrecision drzki = z1ptr[i] - z3ptr[k];
+
+          const SoAFloatPrecision drxki2 = drxki * drxki;
+          const SoAFloatPrecision dryki2 = dryki * dryki;
+          const SoAFloatPrecision drzki2 = drzki * drzki;
+
+          const SoAFloatPrecision drki2 = drxki2 + dryki2 + drzki2;
+
+          const SoAFloatPrecision drxi2 = drxij * drxki;
+          const SoAFloatPrecision dryi2 = dryij * dryki;
+          const SoAFloatPrecision drzi2 = drzij * drzki;
+
+          const SoAFloatPrecision dri2 = drxi2 + dryi2 + drzi2;
+
+          const SoAFloatPrecision drxj2 = drxij * drxjk;
+          const SoAFloatPrecision dryj2 = dryij * dryjk;
+          const SoAFloatPrecision drzj2 = drzij * drzjk;
+
+          const SoAFloatPrecision drj2 = drxj2 + dryj2 + drzj2;
+
+          const SoAFloatPrecision drxk2 = drxjk * drxki;
+          const SoAFloatPrecision dryk2 = dryjk * dryki;
+          const SoAFloatPrecision drzk2 = drzjk * drzki;
+
+          const SoAFloatPrecision drk2 = drxk2 + dryk2 + drzk2;
+
+          const SoAFloatPrecision drijk2 = dri2 * drj2 * drk2;
+
+          const SoAFloatPrecision dr2 = drij2 * drjk2 * drki2;
+          const SoAFloatPrecision dr5 = dr2 * dr2 * std::sqrt(dr2);
+
+          auto nu = _nu;
+          if constexpr (useMixing) {
+            nu = _PPLibrary->getMixingNu(type1ptr[i], type2ptr[j], type3ptr[k]);
+          }
+          const SoAFloatPrecision invdr5 = nu / dr5;
+
+          const auto fxi = drxjk * dri2 * (drj2 - drk2) + drxij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           drxki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fxacc += fxi * 3.0 * invdr5;
+          const auto fyi = dryjk * dri2 * (drj2 - drk2) + dryij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           dryki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fyacc += fyi * 3.0 * invdr5;
+          const auto fzi = drzjk * dri2 * (drj2 - drk2) + drzij * (drj2 * drk2 - drjk2 * drki2 + 5.0 * drijk2 / drij2) +
+                           drzki * (-drj2 * drk2 + drij2 * drjk2 - 5.0 * drijk2 / drki2);
+          fzacc += fzi * 3.0 * invdr5;
+
+          if (newton3) {
+            const auto fxj = drxki * drj2 * (drk2 - dri2) +
+                             drxij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                             drxjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+            const auto fyj = dryki * drj2 * (drk2 - dri2) +
+                             dryij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                             dryjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+            const auto fzj = drzki * drj2 * (drk2 - dri2) +
+                             drzij * (-dri2 * drk2 + drjk2 * drki2 - 5.0 * drijk2 / drij2) +
+                             drzjk * (dri2 * drk2 - drij2 * drki2 + 5.0 * drijk2 / drjk2);
+
+            fx2ptr[j] += fxj * 3.0 * invdr5;
+            fy2ptr[j] += fyj * 3.0 * invdr5;
+            fz2ptr[j] += fzj * 3.0 * invdr5;
+
+            /*const auto fxk = drxij * drk2 * (dri2 - drj2) +
+                             drxjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                             drxki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+            const auto fyk = dryij * drk2 * (dri2 - drj2) +
+                             dryjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                             dryki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);
+            const auto fzk = drzij * drk2 * (dri2 - drj2) +
+                             drzjk * (-dri2 * drj2 + drij2 * drki2 - 5.0 * drijk2 / drjk2) +
+                             drzki * (dri2 * drj2 - drij2 * drjk2 + 5.0 * drijk2 / drki2);*/
+            const auto fxk = (fxi + fxj) * (-1.0);
+            const auto fyk = (fyi + fyj) * (-1.0);
+            const auto fzk = (fzi + fzj) * (-1.0);
+
+            fx3ptr[k] += fxk * 3.0 * invdr5;
+            fy3ptr[k] += fyk * 3.0 * invdr5;
+            fz3ptr[k] += fzk * 3.0 * invdr5;
+          }
+        }
+      }
+      fx1ptr[i] += fxacc;
+      fy1ptr[i] += fyacc;
+      fz1ptr[i] += fzacc;
+    }
   }
 
  private:
