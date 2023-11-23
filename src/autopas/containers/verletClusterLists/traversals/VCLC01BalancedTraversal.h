@@ -75,8 +75,7 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
         auto startIndexInTower =
             clusterCount == 0 ? clusterRange.startIndexInTower : currentTower.getFirstOwnedClusterIndex();
         for (size_t clusterIndex = startIndexInTower;
-             clusterIndex < clusterRange.numClusters and clusterCount < clusterRange.numClusters and
-             clusterIndex < currentTower.getFirstTailHaloClusterIndex();
+             clusterCount < clusterRange.numClusters and clusterIndex < currentTower.getFirstTailHaloClusterIndex();
              clusterIndex++, clusterCount++) {
           const auto isHaloCluster = clusterIndex < currentTower.getFirstOwnedClusterIndex() or
                                      clusterIndex >= currentTower.getFirstTailHaloClusterIndex();
