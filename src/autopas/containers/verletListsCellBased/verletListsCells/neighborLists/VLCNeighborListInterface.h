@@ -69,16 +69,22 @@ class VLCNeighborListInterface {
     _soa.clear();
 
     // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
-    // SoALoader.
-    size_t totalSizeOfAllCells{_internalLinkedCells->size()};
-    _soa.resizeArrays(totalSizeOfAllCells);
+    // SoALoader. Note: we do not use _baseLinkedCells->size() here since otherwise we can not store the cellSizes
+    // in parallel in the same run
+    auto &cells = _internalLinkedCells->getCells();
+    _soa.resizeArrays(_internalLinkedCells->size());
 
-    size_t offset = 0;
-    for (auto &cell : _internalLinkedCells->getCells()) {
-      // Skip SoA resize, since this was done above
-      f->SoALoader(cell, _soa, offset, /*skipSoAResize*/ true);
-      offset += cell.size();
+#ifdef AUTOPAS_OPENMP
+    // this heuristik was taken from CellBasedParticleContainer::size()
+    const int numThreads = std::clamp(static_cast<int>(cells.size() / 100000), 1, omp_get_max_threads());
+#pragma omp parallel for num_threads(numThreads)
+#endif
+    for (size_t i = 0; i < cells.size(); ++i) {
+      const auto offset =
+          std::accumulate(cells.begin(), cells.begin() + i, 0, [](auto &acc, auto &cell) { return acc + cell.size(); });
+      f->SoALoader(cells[i], _soa, offset, /*skipSoAResize*/ true);
     }
+
     return &_soa;
   }
 

@@ -48,18 +48,24 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     if (dataLayout == DataLayoutOption::soa) {
       // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
       // SoALoader.
-      size_t totalSizeOfAllCells{0};
-      for (auto &cell : cells) {
-        totalSizeOfAllCells += cell.size();
+      size_t numParticles = 0;
+#ifdef AUTOPAS_OPENMP
+      // this heuristik was taken from CellBasedParticleContainer::size()
+      const int numThreads = std::clamp(static_cast<int>(cells.size() / 100000), 1, omp_get_max_threads());
+#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
+#endif
+      for (size_t i = 0; i < cells.size(); ++i) {
+        numParticles += cells[i].size();
       }
+      _soa.resizeArrays(numParticles);
 
-      _soa.resizeArrays(totalSizeOfAllCells);
-
-      size_t offset = 0;
-      for (auto &cell : cells) {
-        // Skip SoA resize, since this was done above
-        _functor->SoALoader(cell, _soa, offset, /*skipSoAResize*/ true);
-        offset += cell.size();
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel for num_threads(numThreads)
+#endif
+      for (size_t i = 0; i < cells.size(); ++i) {
+        const auto offset = std::accumulate(cells.begin(), cells.begin() + i, 0,
+                                            [](auto &acc, auto &cell) { return acc + cell.size(); });
+        _functor->SoALoader(cells[i], _soa, offset, /*skipSoAResize*/ true);
       }
     }
   }
