@@ -64,7 +64,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
 #endif
       for (size_t i = 0; i < cells.size(); ++i) {
         const auto offset = std::accumulate(cells.begin(), cells.begin() + i, 0,
-                                            [](auto &acc, auto &cell) { return acc + cell.size(); });
+                                            [](const auto &acc, const auto &cell) { return acc + cell.size(); });
         _functor->SoALoader(cells[i], _soa, offset, /*skipSoAResize*/ true);
       }
     }

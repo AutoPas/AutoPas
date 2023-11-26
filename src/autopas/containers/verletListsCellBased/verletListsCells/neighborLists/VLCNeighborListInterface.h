@@ -79,8 +79,8 @@ class VLCNeighborListInterface {
 #pragma omp parallel for num_threads(numThreads)
 #endif
     for (size_t i = 0; i < cells.size(); ++i) {
-      const auto offset =
-          std::accumulate(cells.begin(), cells.begin() + i, 0, [](auto &acc, auto &cell) { return acc + cell.size(); });
+      const auto offset = std::accumulate(cells.begin(), cells.begin() + i, 0,
+                                          [](const auto &acc, const auto &cell) { return acc + cell.size(); });
       f->SoALoader(cells[i], _soa, offset, /*skipSoAResize*/ true);
     }
 
