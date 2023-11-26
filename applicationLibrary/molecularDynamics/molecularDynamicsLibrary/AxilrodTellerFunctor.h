@@ -100,12 +100,7 @@ class AxilrodTellerFunctor
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
-   * iterateTriwise using different functors in the logs.
-   * @return name of functor.
-   */
-  virtual std::string getName() { return "AxilrodTellerFunctorAutoVec"; }
+  std::string getName() final { return "AxilrodTellerFunctorAutoVec"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 

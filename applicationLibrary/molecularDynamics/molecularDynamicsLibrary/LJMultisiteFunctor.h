@@ -151,6 +151,8 @@ class LJMultisiteFunctor
     _PPLibrary = &particlePropertiesLibrary;
   }
 
+  std::string getName() final { return "LJMultisiteFunctor"; }
+
   bool isRelevantForTuning() final { return relevantForTuning; }
 
   bool allowsNewton3() final {

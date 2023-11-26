@@ -110,12 +110,7 @@ class LJFunctorSVE
     _PPLibrary = &particlePropertiesLibrary;
   }
 
-  /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
-   * computeInteractions using different functors in the logs.
-   * @return name of functor.
-   */
-  virtual std::string getName() { return "LJFunctorSVE"; }
+  std::string getName() final { return "LJFunctorSVE"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
