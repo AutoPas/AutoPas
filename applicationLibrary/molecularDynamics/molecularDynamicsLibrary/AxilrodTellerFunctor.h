@@ -20,7 +20,7 @@
 namespace mdLib {
 
 /**
- * A functor to handle lennard-jones interactions between two particles (molecules).
+ * A functor to handle Axilrod-Teller(-Muto) interactions between three particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
  * @tparam Particle The type of particle.
@@ -118,61 +118,66 @@ class AxilrodTellerFunctor
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
       return;
     }
+
     auto nu = _nu;
     if constexpr (useMixing) {
       nu = _PPLibrary->getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
     }
-    auto drij = j.getR() - i.getR();
-    auto drjk = k.getR() - j.getR();
-    auto drki = i.getR() - k.getR();
 
-    double dr2ij = autopas::utils::ArrayMath::dot(drij, drij);
-    double dr2jk = autopas::utils::ArrayMath::dot(drjk, drjk);
-    double dr2ki = autopas::utils::ArrayMath::dot(drki, drki);
+    const auto displacementIJ = j.getR() - i.getR();
+    const auto displacementJK = k.getR() - j.getR();
+    const auto displacementKI = i.getR() - k.getR();
 
-    // Check cutoff
-    if (dr2ij > _cutoffSquared or dr2jk > _cutoffSquared or dr2ki > _cutoffSquared) {
+    const double distSquaredIJ = autopas::utils::ArrayMath::dot(displacementIJ, displacementIJ);
+    const double distSquaredJK = autopas::utils::ArrayMath::dot(displacementJK, displacementJK);
+    const double distSquaredKI = autopas::utils::ArrayMath::dot(displacementKI, displacementKI);
+
+    // Check cutoff for every distance
+    if (distSquaredIJ > _cutoffSquared or distSquaredJK > _cutoffSquared or distSquaredKI > _cutoffSquared) {
       return;
     }
 
-    // Dot products of distances belonging to one particle
-    double dr2i = autopas::utils::ArrayMath::dot(drij, drki);
-    double dr2j = autopas::utils::ArrayMath::dot(drij, drjk);
-    double dr2k = autopas::utils::ArrayMath::dot(drjk, drki);
+    // Dot products of both distance vectors going from one particle
+    const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
+    const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
+    const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
 
-    double dr2ijk = dr2i * dr2j * dr2k;
+    const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
 
-    double dr2 = dr2ij * dr2jk * dr2ki;
-    double dr5 = dr2 * dr2 * std::sqrt(dr2);
-    double invdr5 = nu / dr5;
+    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+    const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+    const double factor = 3.0 * nu / allDistsTo5;
 
-    auto fi = drjk * dr2i * (dr2j - dr2k) + drij * (dr2j * dr2k - dr2jk * dr2ki + 5.0 * dr2ijk / dr2ij) +
-              drki * (-dr2j * dr2k + dr2ij * dr2jk - 5.0 * dr2ijk / dr2ki);
-    fi *= 3.0 * invdr5;
-    i.addF(fi);
+    const auto forceIDirectionJK = displacementJK * IJDotKI * (IJDotJK - JKDotKI);
+    const auto forceIDirectionIJ =
+        displacementIJ * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ);
+    const auto forceIDirectionKI =
+        displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
+    const auto forceI = factor * (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI);
+    i.addF(forceI);
 
-    auto fj = fi;
-    auto fk = fi;
+    auto forceJ = forceI;
+    auto forceK = forceI;
     if (newton3) {
-      fj = drki * dr2j * (dr2k - dr2i) + drij * (-dr2i * dr2k + dr2jk * dr2ki - 5.0 * dr2ijk / dr2ij) +
-           drjk * (dr2i * dr2k - dr2ij * dr2ki + 5.0 * dr2ijk / dr2jk);
-      fj *= 3.0 * invdr5;
-      j.addF(fj);
+      const auto forceJDirectionKI = displacementKI * IJDotJK * (JKDotKI - IJDotKI);
+      const auto forceJDirectionIJ =
+          displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI - 5.0 * allDotProducts / distSquaredIJ);
+      const auto forceJDirectionJK =
+          displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
+      forceJ = factor * (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK);
+      j.addF(forceJ);
 
-      /* auto fk = drij * dr2k * (dr2i - dr2j)
-                + drjk * (- dr2i * dr2j + dr2ij * dr2ki - 5.0 * dr2ijk / dr2jk)
-                + drki * (dr2i * dr2j - dr2ij * dr2jk + 5.0 * dr2ijk / dr2ki);
-      fk *= 3.0 * invdr5; */
-      fk = (fi + fj) * (-1.0);
-      k.addF(fk);
+      forceK = (forceI + forceJ) * (-1.0);
+      k.addF(forceK);
     }
 
-    if (calculateGlobals) {
-      // Virial is calculated as f_i * r_i
-      auto virialI = fi * i.getR();
+    if constexpr (calculateGlobals) {
       // Calculate third of total potential energy from 3-body interaction
-      double potentialEnergy = invdr5 * (dr2 - 3.0 * dr2ijk) / 3.0;
+      const double potentialEnergy = factor * (allDistsSquared - 3.0 * allDotProducts) / 3.0;
 
+      // Virial is calculated as f_i * r_i
+      // see Thompson et al.: https://doi.org/10.1063/1.3245303
+      const auto virialI = forceI * i.getR();
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
@@ -180,12 +185,12 @@ class AxilrodTellerFunctor
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        auto virialJ = fj * j.getR();
+        const auto virialJ = forceJ * j.getR();
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadData[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
-        auto virialK = fk * k.getR();
+        const auto virialK = forceK * k.getR();
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadData[threadnum].virialSum += virialK;
       }
@@ -194,8 +199,6 @@ class AxilrodTellerFunctor
 
   /**
    * @copydoc autopas::TriwiseFunctor::SoAFunctorSingle()
-   * This functor will always use a newton3 like traversal of the soa.
-   * However, it still needs to know about newton3 to correctly add up the global values.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
@@ -211,15 +214,7 @@ class AxilrodTellerFunctor
   }
 
   /**
-   * Functor for structure of arrays (SoA)
-   *
-   * This functor calculates the forces
-   * between all particles of soa1 and soa2 and soa3.
-   *
-   * @param soa1 First structure of arrays.
-   * @param soa2 Second structure of arrays.
-   * @param soa3 Third structure of arrays.
-   * @param newton3 defines whether or whether not to use newton 3
+   * @copydoc autopas::TriwiseFunctor::SoAFunctorTriple()
    */
   void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                         autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
@@ -258,7 +253,7 @@ class AxilrodTellerFunctor
    *
    * This is only necessary if no particlePropertiesLibrary is used.
    *
-   * @param nu
+   * @param nu The Axilrod-Teller potential parameter
    */
   void setParticleProperties(SoAFloatPrecision nu) { _nu = nu; }
 
@@ -420,6 +415,7 @@ class AxilrodTellerFunctor
 
   const double _cutoffSquared;
 
+  // Parameter of the Axilrod-Teller potential
   // not const because they might be reset through PPL
   double _nu = 0.0;
 
