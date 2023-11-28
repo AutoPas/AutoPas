@@ -6,7 +6,7 @@
 #include "MoleculeLJ.h"
 
 namespace mdLib {
-class Site : public MoleculeLJ {
+class Site : public autopas::Particle{
  public:
 
   Site() = default;
@@ -20,7 +20,7 @@ class Site : public MoleculeLJ {
  * @param moleculeId Identifier of the molecule this site is a part of. Sites are in a many-to-one relationship with Molecules.
    */
   Site(const std::array<double, 3> &pos,const std::array<double, 3> &v, unsigned long siteId,
-       unsigned long typeId, unsigned long moleculeId, size_t indexInsideMolecule);
+             unsigned long moleculeId, unsigned long indexInsideMolecule);
 
   void setMoleculeId(unsigned long moleculeId);
 
@@ -37,19 +37,14 @@ class Site : public MoleculeLJ {
     ptr,
     id,
     owningMoleculeId,
+    indexInsideMolecule,
     posX,
     posY,
     posZ,
-    velocityX,
-    velocityY,
-    velocityZ,
+    typeId,
     forceX,
     forceY,
     forceZ,
-    oldForceX,
-    oldForceY,
-    oldForceZ,
-    typeId,
     ownershipState
   };
 
@@ -61,10 +56,10 @@ class Site : public MoleculeLJ {
    * The reason for this is the easier use of the value in calculations (See LJFunctor "energyFactor")
    */
   using SoAArraysType =
-      typename autopas::utils::SoAType<Site *, size_t /*id*/, size_t /*owningMoleculeId*/, double /*x*/, double /*y*/,
-                                       double /*z*/, double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/,
-                                       double /*fy*/, double /*fz*/, double /*oldFx*/, double /*oldFy*/,
-                                       double /*oldFz*/, size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
+      typename autopas::utils::SoAType<Site *, size_t /*id*/, unsigned long /*owningMoleculeId*/, unsigned long /*indexInsideMolecule*/,
+                                       double /*x*/, double /*y*/, double /*z*/, unsigned long /*typeid*/,
+                                       double /*fx*/, double /*fy*/, double /*fz*/,
+                                        autopas::OwnershipState /*ownershipState*/>::Type;
 
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
   constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
@@ -72,32 +67,22 @@ class Site : public MoleculeLJ {
       return getID();
     } else if constexpr (attribute == AttributeNames::owningMoleculeId){
       return getMoleculeId();
+    } else if constexpr (attribute == AttributeNames::indexInsideMolecule){
+      return getIndexInsideMolecule();
     } else if constexpr (attribute == AttributeNames::posX) {
       return getR()[0];
     } else if constexpr (attribute == AttributeNames::posY) {
       return getR()[1];
     } else if constexpr (attribute == AttributeNames::posZ) {
       return getR()[2];
-    } else if constexpr (attribute == AttributeNames::velocityX) {
-      return getV()[0];
-    } else if constexpr (attribute == AttributeNames::velocityY) {
-      return getV()[1];
-    } else if constexpr (attribute == AttributeNames::velocityZ) {
-      return getV()[2];
+    } else if constexpr (attribute == AttributeNames::typeId) {
+      return getTypeId();
     } else if constexpr (attribute == AttributeNames::forceX) {
       return getF()[0];
     } else if constexpr (attribute == AttributeNames::forceY) {
       return getF()[1];
     } else if constexpr (attribute == AttributeNames::forceZ) {
       return getF()[2];
-    } else if constexpr (attribute == AttributeNames::oldForceX) {
-      return getOldF()[0];
-    } else if constexpr (attribute == AttributeNames::oldForceY) {
-      return getOldF()[1];
-    } else if constexpr (attribute == AttributeNames::oldForceZ) {
-      return getOldF()[2];
-    } else if constexpr (attribute == AttributeNames::typeId) {
-      return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
@@ -116,6 +101,8 @@ class Site : public MoleculeLJ {
   constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
+    }else if constexpr (attribute == AttributeNames::indexInsideMolecule){
+      setIndexInsideMolecule(value);
     } else if constexpr (attribute == AttributeNames::owningMoleculeId){
       setMoleculeId(value);
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -124,24 +111,12 @@ class Site : public MoleculeLJ {
       _r[1] = value;
     } else if constexpr (attribute == AttributeNames::posZ) {
       _r[2] = value;
-    } else if constexpr (attribute == AttributeNames::velocityX) {
-      _v[0] = value;
-    } else if constexpr (attribute == AttributeNames::velocityY) {
-      _v[1] = value;
-    } else if constexpr (attribute == AttributeNames::velocityZ) {
-      _v[2] = value;
     } else if constexpr (attribute == AttributeNames::forceX) {
       _f[0] = value;
     } else if constexpr (attribute == AttributeNames::forceY) {
       _f[1] = value;
     } else if constexpr (attribute == AttributeNames::forceZ) {
       _f[2] = value;
-    } else if constexpr (attribute == AttributeNames::oldForceX) {
-      _oldF[0] = value;
-    } else if constexpr (attribute == AttributeNames::oldForceY) {
-      _oldF[1] = value;
-    } else if constexpr (attribute == AttributeNames::oldForceZ) {
-      _oldF[2] = value;
     } else if constexpr (attribute == AttributeNames::typeId) {
       setTypeId(value);
     } else if constexpr (attribute == AttributeNames::ownershipState) {
@@ -151,17 +126,33 @@ class Site : public MoleculeLJ {
     }
   }
 
+  /**
+   * Get TypeId.
+   * @return
+   */
+  [[nodiscard]] unsigned long getTypeId() const;
+
+  /**
+   * Set typeId of this individual Site.
+   * @param typeId
+   */
+  void setTypeId(unsigned long typeId);
+
  private:
   /**
    * The moleculeId identifies the MultiSite Molecule this Site belongs to. It corresponds to the moleculeId of MultiSiteMoleculeLJ
    */
-  size_t _moleculeID;
+  unsigned long _moleculeID;
 
   /**
    * The indexInsideMolecule defines which Site this site is inside of its respective molecule.
    * For example: particlePropertiesLibrary.getSitePositions(_moleculeID)[_indexInsideMolecule] gets SitePosition of this site
    */
-   size_t _indexInsideMolecule;
+   unsigned long _indexInsideMolecule;
 
+   /**
+   * The typeId is the typeId of this individual Site (in contrast to the typeId of the entire molecule)
+   */
+   unsigned long _typeId;
 };
 }

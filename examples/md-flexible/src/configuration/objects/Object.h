@@ -81,6 +81,7 @@ class Object {
       particle.setID(particle.getID() + 1);
       particle.setMoleculeId(moleculeID);
       particle.setIndexInsideMolecule(siteIndex);
+      particle.setTypeId(siteTypes[siteIndex]);
       particles.push_back(particle);
     }
   }
@@ -98,7 +99,9 @@ class Object {
     particle.setOwnershipState(autopas::OwnershipState::owned);
     particle.setV(_velocity);
     particle.setF({0.0, 0.0, 0.0});
+#if MD_FLEXIBLE_MODE != MULTISITE or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
     particle.setOldF({0.0, 0.0, 0.0});
+#endif
 
 #if MD_FLEXIBLE_MODE == MULTISITE and not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
 #if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)

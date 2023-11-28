@@ -116,12 +116,12 @@ class LJFunctor
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
-    //if you are sites belonging to the same molecule: don't interact
-    if(i.getMoleculeId() == j.getMoleculeId()){
-      return;
-    }
-#endif
+//#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
+////if you are sites belonging to the same molecule: don't interact#
+//    if(i.getMoleculeId() == j.getMoleculeId()){
+//      return;
+//    }
+//#endif
 
     if (i.isDummy() or j.isDummy()) {
       return;
@@ -566,10 +566,18 @@ class LJFunctor
         Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
   }
 #else
+  /*
   constexpr static auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 10>{
         Particle::AttributeNames::id,     Particle::AttributeNames::owningMoleculeId,
         Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::typeId,
+        Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::ownershipState};
+  }*/
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 9>{
+        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
         Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
   }
@@ -590,14 +598,14 @@ class LJFunctor
     return std::array<typename Particle::AttributeNames, 7>{
         Particle::AttributeNames::id,     Particle::AttributeNames::owningMoleculeId,
         Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
-  }*/
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::typeId,
+        Particle::AttributeNames::ownershipState};
+  }
+   */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 10>{
-        Particle::AttributeNames::id,     Particle::AttributeNames::owningMoleculeId,
-        Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+    return std::array<typename Particle::AttributeNames, 6>{
+        Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
+        Particle::AttributeNames::posZ,   Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
   }
 #endif
 

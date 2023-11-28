@@ -44,21 +44,15 @@ constexpr std::array<typename ParticleType::AttributeNames, 24> Attributes = {
     mdLib::PositionStoringMultiSiteMolecule::AttributeNames::typeId,
     mdLib::PositionStoringMultiSiteMolecule::AttributeNames::ownershipState};
 #elif defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-constexpr std::array<typename ParticleType::AttributeNames, 16> Attributes ={
+constexpr std::array<typename ParticleType::AttributeNames, 10> Attributes ={
                                                                 mdLib::Site::AttributeNames::id,
                                                                 mdLib::Site::AttributeNames::owningMoleculeId,
                                                                 mdLib::Site::AttributeNames::posX,
                                                                 mdLib::Site::AttributeNames::posY,
                                                                 mdLib::Site::AttributeNames::posZ,
-                                                                mdLib::Site::AttributeNames::velocityX,
-                                                                mdLib::Site::AttributeNames::velocityY,
-                                                                mdLib::Site::AttributeNames::velocityZ,
                                                                 mdLib::Site::AttributeNames::forceX,
                                                                 mdLib::Site::AttributeNames::forceY,
                                                                 mdLib::Site::AttributeNames::forceZ,
-                                                                mdLib::Site::AttributeNames::oldForceX,
-                                                                mdLib::Site::AttributeNames::oldForceY,
-                                                                mdLib::Site::AttributeNames::oldForceZ,
                                                                 mdLib::Site::AttributeNames::typeId,
                                                                 mdLib::Site::AttributeNames::ownershipState};
 #else
