@@ -152,7 +152,8 @@ class AxilrodTellerFunctor
         displacementIJ * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ);
     const auto forceIDirectionKI =
         displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
-    const auto forceI = factor * (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI);
+
+    const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
     i.addF(forceI);
 
     auto forceJ = forceI;
@@ -163,7 +164,8 @@ class AxilrodTellerFunctor
           displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI - 5.0 * allDotProducts / distSquaredIJ);
       const auto forceJDirectionJK =
           displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
-      forceJ = factor * (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK);
+
+      forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
       j.addF(forceJ);
 
       forceK = (forceI + forceJ) * (-1.0);
@@ -196,25 +198,16 @@ class AxilrodTellerFunctor
     }
   }
 
-  /**
-   * @copydoc autopas::TriwiseFunctor::SoAFunctorSingle()
-   */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
   }
 
-  /**
-   * @copydoc autopas::TriwiseFunctor::SoAFunctorPair()
-   */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
     // TODO: should always calculate forces for all particles in soa1, even when newton3 == false
     autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
   }
 
-  /**
-   * @copydoc autopas::TriwiseFunctor::SoAFunctorTriple()
-   */
   void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                         autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
     autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
