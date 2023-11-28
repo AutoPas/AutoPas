@@ -60,7 +60,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       _soa.resizeArrays(numParticles);
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel for num_threads(numThreads)
+#pragma omp parallel for
 #endif
       for (size_t i = 0; i < cells.size(); ++i) {
         const auto offset = std::accumulate(cells.begin(), cells.begin() + i, 0,
