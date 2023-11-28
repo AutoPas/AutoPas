@@ -28,13 +28,12 @@ namespace mdLib {
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
- * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGlobals = false, bool relevantForTuning = true>
+          bool calculateGlobals = false>
 class AxilrodTellerFunctor
     : public autopas::TriwiseFunctor<
-          Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+          Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -59,7 +58,7 @@ class AxilrodTellerFunctor
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
       : autopas::TriwiseFunctor<
-            Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -102,7 +101,7 @@ class AxilrodTellerFunctor
 
   std::string getName() final { return "AxilrodTellerFunctorAutoVec"; }
 
-  bool isRelevantForTuning() final { return relevantForTuning; }
+  bool isRelevantForTuning() final { return true; }
 
   bool allowsNewton3() final {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both;
