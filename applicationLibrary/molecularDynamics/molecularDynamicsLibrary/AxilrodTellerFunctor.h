@@ -20,6 +20,69 @@
 namespace mdLib {
 
 /**
+ * The Axilrod-Teller potential
+ * ---
+ * The reference paper of Axilrod and Teller can be found here: https://doi.org/10.1063/1.1723844
+ * \image html 3_body_sketch.png "Sketch of three particles that are used in the Axilrod-Teller Functor" width=400px
+ *
+ * The Axilrod-Teller potential is a model for the interactions of three molecules which appear when the van
+ * der Waals forces are approximated to the third order. It is usually combined with a model for pairwise interaction as
+ * e.g. the Lennard-Jones potential.
+ *
+ * \f[
+ * U_{AT} = \nu \frac{3 \cos\gamma_1 \cos\gamma_2 \cos\gamma_3 + 1}{r_{12}^3 r_{23}^3 r_{31}^3}
+ * \f]
+ *
+ * , where \f$r_{ij}\f$ is the distance between particles \f$i\f$ and \f$j\f$ and \f$\gamma_i\f$ is the angle between
+ * the sides \f$r_{ij}\f$ and \f$r_{ik}\f$. \f$\nu\f$ is a material dependent parameter of the order \f$V\alpha^3\f$,
+ * where \f$V\f$ is the ionization energy and \f$\alpha\f$ the polarizability.
+ *
+ * The cosines can also be expressed as:
+ *
+ * \f[
+ *  \cos\gamma_1 = \frac{ \vec{r}_{12} \cdot \vec{r}_{13}}{|\vec{r}_{12}||\vec{r}_{13}|}
+ * \f]
+ *
+ * , where \f$\vec{r}_{ij}\f$ is the vector from particle \f$i\f$ to particle \f$j\f$ (\f$i \longrightarrow j\f$ ).
+ * It is calculated as \f$\vec{x}_j - \vec{x}_i\f$, where \f$\vec{x}_i\f$ is the position of particle \f$i\f$.
+ *
+ * Therefore, the potential can also be expressed as:
+ *
+ * \f[
+ * U_{AT} = \nu\frac{-3 (\vec{r}_{12} \cdot \vec{r}_{31}) (\vec{r}_{12} \cdot \vec{r}_{23}) (\vec{r}_{31} \cdot
+ * \vec{r}_{23}) + r_{12}^2 r_{23}^2 r_{31}^2}{r_{12}^5 r_{23}^5 r_{31}^5} \f]
+ *
+ * Note that we have \f$-3\f$ because we use the circular vectors \f$\vec{r}_ {12}, \vec{r}_ {23}, \vec{r}_ {31}\f$.
+ *
+ * The derivative can be calculated by applying the chain rule and leads to a resulting Force exerted on particle
+ * \f$1\f$:
+ *
+ * \f[
+ * \vec{F}_ {1} = - \frac{\partial U_ {AT}}{\partial \vec{x}_ 1}
+ * \f]
+ *
+ * \f[
+ * \vec{F}_ {1} = \frac{3}{r_ {12}^5 r_ {23}^5 r_ {31}^5}\cdot
+ * \left[ \left( -5\frac{<>_ 1<>_ 2<>_ 3}{r_ {12}^2} - <>_ 1<>_ 3 + r_ {23}^2r_ {31}^2\right)\cdot \vec{r}_ {12}
+ *          +\left( 5\frac{<>_ 1<>_ 2<>_ 3}{r_ {23}^2} + <>_ 1<>_ 3 - r_ {12}^2r_ {31}^2\right)\cdot\vec{r}_ {23}
+ *          +\left( <>_ 2<>_ 3 - <>_ 2<>_ 1 \right)\cdot \vec{r}_ {31} \right]
+ * \f]
+ *
+ * , where \f$<>_ 1=\vec{r}_ {12}\cdot\vec{r}_ {31}\f$ and so on. The terms are already ordered to show the contribution
+ * from all three distance vectors.
+ *
+ * **Newton's third law**
+ *
+ * To apply Newton's third law, the force on particle \f$2\f$ needs to be calculated in a similar fashion as for
+ * particle \f$1\f$. The force on particle \f$3\f$ can then be written as the negative sum of the other two forces:
+ *
+ * \f[
+ * \vec{F}_3 = -(\vec{F}_1 + \vec{F}_2)
+ * \f]
+ *
+ */
+
+/**
  * A functor to handle Axilrod-Teller(-Muto) interactions between three particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
@@ -32,8 +95,8 @@ namespace mdLib {
 template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false>
 class AxilrodTellerFunctor
-    : public autopas::TriwiseFunctor<
-          Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>> {
+    : public autopas::TriwiseFunctor<Particle,
+                                     AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -57,8 +120,7 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<
-            Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>>(
+      : autopas::TriwiseFunctor<Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
