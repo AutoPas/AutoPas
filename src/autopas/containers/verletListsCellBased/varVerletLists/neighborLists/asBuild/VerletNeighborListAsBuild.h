@@ -210,9 +210,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     _soa.resizeArrays(_baseLinkedCells->size());
 
 #ifdef AUTOPAS_OPENMP
-    // this heuristik was taken from CellBasedParticleContainer::size()
-    const int numThreads = std::clamp(static_cast<int>(cells.size() / 100000), 1, omp_get_max_threads());
-#pragma omp parallel for num_threads(numThreads)
+#pragma omp parallel for
 #endif
     for (size_t i = 0; i < cells.size(); ++i) {
       const auto offset = std::accumulate(cells.begin(), cells.begin() + i, 0,
