@@ -139,7 +139,7 @@ class Sphere : public Object {
    * @param particles The container where the generated particles will be stored.
    */
 #if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
+  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const override {
 #else
 void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
     MoleculeContainer& moleculeContainer) const override {

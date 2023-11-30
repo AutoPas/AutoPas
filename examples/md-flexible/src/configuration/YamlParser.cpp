@@ -217,8 +217,10 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
         if (strArg.find("avx") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX; }
-        else if (strArg.find("abs") != std::string::npos) {
+        else if (strArg.find("absolute") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AbsSites;
+        } else if (strArg.find("bundling") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Bundling;
         } else if (strArg.find("sve") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("glob") != std::string::npos) {

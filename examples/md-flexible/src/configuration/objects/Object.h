@@ -44,7 +44,7 @@ class Object {
 
 #if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void insertMolecule(const std::array<double, 3>& position, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl,
-                                    std::vector<ParticleType> &particles) {
+                                    std::vector<ParticleType> &particles) const {
     //the typeID set in getDummyParticle is the ID of the MOLECULE. Since in this configuration a Particle is just a single
     //site we need to overwrite this typeID with the proper siteID
     ParticleType particle = getDummyParticle(particles.size());

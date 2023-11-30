@@ -723,6 +723,15 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_Bundling: {
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+      return f(LJFunctorTypeBundling{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for Bundling Multisite Approach. Activate it via `cmake "
+          "-MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH=ON`.");
+#endif
+    }
     case MDFlexConfig::FunctorOption::lj12_6_Globals: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
       std::cout<<"Choosing LJFunctorTypeAutovecGlobals" << std::endl;

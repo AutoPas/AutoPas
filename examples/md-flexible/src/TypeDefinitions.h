@@ -84,7 +84,15 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS) and (not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH))
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+#if MD_FLEXIBLE_MODE == MULTISITE
+using LJFunctorTypeBundling = mdLib::LJFunctor<ParticleType, true, true>;
+#else
+#error "Single site simulation can't use bundling approach multisite functor."
+#endif
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
 /**
 * Type of LJFunctorTypeAutovec used in md-flexible.
 * Can only be LJPositionUsingMultiSiteFunctor for MultiSite molecules. A corresponding functor for single site molecules wouldn't really make sense

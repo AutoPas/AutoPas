@@ -4,7 +4,7 @@
 container                         : [LinkedCells]
 # traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
 traversal                         :  [lc_c08]
-data-layout                      :  [AoS, SoA] #[AoS, SoA]
+data-layout                      :  [AoS] #[AoS, SoA]
 # newton3                          :  [disabled, enabled]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.02
@@ -36,12 +36,18 @@ Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0
-      box-length                 :  [15, 6, 15]
-      bottomLeftCorner           :  [0, 27, 0]
+      box-length: [ 0.5, 0.5, 0.5 ]
+      bottomLeftCorner           :  [0, 5, 0]
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
+    1:
+      particle-type-id: 0
+      box-length: [ 0.5, 0.5, 0.5 ]
+      bottomLeftCorner: [ 0, 6, 0 ]
+      particle-spacing: 1.
+      velocity: [ 0, 0, 0 ]
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
-vtk-filename                     :  explodingLiquid
+vtk-filename                     :  twoMoleculesBundled
 vtk-write-frequency              :  100

@@ -96,7 +96,7 @@ class CubeGauss : public Object {
    * @param particles The container where the new particles will be stored.
    */
 #if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl) const override {
+  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const override {
 #else
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
                 MoleculeContainer& moleculeContainer) const override{
@@ -114,7 +114,7 @@ class CubeGauss : public Object {
             _bottomLeftCorner[1] + distributions[1](generator),
             _bottomLeftCorner[2] + distributions[2](generator)};
 #if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-      insertMolecule(position, ppl, particles)
+      insertMolecule(position, ppl, particles);
 #else
       insertMolecule(position, ppl, particles, moleculeContainer);
 #endif

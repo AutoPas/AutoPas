@@ -24,6 +24,9 @@ namespace TimeDiscretization {
  * In addition, pushes the force stored in the force vector to the old force vector and sets the force vector to the
  * global force in preparation for the calculate forces stage.
  *
+ * When using the Bundling Molecule approach this function does NOT update the position of the sites based on the molecule movement.
+ * Therefore this still has to be done lateron. The most reasonable place to do this is after the computation of the new rotation.
+ *
  * @param autoPasContainer The container for which to update the positions.
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
@@ -31,7 +34,7 @@ namespace TimeDiscretization {
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/2/rebuildFrequency).
  */
-#if not defined MD_FLEXIBLE_US<E_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
@@ -78,7 +81,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  */
-#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
 #else

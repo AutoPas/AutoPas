@@ -184,7 +184,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_AbsSites };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_AbsSites, lj12_6_Bundling};
 
   /**
    * Choice of the particle generators specified in the command line
@@ -752,9 +752,11 @@ class MDFlexConfig {
    */
   static constexpr int valueOffset{33};
 
+#if MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   MoleculeContainer moveAwayMoleculeContainer(){
     return std::move(_moleculeContainer);
   }
+#endif
 
  private:
   /**
@@ -789,7 +791,7 @@ class MDFlexConfig {
 
 };
 
-/**
+/**<
  * Stream insertion operator for MDFlexConfig.
  * @param os
  * @param config

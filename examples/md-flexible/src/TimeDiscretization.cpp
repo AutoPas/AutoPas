@@ -82,16 +82,17 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 #endif
   //store oldForce of all molecules
   for(size_t i=0; i < moleculeContainer.size(); i++) {
-    auto molecule = moleculeContainer.get(i);
+    auto& molecule = moleculeContainer.get(i);
     molecule.setOldF(molecule.getF());
-    //molecule.setF({0,0,0}); //we still need the force in this implementation for later torque calculation. After that we can reset
+    molecule.setF({0,0,0}); //we still need the force in this implementation for later torque calculation. After that we can reset <- why? no?!
   }
 
+  //@TODO: Parallelize!
   //accumulate all forces acting on sites of a molecule in that molecule
   for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    MoleculeType molecule = moleculeContainer.get(iter->getMoleculeId());
+    MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
     molecule.addF(iter->getF());    //@TODO considering that acting force shouldn't just be translated as a translational force there should be some factor based on the angle between the relative site position and the force vector
-    iter->setF(globalForce);
+    //iter->setF(globalForce);           //don't reset site force since we need that later for torque calculation
   }
 
 #ifdef AUTOPAS_OPENMP
@@ -99,7 +100,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 #endif
   //compute velocity and new position based on that info
   for(size_t i=0; i < moleculeContainer.size(); i++) {
-    auto molecule = moleculeContainer.get(i);
+    auto& molecule = moleculeContainer.get(i);
     auto m = particlePropertiesLibrary.getMolMass(molecule.getTypeId());
     auto v = molecule.getV();
     auto f = molecule.getF();
@@ -128,7 +129,6 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
       throw std::runtime_error("At least one molecule was too fast!");
     }
   }
-
 
   /*
    //old implementation (still kept around because i will definitely need it when debugging)
@@ -283,8 +283,9 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
   for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     MoleculeType molecule = moleculeContainer.get(iter->getMoleculeId());
     const auto q = molecule.getQuaternion();
-    const auto rotatedSitePosition = rotatePosition(q,particlePropertiesLibrary.getSitePositions(iter->getMoleculeId())[iter->getIndexInsideMolecule()]);
+    const auto rotatedSitePosition = rotatePosition(q,particlePropertiesLibrary.getSitePositions(iter->getTypeId())[iter->getIndexInsideMolecule()]);
     const auto torqueOnSite = autopas::utils::ArrayMath::cross(rotatedSitePosition, iter->getF());
+    iter->setF(globalForce);         //reset site force, making it ready for next iteration
     molecule.addTorque(torqueOnSite);
   }
 
@@ -293,7 +294,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #pragma omp parallel for shared(moleculeContainer, particlePropertiesLibrary, halfDeltaT, tol, tolSquared, globalForce, deltaT) default(none)
 #endif
   for(size_t i=0; i < moleculeContainer.size(); i++){
-    MoleculeType molecule = moleculeContainer.get(i);
+    MoleculeType& molecule = moleculeContainer.get(i);
     const auto q = molecule.getQuaternion();
     const auto angVelW = molecule.getAngularVel();// angular velocity in world frame
     const auto angVelM =
@@ -345,6 +346,15 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
    }
   }
 
+  //update the site position based on the position and rotation of the molecule
+  for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+   MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
+   const auto r = molecule.getR();
+   const auto q = molecule.getQuaternion();
+   const auto rotatedSitePosition = rotatePosition(q,particlePropertiesLibrary.getSitePositions(iter->getTypeId())[iter->getIndexInsideMolecule()]);
+   iter->setR(autopas::utils::ArrayMath::add(r, rotatedSitePosition));
+  }
+
 #else
   autopas::utils::ExceptionHandler::exception(
       "Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
@@ -372,7 +382,20 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 #else
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {
-  throw std::runtime_error( "calculateVelocities for bundling Molecule approach not implemented" );
+  // helper declarations for operations with vector
+  using namespace autopas::utils::ArrayMath::literals;
+
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel shared(moleculeContainer, particlePropertiesLibrary, deltaT) default(none)
+#endif
+  for(size_t i = 0; i < moleculeContainer.size(); i++) {
+   auto& molecule = moleculeContainer.get(i);
+   const auto molecularMass = particlePropertiesLibrary.getMolMass(molecule.getTypeId());
+   const auto oldForce = molecule.getOldF();
+   const auto force = molecule.getF();
+   const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));
+   molecule.addV(changeInVel);
+  }
 }
 #endif
 
@@ -433,7 +456,7 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 #pragma omp parallel for shared(moleculeContainer, particlePropertiesLibrary, deltaT) default(none)
 #endif
   for(size_t i = 0; i < moleculeContainer.size(); i++) {
-    MoleculeType molecule = moleculeContainer.get(i);
+    MoleculeType& molecule = moleculeContainer.get(i);
     const auto torqueW = molecule.getTorque();
     const auto q = molecule.getQuaternion();
     const auto I = particlePropertiesLibrary.getMomentOfInertia(molecule.getTypeId());
