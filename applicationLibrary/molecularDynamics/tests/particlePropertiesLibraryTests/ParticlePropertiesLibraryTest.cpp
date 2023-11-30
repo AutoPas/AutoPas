@@ -265,7 +265,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
   // Confirm that PPL's individual get sime mixing data functions match PPL's get all mixing data for a site-type pair.
   for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {
     for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); j++) {
-      const auto allMixingData = PPL->getMixingData(i, j);
+      const auto allMixingData = PPL->getLJMixingData(i, j);
       const auto epsilon24 = PPL->getMixing24Epsilon(i, j);
       const auto sigmaSquared = PPL->getMixingSigmaSquared(i, j);
       const auto shift6 = PPL->getMixingShift6(i, j);
@@ -327,7 +327,7 @@ TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
   for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {
     for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); j++) {
       for (unsigned int k = 0; k < PPL->getNumberRegisteredSiteTypes(); k++) {
-        const auto allMixingData = PPL->getMixingData(i, j, k);
+        const auto allMixingData = PPL->getATMixingData(i, j, k);
         const auto epsilon24 = PPL->getMixingNu(i, j, k);
 
         EXPECT_DOUBLE_EQ(allMixingData.nu, epsilon24);

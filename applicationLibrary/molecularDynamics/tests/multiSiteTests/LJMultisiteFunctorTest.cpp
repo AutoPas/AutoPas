@@ -101,8 +101,8 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
         const auto displacement = sub(exactSitePositionA, exactSitePositionB);
         const auto distanceSquared = dot(displacement, displacement);
 
-        const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).sigmaSquared;
-        const auto epsilon24 = PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).epsilon24;
+        const auto sigmaSquared = PPL.getLJMixingData(siteTypesA[siteA], siteTypesB[siteB]).sigmaSquared;
+        const auto epsilon24 = PPL.getLJMixingData(siteTypesA[siteA], siteTypesB[siteB]).epsilon24;
 
         const auto invDistSquared = 1. / distanceSquared;
         const auto lj2 = sigmaSquared * invDistSquared;
@@ -125,7 +125,7 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
         }
 
         if constexpr (calculateGlobals) {
-          const auto shift6 = applyShift ? PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).shift6 : 0;
+          const auto shift6 = applyShift ? PPL.getLJMixingData(siteTypesA[siteA], siteTypesB[siteB]).shift6 : 0;
           const auto shift = shift6 / 6.;
           const auto epsilon4 = epsilon24 / 6.;
 

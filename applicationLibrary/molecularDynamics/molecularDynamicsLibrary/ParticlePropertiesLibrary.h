@@ -232,22 +232,22 @@ class ParticlePropertiesLibrary {
   }
 
   /**
-   * Get complete mixing data for one pair of site types.
+   * Get complete mixing data for one pair of LJ site types.
    * @param i Id of site one.
    * @param j Id of site two.
    * @return
    */
-  inline auto getMixingData(intType i, intType j) const {
+  inline auto getLJMixingData(intType i, intType j) const {
     return _computedLJMixingData[i * _numRegisteredSiteTypes + j];
   }
 
   /**
-   * Get a pointer to Mixing Data for one pair of site types.
+   * Get a pointer to Mixing Data for one pair of LJ site types.
    * @param i Id of site one.
    * @param j Id of site two.
    * @return
    */
-  inline const double *getMixingDataPtr(intType i, intType j) {
+  inline const double *getLJMixingDataPtr(intType i, intType j) {
     return reinterpret_cast<const double *>(&_computedLJMixingData[i * _numRegisteredSiteTypes + j]);
   }
 
@@ -295,13 +295,13 @@ class ParticlePropertiesLibrary {
   }
 
   /**
-   * Get complete mixing data for one triplet of site types.
+   * Get complete mixing data for one triplet of AT site types.
    * @param i Id of site one.
    * @param j Id of site two.
    * @param k Id of site three.
    * @return
    */
-  inline auto getMixingData(intType i, intType j, intType k) const {
+  inline auto getATMixingData(intType i, intType j, intType k) const {
     return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
                                  k];
   }
@@ -443,7 +443,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
       _computedLJMixingData[globalIndex].shift6 = shift6;
 
       for (size_t thirdIndex = 0ul; thirdIndex < _numRegisteredSiteTypes; ++thirdIndex) {
-        auto globalIndex3B = _numRegisteredSiteTypes * globalIndex + thirdIndex;
+        const auto globalIndex3B = _numRegisteredSiteTypes * globalIndex + thirdIndex;
         // geometric mixing as used in e.g. https://doi.org/10.1063/1.3567308
         const floatType mixedNu = cbrt(_nus[firstIndex] * _nus[secondIndex] * _nus[thirdIndex]);
         _computedATMixingData[globalIndex3B].nu = mixedNu;
