@@ -422,7 +422,7 @@ class LJFunctorSVE
     const svuint64_t typeIds =
         useMixing ? svmul_m(pgC, (indexed) ? svld1_gather_index(pgC, typeID2ptr, index) : svld1_u64(pgC, typeID2ptr), 3)
                   : svundef_u64();
-    const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtr(*typeID1ptr, 0) : nullptr;
+    const auto mixingDataPtr = useMixing ? _PPLibrary->getLJMixingDataPtr(*typeID1ptr, 0) : nullptr;
 
     const svfloat64_t sigmaSquareds =
         useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_sigmaSquared);
