@@ -18,8 +18,8 @@ class ThermostatTest : public AutoPasTestBase,
   using AutoPasType = autopas::AutoPas<ParticleType>;
 
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
-    _particlePropertiesLibrary.addSiteType(0, 1., 1., 1.);
-    _particlePropertiesLibrary.addSiteType(1, 1., 1., 2.);
+    _particlePropertiesLibrary.addLJSiteType(0, 1., 1., 1.);
+    _particlePropertiesLibrary.addLJSiteType(1, 1., 1., 2.);
 #if MD_FLEXIBLE_MODE == MULTISITE
     _particlePropertiesLibrary.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
     _particlePropertiesLibrary.addMolType(1, {0, 0, 1}, {{0., -0.05, 0.}, {0.5, 0., 0.}, {0., 0.25, 0.25}},

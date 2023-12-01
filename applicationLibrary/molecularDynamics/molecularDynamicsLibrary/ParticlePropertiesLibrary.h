@@ -56,8 +56,7 @@ class ParticlePropertiesLibrary {
    * @param nu
    * @param mass
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType nu,
-                   const floatType mass);
+  void addSiteType(const intType siteId, const floatType mass);
 
   /**
    * Adds the properties of a type of a single LJ site type to the library.
@@ -70,7 +69,7 @@ class ParticlePropertiesLibrary {
    * @param sigma
    * @param mass
    */
-  void addSiteType(const intType siteId, const floatType epsilon, const floatType sigma, const floatType mass);
+  void addLJSite(const intType siteId, const floatType epsilon, const floatType sigma);
 
   /**
    * Adds the properties of a type of a single AT site type to the library.
@@ -82,7 +81,7 @@ class ParticlePropertiesLibrary {
    * @param nu
    * @param mass
    */
-  void addSiteType(const intType siteId, const floatType nu, const floatType mass);
+  void addATSite(const intType siteId, const floatType nu);
 
   /**
    * Adds the properties of a molecule type to the library including: position and type of all sites, as well as the
@@ -340,30 +339,45 @@ class ParticlePropertiesLibrary {
 };
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
-                                                                floatType nu, floatType mass) {
+void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType mass) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please register types "
+        "ParticlePropertiesLibrary::addATSiteType(): trying to register a site type with id {}. Please register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }
   ++_numRegisteredSiteTypes;
-  _epsilons.emplace_back(epsilon);
-  _sigmas.emplace_back(sigma);
-  _nus.emplace_back(nu);
   _siteMasses.emplace_back(mass);
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType epsilon, floatType sigma,
-                                                                floatType mass) {
-  addSiteType(siteID, epsilon, sigma, /*nu*/ 0.0, mass);
+void ParticlePropertiesLibrary<floatType, intType>::addLJSite(intType siteID, floatType epsilon, floatType sigma) {
+  if (siteID >= _numRegisteredSiteTypes) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addLJSite(): Trying to set lennard-jones parameters for a site type with id {},"
+        " which has not been registered yet. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  if (_epsilons.size() != _numRegisteredSiteTypes) {
+    _epsilons.resize(_numRegisteredSiteTypes);
+    _sigmas.resize(_numRegisteredSiteTypes);
+  }
+  _epsilons[siteID] = epsilon;
+  _sigmas[siteID] = sigma;
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType nu, floatType mass) {
-  addSiteType(siteID, /*epsilon*/ 0.0, /*sigma*/ 0.0, nu, mass);
+void ParticlePropertiesLibrary<floatType, intType>::addATSite(intType siteID, floatType nu) {
+  if (siteID >= _numRegisteredSiteTypes) {
+    autopas::utils::ExceptionHandler::exception(
+        "ParticlePropertiesLibrary::addATSite(): Trying to set the axilrod-teller parameter for a site type with id {},"
+        " which has not been registered yet. Currently there are {} registered types.",
+        siteID, _numRegisteredSiteTypes);
+  }
+  if (_nus.size() != _numRegisteredSiteTypes) {
+    _nus.resize(_numRegisteredSiteTypes);
+  }
+  _nus[siteID] = nu;
 }
 
 template <typename floatType, typename intType>

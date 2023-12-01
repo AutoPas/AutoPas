@@ -160,7 +160,23 @@ class MDFlexConfig {
    * @param nu
    * @param mass
    */
-  void addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass);
+  void addSiteType(unsigned long siteId, double mass);
+
+  void addLJSite(unsigned long siteId, double epsilon, double sigma);
+  void addATSite(unsigned long siteId, double nu);
+
+//  /**
+//   * Adds parameters of a LJ and AT site and checks if the siteId already exists.
+//   *
+//   * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
+//   *
+//   * @param siteId unique site type id
+//   * @param epsilon
+//   * @param sigma
+//   * @param nu
+//   * @param mass
+//   */
+//  void addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists

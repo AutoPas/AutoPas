@@ -25,7 +25,8 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   const double sigma0 = 1.;
   const double nu0 = 0.1;
   const double mass0 = 1.;
-  PPL->addSiteType(0, epsilon0, sigma0, nu0, mass0);
+  PPL->addLJSiteType(0, epsilon0, sigma0, mass0);
+  PPL->addATSiteType(0, nu0, mass0);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 1);
@@ -39,8 +40,8 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   const double sigma1 = 0.7;
   const double nu1 = 0.2;
   const double mass1 = 1.2;
-  PPL->addSiteType(1, epsilon1, sigma1, nu1, mass1);
-
+  PPL->addLJSiteType(1, epsilon1, sigma1, mass1);
+  PPL->addATSiteType(1, nu1, mass1);
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 2);
   EXPECT_EQ(PPL->getEpsilon(0), epsilon0);
@@ -52,9 +53,11 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   EXPECT_EQ(PPL->getNu(1), nu1);
   EXPECT_EQ(PPL->getSiteMass(1), mass1);
 
-  // Check addSiteType with an inappropriate siteId throws an error.
-  EXPECT_ANY_THROW(PPL->addSiteType(1, 1., 1., 1., 1.));
-  EXPECT_ANY_THROW(PPL->addSiteType(5, 1., 1., 1., 1.));
+  // Check addLJSiteType with an inappropriate siteId throws an error.
+  EXPECT_ANY_THROW(PPL->addLJSiteType(1, 1., 1., 1.));
+  EXPECT_ANY_THROW(PPL->addLJSiteType(5, 1., 1., 1.));
+  EXPECT_ANY_THROW(PPL->addATSiteType(3, 1., 1.));
+  EXPECT_ANY_THROW(PPL->addATSiteType(1, 1., 1.));
 }
 
 /**
@@ -75,8 +78,8 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
 
 #if MD_FLEXIBLE_MODE == MULTISITE
   // add two site types
-  PPL->addSiteType(0, 1., 1., 1.);
-  PPL->addSiteType(1, 0.2, 0.7, 1.2);
+  PPL->addLJSiteType(0, 1., 1., 1.);
+  PPL->addLJSiteType(1, 0.2, 0.7, 1.2);
 
   // Check that PPL is empty of molecule types
   EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 0);
@@ -164,7 +167,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   std::shared_ptr<ParticlePropertiesLibrary<double, size_t>> PPL =
       std::make_shared<ParticlePropertiesLibrary<double, size_t>>(cutoff);
 
-  PPL->addSiteType(0, epsilon, sigma, 1.);
+  PPL->addLJSiteType(0, epsilon, sigma, 1.);
   PPL->calculateMixingCoefficients();
 
   const auto cutoffSquared = cutoff * cutoff;
@@ -208,9 +211,9 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
   const double sigma1 = 1.4;
   const double epsilon2 = 1.;
   const double sigma2 = 1.;
-  PPL->addSiteType(0, epsilon0, sigma0, 1.);
-  PPL->addSiteType(1, epsilon1, sigma1, 1.);
-  PPL->addSiteType(2, epsilon2, sigma2, 1.);
+  PPL->addLJSiteType(0, epsilon0, sigma0, 1.);
+  PPL->addLJSiteType(1, epsilon1, sigma1, 1.);
+  PPL->addLJSiteType(2, epsilon2, sigma2, 1.);
 
   // Calculate mixing coefficients
   PPL->calculateMixingCoefficients();
@@ -292,9 +295,9 @@ TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
   const double nu1 = 0.7;
   const double nu2 = 0.3;
 
-  PPL->addSiteType(0, nu0, 1.);
-  PPL->addSiteType(1, nu1, 1.);
-  PPL->addSiteType(2, nu2, 1.);
+  PPL->addATSiteType(0, nu0, 1.);
+  PPL->addATSiteType(1, nu1, 1.);
+  PPL->addATSiteType(2, nu2, 1.);
 
   // Calculate mixing coefficients
   PPL->calculateMixingCoefficients();

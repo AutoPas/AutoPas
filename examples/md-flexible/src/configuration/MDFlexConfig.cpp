@@ -483,25 +483,75 @@ void MDFlexConfig::calcSimulationBox() {
   }
 }
 
-void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass) {
+void MDFlexConfig::addSiteType(unsigned long siteId, double mass) {
   // check if siteId is already existing and if there is no error in input
-  if (epsilonMap.value.count(siteId) == 1) {
+  if (massMap.value.count(siteId) == 1) {
     // check if type is already added
-    if (autopas::utils::Math::isNear(epsilonMap.value.at(siteId), epsilon) and
-        autopas::utils::Math::isNear(sigmaMap.value.at(siteId), sigma) and
-        autopas::utils::Math::isNear(nuMap.value.at(siteId), nu) and
-        autopas::utils::Math::isNear(massMap.value.at(siteId), mass)) {
+    if (autopas::utils::Math::isNear(massMap.value.at(siteId), mass)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
     }
   } else {
-    epsilonMap.value.emplace(siteId, epsilon);
-    sigmaMap.value.emplace(siteId, sigma);
-    nuMap.value.emplace(siteId, nu);
     massMap.value.emplace(siteId, mass);
   }
 }
+
+void MDFlexConfig::addLJSite(unsigned long siteId, double epsilon, double sigma) {
+  // check if siteId was already declared and mass was specified
+  if (massMap.value.count(siteId) == 1) {
+    if (epsilonMap.value.count(siteId) == 1) {
+      if (autopas::utils::Math::isNear(epsilonMap.value.at(siteId), epsilon) and
+          autopas::utils::Math::isNear(sigmaMap.value.at(siteId), sigma)) {
+        return;
+      } else {
+        throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+      }
+    } else {
+      epsilonMap.value.emplace(siteId, epsilon);
+      sigmaMap.value.emplace(siteId, sigma);
+    }
+  } else {
+    throw std::runtime_error("Initializing LJ parameters to a non existing site-ID");
+  }
+}
+
+void MDFlexConfig::addATSite(unsigned long siteId, double nu) {
+  // check if siteId was already declared and mass was specified
+  if (massMap.value.count(siteId) == 1) {
+    if (nuMap.value.count(siteId) == 1) {
+      if (autopas::utils::Math::isNear(nuMap.value.at(siteId), nu)) {
+        return;
+      } else {
+        throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+      }
+    } else {
+      nuMap.value.emplace(siteId, nu);
+    }
+  } else {
+    throw std::runtime_error("Initializing AT parameters to a non existing site-ID");
+  }
+}
+
+//void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass) {
+//  // check if siteId is already existing and if there is no error in input
+//  if (epsilonMap.value.count(siteId) == 1) {
+//    // check if type is already added
+//    if (autopas::utils::Math::isNear(epsilonMap.value.at(siteId), epsilon) and
+//        autopas::utils::Math::isNear(sigmaMap.value.at(siteId), sigma) and
+//        autopas::utils::Math::isNear(nuMap.value.at(siteId), nu) and
+//        autopas::utils::Math::isNear(massMap.value.at(siteId), mass)) {
+//      return;
+//    } else {  // wrong initialization:
+//      throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
+//    }
+//  } else {
+//    epsilonMap.value.emplace(siteId, epsilon);
+//    sigmaMap.value.emplace(siteId, sigma);
+//    nuMap.value.emplace(siteId, nu);
+//    massMap.value.emplace(siteId, mass);
+//  }
+//}
 
 void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
                               const std::vector<std::array<double, 3>> &relSitePos,
@@ -533,15 +583,21 @@ void MDFlexConfig::flushParticles() { _particles.clear(); }
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
-  // check size of site level vectors match
-  if (epsilonMap.value.size() != sigmaMap.value.size() or epsilonMap.value.size() != massMap.value.size()) {
-    throw std::runtime_error("Number of site-level properties differ!");
+  // initialize site Ids with mandatory mass parameter
+  for (auto [siteTypeId, mass] : massMap.value) {
+    _particlePropertiesLibrary->addSiteType(siteTypeId, massMap.value.at(siteTypeId));
   }
-
-  // initialize at site level
+  // check size of LJ site parameter vectors match
+  if (epsilonMap.value.size() != sigmaMap.value.size()) {
+    throw std::runtime_error("Number of LJ site-level properties differ! Potentially missing epsilon or sigma for some LJ sites.");
+  }
+  // initialize LJ parameters
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
-    _particlePropertiesLibrary->addSiteType(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId),
-                                            nuMap.value.at(siteTypeId), massMap.value.at(siteTypeId));
+    _particlePropertiesLibrary->addLJSite(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId));
+  }
+  // initialize AT parameters
+  for (auto [siteTypeId, nu] : nuMap.value) {
+    _particlePropertiesLibrary->addATSite(siteTypeId, nu);
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level
