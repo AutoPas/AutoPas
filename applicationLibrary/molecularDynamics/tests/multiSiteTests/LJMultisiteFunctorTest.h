@@ -12,8 +12,8 @@
 #include "autopas/AutoPasDecl.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
-#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512.h"
-#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_STS.h"
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_GS.h"
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_Mask.h"
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
@@ -137,6 +137,13 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
   template <template<class, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
   void singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
                              ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff);
+
+  /**
+   * Carries out AoS Dummy Test for some given functor F. Interacts 3 dummy molecules and expects no forces.
+   * @tparam F functor to be tested.
+   */
+  template <class F>
+  void AoSDummyTestHelper();
 
   /**
    * Compares the correctness of the SoACellFunctor against that of the AoSFunctor.

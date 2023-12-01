@@ -1,5 +1,5 @@
 /**
- * @file LJMultisiteFunctorAVX512.h
+ * @file LJMultisiteFunctorAVX512_GS.h
  * @date 15/09/2023
  * @author Q. Behrami
  */
@@ -26,20 +26,19 @@ namespace mdLib {
  * A functor to handle Lennard-Jones interactions between two Multisite Molecules.
  * This functor utilizes AVX512 instructions to speed up the computation.
  *
+ * This functor uses cutoffs based on site-to-site distances. Handling of cutoffs in SoA functors is done using masks.
+ *
  * @tparam Particle The type of particle.
  * @tparam applyShift Flag for the LJ potential to have a truncated shift.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off, or both. See FunctorN3Nodes for possible
  * values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
- * @tparam useMasks if true, use a 0/1 mask (i.e. calculate all forces for all molecules considered then multiply by
- * 0 if molecules are beyond the cutoff and 1 if molecules are within cutoff). If false, use a Gather/Scatter approach
- * i.e. calculate forces only for
  */
 template <class Particle, bool applyShift = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJMultisiteFunctorAVX512_STS
-    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useNewton3, calculateGlobals, relevantForTuning>> {
+class LJMultisiteFunctorAVX512_Mask
+    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512_Mask<Particle, applyShift, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -166,15 +165,15 @@ class LJMultisiteFunctorAVX512_STS
   /**
    * Deleted default constructor
    */
-  LJMultisiteFunctorAVX512_STS() = delete;
+  LJMultisiteFunctorAVX512_Mask() = delete;
 
  public:
   /**
    * todo
    */
-  LJMultisiteFunctorAVX512_STS(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  LJMultisiteFunctorAVX512_Mask(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
 #ifdef __AVX512F__
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useNewton3, calculateGlobals,
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX512_Mask<Particle, applyShift, useNewton3, calculateGlobals,
                                                                 relevantForTuning>>(cutoff),
         _cutoffSquared{_mm512_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),

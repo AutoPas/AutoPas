@@ -1,5 +1,5 @@
 /**
- * @file LJMultisiteFunctorAVX512.h
+ * @file LJMultisiteFunctorAVX512_GS.h
  * @date 15/09/2023
  * @author S. Newcome
  * @note Largely derived from LJMultisiteFunctorAVX.h by Q. Behrami which no longer exists.
@@ -40,8 +40,8 @@ namespace mdLib {
  */
 template <class Particle, bool applyShift = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJMultisiteFunctorAVX512
-    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useNewton3,
+class LJMultisiteFunctorAVX512_GS
+    : public autopas::Functor<Particle, LJMultisiteFunctorAVX512_GS<Particle, applyShift, useNewton3,
                                                               calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -106,7 +106,7 @@ class LJMultisiteFunctorAVX512
   /**
    * Deleted default constructor
    */
-  LJMultisiteFunctorAVX512() = delete;
+  LJMultisiteFunctorAVX512_GS() = delete;
 
   /**
    * Constructor for Functor with particle mixing enabled.
@@ -115,10 +115,10 @@ class LJMultisiteFunctorAVX512
    * @param particlePropertiesLibrary Library used to look up the properties of each type of particle e.g. sigma,
    * epsilon, shift, site positions, site types, moment of inertia.
    */
-  LJMultisiteFunctorAVX512(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  LJMultisiteFunctorAVX512_GS(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
 #ifdef __AVX512F__
       : autopas::Functor<
-            Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useNewton3, calculateGlobals, relevantForTuning>>(
+            Particle, LJMultisiteFunctorAVX512_GS<Particle, applyShift, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{_mm512_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
@@ -132,7 +132,7 @@ class LJMultisiteFunctorAVX512
     }
   }
 #else
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX512<Particle, applyShift, useNewton3, calculateGlobals,
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX512_GS<Particle, applyShift, useNewton3, calculateGlobals,
                                                             relevantForTuning>>(cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX512 support!");
   }

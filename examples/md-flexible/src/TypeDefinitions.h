@@ -14,12 +14,12 @@
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX)
-#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512.h"
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_GS)
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_GS.h"
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX_STS)
-#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_STS.h"
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_Mask.h"
 #endif
 
 #else
@@ -58,18 +58,6 @@ using ParticleType = mdLib::MultisiteMoleculeLJ;
 using ParticleType = mdLib::MoleculeLJ;
 #endif
 
-/**
- * Some Functors require a vecLength i.e. the number of doubles which fit into a floating register.
- * Currently, this is by default set to 4. If AVX512 is used this is set to 8.
- * Todo check SVE
- */
-const size_t vecLength =
-#ifdef __AVX512__
-    8;
-#else
-    4;
-#endif
-
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**
  * Type of LJFunctorTypeAutovec used in md-flexible.
@@ -92,7 +80,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovecGlobals =
-    mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+    mdLib::LJMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true>;
 #else
 using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif
@@ -102,28 +90,42 @@ using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, a
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
  * Type of LJFunctorTypeAVX used in md-flexible.
- * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX512 as determined by CMake flag
+ * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX512_GS as determined by CMake flag
  * MD_FLEXIBLE_MODE. The Multi-site variant uses cutoffs based on the distance between the center-of-masses.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAVX = mdLib::LJMultisiteFunctorAVX512<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+#error "Multi-Site Lennard-Jones Functor does not have AVX support!. If your machine can use AVX512, consider using a variant of the AVX512 functor"
 #else
 using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #endif
 
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AVX_STS)
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_GS)
 /**
- * Type of LJFunctorTypeAVXSTS used in md-flexible.
- * The only difference between this and LJFunctorTypeAVX is the cutoff criterion - which here is based individually on
- * site to site distances. There is no distinction between this functor and LJFunctorTypeAVX in single-site mode, and
- * thus a preprocessor error is thrown if used in that mode.
+ * Type of LJFunctorTypeAVX512_GS used in md-flexible.
+ * Switches between mdLib::LJFunctorAVX512_GS and mdLib::LJMultisiteFunctorAVX512_GS as determined by CMake flag MD_FLEXIBLE_MODE.
+ * Handles cutoffs by using gather and scatter instruction to calculate forces only for interactions within the cutoff distance.
+ * In the multi-site case, the cutoff checks are based on CoM-CoM distances.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAVXSTS = mdLib::LJMultisiteFunctorAVX512_STS<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+using LJFunctorTypeAVX512_GS = mdLib::LJMultisiteFunctorAVX512_GS<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
 #else
-#error "MD_FLEXIBLE_FUNCTOR_AVX_STS is not valid in SINGLESITE mode!"
+#error "Single-Site Lennard-Jones Functor does not have AVX512 support!. "
+#endif
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+/**
+ * Type of LJFunctorTypeAVX512_MASK used in md-flexible.
+ * Switches between mdLib::LJFunctorAVX512_MASK and mdLib::LJMultisiteFunctorAVX512_MASK as determined by CMake flag MD_FLEXIBLE_MODE.
+ * Handles cutoffs by using a mask for interactions beyond the cutoff distance. In the multi-site case, the cutoff checks
+ * are based on site-to-site distances (i.e. every site pair is traversed).
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+using LJFunctorTypeAVX512_MASK = mdLib::LJMultisiteFunctorAVX512_Mask<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+#else
+#error "Single-Site Lennard-Jones Functor does not have AVX512 support!. "
 #endif
 #endif
 
@@ -159,10 +161,10 @@ using LJFunctorTypeAbstract =
         mdLib::LJMultisiteFunctor<ParticleType, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
         mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AVX
-        mdLib::LJMultisiteFunctorAVX512<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AVX_STS
-        mdLib::LJMultisiteFunctorAV512X_STS<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AVX512_GS
+        mdLib::LJMultisiteFunctorAVX512_GS<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AVX512_MASK
+        mdLib::LJMultisiteFunctorAV512_MASK<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
 #endif
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
