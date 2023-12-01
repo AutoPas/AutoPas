@@ -260,22 +260,10 @@ class ParticleContainerInterface {
   [[nodiscard]] virtual const std::array<double, 3> &getBoxMax() const = 0;
 
   /**
-   * Set the upper corner of the container without halo.
-   * @param boxMax Upper corner to be set.
-   */
-  virtual void setBoxMax(const std::array<double, 3> &boxMax) = 0;
-
-  /**
    * Get the lower corner of the container without halo.
    * @return Lower corner of the container.
    */
   [[nodiscard]] virtual const std::array<double, 3> &getBoxMin() const = 0;
-
-  /**
-   * Set the lower corner of the container without halo.
-   * @param boxMin Lower corner to be set.
-   */
-  virtual void setBoxMin(const std::array<double, 3> &boxMin) = 0;
 
   /**
    * Return the cutoff of the container.

@@ -93,8 +93,12 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   Molecule defaultParticle;
   autopasTools::generators::RandomGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(),
                                                                container.getBoxMax(), 100);
-  autopasTools::generators::RandomGenerator::fillWithHaloParticles(container, defaultParticle, container.getCutoff(),
-                                                                   10);
+  // Do not add any halo particles to this test!
+  // Given an owned particle p1 and a halo particle p2 the following interactions are necessary:
+  // Newton3   : p1 <-> p2
+  // No Newton3: p1 <-  p2 (but NOT p1 -> p2)
+  // Depending if the container is able to avoid all halo <- owned interactions, the total number of functor calls
+  // is not trivially to calculate.
 
   EXPECT_CALL(mockFunctor, isRelevantForTuning()).WillRepeatedly(Return(true));
 
@@ -109,17 +113,23 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
           .Times(testing::AtLeast(1));
     });
   }
-
+  // "SC" = single cell
   const auto [callsNewton3SC, callsNewton3Pair] = eval<true>(dataLayout, container, traversalOption);
   const auto [callsNonNewton3SC, callsNonNewton3Pair] = eval<false>(dataLayout, container, traversalOption);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    // within one cell no N3 optimization
-    EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "for containeroption: " << containerOption;
+    // within one cell no N3 optimization.
+    // Don't check if there is at least one, because verlet style
+    // algorithms don't necessarily have a single cell interaction
+    EXPECT_EQ(callsNewton3SC, callsNonNewton3SC)
+        << "Mismatch in cell self interactions for container option: " << containerOption;
   }
 
+  EXPECT_GT(callsNewton3Pair, 0)
+      << "Test generated particles too far apart so there aren't be any functor calls to count";
   // should be called exactly two times
-  EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "for containeroption: " << containerOption;
+  EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair)
+      << "Mismatch in cell pair interactions for container option: " << containerOption;
 
   if (::testing::Test::HasFailure()) {
     std::cerr << "Failures for Container: " << containerOption.to_string()

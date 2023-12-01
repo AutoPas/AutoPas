@@ -64,19 +64,9 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
   [[nodiscard]] const std::array<double, 3> &getBoxMax() const final { return _boxMax; }
 
   /**
-   * @copydoc autopas::ParticleContainerInterface::setBoxMax()
-   */
-  void setBoxMax(const std::array<double, 3> &boxMax) final { _boxMax = boxMax; }
-
-  /**
    * @copydoc autopas::ParticleContainerInterface::getBoxMin()
    */
   [[nodiscard]] const std::array<double, 3> &getBoxMin() const final { return _boxMin; }
-
-  /**
-   * @copydoc autopas::ParticleContainerInterface::setBoxMin()
-   */
-  void setBoxMin(const std::array<double, 3> &boxMin) final { _boxMin = boxMin; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getCutoff()

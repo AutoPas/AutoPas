@@ -358,18 +358,6 @@ class OctreeNodeInterface {
   }
 
   /**
-   * Set the minimum coordinate of the enclosing box.
-   * @param boxMin A point in 3D space
-   */
-  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
-
-  /**
-   * Set the maximum coordinate of the enclosing box.
-   * @param boxMax A point in 3D space
-   */
-  void setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
-
-  /**
    * Get the minimum coordinate of the enclosing box.
    * @return A point in 3D space
    */
