@@ -46,40 +46,32 @@ class ParticlePropertiesLibrary {
   ParticlePropertiesLibrary &operator=(const ParticlePropertiesLibrary &particlePropertiesLibrary) = default;
 
   /**
-   * Adds the properties of a type of a single site type to the library.
+   * Registers a new single site type to the library with a given mass.
+   * @note New sites must be registered with consecutive siteIds.
    *
-   * This function also precomputes all possible mixed values with already known particle types.
-   * If the type id already exists the values will be overwritten.
    * @param siteId
-   * @param epsilon
-   * @param sigma
-   * @param nu
    * @param mass
    */
   void addSiteType(const intType siteId, const floatType mass);
 
   /**
-   * Adds the properties of a type of a single LJ site type to the library.
+   * Adds the properties of a single LJ site type to the library.
    *
-   * This function also precomputes all possible mixed values with already known particle types.
-   * If the type id already exists the values will be overwritten.
-   * @note All Axilrod-Teller parameters are set to 0.0
+   * Checks if a site with given siteId was already registered.
+   * Old values will be overwritten.
    * @param siteId
    * @param epsilon
    * @param sigma
-   * @param mass
    */
   void addLJSite(const intType siteId, const floatType epsilon, const floatType sigma);
 
   /**
-   * Adds the properties of a type of a single AT site type to the library.
+   * Adds the properties of a single AT site type to the library.
    *
-   * This function also precomputes all possible mixed values with already known particle types.
-   * If the type id already exists the values will be overwritten.
-   * @note All Lennard-Jones parameters are set to 0.0
+   * Checks if a site with given siteId was already registered.
+   * Old values will be overwritten.
    * @param siteId
    * @param nu
-   * @param mass
    */
   void addATSite(const intType siteId, const floatType nu);
 
@@ -434,33 +426,42 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
         "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
   }
 
-  _computedLJMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
-  _computedATMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes * _numRegisteredSiteTypes);
+  // There are Lennard-Jones Sites
+  if (_epsilons.size() > 0) {
+    const auto cutoffSquared = _cutoff * _cutoff;
+    _computedLJMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
-  const auto cutoffSquared = _cutoff * _cutoff;
+    for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
+      for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
+        auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
-  for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
-    for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
-      auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
+        // epsilon
+        const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+        _computedLJMixingData[globalIndex].epsilon24 = epsilon24;
 
-      // epsilon
-      const floatType epsilon24 = 24 * sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
-      _computedLJMixingData[globalIndex].epsilon24 = epsilon24;
+        // sigma
+        const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
+        const floatType sigmaSquared = sigma * sigma;
+        _computedLJMixingData[globalIndex].sigmaSquared = sigmaSquared;
 
-      // sigma
-      const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
-      const floatType sigmaSquared = sigma * sigma;
-      _computedLJMixingData[globalIndex].sigmaSquared = sigmaSquared;
+        // shift6
+        const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
+        _computedLJMixingData[globalIndex].shift6 = shift6;
+      }
+    }
+  }
 
-      // shift6
-      const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
-      _computedLJMixingData[globalIndex].shift6 = shift6;
-
-      for (size_t thirdIndex = 0ul; thirdIndex < _numRegisteredSiteTypes; ++thirdIndex) {
-        const auto globalIndex3B = _numRegisteredSiteTypes * globalIndex + thirdIndex;
-        // geometric mixing as used in e.g. https://doi.org/10.1063/1.3567308
-        const floatType mixedNu = cbrt(_nus[firstIndex] * _nus[secondIndex] * _nus[thirdIndex]);
-        _computedATMixingData[globalIndex3B].nu = mixedNu;
+  if (_nus.size() > 0) {
+    _computedATMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes * _numRegisteredSiteTypes);
+    for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
+      for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
+        for (size_t thirdIndex = 0ul; thirdIndex < _numRegisteredSiteTypes; ++thirdIndex) {
+          const auto globalIndex3B = _numRegisteredSiteTypes * _numRegisteredSiteTypes * firstIndex +
+                                     _numRegisteredSiteTypes * secondIndex + thirdIndex;
+          // geometric mixing as used in e.g. https://doi.org/10.1063/1.3567308
+          const floatType mixedNu = cbrt(_nus[firstIndex] * _nus[secondIndex] * _nus[thirdIndex]);
+          _computedATMixingData[globalIndex3B].nu = mixedNu;
+        }
       }
     }
   }

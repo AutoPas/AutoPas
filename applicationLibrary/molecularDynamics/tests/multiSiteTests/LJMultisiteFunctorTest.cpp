@@ -12,8 +12,10 @@
 #define AOS_VS_SOA_ACCURACY 1e-8
 
 void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
-  PPL->addLJSiteType(0, 1, 1, 1);
-  PPL->addLJSiteType(1, 0.5, 0.5, 0.7);
+  PPL->addSiteType(0, 1.);
+  PPL->addLJSite(0, 1., 1.);
+  PPL->addSiteType(1, 0.7);
+  PPL->addLJSite(1, 0.5, 0.5);
   PPL->addMolType(0, {0}, {{0, 0, 0}}, {1, 1, 1});
   PPL->addMolType(1, {1, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1, 1, 1});
   PPL->addMolType(2, {1, 0, 1, 0}, {{-0.025, 0, -0.025}, {-0.025, 0, 0.025}, {0.025, 0, -0.025}, {0.025, 0, 0.025}},
@@ -592,9 +594,10 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   const double cutoff = 2.5;
 
   ParticlePropertiesLibrary PPL(cutoff);
-  PPL.addLJSiteType(0, 1., 1., 1.);
-  PPL.addLJSiteType(1, 0.5, 0.5, 0.5);
-
+  PPL.addSiteType(0, 1.);
+  PPL.addLJSite(0, 1., 1.);
+  PPL.addSiteType(1, 0.5);
+  PPL.addLJSite(1, 0.5, 0.5);
   // Molecules to be used in the tests (explanation of choices documented when tests are run).
   // For ease of readability, each molecule has its own molType, even when duplicated.
   MultisiteMoleculeLJ mol0;
@@ -705,7 +708,8 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
   const double cutoff = 2.5;
 
   ParticlePropertiesLibrary PPL(cutoff);
-  PPL.addLJSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(0, 1.);
+  PPL.addLJSite(0, 1., 1.);
   PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   PPL.calculateMixingCoefficients();
 
@@ -782,8 +786,10 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   const double cutoff = 3.;
 
   ParticlePropertiesLibrary PPL(cutoff);
-  PPL.addLJSiteType(0, 1., 1., 1.);
-  PPL.addLJSiteType(1, 0.5, 0.5, 0.5);
+  PPL.addSiteType(0, 1.);
+  PPL.addLJSite(0, 1., 1.);
+  PPL.addSiteType(1, 0.5);
+  PPL.addLJSite(0, 0.5, 0.5);
 
   MultisiteMoleculeLJ mol0;
   mol0.setR({0., 0., 0.});

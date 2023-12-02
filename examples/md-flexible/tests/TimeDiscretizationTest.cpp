@@ -35,7 +35,8 @@ void initPPL(ParticlePropertiesLibrary<> &PPL) {
   PPL.addSiteType(0, 1., 1., 0.5);
   PPL.addMolType(0, {0, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1., 1., 1.});
 #else
-  PPL.addLJSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(0, 1.);
+  PPL.addLJSite(0, 1., 1.);
 #endif
   PPL.calculateMixingCoefficients();
 }
@@ -170,7 +171,8 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   autopasContainer->init();
 
   // Init PPL
-  PPL->addLJSiteType(0, 1, 1, 0.5);
+  PPL->addSiteType(0, 0.5);
+  PPL->addLJSite(0, 1, 1);
 #if MD_FLEXIBLE_MODE == MULTISITE
   const std::array<double, 3> momentOfInertiaM = {5.23606798, 0.76393202, 6.};
   PPL->addMolType(0, {0, 0, 0},
@@ -443,7 +445,8 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   autopasContainer->init();
 
   // Init PPL
-  PPL->addLJSiteType(0, 1, 1, 0.5);
+  PPL->addSiteType(0, 0.5);
+  PPL->addLJSite(0, 1, 1);
   PPL->calculateMixingCoefficients();
 
   // add particle

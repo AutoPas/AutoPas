@@ -601,15 +601,15 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
           config.addSiteType(siteID, mass);
           // Check LJ parameters
-          const auto epsilon =
-              parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(), siteErrors);
-          const auto sigma =
-              parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(), siteErrors);
+          const auto epsilon = parseComplexTypeValueSingle<double>(siteIterator->second, config.epsilonMap.name.c_str(),
+                                                                   siteErrors, false);
+          const auto sigma = parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(),
+                                                                 siteErrors, false);
           config.addLJSite(siteID, epsilon, sigma);
 
           // Check Axilrod-Teller parameter
           const auto nu =
-              parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors);
+              parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
           config.addATSite(siteID, nu);
         }
       } else if (key == MDFlexConfig::moleculesStr) {

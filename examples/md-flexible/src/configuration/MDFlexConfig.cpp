@@ -533,26 +533,6 @@ void MDFlexConfig::addATSite(unsigned long siteId, double nu) {
   }
 }
 
-//void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass) {
-//  // check if siteId is already existing and if there is no error in input
-//  if (epsilonMap.value.count(siteId) == 1) {
-//    // check if type is already added
-//    if (autopas::utils::Math::isNear(epsilonMap.value.at(siteId), epsilon) and
-//        autopas::utils::Math::isNear(sigmaMap.value.at(siteId), sigma) and
-//        autopas::utils::Math::isNear(nuMap.value.at(siteId), nu) and
-//        autopas::utils::Math::isNear(massMap.value.at(siteId), mass)) {
-//      return;
-//    } else {  // wrong initialization:
-//      throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
-//    }
-//  } else {
-//    epsilonMap.value.emplace(siteId, epsilon);
-//    sigmaMap.value.emplace(siteId, sigma);
-//    nuMap.value.emplace(siteId, nu);
-//    massMap.value.emplace(siteId, mass);
-//  }
-//}
-
 void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
                               const std::vector<std::array<double, 3>> &relSitePos,
                               std::array<double, 3> momentOfInertia) {
@@ -589,7 +569,8 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   }
   // check size of LJ site parameter vectors match
   if (epsilonMap.value.size() != sigmaMap.value.size()) {
-    throw std::runtime_error("Number of LJ site-level properties differ! Potentially missing epsilon or sigma for some LJ sites.");
+    throw std::runtime_error(
+        "Number of LJ site-level properties differ! Potentially missing epsilon or sigma for some LJ sites.");
   }
   // initialize LJ parameters
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {

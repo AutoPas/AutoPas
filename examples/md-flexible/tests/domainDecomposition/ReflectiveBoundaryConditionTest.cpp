@@ -52,7 +52,8 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.verletSkinRadiusPerTimestep.value = 0.02;
   config.verletRebuildFrequency.value = 10;
   const double sigma = 1.;
-  config.addSiteType(0, 1., sigma, 0.1, 1.);
+  config.addSiteType(0, 1.);
+  config.addLJSite(0, 1., sigma);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -68,7 +69,9 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addLJSiteType(0, 1., sigma, 1.);
+  particlePropertiesLibrary->addSiteType(0, 1.);
+  particlePropertiesLibrary->addLJSite(0, 1., sigma);
+
 #if MD_FLEXIBLE_MODE == MULTISITE
   // Correct Moment of Inertia is irrelevant to test, so accept that they are wrong
   particlePropertiesLibrary->addMolType(
@@ -319,8 +322,10 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   config.cutoff.value = cutoff;
   config.verletSkinRadiusPerTimestep.value = 0.01;
   config.verletRebuildFrequency.value = 10;
-  config.addSiteType(0, 1., sigmas[0], 0.1, 1.);
-  config.addSiteType(1, 1., sigmas[1], 0.1, 1.);
+  config.addSiteType(0, 1.);
+  config.addLJSite(0, 1., sigmas[0]);
+  config.addSiteType(1, 1.);
+  config.addLJSite(1, 1., sigmas[1]);
   config.boundaryOption.value = {options::BoundaryTypeOption::reflective, options::BoundaryTypeOption::reflective,
                                  options::BoundaryTypeOption::reflective};
 
@@ -336,8 +341,11 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
-  particlePropertiesLibrary->addLJSiteType(0, 1., sigmas[0], 1.);
-  particlePropertiesLibrary->addLJSiteType(1, 1., sigmas[1], 1.);
+  particlePropertiesLibrary->addSiteType(0, 1.);
+  particlePropertiesLibrary->addLJSite(0, 1., sigmas[0]);
+  particlePropertiesLibrary->addSiteType(1, 1.);
+  particlePropertiesLibrary->addLJSite(1, 1., sigmas[1]);
+
 #if MD_FLEXIBLE_MODE == MULTISITE
   particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   particlePropertiesLibrary->addMolType(1, {1}, {{0., 0., 0.}}, {1., 1., 1.});

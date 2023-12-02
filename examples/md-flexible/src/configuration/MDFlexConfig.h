@@ -150,33 +150,32 @@ class MDFlexConfig {
   void addInteractionType(autopas::InteractionTypeOption interactionType) { _interactionTypes.insert(interactionType); }
 
   /**
-   * Adds parameters of a LJ and AT site and checks if the siteId already exists.
-   *
+   * Adds a new site with specified mass and checks if the siteId already exists.
    * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
    *
    * @param siteId unique site type id
-   * @param epsilon
-   * @param sigma
-   * @param nu
    * @param mass
    */
   void addSiteType(unsigned long siteId, double mass);
 
+  /**
+   * Adds Lennard-Jones parameters to the specified site.
+   * Checks if the given site exists and if the parameters were already specified.
+   *
+   * @param siteId unique site type id
+   * @param epsilon
+   * @param sigma
+   */
   void addLJSite(unsigned long siteId, double epsilon, double sigma);
-  void addATSite(unsigned long siteId, double nu);
 
-//  /**
-//   * Adds parameters of a LJ and AT site and checks if the siteId already exists.
-//   *
-//   * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
-//   *
-//   * @param siteId unique site type id
-//   * @param epsilon
-//   * @param sigma
-//   * @param nu
-//   * @param mass
-//   */
-//  void addSiteType(unsigned long siteId, double epsilon, double sigma, double nu, double mass);
+  /**
+   * Adds the Axilrod-Teller parameter nu to the specified site.
+   * Checks if the given site exists and if the parameter was already specified.
+   *
+   * @param siteId unique site type id
+   * @param nu
+   */
+  void addATSite(unsigned long siteId, double nu);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists
