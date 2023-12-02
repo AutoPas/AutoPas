@@ -62,8 +62,9 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
 }
 
 /**
- * Initializes a ParticleProperties Library, adds two sites, and tests that the getters for site values return correct
- * site information. Then tests that an error is thrown if a site with a non-consecutive site Id is added.
+ * Adds a LJ site and a AT site to a PPL, and tests that the getters for site values return correct
+ * site information being 0 for not explicitly set parameters. Then tests that an error is thrown if a LJ or AT
+ * parameters are added for a not yet initialized site.
  */
 TEST_F(ParticlePropertiesLibraryTest, AddingDifferentSitesTest) {
   const double cutoff = 0.1;

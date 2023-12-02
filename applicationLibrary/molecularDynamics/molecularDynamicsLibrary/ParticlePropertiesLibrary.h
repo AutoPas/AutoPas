@@ -316,6 +316,10 @@ class ParticlePropertiesLibrary {
   std::vector<size_t> _numSites;
   std::vector<floatType> _moleculesLargestSigma;
 
+  // Allocate memory for the respective parameters
+  bool _storeLJData{false};
+  bool _storeATData{false};
+
   struct PackedLJMixingData {
     floatType epsilon24;
     floatType sigmaSquared;
@@ -340,6 +344,15 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
   }
   ++_numRegisteredSiteTypes;
   _siteMasses.emplace_back(mass);
+
+  // Allocate memory for all parameters of used models
+  if (_storeLJData) {
+    _sigmas.emplace_back(0.0);
+    _epsilons.emplace_back(0.0);
+  }
+  if (_storeATData) {
+    _nus.emplace_back(0.0);
+  }
 }
 
 template <typename floatType, typename intType>
@@ -350,6 +363,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addLJSite(intType siteID, fl
         " which has not been registered yet. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }
+  _storeLJData = true;
   if (_epsilons.size() != _numRegisteredSiteTypes) {
     _epsilons.resize(_numRegisteredSiteTypes);
     _sigmas.resize(_numRegisteredSiteTypes);
@@ -366,6 +380,7 @@ void ParticlePropertiesLibrary<floatType, intType>::addATSite(intType siteID, fl
         " which has not been registered yet. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }
+  _storeATData = true;
   if (_nus.size() != _numRegisteredSiteTypes) {
     _nus.resize(_numRegisteredSiteTypes);
   }
@@ -427,7 +442,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
   }
 
   // There are Lennard-Jones Sites
-  if (_epsilons.size() > 0) {
+  if (_storeLJData) {
     const auto cutoffSquared = _cutoff * _cutoff;
     _computedLJMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
 
@@ -451,7 +466,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
     }
   }
 
-  if (_nus.size() > 0) {
+  if (_storeATData) {
     _computedATMixingData.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes * _numRegisteredSiteTypes);
     for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
       for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
