@@ -157,7 +157,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.newton3Options3B)::getoptChar: {
         config.newton3Options3B.value = autopas::Newton3Option::parseOptions(strArg);
         if (config.newton3Options3B.value.empty()) {
-          cerr << "Unknown Newton3 option: " << strArg << endl;
+          cerr << "Unknown Newton3 3-body option: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -244,7 +244,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.dataLayoutOptions3B)::getoptChar: {
         config.dataLayoutOptions3B.value = autopas::DataLayoutOption::parseOptions(strArg);
         if (config.dataLayoutOptions3B.value.empty()) {
-          cerr << "Unknown data layouts: " << strArg << endl;
+          cerr << "Unknown data layouts for 3-body: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -313,7 +313,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.functorOption3B)::getoptChar: {
-        if (strArg.find("at") != string::npos or strArg.find("axilrod-teller") != string::npos) {
+        if (strArg.find("at") != string::npos or strArg.find("axi") != string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
           cerr << "Unknown 3-body functor: " << strArg << endl;
@@ -553,7 +553,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.traversalOptions3B)::getoptChar: {
         config.traversalOptions3B.value = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions3B.value.empty()) {
-          cerr << "Unknown Traversal: " << strArg << endl;
+          cerr << "Unknown 3-body Traversal: " << strArg << endl;
           displayHelp = true;
         }
         break;
