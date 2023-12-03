@@ -5,7 +5,6 @@
  */
 
 #include "ATFunctorTestGlobals.h"
-//#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 
 TYPED_TEST_SUITE_P(ATFunctorTestGlobals);
 

@@ -39,9 +39,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
     GTEST_SKIP() << msg;
   }
 
-  auto f1one = p1.getF();
-  auto f2one = p2.getF();
-  auto f3one = p3.getF();
+  const auto f1one = p1.getF();
+  const auto f2one = p2.getF();
+  const auto f3one = p3.getF();
 
   if (mixing) {
     EXPECT_NEAR(f1one[0], this->expectedForceMixingP1[0], this->absDelta);
@@ -79,9 +79,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
 
   functor->AoSFunctor(p2, p1, p3, newton3);
 
-  auto f1two = p1.getF();
-  auto f2two = p2.getF();
-  auto f3two = p3.getF();
+  const auto f1two = p1.getF();
+  const auto f2two = p2.getF();
+  const auto f3two = p3.getF();
 
   double factor = newton3 ? 2. : 1.;
   if (mixing) {
@@ -119,9 +119,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
 
   functor->AoSFunctor(p3, p1, p2, newton3);
 
-  auto f1three = p1.getF();
-  auto f2three = p2.getF();
-  auto f3three = p3.getF();
+  const auto f1three = p1.getF();
+  const auto f2three = p2.getF();
+  const auto f3three = p3.getF();
 
   factor = newton3 ? 3. : 1.;
   if (mixing) {
@@ -156,9 +156,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   p3.setF({0., 0., 0.});
   functor->AoSFunctor(p1, p3, p2, newton3);
 
-  auto f1four = p1.getF();
-  auto f2four = p2.getF();
-  auto f3four = p3.getF();
+  const auto f1four = p1.getF();
+  const auto f2four = p2.getF();
+  const auto f3four = p3.getF();
 
   if (mixing) {
     EXPECT_NEAR(f1one[0], this->expectedForceMixingP1[0], this->absDelta);
