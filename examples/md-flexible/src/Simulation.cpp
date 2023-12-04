@@ -35,11 +35,11 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 #endif
 
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
-    autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> *);
+    autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
-    autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> *);
+    autopas::FlopCounterFunctor3B<ParticleType, ATFunctorTypeAbstract> *);
 #endif
 //! @endcond
 
@@ -642,8 +642,8 @@ void Simulation::logMeasurements() {
 
     if (_configuration.dontMeasureFlops.value) {
       if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
-        ForceFunctorAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-        autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> flopCounterFunctor(
+        LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+        autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
             ljFunctor, _autoPasContainer->getCutoff());
         _autoPasContainer->computeInteractions(&flopCounterFunctor);
 
@@ -659,8 +659,8 @@ void Simulation::logMeasurements() {
 
 #ifdef MD_FLEXIBLE_FUNCTOR_AT
       if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
-        ForceFunctorAbstract3B atFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-        autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> flopCounterFunctor(
+        ATFunctorTypeAbstract atFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+        autopas::FlopCounterFunctor3B<ParticleType, ATFunctorTypeAbstract> flopCounterFunctor(
             atFunctor, _autoPasContainer->getCutoff());
         _autoPasContainer->computeInteractions(&flopCounterFunctor);
 

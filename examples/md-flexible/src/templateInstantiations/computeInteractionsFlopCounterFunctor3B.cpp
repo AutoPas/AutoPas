@@ -15,7 +15,7 @@
 
 //! @cond Doxygen_Suppress
 template bool autopas::AutoPas<ParticleType>::computeInteractions(
-    autopas::FlopCounterFunctor3B<ParticleType, ForceFunctorAbstract3B> *);
+    autopas::FlopCounterFunctor3B<ParticleType, ATFunctorTypeAbstract> *);
 //! @endcond
 
 #endif

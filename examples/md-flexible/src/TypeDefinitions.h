@@ -138,24 +138,24 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using ForceFunctorAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using ForceFunctorAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using ForceFunctorAbstract = mdLib::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using ForceFunctorAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
-using ForceFunctorAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
-using ForceFunctorAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #endif
 
 #ifdef MD_FLEXIBLE_FUNCTOR_AT
-using ForceFunctorAbstract3B = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 #endif
 
 #endif
