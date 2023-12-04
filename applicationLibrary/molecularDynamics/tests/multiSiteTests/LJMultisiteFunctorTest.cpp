@@ -200,24 +200,26 @@ template <template<class, bool, autopas::FunctorN3Modes, bool, bool> class funct
 void LJMultisiteFunctorTest::testSuiteAoSForceCalculation_CTC(mdLib::MultisiteMoleculeLJ molA,
                                                           mdLib::MultisiteMoleculeLJ molB,
                                                           ParticlePropertiesLibrary<double, size_t> &PPL,
-                                                          double cutoff) {
+                                                          double cutoff, bool calculateGlobalsImplemented) {
   // N3L Disabled, No Calculating Globals
   testAoSForceCalculation_CTC<functorType, false, false, false>(molA, molB, PPL, cutoff);
 
   // N3L Enabled, No Calculating Globals
   testAoSForceCalculation_CTC<functorType, true, false, false>(molA, molB, PPL, cutoff);
 
-  // N3L Disabled, Calculating Globals, no shift applied
-  testAoSForceCalculation_CTC<functorType, false, true, false>(molA, molB, PPL, cutoff);
+  if (calculateGlobalsImplemented) {
+    // N3L Disabled, Calculating Globals, no shift applied
+    testAoSForceCalculation_CTC<functorType, false, true, false>(molA, molB, PPL, cutoff);
 
-  // N3L Disabled, Calculating Globals, shift applied
-  testAoSForceCalculation_CTC<functorType, false, true, true>(molA, molB, PPL, cutoff);
+    // N3L Disabled, Calculating Globals, shift applied
+    testAoSForceCalculation_CTC<functorType, false, true, true>(molA, molB, PPL, cutoff);
 
-  // N3L Enabled, Calculating Globals, no shift applied
-  testAoSForceCalculation_CTC<functorType, true, true, false>(molA, molB, PPL, cutoff);
+    // N3L Enabled, Calculating Globals, no shift applied
+    testAoSForceCalculation_CTC<functorType, true, true, false>(molA, molB, PPL, cutoff);
 
-  // N3L Enabled, Calculating Globals, shift applied
-  testAoSForceCalculation_CTC<functorType, true, true, true>(molA, molB, PPL, cutoff);
+    // N3L Enabled, Calculating Globals, shift applied
+    testAoSForceCalculation_CTC<functorType, true, true, true>(molA, molB, PPL, cutoff);
+  }
 }
 
 
@@ -356,24 +358,26 @@ template <template<class, bool, autopas::FunctorN3Modes, bool, bool> class funct
 void LJMultisiteFunctorTest::testSuiteAoSForceCalculation_STS(mdLib::MultisiteMoleculeLJ molA,
                                                               mdLib::MultisiteMoleculeLJ molB,
                                                               ParticlePropertiesLibrary<double, size_t> &PPL,
-                                                              double cutoff) {
+                                                              double cutoff, bool calculateGlobalsImplemented) {
   // N3L Disabled, No Calculating Globals
   testAoSForceCalculation_STS<functorType, false, false, false>(molA, molB, PPL, cutoff);
 
   // N3L Enabled, No Calculating Globals
   testAoSForceCalculation_STS<functorType, true, false, false>(molA, molB, PPL, cutoff);
 
-  // N3L Disabled, Calculating Globals, no shift applied
-  testAoSForceCalculation_STS<functorType, false, true, false>(molA, molB, PPL, cutoff);
+  if (calculateGlobalsImplemented) {
+    // N3L Disabled, Calculating Globals, no shift applied
+    testAoSForceCalculation_STS<functorType, false, true, false>(molA, molB, PPL, cutoff);
 
-  // N3L Disabled, Calculating Globals, shift applied
-  testAoSForceCalculation_STS<functorType, false, true, true>(molA, molB, PPL, cutoff);
+    // N3L Disabled, Calculating Globals, shift applied
+    testAoSForceCalculation_STS<functorType, false, true, true>(molA, molB, PPL, cutoff);
 
-  // N3L Enabled, Calculating Globals, no shift applied
-  testAoSForceCalculation_STS<functorType, true, true, false>(molA, molB, PPL, cutoff);
+    // N3L Enabled, Calculating Globals, no shift applied
+    testAoSForceCalculation_STS<functorType, true, true, false>(molA, molB, PPL, cutoff);
 
-  // N3L Enabled, Calculating Globals, shift applied
-  testAoSForceCalculation_STS<functorType, true, true, true>(molA, molB, PPL, cutoff);
+    // N3L Enabled, Calculating Globals, shift applied
+    testAoSForceCalculation_STS<functorType, true, true, true>(molA, molB, PPL, cutoff);
+  }
 }
 
 template <template<class, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
@@ -851,28 +855,28 @@ TEST_F(LJMultisiteFunctorTest, AoSTest_CTC) {
   // LJMultisiteFunctorAVX512_GS
 
   // tests: 1 site <-> 2 site interaction
-  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol0, mol1, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol0, mol1, PPL, cutoff, false);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol0, mol2, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol0, mol2, PPL, cutoff, false);
 
   // tests: 2 site <-> 3 site interaction
-  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol1, mol3, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol1, mol3, PPL, cutoff, false);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol3, mol4, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol3, mol4, PPL, cutoff, false);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol1, mol5, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol1, mol5, PPL, cutoff, false);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol0, mol6, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol0, mol6, PPL, cutoff, false);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol0, mol7, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol0, mol7, PPL, cutoff, false);
 
   // tests: 3 site <-> 3 site, with some different site types
-  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol4, mol8, PPL, cutoff);
+  testSuiteAoSForceCalculation_CTC<mdLib::LJMultisiteFunctorAVX512_GS>(mol4, mol8, PPL, cutoff, false);
 }
 
 /**
@@ -966,28 +970,28 @@ TEST_F(LJMultisiteFunctorTest, AoSTest_STS) {
 
 
   // tests: 1 site <-> 2 site interaction
-  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol0, mol1, PPL, cutoff);
+  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol0, mol1, PPL, cutoff, false);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
-  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol0, mol2, PPL, cutoff);
+  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol0, mol2, PPL, cutoff, false);
 
   // tests: 2 site <-> 3 site interaction
-  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol1, mol3, PPL, cutoff);
+  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol1, mol3, PPL, cutoff, false);
 
   // tests: 3 site <-> 3 site interaction, where one has a nontrivial (needs rotating) quaternion
-  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol3, mol4, PPL, cutoff);
+  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol3, mol4, PPL, cutoff, false);
 
   // tests: 2 site <-> 2 site, where molecules are beyond cutoff
-  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol1, mol5, PPL, cutoff);
+  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol1, mol5, PPL, cutoff, false);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM beyond cutoff
-  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol0, mol6, PPL, cutoff);
+  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol0, mol6, PPL, cutoff, false);
 
   // tests: 1 site <-> 2 site, where one site is beyond cutoff, the other within; and CoM within cutoff
-  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol0, mol7, PPL, cutoff);
+  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol0, mol7, PPL, cutoff, false);
 
   // tests: 3 site <-> 3 site, with some different site types
-  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol4, mol8, PPL, cutoff);
+  testSuiteAoSForceCalculation_STS<mdLib::LJMultisiteFunctorAVX512_Mask>(mol4, mol8, PPL, cutoff, false);
 }
 
 /**
@@ -1070,7 +1074,7 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
   // AVX512_GS
 
   // create functor
-  mdLib::LJMultisiteFunctorAVX512_GS<mdLib::MultisiteMoleculeLJ, true, autopas::FunctorN3Modes::Both, true, true> functorAVX512GS(cutoff, PPL);
+  mdLib::LJMultisiteFunctorAVX512_GS<mdLib::MultisiteMoleculeLJ, false, autopas::FunctorN3Modes::Both, false, true> functorAVX512GS(cutoff, PPL);
 
   // newton3 on
   functorAVX512GS.initTraversal();
@@ -1109,7 +1113,7 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
   // AVX512_Mask
 
   // create functor
-  mdLib::LJMultisiteFunctorAVX512_Mask<mdLib::MultisiteMoleculeLJ, true, autopas::FunctorN3Modes::Both, true, true> functorAVX512Mask(cutoff, PPL);
+  mdLib::LJMultisiteFunctorAVX512_Mask<mdLib::MultisiteMoleculeLJ, false, autopas::FunctorN3Modes::Both, false, true> functorAVX512Mask(cutoff, PPL);
 
   // newton3 on
   functorAVX512Mask.initTraversal();
@@ -1207,17 +1211,7 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   // N3L optimization enabled, global calculation disabled.
   singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_GS, true, false, false>(mol0, mol1, PPL, cutoff);
 
-  // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_GS, false, true, false>(mol0, mol1, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_GS, true, true, false>(mol0, mol1, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_GS, false, true, true>(mol0, mol1, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_GS, true, true, true>(mol0, mol1, PPL, cutoff);
+  // todo add tests with globals once globals implemented
 
 
   // AVX512 STS with Masks Functor
@@ -1228,17 +1222,7 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   // N3L optimization enabled, global calculation disabled.
   singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_Mask, true, false, false>(mol0, mol1, PPL, cutoff);
 
-  // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_Mask, false, true, false>(mol0, mol1, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_Mask, true, true, false>(mol0, mol1, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_Mask, false, true, true>(mol0, mol1, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  singleSiteSanityCheck<mdLib::LJMultisiteFunctorAVX512_Mask, true, true, true>(mol0, mol1, PPL, cutoff);
+  // todo add tests with globals once globals implemented
 }
 
 /**
@@ -1310,17 +1294,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
   // N3L optimization enabled, global calculation disabled.
   testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, false, false>(allOwnedMolecules, PPL, cutoff);
 
-  // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, false, true, false>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, true, false>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, false, true, true>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, true, true>(allOwnedMolecules, PPL, cutoff);
+  // todo add tests with globals once globals implemented
 
   // tests with a mix of ownership states
 
@@ -1330,18 +1304,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
   // N3L optimization enabled, global calculation disabled.
   testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
 
-  // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
-
+  // todo add tests with globals once globals implemented
 
   // AVX512 STS with Masks Functor Tests
 
@@ -1353,19 +1316,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
   // N3L optimization enabled, global calculation disabled.
   testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, false, false>(allOwnedMolecules, PPL, cutoff);
 
-  // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, false, true, false>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, true, false>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, false, true, true>(allOwnedMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, true, true>(allOwnedMolecules, PPL, cutoff);
-
-
+  // todo add tests with globals once globals implemented
 
   // tests with a mix of ownership states
 
@@ -1375,18 +1326,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoASingle) {
   // N3L optimization enabled, global calculation disabled.
   testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
 
-  // N3L optimization disabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, false, true, false>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift disabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, true, false>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization disabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, false, true, true>(mixedOwnershipMolecules, PPL, cutoff);
-
-  // N3L optimization enabled, global calculation enabled, apply shift enabled.
-  testSoACellAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
-
+  // todo add tests with globals once globals implemented
 }
 
 /**
@@ -1443,7 +1383,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
   testSoACellPairAgainstAoS<mdLib::LJMultisiteFunctor, false, true, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
 
 
-  // AVX512 CTC with G/S Tests - Do not test Globals
+  // AVX512 CTC with G/S Tests
 
   // tests with only owned molecules
 
@@ -1453,6 +1393,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
   // N3L optimization enabled, global calculation disabled.
   testSoACellPairAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, false, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
 
+  // todo add tests with globals once globals implemented
 
   // tests with a mix of ownership states
 
@@ -1462,8 +1403,9 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
   // N3L optimization enabled, global calculation disabled.
   testSoACellPairAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, false, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
 
+  // todo add tests with globals once globals implemented
 
-  // AVX512 STS with Masks Functor - Do not test Globals
+  // AVX512 STS with Masks Functor
 
   // tests with only owned molecules
 
@@ -1473,6 +1415,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
   // N3L optimization enabled, global calculation disabled.
   testSoACellPairAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, false, false>(allOwnedMoleculesA, allOwnedMoleculesB, PPL, cutoff);
 
+  // todo add tests with globals once globals implemented
 
   // tests with a mix of ownership states
 
@@ -1482,6 +1425,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAPair) {
   // N3L optimization enabled, global calculation disabled.
   testSoACellPairAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, false, false>(mixedOwnershipMoleculesA, mixedOwnershipMoleculesB, PPL, cutoff);
 
+  // todo add tests with globals once globals implemented
 }
 
 /**
@@ -1553,6 +1497,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
   // N3L optimization enabled, global calculation disabled.
   testSoAVerletAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, false, false>(allOwnedMolecules, PPL, cutoff);
 
+  // todo add tests with globals once globals implemented
 
   // tests with a mix of ownership states
 
@@ -1562,6 +1507,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
   // N3L optimization enabled, global calculation disabled.
   testSoAVerletAgainstAoS<mdLib::LJMultisiteFunctorAVX512_GS, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
 
+  // todo add tests with globals once globals implemented
 
   // AVX512 STS with Masks Tests
 
@@ -1573,6 +1519,7 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
   // N3L optimization enabled, global calculation disabled.
   testSoAVerletAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, false, false>(allOwnedMolecules, PPL, cutoff);
 
+  // todo add tests with globals once globals implemented
 
   // tests with a mix of ownership states
 
@@ -1582,4 +1529,5 @@ TEST_F(LJMultisiteFunctorTest, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
   // N3L optimization enabled, global calculation disabled.
   testSoAVerletAgainstAoS<mdLib::LJMultisiteFunctorAVX512_Mask, true, false, false>(mixedOwnershipMolecules, PPL, cutoff);
 
+  // todo add tests with globals once globals implemented
 }

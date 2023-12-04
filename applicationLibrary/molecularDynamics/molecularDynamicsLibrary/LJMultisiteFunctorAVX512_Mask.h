@@ -28,11 +28,16 @@ namespace mdLib {
  *
  * This functor uses cutoffs based on site-to-site distances. Handling of cutoffs in SoA functors is done using masks.
  *
+ * @warning no global calculation implemented. Reasoning: At the time of creation, the value of this implementation of
+ * multisite molecules (i.e. with AutoPas particles = molecules as opposed to particles = sites) is under question. Calculation
+ * of globals is not of priority until we can be sure of which implementation is better and why.
+ *
  * @tparam Particle The type of particle.
  * @tparam applyShift Flag for the LJ potential to have a truncated shift.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off, or both. See FunctorN3Nodes for possible
  * values.
- * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
+ * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial). No global calculation
+ * implemented so throws exception if true.
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, bool applyShift = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
@@ -183,7 +188,7 @@ class LJMultisiteFunctorAVX512_Mask
         _postProcessed{false},
         _PPLibrary{&particlePropertiesLibrary} {
     if (calculateGlobals) {
-      _aosThreadData.resize(autopas::autopas_get_max_threads());
+      autopas::utils::ExceptionHandler::exception("LJMultisiteFunctorAVX512_Mask constructed with calculateGlobals=true, but global calculation has not been implemented!");
     }
   }
 #else
@@ -270,28 +275,8 @@ class LJMultisiteFunctorAVX512_Mask
           particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[j], force));
         }
 
-        if (calculateGlobals) {
-          // Here we calculate either the potential energy * 6 or the potential energy * 12.
-          // For newton3, this potential energy contribution is distributed evenly to the two molecules.
-          // For non-newton3, the full potential energy is added to the one molecule.
-          // I.e. double the potential energy will be added in this case.
-          // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
-          // There is a similar handling of the virial, but without the mutliplication/division by 6.
-          const auto potentialEnergy6 = newton3 ? 0.5 * (epsilon24 * lj12m6 + shift6) : (epsilon24 * lj12m6 + shift6);
-          const auto virial = newton3 ? autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force), 0.5)
-                                      : autopas::utils::ArrayMath::mul(displacement, force);
+        // todo handling of globals should go here (see LJMultisiteFunctor.h or 7dc729af)
 
-          const auto threadNum = autopas::autopas_get_thread_num();
-
-          if (particleA.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
-          }
-          if (newton3 and particleB.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
-            _aosThreadData[threadNum].virialSum = autopas::utils::ArrayMath::add(_aosThreadData[threadNum].virialSum, virial);
-          }
-        }
       }
     }
   }
@@ -371,9 +356,6 @@ class LJMultisiteFunctorAVX512_Mask
       siteCount += _PPLibrary->getNumSites(typeptr[mol]);
     }
 
-    // Accumulators for global values
-    double potentialEnergyAccumulator = 0;
-    std::array<double, 3> virialAccumulator = {0., 0., 0.};
 
     // ------------------------------ Setup auxiliary vectors -----------------------------
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionX;
@@ -459,7 +441,7 @@ class LJMultisiteFunctorAVX512_Mask
           SoAKernel<true>( siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ,
                               siteForceX, siteForceY, siteForceZ, siteOwnership, ownedStateA, siteTypeA,
                               exactSitePositionA, rotatedSitePositionA, forceAccumulator, torqueAccumulator,
-                              potentialEnergyAccumulator, virialAccumulator, siteIndexMolB);
+                               siteIndexMolB);
 
           // Add forces + torques to molA
           fxptr[molA] += forceAccumulator[0];
@@ -492,19 +474,7 @@ class LJMultisiteFunctorAVX512_Mask
         ++siteIndex;
       }
     }
-
-
-    if constexpr (calculateGlobals) {
-      const auto threadNum = autopas::autopas_get_thread_num();
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      const auto newton3Factor = newton3 ? .5 : 1.;
-
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergyAccumulator * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialAccumulator[0] * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialAccumulator[1] * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialAccumulator[2] * newton3Factor;
-    }
+    // todo processing of global accumulators should go here (see LJMultisiteFunctor.h or 7dc729af)
   }
 
   /**
@@ -560,10 +530,6 @@ class LJMultisiteFunctorAVX512_Mask
     for (size_t mol = 0; mol < soaB.size(); ++mol) {
       siteCountB += _PPLibrary->getNumSites(typeptrB[mol]);
     }
-
-    // Accumulators for global values
-    double potentialEnergyAccumulator = 0;
-    std::array<double, 3> virialAccumulator = {0., 0., 0.};
 
     // ------------------------------ Setup auxiliary vectors -----------------------------
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedSitePositionBx;
@@ -646,8 +612,7 @@ class LJMultisiteFunctorAVX512_Mask
 
         SoAKernel<newton3>( siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz,
                                siteForceBx, siteForceBy, siteForceBz, siteOwnershipB, ownedStateA, siteTypeA,
-                               exactSitePositionA, rotatedSitePositionA, forceAccumulator, torqueAccumulator,
-                               potentialEnergyAccumulator, virialAccumulator);
+                               exactSitePositionA, rotatedSitePositionA, forceAccumulator, torqueAccumulator);
       }
       // Add forces and torques to mol A
       fxAptr[molA] += forceAccumulator[0];
@@ -678,17 +643,7 @@ class LJMultisiteFunctorAVX512_Mask
         ++siteIndex;
       }
     }
-    if constexpr (calculateGlobals) {
-      const auto threadNum = autopas::autopas_get_thread_num();
-      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      const auto newton3Factor = newton3 ? .5 : 1.;
-
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergyAccumulator * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialAccumulator[0] * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialAccumulator[1] * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialAccumulator[2] * newton3Factor;
-    }
+    // todo processing of global accumulators should go here (see LJMultisiteFunctor.h or 7dc729af)
   }
 
   /**
@@ -742,9 +697,6 @@ class LJMultisiteFunctorAVX512_Mask
     // Count sites of primary molecule
     const size_t siteCountPrimary = _PPLibrary->getNumSites(typeptr[indexPrimary]);
 
-    // Accumulators for global values
-    double potentialEnergyAccumulator = 0;
-    std::array<double, 3> virialAccumulator = {0., 0., 0.};
 
     // ------------------------------ Setup auxiliary vectors -----------------------------
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> rotatedNeighborSitePositionsX;
@@ -815,8 +767,7 @@ class LJMultisiteFunctorAVX512_Mask
 
       SoAKernel<newton3>(siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
           exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ, siteOwnershipNeighbors, ownedStatePrime,
-          siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator,
-          potentialEnergyAccumulator, virialAccumulator);
+          siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator);
     }
     // Add forces to prime mol
     fxptr[indexPrimary] += forceAccumulator[0];
@@ -846,17 +797,7 @@ class LJMultisiteFunctorAVX512_Mask
       }
     }
 
-    if constexpr (calculateGlobals) {
-      const auto threadNum = autopas::autopas_get_thread_num();
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2here.
-      const auto newton3Factor = newton3 ? .5 : 1.;
-
-      _aosThreadData[threadNum].potentialEnergySum += potentialEnergyAccumulator * newton3Factor;
-      _aosThreadData[threadNum].virialSum[0] += virialAccumulator[0] * newton3Factor;
-      _aosThreadData[threadNum].virialSum[1] += virialAccumulator[1] * newton3Factor;
-      _aosThreadData[threadNum].virialSum[2] += virialAccumulator[2] * newton3Factor;
-    }
+    // todo processing of global accumulators should go here (see LJMultisiteFunctor.h or 7dc729af)
    }
 
   /**
@@ -894,8 +835,7 @@ class LJMultisiteFunctorAVX512_Mask
                         const autopas::OwnershipState ownedStateA, const size_t siteTypeA,
                         const std::array<double, 3> exactSitePositionA,
                         const std::array<double, 3> rotatedSitePositionA, std::array<double, 3> &forceAccumulator,
-                        std::array<double, 3> &torqueAccumulator, double &potentialEnergyAccumulator,
-                        std::array<double, 3> &virialAccumulator, size_t offset = 0) {
+                        std::array<double, 3> &torqueAccumulator, size_t offset = 0) {
 #ifndef __AVX512F__
 #pragma message "LJMultisiteFunctorAVX.h included, but AVX is not supported by the compiler."
 #else
@@ -1067,35 +1007,7 @@ class LJMultisiteFunctorAVX512_Mask
 
       }
 
-      // globals
-      if constexpr (calculateGlobals) {
-//        const __m256d virialX = _mm256_mul_pd(displacementX, forceX);
-//        const __m256d virialY = _mm256_mul_pd(displacementY, forceY);
-//        const __m256d virialZ = _mm256_mul_pd(displacementZ, forceZ);
-//
-//        const __m256d potentialEnergy6 =
-//            _mm256_fmadd_pd(epsilon24, lj12m6, shift6);  // FMA may not be supported on all CPUs
-//        __m256d potentialEnergy6Masked = masked ? _mm256_and_pd(castedMask, potentialEnergy6) : potentialEnergy6;
-//        potentialEnergy6Masked = _mm256_and_pd(_mm256_castsi256_pd(remainderMask), potentialEnergy6Masked);
-//
-//        __m256i ownedStateA4 = _mm256_set1_epi64x(static_cast<int64_t>(ownedStateA));
-//        __m256d ownedMaskA =
-//            _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateA4), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-//        __m256d energyFactor = _mm256_blendv_pd(_zero, _one, ownedMaskA);
-//        if constexpr (newton3) {
-//          const __m256i ownedStateB =
-//              masked ? autopas::utils::avx::load_epi64(remainderCase, &siteOwnership[offset + siteVectorIndex],
-//                                                       remainderMask)
-//                     : autopas::utils::avx::gather_epi64(remainderCase, &siteOwnership[offset], sites, remainderMask);
-//          __m256d ownedMaskB =
-//              _mm256_cmp_pd(_mm256_castsi256_pd(ownedStateB), _mm256_castsi256_pd(_ownedStateOwnedMM256i), _CMP_EQ_UQ);
-//          energyFactor = _mm256_add_pd(energyFactor, _mm256_blendv_pd(_zero, _one, ownedMaskB));
-//        }
-//        potentialEnergySum = _mm256_fmadd_pd(energyFactor, potentialEnergy6Masked, potentialEnergySum);
-//        virialSumX = _mm256_fmadd_pd(energyFactor, virialX, virialSumX);
-//        virialSumY = _mm256_fmadd_pd(energyFactor, virialY, virialSumY);
-//        virialSumZ = _mm256_fmadd_pd(energyFactor, virialZ, virialSumZ);
-      }
+      // todo handling of globals should go here (see LJMultisiteFunctor.h or 7dc729af)
     }
 
     // Add up the forces, torques and globals
@@ -1110,12 +1022,7 @@ class LJMultisiteFunctorAVX512_Mask
     torqueAccumulator[2] += _mm512_reduce_add_pd(torqueSumZ);
 
 
-    if constexpr (calculateGlobals) {
-      potentialEnergyAccumulator += _mm512_reduce_add_pd(potentialEnergySum);
-      virialAccumulator[0] += _mm512_reduce_add_pd(virialSumX);
-      virialAccumulator[1] += _mm512_reduce_add_pd(virialSumY);
-      virialAccumulator[2] += _mm512_reduce_add_pd(virialSumZ);
-    }
+    // todo accumulation of globals should go here (see LJMultisiteFunctor.h or 7dc729af)
 #endif
   }
 

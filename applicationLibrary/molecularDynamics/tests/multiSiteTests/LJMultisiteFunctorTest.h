@@ -76,10 +76,12 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param molB
    * @param PPL
    * @param cutoff
+   * @param calculateGlobalsImplemented if false, disables globals tests. This bool is a short-term solution for functors
+   * without working globals calculations
    */
   template <template<class, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
   void testSuiteAoSForceCalculation_CTC(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
-                                    ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff);
+                                    ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff, bool calculateGlobalsImplemented=true);
 
   /**
    * Tests the correctness of the AoS functor for a given molA, molB, PPL, and cutoff. Only suitable for the STS functors.
@@ -112,10 +114,12 @@ class LJMultisiteFunctorTest : public AutoPasTestBase {
    * @param molB
    * @param PPL
    * @param cutoff
+   * @param calculateGlobalsImplemented if false, disables globals tests. This bool is a short-term solution for functors
+   * without working globals calculations
    */
   template <template<class, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
   void testSuiteAoSForceCalculation_STS(mdLib::MultisiteMoleculeLJ molA, mdLib::MultisiteMoleculeLJ molB,
-                                        ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff);
+                                        ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff, bool calculateGlobalsImplemented=true);
 
   /**
    * Compares the forces produced by the single-site functor (LJFunctor) and a multi-site functor applied to single-site
