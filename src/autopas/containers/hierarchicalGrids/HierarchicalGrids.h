@@ -201,8 +201,10 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
           crossLevel.addParticle(*iterSmaller);
         }
 
+        // Iterate pairwise over the cross-level
         crossLevel.iteratePairwise(&traversal);
 
+        // Delete the cross-level after traversal
         delete crossLevel;
 
       }
