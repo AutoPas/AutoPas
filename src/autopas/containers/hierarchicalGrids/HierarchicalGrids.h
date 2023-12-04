@@ -184,12 +184,6 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
     numberOfCrossLevels = getNumberOfCrossLevels(_numberOfLevels);
 
     //@todo cellSizeFactor has to be adapted
-    /*
-    crossLevels.reserve(numberOfCrossLevels);
-    for (unsigned int level = 0; level < numberOfCrossLevels; level++) {
-      crossLevels.emplace_back(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator);
-    }
-    */
 
     for (unsigned int largerLevel = 0; largerLevel < _numberOfLevels - 1; largerLevel++) {
       for (unsigned int smallerLevel = largerLevel; smallerLevel < _numberOfLevels; smallerLevel++) {
@@ -209,6 +203,8 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
 
         crossLevel.iteratePairwise(&traversal);
 
+        delete crossLevel;
+
       }
     }
     
@@ -221,6 +217,7 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
     autopas::DEMFunctor::endExcessForceSubtraction();
 
   }
+
 
   /**
    * @brief Get the Hierarchy Level Of Particle object
