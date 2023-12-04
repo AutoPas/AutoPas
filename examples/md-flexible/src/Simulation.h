@@ -234,8 +234,10 @@ class Simulation {
 
  private:
   /**
-   * Estimates the number of tuning iterations which ocurred during the simulation so far.
-   * @return an estimation of the number of tuning iterations which occured so far.
+   * Returns the number of expected maximum number of iterations of the Simulation.
+   * This is exact if the number of iterations was specified, or an estimate based on the number of tuning iterations if
+   * the number of tuning phases is specified.
+   * @return <size_t, bool> Max number of iterations, bool whether it is an estimate.
    */
   [[nodiscard]] std::tuple<size_t, bool> estimateNumberOfIterations() const;
 

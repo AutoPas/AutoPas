@@ -319,18 +319,29 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
         return static_cast<size_t>(_configuration.tuningMaxEvidence.value);
       } else {
         // @TODO: this can be improved by considering the tuning strategy
-        //  or averaging number of iterations per tuning phase and dynamically adapt prediction
+        // or averaging number of iterations per tuning phase and dynamically adapt prediction
 
         // This estimate is only valid for full search and no restrictions on the cartesian product.
         // add static to only evaluate this once
-        // @TODO: estimate with 3-body
-        static const auto ret = autopas::SearchSpaceGenerators::cartesianProduct(
-                                    _configuration.containerOptions.value, _configuration.traversalOptions.value,
-                                    _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                                    autopas::InteractionTypeOption::pairwise)
-                                    .size();
-        return ret;
+        size_t space2 = 0;
+        size_t space3 = 0;
+        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise) > 0) {
+          space2 = autopas::SearchSpaceGenerators::cartesianProduct(
+                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
+                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
+                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
+                       autopas::InteractionTypeOption::pairwise)
+                       .size();
+        }
+        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody) > 0) {
+          space3 = autopas::SearchSpaceGenerators::cartesianProduct(
+                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
+                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
+                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
+                       autopas::InteractionTypeOption::threeBody)
+                       .size();
+        }
+        return std::max(space2, space3);
       }
     }();
     // non-tuning iterations + tuning iterations + one iteration after last phase
