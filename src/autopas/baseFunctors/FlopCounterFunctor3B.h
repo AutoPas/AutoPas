@@ -27,7 +27,6 @@ namespace autopas {
 template <class Particle, class ForceFunctorType>
 class FlopCounterFunctor3B : public TriwiseFunctor<Particle, FlopCounterFunctor3B<Particle, ForceFunctorType>> {
  public:
-
   std::string getName() final { return "FlopCounterFunctor3B"; }
 
   bool isRelevantForTuning() override { return false; }

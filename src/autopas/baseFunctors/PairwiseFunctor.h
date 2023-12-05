@@ -106,8 +106,7 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
   /**
    * @copydoc autopas::Functor::getName()
    */
-  virtual std::string getName() override {return "PairwiseFunctor";}
-
+  virtual std::string getName() override { return "PairwiseFunctor"; }
 };
 
 }  // namespace autopas

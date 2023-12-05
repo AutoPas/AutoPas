@@ -75,14 +75,13 @@ class CellFunctor {
    * Set the sorting-threshold
    * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
    * sorted view of the particles to avoid unnecessary distance checks.
-   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
+   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled.
    */
   void setSortingThreshold(size_t sortingThreshold);
 
  private:
   /**
-   * Applies the functor to all particle pairs exploiting newtons third law of
-   * motion.
+   * Applies the functor to all particle pairs exploiting newtons third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
    * The value of newton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or not:
    * - if newton3 is true: the aos functor will be applied once for each pair (only i,j), passing newton3=true.
@@ -172,8 +171,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3
 
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((dataLayout == DataLayoutOption::soa and
-       (cell1._particleSoABuffer.size() == 0 and cell2._particleSoABuffer.size() == 0)) or
-      (dataLayout == DataLayoutOption::aos and (cell1.size() == 0 and cell2.size() == 0))) {
+       (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
+      (dataLayout == DataLayoutOption::aos and (cell1.size() == 0 or cell2.size() == 0))) {
     return;
   }
 
@@ -215,10 +214,10 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3
     if constexpr (newton3) {
       _functor->AoSFunctor(p1, p2, true);
     } else {
-      if (not p1.isHalo()) {
+      if (p1.isOwned()) {
         _functor->AoSFunctor(p1, p2, false);
       }
-      if (not p2.isHalo()) {
+      if (p2.isOwned()) {
         _functor->AoSFunctor(p2, p1, false);
       }
     }
@@ -240,11 +239,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3
       }
     }
   } else {
-    for (auto cellIter1 = cell.begin(); cellIter1 != cell.end(); ++cellIter1) {
-      auto cellIter2 = cellIter1;
-      ++cellIter2;
-      for (; cellIter2 != cell.end(); ++cellIter2) {
-        interactParticles(*cellIter1, *cellIter2);
+    for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
+      for (auto p2Ptr = std::next(p1Ptr); p2Ptr != cell.end(); ++p2Ptr) {
+        interactParticles(*p1Ptr, *p2Ptr);
       }
     }
   }
@@ -294,12 +291,12 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
 
-    for (auto &[p1Projection, p1] : cell1Sorted._particles) {
-      for (auto &[p2Projection, p2] : cell2Sorted._particles) {
+    for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
+      for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
         if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
           break;
         }
-        interactParticlesNoN3(*p1, *p2);
+        interactParticlesNoN3(*p1Ptr, *p2Ptr);
       }
     }
   } else {
