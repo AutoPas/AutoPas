@@ -88,16 +88,6 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   }
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel shared(moleculeContainer, autoPasContainer) default(none)
-#endif
-  //accumulate all forces acting on sites of a molecule in that molecule
-  for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
-    molecule.addF(iter->getF());    //@TODO considering that acting force shouldn't just be translated as a translational force there should be some factor based on the angle between the relative site position and the force vector
-    //iter->setF(globalForce);           //don't reset site force since we need that later for torque calculation
-  }
-
-#ifdef AUTOPAS_OPENMP
 #pragma omp parallel for shared(std::cerr, moleculeContainer, particlePropertiesLibrary, deltaT, maxAllowedDistanceMoved, maxAllowedDistanceMovedSquared, autoPasContainer, fastParticlesThrow, throwException) default(none)
 #endif
   //compute velocity and new position based on that info
@@ -165,6 +155,20 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   if (throwException) {
     throw std::runtime_error("At least one particle was too fast!");
   }*/
+}
+#endif
+
+#if defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_MODE==MULTISITE
+void accumulateSiteForcesInMol(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer){
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel shared(moleculeContainer, autoPasContainer) default(none)
+#endif
+  //accumulate all forces acting on sites of a molecule in that molecule
+  for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
+    molecule.addF(iter->getF());    //@TODO considering that acting force shouldn't just be translated as a translational force there should be some factor based on the angle between the relative site position and the force vector
+    //iter->setF(globalForce);           //don't reset site force since we need that later for torque calculation
+  }
 }
 #endif
 

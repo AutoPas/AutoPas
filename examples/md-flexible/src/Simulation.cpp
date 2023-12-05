@@ -449,6 +449,8 @@ void Simulation::updateForces() {
 
   const bool isTuningIteration = calculatePairwiseForces();
 
+
+
   const auto timeIteration = _timers.forceUpdatePairwise.stop();
 
   // count time spent for tuning
@@ -483,6 +485,7 @@ void Simulation::updateVelocities() {
     TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                             deltaT);
 #else
+    TimeDiscretization::accumulateSiteForcesInMol(*_autoPasContainer, _moleculeContainer);
     TimeDiscretization::calculateVelocities(*_autoPasContainer, _moleculeContainer,
                                             *(_configuration.getParticlePropertiesLibrary()), deltaT);
 #endif

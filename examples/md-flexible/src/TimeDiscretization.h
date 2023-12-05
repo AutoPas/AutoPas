@@ -46,6 +46,10 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
                                       bool fastParticlesThrow);
 #endif
 
+#if defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_MODE==MULTISITE
+void accumulateSiteForcesInMol(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer);
+#endif
+
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
  * Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods (https://doi.org/10.1103/PhysRevE.81.056706)
