@@ -105,10 +105,19 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   if (dataLayout == autopas::DataLayoutOption::soa) {
     // loader and extractor will be called, we don't care how often.
     autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-      EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _, _))
-          .Times(testing::AtLeast(1))
-          .WillRepeatedly(
-              testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+      // Verlet based containers resize the SoA before they call SoALoader, so no need for the testing::Invoke here
+      if ((container.getContainerType() == autopas::ContainerOption::varVerletListsAsBuild ||
+           container.getContainerType() == autopas::ContainerOption::pairwiseVerletLists ||
+           container.getContainerType() == autopas::ContainerOption::verletListsCells)) {
+        EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _, _))
+            .Times(testing::AtLeast(1));
+      } else {
+        EXPECT_CALL(mockFunctor, SoALoader(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _, _))
+            .Times(testing::AtLeast(1))
+            .WillRepeatedly(
+                testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
+      }
+
       EXPECT_CALL(mockFunctor, SoAExtractor(::testing::Matcher<decltype(particleCellDummy) &>(_), _, _))
           .Times(testing::AtLeast(1));
     });
