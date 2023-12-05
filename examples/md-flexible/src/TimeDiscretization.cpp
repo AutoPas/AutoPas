@@ -78,48 +78,36 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   bool throwException = false;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel for shared(moleculeContainer) default(none)
+#pragma omp parallel for reduction(|| : throwException) shared(autoPasContainer, moleculeContainer, particlePropertiesLibrary, globalForce, deltaT, maxAllowedDistanceMovedSquared, maxAllowedDistanceMoved, fastParticlesThrow, std::cerr) default(none)
 #endif
-  //store oldForce of all molecules
-  for(size_t i=0; i < moleculeContainer.size(); i++) {
-    auto& molecule = moleculeContainer.get(i);
-    molecule.setOldF(molecule.getF());
-    molecule.setF({0,0,0}); //we still need the force in this implementation for later torque calculation. After that we can reset <- why? no?!
+  for(size_t i = 0; i < moleculeContainer.size(); i++) {
+  auto& molecule = moleculeContainer.get(i);
+  const auto m = particlePropertiesLibrary.getMolMass(molecule.getTypeId());
+  auto v = molecule.getV();
+  auto f = molecule.getF();
+  molecule.setOldF(f);
+  molecule.setF(globalForce);
+  v *=deltaT;
+  f *= (deltaT * deltaT / (2 * m));
+  const auto displacement = v + f;
+  // sanity check that particles are not too fast for the Verlet skin technique.
+  // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
+  // the whole rebuild frequency is farther than the skin we lose interactions.
+  const auto distanceMovedSquared = dot(displacement, displacement);
+  if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
+#pragma omp critical
+    std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
+              << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
+              << molecule << "\nNew Position: " << molecule.getR() + displacement << std::endl;
+    if (fastParticlesThrow) {
+      throwException = true;
+    }
+  }
+  molecule.addR(displacement);
   }
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for shared(std::cerr, moleculeContainer, particlePropertiesLibrary, deltaT, maxAllowedDistanceMoved, maxAllowedDistanceMovedSquared, autoPasContainer, fastParticlesThrow, throwException) default(none)
-#endif
-  //compute velocity and new position based on that info
-  for(size_t i=0; i < moleculeContainer.size(); i++) {
-    auto& molecule = moleculeContainer.get(i);
-    auto m = particlePropertiesLibrary.getMolMass(molecule.getTypeId());
-    auto v = molecule.getV();
-    auto f = molecule.getF();
-    v *= deltaT;
-    f*= (deltaT * deltaT / (2 * m));
-    const auto displacement = v + f;
-
-    // sanity check that particles are not too fast for the Verlet skin technique.
-    // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
-    // the whole rebuild frequency is farther than the skin we lose interactions.
-    const auto distanceMovedSquared = dot(displacement, displacement);
-    if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
-#pragma omp critical
-      {
-      std::cerr << "A molecule moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
-                << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
-                << molecule << "\nNew Position: " << molecule.getR() + displacement << std::endl;
-      }
-      if (fastParticlesThrow) {
-        throwException = true;
-      }
-    }
-    molecule.addR(displacement);
-
-    if (throwException) {
-      throw std::runtime_error("At least one molecule was too fast!");
-    }
+  if (throwException) {
+    throw std::runtime_error("At least one particle was too fast!");
   }
 
   /*
