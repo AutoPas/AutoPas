@@ -17,7 +17,7 @@ endif ()
 
 add_executable(sph-main-mpi ${MY_SRC})
 
-target_link_libraries(sph-main-mpi autopas MPI::MPI_CXX)
+target_link_libraries(sph-main-mpi autopas SPHLibrary MPI::MPI_CXX)
 
 # -----------------test-----------------
 # add check for current target

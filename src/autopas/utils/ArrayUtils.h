@@ -90,6 +90,33 @@ template <class output_t, class input_t, std::size_t SIZE>
  * Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend)
  * and appends it to a stream.
  * @tparam Container
+ * @tparam Fun Function type (Container::element) -> implicit std::string
+ * @param os
+ * @param container
+ * @param elemToString Function converting one element of container to something that is implicitly convertible to
+ * std::string.
+ * @param delimiter
+ * @param surround
+ */
+template <class Container, class Fun>
+void to_string(std::ostream &os, const Container &container, const std::string &delimiter,
+               const std::array<std::string, 2> &surround, Fun elemToString) {
+  auto it = std::cbegin(container);
+  const auto end = std::cend(container);
+  if (it == end) {
+    os << surround[0] << surround[1];
+    return;
+  }
+  os << surround[0] << elemToString(*it);
+  for (++it; it != end; ++it) {
+    os << delimiter << elemToString(*it);
+  }
+  os << surround[1];
+}
+
+/**
+ * Version of to_string() with simpler signature and default arguments.
+ * @tparam Container
  * @param os
  * @param container
  * @param delimiter
@@ -98,36 +125,43 @@ template <class output_t, class input_t, std::size_t SIZE>
 template <class Container>
 void to_string(std::ostream &os, const Container &container, const std::string &delimiter = ", ",
                const std::array<std::string, 2> &surround = {"[", "]"}) {
-  auto it = std::cbegin(container);
-  const auto end = std::cend(container);
-  if (it == end) {
-    os << surround[0] << surround[1];
-    return;
-  }
-  os << surround[0] << *it;
-  for (++it; it != end; ++it) {
-    os << delimiter << *it;
-  }
-  os << surround[1];
+  to_string(os, container, delimiter, surround, [](const auto &x) { return x; });
 }
 
 /**
  * Generates a string representation of a container which fulfills the Container requirement (provide cbegin and cend).
  * @note std::boolalpha is always enabled.
  * @tparam T Type of Container.
+ * @tparam Fun Function type (Container::element) -> implicit std::string
  * @param container
+ * @param elemToString Function converting one element of container to something that is implicitly convertible to
+ * std::string.
  * @param delimiter String that is put between items.
  * @param surround Strings to be put before and after the listing (e.g. brackets).
  * @return String representation of container.
  */
+template <class Container, class Fun>
+[[nodiscard]] std::string to_string(const Container &container, const std::string &delimiter,
+                                    const std::array<std::string, 2> &surround, Fun elemToString) {
+  std::ostringstream strStream;
+  strStream << std::boolalpha;
+  to_string(strStream, container, delimiter, surround, elemToString);
+
+  return strStream.str();
+}
+
+/**
+ * Version of to_string() with simpler signature and default arguments.
+ * @tparam Container
+ * @param container
+ * @param delimiter
+ * @param surround
+ * @return
+ */
 template <class Container>
 [[nodiscard]] std::string to_string(const Container &container, const std::string &delimiter = ", ",
                                     const std::array<std::string, 2> &surround = {"[", "]"}) {
-  std::ostringstream strStream;
-  strStream << std::boolalpha;
-  to_string(strStream, container, delimiter, surround);
-
-  return strStream.str();
+  return to_string(container, delimiter, surround, [](const auto &elem) { return elem; });
 }
 
 /**

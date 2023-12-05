@@ -79,6 +79,12 @@ class VLCSlicedTraversal
     return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setSortingThreshold(size_t sortingThreshold) override {}
+
  private:
   PairwiseFunctor *_functor;
 };

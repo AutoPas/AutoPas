@@ -15,11 +15,11 @@
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/octree/OctreeDirection.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/particles/Particle.h"
-#include "autopas/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 
 using ::testing::_;
 
@@ -483,31 +483,31 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   selector.selectContainer(containerOption,
                            autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
                                                           autopas::LoadEstimatorOption::none});
-  auto container = selector.getCurrentContainer();
+  auto &container = selector.getCurrentContainer();
 
   // Create a functor that is able to calculate forces
-  autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                     false /*calculateGlobals*/>
+  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                   false /*calculateGlobals*/>
       ljFunctor{cutoff};
   ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
 
   for (int unsigned i = 0; i < numParticles; ++i) {
     auto position = particlePositions[i];
     auto particle = Molecule(position, {0, 0, 0}, i);
-    container->addParticle(particle);
+    container.addParticle(particle);
   }
 
   for (int unsigned i = 0; i < numHaloParticles; ++i) {
     auto position = haloParticlePositions[i];
     auto particle = Molecule(position, {0, 0, 0}, numParticles + i);
-    container->addHaloParticle(particle);
+    container.addHaloParticle(particle);
   }
 
   // Obtain a compatible traversal
   auto traversal =
-      autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+      autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
-            traversalOption, mockFunctor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+            traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
       });
 
   // Specify the behavior that should be executed for each particle pair
@@ -515,7 +515,9 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   std::vector<std::tuple<unsigned long, unsigned long, double>> particlePairs;
   bool useNewton3 = newton3Option == Newton3Option::enabled;
   EXPECT_CALL(mockFunctor, AoSFunctor(_, _, useNewton3))
-      .Times(testing::AtLeast(1))
+      // For the call with a reference container which may use SortedCellView the functor is maybe not called depending
+      // on the cutoff and particle distribution. But for Octree we check if the functor is called at least once.
+      .Times(testing::AtLeast(containerOption != ContainerOption::octree ? 0 : 1))
       .WillRepeatedly(testing::WithArgs<0, 1>([&](auto &i, auto &j) {
         ++numPairs;
 
@@ -536,7 +538,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Perform the traversal
   mockFunctor.initTraversal();
-  container->iteratePairwise(traversal.get());
+  container.iteratePairwise(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
   // NOTE(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has
@@ -545,7 +547,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Obtain all calculated forces
   std::vector<std::array<double, 3>> forces(numParticles), positions(numParticles);
-  for (auto it = container->begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
+  for (auto it = container.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     EXPECT_TRUE(it->isOwned());
     auto f = it->getF();
     auto r = it->getR();
@@ -735,7 +737,7 @@ TEST_F(OctreeTest, testLeafIDs) {
   // Get leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
   root->appendAllLeaves(leaves);
-  OTC18Traversal<ParticleFP64, LJFunctor<ParticleFP64>, DataLayoutOption::aos, true>::assignIDs(leaves);
+  OTC18Traversal<ParticleFP64, mdLib::LJFunctor<ParticleFP64>, DataLayoutOption::aos, true>::assignIDs(leaves);
 
   std::vector<int> ids, expected;
   for (int i = 0; i < leaves.size(); ++i) {

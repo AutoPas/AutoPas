@@ -66,6 +66,12 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setSortingThreshold(size_t sortingThreshold) override {}
+
  private:
   PairwiseFunctor *_functor;
 };

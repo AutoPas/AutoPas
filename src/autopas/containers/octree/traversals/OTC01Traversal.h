@@ -81,7 +81,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                                          this->_haloLeaves);
 
     // Get neighboring cells for each leaf
-    //#pragma omp parallel for
+    // #pragma omp parallel for
     for (int i = 0; i < this->_ownedLeaves.size(); ++i) {
       OctreeLeafNode<Particle> *leaf = this->_ownedLeaves[i];
 
@@ -105,11 +105,17 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
     }
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
+
  private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false> _cellFunctor;
+  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, /*bidirectional*/ false>
+      _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal

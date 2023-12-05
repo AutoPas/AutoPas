@@ -70,6 +70,11 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, d
     return minLength >= this->_interactionLength and minDim > 3;
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
+
  private:
   void traverseSingleColor(std::vector<ParticleCell> &cells, int color);
 

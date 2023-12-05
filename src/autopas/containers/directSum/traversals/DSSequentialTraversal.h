@@ -65,12 +65,17 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    */
   void traverseParticlePairs() override;
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
+
  private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
   internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                        true>
+                        /*bidirectional*/ true>
       _cellFunctor;
 
   /**

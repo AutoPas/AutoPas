@@ -17,6 +17,8 @@ Alternatively you can build the documentation on your own:
 * CMake 3.14 or newer
 * make (build-essentials) or ninja
 * a C++17 compiler (gcc11, clang13, and ~~icpc 2019~~ are tested.)
+* For rule based tuning: `pkg-config`, `uuid`
+* For `tuningLogToSQL`: `libsqlite3`
 
 ## Building AutoPas
 build instructions for make:
@@ -114,7 +116,7 @@ Steps to using AutoPas in your particle simulation program:
 
 ### Custom Particles
 First you will need to define a particle class which will be passed to AutoPas as template Argument.
-For that we provide some basic Particle classes defined in `src/autopas/molecularDynamics` or `src/autopas/sph` 
+For that we provide some basic Particle classes defined in `applicationLibrary/molecularDynamics/molecularDynamicsLibrary` or `applicationLibrary/sph/SPHLibrary` 
 that you can use either directly or you can write your own Particle class by inheriting from one of the provided
 classes or from `autopas::Particle`.
 
@@ -189,7 +191,7 @@ The default parameter is `ownedOrHalo`, which is also used for range-based for l
 
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
 
-Iterators are not guaranteed to be valid after particle insertion. 
+Iterators are not guaranteed to be valid after particle insertion (see [Issue #766](https://github.com/AutoPas/AutoPas/issues/766) for details).
 However, particle deletion while iterating is supported via `autoPas.deleteParticle(iterator)`. 
 After deletion the `++` operator has to be called:
 ```cpp

@@ -87,6 +87,8 @@ include(version.cmake)
 # libraries
 add_subdirectory(libs)
 
+include(autopas_antlr4cpp)
+
 # autopas
 add_subdirectory(src)
 # autopasTools
@@ -100,6 +102,8 @@ include(autopas_vectorization)
 
 # tests and examples
 add_subdirectory(tests)
+# application libraries
+add_subdirectory(applicationLibrary)
 # might also include tests, hence might need flags from tests subdirectory
 add_subdirectory(examples)
 

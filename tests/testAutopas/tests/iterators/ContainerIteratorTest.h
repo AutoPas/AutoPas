@@ -13,11 +13,7 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
 
-using testingTuple =
-    std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*regionIterator (true) or regular (false)*/,
-               bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
-
-class ContainerIteratorTest : public testing::Test, public ::testing::WithParamInterface<testingTuple> {
+class ContainerIteratorTestBase : public testing::Test {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
@@ -44,7 +40,7 @@ class ContainerIteratorTest : public testing::Test, public ::testing::WithParamI
    * @return tuple {haloBoxMin, haloBoxMax}
    */
   template <typename AutoPasT>
-  auto defaultInit(AutoPasT &autoPas, autopas::ContainerOption &containerOption, double cellSizeFactor);
+  auto defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption, double cellSizeFactor);
 
   /**
    * Deletes all particles whose ID matches the given Predicate.
@@ -61,3 +57,14 @@ class ContainerIteratorTest : public testing::Test, public ::testing::WithParamI
   auto deleteParticles(AutoPasT &autopas, F predicate, bool useRegionIterator,
                        const autopas::IteratorBehavior &behavior);
 };
+
+using testingTuple =
+    std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*regionIterator (true) or regular (false)*/,
+               bool /*testConstIterators*/, bool /*priorForceCalc*/, autopas::IteratorBehavior>;
+class ContainerIteratorTest : public ContainerIteratorTestBase, public ::testing::WithParamInterface<testingTuple> {};
+
+class ContainerIteratorTestNonConst : public ContainerIteratorTestBase,
+                                      public ::testing::WithParamInterface<testingTuple> {};
+
+class ContainerIteratorTestNonConstOwned : public ContainerIteratorTestBase,
+                                           public ::testing::WithParamInterface<testingTuple> {};

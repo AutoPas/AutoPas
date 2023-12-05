@@ -99,7 +99,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     // nothing to do.
   }
 
-  CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
@@ -202,13 +202,14 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+          nullptr) const override {
     return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
@@ -345,7 +346,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_cells[cellIndex].numParticles() or
+    if (particleIndex >= this->_cells[cellIndex].size() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -385,7 +386,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
       // advance to the next particle
       ++particleIndex;
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
-      while (particleIndex >= this->_cells[cellIndex].numParticles()) {
+      while (particleIndex >= this->_cells[cellIndex].size()) {
         cellIndex += stride;
         particleIndex = 0;
         // If there are no more reasonable cells return invalid indices.

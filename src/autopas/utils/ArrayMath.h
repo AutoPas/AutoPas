@@ -12,6 +12,8 @@
 #include <numeric>
 #include <sstream>
 
+#include "Math.h"
+
 namespace autopas::utils::ArrayMath {
 
 /**
@@ -185,6 +187,40 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * Divides an array element-wise by a given scalar and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param s divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/s`
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> divScalar(const std::array<T, SIZE> &a, T s) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = a[d] / s;
+  }
+  return result;
+}
+
+/**
+ * Divides a scalar with by every element of an array to create an array of fractions.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param s divisor.
+ * @return element-wise quotient of s and a, i.e., `result[i] = s/a[i]`
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> divScalar(T s, const std::array<T, SIZE> &a) {
+  std::array<T, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = s / a[d];
+  }
+  return result;
+}
+
+/**
  * Generates the dot product of two arrays.
  * Returns the sum of a[i]*b[i] summed over all i, where i is in [0, SIZE)
  * @tparam T floating point type
@@ -200,6 +236,18 @@ template <class T, std::size_t SIZE>
     result += a[i] * b[i];
   }
   return result;
+}
+
+/**
+ * Generates the cross product of two arrays of 3 floats.
+ * @tparam T floating point type
+ * @param a 3D vector (denoted by array of 3 floats)
+ * @param b 3D vector (denoted by array of 3 floats)
+ * @return cross product a x b
+ */
+template <class T>
+[[nodiscard]] constexpr std::array<T, 3> cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
+  return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
 }
 
 /**
@@ -242,6 +290,18 @@ template <class T, std::size_t SIZE>
 }
 
 /**
+ * Generates a normalized array (|a| = 1).
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return normalized array of a
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
+  return mulScalar(a, static_cast<T>(1) / L2Norm(a));
+}
+
+/**
  * For each element in a, computes the smallest integer value not less than the element.
  * @tparam T floating point type
  * @tparam SIZE size of the array
@@ -258,15 +318,98 @@ template <class T, std::size_t SIZE>
 }
 
 /**
- * Generates a normalized array (|a| = 1).
+ * Floors all array elements and converts them to integers.
  * @tparam T floating point type
  * @tparam SIZE size of the array
  * @param a input array
- * @return normalized array of a
+ * @return New array with floored elements of new type int.
  */
 template <class T, std::size_t SIZE>
-[[nodiscard]] constexpr std::array<T, SIZE> normalize(const std::array<T, SIZE> &a) {
-  return mulScalar(a, static_cast<T>(1) / L2Norm(a));
+[[nodiscard]] constexpr std::array<int, SIZE> floorToInt(const std::array<T, SIZE> &a) {
+  std::array<int, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<int>(std::floor(a[d]));
+  }
+  return result;
+}
+
+/**
+ * Ceils all array elements and converts them to integers.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @return New array with ceiled elements of new type int.
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] constexpr std::array<int, SIZE> ceilToInt(const std::array<T, SIZE> &a) {
+  std::array<int, SIZE> result{};
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    result[d] = static_cast<int>(std::ceil(a[d]));
+  }
+  return result;
+}
+
+/**
+ * Returns true if arrays are elementwise relatively near each other.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input array
+ * @param b input array
+ * @param relativeDifference
+ * @return
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] bool isNear(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b,
+                          double relativeDifference = 1e-9) {
+  bool arraysAreNear = true;
+  for (std::size_t i = 0; i < SIZE; ++i) {
+    arraysAreNear = arraysAreNear and utils::Math::isNear(a[i], b[i], relativeDifference);
+  }
+  return arraysAreNear;
+}
+
+/**
+ * Returns true if vectors of arrays are elementwise relatively near each other. Also returns false if vectors are of
+ * different sizes.
+ * @tparam T floating point type
+ * @tparam SIZE size of the array
+ * @param a input vector of arrays
+ * @param b input vector of arrays
+ * @param relativeDifference
+ * @return
+ */
+template <class T, std::size_t SIZE>
+[[nodiscard]] bool isNear(const std::vector<std::array<T, SIZE>> &a, const std::vector<std::array<T, SIZE>> &b,
+                          double relativeDifference = 1e-9) {
+  const auto size = a.size();
+  if (size != b.size()) {
+    return false;
+  }
+  bool arraysAreNear = true;
+  for (std::size_t i = 0; i < size; ++i) {
+    arraysAreNear = arraysAreNear and utils::ArrayMath::isNear(a[i], b[i], relativeDifference);
+  }
+  return arraysAreNear;
+}
+
+/**
+ * Returns true if vectors are elementwise equal to each other. Also returns false if vectors are of different
+ * sizes. Should only be used with an integer type.
+ * @tparam T integer type
+ * @param a input vector
+ * @param b input vector
+ * @return
+ */
+template <class T>
+[[nodiscard]] bool isEqual(const std::vector<T> &a, const std::vector<T> &b) {
+  if (a.size() != b.size()) {
+    return false;
+  }
+  bool arraysAreEqual = true;
+  for (std::size_t i = 0; i < a.size(); ++i) {
+    arraysAreEqual = arraysAreEqual and (a[i] == b[i]);
+  }
+  return arraysAreEqual;
 }
 
 // namespace for templated operators
@@ -344,7 +487,7 @@ constexpr std::array<T, SIZE> operator*(const std::array<T, SIZE> &a, const std:
 }
 
 /**
- * Assignment operator to multply two arrays
+ * Assignment operator to multiply two arrays
  * @tparam T floating point type
  * @tparam SIZE size of the arrays
  * @param a
@@ -370,6 +513,32 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, const std::arr
 template <class T, std::size_t SIZE>
 constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, const std::array<T, SIZE> &b) {
   return div(a, b);
+}
+
+/**
+ * Divides an array element-wise by a given scalar and returns the result.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param b divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a[i]/b`
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator/(const std::array<T, SIZE> &a, T b) {
+  return divScalar(a, b);
+}
+
+/**
+ * Divides a scalar by every element of an array to create an array of fractions.
+ * @tparam T floating point type
+ * @tparam SIZE size of the arrays
+ * @param a dividend.
+ * @param b divisor.
+ * @return element-wise quotient of a and b, i.e., `result[i] = a/b[i]`
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator/(T a, const std::array<T, SIZE> &b) {
+  return divScalar(a, b);
 }
 
 /**
@@ -477,4 +646,25 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
 
 }  // namespace literals
 
+/**
+ * Calculate the squared minimum distance between two boxes, which are aligned to the Cartesian grid.
+ * The boxes are given by their lower and upper corners.
+ * @param aMin
+ * @param aMax
+ * @param bMin
+ * @param bMax
+ * @return squared minimum distance
+ */
+template <class T, std::size_t SIZE>
+double boxDistanceSquared(const std::array<T, SIZE> &aMin, const std::array<T, SIZE> &aMax,
+                          const std::array<T, SIZE> &bMin, const std::array<T, SIZE> &bMax) {
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::dot;
+  using autopas::utils::ArrayMath::max;
+
+  const auto aToB = max(std::array<T, SIZE>{}, aMin - bMax);
+  const auto bToA = max(std::array<T, SIZE>{}, bMin - aMax);
+
+  return dot(aToB, aToB) + dot(bToA, bToA);
+}
 }  // namespace autopas::utils::ArrayMath

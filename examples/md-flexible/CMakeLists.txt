@@ -14,7 +14,7 @@ include(autopas_all)
 
 option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
-target_link_libraries(md-flexible PUBLIC autopas autopasTools yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
+target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
@@ -30,6 +30,17 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
 )
 
+# --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
+string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
+if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
+    if (MD_FLEXIBLE_FUNCTOR_AVX)
+        message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_SVE)
+        message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+endif()
+
 # --- copy script files to build dir ---
 file(
         GLOB_RECURSE SCRIPTS
@@ -38,6 +49,7 @@ file(
         "*.gp"
         "*.py"
         "*.yaml"
+        "*.rule"
 )
 
 foreach (script ${SCRIPTS})

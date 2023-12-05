@@ -11,7 +11,9 @@
 autopas::PredictionLogger::PredictionLogger(const std::string &outputSuffix)
     : _loggerName("PredictionLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_PREDICTIONS
-  auto outputFileName("AutoPas_predictions_" + outputSuffix + utils::Timer::getDateStamp() + ".csv");
+  const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
+  auto outputFileName("AutoPas_predictions_" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() +
+                      ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
   // create and register a non-asychronous logger to write the header
   auto headerLoggerName = _loggerName + "header";
@@ -25,6 +27,8 @@ autopas::PredictionLogger::PredictionLogger(const std::string &outputSuffix)
 
   // create and register the actual logger
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_loggerName, outputFileName);
+  // since this logger only writes rarely flush instantly in order to not lose any information if autopas is killed
+  logger->flush_on(spdlog::level::trace);
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
 #endif
@@ -37,12 +41,10 @@ autopas::PredictionLogger::~PredictionLogger() {
 }
 
 void autopas::PredictionLogger::logAllPredictions(
-    const std::set<Configuration> &configurations,
-    const std::unordered_map<Configuration, long, ConfigHash> &configurationPredictions, long predictionErrorValue,
+    const std::unordered_map<Configuration, long, ConfigHash> &predictions, long predictionErrorValue,
     size_t tuningPhaseCounter) {
 #ifdef AUTOPAS_LOG_PREDICTIONS
-  for (const auto &configuration : configurations) {
-    auto prediction = configurationPredictions.at(configuration);
+  for (const auto &[configuration, prediction] : predictions) {
     spdlog::get(_loggerName)
         ->info("{},{},{}", tuningPhaseCounter, configuration.getCSVLine(),
                prediction == predictionErrorValue ? "none" : std::to_string(prediction));
