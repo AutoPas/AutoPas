@@ -25,7 +25,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   bool throwException = false;
 
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(|| : throwException)
+#pragma omp parallel reduction(|| : throwException) shared(autoPasContainer, particlePropertiesLibrary, globalForce, deltaT, maxAllowedDistanceMoved, maxAllowedDistanceMovedSquared, fastParticlesThrow, std::cerr) default(none)
 #endif
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
@@ -87,7 +87,9 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     molecule.setF({0,0,0}); //we still need the force in this implementation for later torque calculation. After that we can reset <- why? no?!
   }
 
-  //@TODO: Parallelize!
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel shared(moleculeContainer, autoPasContainer) default(none)
+#endif
   //accumulate all forces acting on sites of a molecule in that molecule
   for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
@@ -281,7 +283,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
   //gather total torque acting on molecules
   for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    MoleculeType molecule = moleculeContainer.get(iter->getMoleculeId());
+    MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
     const auto q = molecule.getQuaternion();
     const auto rotatedSitePosition = rotatePosition(q,particlePropertiesLibrary.getSitePositions(iter->getTypeId())[iter->getIndexInsideMolecule()]);
     const auto torqueOnSite = autopas::utils::ArrayMath::cross(rotatedSitePosition, iter->getF());
@@ -385,8 +387,9 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, Molec
   // helper declarations for operations with vector
   using namespace autopas::utils::ArrayMath::literals;
 
+  //this loop is not thread save for some reason that still boggles my mind
 #ifdef AUTOPAS_OPENMP
-#pragma omp parallel shared(moleculeContainer, particlePropertiesLibrary, deltaT) default(none)
+#pragma omp parallel for shared(moleculeContainer, particlePropertiesLibrary, deltaT) default(none)
 #endif
   for(size_t i = 0; i < moleculeContainer.size(); i++) {
    auto& molecule = moleculeContainer.get(i);
@@ -466,7 +469,10 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
     // get I^-1 T in molecular-frame
     const auto torqueDivMoIM = torqueM / I;
 
-    molecule.addAngularVel(torqueDivMoIM * 0.5 * deltaT);  // (28)
+    // convert to world-frame
+    const auto torqueDivMoIW = rotatePosition(q, torqueDivMoIM);
+
+    molecule.addAngularVel(torqueDivMoIW * 0.5 * deltaT);  // (28)
   }
 
 #else

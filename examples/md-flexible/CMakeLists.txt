@@ -9,10 +9,9 @@ add_executable(md-flexible ${MDFlex_SRC}
         src/templateInstantiations/iteratePairwiseLJFunctorAbsoluteSites.cpp
         src/configuration/objects/AbsoluteMultiSiteMoleculeInitializer.cpp
         ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/Site.h
-        ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/Site.h
-        ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/Site.h
         ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/Site.cpp
-        ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/Site.h
+        src/temporaryTests.h
+        src/temporaryTests.cpp
 )
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -24,17 +23,19 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
-option(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH "Defines whether or not a multisite-simulation should be run using Single-Site Particles bundeled to Molecules or not" ON)
+option(I_JUST_WANNA_RUN_UNIT_TESTS " " ON)
+option(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH "Defines whether or not a multisite-simulation should be run using Single-Site Particles bundled to Molecules or not" ON)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS "Compile AutoVec Functor using absolute site positions." OFF)
-option(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING "Temporary option- If MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS is set this variable defines whether or not it should flatten the vectors before using them." ON)
+option(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING "Temporary option- If MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS is set this variable defines whether or not it should flatten the vectors before using them." OFF)# ON)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
 
 target_compile_definitions(
         md-flexible
         PUBLIC
+        $<$<BOOL:${I_JUST_WANNA_RUN_UNIT_TESTS}>:I_JUST_WANNA_RUN_UNIT_TESTS>
         $<$<BOOL:${MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH}>:MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS}>:MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS>

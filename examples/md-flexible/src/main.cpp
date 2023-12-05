@@ -9,6 +9,10 @@
 #include "Simulation.h"
 #include "autopas/utils/WrapMPI.h"
 
+#if defined(I_JUST_WANNA_RUN_UNIT_TESTS)
+#include "temporaryTests.h"
+#endif
+
 // Declare the main AutoPas class as extern template instantiation. It is instantiated in AutoPasClass.cpp.
 extern template class autopas::AutoPas<ParticleType>;
 
@@ -19,6 +23,15 @@ extern template class autopas::AutoPas<ParticleType>;
  * @return
  */
 int main(int argc, char **argv) {
+#if defined(I_JUST_WANNA_RUN_UNIT_TESTS)
+  std::cout << "starting tests" << std::endl;
+  temporaryTests::testCalculateVelocities();
+  temporaryTests::testCalculateQuaternion();
+  temporaryTests::testCalculateAngularVelocities();
+  std::cout << "Jolly good" << std::endl;
+  return EXIT_SUCCESS;
+#endif
+
   autopas::AutoPas_MPI_Init(&argc, &argv);
   {
     MDFlexConfig configuration(argc, argv);
@@ -53,6 +66,13 @@ int main(int argc, char **argv) {
     #else
     std::cout<<"MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING not defined"<< std::endl;
     #endif
+
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+    std::cout<<"MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH defined"<< std::endl;
+#else
+    std::cout<<"MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH not defined"<< std::endl;
+#endif
+
     simulation.run();
     simulation.finalize();
 
@@ -76,3 +96,6 @@ int main(int argc, char **argv) {
   autopas::AutoPas_MPI_Finalize();
   return EXIT_SUCCESS;
 }
+
+
+

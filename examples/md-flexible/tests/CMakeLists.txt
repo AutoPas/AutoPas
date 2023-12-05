@@ -22,8 +22,7 @@ list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/iteratePairwi
 list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/iteratePairwiseFlopCounterFunctor.cpp")
 list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*Simulation.((cpp)|h)")
 
-add_executable(mdFlexTests ${MDFlexTest_SRC}
-        ../../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/Site.cpp)
+add_executable(mdFlexTests ${MDFlexTest_SRC})
 
 target_compile_definitions(
     mdFlexTests PRIVATE
