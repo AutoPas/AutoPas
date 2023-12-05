@@ -25,8 +25,7 @@ enum class FunctorN3Modes {
 };
 
 /**
- * Functor class. This class describes the pairwise interactions between
- * particles.
+ * Functor base class.
  * Both an array of structure (AoS) and a structure of array (SoA) are supported
  * to be used with functors.
  * Newton3: A functor does not have to implement both a newton3 and a

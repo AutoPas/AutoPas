@@ -27,12 +27,8 @@ namespace autopas {
 template <class Particle, class ForceFunctorType>
 class FlopCounterFunctor3B : public TriwiseFunctor<Particle, FlopCounterFunctor3B<Particle, ForceFunctorType>> {
  public:
-  /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
-   * computeInteractions using different functors in the logs.
-   * @return name of functor.
-   */
-  std::string getName() override { return "FlopCounterFunctor3B"; }
+
+  std::string getName() final { return "FlopCounterFunctor3B"; }
 
   bool isRelevantForTuning() override { return false; }
 

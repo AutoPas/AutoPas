@@ -260,48 +260,6 @@ class AxilrodTellerFunctor
     }
   }
 
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
-  }
-
-  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                      const bool newton3) final {
-    // TODO: should always calculate forces for all particles in soa1, even when newton3 == false
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
-  }
-
-  void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                        autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
-  }
-
- private:
-  /**
-   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
-   *
-   * @tparam newton3
-   * @param soa1
-   * @param soa2
-   */
-  template <bool newton3>
-  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPairImpl() is not implemented.");
-  }
-
- public:
-  // clang-format off
-  /**
-   * @copydoc autopas::TriwiseFunctor::SoAFunctorVerlet()
-   * @note If you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors!
-   */
-  // clang-format on
-  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool newton3) final {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorVerlet() is not implemented.");
-  }
-
   /**
    * Sets the particle properties constants for this functor.
    *

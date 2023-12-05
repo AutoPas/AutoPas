@@ -26,11 +26,6 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
       // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
       : autopas::PairwiseFunctor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
 
-  /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
-   * computeInteractions using different functors in the logs.
-   * @return name of functor.
-   */
   virtual std::string getName() override { return "SPHHydroForceFunctor"; }
 
   bool isRelevantForTuning() override { return true; }
