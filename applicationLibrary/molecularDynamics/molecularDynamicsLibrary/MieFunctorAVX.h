@@ -1,7 +1,3 @@
-#ifndef AUTOPAS_MIEFUNCTORAVX2_H
-#define AUTOPAS_MIEFUNCTORAVX2_H
-
-#endif  // AUTOPAS_MIEFUNCTORAVX2_H
 /**
   * @file MieFunctor
   *
@@ -56,46 +52,40 @@
       /**
        * Computes and sets the DoubbleAdditionChain for th eexponents
        */
-       void computeDoubleAdditionChain(){
+       void initDoubleAdditionChain(){
          uint16_t  a,b;
+         a = (_mexpAoS > _nexpAoS) ? _nexpAoS : _mexpAoS;
+         b = (_mexpAoS > _nexpAoS) ? _mexpAoS : _nexpAoS;
 
-         if(_mexpAoS>_nexpAoS){
-           a = _nexpAoS;
-           b = _mexpAoS;
-         }
-         else{
-           a = _mexpAoS;
-           b = _nexpAoS;
-         }
          int chain = 0;
          int pointer = 1;
          int i = 0;
-         while(a || b != 1) {
-           i++;
+
+         for(;a || b != 1;i++,pointer <<= 1) {
            if (a <= b / 2) {
              i++;
              if (b & 1) {
                chain |= pointer;
              }
              pointer <<= 1;
-             b = b / 2;
+             b >>= 1 ;
            } else {
+
              auto diff = b - a;
              b = a;
              a = diff;
              chain |= pointer;
            }
-           pointer <<= 1;
          }
 
          int rev_chain = 0;
-
          for (int k = 0; k < i; k++,chain >>= 1) {
            rev_chain = (rev_chain<<1) | (chain & 1);
          }
          doubleAdditionChain = rev_chain;
          chain_len = i;
        }
+
      public:
       /**
        * Deleted default constructor
@@ -127,7 +117,7 @@
 
         if constexpr (applyShift) {
           _shift6 = _mm256_set1_pd(
-              ParticlePropertiesLibrary<double, size_t>::calcShiftMie(cepsilon, sigmaSquared, _cutoffSquared[0], _nexpAoS,_mexpAoS));
+              ParticlePropertiesLibrary<double, size_t>::calcShiftMie(cepsilon, sigmaSquared, _cutoffSquaredAoS, _nexpAoS,_mexpAoS));
         } else {
           _shift6 = _mm256_setzero_pd();
         }
@@ -172,7 +162,7 @@
         if (calculateGlobals) {
           _aosThreadData.resize(autopas::autopas_get_max_threads());
         }
-        computeDoubleAdditionChain();
+        initDoubleAdditionChain();
 
 
       }
@@ -195,7 +185,7 @@
        * @param n_exp
        * @param m_exp
        */
-      explicit MieFunctorAVX(double cutoff, double n_exp, double m_exp) : MieFunctorAVX(cutoff, n_exp, m_exp, nullptr) {
+      explicit MieFunctorAVX(double cutoff, uint16_t n_exp, uint16_t m_exp) : MieFunctorAVX(cutoff, n_exp, m_exp, nullptr) {
         static_assert(not useMixing,
                       "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                       "mixing to false.");
@@ -209,7 +199,7 @@
        * @param m_exp
        * @param particlePropertiesLibrary
        */
-      explicit MieFunctorAVX(double cutoff, double n_exp, double m_exp,
+      explicit MieFunctorAVX(double cutoff, uint16_t n_exp, uint16_t m_exp,
                              ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
           : MieFunctorAVX(cutoff, n_exp, m_exp, nullptr) {
         static_assert(useMixing,
@@ -295,65 +285,62 @@
         double Mie_m = 1;
         double Mie_n = 1;
 
-        if(mode==0) {
+        if constexpr (mode==0) {
 
           Mie_m = m_exp & 1 ? sqrt(fract) : 1;
           Mie_n = n_exp & 1 ? sqrt(fract) : 1;
 
-          for (size_t k = 1; k < m_exp; k += 2) {
+          for (size_t k = 1; k < _mexpAoS; k += 2) {
             Mie_m = Mie_m * fract;
           }
 
-          for (size_t k = 1; k < n_exp; k += 2) {
+          for (size_t k = 1; k < _nexpAoS; k += 2) {
             Mie_n = Mie_n * fract;
           }
         }
 
-        else if(mode==1) {
-           if(m_exp&1) {
+        else if constexpr (mode==1) {
+          if(m_exp&1) {
             Mie_m = sqrt(fract);
-           }
-           if(n_exp&1) {
+          }
+          if(n_exp&1) {
             Mie_n = sqrt(fract);
-           }
+          }
 
-           m_exp>>=1;
-           n_exp>>=1;
-
-           while(m_exp||n_exp) {
+          m_exp>>=1;
+          n_exp>>=1;
+          while(m_exp || n_exp) {
             if(m_exp&1)
-              Mie_m*=fract;
+               Mie_m*=fract;
             if(n_exp&1)
-              Mie_n*=fract;
+               Mie_n*=fract;
             fract*=fract;
             m_exp>>=1;
             n_exp>>=1;
-           }
+          }
         }
 
-        else if(mode==2) {
-           auto chain = doubleAdditionChain;
-           auto base = sqrt(fract);
-           double a = 1.0, b = base;
-           for(uint16_t k=0;k<chain_len;k++,chain>>=1){
+        else if constexpr (mode==2) {
+          auto chain = doubleAdditionChain;
+          auto base = sqrt(fract);
+          double a = 1.0, b = base;
 
+          for(uint16_t k=0; k<chain_len; k++,chain>>=1){
             if(chain&1){
-              auto tmp = b*a;
-              a = b;
-              b = tmp;
+               std::swap(a,b);
+               b *= a;
             }
             else{
-              chain>>=1;
-              k++;
-              b *=b;
-              if(chain&1){
-                b *=base;
-              }
+               chain>>=1;
+               k++;
+               b *=b;
+               if(chain&1){
+                 b *=base;
+               }
             }
-           }
-        Mie_m = a;
-        Mie_n = b;
-
+          }
+          Mie_m = a;
+          Mie_n = b;
         }
 
            
@@ -784,7 +771,7 @@
         __m256d miem, mien;
         const __m256d mie2 = _mm256_mul_pd(sigmaSquareds, invdr2);
 
-        if(mode==0) {
+        if constexpr(mode==0) {
           miem = m_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
           mien = n_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
 
@@ -795,7 +782,7 @@
             mien = _mm256_mul_pd(mien, mie2);
           }
         }
-        else if(mode==1) {
+        else if constexpr(mode==1) {
 
           miem = m_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
           mien = n_exp & 1 ? _mm256_sqrt_pd(mie2) : _one;
@@ -815,23 +802,22 @@
             n_exp >>= 1;
           }
         }
-        else if(mode==2) {
+        else if constexpr(mode==2) {
           auto chain = doubleAdditionChain;
           __m256d base =  _mm256_sqrt_pd(mie2);
           __m256d a = _one, b = base;
           for(size_t k=0;k<chain_len;k++,chain>>=1){
-
             if(chain&1){
-              auto tmp = b*a;
+              __m256d tmp = _mm256_mul_pd(b, a);
               a = b;
               b = tmp;
             }
             else{
               chain>>=1;
               k++;
-              b *=b;
+              b = _mm256_mul_pd(b,b);
               if(chain&1){
-                b *=base;
+                b = _mm256_mul_pd(b, base);
               }
             }
           }
@@ -1340,7 +1326,7 @@
 
 
   #endif
-    const uint8_t mode = 1;
+    static constexpr uint8_t mode = 0;
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS, _cnepsilonAoS, _cmepsilonAoS, _sigmaSquaredAoS, _shift6AoS = 0;
     uint16_t _nexpAoS,_mexpAoS = 0;
