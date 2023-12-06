@@ -1275,7 +1275,7 @@ class MieFunctor
         SoAFloatPrecision virialx = drx * fx;
         SoAFloatPrecision virialy = dry * fy;
         SoAFloatPrecision virialz = drz * fz;
-        SoAFloatPrecision potentialEnergy6 = (cepsilon * (Mie_m - Mie_n) + shift6);
+        SoAFloatPrecision potentialEnergy6 = (cepsilon * (miem - mien) + shift6);
 
         // Add to the potential energy sum for each particle which is owned.
         // This results in obtaining 12 * the potential energy for the SoA.
