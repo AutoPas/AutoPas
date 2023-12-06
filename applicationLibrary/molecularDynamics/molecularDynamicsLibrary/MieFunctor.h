@@ -49,6 +49,42 @@ class MieFunctor
 
  private:
   /**
+       * Computes and sets the DoubbleAdditionChain for the exponents
+   */
+  void initDoubleAdditionChain(){
+    uint16_t  a,b;
+    a = (_mexp > _nexp) ? _nexp : _mexp;
+    b = (_mexp > _nexp) ? _mexp : _nexp;
+
+    int chain = 0;
+    int pointer = 1;
+    int i = 0;
+
+    for(;a || b != 1;i++,pointer <<= 1) {
+      if (a <= b / 2) {
+        i++;
+        if (b & 1) {
+          chain |= pointer;
+        }
+        pointer <<= 1;
+        b >>= 1 ;
+      } else {
+
+        auto diff = b - a;
+        b = a;
+        a = diff;
+        chain |= pointer;
+      }
+    }
+
+    int rev_chain = 0;
+    for (int k = 0; k < i; k++,chain >>= 1) {
+      rev_chain = (rev_chain<<1) | (chain & 1);
+    }
+    doubleAdditionChain = rev_chain;
+    chain_len = i;
+  }
+  /**
    * Internal, actual constructor.
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
@@ -66,6 +102,9 @@ class MieFunctor
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
+    }
+    if constexpr (mode==2) {
+      initDoubleAdditionChain();
     }
   }
 
@@ -129,7 +168,7 @@ class MieFunctor
       cmepsilon = _PPLibrary->getMixingCMEpsilonMie(i.getTypeId(), j.getTypeId());
 
       if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6Mie()(i.getTypeId(), j.getTypeId());
+        shift6 = _PPLibrary->getMixingShift6Mie(i.getTypeId(), j.getTypeId());
       }
     }
     auto dr = i.getR() - j.getR();
@@ -145,21 +184,18 @@ class MieFunctor
     double Mie_m = 1;
     double Mie_n = 1;
 
-    if(mode==0){
-
+      if constexpr(mode == 0) {
       Mie_m = m_exp & 1 ? sqrt(fract) : 1;
       Mie_n = n_exp & 1 ? sqrt(fract) : 1;
 
       for (size_t k = 1; k < m_exp; k += 2) {
         Mie_m = Mie_m * fract;
       }
-
       for (size_t k = 1; k < n_exp; k += 2) {
         Mie_n = Mie_n * fract;
       }
     }
-
-    else if(mode==1) {
+      else if constexpr (mode==1) {
       if(m_exp&1) {
         Mie_m = sqrt(fract);
       }
@@ -169,8 +205,7 @@ class MieFunctor
 
       m_exp>>=1;
       n_exp>>=1;
-
-      while(m_exp||n_exp) {
+      while(m_exp || n_exp) {
         if(m_exp&1)
           Mie_m*=fract;
         if(n_exp&1)
@@ -179,18 +214,17 @@ class MieFunctor
         m_exp>>=1;
         n_exp>>=1;
       }
-    }
-  //TODO: this
-   /* else if(mode==2) {
+      }
+
+      else if constexpr (mode==2) {
       auto chain = doubleAdditionChain;
       auto base = sqrt(fract);
       double a = 1.0, b = base;
-      for(uint16_t k=0;k<chain_len;k++,chain>>=1){
 
+      for(uint16_t k=0; k < chain_len; k++,chain>>=1){
         if(chain&1){
-          auto tmp = b*a;
-          a = b;
-          b = tmp;
+          std::swap(a,b);
+          b *= a;
         }
         else{
           chain>>=1;
@@ -203,10 +237,7 @@ class MieFunctor
       }
       Mie_m = a;
       Mie_n = b;
-
-    }
-*/
-
+      }
 
     double Mie = (cnepsilon * Mie_n - cmepsilon * Mie_m);
     auto f = dr * (invdr2 * Mie);
@@ -356,12 +387,68 @@ class MieFunctor
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
 
-        //TODO Mie
-        const SoAFloatPrecision Mie2 = sigmaSquared * invdr2;
-        const SoAFloatPrecision Mie6 = Mie2 * Mie2 * Mie2;
-        const SoAFloatPrecision Mie12 = Mie6 * Mie6;
-        const SoAFloatPrecision Mie12m6 = Mie12 - Mie6;
-        const SoAFloatPrecision fac = mask ? cepsilon * (Mie12 + Mie12m6) * invdr2 : 0.;
+        SoAFloatPrecision fract = sigmaSquared * invdr2;
+
+        SoAFloatPrecision miem = 1;
+        SoAFloatPrecision mien = 1;
+        auto m_exp = _mexp;
+        auto n_exp = _nexp;
+
+        if constexpr (mode==0) {
+          miem = m_exp & 1 ? sqrt(fract) : 1;
+          mien = n_exp & 1 ? sqrt(fract) : 1;
+
+          for (size_t k = 1; k < m_exp; k += 2) {
+            miem = miem * fract;
+          }
+          for (size_t k = 1; k < n_exp; k += 2) {
+            mien = mien * fract;
+          }
+        }
+        else if constexpr (mode==1){
+          miem = m_exp & 1 ? sqrt(fract) : 1;
+          mien = n_exp & 1 ? sqrt(fract) : 1;
+
+          m_exp>>=1;
+          n_exp>>=1;
+
+          while (m_exp||n_exp) {
+            if (m_exp & 1) {
+              miem = miem * fract;
+            }
+            if (n_exp & 1) {
+              mien = mien * fract;
+            }
+            fract = fract * fract;
+            m_exp >>= 1;
+            n_exp >>= 1;
+          }
+        }
+        else if constexpr (mode==2){
+          auto chain = doubleAdditionChain;
+          SoAFloatPrecision base =  sqrt(fract);
+          SoAFloatPrecision a = 1.0, b = base;
+          for(size_t k=0;k<chain_len;k++,chain>>=1){
+            if(chain&1){
+              SoAFloatPrecision tmp = b*a;
+              a = b;
+              b = tmp;
+            }
+            else{
+              chain>>=1;
+              k++;
+              b =  b *b;
+              if(chain&1){
+                b = b *base;
+              }
+            }
+          }
+          miem = a;
+          mien = b;
+        }
+
+        const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * miem);
+        const SoAFloatPrecision fac = mask ?  (invdr2 * mie) : 0;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -380,7 +467,7 @@ class MieFunctor
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision potentialEnergy6 = mask ? (cepsilon * Mie12m6 + shift6) : 0.;
+          const SoAFloatPrecision potentialEnergy6 = mask ? (cepsilon * (miem-mien) + shift6) : 0.;
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
@@ -543,13 +630,69 @@ class MieFunctor
         // Particle ownedStateI was already checked previously.
         const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
 
-        //TODO MIE
         const SoAFloatPrecision invdr2 = 1. / dr2;
-        const SoAFloatPrecision Mie2 = sigmaSquared * invdr2;
-        const SoAFloatPrecision Mie6 = Mie2 * Mie2 * Mie2;
-        const SoAFloatPrecision Mie12 = Mie6 * Mie6;
-        const SoAFloatPrecision Mie12m6 = Mie12 - Mie6;
-        const SoAFloatPrecision fac = mask ? cepsilon * (Mie12 + Mie12m6) * invdr2 * mask : 0.;
+        const SoAFloatPrecision fract = sigmaSquared * invdr2;
+
+        SoAFloatPrecision miem = 1;
+        SoAFloatPrecision mien = 1;
+        auto m_exp = _mexp;
+        auto n_exp = _nexp;
+
+        if constexpr (mode==0) {
+          miem = m_exp & 1 ? sqrt(fract) : 1;
+          mien = n_exp & 1 ? sqrt(fract) : 1;
+
+          for (size_t k = 1; k < m_exp; k += 2) {
+            miem = miem * fract;
+          }
+          for (size_t k = 1; k < n_exp; k += 2) {
+            mien = mien * fract;
+          }
+        }
+        else if constexpr (mode==1){
+          miem = m_exp & 1 ? sqrt(fract) : 1;
+          mien = n_exp & 1 ? sqrt(fract) : 1;
+
+          m_exp>>=1;
+          n_exp>>=1;
+
+          while (m_exp||n_exp) {
+            if (m_exp & 1) {
+              miem = miem * fract;
+            }
+            if (n_exp & 1) {
+              mien = mien * fract;
+            }
+            fract = fract * fract;
+            m_exp >>= 1;
+            n_exp >>= 1;
+          }
+        }
+        else if constexpr (mode==2){
+          auto chain = doubleAdditionChain;
+          SoAFloatPrecision base =  sqrt(fract);
+          SoAFloatPrecision a = 1.0, b = base;
+          for(size_t k=0;k<chain_len;k++,chain>>=1){
+            if(chain&1){
+              SoAFloatPrecision tmp = b*a;
+              a = b;
+              b = tmp;
+            }
+            else{
+              chain>>=1;
+              k++;
+              b =  b *b;
+              if(chain&1){
+                b = b *base;
+              }
+            }
+          }
+          miem = a;
+          mien = b;
+        }
+
+        const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * mie);
+        const SoAFloatPrecision fac = mask ?  (invdr2 * mie) : 0;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -568,7 +711,7 @@ class MieFunctor
           SoAFloatPrecision virialx = drx * fx;
           SoAFloatPrecision virialy = dry * fy;
           SoAFloatPrecision virialz = drz * fz;
-          SoAFloatPrecision potentialEnergy6 = (cepsilon * Mie12m6 + shift6) * mask;
+          SoAFloatPrecision potentialEnergy6 = (cepsilon * (miem-mien) + shift6) * mask;
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
@@ -640,7 +783,7 @@ class MieFunctor
     _cmepsilon = _mexp * _cepsilon;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
+      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(epsilon, _sigmaSquared, _cutoffSquared);
     } else {
       _shift6 = 0.;
     }
@@ -915,13 +1058,70 @@ class MieFunctor
           // Mask away if distance is too large or any particle is a dummy.
           // Particle ownedStateI was already checked previously.
           const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
-          // TODO MIE
+
           const SoAFloatPrecision invdr2 = 1. / dr2;
-          const SoAFloatPrecision Mie2 = sigmaSquared * invdr2;
-          const SoAFloatPrecision Mie6 = Mie2 * Mie2 * Mie2;
-          const SoAFloatPrecision Mie12 = Mie6 * Mie6;
-          const SoAFloatPrecision Mie12m6 = Mie12 - Mie6;
-          const SoAFloatPrecision fac = mask ? cepsilon * (Mie12 + Mie12m6) * invdr2 : 0.;
+          const SoAFloatPrecision fract = sigmaSquared * invdr2;
+
+          SoAFloatPrecision miem = 1;
+          SoAFloatPrecision mien = 1;
+          auto m_exp = _mexp;
+          auto n_exp = _nexp;
+
+          if constexpr (mode==0) {
+            miem = m_exp & 1 ? sqrt(fract) : 1;
+            mien = n_exp & 1 ? sqrt(fract) : 1;
+
+            for (size_t k = 1; k < m_exp; k += 2) {
+              miem = miem * fract;
+            }
+            for (size_t k = 1; k < n_exp; k += 2) {
+              mien = mien * fract;
+            }
+          }
+          else if constexpr (mode==1){
+            miem = m_exp & 1 ? sqrt(fract) : 1;
+            mien = n_exp & 1 ? sqrt(fract) : 1;
+
+            m_exp>>=1;
+            n_exp>>=1;
+
+            while (m_exp||n_exp) {
+              if (m_exp & 1) {
+                miem = miem * fract;
+              }
+              if (n_exp & 1) {
+                mien = mien * fract;
+              }
+              fract = fract * fract;
+              m_exp >>= 1;
+              n_exp >>= 1;
+            }
+          }
+          else if constexpr (mode==2){
+            auto chain = doubleAdditionChain;
+            SoAFloatPrecision base =  sqrt(fract);
+            SoAFloatPrecision a = 1.0, b = base;
+            for(size_t k=0;k<chain_len;k++,chain>>=1){
+              if(chain&1){
+                SoAFloatPrecision tmp = b*a;
+                a = b;
+                b = tmp;
+              }
+              else{
+                chain>>=1;
+                k++;
+                b =  b *b;
+                if(chain&1){
+                  b = b *base;
+                }
+              }
+            }
+            miem = a;
+            mien = b;
+          }
+
+          const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * mie);
+          const SoAFloatPrecision fac = mask ?  (invdr2 * mie) : 0;
 
           const SoAFloatPrecision fx = drx * fac;
           const SoAFloatPrecision fy = dry * fac;
@@ -939,7 +1139,7 @@ class MieFunctor
             SoAFloatPrecision virialx = drx * fx;
             SoAFloatPrecision virialy = dry * fy;
             SoAFloatPrecision virialz = drz * fz;
-            SoAFloatPrecision potentialEnergy6 = mask ? (cepsilon * Mie12m6 + shift6) : 0.;
+            SoAFloatPrecision potentialEnergy6 = mask ? (cepsilon * (miem - mien) + shift6) : 0.;
 
             const SoAFloatPrecision energyFactor =
                 (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
@@ -996,11 +1196,68 @@ class MieFunctor
       }
       //TODO MIE
       const SoAFloatPrecision invdr2 = 1. / dr2;
-      const SoAFloatPrecision Mie2 = sigmaSquared * invdr2;
-      const SoAFloatPrecision Mie6 = Mie2 * Mie2 * Mie2;
-      const SoAFloatPrecision Mie12 = Mie6 * Mie6;
-      const SoAFloatPrecision Mie12m6 = Mie12 - Mie6;
-      const SoAFloatPrecision fac = cepsilon * (Mie12 + Mie12m6) * invdr2;
+      const SoAFloatPrecision fract = sigmaSquared * invdr2;
+
+      SoAFloatPrecision miem = 1;
+      SoAFloatPrecision mien = 1;
+      auto m_exp = _mexp;
+      auto n_exp = _nexp;
+
+      if constexpr (mode==0) {
+        miem = m_exp & 1 ? sqrt(fract) : 1;
+        mien = n_exp & 1 ? sqrt(fract) : 1;
+
+        for (size_t k = 1; k < m_exp; k += 2) {
+          miem = miem * fract;
+        }
+        for (size_t k = 1; k < n_exp; k += 2) {
+          mien = mien * fract;
+        }
+      }
+      else if constexpr (mode==1){
+        miem = m_exp & 1 ? sqrt(fract) : 1;
+        mien = n_exp & 1 ? sqrt(fract) : 1;
+
+        m_exp>>=1;
+        n_exp>>=1;
+
+        while (m_exp||n_exp) {
+          if (m_exp & 1) {
+            miem = miem * fract;
+          }
+          if (n_exp & 1) {
+            mien = mien * fract;
+          }
+          fract = fract * fract;
+          m_exp >>= 1;
+          n_exp >>= 1;
+        }
+      }
+      else if constexpr (mode==2){
+        auto chain = doubleAdditionChain;
+        SoAFloatPrecision base =  sqrt(fract);
+        SoAFloatPrecision a = 1.0, b = base;
+        for(size_t k=0;k<chain_len;k++,chain>>=1){
+          if(chain&1){
+            SoAFloatPrecision tmp = b*a;
+            a = b;
+            b = tmp;
+          }
+          else{
+            chain>>=1;
+            k++;
+            b =  b *b;
+            if(chain&1){
+              b = b *base;
+            }
+          }
+        }
+        miem = a;
+        mien = b;
+      }
+
+      const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * mie);
+      const SoAFloatPrecision fac = (invdr2 * mie);
 
       const SoAFloatPrecision fx = drx * fac;
       const SoAFloatPrecision fy = dry * fac;
@@ -1018,7 +1275,7 @@ class MieFunctor
         SoAFloatPrecision virialx = drx * fx;
         SoAFloatPrecision virialy = dry * fy;
         SoAFloatPrecision virialz = drz * fz;
-        SoAFloatPrecision potentialEnergy6 = (cepsilon * Mie12m6 + shift6);
+        SoAFloatPrecision potentialEnergy6 = (cepsilon * (Mie_m - Mie_n) + shift6);
 
         // Add to the potential energy sum for each particle which is owned.
         // This results in obtaining 12 * the potential energy for the SoA.
@@ -1092,11 +1349,14 @@ class MieFunctor
   const double _cutoffSquared;
   const uint16_t _nexp;
   const uint16_t _mexp;
+  int doubleAdditionChain;
+  uint16_t chain_len;
   // not const because they might be reset through PPL
   double _cepsilon, _cnepsilon, _cmepsilon, _sigmaSquared, _shift6 = 0;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
+  static constexpr int mode = 0;
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
 
