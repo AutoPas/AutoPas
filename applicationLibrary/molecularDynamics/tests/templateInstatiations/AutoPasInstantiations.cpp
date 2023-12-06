@@ -7,7 +7,7 @@
 
 #include "autopas/AutoPasImpl.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "molecularDynamicsLibrary/MieFunctorAVX.h"
+#include "molecularDynamicsLibrary/MieFunctor.h"
 
 #include "testingHelpers/commonTypedefs.h"
 
@@ -17,6 +17,6 @@ template bool autopas::AutoPas<Molecule>::iteratePairwise(
     mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false, /*relevantForTuning*/ true> *);
 template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::MieFunctorAVX<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+    mdLib::MieFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                       /*globals*/ false, /*relevantForTuning*/ true> *);
 //! @endcond

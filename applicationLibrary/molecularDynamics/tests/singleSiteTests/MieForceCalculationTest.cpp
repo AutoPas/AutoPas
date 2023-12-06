@@ -4,17 +4,16 @@
  * @author F. Gratl
  * @date 13.04.18
  */
-#ifdef __AVX__
 
 #include "autopas/AutoPasDecl.h"
 #include "autopasTools/generators/GridGenerator.h"
-#include "molecularDynamicsLibrary/MieFunctorAVX.h"
+#include "molecularDynamicsLibrary/MieFunctor.h"
 #include "autopas/AutoPasImpl.h"
 
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::MieFunctorAVX<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+    mdLib::MieFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false, /*relevantForTuning*/ true> *);
 
 void MieForceCalculationTest::testMie(uint16_t n, uint16_t m, double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption, std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
@@ -35,7 +34,7 @@ void MieForceCalculationTest::testMie(uint16_t n, uint16_t m, double particleSpa
 
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
                                                              {particleSpacing, particleSpacing, particleSpacing});
-  mdLib::MieFunctorAVX<Molecule> functor(cutoff,n,m);
+  mdLib::MieFunctor<Molecule> functor(cutoff,n,m);
   functor.setParticleProperties(1, 1);
 
   autoPas.iteratePairwise(&functor);
@@ -88,4 +87,3 @@ TEST_F(MieForceCalculationTest, testMiewithF0SoA) {
   testMie(2,1, spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }
 
-#endif

@@ -184,7 +184,7 @@ class MieFunctor
     double Mie_m = 1;
     double Mie_n = 1;
 
-      if constexpr(mode == 0) {
+      if constexpr(mode==0) {
       Mie_m = m_exp & 1 ? sqrt(fract) : 1;
       Mie_n = n_exp & 1 ? sqrt(fract) : 1;
 
@@ -691,7 +691,7 @@ class MieFunctor
           mien = b;
         }
 
-        const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * mie);
+        const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * miem);
         const SoAFloatPrecision fac = mask ?  (invdr2 * mie) : 0;
 
         const SoAFloatPrecision fx = drx * fac;
@@ -783,7 +783,7 @@ class MieFunctor
     _cmepsilon = _mexp * _cepsilon;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(epsilon, _sigmaSquared, _cutoffSquared);
+      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShiftMie(epsilon, _sigmaSquared, _cutoffSquared, _nexp, _mexp);
     } else {
       _shift6 = 0.;
     }
@@ -1120,7 +1120,7 @@ class MieFunctor
             mien = b;
           }
 
-          const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * mie);
+          const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * miem);
           const SoAFloatPrecision fac = mask ?  (invdr2 * mie) : 0;
 
           const SoAFloatPrecision fx = drx * fac;
@@ -1256,7 +1256,7 @@ class MieFunctor
         mien = b;
       }
 
-      const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * mie);
+      const SoAFloatPrecision mie = (cnepsilon * mien - cmepsilon * miem);
       const SoAFloatPrecision fac = (invdr2 * mie);
 
       const SoAFloatPrecision fx = drx * fac;
