@@ -66,8 +66,7 @@ if (AUTOPAS_BUILD_TESTS)
             "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
     )
 
-    add_executable(mdLibSingleSiteTests ${SS_TEST_SRC} mdLibTests.cpp
-            molecularDynamics/tests/singleSiteTests/MieFunctorAVXTest.cpp)
+    add_executable(mdLibSingleSiteTests ${SS_TEST_SRC} mdLibTests.cpp)
 
     target_compile_definitions(
             mdLibSingleSiteTests PRIVATE
@@ -97,8 +96,7 @@ if (AUTOPAS_BUILD_TESTS)
             "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
     )
 
-    add_executable(mdLibMultiSiteTests ${MS_TEST_SRC} mdLibTests.cpp
-            molecularDynamics/tests/singleSiteTests/MieFunctorAVXTest.cpp)
+    add_executable(mdLibMultiSiteTests ${MS_TEST_SRC} mdLibTests.cpp)
 
     target_compile_definitions(
             mdLibMultiSiteTests PRIVATE

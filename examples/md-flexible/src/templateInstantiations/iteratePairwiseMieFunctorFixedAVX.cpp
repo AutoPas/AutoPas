@@ -7,12 +7,12 @@
 * not instantiate this template.
 */
 
-#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX) && defined(__AVX__)
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_FIXED) && defined(__AVX__)
 #include "autopas/AutoPasImpl.h"
 #include "src/TypeDefinitions.h"
 
 //! @cond Doxygen_Suppress
-template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorTypeAVX *);
+template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorFixedTypeAVX *);
 //! @endcond
 
 #endif

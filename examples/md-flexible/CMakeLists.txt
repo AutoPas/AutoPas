@@ -20,7 +20,13 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_MIE "If instruction set is available, compile Mie AVX Functor without calculation of global values." ON)
+
+option(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC "Compile AutoVec Mie Functor without calculation of global values." OFF)
+option(MD_FLEXIBLE_FUNCTOR_MIE_AVX "If instruction set is available, compile Mie AVX Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_MIE_FIXED "If instruction set is available, compile Mie AVX Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_MIE_SVE "If instruction set is available, compile Mie SVE Functor without calculation of global values." ON)
+
+
 target_compile_definitions(
         md-flexible
         PUBLIC
@@ -28,8 +34,10 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIE}>:MD_FLEXIBLE_FUNCTOR_MIE>
-
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIE_AVX}>:MD_FLEXIBLE_FUNCTOR_MIE_AVX>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIE_FIXED}>:MD_FLEXIBLE_FUNCTOR_MIE_FIXED>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIE_SVE}>:MD_FLEXIBLE_FUNCTOR_MIE_SVE>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
@@ -41,8 +49,17 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()
-     if (MD_FLEXIBLE_FUNCTOR_MIE)
+     if (MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC)
         message(WARNING "Mie functor has not been implemented for Multi-Site Molecules")
+    endif()
+     if (MD_FLEXIBLE_FUNCTOR_MIE_AVX)
+        message(WARNING "AVX Mie functor has not been implemented for Multi-Site Molecules")
+    endif()
+     if (MD_FLEXIBLE_FUNCTOR_MIE_FIXED)
+        message(WARNING "Mie functor has not been implemented for Multi-Site Molecules")
+    endif()
+     if (MD_FLEXIBLE_FUNCTOR_MIE_SVE)
+        message(WARNING "SVE Mie functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 

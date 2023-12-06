@@ -30,12 +30,20 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_MIE)
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC)
+#include "molecularDynamicsLibrary/MieFunctor.h"
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX)
 #include "molecularDynamicsLibrary/MieFunctorAVX.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE)
 #include "molecularDynamicsLibrary/MieFunctorSVE.h"
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_FIXED)
+#include "molecularDynamicsLibrary/MieFunctorAVXFixedExponents.h"
 #endif
 
 #endif
@@ -114,9 +122,24 @@ using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #else
 using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_MIE)
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC)
 /**
- * Type of MieFunctorTypeAVX used in md-flexible.
+ * Type of MieFunctorTypeAutovec used in md-flexible.
+ * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
+ * MD_FLEXIBLE_MODE.
+ * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "No Multi-Site Mie Functor support!"
+#else
+using MieFunctorTypeAutovec = mdLib::MieFunctor<ParticleType, true, true>;
+#endif
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX)
+/**
+ * Type of MieFunctorTypeAutovec used in md-flexible.
  * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
  * MD_FLEXIBLE_MODE.
  * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
@@ -126,9 +149,32 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #else
 using MieFunctorTypeAVX = mdLib::MieFunctorAVX<ParticleType, true, true>;
 #endif
-
 #endif
-
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_FIXED)
+/**
+ * Type of MieFunctorTypeAVX used in md-flexible.
+ * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
+ * MD_FLEXIBLE_MODE.
+ * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "No Multi-Site Mie Functor support!"
+#else
+using MieFunctorFixedTypeAVX = mdLib::MieFunctorFixedExponentsAVX<ParticleType, true, true>;
+#endif
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE)
+/**
+ * Type of MieFunctorTypeAVX used in md-flexible.
+ * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
+ * MD_FLEXIBLE_MODE.
+ * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "No Multi-Site Mie Functor support!"
+#else
+using MieFunctorFixedTypeSVE = mdLib::mieFunctorSVE<ParticleType, true, true>;
+#endif
 #endif
 
 /**
@@ -158,8 +204,14 @@ using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas
 using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
 using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_MIE
+#elif MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC
+using MieFunctorTypeAbstract = mdLib::MieFunctor<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_MIE_AVX
 using MieFunctorTypeAbstract = mdLib::MieFunctorAVX<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_MIE_SVE
+using MieFunctorTypeAbstract = mdLib::MieFunctorSVE<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_MIE_FIXED
+using MieFunctorFixedTypeAbstract = mdLib::MieFunctorFixedExponentsAVX<ParticleType, true, true>;
 #endif
 
 #endif

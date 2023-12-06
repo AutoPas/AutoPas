@@ -1,12 +1,6 @@
 //
 // Created by kay on 03.10.23.
 //
-
-#ifndef AUTOPAS_MIEFUNCTORAVXTEXT_H
-#define AUTOPAS_MIEFUNCTORAVXTEXT_H
-
-
-#endif  // AUTOPAS_MIEFUNCTORAVXTEXT_H
 /**
  * @file LJFunctorAVXTest.h
  * @author F. Gratl

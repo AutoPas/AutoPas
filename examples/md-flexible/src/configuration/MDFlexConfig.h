@@ -181,7 +181,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, mie_AVX};
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, mie, mie_AVX, miefixed_AVX, mie_SVE};
 
   /**
    * Choice of the particle generators specified in the command line
@@ -443,14 +443,17 @@ class MDFlexConfig {
     FunctorOption::lj12_6_AVX,
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
     FunctorOption::lj12_6_SVE,
-#elif defined(MD_FLEXIBLE_FUNCTOR_MIE) && defined(__AVX__)
+#elif defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX) && defined(__AVX__)
     FUnctorOption::mie_AVX
+#elif defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE) && defined(__ARM_FEATURE_SVE)
+    FUnctorOption::mie_SVE
+
 #else
     FunctorOption::lj12_6,
 #endif
         "functor", true,
         "Force functor to use. Possible Values: (lennard-jones "
-        "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals, mie-AVX)"
+        "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals, mie-AVX,miefixed-AVX)"
   };
   /**
    * iterations
