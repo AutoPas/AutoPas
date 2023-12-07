@@ -36,6 +36,9 @@ namespace autopas {
 
 /**
  * Wrapper macro to replace "#pragma omp" that can be (de)activated.
+ * @param args Anything one can pass to `#pragma omp`
+ *
+ * @note Only one argument is supported. OpenMP clauses must thus be separated by a space.
  */
 #define AUTOPAS_OPENMP(args) AUTOPAS_DO_PRAGMA(omp args)
 
@@ -118,7 +121,7 @@ class AutoPasLock {
 #else
 
 /**
- * Empty macro to throw away OpenMP macros
+ * Empty macro to throw away any arguments.
  */
 #define AUTOPAS_OPENMP(args)
 
