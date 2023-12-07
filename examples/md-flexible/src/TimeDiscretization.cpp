@@ -20,9 +20,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
   bool throwException = false;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(|| : throwException)
-#endif
+  AUTOPAS_OPENMP(parallel reduction(|| : throwException))
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto v = iter->getV();
@@ -76,9 +74,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
   const double tol = 1e-13;  // tolerance given in paper
   const double tolSquared = tol * tol;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     // Calculate Quaternions
     const auto q = iter->getQuaternion();
@@ -143,9 +139,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   // helper declarations for operations with vector
   using namespace autopas::utils::ArrayMath::literals;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     const auto force = iter->getF();
@@ -163,9 +157,7 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto torqueW = iter->getTorque();
     const auto q = iter->getQuaternion();

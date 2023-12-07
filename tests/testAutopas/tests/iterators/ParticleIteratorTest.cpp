@@ -30,9 +30,7 @@
 //  }
 //
 //  std::vector<size_t> foundParticles;
-// #ifdef AUTOPAS_OPENMP
-// #pragma omp parallel num_threads(numThreads) reduction(vecMerge : foundParticles)
-// #endif
+//  AUTOPAS_OPENMP(parallel num_threads(numThreads) reduction(vecMerge : foundParticles))
 //  {
 //    for (auto iter =
 //             ContainerIterator<Molecule, true>(&cells, 0, nullptr, IteratorBehavior::ownedOrHalo,
@@ -68,9 +66,7 @@
 //  auto data = IteratorTestHelper::generateCellsWithPattern(10, cellsToFill, numParticlesToAddPerCell);
 //
 //  int numFoundParticles = 0;
-// #ifdef AUTOPAS_OPENMP
-// #pragma omp parallel reduction(+ : numFoundParticles)
-// #endif
+//  AUTOPAS_OPENMP(parallel reduction(+ : numFoundParticles))
 //  {
 //    ContainerIterator<Molecule, FMCell, true> iter(&data);
 //    for (; iter.isValid(); ++iter, ++numFoundParticles) {
@@ -80,9 +76,7 @@
 //  ASSERT_EQ(numFoundParticles, cellsToFill.size() * numParticlesToAddPerCell);
 //
 //  numFoundParticles = 0;
-// #ifdef AUTOPAS_OPENMP
-// #pragma omp parallel reduction(+ : numFoundParticles)
-// #endif
+//  AUTOPAS_OPENMP(parallel reduction(+ : numFoundParticles))
 //  {
 //    ContainerIterator<Molecule, FMCell, true> iter(&data);
 //    for (; iter.isValid(); ++iter) {
@@ -92,7 +86,7 @@
 //  ASSERT_EQ(numFoundParticles, 0);
 //}
 //
-// #ifdef AUTOPAS_OPENMP
+// #ifdef AUTOPAS_USE_OPENMP
 // const std::vector<size_t> threadNumsToTest{1, 2, 4};
 // #else
 //// no need to test more thread counts when openmp is not enabled

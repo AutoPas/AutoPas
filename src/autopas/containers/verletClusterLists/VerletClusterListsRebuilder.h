@@ -203,10 +203,7 @@ class VerletClusterListsRebuilder {
    */
   void sortParticlesIntoTowers(const std::vector<std::vector<Particle>> &particles2D) {
     const auto numVectors = particles2D.size();
-#if defined(AUTOPAS_OPENMP)
-    /// @todo: find sensible chunk size
-#pragma omp parallel for schedule(dynamic)
-#endif
+    AUTOPAS_OPENMP(parallel for schedule(dynamic))
     for (size_t index = 0; index < numVectors; index++) {
       const std::vector<Particle> &vector = particles2D[index];
       for (const auto &particle : vector) {
@@ -229,10 +226,8 @@ class VerletClusterListsRebuilder {
     const int maxTowerIndexY = _towerBlock.getTowersPerDim()[1] - 1;
     const auto numTowersPerInteractionLength = _towerBlock.getNumTowersPerInteractionLength();
     // for all towers
-#if defined(AUTOPAS_OPENMP)
     /// @todo: find sensible chunksize
-#pragma omp parallel for schedule(dynamic) collapse(2)
-#endif
+    AUTOPAS_OPENMP(parallel for schedule(dynamic) collapse(2))
     for (int towerIndexY = 0; towerIndexY <= maxTowerIndexY; towerIndexY++) {
       for (int towerIndexX = 0; towerIndexX <= maxTowerIndexX; towerIndexX++) {
         // calculate extent of interesting tower 2D indices

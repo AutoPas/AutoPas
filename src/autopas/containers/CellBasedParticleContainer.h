@@ -7,12 +7,13 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
 
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPAS_USE_OPENMP
 #include <omp.h>
 #endif
 
@@ -92,13 +93,11 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * Deletes all particles from the container.
    */
   void deleteAllParticles() override {
-#ifdef AUTOPAS_OPENMP
     /// @todo: find a sensible value for magic number
     /// numThreads should be at least 1 and maximal max_threads
-    int numThreads = std::max(1, std::min(omp_get_max_threads(), (int)(this->_cells.size() / 1000)));
-    AutoPasLog(TRACE, "Using {} threads", numThreads);
-#pragma omp parallel for num_threads(numThreads)
-#endif
+    AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 1000,  \
+                                                       1,                                             \
+                                                       autopas::autopas_get_max_threads())))
     for (size_t i = 0; i < this->_cells.size(); ++i) {
       this->_cells[i].clear();
     }
@@ -109,13 +108,12 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
     size_t numParticles = 0ul;
-#ifdef AUTOPAS_OPENMP
     // parallelizing this loop is only worth it if we have LOTS of cells.
     // numThreads should be at least 1 and maximal max_threads
-    const int numThreads = std::clamp(static_cast<int>(this->_cells.size() / 100000), 1, omp_get_max_threads());
-    AutoPasLog(TRACE, "CellBasedParticleContainer::getNumberOfParticles uses {} threads", numThreads);
-#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
-#endif
+    AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 100000, \
+                                                       1,                                              \
+                                                       autopas::autopas_get_max_threads()))            \
+                                reduction(+ : numParticles))
     for (size_t index = 0; index < _cells.size(); ++index) {
       numParticles += _cells[index].getNumberOfParticles(behavior);
     }
@@ -128,13 +126,12 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    */
   [[nodiscard]] size_t size() const override {
     size_t numParticles = 0ul;
-#ifdef AUTOPAS_OPENMP
     // parallelizing this loop is only worth it if we have LOTS of cells.
     // numThreads should be at least 1 and maximal max_threads
-    const int numThreads = std::clamp(static_cast<int>(this->_cells.size() / 100000), 1, omp_get_max_threads());
-    AutoPasLog(TRACE, "CellBasedParticleContainer::size uses {} threads", numThreads);
-#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
-#endif
+    AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(this->_cells.size()) / 100000, \
+                                                       1,                                              \
+                                                       autopas::autopas_get_max_threads()))            \
+                                reduction(+ : numParticles))
     for (size_t index = 0; index < _cells.size(); ++index) {
       numParticles += _cells[index].size();
     }

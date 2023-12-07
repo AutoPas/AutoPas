@@ -6,9 +6,7 @@
 
 #pragma once
 
-#ifdef AUTOPAS_OPENMP
-#include <omp.h>
-#endif
+#include <autopas/utils/WrapOpenMP.h>
 
 /**
  * NumThreadGuard sets current number of threads to newNum and resets number of threads during destruction.
@@ -19,21 +17,14 @@ class NumThreadGuard final {
    * Construct a new NumThreadGuard object and sets current number of threads to newNum.
    * @param newNum new number of threads
    */
-  NumThreadGuard(const int newNum) {
-#ifdef AUTOPAS_OPENMP
-    numThreadsBefore = omp_get_max_threads();
-    omp_set_num_threads(newNum);
-#endif
+  explicit NumThreadGuard(const int newNum) : numThreadsBefore(autopas::autopas_get_max_threads()) {
+    autopas::autopas_set_num_threads(newNum);
   }
 
   /**
    * Destroy the NumThreadGuard object and reset number of threads.
    */
-  ~NumThreadGuard() {
-#ifdef AUTOPAS_OPENMP
-    omp_set_num_threads(numThreadsBefore);
-#endif
-  }
+  ~NumThreadGuard() { autopas::autopas_set_num_threads(numThreadsBefore); }
 
   /**
    * delete copy constructor.
@@ -47,7 +38,5 @@ class NumThreadGuard final {
   NumThreadGuard &operator=(const NumThreadGuard &) = delete;
 
  private:
-#ifdef AUTOPAS_OPENMP
   int numThreadsBefore;
-#endif
 };

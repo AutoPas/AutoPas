@@ -46,10 +46,7 @@ auto ContainerIteratorTestBase::deleteParticles(AutoPasT &autopas, F predicate, 
                                                 const autopas::IteratorBehavior &behavior) {
   if constexpr (not constIter) {
     IteratorTestHelper::provideIterator<false>(autopas, behavior, useRegionIterator, [&](auto &autopas, auto getIter) {
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-      {
+      AUTOPAS_OPENMP(parallel) {
         for (auto iter = getIter(); iter.isValid(); ++iter) {
           const auto leID = iter->getID();
           if (predicate(leID)) {

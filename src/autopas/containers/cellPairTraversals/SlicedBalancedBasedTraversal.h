@@ -62,9 +62,7 @@ class SlicedBalancedBasedTraversal
     utils::Timer timer;
     timer.start();
     loads.resize(maxDimensionLength);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for schedule(static, 1)
-#endif
+    AUTOPAS_OPENMP(parallel for schedule(static, 1))
     for (auto x = 0; x < maxDimensionLength; x++) {
       std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
       std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;

@@ -320,7 +320,7 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
             expectedTowersPerDimTotal - expectedHaloWidthInTowers);
 }
 
-#if defined(AUTOPAS_OPENMP)
+#if defined(AUTOPAS_USE_OPENMP)
 TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace) {
   const std::array<double, 3> boxMin = {0, 0, 0};
   const std::array<double, 3> boxMax = {3, 3, 3};

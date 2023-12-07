@@ -102,15 +102,10 @@ void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, us
     VerletNeighborListAsBuild<Particle> &neighborList) {
   const auto &list = neighborList.getAoSNeighborList();
 
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel num_threads(list[0].size())
-#endif
-  {
+  AUTOPAS_OPENMP(parallel num_threads(list[0].size())) {
     constexpr int numColors = 8;
     for (int color = 0; color < numColors; color++) {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(static)
-#endif
+      AUTOPAS_OPENMP(for schedule(static))
       for (unsigned int thread = 0; thread < list[color].size(); thread++) {
         const auto &particleToNeighborMap = list[color][thread];
         for (const auto &[particlePtr, neighborPtrList] : particleToNeighborMap) {
@@ -129,15 +124,10 @@ void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, us
     VerletNeighborListAsBuild<Particle> &neighborList) {
   const auto &soaNeighborList = neighborList.getSoANeighborList();
 
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel num_threads(soaNeighborList[0].size())
-#endif
-  {
+  AUTOPAS_OPENMP(parallel num_threads(soaNeighborList[0].size())) {
     constexpr int numColors = 8;
     for (int color = 0; color < numColors; color++) {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(static)
-#endif
+      AUTOPAS_OPENMP(for schedule(static))
       for (unsigned int thread = 0; thread < soaNeighborList[color].size(); thread++) {
         const auto &threadNeighborList = soaNeighborList[color][thread];
         for (const auto &[indexFirst, neighbors] : threadNeighborList) {

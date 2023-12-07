@@ -61,10 +61,7 @@ class VCLC01BalancedTraversal : public TraversalInterface, public VCLTraversalIn
     auto &clusterThreadPartition = clusterList.getClusterThreadPartition();
 
     auto numThreads = clusterThreadPartition.size();
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel num_threads(numThreads)
-#endif
-    {
+    AUTOPAS_OPENMP(parallel num_threads(numThreads)) {
       auto threadNum = autopas_get_thread_num();
       const auto &clusterRange = clusterThreadPartition[threadNum];
       auto &towers = *VCLTraversalInterface<Particle>::_towers;
