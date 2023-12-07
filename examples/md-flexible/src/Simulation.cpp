@@ -211,7 +211,8 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    if (_configuration.deltaT.value != 0) {
+    //if (_configuration.deltaT.value != 0) {
+    if(true){
       updatePositions();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();

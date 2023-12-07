@@ -194,6 +194,9 @@ class LJFunctor
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
+    const auto *const __restrict owningMoleculeIDs = soa.template begin<Particle::AttributeNames::owningMoleculeId>();
+#endif
 
     SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
@@ -279,6 +282,7 @@ class LJFunctor
         // Particle ownedStateI was already checked previously.
         const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy
 #if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
+                                                                      and owningMoleculeIDs[i] != owningMoleculeIDs[j]
 #endif
                           ;
 
@@ -375,6 +379,10 @@ class LJFunctor
     const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
     const auto *const __restrict ownedStatePtr1 = soa1.template begin<Particle::AttributeNames::ownershipState>();
     const auto *const __restrict ownedStatePtr2 = soa2.template begin<Particle::AttributeNames::ownershipState>();
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
+    const auto *const __restrict owningMoleculeIDs1 = soa1.template begin<Particle::AttributeNames::owningMoleculeId>();
+    const auto *const __restrict owningMoleculeIDs2 = soa2.template begin<Particle::AttributeNames::owningMoleculeId>();
+#endif
 
     auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
     auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
@@ -456,7 +464,11 @@ class LJFunctor
 
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
+          and owningMoleculeIDs1[i]!=owningMoleculeIDs2[j]
+#endif
+            ;
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
         const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
@@ -746,6 +758,9 @@ class LJFunctor
     [[maybe_unused]] auto *const __restrict typeptr2 = soa.template begin<Particle::AttributeNames::typeId>();
 
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
+    const auto *const __restrict owningMoleculeIDs = soa.template begin<Particle::AttributeNames::owningMoleculeId>();
+#endif
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
@@ -850,7 +865,11 @@ class LJFunctor
 
           // Mask away if distance is too large or any particle is a dummy.
           // Particle ownedStateI was already checked previously.
-          const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
+          const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy
+#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
+                                                                        and owningMoleculeIDs[indexFirst]!=owningMoleculeIDs[j];
+#endif
+              ;
 
           const SoAFloatPrecision invdr2 = 1. / dr2;
           const SoAFloatPrecision lj2 = sigmaSquared * invdr2;

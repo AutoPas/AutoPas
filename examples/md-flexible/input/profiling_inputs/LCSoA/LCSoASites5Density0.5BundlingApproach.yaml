@@ -13,7 +13,7 @@ selector-strategy                :  Fastest-Mean-Value
 tuning-strategies                :  [predictive-tuning]
 tuning-interval                  :  6000
 tuning-samples                   :  10
-functor                          :  Lennard-Jones Absolute-Site-Positions
+functor                          :  Lennard-Jones Bundling-Approach
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
 box-max                          :  [9, 9, 9]
@@ -29,8 +29,8 @@ Sites:
 # Uncomment below to run a multi-site simulation.
 Molecules:
   0:
-    site-types                   :  [ 0, 0 ]
-    relative-site-positions      :  [ [0, 0, 0 ], [0, 0, 0]]
+    site-types                   :  [ 0, 0, 0, 0, 0 ]
+    relative-site-positions      :  [ [0, 0, 0 ], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]
     moment-of-inertia            :  [ 1., 1., 1. ]
 Objects:                         
   CubeClosestPacked:
@@ -43,5 +43,5 @@ Objects:
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  true
-vtk-filename                     :  VLSoASites2Density0.5NewFunc.yaml
+vtk-filename                     :  VLSoASites5Density0.5BundlingApproach.yaml
 vtk-write-frequency              :  100
