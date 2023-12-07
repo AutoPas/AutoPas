@@ -15,7 +15,7 @@
 
 #pragma once
 
-#if defined(AUTOPAS_OPENMP)
+#if defined(AUTOPAS_USE_OPENMP)
 #include <omp.h>
 
 #include <cstddef>  // for size_t
@@ -26,7 +26,18 @@
 
 namespace autopas {
 
-#if defined(AUTOPAS_OPENMP)
+#if defined(AUTOPAS_USE_OPENMP)
+
+/**
+ * Helper macro to stringify arguments and use them as a pragma
+ * This is necessary to combine literals and arguments to a string argument for _Pragma()
+ */
+#define AUTOPAS_DO_PRAGMA(x) _Pragma(#x)
+
+/**
+ * Wrapper macro to replace "#pragma omp" that can be (de)activated.
+ */
+#define AUTOPAS_OPENMP(args) AUTOPAS_DO_PRAGMA(omp args)
 
 /**
  * Wrapper for omp_get_thread_num().
@@ -105,6 +116,11 @@ class AutoPasLock {
 #pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 
 #else
+
+/**
+ * Empty macro to throw away OpenMP macros
+ */
+#define AUTOPAS_OPENMP(args)
 
 /**
  * Dummy for omp_set_lock() when no OpenMP is available.
