@@ -12,13 +12,10 @@
 
 namespace autopas {
 /**
- * This class helps in getting the number of performed floating point
- * operations. It is a functor that only calculated the amount of floating point
- * operations.
- * @todo this class currently is limited to the following case:
- *  - constant cutoff radius
- *  - cases where cutoff is determined with a single distance calculation between two positions ( the notable case where
- *    this doesn't hold is in a CoM-to-site style SoA Functor for multi-site molecules )
+ * This class helps in getting the number of performed floating point operations. It is a functor that only calculates
+ * the amount of floating point operations for a 3-body force functor that requires 3 distance checks between each of
+ * the particles, where each distance must be smaller than the cutoff.
+ *
  * @todo: we may want the possibility of doing this faster in cases where the number of flops per kernel call is
  * constant
  * @tparam Particle
@@ -69,34 +66,6 @@ class FlopCounterFunctor3B : public TriwiseFunctor<Particle, FlopCounterFunctor3
           _forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), k.getTypeId(), newton3),
           std::memory_order_relaxed);
     }
-  }
-
-  /**
-   * @copydoc TriwiseFunctor::SoAFunctorSingle()
-   * This SoA Functor does not use any vectorization.
-   */
-  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
-    autopas::utils::ExceptionHandler::exception("FlopCounterFunctor3B::SoAFunctorSingle() is not yet implemented.");
-  }
-
-  /**
-   * @copydoc TriwiseFunctor::SoAFunctorPair()
-   */
-  void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
-                      bool newton3) override {
-    autopas::utils::ExceptionHandler::exception("FlopCounterFunctor3B::SoAFunctorPair() is not yet implemented.");
-  }
-
-  // clang-format off
-  /**
-   * @copydoc TriwiseFunctor::SoAFunctorVerlet()
-   * @note If you want to parallelize this by openmp, please ensure that there
-   * are no dependencies, i.e. introduce colors!
-   */
-  // clang-format on
-  void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) override {
-    autopas::utils::ExceptionHandler::exception("FlopCounterFunctor3B::SoAFunctorVerlet() is not yet implemented.");
   }
 
   /**
