@@ -6,6 +6,8 @@
 
 #include "FlopCounterTest.h"
 
+#include <autopas/utils/WrapOpenMP.h>
+
 #include "autopas/AutoPasDecl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"

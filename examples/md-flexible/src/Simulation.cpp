@@ -5,6 +5,8 @@
  */
 #include "Simulation.h"
 
+#include <autopas/utils/WrapOpenMP.h>
+
 #include <algorithm>
 
 #include "TypeDefinitions.h"

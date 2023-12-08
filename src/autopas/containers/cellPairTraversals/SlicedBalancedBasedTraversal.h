@@ -4,6 +4,7 @@
  * @date 24 Apr 2020
  * @author fischerv
  */
+#include <autopas/utils/WrapOpenMP.h>
 
 #pragma once
 

@@ -4,6 +4,7 @@
 // * @author F. Gratl
 // * @date 08.03.21
 // */
+#include <autopas/utils/WrapOpenMP.h>
 //
 // #include "ParticleIteratorTest.h"
 //

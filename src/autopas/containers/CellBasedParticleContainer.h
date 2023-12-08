@@ -4,6 +4,7 @@
  * @date 17 Jan 2018
  * @author tchipevn
  */
+#include <autopas/utils/WrapOpenMP.h>
 
 #pragma once
 

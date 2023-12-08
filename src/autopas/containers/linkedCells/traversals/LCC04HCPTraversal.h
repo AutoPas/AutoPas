@@ -4,6 +4,7 @@
  * @date 30.03.2020
  */
 
+#include <autopas/utils/WrapOpenMP.h>
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"

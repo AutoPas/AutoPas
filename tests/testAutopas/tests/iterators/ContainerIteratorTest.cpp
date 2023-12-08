@@ -6,6 +6,8 @@
 
 #include "ContainerIteratorTest.h"
 
+#include <autopas/utils/WrapOpenMP.h>
+
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleTraversals.h"

@@ -4,6 +4,7 @@
  * @date 29.07.19
  */
 
+#include <autopas/utils/WrapOpenMP.h>
 #pragma once
 
 #include "autopas/utils/ArrayMath.h"

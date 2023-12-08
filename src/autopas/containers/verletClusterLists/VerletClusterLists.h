@@ -27,6 +27,7 @@
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 

@@ -6,6 +6,8 @@
 
 #include "GeneratorsTest.h"
 
+#include <autopas/utils/WrapOpenMP.h>
+
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "src/configuration/YamlParser.h"

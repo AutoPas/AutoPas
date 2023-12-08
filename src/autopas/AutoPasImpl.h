@@ -4,6 +4,7 @@
  * LogicHandler are only forward declared.
  */
 
+#include <autopas/utils/WrapOpenMP.h>
 #pragma once
 
 #include <array>

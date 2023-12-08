@@ -5,6 +5,8 @@
  */
 #include "RegionParticleIteratorTest.h"
 
+#include <autopas/utils/WrapOpenMP.h>
+
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
 #include "testingHelpers/EmptyFunctor.h"

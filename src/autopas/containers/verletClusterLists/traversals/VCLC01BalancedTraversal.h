@@ -4,6 +4,7 @@
  * @date 12.08.19
  */
 
+#include <autopas/utils/WrapOpenMP.h>
 #pragma once
 
 #include "autopas/containers/TraversalInterface.h"

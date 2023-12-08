@@ -10,6 +10,7 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 /**

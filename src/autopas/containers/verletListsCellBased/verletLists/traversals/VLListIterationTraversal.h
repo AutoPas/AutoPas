@@ -4,6 +4,7 @@
  * @date 7.4.2019
  * @author jspahl
  */
+#include <autopas/utils/WrapOpenMP.h>
 
 #pragma once
 
