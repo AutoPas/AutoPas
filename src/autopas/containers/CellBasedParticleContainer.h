@@ -13,10 +13,6 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/utils/WrapOpenMP.h"
 
-#ifdef AUTOPAS_USE_OPENMP
-#include <omp.h>
-#endif
-
 namespace autopas {
 
 // consider multiple inheritance or delegation to avoid virtual call to Functor
