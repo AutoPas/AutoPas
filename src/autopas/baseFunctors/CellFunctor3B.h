@@ -216,6 +216,16 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
     return;
   }
 
+  // avoid force calculations if both cells can not contain owned particles or if newton3==false and cell1 does not
+  // contain owned particles
+  const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
+  const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
+
+  if (((not cell1HasOwnedParticles) and (not useNewton3) and (not bidirectional)) or
+      ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
+    return;
+  }
+
   switch (DataLayout) {
     case DataLayoutOption::aos:
       if constexpr (useNewton3) {
@@ -285,15 +295,9 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
     if constexpr (newton3) {
       _functor->AoSFunctor(p1, p2, p3, true);
     } else {
-      if (p1.isOwned()) {
-        _functor->AoSFunctor(p1, p2, p3, false);
-      }
-      if (p2.isOwned()) {
-        _functor->AoSFunctor(p2, p1, p3, false);
-      }
-      if (p3.isOwned()) {
-        _functor->AoSFunctor(p3, p1, p2, false);
-      }
+      _functor->AoSFunctor(p1, p2, p3, false);
+      _functor->AoSFunctor(p2, p1, p3, false);
+      _functor->AoSFunctor(p3, p1, p2, false);
     }
   };
 
@@ -322,8 +326,12 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
     }
   } else {
     for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
-      for (auto p2Ptr = std::next(p1Ptr); p2Ptr != cell.end(); ++p2Ptr) {
-        for (auto p3Ptr = std::next(p2Ptr); p3Ptr != cell.end(); ++p3Ptr) {
+      auto p2Ptr = p1Ptr;
+      ++p2Ptr;
+      for (; p2Ptr != cell.end(); ++p2Ptr) {
+        auto p3Ptr = p2Ptr;
+        ++p3Ptr;
+        for (; p3Ptr != cell.end(); ++p3Ptr) {
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr);
         }
       }
@@ -379,7 +387,9 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
     // Particle 1 always from cell1
     for (auto p1Ptr = cell1.begin(); p1Ptr != cell1.end(); ++p1Ptr) {
       // Particle 2 still in cell1, particle 3 in cell2
-      for (auto p2Ptr = std::next(p1Ptr); p2Ptr != cell1.end(); ++p2Ptr) {
+      auto p2Ptr = p1Ptr;
+      ++p2Ptr;
+      for (; p2Ptr != cell1.end(); ++p2Ptr) {
         for (auto &p3 : cell2) {
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, p3, true);
         }
@@ -387,7 +397,9 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
 
       // Particles 2 and 3 in cell2
       for (auto p2Ptr = cell2.begin(); p2Ptr != cell2.end(); ++p2Ptr) {
-        for (auto p3Ptr = std::next(p2Ptr); p3Ptr != cell2.end(); ++p3Ptr) {
+        auto p3Ptr = p2Ptr;
+        ++p3Ptr;
+        for (; p3Ptr != cell2.end(); ++p3Ptr) {
           _functor->AoSFunctor(*p1Ptr, *p2Ptr, *p3Ptr, true);
         }
       }
@@ -407,15 +419,11 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       _functor->AoSFunctor(p2, p1, p3, false);  // because of no newton3 and p2 is still in cell1
     } else {
       if constexpr (bidirectional) {
-        if (p2.isOwned()) {
-          _functor->AoSFunctor(p2, p1, p3, false);
-        }
+        _functor->AoSFunctor(p2, p1, p3, false);
       }
     }
     if constexpr (bidirectional) {
-      if (p3.isOwned()) {
-        _functor->AoSFunctor(p3, p1, p2, false);
-      }
+      _functor->AoSFunctor(p3, p1, p2, false);
     }
   };
 
@@ -462,7 +470,9 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
     // Particle 1 from cell1
     for (auto p1Ptr = cell1.begin(); p1Ptr != cell1.end(); ++p1Ptr) {
       // Particle 2 in cell1, particle 3 in cell2
-      for (auto p2Ptr = std::next(p1Ptr); p2Ptr != cell1.end(); ++p2Ptr) {
+      auto p2Ptr = p1Ptr;
+      ++p2Ptr;
+      for (; p2Ptr != cell1.end(); ++p2Ptr) {
         for (auto &p3 : cell2) {
           interactParticles(*p1Ptr, *p2Ptr, p3, true);
         }
@@ -470,7 +480,9 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
 
       // Particles 2 and 3 both in cell2
       for (auto p2Ptr = cell2.begin(); p2Ptr != cell2.end(); ++p2Ptr) {
-        for (auto p3Ptr = std::next(p2Ptr); p3Ptr != cell2.end(); ++p3Ptr) {
+        auto p3Ptr = p2Ptr;
+        ++p3Ptr;
+        for (; p3Ptr != cell2.end(); ++p3Ptr) {
           interactParticles(*p1Ptr, *p2Ptr, *p3Ptr, false);
         }
       }
@@ -491,7 +503,7 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
 
     for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
       for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
-        if (std::abs(p1Projection - p2Projection.first) > _sortingCutoff) {
+        if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
           break;
         }
         for (auto &[p3Projection, p3Ptr] : cell3Sorted._particles) {
@@ -524,12 +536,8 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
   const auto interactParticlesNoN3 = [&](auto &p1, auto &p2, auto &p3) {
     _functor->AoSFunctor(p1, p2, p3, false);
     if constexpr (bidirectional) {
-      if (p2.isOwned()) {
-        _functor->AoSFunctor(p2, p1, p3, false);
-      }
-      if (p3.isOwned()) {
-        _functor->AoSFunctor(p3, p1, p2, false);
-      }
+      _functor->AoSFunctor(p2, p1, p3, false);
+      _functor->AoSFunctor(p3, p1, p2, false);
     }
   };
 

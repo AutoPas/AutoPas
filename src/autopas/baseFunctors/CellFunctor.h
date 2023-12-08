@@ -214,12 +214,8 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3
     if constexpr (newton3) {
       _functor->AoSFunctor(p1, p2, true);
     } else {
-      if (p1.isOwned()) {
-        _functor->AoSFunctor(p1, p2, false);
-      }
-      if (p2.isOwned()) {
-        _functor->AoSFunctor(p2, p1, false);
-      }
+      _functor->AoSFunctor(p1, p2, false);
+      _functor->AoSFunctor(p2, p1, false);
     }
   };
 
@@ -240,7 +236,9 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3
     }
   } else {
     for (auto p1Ptr = cell.begin(); p1Ptr != cell.end(); ++p1Ptr) {
-      for (auto p2Ptr = std::next(p1Ptr); p2Ptr != cell.end(); ++p2Ptr) {
+      auto p2Ptr = p1Ptr;
+      ++p2Ptr;
+      for (; p2Ptr != cell.end(); ++p2Ptr) {
         interactParticles(*p1Ptr, *p2Ptr);
       }
     }
@@ -281,9 +279,7 @@ void CellFunctor<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3
   const auto interactParticlesNoN3 = [&](auto &p1, auto &p2) {
     _functor->AoSFunctor(p1, p2, false);
     if constexpr (bidirectional) {
-      if (p2.isOwned()) {
-        _functor->AoSFunctor(p2, p1, false);
-      }
+      _functor->AoSFunctor(p2, p1, false);
     }
   };
 
