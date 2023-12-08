@@ -163,7 +163,7 @@ class CellFunctor3B {
 
   /**
    * Min. number of particles to start sorting. This is the sum of the number of particles of all involved cells.
-   * The default threshold is taken from from CellFunctor.h. For more details see:
+   * The default threshold is (blindly) taken from CellFunctor.h. For some more details see:
    * https://github.com/AutoPas/AutoPas/pull/619
    */
   size_t _sortingThreshold{8};

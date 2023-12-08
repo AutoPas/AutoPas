@@ -281,7 +281,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionSingle) {
   };
 
   // Test with and without sorting
-  for (const auto sortingThreshold: {0, 100}) {
+  for (const auto sortingThreshold : {0, 100}) {
     // Test all reasonable combinations of owned / halo particles and cells
     for (const auto ownershipParticle1 : {owned, halo}) {
       for (const auto ownershipParticle2 : {owned, halo}) {
@@ -367,7 +367,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionPair) {
   };
 
   // Test with and without sorting
-  for (const auto sortingThreshold: {0, 100}) {
+  for (const auto sortingThreshold : {0, 100}) {
     // Test all reasonable combinations of owned / halo particles and cells
     for (const auto ownershipParticle1 : {owned, halo}) {
       for (const auto ownershipParticle2 : {owned, halo}) {
@@ -478,7 +478,7 @@ TYPED_TEST_P(CellFunctorTest3B, testOwnedAndHaloCellInteractionTriple) {
   };
 
   // Test with and without sorting
-  for (const auto sortingThreshold: {0, 100}) {
+  for (const auto sortingThreshold : {0, 100}) {
     // Test all reasonable combinations of owned / halo particles and cells
     for (const auto ownershipParticle1 : {owned, halo}) {
       for (const auto ownershipParticle2 : {owned, halo}) {
