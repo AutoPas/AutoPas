@@ -40,8 +40,8 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] bool isApplicable() const override {
-    // No parallel version with N3 and no data races is available.
-    return (autopas_get_max_threads() > 1 and not useNewton3);
+    // No parallel version with N3 and no data races is available, hence no N3 is completely disabled.
+    return (not useNewton3) and (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
   }
 
   void initTraversal() override {
