@@ -4,8 +4,6 @@
  * @date 17 Jan 2018
  * @author tchipevn
  */
-#include <autopas/utils/WrapOpenMP.h>
-
 #pragma once
 
 #include <algorithm>
@@ -13,6 +11,7 @@
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/TraversalInterface.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 #ifdef AUTOPAS_USE_OPENMP
 #include <omp.h>

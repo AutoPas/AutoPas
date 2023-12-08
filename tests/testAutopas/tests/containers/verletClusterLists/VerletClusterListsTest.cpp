@@ -6,11 +6,10 @@
 
 #include "VerletClusterListsTest.h"
 
-#include <autopas/utils/WrapOpenMP.h>
-
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 using ::testing::_;
 using ::testing::AtLeast;

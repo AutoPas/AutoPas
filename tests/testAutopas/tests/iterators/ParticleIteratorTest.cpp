@@ -4,7 +4,6 @@
 // * @author F. Gratl
 // * @date 08.03.21
 // */
-#include <autopas/utils/WrapOpenMP.h>
 //
 // #include "ParticleIteratorTest.h"
 //
@@ -12,6 +11,7 @@
 // #include "autopas/containers/linkedCells/LinkedCells.h"
 // #include "autopas/iterators/ContainerIterator.h"
 // #include "autopas/options/IteratorBehavior.h"
+// #include "autopas/utils/WrapOpenMP.h"
 // #include "testingHelpers/commonTypedefs.h"
 //
 // using namespace autopas;

@@ -4,7 +4,6 @@
  * @date 30.03.2020
  */
 
-#include <autopas/utils/WrapOpenMP.h>
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
@@ -12,6 +11,7 @@
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

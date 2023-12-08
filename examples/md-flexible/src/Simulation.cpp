@@ -5,8 +5,6 @@
  */
 #include "Simulation.h"
 
-#include <autopas/utils/WrapOpenMP.h>
-
 #include <algorithm>
 
 #include "TypeDefinitions.h"
@@ -14,6 +12,7 @@
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.

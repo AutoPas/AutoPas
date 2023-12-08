@@ -4,11 +4,11 @@
  * @date 29.07.19
  */
 
-#include <autopas/utils/WrapOpenMP.h>
 #pragma once
 
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas::internal {

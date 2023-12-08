@@ -5,7 +5,7 @@
  */
 #include "TimeDiscretization.h"
 
-#include <autopas/utils/WrapOpenMP.h>
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace TimeDiscretization {
 

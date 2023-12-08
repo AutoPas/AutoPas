@@ -4,7 +4,6 @@
  * LogicHandler are only forward declared.
  */
 
-#include <autopas/utils/WrapOpenMP.h>
 #pragma once
 
 #include <array>
@@ -27,6 +26,7 @@
 #include "autopas/utils/CompileInfo.h"
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSetFinite.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

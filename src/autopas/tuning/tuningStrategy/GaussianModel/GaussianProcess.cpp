@@ -6,7 +6,7 @@
 
 #include "GaussianProcess.h"
 
-#include <autopas/utils/WrapOpenMP.h>
+#include "autopas/utils/WrapOpenMP.h"
 
 autopas::GaussianProcess::GaussianProcess(size_t dims, double sigma, Random &rngRef)
     : _inputs(),

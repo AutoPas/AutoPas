@@ -4,8 +4,6 @@
  * @date 24 Apr 2020
  * @author fischerv
  */
-#include <autopas/utils/WrapOpenMP.h>
-
 #pragma once
 
 #include <array>
@@ -14,6 +12,7 @@
 #include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
 #include "autopas/containers/cellPairTraversals/SlicedLockBasedTraversal.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

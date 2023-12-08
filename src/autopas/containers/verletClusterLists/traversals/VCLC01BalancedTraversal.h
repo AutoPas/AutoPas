@@ -4,12 +4,12 @@
  * @date 12.08.19
  */
 
-#include <autopas/utils/WrapOpenMP.h>
 #pragma once
 
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

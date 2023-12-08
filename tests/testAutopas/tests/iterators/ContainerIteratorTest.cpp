@@ -6,12 +6,11 @@
 
 #include "ContainerIteratorTest.h"
 
-#include <autopas/utils/WrapOpenMP.h>
-
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/IteratorBehavior.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "testingHelpers/EmptyFunctor.h"
 #include "testingHelpers/commonTypedefs.h"

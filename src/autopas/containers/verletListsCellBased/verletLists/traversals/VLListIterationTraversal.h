@@ -4,14 +4,13 @@
  * @date 7.4.2019
  * @author jspahl
  */
-#include <autopas/utils/WrapOpenMP.h>
-
 #pragma once
 
 #include "VLTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

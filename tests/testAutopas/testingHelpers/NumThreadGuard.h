@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <autopas/utils/WrapOpenMP.h>
+#include "autopas/utils/WrapOpenMP.h"
 
 /**
  * NumThreadGuard sets current number of threads to newNum and resets number of threads during destruction.
