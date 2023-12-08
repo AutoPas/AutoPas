@@ -1,8 +1,6 @@
 /**
  * @file HierarchicalGrids.h
  * @author hoppef
- * @brief 
- * @version 0.1
  * @date 2023-07-10
  * 
  */
@@ -11,13 +9,14 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/discreteElementMethod/DEMFunctor.h"
 
 #include <vector>
 
 namespace autopas {
 
 template <class Particle>
-class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Particle>> {
+class HierarchicalGrids : public ParticleContainerInterface<Particle> {
  public:
   /**
    *  Type of the ParticleCell.
@@ -27,12 +26,12 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
   /**
    *  Type of the Particle.
    */
-  using ParticleType = typename ParticleCell::ParticleType;
+  using ParticleType = Particle;
 
   HierarchicalGrids (const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                       const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
-                      LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell, const unsigned int numberOfLevels)
-      : _numberOfLevels(numberOfLevels) {
+                      LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell, const unsigned int numberOfLevels = 1)
+      : _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skinPerTimestep(skinPerTimestep), _rebuildFrequency(rebuildFrequency), _cellSizeFactor(cellSizeFactor), _loadEstimator(loadEstimator), _numberOfLevels(numberOfLevels) {
 
     // Loop over all hierarchy levels and create a Linked Cells container for each level.
     //
@@ -46,18 +45,16 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
   }
 
   /**
-   * 
    * @brief Get the ContainerType.
    * @return ContainerOption of the type of this container.
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::hierarchicalGrids; };
 
     /**
-   *
    * Get the ParticleCell type as an Enum
    * @return The Cell type as an Enum
    */
-  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
     /**
    * @todo !
@@ -73,6 +70,7 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
 
   }
 
+  protected:
   /**
    * @brief Adds a particle to the container.
    * 
@@ -80,56 +78,56 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
    * @param p The particle to be added. This particle is already checked to be inside of the bounding box.
    * @note Only call this function if the position of the particle is guaranteed to be inside of the bounding box!
    */
-  void addParticleImpl(const ParticleType &p) override {
+  void addParticleImpl(const Particle &p) override {
 
     unsigned int level = getHierarchyLevelOfParticle(p);
     addParticleToGridLevel(p, level);
 
   }
 
+  public:
   /**
    * @brief Adds a particle to a given level of the hierarchical grid
    * 
    * @param p The particle to be added.
    * @param level The level of the H-grid to be added to.
    */
-  void addParticleToGridLevel(const ParticleType &p, unsigned int level) {
+  void addParticleToGridLevel(const Particle &p, unsigned int level) {
 
     hierarchyLevels[level].addParticle(p);
 
   }
 
+  protected:
   /**
-   * 
    * @brief Adds a particle to the container that lies in the halo region of the container.
    * 
    * This is an unsafe version of addParticle() and does not perform a boundary check.
    * @param haloParticle Particle to be added. This particle is already checked to be outside of the bounding box.
    * @note Only call this function if the position of the particle is guaranteed to be outside of the bounding box!
    */
-  void addHaloParticleImpl(const ParticleType &haloParticle) override {
+  void addHaloParticleImpl(const Particle &haloParticle) override {
 
     unsigned int level = getHierarchyLevelOfParticle(haloParticle);
     hierarchyLevels[level].addHaloParticle(haloParticle);
 
   }
 
-  /**
-   *    
+  public:
+  /** 
    * @brief Update a halo particle of the container with the given haloParticle.
    * 
    * @param haloParticle Particle to be updated.
    * @return Returns true if the particle was updated, false if no particle could be found.
    */
-  bool updateHaloParticle(const ParticleType &haloParticle) override {
+  bool updateHaloParticle(const Particle &haloParticle) override {
 
     unsigned int level = getHierarchyLevelOfParticle(haloParticle);
-    hierarchyLevels[level].updateHaloParticle(haloParticle);
+    return hierarchyLevels[level].updateHaloParticle(haloParticle);
 
   }
 
   /**
-   * 
    * Rebuilds the neighbor lists.
    * Nothing to do here.
    * @param traversal The used traversal.
@@ -137,8 +135,8 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     // nothing to do.
   }
+
   /**
-   * 
    * Deletes all halo particles.
    */
   void deleteHaloParticles() override {
@@ -148,7 +146,6 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
   }
 
   /**
-   * 
    * Deletes all particles.
    */
   void deleteAllParticles() override {
@@ -158,14 +155,30 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
   }
 
   /**
-   * @todo !
-   * Get the total number of particles saved in the container (owned and halo but not dummies).
+   * Get the number of particles with respect to the specified IteratorBehavior.
+   * @warning: Since this function counts the number of the respective particles in the internal particle storage, this
+   * is in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
+   * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
+   * the function size() can be used.
+   * @param behavior Behavior of the iterator, see IteratorBehavior.
    * @return Number of particles in the container.
    */
-  [[nodiscard]] unsigned long getNumberOfParticles() override {
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
     size_t numParticles = 0ul;
     for (unsigned int level = 0; level < _numberOfLevels; level++) {
-      numParticles += hierarchyLevels[level].getNumberOfParticles();
+      numParticles += hierarchyLevels[level].getNumberOfParticles(behavior);
+    }
+    return numParticles;
+  }
+
+  /**
+   * Get the total number of particles saved in the container (owned + halo + dummy).
+   * @return Number of particles saved in the container (owned + halo + dummy).
+   */
+  [[nodiscard]] size_t size() const override {
+    size_t numParticles = 0ul;
+    for (unsigned int level = 0; level < _numberOfLevels; level++) {
+      numParticles += hierarchyLevels[level].size();
     }
     return numParticles;
   }
@@ -181,7 +194,7 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
     // Iterate over cross levels
 
     // Get the number of hierarchy cross-levels
-    numberOfCrossLevels = getNumberOfCrossLevels(_numberOfLevels);
+    unsigned int numberOfCrossLevels = getNumberOfCrossLevels(_numberOfLevels);
 
     //@todo cellSizeFactor has to be adapted
 
@@ -189,7 +202,7 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
       for (unsigned int smallerLevel = largerLevel; smallerLevel < _numberOfLevels; smallerLevel++) {
         
         //Create cross-level
-        autopas::LinkedCells<ParticleCell> crossLevel(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator);
+        autopas::LinkedCells<ParticleCell> crossLevel(_boxMin, _boxMax, _cutoff, _skinPerTimestep, _rebuildFrequency, _cellSizeFactor, _loadEstimator);
         
         //Add large particles
         for(auto iterLarger = hierarchyLevels[largerLevel].begin(); iterLarger.isValid(); ++iterLarger) {
@@ -212,11 +225,11 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
     
 
     // Iterate over hierarchy levels and subtract excess forces
-    autopas::DEMFunctor::initExcessForceSubtraction(_numberOfLevels);
+    autopas::DEMFunctor<Particle>::initExcessForceSubtraction(_numberOfLevels);
     for (unsigned int level = 0; level < _numberOfLevels; level++) {
       hierarchyLevels[level].iteratePairwise(&traversal); // add traversal option
     }
-    autopas::DEMFunctor::endExcessForceSubtraction();
+    autopas::DEMFunctor<Particle>::endExcessForceSubtraction();
 
   }
 
@@ -227,13 +240,15 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
    * @param p 
    * @return Level the particle should be sorted into. 
    */
-  unsigned int getHierarchyLevelOfParticle(const ParticleType &p) {
+  unsigned int getHierarchyLevelOfParticle(const Particle &p) {
     
     // Get the radius of the particle in question
     auto particleRad = p.getRad();
 
+    unsigned int level;
+
     // Loop over all hierarchy levels
-    for (unsigned int level = 0; level < _numberOfLevels; level++) {
+    for (level = 0; level < _numberOfLevels; level++) {
       // As long as the 'hierarchicalGridBorders' element is smaller than the radius continue to cycle
       if (particleRad > hierarchicalGridBorders[level]) break;     
     }
@@ -282,6 +297,14 @@ class HierarchicalGrids : public ParticleContainerInterface<FullParticleCell<Par
    * 
    */
   unsigned int _numberOfLevels = 1;
+
+  std::array<double, 3> _boxMin; 
+  std::array<double, 3> _boxMax; 
+  double _cutoff;
+  double _skinPerTimestep; 
+  unsigned int _rebuildFrequency;
+  double _cellSizeFactor;
+  LoadEstimatorOption _loadEstimator;
 
   /**
    * @brief Vector containing the upper boundaries of the grid levels. 

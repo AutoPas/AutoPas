@@ -80,11 +80,11 @@ public:
   }
 
 
-  void initExcessForceSubtraction(unsigned int numberLevels) {
+  static void initExcessForceSubtraction(unsigned int numberLevels) {
     _factorSubtractExcessForces = - (numberLevels - 2);
   }
 
-  void endExcessForceSubtraction() {
+  static void endExcessForceSubtraction() {
     _factorSubtractExcessForces = 1.0;
   }
 
@@ -851,11 +851,12 @@ private:
   // defines whether and, if yes, how much of the excess forces obtained by iterating 
   // over the H-Grid should be subtracted
   // The logic is: true => _factorSubtractExcessForces = - (numberGridLevels - 2)
-  double _factorSubtractExcessForces = 1.0;
+  static double _factorSubtractExcessForces;
 
   // Damping ratio
   double _dampingRatio = 0.1;
 
 };
+//double DEMFunctor<???>::_factorSubtractExcessForces{1.0};
 
 }; //namespace autopas
