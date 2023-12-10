@@ -1,4 +1,3 @@
-
 # ![AutoPas](https://raw.githubusercontent.com/AutoPas/AutoPas/master/docs/graphics/AutoPasLogo_Large.svg "Title")
 
 AutoPas is a node-level auto-tuned particle simulation library developed
@@ -116,9 +115,9 @@ Steps to using AutoPas in your particle simulation program:
 
 ### Custom Particles
 First you will need to define a particle class which will be passed to AutoPas as template Argument.
-For that we provide some basic Particle classes defined in `applicationLibrary/molecularDynamics/molecularDynamicsLibrary` or `applicationLibrary/sph/SPHLibrary` 
+For that we provide some basic Particle classes defined in [`molecularDynamicsLibrary`](applicationLibrary/molecularDynamics/molecularDynamicsLibrary) or [`SPHLibrary`](applicationLibrary/sph/SPHLibrary) 
 that you can use either directly or you can write your own Particle class by inheriting from one of the provided
-classes or from `autopas::Particle`.
+classes or from [`autopas::ParticleBase`](src/autopas/particles/ParticleBase.h).
 
 Important parts to implement:
 * `enum AttributeNames`
@@ -137,7 +136,7 @@ Important parts to implement:
 
 #### Usage
 Each functor is applied to AutoPas via:
-```bash
+```cpp
 autoPas.iteratePairwise(&myFunctor);
 ```
 
@@ -186,7 +185,7 @@ for(auto iter = autoPas.getRegionIterator(lowCorner, highCorner); iter != autoPa
 
 Both `begin()` and `getRegionIterator()` can also take the additional parameter `IteratorBehavior`,
 which indicates over which particles the iteration should be performed. See [autopas::IteratorBehavior
-](https://autopas.github.io/doxygen_documentation/git-master/namespaceautopas.html#a520fefd51e4555074cd16e7c3fd19c42) for possible options and details.
+](https://autopas.github.io/doxygen_documentation/git-master/classautopas_1_1options_1_1IteratorBehavior.html) for possible options and details.
 The default parameter is `ownedOrHalo`, which is also used for range-based for loops.
 
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
@@ -313,7 +312,7 @@ There exist some things you have to be careful about when using multiple functor
   It is recommended, to only mark the most expensive functor as relevant.
 
 ## Developing AutoPas
-Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
+Please look at our [contribution guidelines](.github/CONTRIBUTING.md).
 
 For profiling the compile-time, the `cmake` option `AUTOPAS_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -`ftime-report` and clang's `-ftime-trace`. 
 It is recommended to use clang, as its output is more detailed.
