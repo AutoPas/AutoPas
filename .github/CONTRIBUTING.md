@@ -176,7 +176,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Adjust any tests that are affected by these changes. The following tests will definitely require changes:
   * [`AutoPasInterfaceTest`](/tests/testAutopas/tests/autopasInterface/AutoPasInterfaceTest.cpp)
   * [`AutoTunerTest`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp)
-  * [`FeatureVectorTest`](/tests/testAutopas/tests/tuning/FeatureVectorTest.cpp)
+  * [`FeatureVectorTest`](/tests/testAutopas/tests/tuning/utils/FeatureVectorTest.cpp)
   * Tests for the individual tuning strategies. See files in [`tests/testAutopas/tests/tuning/tuningStrategy/`](/tests/testAutopas/tests/tuning/tuningStrategy/).
 
 ### Rule Based Tuning and Antlr
