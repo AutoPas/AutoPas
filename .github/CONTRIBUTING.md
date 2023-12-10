@@ -115,7 +115,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp) and [`OptionTest::parseTraversalOptionsTest`](/tests/testAutopas/tests/options/OptionTest.h)).
 * Add new unit tests for your traversal.
-* Regenerate the `RuleLanguage.g4` via the `generateRuleLanguage.sh` script, both located in [`ruleBasedTuning`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning).
+* Regenerate the [`RuleLanguage.g4`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4) via the [`generateRuleLanguage.sh`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh) script, both located in [`ruleBasedTuning`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning).
 
 ### Adding a new Container
 * Create a new container class under [`src/autopas/containers/`](/src/autopas/containers/).
@@ -129,7 +129,7 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Check that the new option is working in the md-flexible example.
 * Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp) and [`StringUtilsTest::parseContainerOptionsTest`](/tests/testAutopas/tests/utils/StringUtilsTest.cpp)).
 * Add new unit tests for your container.
-* Regenerate the `RuleLanguage.g4` via the `generateRuleLanguage.sh` script, both located in [`ruleBasedTuning`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning).
+* Regenerate the [`RuleLanguage.g4`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4) via the [`generateRuleLanguage.sh`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh) script, both located in [`ruleBasedTuning`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning).
 
 ### Adding a new Tuning Strategy
 * Create a new tuning strategy class under [`src/autopas/tuning/tuningStrategy`](/src/autopas/tuning/tuningStrategy).
@@ -150,10 +150,10 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Inherit from [`Option`](/src/autopas/options/Option.h). This will also generate functions for conversion from and to strings.
 * Add new unit tests for your option, mainly in [`OptionTest`](/tests/testAutopas/tests/options/OptionTest.cpp).
 * Also add the new option to md-flexible! 
-  * Add the option in [`MDFlexConfig`](/examples/md-flexible/src/parsing/MDFlexConfig.h).
-  * Add it to [`MDFlexConfig::to_string`](/examples/md-flexible/src/parsing/MDFlexConfig.h).
-  * Parse it in [`CLIParser`](/examples/md-flexible/src/parsing/CLIParser.cpp).
-  * In [`CLIParser::parseInput()`](/examples/md-flexible/src/parsing/CLIParser.cpp) add it to `relevantOptions` and switch.
+  * Add the option in [`MDFlexConfig`](/examples/md-flexible/src/configuration/MDFlexConfig.h).
+  * Add it to [`MDFlexConfig::to_string`](/examples/md-flexible/src/configuration/MDFlexConfig.h).
+  * Parse it in [`CLIParser`](/examples/md-flexible/src/configuration/CLIParser.cpp).
+  * In [`CLIParser::parseInput()`](/examples/md-flexible/src/configuration/CLIParser.cpp) add it to `relevantOptions` and switch.
   * Parse it in [`YamlParser`](/examples/md-flexible/src/configuration/YamlParser.cpp).
   * If applicable, pass the option value to AutoPas in [`Simulation::Simulation()`](/examples/md-flexible/src/Simulation.cpp).
   * Make sure that the description is parsable by [`CLIParser::createZSHCompletionFile()`](/examples/md-flexible/src/configuration/CLIParser.cpp).
