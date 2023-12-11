@@ -15,13 +15,15 @@
 
 #pragma once
 
+#include <type_traits>
+
 #if defined(AUTOPAS_OPENMP)
 #include <omp.h>
 
 #include <cstddef>  // for size_t
 #include <vector>
 #else
-#include "ExceptionHandler.h"
+#include "autopas/utils/ExceptionHandler.h"
 #endif
 
 namespace autopas {

@@ -8,19 +8,19 @@
 
 namespace autopas::tuningLogEntry {
 
-std::string writeEvidence(long time, size_t iteration, const autopas::Configuration &config) {
+std::string writeEvidence(long time, std::size_t iteration, const autopas::Configuration &config) {
   return toString(std::string{"evidence"}, time, iteration, config);
 }
 
-std::tuple<long, size_t, Configuration> readEvidence(std::stringstream &str) {
-  return fromString<long, size_t, Configuration>(str);
+std::tuple<long, std::size_t, Configuration> readEvidence(std::stringstream &str) {
+  return fromString<long, std::size_t, Configuration>(str);
 }
 
 std::string writeTune() { return toString(std::string{"tune"}); }
 
 bool readTune(std::stringstream &str) { return std::get<0>(fromString<bool>(str)); }
 
-std::string writeReset(size_t iteration) { return toString(std::string{"reset"}, iteration); }
+std::string writeReset(std::size_t iteration) { return toString(std::string{"reset"}, iteration); }
 
 std::string writeLiveInfo(const autopas::LiveInfo &liveInfo) { return toString(std::string{"liveInfo"}, liveInfo); }
 

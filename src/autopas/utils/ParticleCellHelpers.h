@@ -5,6 +5,9 @@
  */
 
 #pragma once
+
+#include <mutex>
+
 #include "autopas/utils/ArrayMath.h"
 
 namespace autopas::internal {

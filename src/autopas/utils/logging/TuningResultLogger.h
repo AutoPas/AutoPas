@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <spdlog/async.h>
+#include <string>
 
 #include "autopas/tuning/Configuration.h"
 
@@ -40,7 +40,7 @@ class TuningResultLogger {
    * @param timeTuning
    * @param optimumPerformance Performance of the best configuration
    */
-  void logTuningResult(const autopas::Configuration &configuration, size_t iteration, long timeTuning,
+  void logTuningResult(const autopas::Configuration &configuration, std::size_t iteration, long timeTuning,
                        long optimumPerformance);
 
  private:

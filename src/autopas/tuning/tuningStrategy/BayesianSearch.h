@@ -6,18 +6,20 @@
 
 #pragma once
 
-#include <limits>
-#include <map>
 #include <set>
 #include <unordered_set>
 
-#include "GaussianModel/GaussianProcess.h"
-#include "TuningStrategyInterface.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
-#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/tuningStrategy/GaussianModel/GaussianProcess.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/FeatureVectorEncoder.h"
-#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSet.h"
 
 namespace autopas {
@@ -31,7 +33,7 @@ class BayesianSearch final : public TuningStrategyInterface {
   /**
    * The maximum number of attempts to sample an optimum.
    */
-  constexpr static size_t maxAttempts = 10;
+  constexpr static std::size_t maxAttempts = 10;
   /**
    *
    */
@@ -57,15 +59,15 @@ class BayesianSearch final : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), std::size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
-      size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()());
+      std::size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()());
 
   TuningStrategyOption getOptionType() override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  void reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
@@ -87,7 +89,7 @@ class BayesianSearch final : public TuningStrategyInterface {
    * @param n numSamples
    * @param af acquisition function
    */
-  std::vector<FeatureVector> sampleAcquisitions(size_t n, AcquisitionFunctionOption af);
+  std::vector<FeatureVector> sampleAcquisitions(std::size_t n, AcquisitionFunctionOption af);
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
@@ -103,9 +105,9 @@ class BayesianSearch final : public TuningStrategyInterface {
 
   Random _rng;
   GaussianProcess _gaussianProcess;
-  size_t _maxEvidence;
+  std::size_t _maxEvidence;
   AcquisitionFunctionOption _predAcqFunction;
-  size_t _predNumLHSamples;
+  std::size_t _predNumLHSamples;
 };
 
 }  // namespace autopas

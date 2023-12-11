@@ -4,6 +4,7 @@
  * @date 28.07.23
  */
 
+#include "RuleBasedProgramParser.h"
 #include "RuleBasedTuning.h"
 
 #include <sys/stat.h>

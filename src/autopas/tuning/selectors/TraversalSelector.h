@@ -6,11 +6,6 @@
 
 #pragma once
 
-#include <array>
-#include <numeric>
-#include <unordered_map>
-#include <vector>
-
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
@@ -42,14 +37,9 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
-#include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/StringUtils.h"
-#include "autopas/utils/TrivialHash.h"
-#include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
 
@@ -63,7 +53,6 @@ class TraversalSelector {
   /**
    * Generates a given Traversal for the given properties.
    * @tparam PairwiseFunctor
-   * @tparam useSoA
    * @tparam useNewton3
    * @param traversalType
    * @param pairwiseFunctor

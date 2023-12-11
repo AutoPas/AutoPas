@@ -5,6 +5,9 @@
  */
 
 #pragma once
+
+#include <vector>
+
 namespace autopas {
 template <class Particle>
 class AutoPas;

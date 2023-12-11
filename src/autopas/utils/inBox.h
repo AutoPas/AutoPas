@@ -65,7 +65,7 @@ bool boxesOverlap(const std::array<T, 3> &boxALow, const std::array<T, 3> &boxAH
                   const std::array<T, 3> &boxBHigh) {
   static_assert(std::is_floating_point<T>::value, "boxesOverlap assumes floating point types");
 
-  auto overlap1D = [&](size_t dim) { return boxAHigh[dim] >= boxBLow[dim] and boxBHigh[dim] >= boxALow[dim]; };
+  auto overlap1D = [&](std::size_t dim) { return boxAHigh[dim] >= boxBLow[dim] and boxBHigh[dim] >= boxALow[dim]; };
 
   return overlap1D(0) and overlap1D(1) and overlap1D(2);
 }

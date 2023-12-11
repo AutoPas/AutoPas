@@ -7,16 +7,16 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <memory>
+#include <string>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/tuning/tuningStrategy/GaussianModel/GaussianModelTypes.h"
 #include "autopas/tuning/tuningStrategy/GaussianModel/GaussianProcess.h"
-#include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/Math.h"
-#include "autopas/utils/NumberSet.h"
 #include "autopas/utils/Random.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/GaussianClusterLogger.h"
 
 namespace autopas {
@@ -29,9 +29,9 @@ namespace autopas {
  */
 class GaussianCluster {
   // number of samples to find optimal hyperparameters
-  static constexpr size_t hp_sample_size = 500;
+  static constexpr std::size_t hp_sample_size = 500;
   // number of hyperparameters
-  static constexpr size_t hp_size = 25;
+  static constexpr std::size_t hp_size = 25;
 
  public:
   /**
@@ -64,7 +64,7 @@ class GaussianCluster {
    * @param vectorToString function to convert vectors to a readable string
    * @param outputSuffix Suffix for all output files produced by this class.
    */
-  GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims, WeightFunction weightFun, double sigma,
+  GaussianCluster(const std::vector<int> &dimRestriction, std::size_t continuousDims, WeightFunction weightFun, double sigma,
                   Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString = defaultVecToString,
                   const std::string &outputSuffix = "");
 
@@ -89,7 +89,7 @@ class GaussianCluster {
    * @param index1D
    * @return
    */
-  [[nodiscard]] const GaussianProcess &getCluster(size_t index1D) const;
+  [[nodiscard]] const GaussianProcess &getCluster(std::size_t index1D) const;
 
   /**
    * Discard all evidence.
@@ -100,7 +100,7 @@ class GaussianCluster {
    * Get the number of evidence provided.
    * @return
    */
-  [[nodiscard]] size_t numEvidence() const;
+  [[nodiscard]] std::size_t numEvidence() const;
 
   /**
    * Provide a input-output pair as evidence.
@@ -195,7 +195,7 @@ class GaussianCluster {
    * @param x the discrete tuple
    * @return
    */
-  [[nodiscard]] size_t getIndex(const GaussianModelTypes::VectorDiscrete &x) const;
+  [[nodiscard]] std::size_t getIndex(const GaussianModelTypes::VectorDiscrete &x) const;
 
   /**
    * Increment the given discrete tuple x, resulting
@@ -252,7 +252,7 @@ class GaussianCluster {
   /**
    * Number of additional unrestricted continuous dimensions.
    */
-  const size_t _continuousDims;
+  const std::size_t _continuousDims;
 
   /**
    * Gaussian process for each discrete tuple.
@@ -284,7 +284,7 @@ class GaussianCluster {
   /**
    * Current number of evidence.
    */
-  size_t _numEvidence;
+  std::size_t _numEvidence;
 
   /**
    * Fixed noise assumed.

@@ -33,7 +33,7 @@ autopas::TuningResultLogger::~TuningResultLogger() {
 #endif
 }
 
-void autopas::TuningResultLogger::logTuningResult(const autopas::Configuration &configuration, size_t iteration,
+void autopas::TuningResultLogger::logTuningResult(const autopas::Configuration &configuration, std::size_t iteration,
                                                   long timeTuning, long optimumPerformance) {
 #ifdef AUTOPAS_LOG_TUNINGRESULTS
   spdlog::get(_loggerName)->info("{},{},{},{}", iteration, configuration.getCSVLine(), timeTuning, optimumPerformance);

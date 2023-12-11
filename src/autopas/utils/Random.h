@@ -50,7 +50,7 @@ class Random : public std::mt19937 {
    * @return samples
    */
   template <class Iter>
-  std::vector<typename std::iterator_traits<Iter>::value_type> uniformSample(Iter poolBegin, Iter poolEnd, size_t n) {
+  std::vector<typename std::iterator_traits<Iter>::value_type> uniformSample(Iter poolBegin, Iter poolEnd, std::size_t n) {
     if (poolBegin == poolEnd) {
       autopas::utils::ExceptionHandler::exception("Random.uniformSample: Cannot sample from empty set.");
     }
@@ -66,7 +66,7 @@ class Random : public std::mt19937 {
     // if too many elements added
     if (result.size() > n) {
       // randomize the last copy of the set
-      size_t extra = result.size() - n;
+      std::size_t extra = result.size() - n;
       std::shuffle(std::end(result) - extra, std::end(result), *this);
 
       // truncate the rest
@@ -87,9 +87,9 @@ class Random : public std::mt19937 {
    * @param n number samples
    * @return samples
    */
-  std::vector<size_t> uniformSample(size_t min, size_t max, size_t n) {
-    std::set<size_t> allAllowed;
-    for (size_t i = min; i <= max; ++i) {
+  std::vector<std::size_t> uniformSample(std::size_t min, std::size_t max, std::size_t n) {
+    std::set<std::size_t> allAllowed;
+    for (std::size_t i = min; i <= max; ++i) {
       allAllowed.insert(i);
     }
     return uniformSample(allAllowed.begin(), allAllowed.end(), n);
@@ -105,8 +105,8 @@ class Random : public std::mt19937 {
    */
   template <class Container>
   auto pickRandom(const Container &pool) {
-    std::uniform_int_distribution<size_t> distr(0ul, pool.size() - 1ul);
-    size_t pos = distr(*this);
+    std::uniform_int_distribution<std::size_t> distr(0ul, pool.size() - 1ul);
+    std::size_t pos = distr(*this);
 
     auto it = std::begin(pool);
     std::advance(it, pos);
@@ -122,8 +122,8 @@ class Random : public std::mt19937 {
    * @return n random elements
    */
   template <class T>
-  std::set<T> randomSubset(std::set<T> pool, size_t n) {
-    size_t size = std::min(n, pool.size());
+  std::set<T> randomSubset(std::set<T> pool, std::size_t n) {
+    std::size_t size = std::min(n, pool.size());
 
     // create randomly shuffled vector of points to all elements in the pool
     std::vector<const T *> pointerVec;
@@ -135,7 +135,7 @@ class Random : public std::mt19937 {
 
     // return first elements of the shuffled vector
     std::set<T> result;
-    for (size_t i = 0; i < size; ++i) {
+    for (std::size_t i = 0; i < size; ++i) {
       result.insert(*pointerVec[i]);
     }
 

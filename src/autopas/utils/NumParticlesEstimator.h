@@ -8,8 +8,6 @@
 
 #include <array>
 
-#include "autopas/utils/ArrayMath.h"
-
 namespace autopas::utils::NumParticlesEstimator {
 
 /**
@@ -24,7 +22,7 @@ namespace autopas::utils::NumParticlesEstimator {
  * @param haloWidth
  * @return Estimated number of halo particles.
  */
-size_t estimateNumHalosUniform(size_t numParticles, const std::array<double, 3> &boxMin,
+std::size_t estimateNumHalosUniform(std::size_t numParticles, const std::array<double, 3> &boxMin,
                                const std::array<double, 3> &boxMax, double haloWidth);
 
 }  // namespace autopas::utils::NumParticlesEstimator

@@ -6,7 +6,10 @@
 
 #pragma once
 
-#include <unordered_set>
+#include <sstream>
+#include <string>
+#include <ios>
+#include <vector>
 
 #include "autopas/tuning/tuningStrategy/GaussianModel/GaussianModelTypes.h"
 #include "autopas/tuning/tuningStrategy/GaussianModel/GaussianProcess.h"

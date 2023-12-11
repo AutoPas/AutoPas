@@ -17,7 +17,6 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
-#include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopas {

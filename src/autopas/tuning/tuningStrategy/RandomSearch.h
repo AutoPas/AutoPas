@@ -26,11 +26,11 @@ class RandomSearch final : public TuningStrategyInterface {
    * This number should be smaller than the available search space.
    * @param seed Seed for the random number generator (should only be fixed for deterministic tests).
    */
-  explicit RandomSearch(size_t maxEvidence, unsigned long seed);
+  explicit RandomSearch(std::size_t maxEvidence, unsigned long seed);
 
   TuningStrategyOption getOptionType() override;
 
-  void reset(size_t, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  void reset(std::size_t, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue,
@@ -44,11 +44,11 @@ class RandomSearch final : public TuningStrategyInterface {
   /**
    * Since this strategy does not converge this variable defines an upper limit of evidence to collect.
    */
-  size_t _maxEvidence;
+  std::size_t _maxEvidence;
   /**
    * Counter how many evidence were already collected in this tuning phase.
    */
-  size_t _numEvidenceCollected;
+  std::size_t _numEvidenceCollected;
 };
 
 }  // namespace autopas

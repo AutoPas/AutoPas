@@ -4,9 +4,9 @@
  * @author tchipev
  */
 
-#include "utils/Timer.h"
+#include "Timer.h"
 
-#include "ExceptionHandler.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 using namespace std::chrono;
 

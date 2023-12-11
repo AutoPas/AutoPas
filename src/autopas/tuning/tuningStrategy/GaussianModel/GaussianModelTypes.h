@@ -8,7 +8,10 @@
 
 #include <Eigen/Core>
 #include <functional>
+#include <string>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 /**
  * Aliases shared between GaussianModel based files.

@@ -5,8 +5,8 @@
  */
 
 #pragma once
-#include <array>
-#include <memory>
+
+#include <tuple>
 
 #include "autopas/options/LoadEstimatorOption.h"
 

@@ -17,11 +17,11 @@ class Evidence {
   /**
    * Iteration in which the measurement was taken.
    */
-  size_t iteration;
+  std::size_t iteration;
   /**
    * Tuning phase in which the measurement was taken.
    */
-  size_t tuningPhase;
+  std::size_t tuningPhase;
   /**
    * Value of the measurement (time, energy, ...).
    */

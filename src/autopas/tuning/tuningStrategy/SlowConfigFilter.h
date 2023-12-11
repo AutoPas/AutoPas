@@ -6,8 +6,14 @@
 
 #pragma once
 
-#include "TuningStrategyInterface.h"
+#include <set>
+#include <vector>
+
+#include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
+
 namespace autopas {
 /**
  * Acts as a blacklist for configurations that have proven to be very slow.

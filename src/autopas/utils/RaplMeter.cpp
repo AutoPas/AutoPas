@@ -10,7 +10,6 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#include <cmath>
 #include <cstring>
 #include <sstream>
 

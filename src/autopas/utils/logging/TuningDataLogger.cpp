@@ -6,9 +6,11 @@
 
 #include "TuningDataLogger.h"
 
+#include <spdlog/async.h>
+
 #include "utils/Timer.h"
 
-autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix)
+autopas::TuningDataLogger::TuningDataLogger(std::size_t numSamples, const std::string &outputSuffix)
     : _loggerName("TuningDataLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
@@ -20,7 +22,7 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
   std::stringstream samplesHeader;
-  for (size_t i = 0; i < numSamples; ++i) {
+  for (std::size_t i = 0; i < numSamples; ++i) {
     samplesHeader << ",sample" << i;
   }
   // print csv header
@@ -44,7 +46,7 @@ autopas::TuningDataLogger::~TuningDataLogger() {
 void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &configuration,
                                               const std::vector<long> &samplesRebuildingNeighborLists,
                                               const std::vector<long> &samplesNotRebuildingNeighborLists,
-                                              size_t iteration, long reducedValue, long smoothedValue) {
+                                              std::size_t iteration, long reducedValue, long smoothedValue) {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{},{}", iteration, configuration.getCSVLine(),

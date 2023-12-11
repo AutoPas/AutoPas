@@ -6,12 +6,13 @@
 
 #pragma once
 
-#include <cmath>
+#include <algorithm>
 #include <regex>
 #include <set>
 #include <string>
 #include <vector>
 
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/NumberSetFinite.h"

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RuleVM.h"
-
+#include "autopas/tuning/Configuration.h"
 namespace autopas {
 
 /**

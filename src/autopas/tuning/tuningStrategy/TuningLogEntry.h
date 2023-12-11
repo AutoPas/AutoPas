@@ -58,14 +58,14 @@ std::tuple<Payload...> fromString(std::stringstream &stream) {
  * @param config The configuation used.
  * @return The string with the evidence.
  */
-std::string writeEvidence(long time, size_t iteration, const Configuration &config);
+std::string writeEvidence(long time, std::size_t iteration, const Configuration &config);
 
 /**
  * Reads  the arguments of an evidence entry in the log file from a stringstream.
  * @param str The stream to read from.
  * @return The evidence as a tuple.
  */
-std::tuple<long, size_t, Configuration> readEvidence(std::stringstream &str);
+std::tuple<long, std::size_t, Configuration> readEvidence(std::stringstream &str);
 
 /**
  * Writes a tune entry for the log file into a string.
@@ -85,14 +85,14 @@ bool readTune(std::stringstream &str);
  * @param iteration The iteration it was performed on.
  * @return The string with the reset entry.
  */
-std::string writeReset(size_t iteration);
+std::string writeReset(std::size_t iteration);
 
 /**
  * Reads the arguments of a reset entry in the log file from a string.
  * @param str The stringstream to read from.
  * @return The iteration the reset happened in.
  */
-size_t readReset(std::stringstream &str);
+std::size_t readReset(std::stringstream &str);
 
 /**
  * Writes a liveInfo entry in the log file to a string.

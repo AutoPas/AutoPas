@@ -6,7 +6,8 @@
 
 #pragma once
 
-#include <spdlog/async.h>
+#include <string>
+#include <vector>
 
 #include "autopas/tuning/Configuration.h"
 
@@ -27,7 +28,7 @@ class TuningDataLogger {
    * @param numSamples Number of samples that are taken per configuration.
    * @param outputSuffix Suffix for all output files produced by this class.
    */
-  explicit TuningDataLogger(size_t numSamples, const std::string &outputSuffix = "");
+  explicit TuningDataLogger(std::size_t numSamples, const std::string &outputSuffix = "");
 
   /**
    * Destructor drops the logger from the spd registry.
@@ -45,7 +46,7 @@ class TuningDataLogger {
    */
   void logTuningData(const autopas::Configuration &configuration,
                      const std::vector<long> &samplesRebuildingNeighborLists,
-                     const std::vector<long> &samplesNotRebuildingNeighborLists, size_t iteration, long reducedValue,
+                     const std::vector<long> &samplesNotRebuildingNeighborLists, std::size_t iteration, long reducedValue,
                      long smoothedVale);
 
  private:

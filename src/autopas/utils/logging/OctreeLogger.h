@@ -7,10 +7,9 @@
 #pragma once
 
 #include <array>
-#include <cstring>
 #include <fstream>
-#include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "autopas/containers/octree/OctreeNodeInterface.h"

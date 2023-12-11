@@ -8,6 +8,7 @@
 
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TuningMetricOption.h"
+
 namespace autopas {
 
 /**

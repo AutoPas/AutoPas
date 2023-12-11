@@ -7,10 +7,17 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <limits>
+#include <map>
+#include <numeric>
+#include <string>
+#include <tuple>
+#include <type_traits>
 #include <variant>
+#include <vector>
 
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/options/ContainerOption.h"
@@ -19,7 +26,6 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -36,7 +42,7 @@ class LiveInfo {
   /**
    * The type of an info.
    */
-  using InfoType = std::variant<bool, double, size_t, ContainerOption, TraversalOption, LoadEstimatorOption,
+  using InfoType = std::variant<bool, double, std::size_t, ContainerOption, TraversalOption, LoadEstimatorOption,
                                 DataLayoutOption, Newton3Option>;
 
   /**
@@ -93,7 +99,7 @@ class LiveInfo {
     infos["numParticles"] = numParticles;
     infos["cutoff"] = cutoff;
     infos["skin"] = container.getVerletSkin();
-    infos["rebuildFrequency"] = static_cast<size_t>(rebuildFrequency);
+    infos["rebuildFrequency"] = static_cast<std::size_t>(rebuildFrequency);
     const auto domainSize = boxMax - boxMin;
 
     infos["domainSizeX"] = domainSize[0];
@@ -104,15 +110,15 @@ class LiveInfo {
 
     // Calculate number of cells for a linked cells container, assuming cell size factor == 1
     const auto cellsPerDim = ceilToInt(domainSize * cutoffInv);
-    const auto numCells = static_cast<size_t>(cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2]);
+    const auto numCells = static_cast<std::size_t>(cellsPerDim[0] * cellsPerDim[1] * cellsPerDim[2]);
     infos["numCells"] = numCells;
 
     // Count how many particles are in each cell via bin counting
-    std::vector<size_t> particleBins;
+    std::vector<std::size_t> particleBins;
     // +1 because we count all halo particles in the last bin
     particleBins.resize(numCells + 1);
     // Blurred cells divide the domain into 3x3x3 equivalent boxes.
-    std::vector<size_t> particleBinsBlurred;
+    std::vector<std::size_t> particleBinsBlurred;
     particleBinsBlurred.resize(27);
     const auto blurredCellDimsReciproc = std::array<double, 3>{3.0, 3.0, 3.0} / domainSize;
     for (const Particle &particle : container) {
@@ -150,11 +156,11 @@ class LiveInfo {
       double estimatedNumNeighborInteractionsLambda = 0.;
       double maxDiffLambda = 0.;
       double sumStddevLambda = 0.;
-      size_t numEmptyCellsLambda = 0;
-      size_t maxParticlesPerCellLambda = std::numeric_limits<size_t>::min();
-      size_t minParticlesPerCellLambda = std::numeric_limits<size_t>::max();
+      std::size_t numEmptyCellsLambda = 0;
+      std::size_t maxParticlesPerCellLambda = std::numeric_limits<std::size_t>::min();
+      std::size_t minParticlesPerCellLambda = std::numeric_limits<std::size_t>::max();
       // go over all bins and calculate statistics
-      for (size_t i = 0; i < particleBins.size() - 1; i++) {
+      for (std::size_t i = 0; i < particleBins.size() - 1; i++) {
         const auto particlesInBin = particleBins[i];
         if (particlesInBin == 0) {
           ++numEmptyCellsLambda;
@@ -201,9 +207,9 @@ class LiveInfo {
                                                                      static_cast<double>(particleBinsBlurred.size()) /
                                                                      avgParticlesPerBlurredCell;
 
-    infos["threadCount"] = static_cast<size_t>(autopas::autopas_get_max_threads());
+    infos["threadCount"] = static_cast<std::size_t>(autopas::autopas_get_max_threads());
 
-    constexpr size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle, PairwiseFunctor>(
+    constexpr std::size_t particleSizeNeededByFunctor = calculateParticleSizeNeededByFunctor<Particle, PairwiseFunctor>(
         std::make_index_sequence<PairwiseFunctor::getNeededAttr().size()>());
     infos["particleSizeNeededByFunctor"] = particleSizeNeededByFunctor;
   }
@@ -221,7 +227,7 @@ class LiveInfo {
   [[nodiscard]] std::string toString() const {
     auto typeToString = [](auto type) {
       if constexpr (std::is_same_v<decltype(type), bool> or std::is_same_v<decltype(type), double> or
-                    std::is_same_v<decltype(type), size_t>) {
+                    std::is_same_v<decltype(type), std::size_t>) {
         return std::to_string(type);
       } else if constexpr (std::is_base_of_v<Option<decltype(type)>, decltype(type)>) {
         return type.to_string();
@@ -262,12 +268,12 @@ class LiveInfo {
    * @return
    */
   friend std::istream &operator>>(std::istream &in, LiveInfo &info) {
-    size_t numElements{0};
+    std::size_t numElements{0};
     in >> numElements;
-    for (size_t i = 0; i < numElements; i++) {
+    for (std::size_t i = 0; i < numElements; i++) {
       std::string name;
       in >> name;
-      size_t idx{0};
+      std::size_t idx{0};
       in >> idx;
       const auto val =
           readIndex<LiveInfo::InfoType>(in, idx, std::make_index_sequence<std::variant_size_v<LiveInfo::InfoType>>());
@@ -285,7 +291,7 @@ class LiveInfo {
    * @tparam Idx An index sequence for all elements of PairwiseFunctor::getNeededAttr() elements.
    * @return The number of bytes needed by the information of a particle the functor needs.
    */
-  template <class Particle, class PairwiseFunctor, size_t... Idx>
+  template <class Particle, class PairwiseFunctor, std::size_t... Idx>
   constexpr static auto calculateParticleSizeNeededByFunctor(std::index_sequence<Idx...>) {
     return (0 + ... +
             sizeof(typename std::tuple_element<PairwiseFunctor::getNeededAttr()[Idx],
@@ -302,8 +308,8 @@ class LiveInfo {
    * @param idx The index to compare to the template argument Idx.
    * @param var The variant that is filled with the read value if Idx==idx.
    */
-  template <class Variant, class Type, size_t Idx>
-  static void readIndexHelper(std::istream &in, size_t idx, Variant &var) {
+  template <class Variant, class Type, std::size_t Idx>
+  static void readIndexHelper(std::istream &in, std::size_t idx, Variant &var) {
     if (Idx == idx) {
       Type val;
       in >> val;
@@ -319,8 +325,8 @@ class LiveInfo {
    * @param idx The index of the alternative that should be read in.
    * @return A variant that holds the read value of the type indexed by idx in the Variant.
    */
-  template <class Variant, size_t... Idx>
-  static Variant readIndex(std::istream &in, size_t idx, std::index_sequence<Idx...>) {
+  template <class Variant, std::size_t... Idx>
+  static Variant readIndex(std::istream &in, std::size_t idx, std::index_sequence<Idx...>) {
     Variant var;
     (readIndexHelper<Variant, std::variant_alternative_t<Idx, Variant>, Idx>(in, idx, var), ...);
     return var;

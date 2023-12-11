@@ -7,11 +7,8 @@
 #include "RandomSearch.h"
 
 #include <algorithm>
-#include <optional>
 
-#include "autopas/tuning/Configuration.h"
-
-autopas::RandomSearch::RandomSearch(size_t maxEvidence, unsigned long seed)
+autopas::RandomSearch::RandomSearch(std::size_t maxEvidence, unsigned long seed)
     : _rng(seed), _maxEvidence(maxEvidence), _numEvidenceCollected(0) {}
 
 void autopas::RandomSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
@@ -28,7 +25,7 @@ void autopas::RandomSearch::optimizeSuggestions(std::vector<Configuration> &conf
   }
 }
 
-void autopas::RandomSearch::reset(size_t, size_t tuningPhase, std::vector<Configuration> &configQueue,
+void autopas::RandomSearch::reset(std::size_t, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
                                   const autopas::EvidenceCollection &evidenceCollection) {
   _numEvidenceCollected = 0;
 }

@@ -6,9 +6,8 @@
 
 #include "ActiveHarmony.h"
 
-#include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
-#include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
 
@@ -164,7 +163,7 @@ void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, con
   }
 }
 
-void ActiveHarmony::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+void ActiveHarmony::reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
                           const EvidenceCollection &evidenceCollection) {
   resetHarmony();
 }

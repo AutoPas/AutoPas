@@ -6,13 +6,12 @@
 
 #include "MPIParallelizedStrategy.h"
 
-#include <cstddef>
-
-#include "autopas/tuning/Configuration.h"
+#include "options/ContainerOption.h"
 #include "options/DataLayoutOption.h"
+#include "options/LoadEstimatorOption.h"
 #include "options/Newton3Option.h"
+#include "options/TraversalOption.h"
 #include "utils/AutoPasConfigurationCommunicator.h"
-#include "utils/WrapMPI.h"
 
 namespace autopas {
 
@@ -92,7 +91,7 @@ void MPIParallelizedStrategy::rejectConfiguration(const Configuration &configura
   _rejectedConfigurations.insert(configuration);
 }
 
-void MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+void MPIParallelizedStrategy::reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
                                     const EvidenceCollection &evidenceCollection) {
   // clear rejects since they now might be valid.
   _rejectedConfigurations.clear();
@@ -109,14 +108,14 @@ void MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::v
   AutoPas_MPI_Comm_size(_bucket, &numRanksInBucket);
   std::vector<Configuration> myConfigQueue{};
   // Check if there are configs left for this rank.
-  if (static_cast<size_t>(myBucketRank) < configQueue.size()) {
+  if (static_cast<std::size_t>(myBucketRank) < configQueue.size()) {
     // If there are enough configurations, distribute the configs in a round-robin fashion.
     // This way all ranks get a as similar distribution of containers as possible.
 
     // Equivalent to ceil(configQueue / numRanksInBucket) just purely in integers.
     const auto configsPerRankCeiled = (configQueue.size() + numRanksInBucket - 1) / numRanksInBucket;
     myConfigQueue.reserve(configsPerRankCeiled);
-    for (size_t i = myBucketRank; i < configQueue.size(); i += numRanksInBucket) {
+    for (std::size_t i = myBucketRank; i < configQueue.size(); i += numRanksInBucket) {
       myConfigQueue.push_back(configQueue[i]);
     }
   } else {

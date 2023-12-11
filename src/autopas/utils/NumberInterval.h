@@ -7,6 +7,9 @@
 #pragma once
 #include "NumberSet.h"
 
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Random.h"
+
 namespace autopas {
 /**
  * Class describing an interval

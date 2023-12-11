@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include <memory>
-
+#include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
@@ -22,7 +21,6 @@ namespace autopas {
  * Will execute the passed function body with the static container type of container.
  *
  * @tparam Particle
- * @tparam ParticleCell
  * @tparam FunctionType
  * @param container The container to be used.
  * @param function The function body to be executed. Has to take exactly one argument: A reference to the container.

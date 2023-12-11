@@ -6,7 +6,9 @@
 
 #include "NumParticlesEstimator.h"
 
-size_t autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(size_t numParticles,
+#include "autopas/utils/ArrayMath.h"
+
+std::size_t autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(std::size_t numParticles,
                                                                       const std::array<double, 3> &boxMin,
                                                                       const std::array<double, 3> &boxMax,
                                                                       double haloWidth) {
@@ -20,5 +22,5 @@ size_t autopas::utils::NumParticlesEstimator::estimateNumHalosUniform(size_t num
   const auto haloVolume = haloBoxLength[0] * haloBoxLength[1] * haloBoxLength[2];
   // assumption: particle density is the same in the box and the halo. Mathematically speaking:
   // haloVolume / boxVolume == numHaloParticles / numParticles
-  return static_cast<size_t>(static_cast<double>(numParticles) * (haloVolume / boxVolume));
+  return static_cast<std::size_t>(static_cast<double>(numParticles) * (haloVolume / boxVolume));
 }

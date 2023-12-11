@@ -6,7 +6,8 @@
 
 #include "TuningStrategyFactory.h"
 
-#include "autopas/options/TuningStrategyOption.h"
+#include <random>
+
 #include "autopas/tuning/tuningStrategy/ActiveHarmony.h"
 #include "autopas/tuning/tuningStrategy/BayesianClusterSearch.h"
 #include "autopas/tuning/tuningStrategy/BayesianSearch.h"
@@ -15,9 +16,9 @@
 #include "autopas/tuning/tuningStrategy/RandomSearch.h"
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
 #include "autopas/tuning/tuningStrategy/SortByName.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSetFinite.h"
 
 namespace autopas::TuningStrategyFactory {

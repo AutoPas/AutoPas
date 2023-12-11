@@ -9,16 +9,15 @@
 #include <algorithm>
 #include <iterator>
 
-#include "autopas/tuning/searchSpace/EvidenceCollection.h"
-#include "autopas/utils/StringUtils.h"
+#include "autopas/utils/logging/Logger.h"
 
 autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowedContainerOptions,
                                         const autopas::NumberSet<double> &allowedCellSizeFactors,
                                         const std::set<TraversalOption> &allowedTraversalOptions,
                                         const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                         const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                        const std::set<Newton3Option> &allowedNewton3Options, size_t maxEvidence,
-                                        autopas::AcquisitionFunctionOption predAcqFunction, size_t predNumLHSamples,
+                                        const std::set<Newton3Option> &allowedNewton3Options, std::size_t maxEvidence,
+                                        autopas::AcquisitionFunctionOption predAcqFunction, std::size_t predNumLHSamples,
                                         unsigned long seed)
     : _containerOptionsSet(allowedContainerOptions),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
@@ -74,7 +73,7 @@ void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &co
 
   // Sample the search space, check that the samples are in the available configurations, and
   // sort the remaining intersection of the config queue
-  for (size_t i = 0; i < maxAttempts; ++i) {
+  for (std::size_t i = 0; i < maxAttempts; ++i) {
     auto currentSamples = sampleAcquisitions(_predNumLHSamples, _predAcqFunction);
 
     // Filter out all configurations which are either:
@@ -109,7 +108,7 @@ void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &co
   }
 }
 
-std::vector<autopas::FeatureVector> autopas::BayesianSearch::sampleAcquisitions(size_t n,
+std::vector<autopas::FeatureVector> autopas::BayesianSearch::sampleAcquisitions(std::size_t n,
                                                                                 AcquisitionFunctionOption af) {
   // create n lhs samples
   auto currentSamples = _encoder.lhsSampleFeatures(n, _rng);
@@ -154,7 +153,7 @@ void autopas::BayesianSearch::addEvidence(const Configuration &configuration, co
   _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.value * secondsPerMicroseconds, true);
 }
 
-void autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+void autopas::BayesianSearch::reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
                                     const autopas::EvidenceCollection &evidenceCollection) {
   _gaussianProcess.clear();
   optimizeSuggestions(configQueue, evidenceCollection);

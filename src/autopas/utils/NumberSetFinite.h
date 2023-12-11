@@ -6,10 +6,12 @@
 
 #pragma once
 
+#include <memory>
 #include <set>
+#include <string>
 
-#include "ArrayUtils.h"
-#include "NumberSet.h"
+#include "autopas/utils/ArrayUtils.h"
+#include "autopas/utils/NumberSet.h"
 
 namespace autopas {
 /**

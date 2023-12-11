@@ -8,6 +8,8 @@
 #pragma once
 
 #include <limits>
+#include <stdexcept>
+#include <type_traits>
 
 namespace autopas::utils::ConstexprMath {
 

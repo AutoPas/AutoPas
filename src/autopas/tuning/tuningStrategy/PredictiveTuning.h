@@ -8,16 +8,15 @@
 
 #include <limits>
 #include <set>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
-#include "TuningStrategyInterface.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
-#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/options/ExtrapolationMethodOption.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
-#include "autopas/tuning/selectors/OptimumSelector.h"
-#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/logging/PredictionLogger.h"
 
@@ -64,7 +63,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  void reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
@@ -81,7 +80,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
    * @param evidenceCollection Data on which all extrapolation is based on.
    * @return For each configuration a predictions.
    */
-  PredictiveTuning::PredictionsType calculatePredictions(size_t iteration, size_t tuningPhase,
+  PredictiveTuning::PredictionsType calculatePredictions(std::size_t iteration, std::size_t tuningPhase,
                                                          const std::vector<Configuration> &configurations,
                                                          const autopas::EvidenceCollection &evidenceCollection);
 
@@ -90,19 +89,19 @@ class PredictiveTuning final : public TuningStrategyInterface {
    * Predicts the traversal time by placing a line through the last two traversal points and calculating the prediction
    * for the current time.
    */
-  long linePrediction(size_t iteration, size_t tuningPhase, const Configuration &configuration,
+  long linePrediction(std::size_t iteration, std::size_t tuningPhase, const Configuration &configuration,
                       const std::vector<Evidence> &evidenceVec);
   /**
    * Predicts the traversal time by creating a function that places a line through the data points and calculating the
    * prediction for the current time.
    */
-  long linearRegression(size_t iteration, size_t tuningPhase, const Configuration &configuration,
+  long linearRegression(std::size_t iteration, std::size_t tuningPhase, const Configuration &configuration,
                         const std::vector<Evidence> &evidenceVec);
   /**
    * Creates a polynomial function using Newton's method of finite differences and with this function the prediction is
    * calculated.
    */
-  long newtonPolynomial(size_t iteration, size_t tuningPhase, const Configuration &configuration,
+  long newtonPolynomial(std::size_t iteration, std::size_t tuningPhase, const Configuration &configuration,
                         const std::vector<Evidence> &evidenceVec);
 
   /**

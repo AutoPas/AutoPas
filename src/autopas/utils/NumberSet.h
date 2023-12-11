@@ -6,11 +6,11 @@
 
 #pragma once
 
+#include <memory>
 #include <set>
-#include <sstream>
+#include <string>
 #include <vector>
 
-#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/Random.h"
 
 namespace autopas {

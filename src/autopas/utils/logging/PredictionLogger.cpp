@@ -6,6 +6,8 @@
 
 #include "PredictionLogger.h"
 
+#include <spdlog/async.h>
+
 #include "autopas/utils/Timer.h"
 
 autopas::PredictionLogger::PredictionLogger(const std::string &outputSuffix)

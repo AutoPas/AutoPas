@@ -9,13 +9,12 @@
 #include <algorithm>
 #include <fstream>
 #include <iterator>
-#include <set>
 #include <vector>
 
-#include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/TuningLogEntry.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
 TuningStrategyLogReplayer::TuningStrategyLogReplayer(std::string filename,

@@ -6,22 +6,20 @@
 
 #pragma once
 
-#include <chrono>
-#include <cstdio>
-#include <cstdlib>
-#include <string>
-#include <thread>
+#include <set>
 #include <vector>
 
-#include "TuningStrategyInterface.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
-#include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/LoadEstimators.h"
+#include "hclient.h"
+
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/DataLayoutOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
-#include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "autopas/utils/WrapMPI.h"
-#include "hclient.h"
 
 namespace autopas {
 
@@ -73,7 +71,7 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   bool needsSmoothedHomogeneityAndMaxDensity() const override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  void reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
  private:
@@ -93,7 +91,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
   std::set<Newton3Option> _allowedNewton3Options;
 
-  size_t _tuningPhase{0};
+  std::size_t _tuningPhase{0};
   bool _mpiDivideAndConquer;
   AutoPas_MPI_Comm _comm;
   bool _nonLocalServer;

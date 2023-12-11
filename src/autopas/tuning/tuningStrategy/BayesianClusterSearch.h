@@ -6,15 +6,20 @@
 
 #pragma once
 
-#include <limits>
-#include <map>
+#include <memory>
 #include <set>
+#include <string>
 #include <unordered_set>
+#include <vector>
 
-#include "GaussianModel/GaussianCluster.h"
-#include "TuningStrategyInterface.h"
-#include "autopas/containers/CompatibleLoadEstimators.h"
-#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/options/AcquisitionFunctionOption.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/TraversalOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/tuning/tuningStrategy/GaussianModel/GaussianCluster.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/utils/FeatureVectorEncoder.h"
 #include "autopas/utils/NumberSet.h"
@@ -29,7 +34,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * The maximum number of attempts to sample an optimum.
    */
-  constexpr static size_t maxAttempts = 10;
+  constexpr static std::size_t maxAttempts = 10;
   /**
    * The factor for conversion from seconds to microseconds.
    */
@@ -38,7 +43,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * Dimensions of the continuous tuples.
    * FeatureVector continuous dimensions + 1 (time)
    */
-  constexpr static size_t continuousDims = FeatureVectorEncoder::tunableContinuousDims + 1;
+  constexpr static std::size_t continuousDims = FeatureVectorEncoder::tunableContinuousDims + 1;
   /**
    * Fixed noise
    */
@@ -77,9 +82,9 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), std::size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
-      const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()());
+      const std::string &outputSuffix = "", std::size_t predNumLHSamples = 50, unsigned long seed = std::random_device()());
 
   ~BayesianClusterSearch() override;
 
@@ -87,7 +92,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  void reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) override;
@@ -112,7 +117,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @return Vector of acquisitions.
    */
   std::vector<autopas::GaussianModelTypes::VectorPairDiscreteContinuous> sampleAcquisitions(
-      size_t n, AcquisitionFunctionOption af);
+      std::size_t n, AcquisitionFunctionOption af);
 
   /**
    * If allowed options are changed this functions should be called
@@ -150,7 +155,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Maximum number of evidences to collect after which an optimum is declared.
    */
-  const size_t _maxEvidence;
+  const std::size_t _maxEvidence;
   /**
    * Acquisition function used to predict informational gain.
    */
@@ -158,7 +163,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Number of latin-hypercube-samples used to find a evidence with high predicted acquisition.
    */
-  const size_t _predNumLHSamples;
+  const std::size_t _predNumLHSamples;
   /**
    * Flag indicating that we are in the first tuning phase.
    */
@@ -166,7 +171,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Iteration of last added evidence or reset.
    */
-  size_t _currentIteration;
+  std::size_t _currentIteration;
   /**
    * Iteration numbers get scaled down by a multiple of max evidence to ensure not all kernels become 0.
    */
@@ -174,7 +179,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
   /**
    * Number of evidence provided in current tuning phase.
    */
-  size_t _currentNumEvidence;
+  std::size_t _currentNumEvidence;
   /**
    * Lowest time of evidence in current tuning phase.
    */

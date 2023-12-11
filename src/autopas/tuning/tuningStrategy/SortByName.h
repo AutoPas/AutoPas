@@ -6,7 +6,11 @@
 
 #pragma once
 
-#include "TuningStrategyInterface.h"
+#include <vector>
+
+#include "autopas/options/TuningStrategyOption.h"
+#include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 
 namespace autopas {
 

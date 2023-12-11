@@ -8,7 +8,7 @@
 
 #include <Eigen/Cholesky>
 
-#include "GaussianProcess.h"
+#include "autopas/tuning/tuningStrategy/GaussianModel/GaussianProcess.h"
 
 autopas::GaussianHyperparameters::GaussianHyperparameters(double mean, double theta, Eigen::VectorXd dimScales)
     : score(0), mean(mean), theta(theta), dimScales(std::move(dimScales)) {}

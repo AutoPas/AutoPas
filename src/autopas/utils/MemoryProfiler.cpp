@@ -6,8 +6,6 @@
 
 #include "MemoryProfiler.h"
 
-#include <sys/stat.h>
-
 #include <fstream>
 
 #include "autopas/utils/logging/Logger.h"

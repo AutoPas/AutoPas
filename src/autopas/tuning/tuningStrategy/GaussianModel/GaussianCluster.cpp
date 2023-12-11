@@ -6,7 +6,9 @@
 
 #include "GaussianCluster.h"
 
-autopas::GaussianCluster::GaussianCluster(const std::vector<int> &dimRestriction, size_t continuousDims,
+#include "autopas/tuning/tuningStrategy/GaussianModel/AcquisitionFunction.h"
+
+autopas::GaussianCluster::GaussianCluster(const std::vector<int> &dimRestriction, std::size_t continuousDims,
                                           autopas::GaussianCluster::WeightFunction weightFun, double sigma,
                                           Random &rngRef, const GaussianModelTypes::VectorToStringFun &vectorToString,
                                           const std::string &outputSuffix)
@@ -32,7 +34,7 @@ void autopas::GaussianCluster::setDimensions(const std::vector<int> &newValue) {
   initClusters();
 }
 
-const autopas::GaussianProcess &autopas::GaussianCluster::getCluster(size_t index1D) const {
+const autopas::GaussianProcess &autopas::GaussianCluster::getCluster(std::size_t index1D) const {
   return _clusters[index1D];
 }
 
@@ -43,13 +45,13 @@ void autopas::GaussianCluster::clear() {
   _numEvidence = 0;
 }
 
-size_t autopas::GaussianCluster::numEvidence() const { return _numEvidence; }
+std::size_t autopas::GaussianCluster::numEvidence() const { return _numEvidence; }
 
 void autopas::GaussianCluster::addEvidence(const autopas::GaussianModelTypes::VectorDiscrete &inputDiscrete,
                                            const autopas::GaussianModelTypes::VectorContinuous &inputContinuous,
                                            double output) {
-  size_t clusterIdx = getIndex(inputDiscrete);
-  if (static_cast<size_t>(inputContinuous.size()) != _continuousDims) {
+  std::size_t clusterIdx = getIndex(inputDiscrete);
+  if (static_cast<std::size_t>(inputContinuous.size()) != _continuousDims) {
     utils::ExceptionHandler::exception(
         "GaussianCluster: size of continuous input {} does not match specified dimensions {}", inputContinuous.size(),
         _continuousDims);
@@ -78,7 +80,7 @@ void autopas::GaussianCluster::addEvidence(const autopas::GaussianModelTypes::Ve
   }
 
   // combine score of each cluster
-  for (size_t i = 0; i < hp_sample_size; ++i) {
+  for (std::size_t i = 0; i < hp_sample_size; ++i) {
     // set the score of a hyperparameter sample to the product of all scores
     double combinedScore = 0.;
     for (auto &cluster : _clusters) {
@@ -130,7 +132,7 @@ std::vector<autopas::GaussianModelTypes::VectorAcquisition> autopas::GaussianClu
     _logger->add(_clusters, _discreteVectorMap, continuousSample, means, vars, neighbourWeights);
 
     // get acquisition considering neighbours
-    for (size_t i = 0; i < _clusters.size(); ++i) {
+    for (std::size_t i = 0; i < _clusters.size(); ++i) {
       // target cluster gets weight 1.
       double mixAcquisition = currentAcquisisitions[i];
       double weightSum = 1.;
@@ -246,7 +248,7 @@ std::string autopas::GaussianCluster::defaultVecToString(
 }
 
 void autopas::GaussianCluster::initClusters() {
-  size_t numClusters = 1;
+  std::size_t numClusters = 1;
   for (auto restriction : _dimRestriction) {
     if (restriction <= 0) {
       utils::ExceptionHandler::exception("GaussianCluster: dimension-restriction is {} but has to be positive",
@@ -264,20 +266,20 @@ void autopas::GaussianCluster::initClusters() {
   _discreteVectorMap.reserve(numClusters);
 
   GaussianModelTypes::VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-  for (size_t i = 0; i < numClusters; ++i, discreteIncrement(currentDiscrete)) {
+  for (std::size_t i = 0; i < numClusters; ++i, discreteIncrement(currentDiscrete)) {
     _clusters.emplace_back(_continuousDims, _sigma, _rng);
     _discreteVectorMap.emplace_back(currentDiscrete);
   }
 }
 
-size_t autopas::GaussianCluster::getIndex(const autopas::GaussianModelTypes::VectorDiscrete &x) const {
-  if (static_cast<size_t>(x.size()) != _dimRestriction.size()) {
+std::size_t autopas::GaussianCluster::getIndex(const autopas::GaussianModelTypes::VectorDiscrete &x) const {
+  if (static_cast<std::size_t>(x.size()) != _dimRestriction.size()) {
     utils::ExceptionHandler::exception(
         "GaussianCluster: size of discrete input {} does not match specified dimensions {}", x.size(),
         _dimRestriction.size());
   }
 
-  size_t result = 0;
+  std::size_t result = 0;
   for (long i = x.size() - 1; i >= 0; --i) {
     if (x[i] < 0 or x[i] >= _dimRestriction[i]) {
       utils::ExceptionHandler::exception("GaussianCluster: The {}th dimension is {} but is restricted to [0,{})", i,
@@ -325,7 +327,7 @@ std::vector<double> autopas::GaussianCluster::precalculateAcquisitions(autopas::
   std::vector<double> result;
   result.reserve(_clusters.size());
 
-  for (size_t i = 0; i < _clusters.size(); ++i) {
+  for (std::size_t i = 0; i < _clusters.size(); ++i) {
     result.push_back(AcquisitionFunction::calcAcquisition(af, means[i], vars[i], _evidenceMaxValue));
   }
 
@@ -338,14 +340,14 @@ autopas::GaussianModelTypes::NeighboursWeights autopas::GaussianCluster::initNei
   result.reserve(_clusters.size());
 
   // for each cluster create a neighbour list
-  for (size_t i = 0; i < _clusters.size(); ++i) {
+  for (std::size_t i = 0; i < _clusters.size(); ++i) {
     auto neighbours = neighbourFun(_discreteVectorMap[i]);
 
     // calculate initial weight for each neighbour
-    std::vector<std::tuple<size_t, double, double>> neighbourWeights;
+    std::vector<std::tuple<std::size_t, double, double>> neighbourWeights;
     neighbourWeights.reserve(neighbours.size());
     for (const auto &[n, priorWeight] : neighbours) {
-      size_t n_index = getIndex(n);
+      std::size_t n_index = getIndex(n);
       // ignore clusters without evidence
       if (_clusters[n_index].numEvidence() > 0) {
         // calculate initial value for given weight function
@@ -356,7 +358,7 @@ autopas::GaussianModelTypes::NeighboursWeights autopas::GaussianCluster::initNei
             weight = 1.;
             // product of probability densitiy over all evidence in neighbouring cluster if provided to the target
             // cluster
-            for (size_t e = 0; e < inputs.size(); ++e) {
+            for (std::size_t e = 0; e < inputs.size(); ++e) {
               weight *= _clusters[i].predictOutputPDF(inputs[e], outputs[e]);
             }
             // geometric mean
@@ -368,7 +370,7 @@ autopas::GaussianModelTypes::NeighboursWeights autopas::GaussianCluster::initNei
             weight = 1.;
             // product of probability densitiy over all evidence in neighbouring cluster if provided to the target
             // cluster
-            for (size_t e = 0; e < inputs.size(); ++e) {
+            for (std::size_t e = 0; e < inputs.size(); ++e) {
               weight *= _clusters[i].predictOutputScaledPDF(inputs[e], outputs[e]);
             }
             // geometric mean
@@ -392,7 +394,7 @@ void autopas::GaussianCluster::updateNeighbourWeights(autopas::GaussianModelType
                                                       const std::vector<double> &stddevs) const {
   // for each cluster update neighbour-weight list
   GaussianModelTypes::VectorDiscrete currentDiscrete = Eigen::VectorXi::Zero(_dimRestriction.size());
-  for (size_t i = 0; i < _clusters.size(); ++i) {
+  for (std::size_t i = 0; i < _clusters.size(); ++i) {
     // for each neighbour update weight
     for (auto &[n, priorWeight, weight] : neighbourWeights[i]) {
       switch (_weightFun) {

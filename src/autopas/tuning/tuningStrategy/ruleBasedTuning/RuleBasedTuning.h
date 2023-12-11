@@ -6,22 +6,17 @@
 
 #pragma once
 
-#include <algorithm>
 #include <fstream>
-#include <iostream>
-#include <iterator>
+#include <functional>
 #include <list>
+#include <set>
 #include <unordered_map>
-#include <unordered_set>
-#include <variant>
 
-#include "RuleBasedProgramParser.h"
-#include "RuleBasedProgramTree.h"
-#include "RuleVM.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
-#include "autopas/utils/logging/Logger.h"
+#include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramTree.h"
 
 namespace autopas {
 /**

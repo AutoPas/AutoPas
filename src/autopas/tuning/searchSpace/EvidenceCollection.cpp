@@ -8,9 +8,6 @@
 
 #include <limits>
 
-#include "Evidence.h"
-#include "autopas/tuning/Configuration.h"
-
 namespace autopas {
 
 void EvidenceCollection::addEvidence(const Configuration &configuration, const Evidence &evidence) {
@@ -31,7 +28,7 @@ Evidence &EvidenceCollection::modifyLastEvidence(const Configuration &configurat
   return _evidenceMap[configuration].back();
 }
 
-std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(size_t tuningPhase) const {
+std::tuple<Configuration, Evidence> EvidenceCollection::getOptimalConfiguration(std::size_t tuningPhase) const {
   if (_evidenceMap.empty()) {
     utils::ExceptionHandler::exception(
         "EvidenceCollection::getLatestOptimalConfiguration(): Trying to determine the optimal configuration but there "

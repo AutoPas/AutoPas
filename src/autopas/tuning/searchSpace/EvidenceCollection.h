@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <algorithm>
 #include <cstddef>
 #include <map>
+#include <tuple>
 #include <vector>
 
 #include "autopas/tuning/Configuration.h"
@@ -48,7 +48,7 @@ class EvidenceCollection {
    * @param tuningPhase The tuning phase for which the optimum should be returned.
    * @return The optimal configuration.
    */
-  std::tuple<Configuration, Evidence> getOptimalConfiguration(size_t tuningPhase) const;
+  std::tuple<Configuration, Evidence> getOptimalConfiguration(std::size_t tuningPhase) const;
 
   /**
    * Retrieve the configuration with the lowest evidence value for the latest tuning phase.
@@ -74,6 +74,6 @@ class EvidenceCollection {
    * Number of the newest tuning phase for which evidence exists in this object.
    * This tuning phase is not necessarily completed yet.
    */
-  size_t _latestTuningPhase{0};
+  std::size_t _latestTuningPhase{0};
 };
 }  // namespace autopas

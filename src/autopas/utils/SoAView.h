@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <autopas/utils/ExceptionHandler.h>
+
 namespace autopas {
 
 template <class SoAArraysType>
@@ -36,7 +38,7 @@ class SoAView {
    * @param startIndex The index of the first entry to view of the SoA.
    * @param endIndex The index of the entry after the last entry to view of the SoA.
    */
-  SoAView(SoA<SoAArraysType> *soa, size_t startIndex, size_t endIndex)
+  SoAView(SoA<SoAArraysType> *soa, std::size_t startIndex, std::size_t endIndex)
       : _soa(soa), _startIndex(startIndex), _endIndex(endIndex) {
     if (not(soa->size() >= endIndex and endIndex >= startIndex)) /* @todo C++20 [[unlikely]] */ {
       utils::ExceptionHandler::exception("SoAView: Trying to view particles outside of the SoA.");
@@ -60,7 +62,7 @@ class SoAView {
    * @tparam attribute ID of the desired attribute.
    * @return Pointer to the beginning of the attribute vector
    */
-  template <size_t attribute>
+  template <std::size_t attribute>
   [[nodiscard]] auto begin() {
     return _soa->template begin<attribute>() + _startIndex;
   }
@@ -70,7 +72,7 @@ class SoAView {
    * @tparam attribute ID of the desired attribute.
    * @return Pointer to the beginning of the attribute vector const
    */
-  template <size_t attribute>
+  template <std::size_t attribute>
   [[nodiscard]] auto begin() const {
     return _soa->template begin<attribute>() + _startIndex;
   }
@@ -80,7 +82,7 @@ class SoAView {
    *
    * @return Number of particles.
    */
-  [[nodiscard]] size_t size() const { return _endIndex - _startIndex; }
+  [[nodiscard]] std::size_t size() const { return _endIndex - _startIndex; }
 
  private:
   /**
@@ -91,12 +93,12 @@ class SoAView {
   /**
    * The start index of the view in the SoA. (Inclusive)
    */
-  size_t _startIndex;
+  std::size_t _startIndex;
 
   /**
    * The end index of the view in the SoA. (Exclusive)
    */
-  size_t _endIndex;
+  std::size_t _endIndex;
 };
 
 }  // namespace autopas

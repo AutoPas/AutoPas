@@ -6,10 +6,14 @@
 
 #pragma once
 
-#include "TuningStrategyFactoryInfo.h"
+#include <memory>
+#include <set>
+#include <string>
+
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
-#include "autopas/tuning/utils/SearchSpaceGenerators.h"
 
 namespace autopas::TuningStrategyFactory {
 /**

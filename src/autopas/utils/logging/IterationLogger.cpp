@@ -6,6 +6,8 @@
 
 #include "IterationLogger.h"
 
+#include <spdlog/async.h>
+
 #include "utils/Timer.h"
 
 autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
@@ -51,7 +53,7 @@ autopas::IterationLogger::~IterationLogger() {
 #endif
 }
 
-void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
+void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, std::size_t iteration,
                                             bool inTuningPhase, long timeIteratePairwise, long timeRemainderTraversal,
                                             long timeRebuildNeighborLists, long timeIteratePairwiseTotal,
                                             long timeTuning, double energyPsys, double energyPkg, double energyRam) {

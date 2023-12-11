@@ -6,7 +6,7 @@
 
 #include "Quaternion.h"
 
-#include "ExceptionHandler.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::utils::quaternion {
 

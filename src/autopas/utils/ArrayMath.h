@@ -9,8 +9,9 @@
 
 #include <array>
 #include <cmath>
+#include <functional>
 #include <numeric>
-#include <sstream>
+#include <vector>
 
 #include "Math.h"
 

@@ -6,12 +6,10 @@
 
 #pragma once
 
+#include <tuple>
 #include <Eigen/Core>
-#include <vector>
 
 #include "autopas/tuning/Configuration.h"
-#include "autopas/utils/NumberSet.h"
-#include "autopas/utils/Random.h"
 
 namespace autopas {
 
@@ -24,7 +22,7 @@ class FeatureVector : public Configuration {
    * Number of tune-able dimensions.
    * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor
    */
-  static constexpr size_t featureSpaceDims = 4;
+  static constexpr std::size_t featureSpaceDims = 4;
 
   /**
    * Consider Container, Traversal and LoadEstimator options as one dimension.

@@ -38,7 +38,7 @@ class SoAStorage {
    * @tparam soaAttribute the attribute for which the vector should be returned
    * @return a reference to the vector for the specific attribute
    */
-  template <size_t soaAttribute>
+  template <std::size_t soaAttribute>
   inline constexpr auto &get() {
     return std::get<soaAttribute>(soaStorageTuple);
   }
@@ -47,7 +47,7 @@ class SoAStorage {
    * @copydoc autopas::utils::SoAStorage<SoAArraysType>::get()
    * @note const variant
    */
-  template <size_t soaAttribute>
+  template <std::size_t soaAttribute>
   inline constexpr const auto &get() const {
     return std::get<soaAttribute>(soaStorageTuple);
   }

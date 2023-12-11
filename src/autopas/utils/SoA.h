@@ -7,15 +7,10 @@
 #pragma once
 
 #include <algorithm>
-#include <initializer_list>
-#include <map>
 #include <tuple>
-#include <vector>
 
-#include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/SoAStorage.h"
-#include "autopas/utils/SoAType.h"
 #include "autopas/utils/SoAView.h"
 
 namespace autopas {
@@ -42,7 +37,7 @@ class SoA {
    * Resizes all Vectors to the given length.
    * @param length new length.
    */
-  void resizeArrays(size_t length) {
+  void resizeArrays(std::size_t length) {
     soaStorage.apply([=](auto &list) { list.resize(length); });
   }
 
@@ -110,7 +105,7 @@ class SoA {
    * @param values New value.
    */
   template <int... attributes, class ValueArrayType>
-  void writeMultiple(size_t particleId, const ValueArrayType &values) {
+  void writeMultiple(std::size_t particleId, const ValueArrayType &values) {
     write_impl<attributes...>(particleId, values);
   }
 
@@ -121,8 +116,8 @@ class SoA {
    * @param particleId
    * @param values
    */
-  template <int... attributes, size_t N = sizeof...(attributes)>
-  inline void writeMultiple(size_t particleId, const std::array<double, N> &values) {
+  template <int... attributes, std::size_t N = sizeof...(attributes)>
+  inline void writeMultiple(std::size_t particleId, const std::array<double, N> &values) {
     write_impl<attributes...>(particleId, values);
   }
 
@@ -135,7 +130,7 @@ class SoA {
    * @return Array of attributes ordered by given attribute order.
    */
   template <int... attributes>
-  std::array<double, sizeof...(attributes)> readMultiple(size_t particleId) const {
+  std::array<double, sizeof...(attributes)> readMultiple(std::size_t particleId) const {
     std::array<double, sizeof...(attributes)> retArray;
     if (particleId >= size()) {
       autopas::utils::ExceptionHandler::exception(
@@ -153,7 +148,7 @@ class SoA {
    * @return Attribute value.
    */
   template <std::size_t attribute>
-  auto read(size_t particleId) const {
+  auto read(std::size_t particleId) const {
     return soaStorage.template get<attribute>().at(particleId);
   }
 
@@ -174,8 +169,8 @@ class SoA {
    *
    * @return Number of particles.
    */
-  inline size_t size() const {
-    size_t maxLength = 0;
+  inline std::size_t size() const {
+    std::size_t maxLength = 0;
     utils::TupleUtils::for_each(soaStorage.getTuple(), [&](auto &v) { maxLength = std::max(maxLength, v.size()); });
     return maxLength;
   }
@@ -218,31 +213,31 @@ class SoA {
    * @param endIndex The index of the entry after the last entry to view.
    * @return the constructed SoAView from \p startIndex (inclusive) to \p endIndex (exclusive).
    */
-  SoAView<SoAArraysType> constructView(size_t startIndex, size_t endIndex) { return {this, startIndex, endIndex}; }
+  SoAView<SoAArraysType> constructView(std::size_t startIndex, std::size_t endIndex) { return {this, startIndex, endIndex}; }
 
  private:
   // actual implementation of read
   template <int attribute, int... attributes, class ValueArrayType>
-  void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) const {
+  void read_impl(std::size_t particleId, ValueArrayType &values, int _current = 0) const {
     values[_current] = soaStorage.template get<attribute>().at(particleId);
     read_impl<attributes...>(particleId, values, _current + 1);
   }
 
   // stop of recursive read call
   template <class ValueArrayType>
-  void read_impl(size_t particleId, ValueArrayType &values, int _current = 0) const {}
+  void read_impl(std::size_t particleId, ValueArrayType &values, int _current = 0) const {}
 
   // actual implementation of the write function.
   // uses a recursive call.
   template <int attribute, int... attributes, class ValueArrayType>
-  void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {
+  void write_impl(std::size_t particleId, const ValueArrayType &values, int _current = 0) {
     soaStorage.template get<attribute>().at(particleId) = values[_current];
     write_impl<attributes...>(particleId, values, _current + 1);
   }
 
   // Stop of the recursive write_impl call
   template <class ValueArrayType>
-  void write_impl(size_t particleId, const ValueArrayType &values, int _current = 0) {}
+  void write_impl(std::size_t particleId, const ValueArrayType &values, int _current = 0) {}
 
   // helper function to append a single array
   template <std::size_t attribute>

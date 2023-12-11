@@ -8,14 +8,19 @@
 
 #include <array>
 #include <cstddef>
+#include <set>
 #include <vector>
 
-#include "WrapMPI.h"
-#include "autopas/containers/ParticleContainerInterface.h"
+#include "autopas/options/ContainerOption.h"
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/options/Newton3Option.h"
+#include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/Configuration.h"
-#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/NumberSet.h"
-#include "autopas/utils/SimilarityFunctions.h"
+#include "autopas/utils/WrapMPI.h"
+
+
 
 /**
  * Provides several functions for handling configurations among mpi ranks.

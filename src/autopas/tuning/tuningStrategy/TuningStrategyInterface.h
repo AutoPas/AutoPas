@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
@@ -64,7 +66,7 @@ class TuningStrategyInterface {
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
    */
-  virtual void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  virtual void reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
                      const autopas::EvidenceCollection &evidenceCollection) = 0;
 
   /**

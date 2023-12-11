@@ -7,16 +7,13 @@
 #pragma once
 
 #include <Eigen/Core>
+#include <tuple>
 #include <utility>
+#include <vector>
 
-#include "AcquisitionFunction.h"
-#include "GaussianHyperparameters.h"
 #include "autopas/options/AcquisitionFunctionOption.h"
-#include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/Math.h"
-#include "autopas/utils/NumberSet.h"
+#include "autopas/tuning/tuningStrategy/GaussianModel/GaussianHyperparameters.h"
 #include "autopas/utils/Random.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 

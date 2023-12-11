@@ -7,9 +7,7 @@
 #pragma once
 
 #include <array>
-#include <vector>
 
-#include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
@@ -23,7 +21,6 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/utils/NumParticlesEstimator.h"
-#include "autopas/utils/StringUtils.h"
 
 namespace autopas {
 
@@ -34,7 +31,6 @@ namespace autopas {
  * This class selects the optimal container and delegates the choice of the optimal traversal down to this container.
  *
  * @tparam Particle
- * @tparam ParticleCell
  */
 template <class Particle>
 class ContainerSelector {

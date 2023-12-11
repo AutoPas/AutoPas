@@ -5,6 +5,7 @@
  */
 
 #include "SortByName.h"
+
 void autopas::SortByName::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                               const autopas::EvidenceCollection &evidenceCollection) {
   // sort configurations to minimize container conversion overhead.

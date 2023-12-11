@@ -7,10 +7,7 @@
 #include "PredictiveTuning.h"
 
 #include <algorithm>
-#include <vector>
 
-#include "autopas/tuning/searchSpace/Evidence.h"
-#include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "utils/ExceptionHandler.h"
 
 namespace autopas {
@@ -33,7 +30,7 @@ PredictiveTuning::PredictiveTuning(double relativeOptimum, unsigned int maxTunin
 }
 
 PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
-    size_t iteration, size_t tuningPhase, const std::vector<Configuration> &configurations,
+    std::size_t iteration, std::size_t tuningPhase, const std::vector<Configuration> &configurations,
     const EvidenceCollection &evidenceCollection) {
   PredictiveTuning::PredictionsType predictions{};
   predictions.reserve(configurations.size());
@@ -71,7 +68,7 @@ PredictiveTuning::PredictionsType PredictiveTuning::calculatePredictions(
   return predictions;
 }
 
-long PredictiveTuning::linePrediction(size_t iteration, size_t tuningPhase, const Configuration &configuration,
+long PredictiveTuning::linePrediction(std::size_t iteration, std::size_t tuningPhase, const Configuration &configuration,
                                       const std::vector<Evidence> &evidenceVec) {
   auto &functionParams = _predictionFunctionParameters[configuration];
   // if configuration was not tested in last tuning phase reuse prediction function.
@@ -116,7 +113,7 @@ long PredictiveTuning::linePrediction(size_t iteration, size_t tuningPhase, cons
   }
 }
 
-long PredictiveTuning::linearRegression(size_t iteration, size_t tuningPhase, const Configuration &configuration,
+long PredictiveTuning::linearRegression(std::size_t iteration, std::size_t tuningPhase, const Configuration &configuration,
                                         const std::vector<Evidence> &evidenceVec) {
   auto &functionParams = _predictionFunctionParameters[configuration];
   // if configuration was not tested in last tuning phase reuse prediction function.
@@ -137,8 +134,8 @@ long PredictiveTuning::linearRegression(size_t iteration, size_t tuningPhase, co
     // we need signed types because calculation of the gradient might have negative result
     long iterationMultTime = 0;
     long timeSum = 0;
-    size_t iterationSum = 0;
-    size_t iterationSquareSum = 0;
+    std::size_t iterationSum = 0;
+    std::size_t iterationSquareSum = 0;
 
     bool numericOverflow = false;
     for (auto i = evidenceVec.size() - _minNumberOfEvidence; i < evidenceVec.size(); i++) {
@@ -193,7 +190,7 @@ long PredictiveTuning::linearRegression(size_t iteration, size_t tuningPhase, co
   }
 }
 
-long PredictiveTuning::newtonPolynomial(size_t iteration, size_t tuningPhase, const Configuration &configuration,
+long PredictiveTuning::newtonPolynomial(std::size_t iteration, std::size_t tuningPhase, const Configuration &configuration,
                                         const std::vector<Evidence> &evidenceVec) {
   auto &functionParams = _predictionFunctionParameters[configuration];
   bool numericOverflow = false;
@@ -239,7 +236,7 @@ long PredictiveTuning::newtonPolynomial(size_t iteration, size_t tuningPhase, co
 
   } else if (evidenceVec.size() >= _minNumberOfEvidence) {
     std::vector<std::vector<double>> interimCalculation(_minNumberOfEvidence);
-    std::vector<size_t> iterationValues(_minNumberOfEvidence);
+    std::vector<std::size_t> iterationValues(_minNumberOfEvidence);
     std::vector<double> coefficients(_minNumberOfEvidence);
     const auto numberOfEvidence = evidenceVec.size();
     auto lengthIthColumn = _minNumberOfEvidence;
@@ -311,7 +308,7 @@ long PredictiveTuning::newtonPolynomial(size_t iteration, size_t tuningPhase, co
 void PredictiveTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                            const EvidenceCollection &evidence) {}
 
-void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+void PredictiveTuning::reset(std::size_t iteration, std::size_t tuningPhase, std::vector<Configuration> &configQueue,
                              const EvidenceCollection &evidenceCollection) {
   // collect all configurations that were not tested for too long
   for (const auto &conf : configQueue) {

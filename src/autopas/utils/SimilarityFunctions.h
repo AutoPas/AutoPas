@@ -6,8 +6,14 @@
 
 #pragma once
 
-#include "ThreeDimensionalMapping.h"
-#include "autopas/containers/ParticleContainerInterface.h"
+#include <array>
+#include <cmath>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapMPI.h"
 
 namespace autopas::utils {
@@ -32,7 +38,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_INT, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
   // approximately the resolution we want to get.
-  size_t numberOfCells = ceil(numberOfParticles / 10.);
+  std::size_t numberOfCells = ceil(numberOfParticles / 10.);
   std::array<double, 3> domainSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
     domainSizePerDimension[i] = endCorner[i] - startCorner[i];
@@ -44,7 +50,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   const double cellLength = cbrt(cellVolume);
 
   // calculate the size of the boundary cells, which might be smaller then the other cells
-  std::array<size_t, 3> cellsPerDimension = {};
+  std::array<std::size_t, 3> cellsPerDimension = {};
   // size of the last cell layer per dimension. This cell might get truncated to fit in the domain.
   std::array<double, 3> outerCellSizePerDimension = {};
   for (int i = 0; i < 3; ++i) {
@@ -55,21 +61,21 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   // Actual number of cells we end up with
   numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
 
-  std::vector<size_t> particlesPerCell(numberOfCells, 0);
+  std::vector<std::size_t> particlesPerCell(numberOfCells, 0);
   std::vector<double> allVolumes(numberOfCells, 0);
 
   // add particles accordingly to their cell to get the amount of particles in each cell
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     const auto &particleLocation = particleItr->getR();
-    std::array<size_t, 3> index = {};
-    for (size_t i = 0; i < particleLocation.size(); i++) {
+    std::array<std::size_t, 3> index = {};
+    for (std::size_t i = 0; i < particleLocation.size(); i++) {
       index[i] = particleLocation[i] / cellLength;
     }
-    const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
+    const std::size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
     particlesPerCell[cellIndex] += 1;
     // calculate the size of the current cell
     allVolumes[cellIndex] = 1;
-    for (size_t i = 0; i < cellsPerDimension.size(); ++i) {
+    for (std::size_t i = 0; i < cellsPerDimension.size(); ++i) {
       // the last cell layer has a special size
       if (index[i] == cellsPerDimension[i] - 1) {
         allVolumes[cellIndex] *= outerCellSizePerDimension[i];
@@ -82,7 +88,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   // calculate density for each cell
   double maxDensity{0.};
   std::vector<double> densityPerCell(numberOfCells, 0.0);
-  for (size_t i = 0; i < particlesPerCell.size(); i++) {
+  for (std::size_t i = 0; i < particlesPerCell.size(); i++) {
     densityPerCell[i] =
         (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
     if (densityPerCell[i] > maxDensity) {
@@ -98,7 +104,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   double densityVariance = 0.0;
 
   // calculate densityVariance
-  for (size_t r = 0; r < densityPerCell.size(); ++r) {
+  for (std::size_t r = 0; r < densityPerCell.size(); ++r) {
     double distance = densityPerCell[r] - densityMean;
     densityVariance += (distance * distance / densityPerCell.size());
   }

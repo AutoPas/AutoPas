@@ -6,6 +6,8 @@
 
 #include "CompileInfo.h"
 
+#include <sstream>
+
 std::string autopas::utils::CompileInfo::getCompilerInfo() {
   std::stringstream ss;
   // prefix if not included in VERSION

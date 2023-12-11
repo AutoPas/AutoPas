@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <spdlog/async.h>
+#include <string>
 
 #include "autopas/tuning/Configuration.h"
 

@@ -13,6 +13,7 @@
 #include <spdlog/spdlog.h>
 
 #include <iostream>
+#include <memory>
 
 #ifdef AUTOPAS_VERBOSE_LOG
 /**

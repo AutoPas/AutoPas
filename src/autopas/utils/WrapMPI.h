@@ -12,16 +12,12 @@
  * May be extended when necessary.
  */
 
-#include <limits.h>
-#include <stdint.h>
-
 #if defined(AUTOPAS_INCLUDE_MPI)
 #include <mpi.h>
 #else
 #include <cstdio>
 #include <cstring>
 #include <map>
-#include <set>
 #endif
 
 namespace autopas {
@@ -856,7 +852,7 @@ inline int AutoPas_MPI_Ibcast(void *buffer, int count, AutoPas_MPI_Datatype data
 inline int AutoPas_MPI_Reduce(const void *sendbuf, void *recvbuf, int count, AutoPas_MPI_Datatype datatype,
                               AutoPas_MPI_Op op, int root, AutoPas_MPI_Comm comm) {
   if (sendbuf != AUTOPAS_MPI_IN_PLACE) {
-    memcpy(recvbuf, sendbuf, datatype * static_cast<size_t>(count));
+    std::memcpy(recvbuf, sendbuf, datatype * static_cast<std::size_t>(count));
   }
   return AUTOPAS_MPI_SUCCESS;
 }
@@ -910,7 +906,7 @@ inline int AutoPas_MPI_Gather(const void *buffer_send, int count_send, AutoPas_M
   if (buffer_send != AUTOPAS_MPI_IN_PLACE) {
     for (long i = 0; i < (count_recv / count_send); i++)
       // offsets from pointers are of type ptrdiff_t which is an alias for long. Hence, i should be long.
-      memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)), buffer_send,
+      std::memcpy(static_cast<char *>(buffer_recv) + (i * count_send * sizeof(datatype_send)), buffer_send,
              count_send * sizeof(datatype_send));
   }
   return AUTOPAS_MPI_SUCCESS;

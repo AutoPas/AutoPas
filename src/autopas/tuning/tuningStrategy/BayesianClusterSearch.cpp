@@ -6,9 +6,8 @@
 
 #include "BayesianClusterSearch.h"
 
-#include "autopas/tuning/searchSpace/EvidenceCollection.h"
+#include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/StringUtils.h"
 
 autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOption> &allowedContainerOptions,
                                                       const NumberSet<double> &allowedCellSizeFactors,
@@ -16,8 +15,8 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOp
                                                       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                                       const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                                                       const std::set<Newton3Option> &allowedNewton3Options,
-                                                      size_t maxEvidence, AcquisitionFunctionOption predAcqFunction,
-                                                      const std::string &outputSuffix, size_t predNumLHSamples,
+                                                      std::size_t maxEvidence, AcquisitionFunctionOption predAcqFunction,
+                                                      const std::string &outputSuffix, std::size_t predNumLHSamples,
                                                       unsigned long seed)
     : _containerOptionsSet(allowedContainerOptions),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
@@ -94,7 +93,7 @@ void autopas::BayesianClusterSearch::addEvidence(const Configuration &configurat
   _currentAcquisitions.clear();
 }
 
-void autopas::BayesianClusterSearch::reset(size_t iteration, size_t tuningPhase,
+void autopas::BayesianClusterSearch::reset(std::size_t iteration, std::size_t tuningPhase,
                                            std::vector<Configuration> &configQueue,
                                            const autopas::EvidenceCollection &evidenceCollection) {
   const auto iterationSinceLastEvidence = iteration - _currentIteration;
@@ -148,7 +147,7 @@ void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configurati
   }
 
   // try to sample a valid vector which is expected to yield a good acquisition
-  for (size_t i = 0; i < maxAttempts; ++i) {
+  for (std::size_t i = 0; i < maxAttempts; ++i) {
     auto currentAcquisitions = sampleAcquisitions(_predNumLHSamples, _predAcqFunction);
 
     // Filter out all acquisitions, which do map to a configuration which is either:
@@ -185,7 +184,7 @@ void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configurati
 }
 
 std::vector<autopas::GaussianModelTypes::VectorPairDiscreteContinuous>
-autopas::BayesianClusterSearch::sampleAcquisitions(size_t n, AcquisitionFunctionOption af) {
+autopas::BayesianClusterSearch::sampleAcquisitions(std::size_t n, AcquisitionFunctionOption af) {
   // create n lhs samples
   auto continuousSamples = _encoder.lhsSampleFeatureCluster(n, _rng, _currentIteration * _iterationScale);
 
