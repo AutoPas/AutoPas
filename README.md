@@ -107,7 +107,7 @@ If you prefer `gdb`:
 As AutoPas is only a library, it is not able to run simulations by itself.
 We have, however, included a few example proxy applications in the **examples** directory.
 The examples include:
-* [md-flexible](examples/md-flexible): Molecular dynamics simulations with single centered Lennard-Jones particles.
+* [md-flexible](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible): Molecular dynamics simulations with single centered Lennard-Jones particles.
 * Smoothed particle hydrodynamics simulations
 
 ## Using AutoPas
@@ -115,9 +115,9 @@ Steps to using AutoPas in your particle simulation program:
 
 ### Custom Particles
 First you will need to define a particle class which will be passed to AutoPas as template Argument.
-For that we provide some basic Particle classes defined in [`molecularDynamicsLibrary`](applicationLibrary/molecularDynamics/molecularDynamicsLibrary) or [`SPHLibrary`](applicationLibrary/sph/SPHLibrary) 
+For that we provide some basic Particle classes defined in [`molecularDynamicsLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary) or [`SPHLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary) 
 that you can use either directly or you can write your own Particle class by inheriting from one of the provided
-classes or from [`autopas::ParticleBase`](src/autopas/particles/ParticleBase.h).
+classes or from [`autopas::ParticleBase`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/particles/ParticleBase.h).
 
 Important parts to implement:
 * `enum AttributeNames`
@@ -312,7 +312,7 @@ There exist some things you have to be careful about when using multiple functor
   It is recommended, to only mark the most expensive functor as relevant.
 
 ## Developing AutoPas
-Please look at our [contribution guidelines](.github/CONTRIBUTING.md).
+Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
 
 For profiling the compile-time, the `cmake` option `AUTOPAS_COMPILE_TIME_PROFILING` can be turned on. This enables gcc's -`ftime-report` and clang's `-ftime-trace`. 
 It is recommended to use clang, as its output is more detailed.
