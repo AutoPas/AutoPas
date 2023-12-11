@@ -53,6 +53,9 @@ jobs:
           ! grep '#include <autopas' **/*.{h,cpp}
           # prohibit 'typedef' to force 'using'
           ! grep --word-regexp 'typedef' **/*.{h,cpp}
+          # prohibit old usage of AUTOPAS_OPENMP
+          ! grep '#ifdef AUTOPAS_OPENMP'  **/*.{h,cpp}
+          ! grep '#if defined.AUTOPAS_OPENMP'  **/*.{h,cpp}
 
   MatrixJob:
     runs-on: ubuntu-latest

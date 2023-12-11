@@ -464,7 +464,7 @@ TEST_F(OctreeTest, testAbleToSplit) {
   }
 }
 
-#if !defined(AUTOPAS_OPENMP)
+#if !defined(AUTOPAS_USE_OPENMP)
 std::pair<OctreeTest::Vector3DList, std::vector<std::tuple<unsigned long, unsigned long, double>>>
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                                     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,

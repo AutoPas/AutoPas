@@ -11,6 +11,7 @@
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -110,18 +111,13 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::p
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
+  AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {
       traverseSingleColor(cells, color);
 
-#if defined(AUTOPAS_OPENMP)
       if (color < 3) {
-#pragma omp barrier
+        AUTOPAS_OPENMP(barrier)
       }
-#endif
     }
   }  // close parallel region
 }
@@ -169,9 +165,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::t
   const long startZ = startOfThisColor[2], endZ = _end[2];
 
   // iterate over cartesian grid
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3) nowait
-#endif
+  AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3) nowait)
   for (long z = startZ; z < endZ; z += 4) {
     for (long y = startY; y < endY; y++) {
       /* color starts every 6th column again, the +4 is needed to prevent ending too early, since it
