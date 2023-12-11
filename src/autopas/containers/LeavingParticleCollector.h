@@ -10,6 +10,7 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
 /**
@@ -63,15 +64,15 @@ std::vector<typename ContainerType::ParticleType> collectParticlesAndMarkNonOwne
   }};
 
   std::vector<typename ContainerType::ParticleType> leavingParticles{};
-#ifdef AUTOPAS_OPENMP
   // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
-#pragma omp declare reduction(vecMergeParticle : std::vector<typename ContainerType::ParticleType> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+  AUTOPAS_OPENMP(declare reduction(vecMergeParticle :                                                 \
+                                   std::vector<typename ContainerType::ParticleType> :                \
+                                       omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
   // this has to be a `parallel` and not `parallel for` because we are actually interested in parallelizing the inner
   // loops without having a barrier between outer loop iterations.
   // The way this works is that all threads iterate the outer loop but due to the way the iterators are parallelized,
   // each thread only picks its iterations of the inner loops, hence nothing is done multiple times.
-#pragma omp parallel reduction(vecMergeParticle : leavingParticles)
-#endif
+  AUTOPAS_OPENMP(parallel reduction(vecMergeParticle : leavingParticles))
   for (const auto &[regionStart, regionEnd] : haloVolumes) {
     for (auto iter = container.getRegionIterator(regionStart, regionEnd, autopas::IteratorBehavior::ownedOrHalo);
          iter.isValid(); ++iter) {

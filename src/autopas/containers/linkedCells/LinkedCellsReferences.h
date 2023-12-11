@@ -296,15 +296,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     bool exceptionCaught{false};
     std::string exceptionMsg{""};
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif  // AUTOPAS_OPENMP
-    {
+    AUTOPAS_OPENMP(parallel) {
       // private for each thread!
       std::vector<ParticleType> myInvalidParticles, myInvalidNotOwnedParticles;
-#ifdef AUTOPAS_OPENMP
-#pragma omp for
-#endif  // AUTOPAS_OPENMP
+      AUTOPAS_OPENMP(for)
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.
         this->getCells()[cellId].deleteDummyParticles();
@@ -348,15 +343,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         }
       } catch (const std::exception &e) {
         exceptionCaught = true;
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
+        AUTOPAS_OPENMP(critical)
         exceptionMsg.append(e.what());
       }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      {
+      AUTOPAS_OPENMP(critical) {
         // merge private vectors to global one.
         invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
                                 myInvalidNotOwnedParticles.end());

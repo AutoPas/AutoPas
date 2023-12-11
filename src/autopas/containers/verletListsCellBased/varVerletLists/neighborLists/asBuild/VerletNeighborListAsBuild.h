@@ -169,12 +169,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     for (int color = 0; color < _numColors; color++) {
       unsigned int numThreads = _aosNeighborList[color].size();
       _soaNeighborList[color].resize(numThreads);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel num_threads(numThreads)
-#endif
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(static)
-#endif
+      AUTOPAS_OPENMP(parallel num_threads(numThreads))
+      AUTOPAS_OPENMP(for schedule(static))
       for (unsigned int thread = 0; thread < numThreads; thread++) {
         auto &currentThreadList = _soaNeighborList[color][thread];
         currentThreadList.clear();

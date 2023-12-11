@@ -156,18 +156,13 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif  // AUTOPAS_OPENMP
-    {
+    AUTOPAS_OPENMP(parallel) {
       // private for each thread!
       std::vector<ParticleType> myInvalidParticles{}, myInvalidNotOwnedParticles{};
       // TODO: needs smarter heuristic than this.
       myInvalidParticles.reserve(128);
       myInvalidNotOwnedParticles.reserve(128);
-#ifdef AUTOPAS_OPENMP
-#pragma omp for
-#endif  // AUTOPAS_OPENMP
+      AUTOPAS_OPENMP(for)
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.
         this->getCells()[cellId].deleteDummyParticles();
@@ -202,10 +197,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
           myInvalidNotOwnedParticles.push_back(p);
         }
       }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      {
+      AUTOPAS_OPENMP(critical) {
         // merge private vectors to global one.
         invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
                                 myInvalidNotOwnedParticles.end());
