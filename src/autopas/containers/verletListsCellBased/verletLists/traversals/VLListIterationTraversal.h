@@ -50,19 +50,15 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
       // SoALoader.
       size_t numParticles = 0;
-#ifdef AUTOPAS_OPENMP
       // this heuristik was taken from CellBasedParticleContainer::size()
       const int numThreads = std::clamp(static_cast<int>(cells.size() / 100000), 1, omp_get_max_threads());
-#pragma omp parallel for num_threads(numThreads) reduction(+ : numParticles)
-#endif
+      AUTOPAS_OPENMP(parallel for num_threads(numThreads) reduction(+ : numParticles))
       for (size_t i = 0; i < cells.size(); ++i) {
         numParticles += cells[i].size();
       }
       _soa.resizeArrays(numParticles);
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for
-#endif
+      AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         const auto offset = std::accumulate(cells.begin(), cells.begin() + i, 0,
                                             [](const auto &acc, const auto &cell) { return acc + cell.size(); });

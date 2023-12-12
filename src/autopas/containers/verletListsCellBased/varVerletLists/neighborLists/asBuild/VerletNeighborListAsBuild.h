@@ -205,9 +205,7 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     auto &cells = _baseLinkedCells->getCells();
     _soa.resizeArrays(_baseLinkedCells->size());
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for
-#endif
+    AUTOPAS_OPENMP(parallel for)
     for (size_t i = 0; i < cells.size(); ++i) {
       const auto offset = std::accumulate(cells.begin(), cells.begin() + i, 0,
                                           [](const auto &acc, const auto &cell) { return acc + cell.size(); });
