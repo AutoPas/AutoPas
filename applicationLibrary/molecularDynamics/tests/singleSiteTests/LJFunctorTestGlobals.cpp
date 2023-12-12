@@ -465,27 +465,14 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   std::string msg = "";
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
-#if defined(AUTOPAS_OPENMP)
-// reduction for appending strings: "abc" + "def" -> "abcdef"
-#pragma omp declare reduction(stringAppend : std::string : omp_out.append(omp_in))
-
-#pragma omp parallel reduction(stringAppend : msg)
-#endif
-  {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp sections
-#endif
-    {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
-      {
+  // reduction for appending strings: "abc" + "def" -> "abcdef"
+  AUTOPAS_OPENMP(declare reduction(stringAppend : std::string : omp_out.append(omp_in)))
+  AUTOPAS_OPENMP(parallel reduction(stringAppend : msg)) {
+    AUTOPAS_OPENMP(sections) {
+      AUTOPAS_OPENMP(section) {
         msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p1, p2, newton3); });
       }  // pragma omp section
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
-      {
+      AUTOPAS_OPENMP(section) {
         msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p3, p4, newton3); });
       }  // pragma omp section
     }    // pragma omp sections

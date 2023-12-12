@@ -12,6 +12,7 @@
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -472,9 +473,7 @@ bool Simulation::calculatePairwiseForces() {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel shared(_autoPasContainer)
-#endif
+  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     particle->addF(globalForce);
   }
