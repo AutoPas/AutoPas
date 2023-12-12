@@ -5,12 +5,12 @@ container_prefixes = ["LC"] #["VL","LC"]
 data_layouts = ["SoA"] #,"AoS"]
 site_counts = ["1", "2", "5"]
 densities = ["0.5", "0.75", "1"]
-functors = ["BundlingApproach"] #["NewFunc","OldFunc", "SingleSiteEmulator"] #BundlingApproach
+functors = ["OldFunc"] #["NewFunc","OldFunc", "SingleSiteEmulator"] #BundlingApproach
 
 #files_to_sample = ["smallscaleExplodingLiquidSites1", "smallscaleExplodingLiquidSites2", "smallscaleExplodingLiquidSites5", "smallscaleExplodingLiquidSites10"]
 #files_to_sample = ["smallscaleExplodingLiquidSites5"]
 
-samples = 1
+samples = 2
 
 for container_prefix in container_prefixes:
     for data_layout in data_layouts:

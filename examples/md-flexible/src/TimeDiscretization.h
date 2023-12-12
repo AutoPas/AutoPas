@@ -75,6 +75,12 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
                                          const double &deltaT, const std::array<double, 3> &globalForce);
 #endif
 
+#if defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_MODE==MULTISITE
+
+void gatherTorquesFromForces(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
+                                         const ParticlePropertiesLibraryType &particlePropertiesLibrary);
+#endif
+
 /**
  * Calculate and update the velocity for every particle using the the Störmer-Verlet Algorithm.
  *

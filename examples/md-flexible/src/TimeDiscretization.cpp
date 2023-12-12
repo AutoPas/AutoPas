@@ -273,16 +273,6 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
   const double tol = 1e-13;  // tolerance given in paper
   const double tolSquared = tol * tol;
 
-  //gather total torque acting on molecules
-  for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-    MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
-    const auto q = molecule.getQuaternion();
-    const auto rotatedSitePosition = rotatePosition(q,particlePropertiesLibrary.getSitePositions(iter->getTypeId())[iter->getIndexInsideMolecule()]);
-    const auto torqueOnSite = autopas::utils::ArrayMath::cross(rotatedSitePosition, iter->getF());
-    iter->setF(globalForce);         //reset site force, making it ready for next iteration
-    molecule.addTorque(torqueOnSite);
-  }
-
   //do actual quaternion-calculations
 #ifdef AUTOPAS_OPENMP
 #pragma omp parallel for shared(moleculeContainer, particlePropertiesLibrary, halfDeltaT, tol, tolSquared, globalForce, deltaT) default(none)
@@ -340,7 +330,9 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
    }
   }
 
+
   //update the site position based on the position and rotation of the molecule
+  //@TODO: multithread
   for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
    MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
    const auto r = molecule.getR();
@@ -349,10 +341,27 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
    iter->setR(autopas::utils::ArrayMath::add(r, rotatedSitePosition));
   }
 
+
 #else
   autopas::utils::ExceptionHandler::exception(
       "Attempting to perform rotational integrations when md-flexible has not been compiled with multi-site support!");
 #endif
+}
+#endif
+
+#if defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_MODE==MULTISITE
+void gatherTorquesFromForces(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
+                                         const ParticlePropertiesLibraryType &particlePropertiesLibrary) {
+  using autopas::utils::quaternion::rotatePosition;
+  //gather total torque acting on molecules
+  for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
+    const auto q = molecule.getQuaternion();
+    const auto rotatedSitePosition = rotatePosition(q,particlePropertiesLibrary.getSitePositions(iter->getTypeId())[iter->getIndexInsideMolecule()]);
+    const auto torqueOnSite = autopas::utils::ArrayMath::cross(rotatedSitePosition, iter->getF());
+    molecule.addTorque(torqueOnSite);
+    iter->setF({0.,0.,0.}); //global force instantly gets stored in molecule
+  }
 }
 #endif
 
