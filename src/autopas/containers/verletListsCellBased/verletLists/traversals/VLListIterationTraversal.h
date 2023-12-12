@@ -51,8 +51,10 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       // SoALoader.
       size_t numParticles = 0;
       // this heuristik was taken from CellBasedParticleContainer::size()
-      const int numThreads = std::clamp(static_cast<int>(cells.size() / 100000), 1, omp_get_max_threads());
-      AUTOPAS_OPENMP(parallel for num_threads(numThreads) reduction(+ : numParticles))
+      AUTOPAS_OPENMP(parallel for num_threads(std::clamp(static_cast<int>(cells.size()) / 100000, \
+                                                         1,                                       \
+                                                         autopas::autopas_get_max_threads()))     \
+                                  reduction(+ : numParticles))
       for (size_t i = 0; i < cells.size(); ++i) {
         numParticles += cells[i].size();
       }
