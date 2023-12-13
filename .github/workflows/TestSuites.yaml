@@ -26,7 +26,7 @@ jobs:
           source: 'src tests examples'
           # exclude: 'none'
           extensions: 'h,cpp'
-          clangFormatVersion: 9
+          clangFormatVersion: 14
           style: file
 
   # Make sure contribution guidelines are followed. This does not apply any changes!
