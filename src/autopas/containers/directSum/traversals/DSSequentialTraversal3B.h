@@ -1,7 +1,7 @@
 /**
  * @file DSSequentialTraversal3B.h
  * @author M. Muehlhaeusser
- * @date 07/25/23
+ * @date 25.07.2023
  */
 
 #pragma once
