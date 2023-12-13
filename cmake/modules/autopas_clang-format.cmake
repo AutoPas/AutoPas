@@ -1,6 +1,8 @@
 # additional target to perform clang-format run, requires clang-format
 
 # get all project files
+# If you add something here, make sure to also add it to the clang-format
+# step in .github/workflows/TestSuites.yaml
 set(
     INCLUDE_DIRS
     "${PROJECT_SOURCE_DIR}/src/"

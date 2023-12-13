@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: DoozyX/clang-format-lint-action@v0.16.2
         with:
-          source: 'src tests examples'
+          source: 'src tests examples applicationLibrary tools'
           # exclude: 'none'
           extensions: 'h,cpp'
           clangFormatVersion: 14
