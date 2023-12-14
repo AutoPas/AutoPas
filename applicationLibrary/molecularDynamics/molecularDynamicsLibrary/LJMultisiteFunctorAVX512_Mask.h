@@ -59,22 +59,6 @@ class LJMultisiteFunctorAVX512_Mask
    */
   const double _cutoffSquaredAoS = 0;
 
-
-  /**
-   * epsilon x 24 for AoS Functor. Not constant as may be reset through PPL.
-   */
-  double _epsilon24AoS = 0;
-
-  /**
-   * sigma^2 for AoS Functor. Not constant as may be reset through PPL.
-   */
-  double _sigmaSquaredAoS = 0;
-
-  /**
-   * Shift for AoS Functor. Not constant as may be reset through PPL.
-   */
-  double _shift6AoS = 0;
-
   /**
    * Particle property library. Not used if all sites are of the same species.
    */
@@ -95,54 +79,20 @@ class LJMultisiteFunctorAVX512_Mask
    */
   bool _postProcessed;
 
-  /**
-   * List of relative unrotated LJ Site Positions. This is to be used when there is no mixing of molecules.
-   */
-  const std::vector<std::array<double, 3>> _sitePositionsLJ{};
-
-  /**
-   * @brief Whether to use site masks or site indices
-   *
-   * @details If set to true, the sitemask contains either 0 or 1 for all relevant sites to indicate if a site meets the
-   * cutoff and ownership condition. All sites are load contiguously, their respective force is calculated, and a
-   * bitwise AND-operation is applied in the end. This method may include lots of unnecessary force calculations, but
-   * most memory operations are contiguous. It may lead to better cache performance due to improved spatial locality.
-   *
-   * @details If set to false, the sitemask contains the indices of all sites that meet the necessary criteria. Since
-   * these indices are not necessarily sequential, the force calculation requires gather intrinsics instead of regular
-   * load operations. This method only calculates forces for owned sites within the cutoff radius but uses less
-   * efficient memory operations. It may result in poorer cache performance due to potentially scattered memory access
-   * patterns.
-   */
-//  constexpr static bool useRegularSiteMasks = false;
-
-  /**
-   * @brief How to evaluate the cutoff condition
-   *
-   *  @details If set to true, the cutoff condition is evaluated between the centers of masses between the particles
-   * If set to false, the cutoff conditions is evaluated between the center of mass of the first particle and the site
-   * positions of the second particle
-   */
-//  constexpr static bool useCTC = true;
 
 #ifdef __AVX512F__
   const __m512d _cutoffSquared{};
   const __m512d _zero{_mm512_set1_pd(0.)};
-  const __m512i _zeroI{_mm512_set1_epi64(0)};
   const __m512d _one{_mm512_set1_pd(1.)};
-  const __m512i _three{_mm512_set1_epi64(3)}; // todo remove this
+  const __m512i _three{_mm512_set1_epi64(3)};
+  const __m512i _ownedStateDummyMM512i{_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::dummy))};
+
   /**
-   * Masks for the remainder cases
+   * Masks for the remainder cases to avoid loading data beyond the end of the vectors.
+   * Masks are generated with decimal numbers, whose binary equivalent consists of 8 0s or 1s, representing which registers
+   * are masked when that mask is used.
    */
   std::array<__mmask8,8> _remainderMasks{
-//      __mmask8(255), // = 11111111
-//      __mmask8(254), // = 11111110
-//      __mmask8(252), // = 11111100
-//      __mmask8(248), // = 11111000
-//      __mmask8(240), // = 11110000
-//      __mmask8(224), // = 11100000
-//      __mmask8(192), // = 11000000
-//      __mmask8(128), // = 10000000
       __mmask8(255), // = 11111111
       __mmask8(127), // = 01111111
       __mmask8(63),  // = 00111111
@@ -152,7 +102,6 @@ class LJMultisiteFunctorAVX512_Mask
       __mmask8(3),   // = 00000011
       __mmask8(1),   // = 00000001
   };
-  const __m512i _ownedStateDummyMM512i{_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::dummy))};
 #endif
 
   // Vectors used to speed up the global verlet functor
@@ -173,9 +122,6 @@ class LJMultisiteFunctorAVX512_Mask
   LJMultisiteFunctorAVX512_Mask() = delete;
 
  public:
-  /**
-   * todo
-   */
   LJMultisiteFunctorAVX512_Mask(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
 #ifdef __AVX512F__
       : autopas::Functor<Particle, LJMultisiteFunctorAVX512_Mask<Particle, applyShift, useNewton3, calculateGlobals,
@@ -248,7 +194,7 @@ class LJMultisiteFunctorAVX512_Mask
 
         const auto sigmaSquared = _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]);
         const auto epsilon24 = _PPLibrary->getMixing24Epsilon(siteIdsA[i], siteIdsB[j]);
-        const auto shift6 = applyShift ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : _shift6AoS;
+        const auto shift6 = applyShift ? _PPLibrary->getMixingShift6(siteIdsA[i], siteIdsB[j]) : 0;
 
         // clang-format off
         // Calculate potential between sites and thus force
@@ -325,7 +271,7 @@ class LJMultisiteFunctorAVX512_Mask
   template <bool newton3>
   void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 #ifndef __AVX512F__
-#pragma message "SoAFunctorCTS called without AVX support!"
+#pragma message "LJMultisiteFunctorAVX512_Mask::SoAFunctorSingleImpl called without AVX512 intrinsics!"
 #endif
     if (soa.size() == 0) return;
 
@@ -389,8 +335,6 @@ class LJMultisiteFunctorAVX512_Mask
     std::vector<std::array<double, 3>> rotatedSitePositions;
 
     for (size_t mol = 0; mol < soa.size(); ++mol) {
-
-      // todo fix this
       rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
 
@@ -408,10 +352,7 @@ class LJMultisiteFunctorAVX512_Mask
       }
     }
 
-    const auto siteTypesConst = siteTypes;
-
     // ------------------------------ Main force calculation loop -----------------------------
-    auto force_start = std::chrono::high_resolution_clock::now();
     size_t siteIndexMolA = 0;  // index of first site in molA
     for (size_t molA = 0; molA < soa.size(); ++molA) {
       const size_t noSitesInMolA = _PPLibrary->getNumSites(typeptr[molA]);  // Number of sites in molecule A
@@ -428,30 +369,29 @@ class LJMultisiteFunctorAVX512_Mask
       std::array<double, 3> centerOfMass{xptr[molA], yptr[molA], zptr[molA]};
 
 
-        for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
-          const size_t siteTypeA = siteTypes[siteA];
-          const std::array<double, 3> rotatedSitePositionA = {rotatedSitePositionX[siteA], rotatedSitePositionY[siteA],
-                                                              rotatedSitePositionZ[siteA]};
-          const std::array<double, 3> exactSitePositionA = {exactSitePositionX[siteA], exactSitePositionY[siteA],
-                                                            exactSitePositionZ[siteA]};
+      for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
+        const size_t siteTypeA = siteTypes[siteA];
+        const std::array<double, 3> rotatedSitePositionA = {rotatedSitePositionX[siteA], rotatedSitePositionY[siteA],
+                                                            rotatedSitePositionZ[siteA]};
+        const std::array<double, 3> exactSitePositionA = {exactSitePositionX[siteA], exactSitePositionY[siteA],
+                                                          exactSitePositionZ[siteA]};
 
-          std::array<double, 3> forceAccumulator = {0., 0., 0.};
-          std::array<double, 3> torqueAccumulator = {0., 0., 0.};
+        std::array<double, 3> forceAccumulator = {0., 0., 0.};
+        std::array<double, 3> torqueAccumulator = {0., 0., 0.};
 
-          SoAKernel<true>( siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ,
-                              siteForceX, siteForceY, siteForceZ, siteOwnership, ownedStateA, siteTypeA,
-                              exactSitePositionA, rotatedSitePositionA, forceAccumulator, torqueAccumulator,
-                               siteIndexMolB);
+        interactAllWithSiteA<true>(siteTypes, exactSitePositionX, exactSitePositionY, exactSitePositionZ, siteForceX,
+                                   siteForceY, siteForceZ, siteOwnership, ownedStateA, siteTypeA, exactSitePositionA,
+                                   rotatedSitePositionA, forceAccumulator, torqueAccumulator, siteIndexMolB);
 
-          // Add forces + torques to molA
-          fxptr[molA] += forceAccumulator[0];
-          fyptr[molA] += forceAccumulator[1];
-          fzptr[molA] += forceAccumulator[2];
+        // Add forces + torques to molA
+        fxptr[molA] += forceAccumulator[0];
+        fyptr[molA] += forceAccumulator[1];
+        fzptr[molA] += forceAccumulator[2];
 
-          txptr[molA] += torqueAccumulator[0];
-          typtr[molA] += torqueAccumulator[1];
-          tzptr[molA] += torqueAccumulator[2];
-        }
+        txptr[molA] += torqueAccumulator[0];
+        typtr[molA] += torqueAccumulator[1];
+        tzptr[molA] += torqueAccumulator[2];
+      }
 
       siteIndexMolA += noSitesInMolA;
     }
@@ -483,7 +423,7 @@ class LJMultisiteFunctorAVX512_Mask
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soaA, autopas::SoAView<SoAArraysType> soaB) {
 #ifndef __AVX512F__
-#pragma message "SoAFunctorPair functor called without AVX support!"
+#pragma message "LJMultisiteFunctorAVX512_Mask::SoAFunctorPairImpl called without AVX512 intrinsics!"
 #endif
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -578,8 +518,6 @@ class LJMultisiteFunctorAVX512_Mask
         siteTypesB.push_back(_PPLibrary->getSiteTypes(typeptrB[mol])[site]);
       }
     }
-    const auto siteTypesBConst = siteTypesB;
-
     // ------------------------------ Main force calculation loop -----------------------------
 
     for (size_t molA = 0; molA < soaA.size(); ++molA) {
@@ -589,18 +527,15 @@ class LJMultisiteFunctorAVX512_Mask
       }
 
       const auto noSitesInMolA = _PPLibrary->getNumSites(typeptrA[molA]);
+      
       const auto unrotatedSitePositionsA = _PPLibrary->getSitePositions(typeptrA[molA]);
 
       const std::array<double, 3> centerOfMass{xAptr[molA], yAptr[molA], zAptr[molA]};
+
       const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, unrotatedSitePositionsA);
 
       const auto siteTypesA = _PPLibrary->getSiteTypes(typeptrA[molA]);
-
-      // ------------------- Build site mask -------------------
-
-
-      // ------------------- Calculate Forces -------------------
 
       std::array<double, 3> forceAccumulator = {0., 0., 0.};
       std::array<double, 3> torqueAccumulator = {0., 0., 0.};
@@ -610,10 +545,11 @@ class LJMultisiteFunctorAVX512_Mask
         const std::array<double, 3> rotatedSitePositionA = rotatedSitePositionsA[siteA];
         const std::array<double, 3> exactSitePositionA = rotatedSitePositionA + centerOfMass;
 
-        SoAKernel<newton3>( siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz,
-                               siteForceBx, siteForceBy, siteForceBz, siteOwnershipB, ownedStateA, siteTypeA,
-                               exactSitePositionA, rotatedSitePositionA, forceAccumulator, torqueAccumulator);
+        interactAllWithSiteA<newton3>(siteTypesB, exactSitePositionBx, exactSitePositionBy, exactSitePositionBz,
+                                      siteForceBx, siteForceBy, siteForceBz, siteOwnershipB, ownedStateA, siteTypeA,
+                                      exactSitePositionA, rotatedSitePositionA, forceAccumulator, torqueAccumulator);
       }
+
       // Add forces and torques to mol A
       fxAptr[molA] += forceAccumulator[0];
       fyAptr[molA] += forceAccumulator[1];
@@ -653,7 +589,7 @@ class LJMultisiteFunctorAVX512_Mask
    void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexPrimary,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 #ifndef __AVX512F__
-#pragma message "SoAFunctorVerlet functor called without AVX512 support!"
+#pragma message "LJMultisiteFunctorAVX512_Mask::SoAFunctorVerletImpl called without AVX512 intrinsics!"
 #endif
     const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
@@ -765,9 +701,10 @@ class LJMultisiteFunctorAVX512_Mask
       const std::array<double, 3> exactSitePositionPrime =
           autopas::utils::ArrayMath::add(rotatedSitePositionPrime, centerOfMassPrimary);
 
-      SoAKernel<newton3>(siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
-          exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ, siteOwnershipNeighbors, ownedStatePrime,
-          siteTypePrime, exactSitePositionPrime, rotatedSitePositionPrime, forceAccumulator, torqueAccumulator);
+      interactAllWithSiteA<newton3>(siteTypesNeighbors, exactNeighborSitePositionsX, exactNeighborSitePositionsY,
+                                    exactNeighborSitePositionsZ, siteForceX, siteForceY, siteForceZ,
+                                    siteOwnershipNeighbors, ownedStatePrime, siteTypePrime, exactSitePositionPrime,
+                                    rotatedSitePositionPrime, forceAccumulator, torqueAccumulator);
     }
     // Add forces to prime mol
     fxptr[indexPrimary] += forceAccumulator[0];
@@ -824,7 +761,7 @@ class LJMultisiteFunctorAVX512_Mask
    * @param offset An optional offset for neighbor site vectors (only used by SoAFunctorSingle)
    */
   template <bool newton3>
-  inline void SoAKernel(const std::vector<size_t, autopas::AlignedAllocator<size_t>> &siteTypesB,
+  inline void interactAllWithSiteA(const std::vector<size_t, autopas::AlignedAllocator<size_t>> &siteTypesB,
                         const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionX,
                         const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionY,
                         const std::vector<double, autopas::AlignedAllocator<double>> &exactSitePositionZ,
@@ -837,12 +774,12 @@ class LJMultisiteFunctorAVX512_Mask
                         const std::array<double, 3> rotatedSitePositionA, std::array<double, 3> &forceAccumulator,
                         std::array<double, 3> &torqueAccumulator, size_t offset = 0) {
 #ifndef __AVX512F__
-#pragma message "LJMultisiteFunctorAVX.h included, but AVX is not supported by the compiler."
+#pragma message "LJMultisiteFunctorAVX51_Mask.h included, but AVX512 is not supported by the compiler."
 #else
     // Declare mixing variables
-    __m512d sigmaSquared = _mm512_set1_pd(_sigmaSquaredAoS);
-    __m512d epsilon24 = _mm512_set1_pd(_epsilon24AoS);
-    __m512d shift6 = applyShift ? _mm512_set1_pd(_shift6AoS) : _zero;
+    __m512d sigmaSquared = _one;
+    __m512d epsilon24 = _zero;
+    __m512d shift6 = _zero;
 
     // Broadcast exact site positions of particle A
     const __m512d exactSitePositionsAX = _mm512_set1_pd(exactSitePositionA[0]);
@@ -863,12 +800,6 @@ class LJMultisiteFunctorAVX512_Mask
     __m512d torqueSumY = _zero;
     __m512d torqueSumZ = _zero;
 
-    // Globals
-    __m512d potentialEnergySum = _zero;
-    __m512d virialSumX = _zero;
-    __m512d virialSumY = _zero;
-    __m512d virialSumZ = _zero;
-
     // This variable either contains the local mask or the indices of the sites, depending on the template parameter
     __m512i sites = _mm512_setzero_si512();
 
@@ -877,7 +808,7 @@ class LJMultisiteFunctorAVX512_Mask
       const bool remainderCase = remainder < 8;
       const __mmask8 remainderMask = remainderCase ? _remainderMasks[8-remainder] : __mmask8(255);
 
-      // Load the exact site positions of particle B // todo is it faster to just use _mm512_maskz_load_pd?
+      // Load the exact site positions of particle B // todo prior to merge: is it faster to just use _mm512_maskz_load_pd?
       const __m512d exactSitePositionsBX = remainderCase ? _mm512_maskz_loadu_pd(remainderMask, &exactSitePositionX[siteVectorIndex])
                                                          : _mm512_loadu_pd(&exactSitePositionX[siteVectorIndex]);
       const __m512d exactSitePositionsBY = remainderCase ? _mm512_maskz_loadu_pd(remainderMask, &exactSitePositionY[siteVectorIndex])
@@ -896,28 +827,27 @@ class LJMultisiteFunctorAVX512_Mask
       const __m512d distanceSquared =
           _mm512_add_pd(distanceSquaredX, _mm512_add_pd(distanceSquaredY, distanceSquaredZ));
 
+      // mask = distanceSquared < _cutoffSquared
       const __mmask8 mask = _mm512_cmp_pd_mask(distanceSquared, _cutoffSquared, _MM_CMPINT_LT);
 
       const __m512i ownershipStateB = remainderCase ? _mm512_maskz_loadu_epi64(remainderMask, &siteOwnership[siteVectorIndex])
                                                       : _mm512_loadu_epi64(&siteOwnership[siteVectorIndex]);
+      // isNotDummy = ownershipStateB != owned
       const __mmask8 isNotDummy = _mm512_cmp_epi64_mask(ownershipStateB, _ownedStateDummyMM512i, _MM_CMPINT_NE);
 
+      // combinedMask = mask AND isNotDummy
       const __mmask8 combinedMask = _mm512_kand(mask, isNotDummy);
 
-      // Load the mixing parameters
+      // gather mixing parameters.
       const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(siteTypeA, 0);
 
-
-      const __m512i siteTypeIndices = remainderCase ? _mm512_maskz_loadu_epi64(remainderMask, &siteTypesB[siteVectorIndex])
-          : _mm512_loadu_epi64(&siteTypesB[siteVectorIndex]);
-//        const __m512i siteTypeIndicesOffset = _mm512_mullox_epi64(siteTypeIndices, _mm256_set1_epi64x(3));  // This could maybe be problematic!
-
-      // todo this is really silly - just generate different pointers for different mixing data types
-      const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndices, _three);
-
-
-      // I think this is correct but potentially not
+      // Uses base address of mixingPtr (+0/1/2), gathered data is offset by siteTypeIndicesScaled x 64 bits x 8.
+      // We need scaled site-types due to the way the mixing data is stored - todo change this
       if (remainderCase) {
+        const __m512i siteTypeIndices = _mm512_maskz_loadu_epi64(remainderMask, &siteTypesB[siteVectorIndex]);
+        const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndices, _three);
+
+
         epsilon24 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr, 8);
         sigmaSquared =
             _mm512_mask_i64gather_pd(_one, remainderMask, siteTypeIndicesScaled, mixingPtr + 1, 8);  // one used as "filler" in remainder case to avoid dividing by zero
@@ -925,6 +855,9 @@ class LJMultisiteFunctorAVX512_Mask
           shift6 = _mm512_mask_i64gather_pd(_zero, remainderMask, siteTypeIndicesScaled, mixingPtr + 2, 8);
         }
       } else {
+        const __m512i siteTypeIndices = _mm512_loadu_epi64(&siteTypesB[siteVectorIndex]);
+        const __m512i siteTypeIndicesScaled = _mm512_mullox_epi64(siteTypeIndices, _three);
+
         epsilon24 = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr, 8);
         sigmaSquared = _mm512_i64gather_pd(siteTypeIndicesScaled, mixingPtr + 1, 8);
         if constexpr (applyShift) {
@@ -1030,24 +963,6 @@ class LJMultisiteFunctorAVX512_Mask
 
 
  public:
-  /**
-   * Sets the particle properties constants for this functor.
-   *
-   * This is only necessary if no particlePropertiesLibrary is used.
-   * @param epsilon24 epsilon * 24
-   * @param sigmaSquared sigma^2
-   */
-  void setParticleProperties(SoAFloatPrecision epsilon24, SoAFloatPrecision sigmaSquared) {
-    _epsilon24AoS = epsilon24;
-    _sigmaSquaredAoS = sigmaSquared;
-    if (applyShift) {
-      _shift6AoS =
-          ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24AoS, _sigmaSquaredAoS, _cutoffSquaredAoS);
-    } else {
-      _shift6AoS = 0;
-    }
-  }
-
   /**
    * @copydoc Functor::getNeededAttr()
    */

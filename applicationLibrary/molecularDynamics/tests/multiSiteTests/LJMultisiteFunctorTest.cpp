@@ -8,7 +8,7 @@
 
 #include <gtest/gtest.h>
 
-#define PARTICLES_PER_DIM 2 // This should not be a multiple of 2
+#define PARTICLES_PER_DIM 7 // This should not be a multiple of 2
 #define AOS_VS_SOA_ACCURACY 1e-8
 
 void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
@@ -40,7 +40,7 @@ void LJMultisiteFunctorTest::generateMolecules(std::vector<mdLib::MultisiteMolec
         molecules->at(index).setTorque({0, 0, 0});
         molecules->at(index).setV({0, 0, 0});
         molecules->at(index).setAngularVel({0, 0, 0});
-        molecules->at(index).setTypeId(0);
+        molecules->at(index).setTypeId(index % 3);
         if (allOwned) {
           molecules->at(index).setOwnershipState(autopas::OwnershipState::owned);
         } else {
@@ -645,21 +645,6 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
   auto moleculesSoA = molecules;
   const auto numberMolecules = molecules.size();
 
-  // init traversal for functor
-  functorAoS.initTraversal();
-
-  // Apply AoSFunctor to molecules
-  for (size_t i = 0; i < numberMolecules; ++i) {
-    for (size_t j = newton3 ? i + 1 : 0; j < numberMolecules; ++j) {
-      if (i != j) {
-        functorAoS.AoSFunctor(moleculesAoS[i], moleculesAoS[j], newton3);
-      }
-    }
-  }
-
-  // end traversal for functor
-  functorAoS.endTraversal(newton3);
-
   // generate neighbor lists
   std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> neighborLists(numberMolecules);
   for (size_t i = 0; i < numberMolecules; ++i) {
@@ -667,7 +652,7 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
       if (i == j) {
         continue;
       }
-      auto displacement = autopas::utils::ArrayMath::sub(moleculesSoA[i].getR(), moleculesSoA[j].getR());
+      auto displacement = autopas::utils::ArrayMath::sub(moleculesAoS[i].getR(), moleculesAoS[j].getR());
       double distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
       if (distanceSquared < cutoff * cutoff) {
         neighborLists[i].push_back(j);
@@ -677,6 +662,21 @@ void LJMultisiteFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::Multisit
       }
     }
   }
+
+  // init traversal for functor
+  functorAoS.initTraversal();
+
+  // Apply AoSFunctor to molecules
+  for (size_t i = 0; i < numberMolecules; ++i) {
+    const auto neighborsOfI = neighborLists[i];
+    for (size_t j = 0; j < neighborsOfI.size(); ++j) {
+      const auto neighborIndex = neighborsOfI[j];
+      functorAoS.AoSFunctor(moleculesAoS[i], moleculesAoS[neighborIndex], newton3);
+    }
+  }
+
+  // end traversal for functor
+  functorAoS.endTraversal(newton3);
 
   // generate SoA Cell
   autopas::FullParticleCell<MultisiteMoleculeLJ> cellSoA;
