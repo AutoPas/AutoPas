@@ -32,7 +32,7 @@ void toStringHelper(std::ostream &in, const T &val) {
  * @return The string representation of the arguments, with whitespaces between.
  */
 template <class... Payload>
-auto toString(const Payload &... payload) {
+auto toString(const Payload &...payload) {
   std::stringstream stream;
   (toStringHelper(stream, payload), ...);
   return stream.str();
