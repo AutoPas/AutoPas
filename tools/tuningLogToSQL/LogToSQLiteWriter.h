@@ -22,7 +22,7 @@ void toStringHelper(std::ostream &in, const T &val) {
 }
 
 template <class... Payload>
-auto toString(const Payload &... payload) {
+auto toString(const Payload &...payload) {
   std::stringstream stream;
   (toStringHelper(stream, payload), ...);
   return stream.str();
