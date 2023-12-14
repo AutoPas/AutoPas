@@ -65,7 +65,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
   if (_loadBalancerOption == LoadBalancerOption::all) {
     _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
-    _allLoadBalancer->setCommunicator(_communicator);
+    _allLoadBalancer->setCommunicator(reinterpret_cast<MPI_Comm>(_communicator));
 
     const double minDomainSize = 2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency);
     _allLoadBalancer->setMinDomainSize({minDomainSize, minDomainSize, minDomainSize});

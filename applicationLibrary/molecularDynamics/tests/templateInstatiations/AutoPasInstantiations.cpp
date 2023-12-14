@@ -7,6 +7,8 @@
 
 #include "autopas/AutoPasImpl.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/MieFunctor.h"
+
 #include "testingHelpers/commonTypedefs.h"
 
 //! @cond Doxygen_Suppress
@@ -14,4 +16,7 @@ template class autopas::AutoPas<Molecule>;
 template bool autopas::AutoPas<Molecule>::iteratePairwise(
     mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false, /*relevantForTuning*/ true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    mdLib::MieFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                      /*globals*/ false, /*relevantForTuning*/ true> *);
 //! @endcond
