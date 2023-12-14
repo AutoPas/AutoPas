@@ -108,7 +108,7 @@ As AutoPas is only a library, it is not able to run simulations by itself.
 We have, however, included a few example proxy applications in the **examples** directory.
 The examples include:
 * [md-flexible](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible): Molecular dynamics simulations with single centered Lennard-Jones particles.
-* Smoothed particle hydrodynamics simulations
+* [Smoothed particle hydrodynamics simulations](https://github.com/AutoPas/AutoPas/blob/master/examples/sph)
 
 ## Using AutoPas
 Steps to using AutoPas in your particle simulation program:
