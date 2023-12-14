@@ -9,7 +9,7 @@ Please keep in mind the following notes while working.
 ### General Notes
 * Cpp standard: C++17. If there is a piece of code, which could be done better using a newer standard, please add a comment like `@todo C++20` including the alternative version of the code.
 * Pointers: Always use smart pointers when you are managing memory. Don't use `new` or `delete`.
-* OpenMP: Use AutoPas wrapper functions for OpenMP (`src/autopas/utils/WrapOpenMP.h`) instead of OpenMP functions to allow building without enabled OpenMP.
+* OpenMP: Use AutoPas wrapper functions and macros for OpenMP (`src/autopas/utils/WrapOpenMP.h`) instead of OpenMP functions to allow building without enabled OpenMP.
 * `#pragma once` instead of header guards.
 * `#include` of files from within AutoPas shall be given with the full path (starting with `autopas/`) and using `""`. 
 * `constexpr` instead of `#define`. Use it wherever possible.

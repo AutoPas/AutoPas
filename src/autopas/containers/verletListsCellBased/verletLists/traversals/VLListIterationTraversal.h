@@ -4,13 +4,13 @@
  * @date 7.4.2019
  * @author jspahl
  */
-
 #pragma once
 
 #include "VLTraversalInterface.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -40,6 +40,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] bool isApplicable() const override {
+    // No parallel version with N3 and no data races is available, hence no N3 is completely disabled.
     return (not useNewton3) and (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
   }
 
@@ -70,11 +71,11 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
     auto &soaNeighborLists = *(this->_soaNeighborLists);
     switch (dataLayout) {
       case DataLayoutOption::aos: {
-#if defined(AUTOPAS_OPENMP)
+        // If we use parallelization,
         if (not useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
-#pragma omp parallel for schedule(dynamic)
+          AUTOPAS_OPENMP(parallel for schedule(dynamic))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
@@ -85,9 +86,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
               }
             }
           }
-        } else
-#endif
-        {
+        } else {
           for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
             Particle &particle = *particlePtr;
             for (auto neighborPtr : neighborPtrList) {
@@ -100,17 +99,13 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
       }
 
       case DataLayoutOption::soa: {
-#if defined(AUTOPAS_OPENMP)
         if (not useNewton3) {
           /// @todo find a sensible chunk size
-          const size_t chunkSize = std::max(soaNeighborLists.size() / (omp_get_max_threads() * 10), 1ul);
-#pragma omp parallel for schedule(dynamic, chunkSize)
+          AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(soaNeighborLists.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
           for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
             _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], useNewton3);
           }
-        } else
-#endif
-        {
+        } else {
           // iterate over SoA
           for (size_t particleIndex = 0; particleIndex < soaNeighborLists.size(); particleIndex++) {
             _functor->SoAFunctorVerlet(_soa, particleIndex, soaNeighborLists[particleIndex], useNewton3);
