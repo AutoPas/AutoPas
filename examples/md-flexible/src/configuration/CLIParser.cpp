@@ -11,21 +11,6 @@
 #include <any>
 #include <fstream>
 
-// anonymous namespace to hide helper function
-namespace {
-
-/**
- * Utility function to check if a file behind a given path exists.
- * @param filename
- * @return True iff the file exists.
- */
-bool checkFileExists(const std::string &filename) {
-  struct stat buffer {};
-  return (stat(filename.c_str(), &buffer) == 0);
-}
-
-}  // namespace
-
 MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
 
@@ -71,16 +56,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.logFileName,
       config.logLevel,
       config.maxTuningPhasesWithoutTest,
+      config.mpiStrategyOption,
       config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
-      config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
       config.particlesTotal,
       config.relativeBlacklistRange,
       config.relativeOptimumRange,
-      config.ruleFilename,
       config.selectorStrategy,
       config.traversalOptions,
       config.tuningInterval,
@@ -88,9 +72,8 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.tuningMetricOption,
       config.tuningPhases,
       config.tuningSamples,
-      config.tuningStrategyOptions,
+      config.tuningStrategyOption,
       config.useThermostat,
-      config.useTuningLogger,
       config.verletClusterSize,
       config.verletRebuildFrequency,
       config.verletSkinRadiusPerTimestep,
@@ -515,9 +498,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.tuningStrategyOptions)::getoptChar: {
-        config.tuningStrategyOptions.value =
-            autopas::TuningStrategyOption::parseOptions<std::vector<autopas::TuningStrategyOption>>(strArg);
+      case decltype(config.tuningStrategyOption)::getoptChar: {
+        auto parsedOptions = autopas::TuningStrategyOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one tuning strategy option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.tuningStrategyOption.value = *parsedOptions.begin();
         break;
       }
       case decltype(config.tuningMetricOption)::getoptChar: {
@@ -531,11 +520,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.tuningMetricOption.value = *parsedOptions.begin();
         break;
       }
-      case decltype(config.ruleFilename)::getoptChar: {
-        config.ruleFilename.value = optarg;
-        if (not checkFileExists(optarg)) {
-          throw std::runtime_error("CLIParser::parse(): rule-File " + config.ruleFilename.value + " not found!");
+      case decltype(config.mpiStrategyOption)::getoptChar: {
+        auto parsedOptions = autopas::MPIStrategyOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one mpi strategy option. AutoPas cannot switch between several." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
         }
+        config.mpiStrategyOption.value = *parsedOptions.begin();
         break;
       }
       case decltype(config.MPITuningMaxDifferenceForBucket)::getoptChar: {
@@ -628,22 +621,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.boundaryOption.value = {parsedOption, parsedOption, parsedOption};
         break;
       }
-      case decltype(config.useTuningLogger)::getoptChar: {
-        if (strArg == "true") {
-          config.useTuningLogger.value = true;
-        } else if (strArg == "false") {
-          config.useTuningLogger.value = false;
-        } else {
-          cerr << "Error parsing 'useTuningLogger': " << optarg << endl;
-          cerr << "Value should be true or false." << endl;
-          displayHelp = true;
-        }
-        break;
-      }
-      case decltype(config.outputSuffix)::getoptChar: {
-        config.outputSuffix.value = strArg;
-        break;
-      }
       case decltype(config.loadBalancer)::getoptChar: {
         auto parsedOptions = LoadBalancerOption::parseOptions(strArg);
 
@@ -725,6 +702,21 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
   }
   return MDFlexParser::exitCodes::success;
 }
+
+// anonymous namespace to hide helper function
+namespace {
+
+/**
+ * Checks if a file with the given path exists.
+ * @param filename
+ * @return True iff the file exists.
+ */
+bool checkFileExists(const std::string &filename) {
+  struct stat buffer {};
+  return (stat(filename.c_str(), &buffer) == 0);
+}
+
+}  // namespace
 
 void MDFlexParser::CLIParser::inputFilesPresent(int argc, char **argv, MDFlexConfig &config) {
   // suppress error messages since we only want to look if the yaml option is there

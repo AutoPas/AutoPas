@@ -11,7 +11,6 @@
 #include <string>
 
 #include "autopas/AutoPas.h"
-#include "autopas/tuning/Configuration.h"
 #include "src/TypeDefinitions.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 

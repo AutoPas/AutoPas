@@ -5,8 +5,6 @@
  */
 #include "Simulation.h"
 
-#include <algorithm>
-
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
@@ -134,26 +132,20 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setExtrapolationMethodOption(_configuration.extrapolationMethodOption.value);
   _autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
   _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
-  _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
-  _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);
+  _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOption.value);
   _autoPasContainer->setTuningMetricOption(_configuration.tuningMetricOption.value);
+  _autoPasContainer->setMPIStrategy(_configuration.mpiStrategyOption.value);
   _autoPasContainer->setMPITuningMaxDifferenceForBucket(_configuration.MPITuningMaxDifferenceForBucket.value);
   _autoPasContainer->setMPITuningWeightForMaxDensity(_configuration.MPITuningWeightForMaxDensity.value);
   _autoPasContainer->setVerletClusterSize(_configuration.verletClusterSize.value);
   _autoPasContainer->setVerletRebuildFrequency(_configuration.verletRebuildFrequency.value);
   _autoPasContainer->setVerletSkinPerTimestep(_configuration.verletSkinRadiusPerTimestep.value);
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
-  _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
-  const auto *fillerBeforeSuffix =
-      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
-  const auto *fillerAfterSuffix =
-      _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.back() == '_' ? "" : "_";
-  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + fillerBeforeSuffix +
-                                     _configuration.outputSuffix.value + fillerAfterSuffix);
+  _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + "_");
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
   _autoPasContainer->init();
 
@@ -296,32 +288,16 @@ void Simulation::run() {
 
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
   if (_configuration.tuningPhases.value > 0) {
-    const size_t configsTestedPerTuningPhase = [&]() {
-      if (std::any_of(_configuration.tuningStrategyOptions.value.begin(),
-                      _configuration.tuningStrategyOptions.value.end(), [](const auto &stratOpt) {
-                        return stratOpt == autopas::TuningStrategyOption::bayesianSearch or
-                               stratOpt == autopas::TuningStrategyOption::bayesianClusterSearch or
-                               stratOpt == autopas::TuningStrategyOption::randomSearch;
-                      })) {
-        return static_cast<size_t>(_configuration.tuningMaxEvidence.value);
-      } else {
-        // @TODO: this can be improved by considering the tuning strategy
-        //  or averaging number of iterations per tuning phase and dynamically adapt prediction
-
-        // This estimate is only valid for full search and no restrictions on the cartesian product.
-        // add static to only evaluate this once
-        static const auto ret = autopas::SearchSpaceGenerators::cartesianProduct(
-                                    _configuration.containerOptions.value, _configuration.traversalOptions.value,
-                                    _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get())
-                                    .size();
-        return ret;
-      }
-    }();
-    // non-tuning iterations + tuning iterations + one iteration after last phase
+    // @TODO: this can be improved by considering the tuning strategy
+    // This is just a randomly guessed number but seems to fit roughly for default settings.
+    size_t configsTestedPerTuningPhase = 90;
+    if (_configuration.tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch or
+        _configuration.tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianClusterSearch) {
+      configsTestedPerTuningPhase = _configuration.tuningMaxEvidence.value;
+    }
     auto estimate =
         (_configuration.tuningPhases.value - 1) * _configuration.tuningInterval.value +
-        (_configuration.tuningPhases.value * _configuration.tuningSamples.value * configsTestedPerTuningPhase) + 1;
+        (_configuration.tuningPhases.value * _configuration.tuningSamples.value * configsTestedPerTuningPhase);
     return {estimate, false};
   } else {
     return {_configuration.iterations.value, true};

@@ -221,9 +221,9 @@ std::string MDFlexConfig::to_string() const {
   };
 
 #if MD_FLEXIBLE_MODE == MULTISITE
-  os << "# Running multi-site MD simulation.\n" << endl;
+  os << "Running multi-site MD simulation.\n" << endl;
 #else
-  os << "# Running single-site MD simulation.\n" << endl;
+  os << "Running single-site MD simulation.\n" << endl;
 #endif
 
   printOption(containerOptions);
@@ -243,45 +243,25 @@ std::string MDFlexConfig::to_string() const {
 
   printOption(dataLayoutOptions);
   printOption(traversalOptions);
-  printOption(tuningStrategyOptions);
-
-  // helper function to check if any options of a given list is in the tuningStrategyOptions.
-  auto tuningStrategyOptionsContainAnyOf = [&](const std::vector<autopas::TuningStrategyOption> &needles) {
-    return std::any_of(tuningStrategyOptions.value.begin(), tuningStrategyOptions.value.end(), [&](const auto &lhs) {
-      return std::any_of(needles.begin(), needles.end(), [&](const auto &rhs) { return lhs == rhs; });
-    });
-  };
-
-  if (tuningStrategyOptionsContainAnyOf({
-          autopas::TuningStrategyOption::bayesianSearch,
-          autopas::TuningStrategyOption::bayesianClusterSearch,
-      })) {
+  printOption(tuningStrategyOption);
+  if (tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianSearch or
+      tuningStrategyOption.value == autopas::TuningStrategyOption::bayesianClusterSearch) {
     printOption(acquisitionFunctionOption);
   }
-  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::mpiDivideAndConquer})) {
+  printOption(mpiStrategyOption);
+  if (mpiStrategyOption.value == autopas::MPIStrategyOption::divideAndConquer) {
     printOption(MPITuningMaxDifferenceForBucket);
     printOption(MPITuningWeightForMaxDensity);
   }
   printOption(tuningInterval);
   printOption(tuningSamples);
-  if (tuningStrategyOptionsContainAnyOf({
-          autopas::TuningStrategyOption::randomSearch,
-          autopas::TuningStrategyOption::bayesianSearch,
-          autopas::TuningStrategyOption::bayesianClusterSearch,
-      })) {
-    printOption(tuningMaxEvidence);
-  }
-  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::predictiveTuning})) {
+  printOption(tuningMaxEvidence);
+  if (tuningStrategyOption.value == autopas::TuningStrategyOption::predictiveTuning) {
     printOption(relativeOptimumRange);
     printOption(maxTuningPhasesWithoutTest);
+    printOption(relativeBlacklistRange);
     printOption(evidenceFirstPrediction);
     printOption(extrapolationMethodOption);
-  }
-  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::slowConfigFilter})) {
-    printOption(relativeBlacklistRange);
-  }
-  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::ruleBasedTuning})) {
-    printOption(ruleFilename);
   }
   os << setw(valueOffset) << left << functorOption.name << ":  ";
   switch (functorOption.value) {
@@ -338,6 +318,7 @@ std::string MDFlexConfig::to_string() const {
     os << "    " << setw(valueOffset - 4) << left << sigmaMap.name << ":  " << sigmaMap.value.at(siteId) << endl;
     os << "    " << setw(valueOffset - 4) << left << massMap.name << ":  " << massMap.value.at(siteId) << endl;
   }
+
 #if MD_FLEXIBLE_MODE == MULTISITE
   os << setw(valueOffset) << left << "Molecules:" << endl;
   for (auto [molId, molToSiteId] : molToSiteIdMap) {
@@ -403,9 +384,6 @@ std::string MDFlexConfig::to_string() const {
   if (not checkpointfile.value.empty()) {
     printOption(checkpointfile);
   }
-
-  os << setw(valueOffset) << left << useTuningLogger.name << ":  " << useTuningLogger.value << endl;
-  os << setw(valueOffset) << left << outputSuffix.name << ":  " << outputSuffix.value << endl;
 
   os << setw(valueOffset) << left << logLevel.name << ":  " << spdlog::level::to_string_view(logLevel.value).data()
      << endl;

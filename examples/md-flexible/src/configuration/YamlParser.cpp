@@ -215,20 +215,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         auto strArg = node[key].as<std::string>();
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-        if (strArg.find("mie") != std::string::npos) {
-          if (strArg.find("fixed") != std::string::npos) {
-            config.functorOption.value = MDFlexConfig::FunctorOption::miefixed_AVX;
-          }
-          else if (strArg.find("avx") != std::string::npos) {
-            config.functorOption.value = MDFlexConfig::FunctorOption::mie_AVX;
-          }
-          else if (strArg.find("sve") != std::string::npos) {
-            config.functorOption.value = MDFlexConfig::FunctorOption::mie_SVE;
-          }
-          else {
-            config.functorOption.value = MDFlexConfig::FunctorOption::mie;
-          }
-        } else if (strArg.find("avx") != std::string::npos) {
+        if (strArg.find("avx") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
         } else if (strArg.find("sve") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
@@ -375,13 +362,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.extrapolationMethodOption.value = *parsedOptions.begin();
 
-      } else if (key == config.tuningStrategyOptions.name) {
-        expected = "List of tuning strategies that will be applied in the given order.";
-        description = config.tuningStrategyOptions.description;
+      } else if (key == config.tuningStrategyOption.name) {
+        expected = "Exactly one tuning strategy option out of the possible values.";
+        description = config.tuningStrategyOption.description;
 
-        config.tuningStrategyOptions.value =
-            autopas::TuningStrategyOption::parseOptions<std::vector<autopas::TuningStrategyOption>>(
-                autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+        const auto parsedOptions = autopas::TuningStrategyOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning strategy!"));
+
+        config.tuningStrategyOption.value = *parsedOptions.begin();
       } else if (key == config.tuningMetricOption.name) {
         expected = "Exactly one tuning metric option out of the possible values.";
         description = config.tuningMetricOption.description;
@@ -390,6 +378,14 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one tuning metric!"));
 
         config.tuningMetricOption.value = *parsedOptions.begin();
+      } else if (key == config.mpiStrategyOption.name) {
+        expected = "Exactly one MPI strategy option out of the possible values.";
+        description = config.mpiStrategyOption.description;
+
+        const auto parsedOptions = autopas::MPIStrategyOption::parseOptions(
+            parseSequenceOneElementExpected(node[key], "Pass exactly one MPI strategy!"));
+
+        config.mpiStrategyOption.value = *parsedOptions.begin();
       } else if (key == config.MPITuningMaxDifferenceForBucket.name) {
         expected = "Floating-point Value";
         description = config.MPITuningMaxDifferenceForBucket.description;
@@ -462,14 +458,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.logFileName.value.empty()) {
           throw std::runtime_error("Parsed log filename is empty!");
         }
-      } else if (key == config.ruleFilename.name) {
-        expected = "String";
-        description = config.ruleFilename.description;
-
-        config.ruleFilename.value = node[key].as<std::string>();
-        if (config.ruleFilename.value.empty()) {
-          throw std::runtime_error("Parsed rule filename is empty!");
-        }
       } else if (key == config.verletRebuildFrequency.name) {
         expected = "Unsigned Integer >= 1";
         description = config.verletRebuildFrequency.description;
@@ -521,16 +509,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.vtkWriteFrequency.value < 1) {
           throw std::runtime_error("VTK write frequency has to be a positive integer >= 1!");
         }
-      } else if (key == config.useTuningLogger.name) {
-        expected = "Boolean Value";
-        description = config.useTuningLogger.description;
-
-        config.useTuningLogger.value = node[config.useTuningLogger.name].as<bool>();
-      } else if (key == config.outputSuffix.name) {
-        expected = "String";
-        description = config.outputSuffix.description;
-
-        config.outputSuffix.value = node[config.outputSuffix.name].as<std::string>();
       } else if (key == config.globalForce.name) {
         expected = "YAML-sequence of three floats. Example: [0, 0, -9.81].";
         description = config.globalForce.description;
