@@ -6,15 +6,13 @@
 #ifdef __AVX__
 #pragma once
 
+#include <gtest/gtest.h>
 
 #include <array>
 
 #include "AutoPasTestBase.h"
-#include "autopas/utils/SoA.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "testingHelpers/commonTypedefs.h"
 
-#include <cstdint>
 class MieForceCalculationTest : public AutoPasTestBase {
  public:
   MieForceCalculationTest() = default;

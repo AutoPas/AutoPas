@@ -8,7 +8,8 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "molecularDynamicsLibrary/MieFunctor.h"
-#include "autopas/AutoPasImpl.h"
+#include "testingHelpers/commonTypedefs.h"
+
 
 
 extern template class autopas::AutoPas<Molecule>;
