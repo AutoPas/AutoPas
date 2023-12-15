@@ -9,7 +9,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/discreteElementMethod/DEMFunctor.h"
+#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
 
 #include <vector>
 
@@ -150,7 +150,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     //for (unsigned int level = 0; level < _numberOfLevels; level++) {
     //  hierarchyLevels[level].deleteHaloParticles();
     //}
-    hieraryLevels[0].deleteHaloParticles();
+    hierarchyLevels[0].deleteHaloParticles();
   }
 
   /**
@@ -160,7 +160,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     //for (unsigned int level = 0; level < _numberOfLevels; level++) {
     //  hierarchyLevels[level].deleteAllParticles();
     //}
-    hieraryLevels[0].deleteAllParticles();
+    hierarchyLevels[0].deleteAllParticles();
   }
 
   /**
@@ -247,7 +247,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
 
-        return hierarchyLevels[0].getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors)
+        return hierarchyLevels[0].getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
 
       }
 
@@ -294,11 +294,11 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     
 
     // Iterate over hierarchy levels and subtract excess forces
-    autopas::DEMFunctor<Particle>::initExcessForceSubtraction(_numberOfLevels);
+    demLib::DEMFunctor<Particle>::initExcessForceSubtraction(_numberOfLevels);
     for (unsigned int level = 0; level < _numberOfLevels; level++) {
       hierarchyLevels[level].iteratePairwise(&traversal); // add traversal option
     }
-    autopas::DEMFunctor<Particle>::endExcessForceSubtraction();
+    demLib::DEMFunctor<Particle>::endExcessForceSubtraction();
 
   }
 
@@ -325,12 +325,12 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   /**
    * @copydoc autopas::ParticleContainerInterface::getVerletSkin()
    */
-  [[nodiscard]] double getVerletSkin() const override { return _skinPerTimestep * _rebuildFrequency }
+  [[nodiscard]] double getVerletSkin() const override { return _skinPerTimestep * _rebuildFrequency; }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getInteractionLength()
    */
-  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency }
+  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency; }
 
   /**
    * @TODO !!! Funktioniert so bestimmt nicht ... 
@@ -348,15 +348,49 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] TraversalSelectorInfo getTraversalSelectorInfo() const override {
 
-    return hierarchyLevels[0].getTraversalSelectorInfo()
+    return hierarchyLevels[0].getTraversalSelectorInfo();
 
   }
 
   /**
-   * @TODO: Continue with getParticle() 
-   * 
+   * @copydoc autopas::ParticleContainerInterface::getParticle()
    */
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                            IteratorBehavior iteratorBehavior) const override {
 
+    return hierarchyLevels[0].getParticle(cellIndex, particleIndex, iteratorBehavior); 
+
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getParticle()
+   */
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                                   IteratorBehavior iteratorBehavior,
+                                                                   const std::array<double, 3> &boxMin,
+                                                                   const std::array<double, 3> &boxMax) const override {
+
+    return hierarchyLevels[0].getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::deleteParticle()
+   */
+  bool deleteParticle(Particle &particle) override {
+
+    return hierarchyLevels[0].deleteParticle(particle);
+
+  }
+
+  /**
+   * @copydoc autopas::ParticleContainerInterface::deleteParticle()
+   */
+  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+
+    return hierarchyLevels[0].deleteParticle(cellIndex, particleIndex);
+
+  }
 
   /**
    * @brief Get the Hierarchy Level Of Particle object

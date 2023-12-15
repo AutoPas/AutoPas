@@ -50,6 +50,22 @@ target_link_libraries(SPHLibrary PUBLIC autopas)
 
 target_include_directories(SPHLibrary PUBLIC ./sph)
 
+
+# --- sph ---
+
+file(
+        GLOB_RECURSE
+        LIB_DEM_SRC
+        "discreteElementMethod/discreteElementMethodLibrary/*.h"
+        "discreteElementMethod/discreteElementMethodLibrary/*.cpp"
+)
+
+add_library(discreteElementMethodLibrary STATIC ${LIB_DEM_SRC})
+
+target_link_libraries(discreteElementMethodLibrary PUBLIC autopas)
+
+target_include_directories(discreteElementMethodLibrary PUBLIC ./discreteElementMethod)
+
 # --------------------------------tests---------------------------------------
 
 # --- molecular dynamics ---

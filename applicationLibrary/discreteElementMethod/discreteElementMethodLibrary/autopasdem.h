@@ -11,6 +11,6 @@
 
 #pragma once
 
-#include "autopas/discreteElementMethod/ParticleDEM.h"
-#include "autopas/discreteElementMethod/DEMFunctor.h"
+#include "ParticleDEM.h"
+#include "DEMFunctor.h"
 

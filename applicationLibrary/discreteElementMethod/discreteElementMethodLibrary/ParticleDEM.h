@@ -13,7 +13,7 @@
 
 #include "autopas/particles/Particle.h"
 
-namespace autopas {
+namespace demLib {
 
 /**
  * @brief Particle class for the DEM functor
@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam floatType 
  */
 template <typename floatType = double>
-class ParticleDEM final : public Particle {
+class ParticleDEM final : public autopas::Particle {
  public:
 
   /**
@@ -336,4 +336,4 @@ class ParticleDEM final : public Particle {
 
 };
 
-}  // namespace autopas
+}  // namespace demLib

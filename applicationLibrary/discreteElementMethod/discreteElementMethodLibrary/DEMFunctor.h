@@ -24,7 +24,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
 
-namespace autopas {
+namespace demLib {
 
 /**
  * @brief Functor for the force interactions between two DEM objects (particles)
@@ -33,9 +33,9 @@ namespace autopas {
  * @tparam useNewton3 
  * @tparam relevantForTuning 
  */
-template <class Particle, FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool relevantForTuning = true>
+template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool relevantForTuning = true>
 class DEMFunctor
-    : public Functor<Particle,
+    : public autopas::Functor<Particle,
                       DEMFunctor<Particle, useNewton3, relevantForTuning>> {
 
   /**
@@ -65,18 +65,18 @@ public:
    */
   explicit DEMFunctor(double cutoff) 
 
-    : Functor<Particle, DEMFunctor<Particle, useNewton3, relevantForTuning>>(cutoff) {}
+    : autopas::Functor<Particle, DEMFunctor<Particle, useNewton3, relevantForTuning>>(cutoff) {}
 
   bool isRelevantForTuning() final { 
     return relevantForTuning; 
   }
 
   bool allowsNewton3() final { 
-    return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; 
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; 
   }
 
   bool allowsNonNewton3() final {
-    return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
+    return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
 
@@ -114,11 +114,11 @@ public:
     const double radJ = j.getRad();
 
     //distance between ParticleCenters
-    const auto dr = utils::ArrayMath::sub(i.getR(), j.getR()); 
-    const double penDepth = radI + radJ - utils::ArrayMath::L2Norm(dr);
+    const auto dr = autopas::utils::ArrayMath::sub(i.getR(), j.getR()); 
+    const double penDepth = radI + radJ - autopas::utils::ArrayMath::L2Norm(dr);
 
     //relative particle velocity
-    const auto relVel = utils::ArrayMath::sub(i.getV(), j.getV());
+    const auto relVel = autopas::utils::ArrayMath::sub(i.getV(), j.getV());
 
     // Particles do not intersect => return
     if (penDepth <= 0) {
@@ -157,14 +157,14 @@ public:
     // Calculate the normal force vector
     const double normalForce = normalFactorForce * penDepth; 
 
-    const auto vecNormalForce = utils::ArrayMath::mulScalar (utils::ArrayMath::normalize(dr), normalForce);
+    const auto vecNormalForce = autopas::utils::ArrayMath::mulScalar (autopas::utils::ArrayMath::normalize(dr), normalForce);
 
     //Calculate the normal damping
-    const auto vecNormalDamping = utils::ArrayMath::mulScalar(relVel, normalFactorDamping);
+    const auto vecNormalDamping = autopas::utils::ArrayMath::mulScalar(relVel, normalFactorDamping);
 
     //Calculate the force
-    const auto vecForce = utils::ArrayMath::sub(vecNormalForce, vecNormalDamping);
-    vecForce = utils::ArrayMath::mulScalar(vecForce,_factorSubtractExcessForces);
+    const auto vecForce = autopas::utils::ArrayMath::sub(vecNormalForce, vecNormalDamping);
+    vecForce = autopas::utils::ArrayMath::mulScalar(vecForce,_factorSubtractExcessForces);
 
     i.addF(vecForce);
 
@@ -176,12 +176,12 @@ public:
 
   /**
    * 
-   * @copydoc Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3)
    * 
    * DEM Functor for an SoA
    * 
    */
-  void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
+  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
 
     // If SoA is empty, return
     if (soa.getNumberOfParticles() == 0) return;
@@ -214,7 +214,7 @@ public:
 
       // If particle is dummy, skip it
       const auto ownedStateI = ownershipPtr[i];
-      if (ownedStateI == OwnershipState::dummy) {
+      if (ownedStateI == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -248,7 +248,7 @@ public:
 
         // Mask away if particles arent intersecting or if j is dummy.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr <= rad and ownedStateJ != OwnershipState::dummy;
+        const bool mask = dr <= rad and ownedStateJ != autopas::OwnershipState::dummy;
 
         // Relative particle velocity
         const SoAFloatPrecision dvx = vxptr[i] - vxptr[j];
@@ -312,9 +312,9 @@ public:
   }
 
   /**
-   * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
    */
-  void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+  void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
@@ -332,7 +332,7 @@ private:
    * @param soa2
    */
   template <bool newton3>
-  void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
+  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
 
     // If SoA is empty, return
     if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
@@ -380,7 +380,7 @@ private:
       
       // If particle is dummy, skip it
       const auto ownedStateI = ownership1Ptr[i];
-      if (ownedStateI == OwnershipState::dummy) {
+      if (ownedStateI == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -412,7 +412,7 @@ private:
 
         // Mask away if particles arent intersecting or if j is dummy.
         // Particle ownedStateI was already checked previously.
-        const bool mask = dr <= rad and ownedStateJ != OwnershipState::dummy;
+        const bool mask = dr <= rad and ownedStateJ != autopas::OwnershipState::dummy;
 
         // Relative particle velocity
         const SoAFloatPrecision dvx = vx1ptr[i] - vx2ptr[j];
@@ -481,7 +481,7 @@ public:
 
   // clang-format off
   /**
-   * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+   * @copydoc autopas::Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
    * 
    * DEM Functor for a Verlet SoA
    * 
@@ -489,7 +489,7 @@ public:
    * are no dependencies, i.e. introduce colors!
    */
   // clang-format on
-  void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                         bool newton3) final {
     
@@ -553,7 +553,7 @@ public:
 
   void endTraversal(bool newton3) final {
     if (_postProcessed) {
-      throw utils::ExceptionHandler::AutoPasException(
+      throw autopas::utils::ExceptionHandler::AutoPasException(
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
   }
@@ -570,7 +570,7 @@ private:
    * @param neighborList 
    */
   template <bool newton3>
-  void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+  void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
 
     // Pointers to particle properties
@@ -603,7 +603,7 @@ private:
 
     // checks whether particle i is owned.
     const auto ownedStateI = ownedStatePtr[indexFirst];
-    if (ownedStateI == OwnershipState::dummy) {
+    if (ownedStateI == autopas::OwnershipState::dummy) {
       return;
     }
 
@@ -627,7 +627,7 @@ private:
     // we will use a vectorized version.
     if (neighborListSize >= vecsize) {
       alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, vxtmp, vytmp, vztmp, masstmp, radtmp, poissontmp, youngtmp, xArr, yArr, zArr, vxArr, vyArr, vzArr, massArr, radArr, poissonArr, youngArr, fxArr, fyArr, fzArr;
-      alignas(64) std::array<OwnershipState, vecsize> ownedStateArr{};
+      alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
       
       // broadcast of the position of particle i
       for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
@@ -689,7 +689,7 @@ private:
 
           // Mask away if particles arent intersecting or if j is dummy.
           // Particle ownedStateI was already checked previously.
-          const bool mask = dr <= rad and ownedStateJ != OwnershipState::dummy and dr != 0;
+          const bool mask = dr <= rad and ownedStateJ != autopas::OwnershipState::dummy and dr != 0;
 
           // Relative particle velocity
           const SoAFloatPrecision dvx = vxtmp[j] - vxArr[j];
@@ -757,7 +757,7 @@ private:
 
       // Skipp if dummy
       const auto ownedStateJ = ownedStatePtr[j];
-      if (ownedStateJ == OwnershipState::dummy) {
+      if (ownedStateJ == autopas::OwnershipState::dummy) {
         continue;
       }
 
@@ -859,4 +859,4 @@ private:
 };
 //double DEMFunctor<???>::_factorSubtractExcessForces{1.0};
 
-}; //namespace autopas
+}; //namespace demLib
