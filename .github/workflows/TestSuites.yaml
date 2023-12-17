@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: DoozyX/clang-format-lint-action@v0.12
+      - uses: DoozyX/clang-format-lint-action@v0.16.2
         with:
-          source: 'src tests examples'
+          source: 'src tests examples applicationLibrary tools'
           # exclude: 'none'
           extensions: 'h,cpp'
-          clangFormatVersion: 9
+          clangFormatVersion: 14
           style: file
 
   # Make sure contribution guidelines are followed. This does not apply any changes!
