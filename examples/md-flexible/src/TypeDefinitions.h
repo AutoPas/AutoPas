@@ -173,7 +173,7 @@ using MieFunctorFixedTypeAVX = mdLib::MieFunctorFixedExponentsAVX<ParticleType, 
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "No Multi-Site Mie Functor support!"
 #else
-using MieFunctorFixedTypeSVE = mdLib::mieFunctorSVE<ParticleType, true, true>;
+using MieFunctorTypeSVE = mdLib::mieFunctorSVE<ParticleType, true, true>;
 #endif
 #endif
 

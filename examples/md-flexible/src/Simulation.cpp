@@ -698,8 +698,8 @@ T Simulation::applyWithChosenFunctor(F f) {
       return f(MieFunctorTypeSVE{cutoff, 12,6, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
-          "MD-Flexible was not compiled with support for MieFunctor AVX. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
+          "MD-Flexible was not compiled with support for MieFunctor SVE. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
 
     }
