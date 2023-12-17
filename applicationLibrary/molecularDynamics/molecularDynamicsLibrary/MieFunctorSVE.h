@@ -560,7 +560,7 @@
       fac = svmul_x(pgC, miensubmiem, invdr2);
       //TODO: mie6 for Globals in applyForces!!
     }
-
+    //TODO: esilon24s is for calculate globals in apply forces
     template <bool newton3, bool indexed>
     inline void applyForces(const size_t j, const svuint64_t &index, const bool ownedStateIisOwned,
                             double *const __restrict fx2ptr, double *const __restrict fy2ptr,
@@ -672,33 +672,41 @@
       const bool continue_3 = svptest_any(svptrue_b64(), pgC_3);
       const bool continue_4 = svptest_any(svptrue_b64(), pgC_4);
 
-      svfloat64_t epsilon24s_1;
+      svfloat64_t cepsilons_1;
+      svfloat64_t cnepsilons_1;
+      svfloat64_t cmepsilons_1;
       svfloat64_t shift6s_1;
       svfloat64_t mie6_1;
       svfloat64_t fac_1;
       if (continue_1)
-        mie<indexed>(index_1, typeID1ptr, typeID2ptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, mie6_1, fac_1);
+        mie<indexed>(index_1, typeID1ptr, typeID2ptr, pgC_1, dr2_1, cepsilons_1, cnepsilons_1, cmepsilons_1, shift6s_1, mie6_1, fac_1);
 
-      svfloat64_t epsilon24s_2;
+      svfloat64_t cepsilons_2;
+      svfloat64_t cnepsilons_2;
+      svfloat64_t cmepsilons_2;
       svfloat64_t shift6s_2;
       svfloat64_t mie6_2;
       svfloat64_t fac_2;
       if (continue_2)
-        mie<indexed>(index_2, typeID1ptr, typeID2ptr, pgC_2, dr2_2, epsilon24s_2, shift6s_2, mie6_2, fac_2);
+        mie<indexed>(index_2, typeID1ptr, typeID2ptr, pgC_2, dr2_2, cepsilons_2, cnepsilons_2, cmepsilons_2, shift6s_2, mie6_2, fac_2);
 
-      svfloat64_t epsilon24s_3;
+      svfloat64_t cepsilons_3;
+      svfloat64_t cnepsilons_3;
+      svfloat64_t cmepsilons_3;
       svfloat64_t shift6s_3;
       svfloat64_t mie6_3;
       svfloat64_t fac_3;
       if (continue_3)
-        mie<indexed>(index_3, typeID1ptr, typeID2ptr, pgC_3, dr2_3, epsilon24s_3, shift6s_3, mie6_3, fac_3);
+        mie<indexed>(index_3, typeID1ptr, typeID2ptr, pgC_3, dr2_3, cepsilons_3, cnepsilons_3, cmepsilons_3, shift6s_3, mie6_3, fac_3);
 
-      svfloat64_t epsilon24s_4;
+      svfloat64_t cepsilons_4;
+      svfloat64_t cnepsilons_4;
+      svfloat64_t cmepsilons_4;
       svfloat64_t shift6s_4;
       svfloat64_t mie6_4;
       svfloat64_t fac_4;
       if (continue_4)
-        mie<indexed>(index_4, typeID1ptr, typeID2ptr, pgC_4, dr2_4, epsilon24s_4, shift6s_4, mie6_4, fac_4);
+        mie<indexed>(index_4, typeID1ptr, typeID2ptr, pgC_4, dr2_4, cepsilons_4, cnepsilons_4,cmepsilons_4, shift6s_4, mie6_4, fac_4);
 
       if (continue_1)
         applyForces<newton3, indexed>(j, index_1, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
@@ -792,12 +800,14 @@
                                               dry_1, drz_1, dr2_1, ownedStateJ_1);
 
         const bool continue_1 = svptest_any(svptrue_b64(), pgC_1);
-        svfloat64_t epsilon24s_1;
+        svfloat64_t cepsilons_1;
+        svfloat64_t cnepsilons_1;
+        svfloat64_t cmepsilons_1;
         svfloat64_t shift6s_1;
         svfloat64_t mie6_1;
         svfloat64_t fac_1;
         if (continue_1)
-          mie<true>(index_1, typeIDptr, typeIDptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, mie6_1, fac_1);
+          mie<true>(index_1, typeIDptr, typeIDptr, pgC_1, dr2_1, cepsilons_1, cnepsilons_1, cmepsilons_1, shift6s_1, mie6_1, fac_1);
 
         if (continue_1)
           applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr,
