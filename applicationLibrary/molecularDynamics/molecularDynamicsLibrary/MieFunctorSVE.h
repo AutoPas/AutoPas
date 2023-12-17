@@ -711,22 +711,22 @@
       if (continue_1)
         applyForces<newton3, indexed>(j, index_1, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
                                       virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_1, dry_1, drz_1, x2ptr,
-                                      y2ptr, z2ptr, ownedStateJ_1, pgC_1, epsilon24s_1, shift6s_1, mie6_1, fac_1);
+                                      y2ptr, z2ptr, ownedStateJ_1, pgC_1, epsilon24s_1, cepsilons_1, mie6_1, fac_1);
       if (continue_2)
         applyForces<newton3, indexed>(j + svlen(x1), index_2, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc,
                                       fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_2, dry_2, drz_2,
-                                      x2ptr, y2ptr, z2ptr, ownedStateJ_2, pgC_2, epsilon24s_2, shift6s_2, mie6_2, fac_2);
+                                      x2ptr, y2ptr, z2ptr, ownedStateJ_2, pgC_2, cepsilons_2, shift6s_2, mie6_2, fac_2);
 
       if (continue_3)
         applyForces<newton3, indexed>(j + svlen(x1) * 2, index_3, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc,
                                       fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_3, dry_3,
-                                      drz_3, x2ptr, y2ptr, z2ptr, ownedStateJ_3, pgC_3, epsilon24s_3, shift6s_3, mie6_3,
+                                      drz_3, x2ptr, y2ptr, z2ptr, ownedStateJ_3, pgC_3, cepsilons_3, shift6s_3, mie6_3,
                                       fac_3);
 
       if (continue_4)
         applyForces<newton3, indexed>(j + svlen(x1) * 3, index_4, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc,
                                       fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, drx_4, dry_4,
-                                      drz_4, x2ptr, y2ptr, z2ptr, ownedStateJ_4, pgC_4, epsilon24s_4, shift6s_4, mie6_4,
+                                      drz_4, x2ptr, y2ptr, z2ptr, ownedStateJ_4, pgC_4, cepsilons_4, shift6s_4, mie6_4,
                                       fac_4);
     }
 #endif
@@ -813,7 +813,7 @@
           applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr,
                                      fyptr, fzptr, fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ,
                                      potentialEnergySum, drx_1, dry_1, drz_1, xptr, yptr, zptr, ownedStateJ_1, pgC_1,
-                                     epsilon24s_1, shift6s_1, mie6_1, fac_1);
+                                     cepsilons_1, shift6s_1, mie6_1, fac_1);
       }
 
       fxptr[indexFirst] += svaddv_f64(svptrue_b64(), fxacc);
