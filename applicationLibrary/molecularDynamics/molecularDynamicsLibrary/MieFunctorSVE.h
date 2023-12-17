@@ -65,9 +65,7 @@
               cutoff),
           _cutoffSquared{cutoff * cutoff},
           _cutoffSquaredAoS(cutoff * cutoff),
-          _nexp{n_exp},
           _nexpAoS(n_exp),
-          _mexp{m_exp},
           _mexpAoS(m_exp),
           _potentialEnergySum{0.},
           _virialSum{0., 0., 0.},
@@ -508,9 +506,9 @@
 
       const svfloat64_t sigmaSquareds =
           useMixing ? svld1_gather_index(pgC, mixingDataPtr + 3, typeIds) : svdup_f64(_sigmaSquared);
-      cepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr, typeIds) : svdup_f64(_cepsilons);
-      cnepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_cnepsilons);
-      cmepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr + 2, typeIds) : svdup_f64(_cmepsilons);
+      cepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr, typeIds) : svdup_f64(_cepsilon);
+      cnepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_cnepsilon);
+      cmepsilons = useMixing ? svld1_gather_index(pgC, mixingDataPtr + 2, typeIds) : svdup_f64(_cmepsilon);
 
       shift6s = (useMixing && applyShift) ? svld1_gather_index(pgC, mixingDataPtr + 4, typeIds) : svdup_f64(_shift6);
 
@@ -559,7 +557,7 @@
       const svfloat64_t nmien = svmul_x(pgC, cnepsilons, mien);
       const svfloat64_t mmiem = svmul_x(pgC, cmepsilons, miem);
       const svfloat64_t miensubmiem = svmul_x(pgC, nmien, mmiem);
-      fac = _mm256_mul_pd(miensubmiem, invdr2);
+      fac = svmul_x(pgC, miensubmiem, invdr2);
       //TODO: mie6 for Globals in applyForces!!
     }
 
@@ -1047,7 +1045,7 @@
     double _shift6{0.};
     double _cepsilon{0.};
     double _cnepsilon{0.};
-    double _cmepsilon{0.}
+    double _cmepsilon{0.};
     double _sigmaSquared{0.};
     double _one{1.};
 #endif
