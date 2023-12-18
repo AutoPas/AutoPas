@@ -173,7 +173,7 @@ class LCC01Traversal
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout,
+  internal::CellFunctor<ParticleCell, PairwiseFunctor, dataLayout,
                         /*useNewton3*/ false, /*bidirectional*/ false>
       _cellFunctor;
 

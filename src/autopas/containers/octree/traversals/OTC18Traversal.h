@@ -131,8 +131,7 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, /*bidirectional*/ false>
-      _cellFunctor;
+  internal::CellFunctor<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, /*bidirectional*/ false> _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal

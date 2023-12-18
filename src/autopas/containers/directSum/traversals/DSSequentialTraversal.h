@@ -74,7 +74,7 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+  internal::CellFunctor<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
                         /*bidirectional*/ true>
       _cellFunctor;
 
