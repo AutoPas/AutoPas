@@ -181,7 +181,7 @@ class ClusterTower : public FullParticleCell<Particle> {
    */
   template <class Functor>
   void loadSoA(Functor *functor) {
-    functor->SoALoader(*this, this->_particleSoABuffer, 0);
+    functor->SoALoader(*this, this->_particleSoABuffer, 0, /*skipSoAResize*/ false);
     for (size_t index = 0; index < getNumClusters(); index++) {
       auto &cluster = getCluster(index);
       cluster.setSoAView({&(this->_particleSoABuffer), index * _clusterSize, (index + 1) * _clusterSize});

@@ -125,9 +125,9 @@ std::tuple<double, double> ownedHaloInteractionHelper(T &cellFunctor, const auto
   }
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ljFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0);
+    ljFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
     if (not singleCell) {
-      ljFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0);
+      ljFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
     }
   }
 
