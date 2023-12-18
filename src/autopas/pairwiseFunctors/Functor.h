@@ -164,13 +164,16 @@ class Functor {
    *
    * @param cell Cell from where the data is loaded.
    * @param soa  Structure of arrays where the data is copied to.
-   * @param offset Offset within the SoA. The data of the cell should be added
-   * to the SoA with the specified offset.
+   * @param offset Offset within the SoA. The data of the cell should be added to the SoA with the specified offset.
+   * @param skipSoAResize If resizing of the SoA buffers should be skipped or not. If this is called with true, it must
+   * be ensured before the call that there is sufficient capacity in the SoA.
+   * @note The parameter skipSoAResize is usually set to false, only for VerletListsCellBased Containers it is set to
+   * true, since they resize the SoA before the call to SoALoader.
    * @tparam ParticleCell Type of the cell.
    */
   template <class ParticleCell>
-  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
-    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize) {
+    SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
   }
 
   /**
@@ -228,12 +231,17 @@ class Functor {
    * @param cell Cell from where the data is loaded.
    * @param soa  Structure of arrays where the data is copied to.
    * @param offset Offset within the SoA. The data of the cell should be added
+   * @param skipSoAResize If resizing of the SoA buffers should be skipped or not. If this is called with true, it must
+   * be ensured before the call that there is sufficient capacity in the SoA.
    * to the SoA with the specified offset.
    */
 
   template <typename cell_t, std::size_t... I>
-  void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
-    soa.resizeArrays(offset + cell.size());
+  void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize,
+                     std::index_sequence<I...>) {
+    if (not skipSoAResize) {
+      soa.resizeArrays(offset + cell.size());
+    }
 
     if (cell.size() == 0) return;
 

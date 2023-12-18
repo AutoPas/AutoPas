@@ -6,6 +6,7 @@
 
 #include "GeneratorsTest.h"
 
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "src/configuration/YamlParser.h"
@@ -21,9 +22,7 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
 
   autoPas.init();
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     EXPECT_TRUE(autopas::utils::inBox(iter->getR(), boxmin, boxmax));
   }
