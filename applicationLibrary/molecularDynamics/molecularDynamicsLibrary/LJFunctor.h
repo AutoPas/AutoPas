@@ -920,7 +920,12 @@ class LJFunctor
     // this loop goes over the remainder and uses no optimizations
     for (size_t jNeighIndex = joff; jNeighIndex < neighborListSize; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
+#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or (MD_FLEXIBLE_MODE!=MULTISITE)
       if (indexFirst == j) continue;
+#else
+      if (owningMoleculeIDs[indexFirst] == owningMoleculeIDs[j]) continue;
+
+#endif
       if constexpr (useMixing) {
         sigmaSquared = _PPLibrary->getMixingSigmaSquared(typeptr1[indexFirst], typeptr2[j]);
         epsilon24 = _PPLibrary->getMixing24Epsilon(typeptr1[indexFirst], typeptr2[j]);

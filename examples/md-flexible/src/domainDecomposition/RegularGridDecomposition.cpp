@@ -358,7 +358,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 
         const bool reflectMoleculeFlag =
             distanceToBoundary < sixthRootOfTwo * 0.5 *
-#if MD_FLEXIBLE_MODE == MULTISITE
+#if MD_FLEXIBLE_MODE == MULTISITE and not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
                                      particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
 #else
                                      particlePropertiesLib.getSigma(p->getTypeId());
