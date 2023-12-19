@@ -233,7 +233,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_
 }
 
 // This test is not possible without OpenMP because there only exists one buffer
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPAS_USE_OPENMP
 TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_particleBufferB_NoN3_3B) {
   NumThreadGuard threadGuard(3);
   std::vector<Molecule> particlesContainerOwned{};
@@ -377,7 +377,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_
 }
 
 // This test is not possible without OpenMP because there only exists one buffer
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPAS_USE_OPENMP
 TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_particleBufferB_N3_3B) {
   NumThreadGuard threadGuard(3);
   std::vector<Molecule> particlesContainerOwned{};

@@ -1295,9 +1295,7 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
   timerBufferBufferBuffer.start();
 #endif
   // Step 1: 3-body interactions of all particles in the buffers (owned and halo)
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for
-#endif
+  AUTOPAS_OPENMP(parallel for)
   for (auto i = 0; i < numOwnedBufferParticles; ++i) {
     Particle &p1 = *bufferParticles[i];
 
@@ -1325,9 +1323,7 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
   const auto interactionLengthInv = 1. / container.getInteractionLength();
 
   const double cutoff = container.getCutoff();
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for
-#endif
+  AUTOPAS_OPENMP(parallel for)
   for (auto i = 0; i < numTotal; ++i) {
     Particle &p1 = *bufferParticles[i];
     const auto pos = p1.getR();
@@ -1360,9 +1356,7 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
 
   // Step 3: 3-body interactions of 1 buffer particle and 2 container particles
   // todo: parallelize without race conditions
-  //#ifdef AUTOPAS_OPENMP
-  //#pragma omp parallel for shared(bufferParticles)
-  //#endif
+  // AUTOPAS_OPENMP(parallel for shared(bufferParticles))
   for (auto i = 0; i < numTotal; ++i) {
     Particle &p1 = *bufferParticles[i];
     const auto pos = p1.getR();
