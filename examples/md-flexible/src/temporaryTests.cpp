@@ -275,6 +275,7 @@ void testCalculateQuaternion() {
       convertQuaternionTo3DVec(qMul(mol.getQuaternion(), qMul(angularVelocityMHalf, qConjugate(mol.getQuaternion()))));
 
   // Run TimeDiscretization::calculateQuaternions
+  TimeDiscretization::gatherTorquesFromForces(*autopasContainer, moleculeContainer, *PPL);
   TimeDiscretization::calculateQuaternionsAndResetTorques(*autopasContainer, moleculeContainer, *PPL, deltaT, {0, 0, 0});
 
   //auto resultantMol = autopasContainer->begin(autopas::IteratorBehavior::owned);
