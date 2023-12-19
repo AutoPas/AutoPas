@@ -120,10 +120,10 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVETwoCells(bool newton3, bool do
   ASSERT_TRUE(AoSParticlesEqual(cell1SVE, cell1NoSVE)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2SVE, cell2NoSVE)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoSVE.SoALoader(cell1NoSVE, cell1NoSVE._particleSoABuffer, 0);
-  ljFunctorNoSVE.SoALoader(cell2NoSVE, cell2NoSVE._particleSoABuffer, 0);
-  ljFunctorSVE.SoALoader(cell1SVE, cell1SVE._particleSoABuffer, 0);
-  ljFunctorSVE.SoALoader(cell2SVE, cell2SVE._particleSoABuffer, 0);
+  ljFunctorNoSVE.SoALoader(cell1NoSVE, cell1NoSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorNoSVE.SoALoader(cell2NoSVE, cell2NoSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorSVE.SoALoader(cell1SVE, cell1SVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorSVE.SoALoader(cell2SVE, cell2SVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1SVE._particleSoABuffer, cell1NoSVE._particleSoABuffer))
       << "Cells 1 not equal after loading.";
@@ -190,8 +190,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
   ljFunctorSVE.initTraversal();
   ljFunctorNoSVE.initTraversal();
 
-  ljFunctorNoSVE.SoALoader(cellNoSVE, cellNoSVE._particleSoABuffer, 0);
-  ljFunctorSVE.SoALoader(cellSVE, cellSVE._particleSoABuffer, 0);
+  ljFunctorNoSVE.SoALoader(cellNoSVE, cellNoSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorSVE.SoALoader(cellSVE, cellSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   ASSERT_TRUE(SoAParticlesEqual(cellSVE._particleSoABuffer, cellNoSVE._particleSoABuffer))
       << "Cells not equal after loading.";
@@ -268,8 +268,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   ljFunctorSVE.initTraversal();
   ljFunctorNoSVE.initTraversal();
 
-  ljFunctorNoSVE.SoALoader(cellNoSVE, cellNoSVE._particleSoABuffer, 0);
-  ljFunctorSVE.SoALoader(cellSVE, cellSVE._particleSoABuffer, 0);
+  ljFunctorNoSVE.SoALoader(cellNoSVE, cellNoSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctorSVE.SoALoader(cellSVE, cellSVE._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   ASSERT_TRUE(SoAParticlesEqual(cellSVE._particleSoABuffer, cellNoSVE._particleSoABuffer))
       << "Cells not equal after loading.";

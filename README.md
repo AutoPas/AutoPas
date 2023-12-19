@@ -1,4 +1,3 @@
-
 # ![AutoPas](https://raw.githubusercontent.com/AutoPas/AutoPas/master/docs/graphics/AutoPasLogo_Large.svg "Title")
 
 AutoPas is a node-level auto-tuned particle simulation library developed
@@ -108,17 +107,17 @@ If you prefer `gdb`:
 As AutoPas is only a library, it is not able to run simulations by itself.
 We have, however, included a few example proxy applications in the **examples** directory.
 The examples include:
-* [md-flexible](examples/md-flexible): Molecular dynamics simulations with single centered Lennard-Jones particles.
-* Smoothed particle hydrodynamics simulations
+* [md-flexible](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible): Molecular dynamics simulations with single centered Lennard-Jones particles.
+* [Smoothed particle hydrodynamics simulations](https://github.com/AutoPas/AutoPas/blob/master/examples/sph)
 
 ## Using AutoPas
 Steps to using AutoPas in your particle simulation program:
 
 ### Custom Particles
 First you will need to define a particle class which will be passed to AutoPas as template Argument.
-For that we provide some basic Particle classes defined in `applicationLibrary/molecularDynamics/molecularDynamicsLibrary` or `applicationLibrary/sph/SPHLibrary` 
+For that we provide some basic Particle classes defined in [`molecularDynamicsLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary) or [`SPHLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary) 
 that you can use either directly or you can write your own Particle class by inheriting from one of the provided
-classes or from `autopas::Particle`.
+classes or from [`autopas::ParticleBase`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/particles/ParticleBase.h).
 
 Important parts to implement:
 * `enum AttributeNames`
@@ -137,7 +136,7 @@ Important parts to implement:
 
 #### Usage
 Each functor is applied to AutoPas via:
-```bash
+```cpp
 autoPas.iteratePairwise(&myFunctor);
 ```
 
@@ -186,7 +185,7 @@ for(auto iter = autoPas.getRegionIterator(lowCorner, highCorner); iter != autoPa
 
 Both `begin()` and `getRegionIterator()` can also take the additional parameter `IteratorBehavior`,
 which indicates over which particles the iteration should be performed. See [autopas::IteratorBehavior
-](https://autopas.github.io/doxygen_documentation/git-master/namespaceautopas.html#a520fefd51e4555074cd16e7c3fd19c42) for possible options and details.
+](https://autopas.github.io/doxygen_documentation/git-master/classautopas_1_1options_1_1IteratorBehavior.html) for possible options and details.
 The default parameter is `ownedOrHalo`, which is also used for range-based for loops.
 
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.
