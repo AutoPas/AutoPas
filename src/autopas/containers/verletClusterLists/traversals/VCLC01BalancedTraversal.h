@@ -8,6 +8,7 @@
 
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -61,10 +62,7 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
     auto &clusterThreadPartition = clusterList.getClusterThreadPartition();
 
     auto numThreads = clusterThreadPartition.size();
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel num_threads(numThreads)
-#endif
-    {
+    AUTOPAS_OPENMP(parallel num_threads(numThreads)) {
       auto threadNum = autopas_get_thread_num();
       const auto &clusterRange = clusterThreadPartition[threadNum];
       auto &towers = *VCLTraversalInterface<Particle>::_towers;
@@ -75,8 +73,7 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
         auto startIndexInTower =
             clusterCount == 0 ? clusterRange.startIndexInTower : currentTower.getFirstOwnedClusterIndex();
         for (size_t clusterIndex = startIndexInTower;
-             clusterIndex < clusterRange.numClusters and clusterCount < clusterRange.numClusters and
-             clusterIndex < currentTower.getFirstTailHaloClusterIndex();
+             clusterCount < clusterRange.numClusters and clusterIndex < currentTower.getFirstTailHaloClusterIndex();
              clusterIndex++, clusterCount++) {
           const auto isHaloCluster = clusterIndex < currentTower.getFirstOwnedClusterIndex() or
                                      clusterIndex >= currentTower.getFirstTailHaloClusterIndex();

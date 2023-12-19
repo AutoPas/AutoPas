@@ -90,16 +90,14 @@ void SlicedLockBasedTraversal<ParticleCell, Functor, dataLayout, useNewton3, spa
   timers.resize(numSlices);
   threadTimes.resize(numSlices);
 
-#ifdef AUTOPAS_OPENMP
-  // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-  auto numThreads = static_cast<size_t>(autopas_get_max_threads());
+#ifdef AUTOPAS_USE_OPENMP
   if (this->_dynamic) {
     omp_set_schedule(omp_sched_dynamic, 1);
   } else {
     omp_set_schedule(omp_sched_static, 1);
   }
-#pragma omp parallel for schedule(runtime) num_threads(numThreads)
 #endif
+  AUTOPAS_OPENMP(parallel for schedule(runtime))
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();
     array<unsigned long, 3> myStartArray{0, 0, 0};

@@ -8,6 +8,7 @@
 
 #include "autopas/AutoPasDecl.h"
 #include "autopas/baseFunctors/FlopCounterFunctor.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -78,21 +79,11 @@ TEST_F(FlopCounterTest, testFlopCounterAoSOpenMP) {
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp sections
-#endif
-    {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
+  AUTOPAS_OPENMP(parallel) {
+    AUTOPAS_OPENMP(sections) {
+      AUTOPAS_OPENMP(section)
       functor.AoSFunctor(p1, p2, newton3);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
+      AUTOPAS_OPENMP(section)
       functor.AoSFunctor(p3, p4, newton3);
     }
   }
@@ -133,58 +124,34 @@ TEST_F(FlopCounterTest, testFlopCounterSoAOpenMP) {
   cell3.addParticle(p7);
   cell3.addParticle(p8);
 
-  functor.SoALoader(cell1, cell1._particleSoABuffer, 0);
-  functor.SoALoader(cell2, cell2._particleSoABuffer, 0);
-  functor.SoALoader(cell3, cell3._particleSoABuffer, 0);
-  functor.SoALoader(cell4, cell4._particleSoABuffer, 0);
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell4, cell4._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // This is a basic check for the accumulated values, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
 
   // first functors on one cell
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp sections
-#endif
-    {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
+  AUTOPAS_OPENMP(parallel) {
+    AUTOPAS_OPENMP(sections) {
+      AUTOPAS_OPENMP(section)
       functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
+      AUTOPAS_OPENMP(section)
       functor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
+      AUTOPAS_OPENMP(section)
       functor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
+      AUTOPAS_OPENMP(section)
       functor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
     }
   }
 
   // functors on two cells
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp sections
-#endif
-    {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
+  AUTOPAS_OPENMP(parallel) {
+    AUTOPAS_OPENMP(sections) {
+      AUTOPAS_OPENMP(section)
       functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
+      AUTOPAS_OPENMP(section)
       functor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
     }
   }

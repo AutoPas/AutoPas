@@ -9,6 +9,7 @@
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLC06Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterIterationTraversal.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -320,7 +321,7 @@ TEST_F(VerletClusterListsTest, testGridAlignment) {
             expectedTowersPerDimTotal - expectedHaloWidthInTowers);
 }
 
-#if defined(AUTOPAS_OPENMP)
+#if defined(AUTOPAS_USE_OPENMP)
 TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace) {
   const std::array<double, 3> boxMin = {0, 0, 0};
   const std::array<double, 3> boxMax = {3, 3, 3};

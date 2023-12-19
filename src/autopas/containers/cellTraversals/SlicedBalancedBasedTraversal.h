@@ -4,7 +4,6 @@
  * @date 24 Apr 2020
  * @author fischerv
  */
-
 #pragma once
 
 #include <array>
@@ -13,6 +12,7 @@
 #include "BalancedTraversal.h"
 #include "SlicedLockBasedTraversal.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -61,9 +61,7 @@ class SlicedBalancedBasedTraversal
     utils::Timer timer;
     timer.start();
     loads.resize(maxDimensionLength);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for schedule(static, 1)
-#endif
+    AUTOPAS_OPENMP(parallel for schedule(static, 1))
     for (auto x = 0; x < maxDimensionLength; x++) {
       std::array<unsigned long, 3> lowerCorner = {0, 0, 0};
       std::array<unsigned long, 3> upperCorner = this->_cellsPerDimension;

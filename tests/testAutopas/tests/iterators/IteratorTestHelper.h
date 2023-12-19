@@ -40,7 +40,7 @@ auto fillContainerAroundBoundary(AutoPasT &autoPas, const std::array<double, 3> 
   auto skin = autoPas.getVerletSkin();
 
   // generator function for critical coordinates (along  one dimension)
-  auto generateInteresting1DPositions = [&](double min, double max) -> auto {
+  auto generateInteresting1DPositions = [&](double min, double max) -> auto{
     // ensure that all particles are at most skin away from halo!
     // interesting cases are:
     //   - outside the halo by skin
@@ -194,9 +194,8 @@ void provideIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior, bool
       };
       fun(autoPasRef, getIter);
     } else {
-      auto getIter = [&]() -> typename AutoPasT::RegionIteratorT {
-        return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior);
-      };
+      auto getIter = [&]() ->
+          typename AutoPasT::RegionIteratorT { return autoPas.getRegionIterator(haloBoxMin, haloBoxMax, behavior); };
       fun(autoPas, getIter);
     }
   } else {
@@ -247,14 +246,12 @@ void provideRegionIterator(AutoPasT &autoPas, autopas::IteratorBehavior behavior
                            const std::array<double, 3> &boxMax, F fun) {
   if constexpr (useConstIterator) {
     const auto &autoPasRef = autoPas;
-    auto getIter = [&]() -> typename AutoPasT::RegionConstIteratorT {
-      return autoPasRef.getRegionIterator(boxMin, boxMax, behavior);
-    };
+    auto getIter = [&]() ->
+        typename AutoPasT::RegionConstIteratorT { return autoPasRef.getRegionIterator(boxMin, boxMax, behavior); };
     fun(autoPasRef, getIter);
   } else {
-    auto getIter = [&]() -> typename AutoPasT::RegionIteratorT {
-      return autoPas.getRegionIterator(boxMin, boxMax, behavior);
-    };
+    auto getIter = [&]() ->
+        typename AutoPasT::RegionIteratorT { return autoPas.getRegionIterator(boxMin, boxMax, behavior); };
     fun(autoPas, getIter);
   }
 }
@@ -292,16 +289,14 @@ template <class AutoPasT, class FgetIter>
 void findParticles(AutoPasT &autopas, FgetIter getIter, const std::vector<size_t> &particleIDsExpected) {
   std::vector<size_t> particleIDsFound;
 
-#ifdef AUTOPAS_OPENMP
-  // aparently the version from WrapOpenMP.h can not be found
-#pragma omp declare reduction(vecMergeWorkaround : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-#pragma omp parallel reduction(vecMergeWorkaround : particleIDsFound)
-#endif
-  {
-    for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
-      const auto id = iterator->getID();
-      particleIDsFound.push_back(id);
-    }
+  // apparently the version from WrapOpenMP.h can not be found
+  AUTOPAS_OPENMP(declare reduction(vecMergeWorkaround :                                             \
+                                   std::vector<size_t> :                                            \
+                                       omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
+  AUTOPAS_OPENMP(parallel reduction(vecMergeWorkaround : particleIDsFound))
+  for (auto iterator = getIter(); iterator.isValid(); ++iterator) {
+    const auto id = iterator->getID();
+    particleIDsFound.push_back(id);
   }
 
   // check that everything was found

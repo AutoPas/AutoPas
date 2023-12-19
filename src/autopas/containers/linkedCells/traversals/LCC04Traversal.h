@@ -185,18 +185,13 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::proc
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 void LCC04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
+  AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {
       traverseSingleColor(cells, color);
 
-#if defined(AUTOPAS_OPENMP)
       if (color < 3) {
-#pragma omp barrier
+        AUTOPAS_OPENMP(barrier)
       }
-#endif
     }
   }  // close parallel region
 }
@@ -234,11 +229,9 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::trav
   const long startY = startOfThisColor[1], endY = _end[1];
   const long startZ = startOfThisColor[2], endZ = _end[2];
 
-// first cartesian grid
-// grids are interlinked: one grid fills the gaps in the other grid
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3) nowait
-#endif
+  // first cartesian grid
+  // grids are interlinked: one grid fills the gaps in the other grid
+  AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3) nowait)
   for (long z = startZ; z < endZ; z += 4) {
     for (long y = startY; y < endY; y += 4) {
       for (long x = startX; x < endX; x += 4) {

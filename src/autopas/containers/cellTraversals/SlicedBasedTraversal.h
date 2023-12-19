@@ -106,10 +106,8 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>,
   void endTraversal() override {
     if (this->_cells) {
       auto &cells = *(this->_cells);
-#ifdef AUTOPAS_OPENMP
       /// @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
+      AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.storeDataLayout(cells[i]);
       }
@@ -129,10 +127,8 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>,
   virtual void loadDataLayout() {
     if (this->_cells) {
       auto &cells = *(this->_cells);
-#ifdef AUTOPAS_OPENMP
       /// @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
+      AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.loadDataLayout(cells[i]);
       }

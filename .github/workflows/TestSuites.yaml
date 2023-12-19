@@ -21,12 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: DoozyX/clang-format-lint-action@v0.12
+      - uses: DoozyX/clang-format-lint-action@v0.16.2
         with:
-          source: 'src tests examples'
+          source: 'src tests examples applicationLibrary tools'
           # exclude: 'none'
           extensions: 'h,cpp'
-          clangFormatVersion: 9
+          clangFormatVersion: 14
           style: file
 
   # Make sure contribution guidelines are followed. This does not apply any changes!
@@ -38,9 +38,9 @@ jobs:
       - name: Checks
         # this exits immediately when any command returns != 0
         run: |
-          # enable retursive globbing syntax
+          # enable recursive globbing syntax
           shopt -s globstar
-          # '!' at the beginnig of the line negates the exit code
+          # '!' at the beginning of the line negates the exit code
           # all headers should contain pragma once
           ! grep --files-without-match '#pragma once' **/*.h
           # all files should contain a file comment
@@ -53,6 +53,9 @@ jobs:
           ! grep '#include <autopas' **/*.{h,cpp}
           # prohibit 'typedef' to force 'using'
           ! grep --word-regexp 'typedef' **/*.{h,cpp}
+          # prohibit old usage of AUTOPAS_OPENMP
+          ! grep '#ifdef AUTOPAS_OPENMP'  **/*.{h,cpp}
+          ! grep '#if defined.AUTOPAS_OPENMP'  **/*.{h,cpp}
 
   MatrixJob:
     runs-on: ubuntu-latest
