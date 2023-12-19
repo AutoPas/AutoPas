@@ -273,9 +273,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
       }
     }
     // Load the particles into the soa.
-    functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-    functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
-    functor->SoALoader(cell3, cell3._particleSoABuffer, 0);
+    functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
     if (auto msg = this->shouldSkipIfNotImplemented([&]() {
           switch (interactionType) {
@@ -406,9 +406,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
 
     // Second cell interaction for types with multiple cells
     if (interactionType != TestType::InteractionType::own and interactionType != TestType::InteractionType::verlet) {
-      functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-      functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
-      functor->SoALoader(cell3, cell3._particleSoABuffer, 0);
+      functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+      functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+      functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
       switch (interactionType) {
         case TestType::InteractionType::pair12:
           // Interaction of a cell pair
@@ -498,9 +498,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
 
       // Third interaction for 3 cells
       if (interactionType == TestType::InteractionType::triple) {
-        functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-        functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
-        functor->SoALoader(cell3, cell3._particleSoABuffer, 0);
+        functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+        functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+        functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
         functor->SoAFunctorTriple(cell3._particleSoABuffer, cell1._particleSoABuffer, cell2._particleSoABuffer,
                                   newton3);

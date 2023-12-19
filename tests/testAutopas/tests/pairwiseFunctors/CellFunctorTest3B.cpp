@@ -116,7 +116,7 @@ std::tuple<double, double, double> doSingleCellInteraction(
   cell1.addParticle(p3);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0);
+    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
 
   cellFunctor.processCell(cell1);
@@ -175,8 +175,8 @@ std::tuple<double, double, double> doPairCellInteraction(
   cell2.addParticle(p3);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0);
-    ATFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0);
+    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
 
   cellFunctor.processCellPair(cell1, cell2);
@@ -240,9 +240,9 @@ std::tuple<double, double, double> doTripleCellInteraction(
   cell3.addParticle(p3);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
-    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0);
-    ATFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0);
-    ATFunctor.SoALoader(cell3, cell3._particleSoABuffer, 0);
+    ATFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ATFunctor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
 
   cellFunctor.processCellTriple(cell1, cell2, cell3);
