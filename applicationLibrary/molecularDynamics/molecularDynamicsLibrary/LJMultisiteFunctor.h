@@ -244,7 +244,7 @@ class LJMultisiteFunctor
         // Add force on site to net force
         particleA.addToForceOnSite(i, force);
         if (newton3) {
-          particleB.subToForceOnSite(force);
+          particleB.subToForceOnSite(i, force);
         }
 #endif
 
@@ -308,9 +308,9 @@ class LJMultisiteFunctor
     SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
 
 #else
-  const auto *const __restrict fXOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesX>();
-  const auto *const __restrict fYOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesY>();
-  const auto *const __restrict fZOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesZ>();
+  auto *const __restrict fXOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesX>();
+  auto *const __restrict fYOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesY>();
+  auto *const __restrict fZOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesZ>();
 
 #endif
 
@@ -690,10 +690,11 @@ class LJMultisiteFunctor
   }
 #else
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 11>{
+    return std::array<typename Particle::AttributeNames, 13>{
         Particle::AttributeNames::id,          Particle::AttributeNames::posX,
         Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
-        Particle::AttributeNames::forcesOnSites,
+        Particle::AttributeNames::forcesOnSitesX, Particle::AttributeNames::forcesOnSitesY,
+        Particle::AttributeNames::forcesOnSitesZ,
         Particle::AttributeNames::quaternion0,
         Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
         Particle::AttributeNames::quaternion3,
@@ -910,13 +911,13 @@ class LJMultisiteFunctor
     SoAFloatPrecision *const __restrict tyBptr = soaB.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict tzBptr = soaB.template begin<Particle::AttributeNames::torqueZ>();
 #else
-        const auto *const __restrict fXAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesX>();
-        const auto *const __restrict fYAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesY>();
-        const auto *const __restrict fZAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesZ>();
+        auto *const __restrict fXAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesX>();
+        auto *const __restrict fYAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesY>();
+        auto *const __restrict fZAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesZ>();
 
-        const auto *const __restrict fXBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesX>();
-        const auto *const __restrict fYBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesY>();
-        const auto *const __restrict fZBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesZ>();
+        auto *const __restrict fXBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesX>();
+        auto *const __restrict fYBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesY>();
+        auto *const __restrict fZBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesZ>();
 #endif
 
     [[maybe_unused]] auto *const __restrict typeptrA = soaA.template begin<Particle::AttributeNames::typeId>();
@@ -1206,9 +1207,9 @@ class LJMultisiteFunctor
           tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
                          rotatedSitePositions[site][1] * siteForceBx[siteIndex];
 #else
-          fXBOnSitesPtr[mol] += siteForceBx[siteIndex];
-          fYBOnSitesPtr[mol] += siteForceBy[siteIndex];
-          fZBOnSitesPtr[mol] += siteForceBz[siteIndex];
+          fXBOnSitesPtr[mol][site] += siteForceBx[siteIndex];
+          fYBOnSitesPtr[mol][site] += siteForceBy[siteIndex];
+          fZBOnSitesPtr[mol][site] += siteForceBz[siteIndex];
 #endif
           ++siteIndex;
         }
@@ -1285,9 +1286,9 @@ class LJMultisiteFunctor
     SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
 #else
-    const auto *const __restrict fXOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesX>();
-    const auto *const __restrict fYOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesY>();
-    const auto *const __restrict fZOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesZ>();
+    auto *const __restrict fXOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesX>();
+    auto *const __restrict fYOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesY>();
+    auto *const __restrict fZOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesZ>();
 #endif
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();

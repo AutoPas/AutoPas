@@ -354,41 +354,56 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * Classic setter
    * @param forces_on_sites
    */
-  void setForcesOnSitesX(std::vector<double>&& forcesOnSitesX);
+  void setForcesOnSitesX(std::vector<double> &&forcesOnSitesX){
+    _forcesOnSitesX = forcesOnSitesX;
+  }
 
   /**
    * Classic setter
    * @param forces_on_sites
    */
-  void setForcesOnSitesY(std::vector<double>&& forcesOnSitesY);
+  void setForcesOnSitesY(std::vector<double> &&forcesOnSitesY){
+    _forcesOnSitesY = forcesOnSitesY;
+  }
 
   /**
    * Classic setter
    * @param forces_on_sites
    */
-  void setForcesOnSitesZ(std::vector<double>&& forcesOnSitesZ);
+  void setForcesOnSitesZ(std::vector<double> &&forcesOnSitesZ){
+    _forcesOnSitesZ = forcesOnSitesZ;
+  }
 
   /**
    * Get the force acting on the Site corresponding to the siteIndex.
    * @param siteIndex
    * @return acting force
    */
-  const std::array<double, 3> getForceOnSite(size_t siteIndex);
+  const std::array<double, 3> getForceOnSite(size_t siteIndex) {
+    return {_forcesOnSitesX[siteIndex], _forcesOnSitesY[siteIndex], _forcesOnSitesZ[siteIndex]};
+  }
 
   /**
    * Adds force to the forces experienced by the site identified by siteIndex
    * @param siteIndex
    * @param force
    */
-  void addToForceOnSite(size_t siteIndex, std::array<double, 3>& force);
+  void addToForceOnSite(size_t siteIndex, std::array<double, 3> force) {
+    _forcesOnSitesX[siteIndex] += force[0];
+    _forcesOnSitesY[siteIndex] += force[1];
+    _forcesOnSitesZ[siteIndex] += force[2];
+  }
 
   /**
    * Subtracts force to the forces experienced by the site identified by siteIndex
    * @param siteIndex
    * @param force
    */
-  void subToForceOnSite(size_t siteIndex, std::array<double, 3>& force);
-
+  void subToForceOnSite(size_t siteIndex, std::array<double, 3> force) {
+    _forcesOnSitesX[siteIndex] -= force[0];
+    _forcesOnSitesY[siteIndex] -= force[1];
+    _forcesOnSitesZ[siteIndex] -= force[2];
+  }
 #endif
 
  protected:
@@ -412,19 +427,19 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * When computing the torque after collecting all forces acting on each site, some helper variables are required to store the
    * forces each individual site is experiencing. This variable stores the x-components of the forces acting on the individual sites.
    */
-  std::vector<std::array<double, 3>> _forcesOnSitesX{};
+  std::vector<double> _forcesOnSitesX{};
 
   /**
    * When computing the torque after collecting all forces acting on each site, some helper variables are required to store the
    * forces each individual site is experiencing. This variable stores the y-components of the forces acting on the individual sites.
    */
-  std::vector<std::array<double, 3>> _forcesOnSitesY{};
+  std::vector<double> _forcesOnSitesY{};
 
   /**
    * When computing the torque after collecting all forces acting on each site, some helper variables are required to store the
    * forces each individual site is experiencing. This variable stores the z-components of the forces acting on the individual sites.
    */
-  std::vector<std::array<double, 3>> _forcesOnSitesZ{};
+  std::vector<double> _forcesOnSitesZ{};
 #endif
 };
 

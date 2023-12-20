@@ -381,8 +381,9 @@ void gatherTorquesAndForcesFromSiteForces(autopas::AutoPas<ParticleType> &autoPa
       iter->addF(siteForce);
       iter->addTorque(cross(rotatedSitePositions[siteIndex], siteForce));
     }
-
-    iter->setForcesOnSites(std::vector<std::array<double, 3>>(rotatedSitePositions.size(), {0.,0.,0.}));
+    iter->setForcesOnSitesX(std::vector<double>(rotatedSitePositions.size(), 0.));
+    iter->setForcesOnSitesY(std::vector<double>(rotatedSitePositions.size(), 0.));
+    iter->setForcesOnSitesZ(std::vector<double>(rotatedSitePositions.size(), 0.));
   }
 }
 #endif
