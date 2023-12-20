@@ -1,6 +1,5 @@
 import subprocess
 
-
 container_prefixes = ["LC"] #["VL","LC"]
 data_layouts = ["SoA"] #,"AoS"]
 site_counts = ["1", "2", "5"]

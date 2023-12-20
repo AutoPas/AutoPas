@@ -31,6 +31,7 @@ option(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS "Compile AutoVec Functor using absolute 
 option(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING "Temporary option- If MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS is set this variable defines whether or not it should flatten the vectors before using them." OFF)# ON)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
+option(MD_FLEXIBLE_TORQUE_AFTER_FORCE "If set the torque calculation doesn't get managed by the force functor but by time discretization drastically reducing the number floating point operations required" OFF)
 
 target_compile_definitions(
         md-flexible
@@ -43,6 +44,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+        $<$<BOOL:${MD_FLEXIBLE_TORQUE_AFTER_FORCE}>:MD_FLEXIBLE_TORQUE_AFTER_FORCE>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---

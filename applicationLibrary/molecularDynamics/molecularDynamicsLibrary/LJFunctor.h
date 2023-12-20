@@ -117,7 +117,7 @@ class LJFunctor
     using namespace autopas::utils::ArrayMath::literals;
 
 #if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE==MULTISITE)
-//if you are sites belonging to the same molecule: don't interact#
+//if you are sites belonging to the same molecule: don't interact
     if(i.getMoleculeId() == j.getMoleculeId()){
       return;
     }

@@ -450,10 +450,12 @@ void Simulation::updateForces() {
   //});
 
   const bool isTuningIteration = calculatePairwiseForces();
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
+#if MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   //@TODO: maybe outside of force-calculation runtime measurement?
   TimeDiscretization::accumulateSiteForcesInMol(*_autoPasContainer, _moleculeContainer);
   TimeDiscretization::gatherTorquesFromForces(*_autoPasContainer, _moleculeContainer, *_configuration.getParticlePropertiesLibrary());
+#elif MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE)
+  TimeDiscretization::gatherTorquesAndForcesFromSiteForces(*_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
 #endif
 
   const auto timeIteration = _timers.forceUpdatePairwise.stop();

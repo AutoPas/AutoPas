@@ -76,9 +76,13 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #endif
 
 #if defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_MODE==MULTISITE
-
 void gatherTorquesFromForces(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary);
+
+#endif
+
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+void gatherTorquesAndForcesFromSiteForces(autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLibrary);
 #endif
 
 /**

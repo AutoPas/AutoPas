@@ -229,17 +229,24 @@ class LJMultisiteFunctor
         const auto scalarMultiple = epsilon24 * (lj12 + lj12m6) * invDistSquared;
         const auto force = autopas::utils::ArrayMath::mulScalar(displacement, scalarMultiple);
 
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE)
         // Add force on site to net force
         particleA.addF(force);
         if (newton3) {
           particleB.subF(force);
         }
-
         // Add torque applied by force
         particleA.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[i], force));
         if (newton3) {
           particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[j], force));
         }
+#else
+        // Add force on site to net force
+        particleA.addToForceOnSite(i, force);
+        if (newton3) {
+          particleB.subToForceOnSite(force);
+        }
+#endif
 
         if (calculateGlobals) {
           // Here we calculate the potential energy * 6.
@@ -291,6 +298,7 @@ class LJMultisiteFunctor
     const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
     const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
 
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
     SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
@@ -298,6 +306,13 @@ class LJMultisiteFunctor
     SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
     SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+
+#else
+  const auto *const __restrict fXOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesX>();
+  const auto *const __restrict fYOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesY>();
+  const auto *const __restrict fZOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesZ>();
+
+#endif
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
@@ -517,6 +532,7 @@ class LJMultisiteFunctor
           siteForceY[globalSiteBIndex] -= forceY;
           siteForceZ[globalSiteBIndex] -= forceZ;
 
+
           if constexpr (calculateGlobals) {
             const auto virialX = displacementX * forceX;
             const auto virialY = displacementY * forceY;
@@ -548,6 +564,7 @@ class LJMultisiteFunctor
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
           fxptr[mol] += siteForceX[siteIndex];
           fyptr[mol] += siteForceY[siteIndex];
           fzptr[mol] += siteForceZ[siteIndex];
@@ -557,6 +574,11 @@ class LJMultisiteFunctor
                         rotatedSitePositions[site][0] * siteForceZ[siteIndex];
           tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                         rotatedSitePositions[site][1] * siteForceX[siteIndex];
+#else
+          fXOnSitesPtr[mol][site] += siteForceX[siteIndex];
+          fYOnSitesPtr[mol][site] += siteForceY[siteIndex];
+          fZOnSitesPtr[mol][site] += siteForceZ[siteIndex];
+#endif
           ++siteIndex;
         }
       }
@@ -566,6 +588,7 @@ class LJMultisiteFunctor
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
           fxptr[mol] += siteForceX[siteIndex];
           fyptr[mol] += siteForceY[siteIndex];
           fzptr[mol] += siteForceZ[siteIndex];
@@ -575,6 +598,11 @@ class LJMultisiteFunctor
                         rotatedSitePositions[site][0] * siteForceZ[siteIndex];
           tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                         rotatedSitePositions[site][1] * siteForceX[siteIndex];
+#else
+          fXOnSitesPtr[mol][site] += siteForceX[siteIndex];
+          fYOnSitesPtr[mol][site] += siteForceY[siteIndex];
+          fZOnSitesPtr[mol][site] += siteForceZ[siteIndex];
+#endif
           ++siteIndex;
         }
       }
@@ -648,6 +676,7 @@ class LJMultisiteFunctor
   /**
    * @copydoc autopas::Functor::getNeededAttr()
    */
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
   constexpr static auto getNeededAttr() {
     return std::array<typename Particle::AttributeNames, 16>{
         Particle::AttributeNames::id,          Particle::AttributeNames::posX,
@@ -659,10 +688,23 @@ class LJMultisiteFunctor
         Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
         Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
   }
+#else
+  constexpr static auto getNeededAttr() {
+    return std::array<typename Particle::AttributeNames, 11>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forcesOnSites,
+        Particle::AttributeNames::quaternion0,
+        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
+        Particle::AttributeNames::quaternion3,
+        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+  }
+#endif
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
   constexpr static auto getNeededAttr(std::false_type) {
     return std::array<typename Particle::AttributeNames, 16>{
         Particle::AttributeNames::id,          Particle::AttributeNames::posX,
@@ -674,15 +716,37 @@ class LJMultisiteFunctor
         Particle::AttributeNames::torqueY,     Particle::AttributeNames::torqueZ,
         Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
   }
+#else
+  constexpr static auto getNeededAttr(std::false_type) {
+    return std::array<typename Particle::AttributeNames, 13>{
+        Particle::AttributeNames::id,          Particle::AttributeNames::posX,
+        Particle::AttributeNames::posY,        Particle::AttributeNames::posZ,
+        Particle::AttributeNames::forcesOnSitesX, Particle::AttributeNames::forcesOnSitesY,
+        Particle::AttributeNames::forcesOnSitesZ,
+        Particle::AttributeNames::quaternion0,
+        Particle::AttributeNames::quaternion1, Particle::AttributeNames::quaternion2,
+        Particle::AttributeNames::quaternion3,
+        Particle::AttributeNames::typeId,      Particle::AttributeNames::ownershipState};
+  }
+
+#endif
 
   /**
    * @copydoc autopas::Functor::getComputedAttr()
    */
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
   constexpr static auto getComputedAttr() {
     return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::forceX,  Particle::AttributeNames::forceY,  Particle::AttributeNames::forceZ,
         Particle::AttributeNames::torqueX, Particle::AttributeNames::torqueY, Particle::AttributeNames::torqueZ};
   }
+#else
+  constexpr static auto getComputedAttr() {
+    return std::array<typename Particle::AttributeNames, 3>{
+        Particle::AttributeNames::forcesOnSitesX, Particle::AttributeNames::forcesOnSitesY,
+        Particle::AttributeNames::forcesOnSitesZ};
+  }
+#endif
 
   /**
    * @return useMixing
@@ -831,6 +895,7 @@ class LJMultisiteFunctor
     const auto *const __restrict q2Bptr = soaB.template begin<Particle::AttributeNames::quaternion2>();
     const auto *const __restrict q3Bptr = soaB.template begin<Particle::AttributeNames::quaternion3>();
 
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
     SoAFloatPrecision *const __restrict fxAptr = soaA.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyAptr = soaA.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzAptr = soaA.template begin<Particle::AttributeNames::forceZ>();
@@ -844,6 +909,15 @@ class LJMultisiteFunctor
     SoAFloatPrecision *const __restrict txBptr = soaB.template begin<Particle::AttributeNames::torqueX>();
     SoAFloatPrecision *const __restrict tyBptr = soaB.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict tzBptr = soaB.template begin<Particle::AttributeNames::torqueZ>();
+#else
+        const auto *const __restrict fXAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesX>();
+        const auto *const __restrict fYAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesY>();
+        const auto *const __restrict fZAOnSitesPtr = soaA.template begin<Particle::AttributeNames::forcesOnSitesZ>();
+
+        const auto *const __restrict fXBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesX>();
+        const auto *const __restrict fYBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesY>();
+        const auto *const __restrict fZBOnSitesPtr = soaB.template begin<Particle::AttributeNames::forcesOnSitesZ>();
+#endif
 
     [[maybe_unused]] auto *const __restrict typeptrA = soaA.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict typeptrB = soaB.template begin<Particle::AttributeNames::typeId>();
@@ -1064,6 +1138,7 @@ class LJMultisiteFunctor
           const auto forceY = scalarMultiple * displacementY;
           const auto forceZ = scalarMultiple * displacementZ;
 
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
           forceSumX += forceX;
           forceSumY += forceY;
           forceSumZ += forceZ;
@@ -1071,6 +1146,11 @@ class LJMultisiteFunctor
           torqueSumX += rotatedSitePositionAy * forceZ - rotatedSitePositionAz * forceY;
           torqueSumY += rotatedSitePositionAz * forceX - rotatedSitePositionAx * forceZ;
           torqueSumZ += rotatedSitePositionAx * forceY - rotatedSitePositionAy * forceX;
+#else
+          fXAOnSitesPtr[molA][siteA] += forceX;
+          fYAOnSitesPtr[molA][siteA] += forceY;
+          fZAOnSitesPtr[molA][siteA] += forceZ;
+#endif
 
           // N3L ( total molecular forces + torques to be determined later )
           if constexpr (newton3) {
@@ -1098,12 +1178,14 @@ class LJMultisiteFunctor
           }
         }
       }
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
       fxAptr[molA] += forceSumX;
       fyAptr[molA] += forceSumY;
       fzAptr[molA] += forceSumZ;
       txAptr[molA] += torqueSumX;
       tyAptr[molA] += torqueSumY;
       tzAptr[molA] += torqueSumZ;
+#endif
     }
 
     // reduce the forces on individual sites in SoA B to total forces & torques on whole molecules
@@ -1113,6 +1195,7 @@ class LJMultisiteFunctor
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, _PPLibrary->getSitePositions(typeptrB[mol]));
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptrB[mol]); ++site) {
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
           fxBptr[mol] += siteForceBx[siteIndex];
           fyBptr[mol] += siteForceBy[siteIndex];
           fzBptr[mol] += siteForceBz[siteIndex];
@@ -1122,6 +1205,11 @@ class LJMultisiteFunctor
                          rotatedSitePositions[site][0] * siteForceBz[siteIndex];
           tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
                          rotatedSitePositions[site][1] * siteForceBx[siteIndex];
+#else
+          fXBOnSitesPtr[mol] += siteForceBx[siteIndex];
+          fYBOnSitesPtr[mol] += siteForceBy[siteIndex];
+          fZBOnSitesPtr[mol] += siteForceBz[siteIndex];
+#endif
           ++siteIndex;
         }
       }
@@ -1131,6 +1219,7 @@ class LJMultisiteFunctor
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0Bptr[mol], q1Bptr[mol], q2Bptr[mol], q3Bptr[mol]}, const_unrotatedSitePositions);
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
           fxBptr[mol] += siteForceBx[siteIndex];
           fyBptr[mol] += siteForceBy[siteIndex];
           fzBptr[mol] += siteForceBz[siteIndex];
@@ -1140,6 +1229,11 @@ class LJMultisiteFunctor
                          rotatedSitePositions[site][0] * siteForceBz[siteIndex];
           tzBptr[mol] += rotatedSitePositions[site][0] * siteForceBy[siteIndex] -
                          rotatedSitePositions[site][1] * siteForceBx[siteIndex];
+#else
+          fXBOnSitesPtr[mol] += siteForceBx[siteIndex];
+          fYBOnSitesPtr[mol] += siteForceBy[siteIndex];
+          fZBOnSitesPtr[mol] += siteForceBz[siteIndex];
+#endif
           ++siteIndex;
         }
       }
@@ -1182,6 +1276,7 @@ class LJMultisiteFunctor
     const auto *const __restrict q2ptr = soa.template begin<Particle::AttributeNames::quaternion2>();
     const auto *const __restrict q3ptr = soa.template begin<Particle::AttributeNames::quaternion3>();
 
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
     SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
     SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
@@ -1189,6 +1284,11 @@ class LJMultisiteFunctor
     SoAFloatPrecision *const __restrict txptr = soa.template begin<Particle::AttributeNames::torqueX>();
     SoAFloatPrecision *const __restrict typtr = soa.template begin<Particle::AttributeNames::torqueY>();
     SoAFloatPrecision *const __restrict tzptr = soa.template begin<Particle::AttributeNames::torqueZ>();
+#else
+    const auto *const __restrict fXOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesX>();
+    const auto *const __restrict fYOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesY>();
+    const auto *const __restrict fZOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesZ>();
+#endif
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
@@ -1426,9 +1526,15 @@ class LJMultisiteFunctor
         const auto forceY = scalarMultiple * displacementY;
         const auto forceZ = scalarMultiple * displacementZ;
 
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
         forceSumX += forceX;
         forceSumY += forceY;
         forceSumZ += forceZ;
+#else
+        fXOnSitesPtr[indexPrime][primeSite] += forceX;
+        fYOnSitesPtr[indexPrime][primeSite] += forceY;
+        fZOnSitesPtr[indexPrime][primeSite] += forceZ;
+#endif
 
         torqueSumX += rotatedPrimeSitePositionY * forceZ - rotatedPrimeSitePositionZ * forceY;
         torqueSumY += rotatedPrimeSitePositionZ * forceX - rotatedPrimeSitePositionX * forceZ;
@@ -1460,6 +1566,7 @@ class LJMultisiteFunctor
         }
       }
     }
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
     // Add forces to prime mol
     fxptr[indexPrime] += forceSumX;
     fyptr[indexPrime] += forceSumY;
@@ -1467,6 +1574,7 @@ class LJMultisiteFunctor
     txptr[indexPrime] += torqueSumX;
     typtr[indexPrime] += torqueSumY;
     tzptr[indexPrime] += torqueSumZ;
+#endif
 
     // Reduce forces on individual neighbor sites to molecular forces & torques if newton3=true
     if constexpr (newton3) {
@@ -1478,6 +1586,7 @@ class LJMultisiteFunctor
               {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
               _PPLibrary->getSitePositions(typeptr[neighborMolIndex]));
           for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++site) {
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
             fxptr[neighborMolIndex] += siteForceX[siteIndex];
             fyptr[neighborMolIndex] += siteForceY[siteIndex];
             fzptr[neighborMolIndex] += siteForceZ[siteIndex];
@@ -1487,6 +1596,11 @@ class LJMultisiteFunctor
                                        rotatedSitePositions[site][0] * siteForceZ[siteIndex];
             tzptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                                        rotatedSitePositions[site][1] * siteForceX[siteIndex];
+#else
+            fXOnSitesPtr[neighborMolIndex][site] += siteForceX[siteIndex];
+            fYOnSitesPtr[neighborMolIndex][site] += siteForceY[siteIndex];
+            fZOnSitesPtr[neighborMolIndex][site] += siteForceZ[siteIndex];
+#endif
             ++siteIndex;
           }
         }
@@ -1498,6 +1612,7 @@ class LJMultisiteFunctor
               {q0ptr[neighborMolIndex], q1ptr[neighborMolIndex], q2ptr[neighborMolIndex], q3ptr[neighborMolIndex]},
               const_unrotatedSitePositions);
           for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+#if not defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) or MD_FLEXIBLE_MODE!=MULTISITE
             fxptr[neighborMolIndex] += siteForceX[siteIndex];
             fyptr[neighborMolIndex] += siteForceY[siteIndex];
             fzptr[neighborMolIndex] += siteForceZ[siteIndex];
@@ -1507,6 +1622,11 @@ class LJMultisiteFunctor
                                        rotatedSitePositions[site][0] * siteForceZ[siteIndex];
             txptr[neighborMolIndex] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                                        rotatedSitePositions[site][1] * siteForceX[siteIndex];
+#else
+            fXOnSitesPtr[neighborMolIndex][site] += siteForceX[siteIndex];
+            fYOnSitesPtr[neighborMolIndex][site] += siteForceY[siteIndex];
+            fZOnSitesPtr[neighborMolIndex][site] += siteForceZ[siteIndex];
+#endif
             ++siteIndex;
           }
         }

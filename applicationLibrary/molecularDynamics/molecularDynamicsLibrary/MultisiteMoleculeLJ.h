@@ -73,6 +73,12 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
     torqueZ,
     typeId,
     ownershipState
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+        ,
+    forcesOnSitesX,
+    forcesOnSitesY,
+    forcesOnSitesZ
+#endif
   };
 
   /**
@@ -110,6 +116,13 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       double, // tz
       size_t, // typeid
       autopas::OwnershipState //ownerState
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+        ,
+    std::vector<double>,  //forcesOnSitesX
+    std::vector<double>,  //forcesOnSitesY
+    std::vector<double>  //forcesOnSitesZ
+
+#endif
   >::Type;
   // clang-format on
 
@@ -182,7 +195,19 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       return getTypeId();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
-    } else {
+    }
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+    else if constexpr (attribute == AttributeNames::forcesOnSitesX) {
+      return this->_forcesOnSitesX;
+    }
+    else if constexpr (attribute == AttributeNames::forcesOnSitesY) {
+      return this->_forcesOnSitesY;
+    }
+    else if constexpr (attribute == AttributeNames::forcesOnSitesZ) {
+      return this->_forcesOnSitesZ;
+    }
+#endif
+    else {
       autopas::utils::ExceptionHandler::exception("MultisiteMoleculeLJ::get() unknown attribute {}", attribute);
     }
   }
@@ -246,7 +271,20 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       _typeId = value;
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
-    } else {
+    }
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+    else if constexpr (attribute == AttributeNames::forcesOnSitesX) {
+      this->_forcesOnSitesX = value;
+    }
+    else if constexpr (attribute == AttributeNames::forcesOnSitesY) {
+      this->_forcesOnSitesY = value;
+    }
+    else if constexpr (attribute == AttributeNames::forcesOnSitesZ) {
+      this->_forcesOnSitesZ = value;
+    }
+#endif
+
+    else {
       autopas::utils::ExceptionHandler::exception("MultisiteMoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
@@ -311,6 +349,48 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    */
   [[nodiscard]] std::string toString() const override;
 
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+  /**
+   * Classic setter
+   * @param forces_on_sites
+   */
+  void setForcesOnSitesX(std::vector<double>&& forcesOnSitesX);
+
+  /**
+   * Classic setter
+   * @param forces_on_sites
+   */
+  void setForcesOnSitesY(std::vector<double>&& forcesOnSitesY);
+
+  /**
+   * Classic setter
+   * @param forces_on_sites
+   */
+  void setForcesOnSitesZ(std::vector<double>&& forcesOnSitesZ);
+
+  /**
+   * Get the force acting on the Site corresponding to the siteIndex.
+   * @param siteIndex
+   * @return acting force
+   */
+  const std::array<double, 3> getForceOnSite(size_t siteIndex);
+
+  /**
+   * Adds force to the forces experienced by the site identified by siteIndex
+   * @param siteIndex
+   * @param force
+   */
+  void addToForceOnSite(size_t siteIndex, std::array<double, 3>& force);
+
+  /**
+   * Subtracts force to the forces experienced by the site identified by siteIndex
+   * @param siteIndex
+   * @param force
+   */
+  void subToForceOnSite(size_t siteIndex, std::array<double, 3>& force);
+
+#endif
+
  protected:
   /**
    * Rotational direction of particle as quaternion.
@@ -326,6 +406,26 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    * Torque applied to particle.
    */
   std::array<double, 3> _torque{};
+
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+  /**
+   * When computing the torque after collecting all forces acting on each site, some helper variables are required to store the
+   * forces each individual site is experiencing. This variable stores the x-components of the forces acting on the individual sites.
+   */
+  std::vector<std::array<double, 3>> _forcesOnSitesX{};
+
+  /**
+   * When computing the torque after collecting all forces acting on each site, some helper variables are required to store the
+   * forces each individual site is experiencing. This variable stores the y-components of the forces acting on the individual sites.
+   */
+  std::vector<std::array<double, 3>> _forcesOnSitesY{};
+
+  /**
+   * When computing the torque after collecting all forces acting on each site, some helper variables are required to store the
+   * forces each individual site is experiencing. This variable stores the z-components of the forces acting on the individual sites.
+   */
+  std::vector<std::array<double, 3>> _forcesOnSitesZ{};
+#endif
 };
 
 }  // namespace mdLib

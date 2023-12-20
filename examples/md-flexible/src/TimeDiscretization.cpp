@@ -365,6 +365,28 @@ void gatherTorquesFromForces(autopas::AutoPas<ParticleType> &autoPasContainer, M
 }
 #endif
 
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+void gatherTorquesAndForcesFromSiteForces(autopas::AutoPas<ParticleType> &autoPasContainer,
+                             const ParticlePropertiesLibraryType &particlePropertiesLibrary) {
+  using autopas::utils::quaternion::rotateVectorOfPositions;
+  using autopas::utils::ArrayMath::cross;
+  using autopas::utils::ArrayMath::add;
+  //gather total torque acting on molecules
+  for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const auto unrotatedSitePositions = particlePropertiesLibrary.getSitePositions(iter->getTypeId());
+    const auto rotatedSitePositions = rotateVectorOfPositions(iter->getQuaternion(), unrotatedSitePositions);
+
+    for(size_t siteIndex = 0; siteIndex < rotatedSitePositions.size(); siteIndex++) {
+      const auto siteForce = iter->getForceOnSite(siteIndex);
+      iter->addF(siteForce);
+      iter->addTorque(cross(rotatedSitePositions[siteIndex], siteForce));
+    }
+
+    iter->setForcesOnSites(std::vector<std::array<double, 3>>(rotatedSitePositions.size(), {0.,0.,0.}));
+  }
+}
+#endif
+
 #if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT) {

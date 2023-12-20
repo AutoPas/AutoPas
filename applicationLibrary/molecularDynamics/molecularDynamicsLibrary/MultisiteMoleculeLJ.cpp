@@ -48,4 +48,35 @@ std::string MultisiteMoleculeLJ::toString() const {
   // clang-format on
   return text.str();
 }
+
+#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+void MultisiteMoleculeLJ::setForcesOnSitesX(std::vector<double> &&forcesOnSitesX);
+_forcesOnSitesX = forcesOnSitesX;
+}
+
+void MultisiteMoleculeLJ::setForcesOnSitesY(std::vector<double> &&forcesOnSitesY);
+_forcesOnSitesY = forcesOnSitesY;
+}
+
+void MultisiteMoleculeLJ::setForcesOnSitesZ(std::vector<double> &&forcesOnSitesZ);
+_forcesOnSitesZ = forcesOnSitesZ;
+}
+
+const std::array<double, 3> MultisiteMoleculeLJ::getForceOnSite(size_t siteIndex) {
+  return {_forcesOnSitesX[siteIndex], _forcesOnSitesY[siteIndex], _forcesOnSitesZ[siteIndex]};
+}
+
+void MultisiteMoleculeLJ::addToForceOnSite(size_t siteIndex, std::array<double, 3> &force) {
+  _forcesOnSitesX[siteIndex] += force[0];
+  _forcesOnSitesY[siteIndex] += force[1];
+  _forcesOnSitesZ[siteIndex] += force[2];
+}
+
+void MultisiteMoleculeLJ::subToForceOnSite(size_t siteIndex, std::array<double, 3> &force) {
+  _forcesOnSitesX[siteIndex] -= force[0];
+  _forcesOnSitesY[siteIndex] -= force[1];
+  _forcesOnSitesZ[siteIndex] -= force[2];
+}
+
+#endif
 }  // namespace mdLib
