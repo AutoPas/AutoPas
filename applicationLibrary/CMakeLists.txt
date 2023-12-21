@@ -31,7 +31,9 @@ elseif(MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     target_compile_definitions(molecularDynamicsLibrary PUBLIC MD_FLEXIBLE_MODE=1)
 endif()
 
-target_link_libraries(molecularDynamicsLibrary PUBLIC autopas)
+include(autopas_simde)
+
+target_link_libraries(molecularDynamicsLibrary PUBLIC autopas simde)
 
 target_include_directories(molecularDynamicsLibrary PUBLIC ./molecularDynamics)
 
