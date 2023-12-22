@@ -9,6 +9,10 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/CompatibleTraversals.h"
+#include "autopas/containers/LoadEstimators.h"
+#include "autopas/options/LoadEstimatorOption.h"
+
 #include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
 
 #include <vector>
@@ -21,13 +25,13 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   /**
    *  Type of the ParticleCell.
    */
-  using ParticleCell = FullParticleCell<Particle>;
+  using ParticleCell = Particle; //FullParticleCell<Particle>;
 
   /**
    *  Type of the Particle.
    */
-  //using ParticleType = Particle; // debugging mit Piet
-  using ParticleType = typename ParticleCell::ParticleType;
+  using ParticleType = Particle; // debugging mit Piet
+  //using ParticleType = typename ParticleCell::ParticleType;
 
   HierarchicalGrids (const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                       const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
@@ -195,12 +199,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   }
 
   /**
-   * Iterate over all particles using
-   * for(auto iter = container.begin(); iter.isValid(); ++iter) .
-   * @note The default argument for behavior is necessary to enable range based for loops.
-   * @param behavior Behavior of the iterator, see IteratorBehavior.
-   * @param additionalVectors Vectors that should be included besides the container.
-   * @return Iterator to the first particle.
+   * @copydoc autopas::ParticleContainerInterface::begin()
    */
   [[nodiscard]] ContainerIterator<ParticleType, true, false> begin(
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
@@ -223,15 +222,9 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       }
 
   /**
-   * Iterate over all particles in a specified region
-   * for(auto iter = container.getRegionIterator(lowCorner, highCorner);iter.isValid();++iter) .
-   * @param lowerCorner Lower corner of the region
-   * @param higherCorner Higher corner of the region
-   * @param behavior The behavior of the iterator (shall it iterate over halo particles as well?).
-   * @param additionalVectors Vectors that should be included besides the container.
-   * @return Iterator to iterate over all particles in a specific region.
+   * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, true, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
 
@@ -243,7 +236,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
    * @note const version
    */
-  [[nodiscard]] virtual ContainerIterator<ParticleType, false, true> getRegionIterator(
+  [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
 
@@ -284,10 +277,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
         }
 
         // Iterate pairwise over the cross-level
-        crossLevel.iteratePairwise(&traversal);
-
-        // Delete the cross-level after traversal
-        delete crossLevel;
+        crossLevel.iteratePairwise(traversal);
 
       }
     }
@@ -296,7 +286,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     // Iterate over hierarchy levels and subtract excess forces
     demLib::DEMFunctor<Particle>::initExcessForceSubtraction(_numberOfLevels);
     for (unsigned int level = 0; level < _numberOfLevels; level++) {
-      hierarchyLevels[level].iteratePairwise(&traversal); // add traversal option
+      hierarchyLevels[level].iteratePairwise(traversal); // add traversal option
     }
     demLib::DEMFunctor<Particle>::endExcessForceSubtraction();
 
@@ -446,9 +436,9 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   * @brief Vector containing the HGrid's different hierarchy levels of Linked Cells.
   * 
   */
-  std::vector<LinkedCells<ParticleCell>> hierarchyLevels;
+  std::vector<LinkedCells<Particle>> hierarchyLevels;
 
-  std::vector<LinkedCells<ParticleCell>> crossLevels;
+  //std::vector<LinkedCells<Particle>> crossLevels;
 
   /**
    * @brief Number of levels (hierarchies) in the H-Grid
@@ -462,7 +452,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   double _skinPerTimestep; 
   unsigned int _rebuildFrequency;
   double _cellSizeFactor;
-  LoadEstimatorOption _loadEstimator;
+  autopas::LoadEstimatorOption _loadEstimator;
 
   /**
    * @brief Vector containing the upper boundaries of the grid levels. 
