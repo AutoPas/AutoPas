@@ -10,7 +10,8 @@
 #include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
-
+#include <chrono>
+#include <array>
 namespace autopas {
 
 /**
