@@ -144,14 +144,10 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
     return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
   };
-  static int computeOffsetsCounter = 0;
+  sstatic std::chrono::duration<double> accumulatedDuration = std::chrono::duration<double>::zero();
 
-  // Increment the counter each time the function is called
-  computeOffsetsCounter++;
-
-  // You can print the counter to check how many times the function has been called
-  std::cout << "computeOffsets has been called " << computeOffsetsCounter << " times." << std::endl;
-
+  // Start the timer
+  auto startTime = std::chrono::high_resolution_clock::now();
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
   _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
   // offsets for the first cell
@@ -209,6 +205,11 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
       }
     }
   }
+  accumulatedDuration += std::chrono::high_resolution_clock::now() - startTime;
+
+  // If needed, you can print the accumulated time after each call
+  std::cout << "Accumulated execution time in computeOffsets: " << accumulatedDuration.count() << " seconds." << std::endl;
+
 
 }
 
