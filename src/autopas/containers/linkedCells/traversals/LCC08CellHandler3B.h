@@ -134,6 +134,11 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     const std::array<unsigned long, 3> &cellsPerDimension) {
   using namespace utils::ArrayMath::literals;
 
+  static std::chrono::duration<double> accumulatedDuration = std::chrono::duration<double>::zero();
+
+  // Start the timer
+  auto startTime = std::chrono::high_resolution_clock::now();
+
   // Helper function to get minimal distance between two cells
   auto cellDistance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
     return std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
@@ -145,10 +150,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
     return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
   };
-  static std::chrono::duration<double> accumulatedDuration = std::chrono::duration<double>::zero();
 
-  // Start the timer
-  auto startTime = std::chrono::high_resolution_clock::now();
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
   _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
   // offsets for the first cell
