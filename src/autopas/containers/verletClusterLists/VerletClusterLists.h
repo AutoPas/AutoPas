@@ -774,6 +774,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    autopas::utils::ExceptionHandler::exception(
+        "VerletClusterLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for "
+        "VerletClusterLists has not been implemented yet.");
+  }
+
   /**
    * Helper method to iterate over all clusters.
    * @tparam LoopBody The type of the lambda to execute for all clusters.

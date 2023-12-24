@@ -131,6 +131,12 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
   }
 
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    autopas::utils::ExceptionHandler::exception(
+        "VerletListsCells::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletListsCells "
+        "has not been implemented yet.");
+  }
+
   /**
    * Return the cell length of the underlying linked cells structure, normally needed only for unit tests.
    * @return

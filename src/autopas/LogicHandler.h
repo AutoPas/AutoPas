@@ -1212,12 +1212,11 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   timerTotal.start();
 
   functor.initTraversal();
-  //   TODO: Add list rebuilds for 3-Body
-  //    if (doListRebuild) {
-  //      timerRebuild.start();
-  //      container.rebuildNeighborLists(&traversal);
-  //      timerRebuild.stop();
-  //    }
+  if (doListRebuild) {
+    timerRebuild.start();
+    container.rebuildNeighborLists(&traversal);
+    timerRebuild.stop();
+  }
   timerIterateTriwise.start();
   container.iterateTriwise(&traversal);
   timerIterateTriwise.stop();

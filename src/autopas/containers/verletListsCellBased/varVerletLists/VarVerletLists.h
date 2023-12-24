@@ -71,6 +71,12 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     }
   }
 
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    autopas::utils::ExceptionHandler::exception(
+        "VarVerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VarVerletLists has "
+        "not been implemented yet.");
+  }
+
  private:
   NeighborList _neighborList;
 };

@@ -95,7 +95,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @note This function will be called in iteratePairwise()!
    * @param traversal
    */
   void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
@@ -108,6 +108,17 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       // only do this if we need it, i.e., if we are using soa!
       generateSoAListFromAoSVerletLists();
     }
+  }
+
+  /**
+   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
+   * @note This function will be called in iterateTriwise()!
+   * @param traversal
+   */
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    autopas::utils::ExceptionHandler::exception(
+        "VerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletLists has not "
+        "been implemented yet.");
   }
 
  protected:

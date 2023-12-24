@@ -149,10 +149,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  /**
-   * @copydoc ParticleContainerInterface::rebuildNeighborLists()
-   */
   void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+    updateDirtyParticleReferences();
+  }
+
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
     updateDirtyParticleReferences();
   }
 

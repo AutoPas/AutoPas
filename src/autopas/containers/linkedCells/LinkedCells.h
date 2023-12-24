@@ -106,6 +106,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     // nothing to do.
   }
 
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    // nothing to do.
+  }
+
   /**
    * Generates the load estimation function depending on _loadEstimator.
    * @return load estimator function object.
