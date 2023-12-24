@@ -101,6 +101,7 @@ class LCC08CellHandler3B {
   const std::array<double, 3> _cellLength;
 };
 
+
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
@@ -143,10 +144,16 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
     return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
   };
+  static int computeOffsetsCounter = 0;
+
+  // Increment the counter each time the function is called
+  computeOffsetsCounter++;
+
+  // You can print the counter to check how many times the function has been called
+  std::cout << "computeOffsets has been called " << computeOffsetsCounter << " times." << std::endl;
 
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
   _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
-
   // offsets for the first cell
   for (long x1 = 0; x1 <= static_cast<long>(this->_overlap[0]); ++x1) {
     for (long y1 = 0; y1 <= static_cast<long>(this->_overlap[1]); ++y1) {
