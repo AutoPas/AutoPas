@@ -145,7 +145,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
     return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
   };
-  sstatic std::chrono::duration<double> accumulatedDuration = std::chrono::duration<double>::zero();
+  static std::chrono::duration<double> accumulatedDuration = std::chrono::duration<double>::zero();
 
   // Start the timer
   auto startTime = std::chrono::high_resolution_clock::now();
