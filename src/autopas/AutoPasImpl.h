@@ -57,8 +57,9 @@ AutoPas<Particle>::~AutoPas() {
 
 template <class Particle>
 AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
-  _autoTuner = std::move(other._autoTuner);
-  _autoTuner3B = std::move(other._autoTuner3B);
+  for (auto &[interactionType, tuner] : other._autoTuners) {
+    _autoTuners[interactionType] = std::move(tuner);
+  }
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }
@@ -118,10 +119,10 @@ void AutoPas<Particle>::init() {
         if (_useTuningStrategyLoggerProxy) {
           tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
         }
-        _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                          _verletRebuildFrequency, _outputSuffix);
-        _logicHandler->initPairwise(_autoTuner.get());
-        _autoTuners.insert({InteractionTypeOption::pairwise, *_autoTuner});
+        _autoTuners.insert({InteractionTypeOption::pairwise,
+                            std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+                                                                 _verletRebuildFrequency, _outputSuffix)});
+        _logicHandler->initPairwise(_autoTuners[InteractionTypeOption::pairwise].get());
         break;
       }
       case InteractionTypeOption::threeBody: {
@@ -137,10 +138,10 @@ void AutoPas<Particle>::init() {
         if (_useTuningStrategyLoggerProxy) {
           tuningStrategies3B.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
         }
-        _autoTuner3B = std::make_unique<autopas::AutoTuner>(tuningStrategies3B, searchSpace3B, _autoTunerInfo,
-                                                            _verletRebuildFrequency, _outputSuffix);
-        _logicHandler->initTriwise(_autoTuner3B.get());
-        _autoTuners.insert({InteractionTypeOption::threeBody, *_autoTuner3B});
+        _autoTuners.insert({InteractionTypeOption::threeBody,
+                            std::make_unique<autopas::AutoTuner>(tuningStrategies3B, searchSpace3B, _autoTunerInfo,
+                                                                 _verletRebuildFrequency, _outputSuffix)});
+        _logicHandler->initTriwise(_autoTuners[InteractionTypeOption::threeBody].get());
         break;
       }
       default: {
@@ -269,7 +270,9 @@ std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &
 
 template <class Particle>
 void AutoPas<Particle>::forceRetune() {
-  _autoTuner->forceRetune();
+  for (auto &[interaction, tuner] : _autoTuners) {
+    tuner->forceRetune();
+  }
 }
 
 template <class Particle>
@@ -384,8 +387,8 @@ const autopas::ParticleContainerInterface<Particle> &AutoPas<Particle>::getConta
 template <class Particle>
 bool AutoPas<Particle>::searchSpaceIsTrivial() {
   bool isTrivial = true;
-  for (auto [interaction, tuner] : _autoTuners) {
-    isTrivial = isTrivial and tuner.searchSpaceIsTrivial();
+  for (auto &[interaction, tuner] : _autoTuners) {
+    isTrivial = isTrivial and tuner->searchSpaceIsTrivial();
   }
   return isTrivial;
 }
@@ -393,10 +396,10 @@ bool AutoPas<Particle>::searchSpaceIsTrivial() {
 template <class Particle>
 void AutoPas<Particle>::incrementIterationCounters() {
   _logicHandler->bumpIterationCounters();
-  for (auto [interaction, tuner] : _autoTuners) {
+  for (auto &[interaction, tuner] : _autoTuners) {
     // Check if we need to synchronize multiple tuners
     bool needToWait = _logicHandler->checkTuningStates(interaction);
-    tuner.bumpIterationCounters(needToWait);
+    tuner->bumpIterationCounters(needToWait);
   }
 }
 

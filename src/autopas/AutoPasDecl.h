@@ -957,7 +957,7 @@ class AutoPas {
     // TODO: Avoid copying
     std::set<Configuration> currentConfigs;
     for (auto &[type, tuner] : _autoTuners) {
-      currentConfigs.insert(tuner.getCurrentConfig());
+      currentConfigs.insert(tuner->getCurrentConfig());
     }
     return currentConfigs;
   }
@@ -1142,16 +1142,12 @@ class AutoPas {
    */
   std::unique_ptr<autopas::LogicHandler<Particle>> _logicHandler;
 
-  std::unordered_map<InteractionTypeOption::Value, autopas::AutoTuner &> _autoTuners;
+  /**
+   * All AutoTuners used in this instance of AutoPas.
+   * There can be up to one per interaction type.
+   */
+  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> _autoTuners;
 
-  /**
-   * This is the AutoTuner for pairwise interactions.
-   */
-  std::unique_ptr<autopas::AutoTuner> _autoTuner;
-  /**
-   * This is the AutoTuner for 3-Body interactions.
-   */
-  std::unique_ptr<autopas::AutoTuner> _autoTuner3B;
   /**
    * Stores whether the mpi communicator was provided externally or not
    */
