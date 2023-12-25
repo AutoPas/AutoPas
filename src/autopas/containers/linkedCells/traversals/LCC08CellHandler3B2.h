@@ -101,6 +101,37 @@ class LCC08CellHandler3B {
   * Cell length in CellBlock3D.
    */
   const std::array<double, 3> _cellLength;
+  void offsetsTwoEdgesOneWildCard(
+      const std::vector<long>& edge1,
+      const std::vector<long>& edge2,
+      const std::vector<std::vector<std::vector<long>>>& planes,
+      const std::vector<std::vector<std::vector<long>>>& all,
+      const std::function<std::vector<long>(const std::vector<long>&)>& pair_to_triple,
+      const std::function<void(long, long, const std::vector<std::vector<long>>&, std::vector<std::vector<long>>&)> &append_plane_offsets,
+      const std::function<void(long, long, const std::vector<std::vector<std::vector<long>>>&, std::vector<std::vector<long>>&)> &append_inner_offsets,
+      const std::function<void(const std::vector<long>&, const std::vector<long>&, std::vector<std::vector<long>>&)> &offsets_3_edges_2_same
+  ) {
+    long ov_1 = edge1.size();
+    long ov_2 = edge2.size();
+
+    for (long a = 1; a < ov_1; ++a) {
+      for (long b = 1; b < ov_2; ++b) {
+        _cellOffsets.emplace_back(pair_to_triple({edge1[a], edge2[b]}));
+
+        for (const auto& plane : planes) {
+          append_plane_offsets(edge1[a], edge2[b], plane, _cellOffsets);
+        }
+
+        append_inner_offsets(edge1[a], edge2[b], all, _cellOffsets);
+      }
+    }
+
+    offsets_3_edges_2_same(edge1, edge2, _cellOffsets);
+    offsets_3_edges_2_same(edge2, edge1, _cellOffsets);
+  }
+
+  void offsetsOneEdgeTwoUnknown(std::vector<long> vector1, std::vector<long> vector2, std::vector<long> vector3,
+                                std::vector<long> vector4, std::vector < std::vector<std::vector<long>>) {}
 };
 
 
@@ -149,10 +180,40 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
                                  std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
                                  std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
   };
+  auto pair_to_offsets = [](const std::vector<long>& pair, std::vector<std::vector<long>>& offsets) {
+    long first = pair[0];
+    long second = pair[1];
+    if (first > second) {
+      std::swap(first, second);
+    }
+    offsets.push_back({first, first, second});
+  };
 
-  auto is_valid_distance = [&] (long x1, long y1, long z1, long x2, long y2, long z2, auto interactionlengthsq) {
-    auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
-    return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
+  auto append_inner_offsets = [](long o1, long o2, const std::vector<std::vector<std::vector<long>>>& all, std::vector<std::vector<long>>& offsets) {
+    for (long x = 1; x < all.size(); ++x) {
+      for (long y = 1; y < all[x].size(); ++y) {
+        for (long z = 1; z < all[x][y].size(); ++z) {
+          offsets.push_back({o1, o2, all[x][y][z]});
+        }
+      }
+    }
+  };
+
+  auto append_plane_offsets = [](long o1, long o2, const std::vector<std::vector<long>>& plane, std::vector<std::vector<long>>& offsets) {
+    for (long x = 1; x < plane.size(); ++x) {
+      for (long y = 1; y < plane[x].size(); ++y) {
+        offsets.push_back({o1, o2, plane[x][y]});
+      }
+    }
+  };
+  auto offsets_3_edges_2_same = [](const std::vector<long>& edge1, const std::vector<long>& edge2, std::vector<std::vector<long>>& offsets) {
+    for (long a = 1; a < edge1.size(); ++a) {
+      for (long b = 1; b < edge2.size(); ++b) {
+        for (long a1 = a + 1; a1 < edge1.size(); ++a1) {
+          offsets.push_back({edge1[a], edge1[a1], edge2[b]});
+        }
+      }
+    }
   };
   std::vector<std::vector<std::vector<long>>> all(ovX, std::vector<std::vector<long>>(ovY, std::vector<long>(ovZ)));
   std::vector<std::vector<long>> planeXy(ovX, std::vector<long>(ovY));
@@ -220,61 +281,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
 
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
   _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
-  // offsets for the first cell
-  for (long x1 = 0; x1 <= static_cast<long>(this->_overlap[0]); ++x1) {
-    for (long y1 = 0; y1 <= static_cast<long>(this->_overlap[1]); ++y1) {
-      for (long z1 = 0; z1 <= static_cast<long>(this->_overlap[2]); ++z1) {
 
-        // offsets for the second cell
-        for (long x2 = 0; x2 <= static_cast<long>(this->_overlap[0]); ++x2) {
-          for (long y2 = 0; y2 <= static_cast<long>(this->_overlap[1]); ++y2) {
-            for (long z2 = 0; z2 <= static_cast<long>(this->_overlap[2]); ++z2) {
-              // check distance between cell 1 and cell 2
-              const auto dist12 = cellDistance(x1, y1, z1, x2, y2, z2);
-              const double dist12Square = utils::ArrayMath::dot(dist12, dist12);
-              if (dist12Square > interactionLengthSquare) continue;
-
-              // offsets for the third cell
-              for (long x3 = 0; x3 <= static_cast<long>(this->_overlap[0]); ++x3) {
-                for (long y3 = 0; y3 <= static_cast<long>(this->_overlap[1]); ++y3) {
-                  for (long z3 = 0; z3 <= static_cast<long>(this->_overlap[2]); ++z3) {
-                    // check distance between cell 1 and cell 3
-                    const auto dist13 = cellDistance(x1, y1, z1, x3, y3, z3);
-                    const double dist13Square = utils::ArrayMath::dot(dist13, dist13);
-                    if (dist13Square > interactionLengthSquare) continue;
-
-                    // check distance between cell 2 and cell 3
-                    const auto dist23 = cellDistance(x2, y2, z2, x3, y3, z3);
-                    const double dist23Squared = utils::ArrayMath::dot(dist23, dist23);
-                    if (dist23Squared > interactionLengthSquare) continue;
-
-                    const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-
-                    const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x2, y2, z2, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-
-                    const long offset3 = utils::ThreeDimensionalMapping::threeToOneD(
-                        x3, y3, z3, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-
-                    if (offset1 > offset2 or offset2 >= offset3) continue;
-
-                    if ((x1 == 0 or x2 == 0 or x3 == 0) and(y1 == 0 or y2 == 0 or y3 == 0) and (z1 == 0 or z2 == 0 or z3 == 0)) {
-
-                      const std::array<double, 3> sortDirection = {(x1 + x2) * this->_cellLength[0],
-                                                                   (y1 + y2) * this->_cellLength[1],
-                                                                   (z1 + z2) * this->_cellLength[2]};
-                      _cellOffsets.emplace_back(offset1, offset2, offset3, utils::ArrayMath::normalize(sortDirection));
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
   accumulatedDuration += std::chrono::high_resolution_clock::now() - startTime;
 
   // If needed, you can print the accumulated time after each call
