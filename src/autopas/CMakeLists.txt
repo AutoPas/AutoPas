@@ -12,8 +12,6 @@ file(
     "*.cuh"
 )
 
-add_library(autopas STATIC ${MY_SRC}
-        containers/linkedCells/traversals/LCSlicedC02Traversal3B.h)
 
 target_link_libraries(
     autopas
