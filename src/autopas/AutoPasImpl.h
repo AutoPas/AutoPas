@@ -102,7 +102,7 @@ void AutoPas<Particle>::init() {
     }
   }();
 
-  for (auto &interactionType : _allowedInteractionTypeOptions) {
+  for (const auto &interactionType : _allowedInteractionTypeOptions) {
     switch (interactionType) {
       case InteractionTypeOption::pairwise: {
         const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
@@ -385,7 +385,7 @@ template <class Particle>
 bool AutoPas<Particle>::searchSpaceIsTrivial() {
   bool isTrivial = true;
   for (auto [interaction, tuner] : _autoTuners) {
-    isTrivial = isTrivial && tuner.searchSpaceIsTrivial();
+    isTrivial = isTrivial and tuner.searchSpaceIsTrivial();
   }
   return isTrivial;
 }
