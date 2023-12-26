@@ -1,0 +1,68 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  schedule:
+    - cron: "28 20 * * 2"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ cpp ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes cmake libssl-dev
+
+      - name: Configure
+        run: |
+          mkdir -p _lgtm_build_dir
+          cd _lgtm_build_dir
+          CC=clang CXX=clang++ cmake -DAUTOPAS_BUILD_TESTS=OFF -DAUTOPAS_USE_TEST_GLOB=OFF -DCMAKE_VERBOSE_MAKEFILE=ON -DBUILD_DOCS=OFF -DCATKIN_ENABLE_TESTING=OFF -DBUILD_DOCUMENTATION=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-fpermissive ..
+
+      - name: After Prepare
+        run: |
+          cmake --version
+          wget -O cmake.tar.gz https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2.tar.gz
+          tar zxf cmake.tar.gz
+          cd cmake-*/
+          mkdir build
+          cd build
+          cmake -DCMAKE_INSTALL_PREFIX:PATH=~/.local/ -DCMAKE_BUILD_TYPE=Release ..
+          make install
+          ls ~/.local/bin
+          export PATH=~/.local/bin:$PATH && echo "PATH=$PATH" >> $GITHUB_ENV
+          cmake --version
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          queries: +security-and-quality
+
+      - name: Build cpp
+        run: |
+          cd _lgtm_build_dir
+          make -j 2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{ matrix.language }}"
