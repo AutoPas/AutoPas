@@ -5,8 +5,7 @@ Under the hood, they use [spdlog](https://github.com/gabime/spdlog).
 When deactivated via `CMake` these loggers do not add any run time overhead.
 
 ## AutoPasLog
-This is the main, general purpose logger. It supports all spdlog-levels. These levels can be (de)activated at compile
-time via the `CMake` variable `AUTOPAS_MIN_LOG_LVL`. At run time, this logger's compiled levels can be set e.g. via:
+This is the main, general purpose logger. It supports all spdlog-levels. These levels can be (de)activated at compile time via the `CMake` variable `AUTOPAS_MIN_LOG_LVL`. At run time, this logger's compiled levels can be set e.g. via:
 `autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);`
 
 At debug level, this logger will print the full configuration of every call to `autopas::AutoPas::iteratePairwise()`.

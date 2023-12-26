@@ -7,8 +7,7 @@ One simulation loop should always consist of the following phases:
    auto invalidParticles = autoPas.updateContainer();
    ```
    This call will trigger an update of the container inside AutoPas.
-   The returned vector `invalidParticles` consists of the particles that were previously owned by this AutoPas container
-   but have left the boundary of this container, i.e., their current position resides outside the container.
+   The returned vector `invalidParticles` consists of the particles that were previously owned by this AutoPas container but have left the boundary of this container, i.e., their current position resides outside the container.
 
 2. Handling the leaving particles
     * Apply boundary conditions on them

@@ -5,9 +5,7 @@ To create a new custom application, custom particle and functor classes have to 
 
 ## Custom Particles
 First you will need to define a particle class which will be passed to AutoPas as template Argument.
-For that we provide some basic Particle classes defined in [`molecularDynamicsLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary) or [`SPHLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary)
-that you can use either directly or you can write your own Particle class by inheriting from one of the provided
-classes or from [`autopas::ParticleBase`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/particles/ParticleBase.h).
+For that we provide some basic Particle classes defined in [`molecularDynamicsLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary) or [`SPHLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary) that you can use either directly or you can write your own Particle class by inheriting from one of the provided classes or from [`autopas::ParticleBase`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/particles/ParticleBase.h).
 
 Important parts to implement:
 * `enum AttributeNames`

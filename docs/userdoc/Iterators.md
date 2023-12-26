@@ -28,9 +28,7 @@ for(auto iter = autoPas.getRegionIterator(lowCorner, highCorner); iter != autoPa
 }
 ```
 
-Both `begin()` and `getRegionIterator()` can also take the additional parameter `IteratorBehavior`,
-which indicates over which particles the iteration should be performed. See [autopas::IteratorBehavior
-](https://autopas.github.io/doxygen_documentation/git-master/classautopas_1_1options_1_1IteratorBehavior.html) for possible options and details.
+Both `begin()` and `getRegionIterator()` can also take the additional parameter `IteratorBehavior`, which indicates over which particles the iteration should be performed. See [autopas::IteratorBehavior](https://autopas.github.io/doxygen_documentation/git-master/classautopas_1_1options_1_1IteratorBehavior.html) for possible options and details.
 The default parameter is `ownedOrHalo`, which is also used for range-based for loops.
 
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const_iterator`.

@@ -30,9 +30,8 @@ cmake -G Ninja ..
 ninja
 ```
 ### Building AutoPas on a Cluster
-HPC clusters often use module systems. CMake is sometimes not able to
-correctly detect the compiler you wished to use. If a wrong compiler is
-found please specify the compiler explicitly, e.g. for gcc:
+HPC clusters often use module systems. CMake is sometimes not able to correctly detect the compiler you wished to use. 
+If a wrong compiler is found please specify the compiler explicitly, e.g. for gcc:
 ```bash
 mkdir build
 cd build
@@ -41,9 +40,8 @@ make
 ```
 
 ### Dependency Management
-AutoPas relies on a small number of dependencies. By default, AutoPas looks for
-installed versions of those libraries, but it can also be forced to (selectively)
-use bundled versions. To make use of this feature, call `cmake` with:
+AutoPas relies on a small number of dependencies. By default, AutoPas looks for installed versions of those libraries, but it can also be forced to (selectively) use bundled versions.
+To make use of this feature, call `cmake` with:
 ```bash
 cmake -D spdlog_ForceBundled=ON    # replace spdlog by the lib you want to force
 ```
