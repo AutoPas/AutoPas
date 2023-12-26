@@ -53,3 +53,7 @@ For profiling the compile-time, the `cmake` option `AUTOPAS_COMPILE_TIME_PROFILI
 It is recommended to use clang, as its output is more detailed.
 `-ftime-trace` generates a .json file for each compilation unit next to the generated object file (inside one of the CMakeFiles directories).
 Chrome has a built-in tool for viewing these files in a flame graph. It can be accessed through the URL `chrome://tracing`.
+
+## Related Files and Folders
+- cmake/
+- CMakeLists.txt

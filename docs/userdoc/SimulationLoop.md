@@ -28,3 +28,7 @@ One simulation loop should always consist of the following phases:
    ```cpp
    autoPas.iteratePairwise(functor);
    ```
+
+## Related Files and Folders
+- AutoPasDecl.h
+- Simulation.cpp

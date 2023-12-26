@@ -19,3 +19,8 @@ Additional information can be found in [PR 642](https://github.com/AutoPas/AutoP
 ### Inserting additional particles
 Additional particles (e.g. through a grand-canonical thermostat), can be inserted at any point in the simulation loop.
 For periodic boundary conditions, or in an MPI-parallel simulation, you, as the user, are responsible for inserting the appropriate halo particles.
+
+## Related Files and Folders
+- LeavingParticleCollector.h
+- LogicHandler.h
+- ParticleContainerInterface.h

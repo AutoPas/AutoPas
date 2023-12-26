@@ -42,3 +42,7 @@ for(auto iter = autoPas.getIterator(); iter != autoPas.end(); ++iter) {
   autoPas.deleteParticle(iterator);
 }
 ```
+
+## Related Files and Folders
+- ContainerIterator.h
+- IteratorBehavior.h

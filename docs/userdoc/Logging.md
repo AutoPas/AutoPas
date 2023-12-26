@@ -34,3 +34,6 @@ This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGDATA`
 ## TuningResultLogger
 Creates a csv containing the results of every tuning phase. Useful if only the high level end results are of interest.
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGRESULTS`.
+
+## Related Files and Folders
+- src/autopas/utils/logging/

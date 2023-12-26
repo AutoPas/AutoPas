@@ -11,3 +11,8 @@ Particles saved in an AutoPas container can be in one of the following states:
   The halo particles are needed for the correct calculation of the pairwise forces.
   On update of the AutoPas container, halo particles are deleted (see [Simulation Loop](TODO).
 * **dummy**: Particles that are deleted or that act as filler for certain algorithms. These particles do not affect the force calculation.
+
+## Related Files and Folders
+- ParticleBase.h
+- OwnershipState.h
+- markParticleAsDeleted.h
