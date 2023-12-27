@@ -370,7 +370,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
                                  std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
   };
 
-  auto pairToTriplet = [](const std::vector<long>& pair, std::vector<std::vector<long>>& offsets) {
+  auto pairToTriplet = [](const std::vector<long>& pair, std::vector<std::tuple<long, long, long>>& offsets) {
     long firstOffset = pair[0];
     long secondOffset = pair[1];
 
@@ -381,7 +381,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   };
 
 
-  auto appendPlaneOffsets = [](long offset1, long offset2, const std::vector<std::vector<long>>& plane, std::vector<std::vector<long>>& offsets) {
+  auto appendPlaneOffsets = [](long offset1, long offset2, const std::vector<std::vector<long>>& plane, std::vector<std::tuple<long, long, long>>& offsets) {
     for (long x = 1; x < plane.size(); ++x) {
       for (long y = 1; y < plane[x].size(); ++y) {
         offsets.push_back({offset1, offset2, plane[x][y]});
@@ -389,7 +389,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     }
   };
 
-  auto offsets3Edges2Same = [](const std::vector<long>& edgeFirst, const std::vector<long>& edgeSecond, std::vector<std::vector<long>>& offsets) {
+  auto offsets3Edges2Same = [](const std::vector<long>& edgeFirst, const std::vector<long>& edgeSecond, std::vector<std::tuple<long, long, long>>& offsets) {
     for (long indexFirst = 1; indexFirst < edgeFirst.size(); ++indexFirst) {
       for (long indexSecond = 1; indexSecond < edgeSecond.size(); ++indexSecond) {
         for (long indexFirstNext = indexFirst + 1; indexFirstNext < edgeFirst.size(); ++indexFirstNext) {
@@ -399,7 +399,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     }
   };
 
-  auto appendInnerOffsets = [](long offset1, long offset2, const std::vector<std::vector<std::vector<long>>>& allCells, std::vector<std::vector<long>>& offsets) {
+  auto appendInnerOffsets = [](long offset1, long offset2, const std::vector<std::vector<std::vector<long>>>& allCells, std::vector<std::tuple<long, long, long>>& offsets) {
     for (long x = 1; x < allCells.size(); ++x) {
       for (long y = 1; y < allCells[x].size(); ++y) {
         for (long z = 1; z < allCells[x][y].size(); ++z) {
@@ -413,7 +413,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
                                         const std::vector<long>& edgeSecond,
                                         const std::vector<std::vector<std::vector<long>>>& planes,
                                         const std::vector<std::vector<std::vector<long>>>& allCells,
-                                        std::vector<std::vector<long>>& offsets
+                                        std::vector<std::tuple<long, long, long>>& offsets
                                     ) {
     std::size_t edgeFirstLength = edgeFirst.size();
     std::size_t edgeSecondLength = edgeSecond.size();
@@ -440,7 +440,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
                                     const std::vector<std::vector<long>>& plane2,
                                     const std::vector<std::vector<long>>& plane3,
                                     const std::vector<std::vector<std::vector<long>>>& allCells,
-                                    std::vector<std::vector<long>>& offsets
+                                    std::vector<std::tuple<long, long, long>>& offsets
                                 ) {
     for (long indexEdge = 1; indexEdge < edge.size(); ++indexEdge) {
       for (long x3 = 1; x3 < plane3.size(); ++x3) {
@@ -517,7 +517,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   std::vector<std::vector<std::vector<long>>> planes = {planeXy, planeXz, planeYz};
 
   // Initialize offsets with base cell combos
-  std::vector<std::vector<long>> offsets = {{0, 0, 0}};
+  std::vector<std::tuple<long, long, long>> offsets = {{0, 0, 0}};
 
   long totalElements = ovX * ovY * ovZ;
   for (long a = 0; a < totalElements; ++a) {
@@ -535,7 +535,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   offsets1Edge2Wildcards(edgeY, planeXy, planeYz, planeXz, all, offsets);
   offsets1Edge2Wildcards(edgeZ, planeYz, planeXz, planeXy, all, offsets);
 
-  for (auto const &[offset1, offset2, offset3, r] : _cellOffsets) {
+  for (auto const &[offset1, offset2, offset3] : offsets) {
     _cellOffsets.emplace_back(offset1, offset2, offset3, std::array<double, 3>{1., 1., 1.});
   }
 
