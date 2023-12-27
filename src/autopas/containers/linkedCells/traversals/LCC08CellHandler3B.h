@@ -377,8 +377,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     if (firstOffset > secondOffset) {
       std::swap(firstOffset, secondOffset);
     }
-
-    offsets.push_back({firstOffset, firstOffset, secondOffset});
+    return {firstOffset, firstOffset, secondOffset};
   };
 
 
@@ -526,8 +525,6 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
       offsets.push_back({0, a, b});
     }
   }
-  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
-  _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
   // Combining edges and planes
   offsetsTwoEdgesOneWildCard(edgeX, edgeY, planes, all, offsets);
   offsetsTwoEdgesOneWildCard(edgeX, edgeZ, planes, all, offsets);
