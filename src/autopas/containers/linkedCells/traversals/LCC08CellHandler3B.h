@@ -377,7 +377,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     if (firstOffset > secondOffset) {
       std::swap(firstOffset, secondOffset);
     }
-    return {firstOffset, firstOffset, secondOffset};
+    offsets.push_back({firstOffset, firstOffset, secondOffset});
   };
 
 
@@ -420,7 +420,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
 
     for (long indexFirst = 1; indexFirst < edgeFirstLength; ++indexFirst) {
       for (long indexSecond = 1; indexSecond < edgeSecondLength; ++indexSecond) {
-        offsets.push_back(pairToTriplet({edgeFirst[indexFirst], edgeSecond[indexSecond]}));
+        pairToTriplet({edgeFirst[indexFirst], edgeSecond[indexSecond]}, offsets);
 
         for (const auto & plane : planes) {
           appendPlaneOffsets(edgeFirst[indexFirst], edgeSecond[indexSecond], plane, offsets);
@@ -445,7 +445,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     for (long indexEdge = 1; indexEdge < edge.size(); ++indexEdge) {
       for (long x3 = 1; x3 < plane3.size(); ++x3) {
         for (long y3 = 1; y3 < plane3[x3].size(); ++y3) {
-          offsets.push_back(pairToTriplet({edge[indexEdge], plane3[x3][y3]}));
+          pairToTriplet({edge[indexEdge], plane3[x3][y3]}, offsets);
           appendPlaneOffsets(edge[indexEdge], plane3[x3][y3], plane1, offsets);
           appendPlaneOffsets(edge[indexEdge], plane3[x3][y3], plane2, offsets);
 
@@ -535,8 +535,8 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   offsets1Edge2Wildcards(edgeY, planeXy, planeYz, planeXz, all, offsets);
   offsets1Edge2Wildcards(edgeZ, planeYz, planeXz, planeXy, all, offsets);
 
-  for (auto offset : offsets) {
-    _cellOffsets.emplace_back(offset, std::array<double, 3>{1., 1., 1.});
+  for (auto const &[offset1, offset2, offset3, r] : _cellOffsets) {
+    _cellOffsets.emplace_back(offset1, offset2, offset3, std::array<double, 3>{1., 1., 1.});
   }
 
   accumulatedDuration += std::chrono::high_resolution_clock::now() - startTime;
