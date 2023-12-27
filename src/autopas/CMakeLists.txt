@@ -11,7 +11,7 @@ file(
     "*.cu"
     "*.cuh"
 )
-
+add_library(autopas STATIC ${MY_SRC})
 
 target_link_libraries(
     autopas
