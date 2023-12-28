@@ -360,7 +360,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   auto startTime = std::chrono::high_resolution_clock::now();
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
   std::vector<std::vector<std::vector<long>>> cells(ovX, std::vector<std::vector<long>>(ovY, std::vector<long>(ovZ)));
-  auto is_valid_distance = [this](long x1, long y1, long z1, long x2, long y2, long z2) {
+  auto is_valid_distance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
     auto dist = std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
                                       std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
                                       std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
