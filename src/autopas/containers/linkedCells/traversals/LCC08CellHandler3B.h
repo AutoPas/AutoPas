@@ -279,14 +279,12 @@ class LCC08CellHandler3B {
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
 
-
   /**
   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  protected:
-
   /**
     * Combination of triplets for processBaseCell().
    */
@@ -296,7 +294,6 @@ class LCC08CellHandler3B {
    * Computes triplets used in processBaseCell()
    */
   void computeOffsets(const std::array<unsigned long, 3> &cellsPerDimension);
-
 
   /**
   * Overlap of interacting cells. Array allows asymmetric cell sizes.
@@ -322,7 +319,6 @@ class LCC08CellHandler3B {
    */
   const std::array<double, 3> _cellLength;
 };
-
 
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::processBaseCell(
@@ -362,189 +358,333 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
 
   // Start the timer
   auto startTime = std::chrono::high_resolution_clock::now();
-
-  // Helper function to get minimal distance between two cells
-  auto cellDistance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-    return std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
-                                 std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
-                                 std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
+  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
+  std::vector<std::vector<std::vector<long>>> cells(ovX, std::vector<std::vector<long>>(ovY, std::vector<long>(ovZ)));
+  auto is_valid_distance = [this](long x1, long y1, long z1, long x2, long y2, long z2) {
+    auto dist = std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
+                                      std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
+                                      std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
+    return utils::ArrayMath::dot(dist, dist) > interactionLengthSquare;
   };
-
-  auto pairToTriplet = [](const std::vector<long>& pair, std::vector<std::tuple<long, long, long>>& offsets) {
-    long firstOffset = pair[0];
-    long secondOffset = pair[1];
-
-    if (firstOffset > secondOffset) {
-      std::swap(firstOffset, secondOffset);
-    }
-    offsets.push_back({firstOffset, firstOffset, secondOffset});
-  };
-
-
-  auto appendPlaneOffsets = [](long offset1, long offset2, const std::vector<std::vector<long>>& plane, std::vector<std::tuple<long, long, long>>& offsets) {
-    for (long x = 1; x < plane.size(); ++x) {
-      for (long y = 1; y < plane[x].size(); ++y) {
-        offsets.push_back({offset1, offset2, plane[x][y]});
-      }
-    }
-  };
-
-  auto offsets3Edges2Same = [](const std::vector<long>& edgeFirst, const std::vector<long>& edgeSecond, std::vector<std::tuple<long, long, long>>& offsets) {
-    for (long indexFirst = 1; indexFirst < edgeFirst.size(); ++indexFirst) {
-      for (long indexSecond = 1; indexSecond < edgeSecond.size(); ++indexSecond) {
-        for (long indexFirstNext = indexFirst + 1; indexFirstNext < edgeFirst.size(); ++indexFirstNext) {
-          offsets.push_back({edgeFirst[indexFirst], edgeFirst[indexFirstNext], edgeSecond[indexSecond]});
+  auto emplaceOffset = [&](long x1, long y1, long z1, long x2, long y2, long z2, long x3, long y3, long z3) {
+    if (is_valid_distance(x1, y1, z1, x2, y2, z2)) {
+      if (is_valid_distance(x2, y2, z2, x3, y3, z3)) {
+        if (is_valid_distance(x1, y1, z1, x3, y3, z3)) {
+          std::array<double, 3> sortingDirection = {(x1 + x2) * this->_cellLength[0], (y1 + y2) * this->_cellLength[1],
+                                                    (z1 + z2) * this->_cellLength[2]};
+          _cellOffsets.emplace_back(cells[x1][y1][z1], cells[x1][y1][z1], cells[x1][y1][z1],
+                                    utils::ArrayMath::normalize(sortingDirection));
         }
       }
     }
   };
 
-  auto appendInnerOffsets = [](long offset1, long offset2, const std::vector<std::vector<std::vector<long>>>& allCells, std::vector<std::tuple<long, long, long>>& offsets) {
-    for (long x = 1; x < allCells.size(); ++x) {
-      for (long y = 1; y < allCells[x].size(); ++y) {
-        for (long z = 1; z < allCells[x][y].size(); ++z) {
-          offsets.push_back({offset1, offset2, allCells[x][y][z]});
-        }
-      }
-    }
-  };
-  auto offsetsTwoEdgesOneWildCard = [&pairToTriplet, &appendPlaneOffsets, &appendInnerOffsets, &offsets3Edges2Same](
-                                        const std::vector<long>& edgeFirst,
-                                        const std::vector<long>& edgeSecond,
-                                        const std::vector<std::vector<std::vector<long>>>& planes,
-                                        const std::vector<std::vector<std::vector<long>>>& allCells,
-                                        std::vector<std::tuple<long, long, long>>& offsets
-                                    ) {
-    std::size_t edgeFirstLength = edgeFirst.size();
-    std::size_t edgeSecondLength = edgeSecond.size();
-
-    for (long indexFirst = 1; indexFirst < edgeFirstLength; ++indexFirst) {
-      for (long indexSecond = 1; indexSecond < edgeSecondLength; ++indexSecond) {
-        pairToTriplet({edgeFirst[indexFirst], edgeSecond[indexSecond]}, offsets);
-
-        for (const auto & plane : planes) {
-          appendPlaneOffsets(edgeFirst[indexFirst], edgeSecond[indexSecond], plane, offsets);
-        }
-
-        appendInnerOffsets(edgeFirst[indexFirst], edgeSecond[indexSecond], allCells, offsets);
-      }
-    }
-
-    offsets3Edges2Same(edgeFirst, edgeSecond, offsets);
-    offsets3Edges2Same(edgeSecond, edgeFirst, offsets);
-  };
-
-  auto offsets1Edge2Wildcards = [&pairToTriplet, &appendPlaneOffsets, &appendInnerOffsets](
-                                    const std::vector<long>& edge,
-                                    const std::vector<std::vector<long>>& plane1,
-                                    const std::vector<std::vector<long>>& plane2,
-                                    const std::vector<std::vector<long>>& plane3,
-                                    const std::vector<std::vector<std::vector<long>>>& allCells,
-                                    std::vector<std::tuple<long, long, long>>& offsets
-                                ) {
-    for (long indexEdge = 1; indexEdge < edge.size(); ++indexEdge) {
-      for (long x3 = 1; x3 < plane3.size(); ++x3) {
-        for (long y3 = 1; y3 < plane3[x3].size(); ++y3) {
-          pairToTriplet({edge[indexEdge], plane3[x3][y3]}, offsets);
-          appendPlaneOffsets(edge[indexEdge], plane3[x3][y3], plane1, offsets);
-          appendPlaneOffsets(edge[indexEdge], plane3[x3][y3], plane2, offsets);
-
-          for (long x32 = 1; x32 < plane3.size(); ++x32) {
-            for (long y32 = 1; y32 < plane3[0].size(); ++y32) {
-              if (plane3[x3][y3] < plane3[x32][y32]) {
-                offsets.push_back({edge[indexEdge], plane3[x3][y3], plane3[x32][y32]});
-              }
-            }
-          }
-
-          appendInnerOffsets(edge[indexEdge], plane3[x3][y3], allCells, offsets);
-
-          for (long indexEdgeNext = indexEdge + 1; indexEdgeNext < edge.size(); ++indexEdgeNext) {
-            offsets.push_back({edge[indexEdge], edge[indexEdgeNext], plane3[x3][y3]});
-          }
-        }
-      }
-    }
-  };
-
-  std::vector<std::vector<std::vector<long>>> all(ovX, std::vector<std::vector<long>>(ovY, std::vector<long>(ovZ)));
-  std::vector<std::vector<long>> planeXy(ovX, std::vector<long>(ovY));
-  std::vector<std::vector<long>> planeXz(ovX, std::vector<long>(ovZ));
-  std::vector<std::vector<long>> planeYz(ovY, std::vector<long>(ovZ));
-  std::vector<long> edgeX(ovX), edgeY(ovY), edgeZ(ovZ);
-
-  // Initializing 3D vector 'all'
   for (long x = 0; x < ovX; ++x) {
     for (long y = 0; y < ovY; ++y) {
       for (long z = 0; z < ovZ; ++z) {
-        all[x][y][z] = (ovX * ovX * x) + (y * ovY) + z;
+        cells[x][y][z] = utils::ThreeDimensionalMapping::threeToOneD(
+            x, y, z, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
       }
     }
   }
-  // Initializing 2D vectors for planes
+  // base cell offsets
+  _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
   for (long x = 0; x < ovX; ++x) {
     for (long y = 0; y < ovY; ++y) {
-      planeXy[x][y] = utils::ThreeDimensionalMapping::threeToOneD(
-          x, y, 0L, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
+      for (long z = 0; z < ovZ; ++z) {
+        for (long z2 = z + 1; z2 < ovZ; ++z2) {
+          emplaceOffset(0, 0, 0, x, y, z, x, y, z2);
+        }
+        for (long y2 = y + 1; y2 < ovZ; ++y2) {
+          for (long z2 = 0; z2 < ovZ; ++z2) {
+            emplaceOffset(0, 0, 0, x, y, z, x, y2, z2);
+          }
+        }
+        for (long x2 = x + 1; x2 < ovX; ++x2) {
+          for (long y2 = 0; y2 < ovY; ++y2) {
+            for (long z2 = 0; z2 < ovZ; ++z2) {
+              emplaceOffset(0, 0, 0, x, y, z, x2, y2, z2);
+            }
+          }
+        }
+      }
     }
   }
-  for (long x = 0; x < ovX; ++x) {
-    for (long z = 0; z < ovZ; ++z) {
-      planeXz[x][z] = utils::ThreeDimensionalMapping::threeToOneD(
-          x, 0L, z, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
+  // 3 planes
+  for (long x = 1; x < ovX; ++x) {
+    for (long y = 1; y < ovY; ++y) {
+      for (long x2 = 1; x2 < ovX; ++x2) {
+        for (long z = 1; z < ovZ; ++z) {
+          for (long y2 = 1; y2 < ovY; ++y2) {
+            for (long z2 = 1; z2 < ovZ; ++z2) {
+              emplaceOffset(x, y, 0, x2, 0, z, 0, y2, z2);
+            }
+          }
+        }
+      }
     }
   }
-  for (long y = 0; y < ovY; ++y) {
-    for (long z = 0; z < ovZ; ++z) {
-      planeXy[y][z] = utils::ThreeDimensionalMapping::threeToOneD(
-          0L, y, z, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
+  // 3 edges
+  for (long x = 1; x < ovX; ++x) {
+    for (long y = 1; y < ovY; ++y) {
+      for (long z = 1; z < ovZ; ++z) {
+        emplaceOffset(x, 0, 0, 0, y, 0, 0, 0, z);
+      }
+    }
+  }
+  // 2 edges, 1 Wildcard
+  // edge x, edge y
+  for (long x = 1; x < ovX; ++x) {
+    for (long y = 1; y < ovY; ++y) {
+      // 2 edges (same cell on one edge counted twice)
+      if (cells[x][0][0] < cells[0][y][0]) {
+        emplaceOffset(x, 0, 0, x, 0, 0, 0, y, 0);
+      } else {
+        emplaceOffset(0, y, 0, 0, y, 0, x, 0, 0);
+      }
+      // 2 edges (2 different cells on one edge)
+      for (long x2 = x + 1; x2 < ovX; ++x2) {
+        emplaceOffset(x, 0, 0, 0, y, 0, x2, 0, 0);
+      }
+      // 2 edges, 1 plane/inner
+      for (long x2 = 1; x2 < ovX; ++x2) {
+        for (long z = 1; z < ovZ; ++z) {
+          emplaceOffset(x, 0, 0, 0, y, 0, x2, 0, z);
+        }
+        for (long y2 = 1; y2 < ovY; ++y2) {
+          emplaceOffset(x, 0, 0, 0, y, 0, x2, y2, 0);
+          // 2 edges, 1 inner
+          for(long z = 1; z < ovZ; ++z) {
+            emplaceOffset(x,0, 0, 0, y, 0, x2, y2, z);
+          }
+        }
+      }
+      for (long y2 = 1; y2 < ovY; ++y2) {
+        for(long z = 1; z < ovZ; ++z) {
+          emplaceOffset(x, 0, 0, 0, y, 0, 0, y2, z);
+        }
+      }
+    }
+  }
+  // 2 edges (2 different cells on one edge)
+  for (long y = 1; y < ovY; ++y) {
+    for (long x = 1; x < ovX; ++x) {
+      for (long y2 = y + 1; y2 < ovY; ++y2) {
+        emplaceOffset(0, y, 0, x, 0, 0, 0, y2, 0);
+      }
     }
   }
 
-  // Initializing 1D vectors for edges
-  for (long x = 0; x < ovX; ++x) {
-    edgeX[x] = utils::ThreeDimensionalMapping::threeToOneD(
-        x, 0L, 0L, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-  }
-  for (long y = 0; y < ovY; ++y) {
-    edgeY[y] = utils::ThreeDimensionalMapping::threeToOneD(
-        0L, y, 0L, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-  }
-  for (long z = 0; z < ovZ; ++z) {
-    edgeZ[z] = utils::ThreeDimensionalMapping::threeToOneD(
-        0L, 0L, z, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-  }
-  std::vector<std::vector<std::vector<long>>> planes = {planeXy, planeXz, planeYz};
-
-  // Initialize offsets with base cell combos
-  std::vector<std::tuple<long, long, long>> offsets = {{0, 0, 0}};
-
-  long totalElements = ovX * ovY * ovZ;
-  for (long a = 0; a < totalElements; ++a) {
-    for (long b = a + 1; b < totalElements; ++b) {
-      offsets.push_back({0, a, b});
+  // edge x, edge z
+  for (long x = 1; x < ovX; ++x) {
+    for (long z = 1; z < ovZ; ++z) {
+      // 2 edges (same cell on one edge counted twice)
+      if (cells[x][0][0] < cells[0][0][z]) {
+        emplaceOffset(x, 0, 0, x, 0, 0, 0, 0, z);
+      } else {
+        emplaceOffset(0, 0, z, 0, 0, z, x, 0, 0);
+      }
+      // 2 edges (2 different cells on one edge)
+      for (long x2 = x + 1; x2 < ovX; ++x2) {
+        emplaceOffset(x, 0, 0, 0, 0, z, x2, 0, 0);
+      }
+      // 2 edges, 1 plane/inner
+      for (long x2 = 1; x2 < ovX; ++x2) {
+        for (long z2 = 1; z2 < ovZ; ++z2) {
+          emplaceOffset(x, 0, 0, 0, 0, z, x2, 0, z2);
+        }
+        for (long y = 1; y < ovY; ++y) {
+          emplaceOffset(x, 0, 0, 0, 0, z, x2, y, 0);
+          // 2 edges, 1 inner
+          for(long z2 = 1; z2 < ovZ; ++z2) {
+            emplaceOffset(x,0, 0, 0, 0, z, x2, y, z2);
+          }
+        }
+      }
+      for (long y = 1; y < ovY; ++y) {
+        for(long z2 = 1; z2 < ovZ; ++z2) {
+          emplaceOffset(x, 0, 0, 0, 0, z, 0, y, z2);
+        }
+      }
     }
   }
-  // Combining edges and planes
-  offsetsTwoEdgesOneWildCard(edgeX, edgeY, planes, all, offsets);
-  offsetsTwoEdgesOneWildCard(edgeX, edgeZ, planes, all, offsets);
-  offsetsTwoEdgesOneWildCard(edgeY, edgeZ, planes, all, offsets);
+  // 2 edges (2 different cells on one edge)
+  for (long z = 1; z < ovY; ++z) {
+    for (long x = 1; x < ovX; ++x) {
+      for (long z2 = z + 1; z2 < ovY; ++z2) {
+        emplaceOffset(0, 0, z, x, 0, 0, 0, 0, z2);
+      }
+    }
+  }
 
-  // Combining an edge with two planes
-  offsets1Edge2Wildcards(edgeX, planeXy, planeXz, planeYz, all, offsets);
-  offsets1Edge2Wildcards(edgeY, planeXy, planeYz, planeXz, all, offsets);
-  offsets1Edge2Wildcards(edgeZ, planeYz, planeXz, planeXy, all, offsets);
+  // edge y, edge z
+  for (long y = 1; y < ovY; ++y) {
+    for (long z = 1; z < ovZ; ++z) {
+      // 2 edges (same cell on one edge counted twice)
+      if (cells[0][y][0] < cells[0][0][z]) {
+        emplaceOffset(0, y, 0, 0, y, 0, 0, 0, z);
+      } else {
+        emplaceOffset(0, 0, z, 0, 0, z, 0, y, 0);
+      }
+      // 2 edges (2 different cells on one edge)
+      for (long y2 = y + 1; y2 < ovX; ++y2) {
+        emplaceOffset(0, y, 0, 0, 0, z, 0, y2, 0);
+      }
+      // 2 edges, 1 plane/inner
+      for (long x = 1; x < ovX; ++x) {
+        for (long z2 = 1; z2 < ovZ; ++z2) {
+          emplaceOffset(0, y, 0, 0, 0, z, x, 0, z2);
+        }
+        for (long y2 = 1; y2 < ovY; ++y2) {
+          emplaceOffset(0, y, 0, 0, 0, z, x, y2, 0);
+          // 2 edges, 1 inner
+          for(long z2 = 1; z2 < ovZ; ++z2) {
+            emplaceOffset(0, y, 0, 0, 0, z, x, y2, z2);
+          }
+        }
+      }
+      for (long y2 = 1; y2 < ovY; ++y2) {
+        for(long z2 = 1; z2 < ovZ; ++z2) {
+          emplaceOffset(0, y, 0, 0, 0, z, 0, y2, z2);
+        }
+      }
+    }
+  }
+  // 2 edges (2 different cells on one edge)
+  for (long z = 1; z < ovY; ++z) {
+    for (long y = 1; y < ovY; ++y) {
+      for (long z2 = z + 1; z2 < ovY; ++z2) {
+        emplaceOffset(0, 0, z, 0, y, 0, 0, 0, z2);
+      }
+    }
+  }
 
-  for (auto const &[offset1, offset2, offset3] : offsets) {
-    _cellOffsets.emplace_back(offset1, offset2, offset3, std::array<double, 3>{1., 1., 1.});
+  // edge x, plane yz
+  for (long x = 1; x < ovX; ++x) {
+    for (long y = 1; y < ovY; ++y) {
+      for (long z = 1; z < ovZ; ++z) {
+        // 1 edge, 1 plane (same cell on one edge counted twice)
+        if (cells[x][0][0] < cells[0][y][z]) {
+          emplaceOffset(x, 0, 0, x, 0, 0, 0, y, z);
+        } else {
+          emplaceOffset(0, y, z, 0, y, z, x, 0, 0);
+        }
+        // 1 edge, 1 plane (2 different cells same edge)
+        for (long x2 = x + 1; x2 < ovX; ++x2) {
+          emplaceOffset(x, 0, 0, x2, 0, 0, 0, y, z);
+        }
+        // 1 edge, 1 plane, 1 plane/inner
+        for (long x2 = 1; x2 < ovX; ++x2) {
+          for (long y2 = 1; y2 < ovY; ++y2) {
+            emplaceOffset(x, 0, 0, 0, y, z, x2, y2, 0);
+            // inner
+            for (long z2 = 1; z2 < ovZ; ++z2) {
+              emplaceOffset(x, 0, 0, 0, y, z, x2, y2, z2);
+            }
+          }
+        }
+        for (long x2 = 1; x2 < ovX; ++x2) {
+          for (long z2 = 1; z2 < ovZ; ++z2) {
+            emplaceOffset(x, 0, 0, 0, y, z, x2, 0, z2);
+          }
+        }
+        // 1 edge 1 plane (2 different cells same plane)
+        for (long y2 = 1; y2 < ovY; ++y2) {
+          for (long z2 = 1; z2 < ovZ; ++z2) {
+            if (cells[0][y][z] < cells[0][y2][z2]) {
+              emplaceOffset(x, 0, 0, 0, y, z, 0, y2, z2);
+            }
+          }
+        }
+      }
+    }
+  }
+  // edge y, plane xz
+  for (long y = 1; y < ovY; ++y) {
+    for (long x = 1; x < ovX; ++x) {
+      for (long z = 1; z < ovZ; ++z) {
+        // 1 edge, 1 plane (same cell on one edge counted twice)
+        if (cells[0][y][0] < cells[x][0][z]) {
+          emplaceOffset(0, y, 0, 0, y, 0, x, 0, z);
+        } else {
+          emplaceOffset(x, 0, z, x, 0, z, 0, y, 0);
+        }
+        // 1 edge, 1 plane (2 different cells same edge)
+        for (long y2 = y + 1; y2 < ovX; ++y2) {
+          emplaceOffset(0, y, 0, 0, y2, 0, x, 0, z);
+        }
+        // 1 edge, 1 plane, 1 plane/inner
+        for (long x2 = 1; x2 < ovX; ++x2) {
+          for (long y2 = 1; y2 < ovY; ++y2) {
+            emplaceOffset(0, y, 0, x, 0, z, x2, y2, 0);
+            // inner
+            for (long z2 = 1; z2 < ovZ; ++z2) {
+              emplaceOffset(0, y, 0, x, 0, z, x2, y2, z2);
+            }
+          }
+        }
+        for (long y2 = 1; y2 < ovY; ++y2) {
+          for (long z2 = 1; z2 < ovZ; ++z2) {
+            emplaceOffset(0, y, 0, x, 0, z, 0, y2, z2);
+          }
+        }
+        // 1 edge 1 plane (2 different cells same plane)
+        for (long x2 = 1; x2 < ovX; ++x2) {
+          for (long z2 = 1; z2 < ovZ; ++z2) {
+            if (cells[x][0][z] < cells[x2][0][z2]) {
+              emplaceOffset(0, y, 0, x, 0, z, x2, 0, z2);
+            }
+          }
+        }
+      }
+    }
+  }
+  // edge z, plane xy
+  for (long z = 1; z < ovZ; ++z) {
+    for (long x = 1; x < ovX; ++x) {
+      for (long y = 1; y < ovY; ++y) {
+        // 1 edge, 1 plane (same cell on one edge counted twice)
+        if (cells[0][0][z] < cells[x][y][0]) {
+          emplaceOffset(0, 0, z, 0, 0, z, x, y, 0);
+        } else {
+          emplaceOffset(x, y, 0, x, y, 0, 0, 0, z);
+        }
+        // 1 edge, 1 plane (2 different cells same edge)
+        for (long z2 = z + 1; z2 < ovX; ++z2) {
+          emplaceOffset(0, 0, z, 0, 0, z2, x, y, 0);
+        }
+        // 1 edge, 1 plane, 1 plane/inner
+        for (long x2 = 1; x2 < ovX; ++x2) {
+          for (long y2 = 1; y2 < ovY; ++y2) {
+            // 1 edge 1 plane (2 different cells same plane)
+            if (cells[x][y][0] < cells[x2][y2][0]) {
+              emplaceOffset(0, 0, z, x, y, 0, x2, y2, 0);
+            }
+            // inner
+            for (long z2 = 1; z2 < ovZ; ++z2) {
+              emplaceOffset(0, 0, z, x, y, 0, x2, y2, z2);
+            }
+          }
+        }
+        for (long y2 = 1; y2 < ovY; ++y2) {
+          for (long z2 = 1; z2 < ovZ; ++z2) {
+            emplaceOffset(0, 0, z, x, y, 0, 0, y2, z2);
+          }
+        }
+        for (long x2 = 1; x2 < ovX; ++x2) {
+          for (long z2 = 1; z2 < ovZ; ++z2) {
+            emplaceOffset(0, 0, z, x, y, 0, x2, 0, z2);
+          }
+        }
+      }
+    }
   }
 
   accumulatedDuration += std::chrono::high_resolution_clock::now() - startTime;
 
-  // If needed, you can print the accumulated time after each call
-  std::cout << "Accumulated execution time in computeOffsets: " << accumulatedDuration.count() << " seconds. Size : " << _cellOffsets.size() << std::endl;
-
+    // If needed, you can print the accumulated time after each call
+    std::cout << "Accumulated execution time in computeOffsets: " << accumulatedDuration.count()
+              << " seconds. Size : " << _cellOffsets.size() << std::endl;
 
 }
-
 }  // namespace autopas
