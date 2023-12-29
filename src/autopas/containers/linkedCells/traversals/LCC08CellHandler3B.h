@@ -360,24 +360,6 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   auto startTime = std::chrono::high_resolution_clock::now();
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
   std::vector<std::vector<std::vector<long>>> cells(ovX, std::vector<std::vector<long>>(ovY, std::vector<long>(ovZ)));
-/*  auto is_valid_distance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-    auto dist = std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
-                                      std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
-                                      std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
-    return utils::ArrayMath::dot(dist, dist) <= interactionLengthSquare;
-  };
-  auto emplaceOffset = [&](long x1, long y1, long z1, long x2, long y2, long z2, long x3, long y3, long z3) {
-    if (is_valid_distance(x1, y1, z1, x2, y2, z2)) {
-      if (is_valid_distance(x2, y2, z2, x3, y3, z3)) {
-        if (is_valid_distance(x1, y1, z1, x3, y3, z3)) {
-          std::array<double, 3> sortingDirection = {(x1 + x2) * this->_cellLength[0], (y1 + y2) * this->_cellLength[1],
-                                                    (z1 + z2) * this->_cellLength[2]};
-          _cellOffsets.emplace_back(cells[x1][y1][z1], cells[x2][y2][z2], cells[x3][y3][z3],
-                                    utils::ArrayMath::normalize(sortingDirection));
-        }
-      }
-    }
-  };*/
   auto emplaceOffset = [&](long x1, long y1, long z1, long x2, long y2, long z2, long x3, long y3, long z3) {
     auto is_valid_distance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
       auto dist = std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
@@ -404,7 +386,6 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
       for (long z = 0; z < ovZ; ++z) {
         cells[x][y][z] = utils::ThreeDimensionalMapping::threeToOneD(
             x, y, z, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
-        std::cout << cells[x][y][z] << ",  ";
       }
     }
   }
@@ -700,18 +681,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
       }
     }
   }
-  std::cout << std::endl;
-  for (auto &[o1, o2, o3, r] : _cellOffsets) {
-    std::vector<long> vector {o1, o2, o3};
-    std::sort(vector.begin(), vector.end());
-    std::cout << "[" << vector[0] << ", " << vector[1] << ", " << vector[2] << "], ";
-  }
-  std::cout << std::endl;
 
   accumulatedDuration += std::chrono::high_resolution_clock::now() - startTime;
-
-    // If needed, you can print the accumulated time after each call
-    std::cout << "Accumulated execution time in computeOffsets: " << accumulatedDuration.count()
+  std::cout << "Accumulated execution time in computeOffsets: " << accumulatedDuration.count()
               << " seconds. Size : " << _cellOffsets.size() << std::endl;
 
 }
