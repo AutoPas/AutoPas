@@ -139,23 +139,23 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   // Start the timer
   auto startTime = std::chrono::high_resolution_clock::now();
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
+  const auto cellLength1 = _cellLength[0];
+  const auto cellLength2 = _cellLength[1];
+  const auto cellLength3 = _cellLength[2];
   std::vector<std::vector<std::vector<long>>> cells(ovX, std::vector<std::vector<long>>(ovY, std::vector<long>(ovZ)));
-  auto emplaceOffset = [&](long x1, long y1, long z1, long x2, long y2, long z2, long x3, long y3, long z3) {
-    auto is_valid_distance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
-      auto dist = std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * this->_cellLength[0],
-                                        std::max(0l, (std::abs(y1 - y2) - 1l)) * this->_cellLength[1],
-                                        std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
-      return utils::ArrayMath::dot(dist, dist) <= interactionLengthSquare;
-    };
+  auto is_valid_distance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
+    auto dist = std::array<double, 3>{std::max(0l, (std::abs(x1 - x2) - 1l)) * cellLength1,
+                                      std::max(0l, (std::abs(y1 - y2) - 1l)) * cellLength2,
+                                      std::max(0l, (std::abs(z1 - z2) - 1l)) * cellLength3};
+    return utils::ArrayMath::dot(dist, dist) <= interactionLengthSquare;
+  };
 
-    if (is_valid_distance(x1, y1, z1, x2, y2, z2)) {
-      if (is_valid_distance(x2, y2, z2, x3, y3, z3)) {
-        if (is_valid_distance(x1, y1, z1, x3, y3, z3)) {
-          std::array<double, 3> sortingDirection = {(x1 + x2) * this->_cellLength[0], (y1 + y2) * this->_cellLength[1],
-                                                    (z1 + z2) * this->_cellLength[2]};
-          _cellOffsets.emplace_back(cells[x1][y1][z1], cells[x2][y2][z2], cells[x3][y3][z3],
-                                    utils::ArrayMath::normalize(sortingDirection));
-        }
+  auto emplaceOffset = [&](long x1, long y1, long z1, long x2, long y2, long z2, long x3, long y3, long z3) {
+    if (is_valid_distance(x2, y2, z2, x3, y3, z3)) {
+      if (is_valid_distance(x1, y1, z1, x3, y3, z3)) {
+        std::array<double, 3> sortingDirection = {(x1 + x2) * cellLength1, (y1 + y2) * cellLength2,(z1 + z2) * cellLength3};
+        _cellOffsets.emplace_back(cells[x1][y1][z1], cells[x2][y2][z2], cells[x3][y3][z3],
+                                  utils::ArrayMath::normalize(sortingDirection));
       }
     }
   };
@@ -174,6 +174,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   for (long x = 0; x < ovX; ++x) {
     for (long y = 0; y < ovY; ++y) {
       for (long z = 0; z < ovZ; ++z) {
+        if (!is_valid_distance(0, 0, 0, x, y, z)) {
+          continue;
+        }
         for (long z2 = z + 1; z2 < ovZ; ++z2) {
           emplaceOffset(0, 0, 0, x, y, z, x, y, z2);
         }
@@ -197,6 +200,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     for (long y = 1; y < ovY; ++y) {
       for (long x2 = 1; x2 < ovX; ++x2) {
         for (long z = 1; z < ovZ; ++z) {
+          if (!is_valid_distance(x, y, 0, x2, 0, z)) {
+            continue;
+          }
           for (long y2 = 1; y2 < ovY; ++y2) {
             for (long z2 = 1; z2 < ovZ; ++z2) {
               emplaceOffset(x, y, 0, x2, 0, z, 0, y2, z2);
@@ -218,6 +224,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   // edge x, edge y
   for (long x = 1; x < ovX; ++x) {
     for (long y = 1; y < ovY; ++y) {
+      if (!is_valid_distance(x, 0, 0, 0, y, 0)) {
+        continue;
+      }
       // 2 edges (same cell on one edge counted twice)
       if (cells[x][0][0] < cells[0][y][0]) {
         emplaceOffset(x, 0, 0, x, 0, 0, 0, y, 0);
@@ -260,6 +269,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   // edge x, edge z
   for (long x = 1; x < ovX; ++x) {
     for (long z = 1; z < ovZ; ++z) {
+      if (!is_valid_distance(x, 0, 0, 0, 0, z)) {
+        continue;
+      }
       // 2 edges (same cell on one edge counted twice)
       if (cells[x][0][0] < cells[0][0][z]) {
         emplaceOffset(x, 0, 0, x, 0, 0, 0, 0, z);
@@ -302,6 +314,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   // edge y, edge z
   for (long y = 1; y < ovY; ++y) {
     for (long z = 1; z < ovZ; ++z) {
+      if (!is_valid_distance(0, y, 0, 0, 0, z)) {
+        continue;
+      }
       // 2 edges (same cell on one edge counted twice)
       if (cells[0][y][0] < cells[0][0][z]) {
         emplaceOffset(0, y, 0, 0, y, 0, 0, 0, z);
@@ -345,6 +360,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   for (long x = 1; x < ovX; ++x) {
     for (long y = 1; y < ovY; ++y) {
       for (long z = 1; z < ovZ; ++z) {
+        if (!is_valid_distance(x, 0, 0, 0, y, z)) {
+          continue;
+        }
         // 1 edge, 1 plane (same cell on one edge counted twice)
         if (cells[x][0][0] < cells[0][y][z]) {
           emplaceOffset(x, 0, 0, x, 0, 0, 0, y, z);
@@ -385,6 +403,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   for (long y = 1; y < ovY; ++y) {
     for (long x = 1; x < ovX; ++x) {
       for (long z = 1; z < ovZ; ++z) {
+        if (!is_valid_distance(0, y, 0, x, 0, z)) {
+          continue;
+        }
         // 1 edge, 1 plane (same cell on one edge counted twice)
         if (cells[0][y][0] < cells[x][0][z]) {
           emplaceOffset(0, y, 0, 0, y, 0, x, 0, z);
@@ -425,6 +446,9 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   for (long z = 1; z < ovZ; ++z) {
     for (long x = 1; x < ovX; ++x) {
       for (long y = 1; y < ovY; ++y) {
+        if (!is_valid_distance(0, 0, z, x, y, 0)) {
+          continue;
+        }
         // 1 edge, 1 plane (same cell on one edge counted twice)
         if (cells[0][0][z] < cells[x][y][0]) {
           emplaceOffset(0, 0, z, 0, 0, z, x, y, 0);
