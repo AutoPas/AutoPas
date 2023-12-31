@@ -309,6 +309,10 @@ TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(Trave
       return std::make_unique<LCC08Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
           info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
     }
+    case TraversalOption::lc_c08_3b: {
+      return std::make_unique<LCC08Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
+          info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
+    }
     case TraversalOption::lc_c04_3b: {
         return std::make_unique<LCC04Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
           info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);

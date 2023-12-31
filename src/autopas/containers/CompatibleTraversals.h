@@ -62,6 +62,7 @@ namespace autopas::compatibleTraversals {
   static const std::set<TraversalOption> s{
       TraversalOption::lc_c01_3b,
       TraversalOption::lc_c08_3b,
+      TraversalOption::lc_c08_3b_opt,
       TraversalOption::lc_c04_3b,
       TraversalOption::lc_sliced_3b,
       TraversalOption::lc_sliced_c02_3b};

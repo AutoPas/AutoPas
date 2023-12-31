@@ -76,6 +76,7 @@ class TraversalOption : public Option<TraversalOption> {
      * blocks. High degree of parallelism and good load balancing due to fine granularity.
      */
     lc_c08_3b,
+    lc_c08_3b_opt,
     /**
      * LCC18Traversal : More compact form of LCC01Traversal supporting Newton3 by only accessing forward neighbors.
      */
@@ -266,6 +267,7 @@ class TraversalOption : public Option<TraversalOption> {
       Value::ds_sequential_3b,
       Value::lc_c01_3b,
       Value::lc_c08_3b,
+      Value::lc_c08_3b_opt,
       Value::lc_c04_3b
       //Value::lc_sliced_3b
   }; }
@@ -321,6 +323,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::lc_c04_combined_SoA, "lc_c04_combined_SoA"},
         {TraversalOption::lc_c08, "lc_c08"},
         {TraversalOption::lc_c08_3b, "lc_c08_3b"},
+        {TraversalOption::lc_c08_3b_opt, "lc_c08_3b_opt"},
         {TraversalOption::lc_c18, "lc_c18"},
 
         // VerletClusterLists Traversals:
