@@ -87,6 +87,22 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     traversal->endTraversal();
   }
 
+  void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
+    if (verletTraversalInterface) {
+      verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
+                                                         _soaNeighborLists);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "trying to use a traversal of wrong type in VerletLists::computeInteractions");
+    }
+
+    traversal->initTraversal();
+    traversal->traverseParticleTriplets();
+    traversal->endTraversal();
+  }
+
   /**
    * get the actual neighbour list
    * @return the neighbour list
@@ -116,9 +132,15 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param traversal
    */
   void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletLists has not "
-        "been implemented yet.");
+    this->_verletBuiltNewton3 = traversal->getUseNewton3();
+    this->updateVerletListsAoS(traversal->getUseNewton3());
+    // the neighbor list is now valid
+    this->_neighborListIsValid.store(true, std::memory_order_relaxed);
+
+    if (not _soaListIsValid and traversal->getDataLayout() == DataLayoutOption::soa) {
+      // only do this if we need it, i.e., if we are using soa!
+      generateSoAListFromAoSVerletLists();
+    }
   }
 
  protected:

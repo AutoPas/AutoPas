@@ -133,6 +133,11 @@ class TraversalOption : public Option<TraversalOption> {
      * Does not support Newton3.
      */
     vl_list_iteration,
+    /**
+     * VLListIterationTraversal3b : Distribute processing of neighbor lists dynamically to threads.
+     * Does not support Newton3.
+     */
+    vl_list_iteration_3b,
 
     // VerletListCells Traversals:
     /**
@@ -242,7 +247,7 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for 3-body interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b, Value::lc_c01_3b}; }
+  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b, Value::lc_c01_3b, Value::vl_list_iteration_3b}; }
 
   /**
    * Set of all pairwise traversals without discouraged options.
@@ -303,6 +308,7 @@ class TraversalOption : public Option<TraversalOption> {
 
         // VerletList Traversals:
         {TraversalOption::vl_list_iteration, "vl_list_iteration"},
+        {TraversalOption::vl_list_iteration_3b, "vl_list_iteration_3b"},
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},

@@ -36,6 +36,7 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal3B.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
@@ -300,6 +301,11 @@ TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(Trave
     case TraversalOption::lc_c01_3b: {
       return std::make_unique<LCC01Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
           info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
+    }
+    // VerletLists
+    case TraversalOption::vl_list_iteration_3b: {
+      return std::make_unique<VLListIterationTraversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
+        &triwiseFunctor);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known 3-body traversal type!",
