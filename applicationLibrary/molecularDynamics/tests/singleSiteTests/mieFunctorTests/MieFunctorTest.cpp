@@ -1,7 +1,8 @@
 //
 // Created by kay on 10.12.23.
 //
-
+#if defined(__AVX__)
+#include "autopas/AutoPasImpl.h"
 #include "MieFunctorTest.h"
 #include <gtest/gtest.h>
 
@@ -878,3 +879,4 @@ TEST_F(MieFunctorTest, MieFunctorTest_AoSVsSoAVerlet) {
   // N3L optimization enabled, global calculation enabled, apply shift enabled.
   testSoAVerletAgainstAoS<true, true, true>(mixedOwnershipMolecules, PPL, cutoff);
 }
+#endif
