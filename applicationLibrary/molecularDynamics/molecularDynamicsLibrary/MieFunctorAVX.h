@@ -1,9 +1,3 @@
-/**
-  * @file MieFunctor
-  *
-  * @date 15 Sep 2023
-  * @author K. Cole
-  */
 #pragma once
 #ifndef __AVX__
 #pragma message "Requested to compile MieFunctorAVX but AVX is not available!"
@@ -282,8 +276,8 @@
         double invdr2 = 1. / dr2;
         double fract = sigmaSquared * invdr2;
 
-        double Mie_m = 1;
-        double Mie_n = 1;
+        double Mie_m;
+        double Mie_n;
 
         if constexpr (mode==0) {
 
@@ -300,21 +294,30 @@
         }
 
         else if constexpr (mode==1) {
-          if(m_exp&1) {
-            Mie_m = sqrt(fract);
-          }
-          if(n_exp&1) {
-            Mie_n = sqrt(fract);
-          }
 
-          m_exp>>=1;
+          // check if exponents are odd
+          Mie_n = n_exp & 1 ? sqrt(fract) : 1;
+          Mie_m = m_exp & 1 ? sqrt(fract) : 1;
+
+          //last bit is not needed
           n_exp>>=1;
-          while(m_exp || n_exp) {
+          m_exp>>=1;
+
+          //iterate through bits of exponent
+          while(n_exp || m_exp) {
+
+            //if current bit in m is odd, multiply
             if(m_exp&1)
                Mie_m*=fract;
+
+            //if current bit in n is odd, multiply
             if(n_exp&1)
                Mie_n*=fract;
+
+            //square for every bit in exponent
             fract*=fract;
+
+            //shift exponents, to process next bit
             m_exp>>=1;
             n_exp>>=1;
           }
@@ -1330,7 +1333,7 @@
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS, _cnepsilonAoS, _cmepsilonAoS, _sigmaSquaredAoS, _shift6AoS = 0;
     uint16_t _nexpAoS,_mexpAoS = 0;
-    int doubleAdditionChain;
+    uint16_t doubleAdditionChain;
     uint16_t chain_len;
 
     ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;

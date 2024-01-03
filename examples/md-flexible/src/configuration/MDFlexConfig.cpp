@@ -292,9 +292,17 @@ std::string MDFlexConfig::to_string() const {
     case FunctorOption::mie_SVE: {
      os << "Mie SVE intrinsics" << endl;
     }
-    case FunctorOption::miefixed_AVX: {
+    case FunctorOption::mie_AVX_FIXED: {
      os << "Mie AVX fixed intrinsics" << endl;
      break;
+    }
+    case FunctorOption::mie_SVE_FIXED: {
+      os << "Mie SVE fixed intrinsics" << endl;
+      break;
+    }
+    case FunctorOption::mie_AUTOVEC_FIXED: {
+      os << "Mie fixed intrinsics" << endl;
+      break;
     }
   }
   printOption(newton3Options);

@@ -247,20 +247,50 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.functorOption)::getoptChar: {
-        if (strArg.find("avx") != string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
-        } else if (strArg.find("sve") != string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
-        } else if (strArg.find("glob") != string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-        } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
-        } else {
-          cerr << "Unknown functor: " << strArg << endl;
-          cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'"
-               << endl;
-          displayHelp = true;
+        if (strArg.find("mie") != string::npos) {
+          if (strArg.find("avx") != string::npos) {
+            if (strArg.find("fixed") != string::npos) {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_AVX_FIXED;
+            }
+            else {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_AVX;
+            }
+          }
+          else if (strArg.find("sve") != string::npos) {
+            if (strArg.find("fixed") != string::npos) {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_SVE_FIXED;
+            }
+            else {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_SVE;
+            }
+          }
+          else if (strArg.find("avx") != string::npos) {
+            if (strArg.find("fixed") != string::npos) {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_AUTOVEC_FIXED;
+            }
+            else {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie;
+            }
+          }
         }
+
+        else {
+          if (strArg.find("avx") != string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
+          } else if (strArg.find("sve") != string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
+          } else if (strArg.find("glob") != string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
+          } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+          } else {
+            cerr << "Unknown functor: " << strArg << endl;
+            cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'" "Mie"
+                 << endl;
+            displayHelp = true;
+          }
+        }
+
         break;
       }
       case decltype(config.dontMeasureFlops)::getoptChar: {

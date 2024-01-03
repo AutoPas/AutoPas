@@ -188,7 +188,6 @@ void MieFunctorTest::testSuiteAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib:
   testAoSForceCalculation<true, true, true>(2,1,molA, molB, PPL, cutoff);
 }
 
-
 template <bool newton3, bool calculateGlobals, bool applyShift>
 void MieFunctorTest::ljSanityCheck(mdLib::MoleculeLJ molA, mdLib::MoleculeLJ molB,
                                                    ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {

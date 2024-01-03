@@ -215,16 +215,46 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         auto strArg = node[key].as<std::string>();
         transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-        if (strArg.find("avx") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
-        } else if (strArg.find("sve") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
-        } else if (strArg.find("glob") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-        } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
-          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
-        } else {
-          throw std::runtime_error("Unrecognized functor!");
+        if (strArg.find("mie") != std::string::npos) {
+          if (strArg.find("avx") != std::string::npos) {
+            if (strArg.find("fixed") != std::string::npos) {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_AVX_FIXED;
+            }
+            else {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_AVX;
+            }
+          }
+          else if (strArg.find("sve") != std::string::npos) {
+            if (strArg.find("fixed") != std::string::npos) {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_SVE_FIXED;
+            }
+            else {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_SVE;
+            }
+          }
+          else {
+            if (strArg.find("fixed") != std::string::npos) {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie_AUTOVEC_FIXED;
+            }
+            else {
+              config.functorOption.value = MDFlexConfig::FunctorOption::mie;
+            }
+          }
+        }
+
+        else
+        {
+          if (strArg.find("avx") != std::string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_AVX;
+          } else if (strArg.find("sve") != std::string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
+          } else if (strArg.find("glob") != std::string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
+          } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
+            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+          } else {
+            throw std::runtime_error("Unrecognized functor!");
+          }
         }
       } else if (key == config.iterations.name) {
         expected = "Unsigned Integer > 0";

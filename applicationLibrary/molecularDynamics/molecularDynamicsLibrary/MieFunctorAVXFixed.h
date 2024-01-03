@@ -1,11 +1,11 @@
-#ifndef AUTOPAS_MieFunctorFixedExponentsAVX2_H
-#define AUTOPAS_MieFunctorFixedExponentsAVX2_H
+#ifndef AUTOPAS_MieFunctorAVXFixed2_H
+#define AUTOPAS_MieFunctorAVXFixed2_H
 
-#endif  // AUTOPAS_MieFunctorFixedExponentsAVX2_H
+#endif  // AUTOPAS_MieFunctorAVXFixed2_H
 
 #pragma once
 #ifndef __AVX__
-#pragma message "Requested to compile MieFunctorFixedExponentsAVX but AVX is not available!"
+#pragma message "Requested to compile MieFunctorAVXFixed but AVX is not available!"
 #else
 #include <immintrin.h>
 #endif
@@ -42,9 +42,9 @@
     template <class Particle, bool applyShift = false, bool useMixing = false,
               autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
               bool relevantForTuning = true>
-    class MieFunctorFixedExponentsAVX
+    class MieFunctorAVXFixed
         : public autopas::Functor<
-              Particle, MieFunctorFixedExponentsAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+              Particle, MieFunctorAVXFixed<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
       using SoAArraysType = typename Particle::SoAArraysType;
 
      private:
@@ -88,7 +88,7 @@
       /**
        * Deleted default constructor
        */
-      MieFunctorFixedExponentsAVX() = delete;
+      MieFunctorAVXFixed() = delete;
 
       /**
        * Sets the particle properties constants for this functor.
@@ -141,14 +141,13 @@
        * @param m_exp
        * @note param dummy unused, only there to make the signature different from the public constructor.
        */
-      explicit MieFunctorFixedExponentsAVX(double cutoff,  void * /*dummy*/)
+      explicit MieFunctorAVXFixed(double cutoff,  void * /*dummy*/)
     #ifdef __AVX__
           : autopas::Functor<
-                Particle, MieFunctorFixedExponentsAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+                Particle, MieFunctorAVXFixed<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
                 cutoff),
             _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
             _cutoffSquaredAoS(cutoff * cutoff),
-
 
             _potentialEnergySum{0.},
             _virialSum{0., 0., 0.},
@@ -163,7 +162,7 @@
       }
     #else
           : autopas::Functor<
-                Particle, MieFunctorFixedExponentsAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+                Particle, MieFunctorAVXFixed<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
                 cutoff) {
         autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
       }
@@ -179,7 +178,7 @@
        * @param n_exp
        * @param m_exp
        */
-      explicit MieFunctorFixedExponentsAVX(double cutoff) : MieFunctorFixedExponentsAVX(cutoff,  nullptr) {
+      explicit MieFunctorAVXFixed(double cutoff) : MieFunctorAVXFixed(cutoff,  nullptr) {
         static_assert(not useMixing,
                       "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                       "mixing to false.");
@@ -193,9 +192,9 @@
        * @param m_exp
        * @param particlePropertiesLibrary
        */
-      explicit MieFunctorFixedExponentsAVX(double cutoff,
+      explicit MieFunctorAVXFixed(double cutoff,
                              ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-          : MieFunctorFixedExponentsAVX(cutoff, nullptr) {
+          : MieFunctorAVXFixed(cutoff, nullptr) {
         static_assert(useMixing,
                       "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                       "or set mixing to true.");

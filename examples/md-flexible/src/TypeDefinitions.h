@@ -42,8 +42,14 @@
 #include "molecularDynamicsLibrary/MieFunctorSVE.h"
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_MIE_FIXED)
-#include "molecularDynamicsLibrary/MieFunctorAVXFixedExponents.h"
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX_FIXED)
+#include "molecularDynamicsLibrary/MieFunctorAVXFixed.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE_FIXED)
+#include "molecularDynamicsLibrary/MieFunctorSVEFixed.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC_FIXED)
+#include "molecularDynamicsLibrary/MieFunctorFixed.h"
 #endif
 
 #endif
@@ -150,19 +156,6 @@ using MieFunctorTypeAutovec = mdLib::MieFunctor<ParticleType, true, true>;
 using MieFunctorTypeAVX = mdLib::MieFunctorAVX<ParticleType, true, true>;
 #endif
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_MIE_FIXED)
-/**
- * Type of MieFunctorTypeAVX used in md-flexible.
- * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
- */
-#if MD_FLEXIBLE_MODE == MULTISITE
-#error "No Multi-Site Mie Functor support!"
-#else
-using MieFunctorFixedTypeAVX = mdLib::MieFunctorFixedExponentsAVX<ParticleType, true, true>;
-#endif
-#endif
 #if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE)
 /**
  * Type of MieFunctorTypeAVX used in md-flexible.
@@ -174,6 +167,41 @@ using MieFunctorFixedTypeAVX = mdLib::MieFunctorFixedExponentsAVX<ParticleType, 
 #error "No Multi-Site Mie Functor support!"
 #else
 using MieFunctorTypeSVE = mdLib::mieFunctorSVE<ParticleType, true, true>;
+#endif
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX_FIXED)
+/**
+ * Type of MieFunctorFixedTypeAVX used in md-flexible.
+ * This type is for a fixed version of the Mie Functor with AVX support.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "No Multi-Site Mie Functor support for fixed AVX!"
+#else
+using MieFunctorFixedTypeAVX = mdLib::MieFunctorAVXFixed<ParticleType, true, true>;
+#endif
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE_FIXED)
+/**
+ * Type of MieFunctorFixedTypeSVE used in md-flexible.
+ * This type is for a fixed version of the Mie Functor with SVE support.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "No Multi-Site Mie Functor support for fixed SVE!"
+#else
+using MieFunctorFixedTypeSVE = mdLib::MieFunctorSVEFixed<ParticleType, true, true>;
+#endif
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC_FIXED)
+/**
+ * Type of MieFunctorFixedTypeAutovec used in md-flexible.
+ * This type is for a fixed version of the Mie Functor with Autovec support.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "No Multi-Site Mie Functor support for fixed Autovec!"
+#else
+using MieFunctorFixedTypeAutovec = mdLib::MieFunctorFixed<ParticleType, true, true>;
 #endif
 #endif
 
@@ -210,8 +238,7 @@ using MieFunctorTypeAbstract = mdLib::MieFunctor<ParticleType, true, true>;
 using MieFunctorTypeAbstract = mdLib::MieFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_MIE_SVE
 using MieFunctorTypeAbstract = mdLib::MieFunctorSVE<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_MIE_FIXED
-using MieFunctorFixedTypeAbstract = mdLib::MieFunctorFixedExponentsAVX<ParticleType, true, true>;
 #endif
+
 
 #endif

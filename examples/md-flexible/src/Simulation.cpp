@@ -33,11 +33,17 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorT
 #if defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX) && defined(__AVX__)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorTypeAVX *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_MIE_FIXED) && defined(__AVX__)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorFixedTypeAVX *);
-#endif
 #if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorTypeSVE *);
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX_FIXED) && defined(__AVX__)
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorFixedTypeAVX *);
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE_FIXED) && defined(__ARM_FEATURE_SVE)
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorFixedTypeSVE *);
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC_FIXED)
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(MieFunctorFixedTypeAutovec *);
 #endif
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
@@ -667,7 +673,7 @@ T Simulation::applyWithChosenFunctor(F f) {
 
   case MDFlexConfig::FunctorOption::mie: {
 #if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC) && defined(__AVX__)
-    return f(MieFunctorTypeAutovec{cutoff, 100, 20, particlePropertiesLibrary});
+    return f(MieFunctorTypeAutovec{cutoff, 12, 6, particlePropertiesLibrary});
 #else
     throw std::runtime_error(
         "MD-Flexible was not compiled with support for MieFunctor AVX. Activate it via `cmake "
@@ -683,16 +689,7 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
 #endif
     }
-    case MDFlexConfig::FunctorOption::miefixed_AVX: {
-#if defined(MD_FLEXIBLE_FUNCTOR_MIE_FIXED) && defined(__AVX__)
-      return f(MieFunctorFixedTypeAVX{cutoff, particlePropertiesLibrary});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for MieFunctor AVX. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
-#endif
 
-    }
     case MDFlexConfig::FunctorOption::mie_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE) && defined(__ARM_FEATURE_SVE)
       return f(MieFunctorTypeSVE{cutoff, 12,6, particlePropertiesLibrary});
@@ -702,6 +699,35 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
 
+    }
+    case MDFlexConfig::FunctorOption::mie_AVX_FIXED: {
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AVX_FIXED) && defined(__AVX__)
+      return f(MieFunctorFixedTypeAVX{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for MieFunctor AVX FIXED. Activate it via `cmake "
+          "-DMD_FLEXIBLE_MIE_AVX_FIXED=ON`.");
+#endif
+    }
+
+    case MDFlexConfig::FunctorOption::mie_SVE_FIXED: {
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE_FIXED) && defined(__ARM_FEATURE_SVE)
+      return f(MieFunctorFixedTypeSVE{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for MieFunctor SVE FIXED. Activate it via `cmake "
+          "-DMD_FLEXIBLE_MIE_SVE_FIXED=ON`.");
+#endif
+    }
+
+    case MDFlexConfig::FunctorOption::mie_AUTOVEC_FIXED: {
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC_FIXED)
+      return f(MieFunctorFixedTypeAutovec{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for MieFunctor AUTOVEC FIXED. Activate it via `cmake "
+          "-DMD_FLEXIBLE_MIE_AUTOVEC_FIXED=ON`.");
+#endif
     }
   }
   throw std::runtime_error("Unknown functor choice" +

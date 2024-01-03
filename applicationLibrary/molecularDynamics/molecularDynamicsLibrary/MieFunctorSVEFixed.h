@@ -1,8 +1,7 @@
-
 #pragma once
 
 #ifndef __ARM_FEATURE_SVE
-#pragma message "Requested to compile mieFunctorSVE but SVE is not available!"
+#pragma message "Requested to compile MieFunctorSVEFixed but SVE is not available!"
 #else
 #include <arm_sve.h>
 #endif
@@ -37,16 +36,16 @@
   template <class Particle, bool applyShift = false, bool useMixing = false,
             autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
             bool relevantForTuning = true>
-  class mieFunctorSVE
+  class MieFunctorSVEFixed
       : public autopas::Functor<
-            Particle, mieFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+            Particle, MieFunctorSVEFixed<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
     using SoAArraysType = typename Particle::SoAArraysType;
 
    public:
     /**
    * Deleted default constructor
      */
-    mieFunctorSVE() = delete;
+    MieFunctorSVEFixed() = delete;
 
    private:
     /**
@@ -54,15 +53,13 @@
    * @param cutoff
    * @note param dummy unused, only there to make the signature different from the public constructor.
      */
-    explicit mieFunctorSVE(double cutoff, uint16_t n_exp, uint16_t m_exp, void * /*dummy*/)
+    explicit MieFunctorSVEFixed(double cutoff, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
         : autopas::Functor<
-              Particle, mieFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+              Particle, MieFunctorSVEFixed<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
               cutoff),
           _cutoffSquared{cutoff * cutoff},
           _cutoffSquaredAoS(cutoff * cutoff),
-          _nexpAoS(n_exp),
-          _mexpAoS(m_exp),
           _potentialEnergySum{0.},
           _virialSum{0., 0., 0.},
           _aosThreadData(),
@@ -73,8 +70,8 @@
     }
 #else
         : autopas::Functor<
-              Particle, mieFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-              cutoff,  n_exp,  m_exp) {
+              Particle, MieFunctorSVEFixed<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+              cutoff) {
       autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
     }
 #endif
@@ -87,7 +84,7 @@
    *
    * @param cutoff
      */
-    explicit mieFunctorSVE(double cutoff,uint16_t n_exp, uint16_t m_exp) : mieFunctorSVE(cutoff,  n_exp,  m_exp, nullptr) {
+    explicit MieFunctorSVEFixed(double cutoff) : MieFunctorSVEFixed(cutoff, nullptr) {
       static_assert(not useMixing,
                     "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                     "mixing to false.");
@@ -99,8 +96,8 @@
    * @param cutoff
    * @param particlePropertiesLibrary
      */
-    explicit mieFunctorSVE(double cutoff, uint16_t n_exp, uint16_t m_exp, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-        : mieFunctorSVE(cutoff,  n_exp,  m_exp, nullptr) {
+    explicit MieFunctorSVEFixed(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+        : MieFunctorSVEFixed(cutoff,  nullptr) {
       static_assert(useMixing,
                     "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                     "or set mixing to true.");
@@ -1060,7 +1057,9 @@
     const uint8_t mode = 0;
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS{0.}, _cnepsilonAoS{0.}, _cmepsilonAoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
-    const uint16_t _nexpAoS,_mexpAoS = 0;
+
+    static constexpr uint16_t _nexpAoS = 12;
+    static constexpr uint16_t _mexpAoS = 6;
 
     ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
