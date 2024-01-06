@@ -1,7 +1,7 @@
 //
 // Created by kay on 19.10.23.
 //
-
+#ifdef __AVX__
 // a class for testing
 #include <iostream>
 #include <utility>
@@ -9,8 +9,6 @@
 #include <vector>
 #include <map>
 
-#ifndef AUTOPAS_POWERFUNCTIONS_H
-#define AUTOPAS_POWERFUNCTIONS_H
 struct AdditionChain{
   std::vector<unsigned> additionChain;
 };
@@ -183,5 +181,4 @@ int main(){
     std::cout << a << "  " << b << std::endl;
 
 }
-
-#endif  // AUTOPAS_POWERFUNCTIONS_H
+#endif
