@@ -672,7 +672,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
 
   case MDFlexConfig::FunctorOption::mie: {
-#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC) && defined(__AVX__)
+#if defined(MD_FLEXIBLE_FUNCTOR_MIE_AUTOVEC)
     return f(MieFunctorTypeAutovec{cutoff, 12, 6, particlePropertiesLibrary});
 #else
     throw std::runtime_error(
