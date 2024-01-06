@@ -8,13 +8,11 @@ copy_modify_and_rename(){
   local new_string_in_filename="$4"
   local old_string="$5"
   local new_string="$6"
-  
-  # remove all old files from directory
-  rm "$destination_directory"/*.yaml
-  
+
+
   # Create the destination directory if it doesn't exist
   mkdir -p "$destination_directory"
-	
+  rm "$destination_directory"/*
 # Loop through each file in the source directory
   for file in "$source_directory"/*
   do
@@ -38,10 +36,13 @@ copy_modify_and_rename(){
 }
 
 
-copy_modify_and_rename "ljsve" "lj" "ljsve" "lj" "Lennard-Jones SVE" "Lennard-Jones"
-copy_modify_and_rename "ljsve" "miesve" "ljsve" "miesve" "Lennard-Jones SVE" "Mie SVE"
-copy_modify_and_rename "ljsve" "mie" "ljsve" "mie" "Lennard-Jones SVE" "Mie"
-copy_modify_and_rename "ljsve" "miesvefixed" "ljsve" "miesvefixed" "Lennard-Jones SVE" "Mie SVE fixed"
-copy_modify_and_rename "ljsve" "miefixed" "ljsve" "miefixed" "Lennard-Jones SVE" "Mie fixed"
 
+copy_modify_and_rename "ljavx" "ljsve" "ljavx" "ljsve" "Lennard-Jones AVX" "Lennard-Jones SVE"
+copy_modify_and_rename "ljavx" "lj" "ljavx" "lj" "Lennard-Jones AVX" "Lennard-Jones"
+copy_modify_and_rename "ljavx" "mieavx" "ljavx" "mieavx" "Lennard-Jones AVX" "Mie AVX"
+copy_modify_and_rename "ljavx" "miesve" "ljavx" "miesve" "Lennard-Jones AVX" "Mie SVE"
+copy_modify_and_rename "ljavx" "mie" "ljavx" "mie" "Lennard-Jones AVX" "Mie"
+copy_modify_and_rename "ljavx" "mieavxfixed" "ljavx" "mieavxfixed" "Lennard-Jones AVX" "Mie AVX fixed"
+copy_modify_and_rename "ljavx" "miesvefixed" "ljavx" "miesvefixed" "Lennard-Jones AVX" "Mie SVE fixed"
+copy_modify_and_rename "ljavx" "miefixed" "ljavx" "miefixed" "Lennard-Jones AVX" "Mie fixed"
 

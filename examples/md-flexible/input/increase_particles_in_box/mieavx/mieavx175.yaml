@@ -4,16 +4,16 @@ container                        :  [LinkedCells]
 #verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [SoA]
-traversal                        :  [lc_c01]
+traversal                        :  [lc_c08]
 tuning-strategy                  :  full-search
-#tuning-interval                  :  2500
-#tuning-samples                   :  1
+tuning-interval                  :  2500
+tuning-samples                   :  1
 #tuning-max-evidence              :  10
 functor                          :  Mie AVX
-newton3                          :  [enabled, disabled]
+newton3                          :  [enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
-box-max                          :  [52, 52, 52]
+box-max                          :  [51, 51, 51]
 cell-size                        :  [1]
 deltaT                           :  0.0005
 iterations                       :  100
@@ -41,4 +41,5 @@ vtk-filename                     :  performance
 no-flops                         :  false
 no-end-config                    :  true
 log-level                        :  info
+no-progress-bar 				 :  true
 
