@@ -28,15 +28,11 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
  * c08)
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
-class SlicedC02BasedTraversal
-    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward> {
+template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
+class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward> {
  public:
   /**
    * Constructor of the colored sliced traversal.
@@ -47,9 +43,10 @@ class SlicedC02BasedTraversal
    * @param cellLength cell length.
    */
   explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                   const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
-            dims, pairwiseFunctor, interactionLength, cellLength) {}
+                                   const double interactionLength, const std::array<double, 3> &cellLength,
+                                   DataLayoutOption::Value dataLayout, bool useNewton3)
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>(dims, pairwiseFunctor, interactionLength,
+                                                                              cellLength, dataLayout, useNewton3) {}
 
   /**
    * The main traversal of the colored sliced traversal.
@@ -80,11 +77,9 @@ class SlicedC02BasedTraversal
   }
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
+template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
 template <typename LoopBody>
-void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>::cSlicedTraversal(
-    LoopBody &&loopBody) {
+void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>::cSlicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();

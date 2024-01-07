@@ -30,13 +30,10 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam DataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCSlicedBalancedTraversal
-    : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>,
-      public LCTraversalInterface<ParticleCell> {
+template <class ParticleCell, class PairwiseFunctor>
+class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, true>,
+                                  public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the balanced sliced traversal.
@@ -47,16 +44,18 @@ class LCSlicedBalancedTraversal
    * @param cellLength cell length.
    */
   explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                     const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
+                                     const double interactionLength, const std::array<double, 3> &cellLength,
+                                     DataLayoutOption::Value dataLayout, bool useNewton3)
+      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, true>(dims, pairwiseFunctor, interactionLength,
+                                                                          cellLength, dataLayout, useNewton3),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
+                     dataLayout, useNewton3) {}
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
 
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_balanced; }
 
@@ -66,11 +65,11 @@ class LCSlicedBalancedTraversal
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
  private:
-  LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

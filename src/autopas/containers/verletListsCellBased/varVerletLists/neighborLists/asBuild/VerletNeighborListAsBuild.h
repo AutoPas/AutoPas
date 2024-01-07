@@ -44,10 +44,10 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     // Use SoA traversal for generation and AoS traversal for validation check.
     constexpr auto dataLayout = validationMode ? DataLayoutOption::aos : DataLayoutOption::soa;
     auto traversal = C08TraversalColorChangeNotify<FullParticleCell<Particle>,
-                                                   internal::AsBuildPairGeneratorFunctor<Particle, validationMode>,
-                                                   dataLayout, useNewton3>(
+                                                   internal::AsBuildPairGeneratorFunctor<Particle, validationMode>>(
         _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &generatorFunctor,
-        _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this);
+        _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this, dataLayout,
+        useNewton3);
     _baseLinkedCells->iteratePairwise(&traversal);
   }
 

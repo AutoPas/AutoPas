@@ -25,11 +25,9 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>,
+template <class ParticleCell, class PairwiseFunctor>
+class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
                           public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -41,10 +39,12 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
    * @param cellLength cell length.
    */
   LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                    const double interactionLength, const std::array<double, 3> &cellLength)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor,
-                                                                                 interactionLength, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
+                    const double interactionLength, const std::array<double, 3> &cellLength,
+                    DataLayoutOption::Value dataLayout, bool useNewton3)
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                         dataLayout, useNewton3),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
+                     dataLayout, useNewton3),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
                                          1l)) {}
 
@@ -52,9 +52,9 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_HCP; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
 
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
 
   [[nodiscard]] bool isApplicable() const override {
     // The cellsize cannot be smaller than the cutoff, if OpenMP is used.
@@ -74,14 +74,14 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
 
   void processBasePack6(std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex);
 
-  LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 
   const std::array<long, 3> _end;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBasePack6(
-    std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
+template <class ParticleCell, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::processBasePack6(std::vector<ParticleCell> &cells,
+                                                                        const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index{};
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension);
@@ -108,8 +108,8 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::p
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {
@@ -128,14 +128,12 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::t
  *
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
- * @tparam dataLayout
- * @tparam useNewton3
  * @param cells
  * @param color
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSingleColor(
-    std::vector<ParticleCell> &cells, int color) {
+template <class ParticleCell, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseSingleColor(std::vector<ParticleCell> &cells,
+                                                                           int color) {
   // determine a starting point of one of the grids
   std::array<long, 3> startOfThisColor{};  // coordinates: {x,y,z}
 

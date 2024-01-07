@@ -16,8 +16,8 @@ namespace autopas {
  *
  * It furthermore notifies an observer when color changes during the traversal happen.
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class C08TraversalColorChangeNotify : public LCC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
+template <class ParticleCell, class PairwiseFunctor>
+class C08TraversalColorChangeNotify : public LCC08Traversal<ParticleCell, PairwiseFunctor> {
  public:
   /**
    * Constructor of the traversal.
@@ -30,9 +30,9 @@ class C08TraversalColorChangeNotify : public LCC08Traversal<ParticleCell, Pairwi
    */
   C08TraversalColorChangeNotify(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double interactionLength, const std::array<double, 3> &cellLength,
-                                ColorChangeObserver *observer)
-      : LCC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(dims, pairwiseFunctor, interactionLength,
-                                                                              cellLength),
+                                ColorChangeObserver *observer, DataLayoutOption::Value dataLayout, bool useNewton3)
+      : LCC08Traversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength, dataLayout,
+                                                      useNewton3),
         _observer(observer) {}
 
  protected:

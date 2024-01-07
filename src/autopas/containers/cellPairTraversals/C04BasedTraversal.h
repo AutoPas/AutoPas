@@ -20,12 +20,10 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
+ * @tparam collapseDepth
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth = 3>
-class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth> {
+template <class ParticleCell, class PairwiseFunctor, int collapseDepth = 3>
+class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth> {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -36,9 +34,10 @@ class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
    * @param cellLength cell length.
    */
   explicit C04BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                             const double interactionLength, const std::array<double, 3> &cellLength)
-      : CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>(
-            dims, pairwiseFunctor, interactionLength, cellLength) {}
+                             const double interactionLength, const std::array<double, 3> &cellLength,
+                             DataLayoutOption::Value dataLayout, bool useNewton3)
+      : CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>(dims, pairwiseFunctor, interactionLength,
+                                                                      cellLength, dataLayout, useNewton3) {}
 
  protected:
   /**
@@ -49,11 +48,9 @@ class C04BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor, 
   inline void c04Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, int collapseDepth>
 template <typename LoopBody>
-inline void C04BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::c04Traversal(
-    LoopBody &&loopBody) {
+inline void C04BasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::c04Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto end = this->_cellsPerDimension - this->_overlap;

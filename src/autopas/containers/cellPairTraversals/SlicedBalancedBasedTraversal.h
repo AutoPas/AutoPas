@@ -25,23 +25,20 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
-class SlicedBalancedBasedTraversal
-    : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>,
-      public BalancedTraversal {
+template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
+class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>,
+                                     public BalancedTraversal {
  public:
   /**
    * Constructor of the balanced sliced traversal.
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
   explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                        const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
-            dims, pairwiseFunctor, interactionLength, cellLength) {
+                                        const double interactionLength, const std::array<double, 3> &cellLength,
+                                        DataLayoutOption::Value dataLayout, bool useNewton3)
+      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>(
+            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
     this->_dynamic = false;
   }

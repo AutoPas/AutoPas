@@ -24,13 +24,10 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
  * c08).
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
+template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
 class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
@@ -42,7 +39,8 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param cellLength cell length.
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                const double interactionLength, const std::array<double, 3> &cellLength)
+                                const double interactionLength, const std::array<double, 3> &cellLength,
+                                DataLayoutOption::Value dataLayout, bool useNewton3)
       : CellPairTraversal<ParticleCell>(dims),
         _overlap{},
         _dimsPerLength{},
@@ -50,7 +48,9 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
         _cellLength(cellLength),
         _overlapLongestAxis(0),
         _sliceThickness{},
-        _dataLayoutConverter(pairwiseFunctor) {
+        _dataLayout(dataLayout),
+        _useNewton3(useNewton3),
+        _dataLayoutConverter(pairwiseFunctor, dataLayout) {
     this->init(dims);
   }
 
@@ -153,6 +153,10 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::vector<unsigned long> _sliceThickness;
 
+  const DataLayoutOption::Value _dataLayout;
+
+  const bool _useNewton3;
+
  private:
   /**
    * Interaction length (cutoff + skin).
@@ -167,12 +171,11 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Data Layout Converter to be used with this traversal.
    */
-  utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+  utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
-inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>::init(
+template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
+inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>::init(
     const std::array<unsigned long, 3> &dims) {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);

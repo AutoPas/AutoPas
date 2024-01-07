@@ -125,10 +125,9 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       case BuildVerletListType::VerletAoS: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
           auto traversal =
-              LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
-                             DataLayoutOption::aos, theBool>(
+              LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
                   this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
+                  this->_linkedCells.getCellBlock().getCellLength(), DataLayoutOption::aos, theBool);
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
@@ -136,10 +135,9 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       case BuildVerletListType::VerletSoA: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
           auto traversal =
-              LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
-                             DataLayoutOption::soa, theBool>(
+              LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
                   this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
+                  this->_linkedCells.getCellBlock().getCellLength(), DataLayoutOption::soa, theBool);
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;

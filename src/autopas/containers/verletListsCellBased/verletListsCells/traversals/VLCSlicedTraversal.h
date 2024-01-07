@@ -32,17 +32,13 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
  * @tparam NeighborList type of the neighbor list
  * @tparam typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
  */
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, ContainerOption::Value typeOfList>
-class VLCSlicedTraversal
-    : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
-      public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+template <class ParticleCell, class PairwiseFunctor, class NeighborList, ContainerOption::Value typeOfList>
+class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, false>,
+                           public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -51,18 +47,21 @@ class VLCSlicedTraversal
    * @param interactionLength cutoff + skin
    * @param cellLength length of the underlying cells
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
+   * @param dataLayout
+   * @param useNewton3
    */
   explicit VLCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                              double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
+                              double interactionLength, const std::array<double, 3> &cellLength,
+                              DataLayoutOption::Value dataLayout, bool useNewton3)
+      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, false>(dims, pairwiseFunctor, interactionLength,
+                                                                       cellLength, dataLayout, useNewton3),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
 
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (typeOfList) {
@@ -76,7 +75,7 @@ class VLCSlicedTraversal
   }
 
   [[nodiscard]] bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa);
+    return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
   }
 
   /**
@@ -89,20 +88,19 @@ class VLCSlicedTraversal
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          class NeighborList, ContainerOption::Value typeOfList>
-inline void VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, NeighborList,
-                               typeOfList>::traverseParticlePairs() {
-  if (dataLayout == DataLayoutOption::soa) {
+template <class ParticleCell, class PairwiseFunctor, class NeighborList, ContainerOption::Value typeOfList>
+inline void VLCSlicedTraversal<ParticleCell, PairwiseFunctor, NeighborList, typeOfList>::traverseParticlePairs() {
+  if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }
 
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
-    this->template processCellLists<PairwiseFunctor, useNewton3>(*(this->_verletList), baseIndex, _functor, dataLayout);
+    this->template processCellLists<PairwiseFunctor>(*(this->_verletList), baseIndex, _functor, this->_dataLayout,
+                                                     this->_useNewton3);
   });
 
-  if (dataLayout == DataLayoutOption::soa) {
+  if (this->_dataLayout == DataLayoutOption::soa) {
     this->extractSoA(_functor, *(this->_verletList));
   }
 }

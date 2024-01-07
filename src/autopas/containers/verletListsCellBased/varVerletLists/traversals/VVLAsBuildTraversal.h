@@ -19,11 +19,8 @@ namespace autopas {
  * @tparam ParticleCell
  * @tparam Particle The particle type used by the neighbor list.
  * @tparam PairwiseFunctor The type of the functor to use for the iteration.
- * @tparam dataLayout The data layout to use.
- * @tparam useNewton3 Whether or not this traversal uses newton 3.
  */
-template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout,
-          bool useNewton3>
+template <class ParticleCell, class Particle, class PairwiseFunctor>
 class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<Particle>>,
                             public TraversalInterface {
  private:
@@ -43,23 +40,26 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
   /**
    * The Constructor of VVLAsBuildTraversal.
    * @param pairwiseFunctor The functor to use for the iteration.
+   * @param dataLayout The data layout to use.
+   * @param useNewton3 Whether or not this traversal uses newton 3.
    */
-  explicit VVLAsBuildTraversal(PairwiseFunctor *pairwiseFunctor) : _functor(pairwiseFunctor), _soa{nullptr} {}
+  explicit VVLAsBuildTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3)
+      : _functor(pairwiseFunctor), _soa{nullptr}, _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
+  [[nodiscard]] bool getUseNewton3() const override { return _useNewton3; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const override { return _dataLayout; }
 
   void initTraversal() override {
     auto &neighborList = *(this->_neighborList);
-    if (dataLayout == DataLayoutOption::soa) {
+    if (_dataLayout == DataLayoutOption::soa) {
       _soa = neighborList.loadSoA(_functor);
     }
   }
 
   void endTraversal() override {
     auto &neighborList = *(this->_neighborList);
-    if (dataLayout == DataLayoutOption::soa) {
+    if (_dataLayout == DataLayoutOption::soa) {
       neighborList.extractSoA(_functor);
       _soa = nullptr;
     }
@@ -67,7 +67,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
 
   void traverseParticlePairs() override {
     auto &neighborList = *(this->_neighborList);
-    switch (dataLayout) {
+    switch (_dataLayout) {
       case DataLayoutOption::aos:
         iterateAoS(neighborList);
         break;
@@ -80,7 +80,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
   }
 
   [[nodiscard]] bool isApplicable() const override {
-    return dataLayout == DataLayoutOption::soa || dataLayout == DataLayoutOption::aos;
+    return _dataLayout == DataLayoutOption::soa || _dataLayout == DataLayoutOption::aos;
   }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vvl_as_built; }
@@ -94,11 +94,13 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
    * A pointer to the SoA to iterate over if DataLayout is soa.
    */
   SoA<typename Particle::SoAArraysType> *_soa;
+
+  const DataLayoutOption::Value _dataLayout;
+  const bool _useNewton3;
 };
 
-template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout,
-          bool useNewton3>
-void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, useNewton3>::iterateAoS(
+template <class ParticleCell, class Particle, class PairwiseFunctor>
+void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor>::iterateAoS(
     VerletNeighborListAsBuild<Particle> &neighborList) {
   const auto &list = neighborList.getAoSNeighborList();
 
@@ -110,7 +112,7 @@ void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, us
         const auto &particleToNeighborMap = list[color][thread];
         for (const auto &[particlePtr, neighborPtrList] : particleToNeighborMap) {
           for (auto neighborPtr : neighborPtrList) {
-            _functor->AoSFunctor(*particlePtr, *neighborPtr, useNewton3);
+            _functor->AoSFunctor(*particlePtr, *neighborPtr, _useNewton3);
           }
         }
       }
@@ -118,9 +120,8 @@ void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, us
   }
 }
 
-template <class ParticleCell, class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout,
-          bool useNewton3>
-void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, useNewton3>::iterateSoA(
+template <class ParticleCell, class Particle, class PairwiseFunctor>
+void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor>::iterateSoA(
     VerletNeighborListAsBuild<Particle> &neighborList) {
   const auto &soaNeighborList = neighborList.getSoANeighborList();
 
@@ -131,7 +132,7 @@ void VVLAsBuildTraversal<ParticleCell, Particle, PairwiseFunctor, dataLayout, us
       for (unsigned int thread = 0; thread < soaNeighborList[color].size(); thread++) {
         const auto &threadNeighborList = soaNeighborList[color][thread];
         for (const auto &[indexFirst, neighbors] : threadNeighborList) {
-          _functor->SoAFunctorVerlet(*_soa, indexFirst, neighbors, useNewton3);
+          _functor->SoAFunctorVerlet(*_soa, indexFirst, neighbors, _useNewton3);
         }
       }
     }

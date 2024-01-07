@@ -22,10 +22,8 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor>
 class LCC08CellHandler {
  public:
   /**
@@ -40,12 +38,16 @@ class LCC08CellHandler {
    */
   explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                             const double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap)
-      : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
+                            const std::array<unsigned long, 3> &overlap, DataLayoutOption::Value dataLayout,
+                            bool useNewton3)
+      : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
+                     dataLayout, useNewton3),
         _cellPairOffsets{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),
-        _overlap(overlap) {
+        _overlap(overlap),
+        _dataLayout(dataLayout),
+        _useNewton3(useNewton3) {
     computeOffsets(cellsPerDimension);
   }
 
@@ -82,11 +84,15 @@ class LCC08CellHandler {
    */
   const std::array<unsigned long, 3> _overlap;
 
+  const DataLayoutOption::Value _dataLayout;
+
+  const bool _useNewton3;
+
  private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
+  internal::CellFunctor<ParticleCell, PairwiseFunctor,
                         /*bidirectional*/ true>
       _cellFunctor;
 
@@ -101,9 +107,9 @@ class LCC08CellHandler {
   const std::array<double, 3> _cellLength;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long baseIndex) {
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
+                                                                             unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;
@@ -119,8 +125,8 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::computeOffsets(
     const std::array<unsigned long, 3> &cellsPerDimension) {
   using namespace autopas::utils::ArrayMath::literals;
   using std::make_pair;

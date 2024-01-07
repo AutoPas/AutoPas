@@ -40,20 +40,20 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
   verletLists.addParticle(p2);
 
   if (useNewton3) {
-    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                             autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
+    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>,
+                             autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(),
-                  verletLists.getCellLength());
+                  verletLists.getCellLength(), autopas::DataLayoutOption::aos, true);
 
     verletLists.rebuildNeighborLists(&traversal);
     verletLists.iteratePairwise(&traversal);
   }
 
   else {
-    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false,
-                             autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
+    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>,
+                             autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(),
-                  verletLists.getCellLength());
+                  verletLists.getCellLength(), autopas::DataLayoutOption::aos, false);
 
     verletLists.rebuildNeighborLists(&traversal);
     verletLists.iteratePairwise(&traversal);
@@ -111,20 +111,20 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
   verletLists.addParticle(p3);
 
   if (useNewton3) {
-    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                             autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
+    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>,
+                             autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(),
-                  verletLists.getCellLength());
+                  verletLists.getCellLength(), autopas::DataLayoutOption::aos, true);
 
     verletLists.rebuildNeighborLists(&traversal);
     verletLists.iteratePairwise(&traversal);
   }
 
   else {
-    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false,
-                             autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
+    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>,
+                             autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(),
-                  verletLists.getCellLength());
+                  verletLists.getCellLength(), autopas::DataLayoutOption::aos, false);
 
     verletLists.rebuildNeighborLists(&traversal);
     verletLists.iteratePairwise(&traversal);
@@ -182,20 +182,20 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
   verletLists.addParticle(p3);
 
   if (useNewton3) {
-    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                             autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
+    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>,
+                             autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
-                  verletLists.getCellLength());
+                  verletLists.getCellLength(), autopas::DataLayoutOption::aos, true);
 
     verletLists.rebuildNeighborLists(&traversal);
     verletLists.iteratePairwise(&traversal);
   }
 
   else {
-    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false,
-                             autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
+    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>,
+                             autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
-                  verletLists.getCellLength());
+                  verletLists.getCellLength(), autopas::DataLayoutOption::aos, false);
 
     verletLists.rebuildNeighborLists(&traversal);
     verletLists.iteratePairwise(&traversal);
@@ -246,20 +246,20 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
   verletLists.addParticle(p);
 
   if (useNewton3) {
-    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                             autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
+    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>,
+                             autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
-                  verletLists.getCellLength());
+                  verletLists.getCellLength(), autopas::DataLayoutOption::aos, true);
 
     verletLists.rebuildNeighborLists(&traversal);
     verletLists.iteratePairwise(&traversal);
   }
 
   else {
-    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, false,
-                             autopas::VLCCellPairNeighborList<Particle>, autopas::ContainerOption::pairwiseVerletLists>
+    autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>,
+                             autopas::ContainerOption::pairwiseVerletLists>
         traversal(verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(),
-                  verletLists.getCellLength());
+                  verletLists.getCellLength(), autopas::DataLayoutOption::aos, false);
 
     verletLists.rebuildNeighborLists(&traversal);
     verletLists.iteratePairwise(&traversal);
@@ -313,16 +313,14 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
   ljFunctor.setParticleProperties(1., 1.);
 
   if (not useNewton3) {
-    autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, false,
-                             autopas::VLCCellPairNeighborList<Molecule>,
+    autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>,
                              autopas::ContainerOption::Value::pairwiseVerletLists>
         verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
-                         verletLists1.getCellLength());
-    autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, false,
-                             autopas::VLCCellPairNeighborList<Molecule>,
+                         verletLists1.getCellLength(), autopas::DataLayoutOption::aos, false);
+    autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>,
                              autopas::ContainerOption::Value::pairwiseVerletLists>
         soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
-                     verletLists2.getCellLength());
+                     verletLists2.getCellLength(), autopas::DataLayoutOption::soa, false);
 
     verletLists1.rebuildNeighborLists(&verletTraversal1);
     verletLists2.rebuildNeighborLists(&soaTraversal);
@@ -331,16 +329,14 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
   }
 
   if (useNewton3) {
-    autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
-                             autopas::VLCCellPairNeighborList<Molecule>,
+    autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>,
                              autopas::ContainerOption::Value::pairwiseVerletLists>
         verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
-                         verletLists1.getCellLength());
-    autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, true,
-                             autopas::VLCCellPairNeighborList<Molecule>,
+                         verletLists1.getCellLength(), autopas::DataLayoutOption::aos, true);
+    autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>,
                              autopas::ContainerOption::Value::pairwiseVerletLists>
         soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
-                     verletLists2.getCellLength());
+                     verletLists2.getCellLength(), autopas::DataLayoutOption::soa, true);
 
     verletLists1.rebuildNeighborLists(&verletTraversal1);
     verletLists2.rebuildNeighborLists(&soaTraversal);

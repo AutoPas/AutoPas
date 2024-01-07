@@ -16,11 +16,8 @@ namespace autopas::internal {
  *
  * @tparam Particle The type of particle the clusters contain.
  * @tparam PairwiseFunctor The type of the functor the VCLClusterFunctor should use.
- * @tparam dataLayout The data layout to use.
- * @tparam useNewton3 If newton 3 should be used or not.
- * @tparam clusterSize The number of particles in each cluster.
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class Particle, class PairwiseFunctor>
 class VCLClusterFunctor {
  public:
   /**
@@ -28,8 +25,9 @@ class VCLClusterFunctor {
    * @param functor The functor to use internally.
    * @param clusterSize Number of particles per cluster.
    */
-  explicit VCLClusterFunctor(PairwiseFunctor *functor, size_t clusterSize)
-      : _functor(functor), _clusterSize(clusterSize) {}
+  explicit VCLClusterFunctor(PairwiseFunctor *functor, size_t clusterSize, DataLayoutOption::Value dataLayout,
+                             bool useNewton3)
+      : _functor(functor), _clusterSize(clusterSize), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
    * Invokes the calculations of all interactions within the cluster and, if they exist, it's neighbors.
@@ -55,11 +53,11 @@ class VCLClusterFunctor {
    * @param cluster The cluster to traverse.
    */
   void traverseCluster(internal::Cluster<Particle> &cluster) {
-    if constexpr (dataLayout == DataLayoutOption::aos) {
+    if (_dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < _clusterSize; i++) {
         for (size_t j = i + 1; j < _clusterSize; j++) {
           // this if else branch is needed because of https://github.com/AutoPas/AutoPas/issues/426
-          if constexpr (useNewton3) {
+          if (_useNewton3) {
             _functor->AoSFunctor(cluster[i], cluster[j], true);
           } else {
             _functor->AoSFunctor(cluster[i], cluster[j], false);
@@ -68,7 +66,7 @@ class VCLClusterFunctor {
         }
       }
     } else {
-      _functor->SoAFunctorSingle(cluster.getSoAView(), useNewton3);
+      _functor->SoAFunctorSingle(cluster.getSoAView(), _useNewton3);
     }
   }
 
@@ -78,20 +76,22 @@ class VCLClusterFunctor {
    * @param neighborCluster The second cluster.
    */
   void traverseClusterPair(internal::Cluster<Particle> &cluster, internal::Cluster<Particle> &neighborCluster) {
-    if constexpr (dataLayout == DataLayoutOption::aos) {
+    if (_dataLayout == DataLayoutOption::aos) {
       for (size_t i = 0; i < _clusterSize; i++) {
         for (size_t j = 0; j < _clusterSize; j++) {
-          _functor->AoSFunctor(cluster[i], neighborCluster[j], useNewton3);
+          _functor->AoSFunctor(cluster[i], neighborCluster[j], _useNewton3);
         }
       }
     } else {
-      _functor->SoAFunctorPair(cluster.getSoAView(), neighborCluster.getSoAView(), useNewton3);
+      _functor->SoAFunctorPair(cluster.getSoAView(), neighborCluster.getSoAView(), _useNewton3);
     }
   }
 
  private:
   PairwiseFunctor *_functor;
   size_t _clusterSize;
+  const DataLayoutOption::Value _dataLayout;
+  const bool _useNewton3;
 };
 
 }  // namespace autopas::internal

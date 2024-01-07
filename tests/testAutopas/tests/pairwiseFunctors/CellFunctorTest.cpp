@@ -8,46 +8,44 @@
 
 // Type aliases via inheritance for more readable test names (using declarations do not work for this)
 struct CellFunctor_AoS_NoN3_NoBi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                            autopas::DataLayoutOption::aos, false, false> {
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, false> {
   CellFunctor_AoS_NoN3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
-      : CellFunctor(f, sortingCutoff) {}
+      : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
 struct CellFunctor_AoS_NoN3_Bi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                            autopas::DataLayoutOption::aos, false, true> {
-  CellFunctor_AoS_NoN3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, true> {
+  CellFunctor_AoS_NoN3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
 struct CellFunctor_AoS_N3_NoBi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                            autopas::DataLayoutOption::aos, true, false> {
-  CellFunctor_AoS_N3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, false> {
+  CellFunctor_AoS_N3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 struct CellFunctor_AoS_N3_Bi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                            autopas::DataLayoutOption::aos, true, true> {
-  CellFunctor_AoS_N3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, true> {
+  CellFunctor_AoS_N3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 struct CellFunctor_SoA_NoN3_NoBi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                            autopas::DataLayoutOption::soa, false, false> {
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, false> {
   CellFunctor_SoA_NoN3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
-      : CellFunctor(f, sortingCutoff) {}
+      : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_NoN3_Bi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                            autopas::DataLayoutOption::soa, false, true> {
-  CellFunctor_SoA_NoN3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, true> {
+  CellFunctor_SoA_NoN3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_N3_NoBi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                            autopas::DataLayoutOption::soa, true, false> {
-  CellFunctor_SoA_N3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, false> {
+  CellFunctor_SoA_N3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 struct CellFunctor_SoA_N3_Bi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>,
-                                            autopas::DataLayoutOption::soa, true, true> {
-  CellFunctor_SoA_N3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff) : CellFunctor(f, sortingCutoff) {}
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, true> {
+  CellFunctor_SoA_N3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+      : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 
 /**
