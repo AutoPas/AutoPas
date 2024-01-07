@@ -9,7 +9,9 @@ file(
         "molecularDynamics/molecularDynamicsLibrary/*.cpp"
 )
 
-add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
+add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC}
+        molecularDynamics/molecularDynamicsLibrary/ForceLookUpTable.cpp
+        molecularDynamics/molecularDynamicsLibrary/ForceLookUpTable.h)
 
 # Set CMake option for md-flexible mode
 set(MD_FLEXIBLE_MODE

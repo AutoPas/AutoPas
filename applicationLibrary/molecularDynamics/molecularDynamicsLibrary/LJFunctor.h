@@ -34,10 +34,10 @@ namespace mdLib {
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+          bool relevantForTuning = true, bool useLUT = false>
 class LJFunctor
     : public autopas::PairwiseFunctor<
-          Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+          Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, useLUT>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -138,12 +138,33 @@ class LJFunctor
       return;
     }
 
-    double invdr2 = 1. / dr2;
-    double lj6 = sigmaSquared * invdr2;
-    lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    // Here look-up
+    // LUT needs to take double dr2 and return double fac
+    // Check if mixing and throw error for now
+
+    double fac;
+    double lj12m6; // Otherwise we get an error in calculateGlobals
+
+    if constexpr (useLUT) {
+      // How to check for mixing if useMixing is always enabled?
+      fac = _PPLibrary->getLJLUT().retrieveSingleValue(dr2);
+      if (calculateGlobals) {
+        // this is a problem
+        AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
+        return;
+      }
+    }
+    else {
+      double invdr2 = 1. / dr2;
+      double lj6 = sigmaSquared * invdr2;
+      lj6 = lj6 * lj6 * lj6;
+      double lj12 = lj6 * lj6;
+      lj12m6 = lj12 - lj6;
+      fac = epsilon24 * (lj12 + lj12m6) * invdr2;
+    }
+
+    // Here return from look-up
+
     auto f = dr * fac;
     i.addF(f);
     if (newton3) {

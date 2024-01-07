@@ -13,6 +13,7 @@
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "ForceLookUpTable.h"
 
 /**
  * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location
@@ -297,6 +298,18 @@ class ParticlePropertiesLibrary {
                                  k];
   }
 
+  void initializeLookUpTables() {
+    if (_storeLJData) {
+      _LJLookUpTable = ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType>({_cutoff*_cutoff, _sigmas[0]*_sigmas[0], _epsilons[0], 5.0});
+    }
+  }
+
+  ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType> getLJLUT() {
+    return _LJLookUpTable;
+  }
+
+
+
  private:
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
@@ -332,6 +345,10 @@ class ParticlePropertiesLibrary {
 
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
   std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
+
+  // Can this be static?
+  ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType> _LJLookUpTable;
+
 };
 
 template <typename floatType, typename intType>

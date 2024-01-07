@@ -596,6 +596,8 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 #endif
 
   _particlePropertiesLibrary->calculateMixingCoefficients();
+
+  _particlePropertiesLibrary->initializeLookUpTables();
 }
 
 void MDFlexConfig::initializeObjects() {
