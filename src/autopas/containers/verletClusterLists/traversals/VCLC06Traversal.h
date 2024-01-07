@@ -57,8 +57,7 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor>,
    */
   explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption::Value dataLayout,
                            bool useNewton3)
-      : CBasedTraversal<ParticleCell, PairwiseFunctor>({0, 0, 0}, pairwiseFunctor, 0, {},
-                                                                               dataLayout, useNewton3),
+      : CBasedTraversal<ParticleCell, PairwiseFunctor>({0, 0, 0}, pairwiseFunctor, 0, {}, dataLayout, useNewton3),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
@@ -116,8 +115,10 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor>,
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-void VCLC06Traversal<ParticleCell, PairwiseFunctor>::processColorCell(
-    unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell, int towersPerColoringCell) {
+void VCLC06Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned long xColorCell,
+                                                                      unsigned long yColorCell,
+                                                                      unsigned long zColorCell,
+                                                                      int towersPerColoringCell) {
   // We are only doing a 2D coloring.
   if (zColorCell != 0) {
     autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");
@@ -137,8 +138,10 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor>::processColorCell(
       }
 
       auto &currentTower = clusterList.getTowerByIndex(x, y);
-      for (auto clusterIter = this->_useNewton3 ? currentTower.getClusters().begin() : currentTower.getFirstOwnedCluster();
-           clusterIter < (this->_useNewton3 ? currentTower.getClusters().end() : currentTower.getFirstTailHaloCluster());
+      for (auto clusterIter = this->_useNewton3 ? currentTower.getClusters().begin()
+                                                : currentTower.getFirstOwnedCluster();
+           clusterIter <
+           (this->_useNewton3 ? currentTower.getClusters().end() : currentTower.getFirstTailHaloCluster());
            ++clusterIter) {
         const auto isHaloCluster =
             clusterIter < currentTower.getFirstOwnedCluster() or clusterIter >= currentTower.getFirstTailHaloCluster();

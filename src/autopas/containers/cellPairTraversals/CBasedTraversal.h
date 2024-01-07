@@ -128,8 +128,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor,
-          int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, int collapseDepth>
 template <typename LoopBody>
 inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,

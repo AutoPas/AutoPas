@@ -34,7 +34,8 @@ class VCLSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
   void processBaseStep(unsigned long x, unsigned long y) {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     auto &currentTower = clusterList.getTowerByIndex(x, y);
-    for (auto clusterIter = (this->_useNewton3 ? currentTower.getClusters().begin() : currentTower.getFirstOwnedCluster());
+    for (auto clusterIter =
+             (this->_useNewton3 ? currentTower.getClusters().begin() : currentTower.getFirstOwnedCluster());
          clusterIter < (this->_useNewton3 ? currentTower.getClusters().end() : currentTower.getFirstTailHaloCluster());
          ++clusterIter) {
       const auto isHaloCluster =
