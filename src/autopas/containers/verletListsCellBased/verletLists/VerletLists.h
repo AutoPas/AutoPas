@@ -121,32 +121,20 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                                                        this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
-    switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength(), DataLayoutOption::aos, theBool);
-          this->_linkedCells.iteratePairwise(&traversal);
-        });
-        break;
-      }
-      case BuildVerletListType::VerletSoA: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength(), DataLayoutOption::soa, theBool);
-          this->_linkedCells.iteratePairwise(&traversal);
-        });
-        break;
-      }
-      default:
-        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
-                                           _buildVerletListType);
-        break;
+    const DataLayoutOption dataLayout;
+    if (_buildVerletListType == BuildVerletListType::VerletAoS) {
+      dataLayout = DataLayoutOption::aos;
+    } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
+      dataLayout = DataLayoutOption::soa;
+    } else {
+      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+                                         _buildVerletListType);
     }
+    auto traversal =
+        LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
+            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+    this->_linkedCells.iteratePairwise(&traversal);
 
     _soaListIsValid = false;
   }
