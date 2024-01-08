@@ -44,21 +44,15 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                           DataLayoutOption::Value dataLayout, bool useNewton3)
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
-      : CellPairTraversal<ParticleCell>({2, 1, 1}),
+      : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
-        _dataLayoutConverter(pairwiseFunctor, dataLayout),
-        _dataLayout(dataLayout),
-        _useNewton3(useNewton3) {}
+        _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c18; }
 
-  [[nodiscard]] bool isApplicable() const override { return _useNewton3; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return _useNewton3; };
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return _dataLayout; };
+  [[nodiscard]] bool isApplicable() const override { return this->_useNewton3; }
 
   /**
    * Assign an integer ID to every leaf
@@ -139,9 +133,5 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * Data Layout Converter to be used with this traversal
    */
   utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
-
-  const DataLayoutOption::Value _dataLayout;
-
-  const bool _useNewton3;
 };
 }  // namespace autopas

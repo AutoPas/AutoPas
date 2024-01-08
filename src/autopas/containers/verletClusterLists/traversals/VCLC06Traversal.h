@@ -63,10 +63,6 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c06; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   [[nodiscard]] bool isApplicable() const override {
     return (this->_dataLayout == DataLayoutOption::aos || this->_dataLayout == DataLayoutOption::soa);
   }

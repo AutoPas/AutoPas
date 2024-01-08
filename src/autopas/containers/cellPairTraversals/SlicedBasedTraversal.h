@@ -41,15 +41,13 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double interactionLength, const std::array<double, 3> &cellLength,
                                 DataLayoutOption::Value dataLayout, bool useNewton3)
-      : CellPairTraversal<ParticleCell>(dims),
+      : CellPairTraversal<ParticleCell>(dims, dataLayout, useNewton3),
         _overlap{},
         _dimsPerLength{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlapLongestAxis(0),
         _sliceThickness{},
-        _dataLayout(dataLayout),
-        _useNewton3(useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {
     this->init(dims);
   }
@@ -152,10 +150,6 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * The number of cells per slice in the dimension that was sliced.
    */
   std::vector<unsigned long> _sliceThickness;
-
-  const DataLayoutOption::Value _dataLayout;
-
-  const bool _useNewton3;
 
  private:
   /**

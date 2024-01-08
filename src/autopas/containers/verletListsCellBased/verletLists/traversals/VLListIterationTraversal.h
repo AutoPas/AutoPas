@@ -7,6 +7,7 @@
 #pragma once
 
 #include "VLTraversalInterface.h"
+#include "autopas/containers/TraversalBase.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -21,7 +22,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
+class VLListIterationTraversal : public TraversalBase, public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -33,13 +34,9 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    */
   explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout,
                                     bool useNewton3)
-      : _functor(pairwiseFunctor), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
+      : TraversalBase(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return _dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return _useNewton3; }
 
   [[nodiscard]] bool isApplicable() const override {
     // No parallel version with N3 and no data races is available, hence no N3 is completely disabled.
@@ -139,10 +136,6 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
    * SoA buffer of verlet lists.
    */
   SoA<typename Particle::SoAArraysType> _soa;
-
-  const DataLayoutOption::Value _dataLayout;
-
-  const bool _useNewton3;
 };
 
 }  // namespace autopas

@@ -53,10 +53,6 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   /**
    * C04 traversals are usable, if cellSizeFactor >= 1.0 and there are at least 3 cells for each dimension.
    * @return information about applicability

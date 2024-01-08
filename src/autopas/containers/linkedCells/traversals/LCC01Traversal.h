@@ -107,10 +107,6 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, (
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   /**
    * C01 traversals are only usable if useNewton3 is disabled and combined SoA buffers are only applicable if SoA is set
    * as DataLayout.

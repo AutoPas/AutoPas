@@ -52,10 +52,6 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_HCP; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   [[nodiscard]] bool isApplicable() const override {
     // The cellsize cannot be smaller than the cutoff, if OpenMP is used.
     // Also see: https://github.com/AutoPas/AutoPas/issues/464

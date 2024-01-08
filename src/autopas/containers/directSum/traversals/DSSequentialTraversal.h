@@ -32,20 +32,14 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    */
   explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff, DataLayoutOption::Value dataLayout,
                                  bool useNewton3)
-      : CellPairTraversal<ParticleCell>({2, 1, 1}),
+      : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
-        _dataLayoutConverter(pairwiseFunctor, dataLayout),
-        _dataLayout(dataLayout),
-        _useNewton3(useNewton3) {}
+        _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential; }
 
   [[nodiscard]] bool isApplicable() const override { return true; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return _useNewton3; };
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return _dataLayout; };
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -82,10 +76,6 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    * Data Layout Converter to be used with this traversal
    */
   utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
-
-  const DataLayoutOption::Value _dataLayout;
-
-  const bool _useNewton3;
 };
 
 template <class ParticleCell, class PairwiseFunctor>

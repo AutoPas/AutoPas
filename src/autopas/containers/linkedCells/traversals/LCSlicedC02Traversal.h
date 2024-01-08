@@ -50,10 +50,6 @@ class LCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairwi
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_c02; }
 
   /**

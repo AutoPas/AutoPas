@@ -42,21 +42,15 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    */
   explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
                           DataLayoutOption::Value dataLayout, bool useNewton3)
-      : CellPairTraversal<ParticleCell>({2, 1, 1}),
+      : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
-        _dataLayoutConverter(pairwiseFunctor, dataLayout),
-        _dataLayout(dataLayout),
-        _useNewton3(useNewton3) {}
+        _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c01; }
 
-  [[nodiscard]] bool isApplicable() const override { return not _useNewton3; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return _useNewton3; };
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return _dataLayout; };
+  [[nodiscard]] bool isApplicable() const override { return not this->_useNewton3; }
 
   void initTraversal() override {
     // Preprocess all leaves
@@ -122,10 +116,6 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * Data Layout Converter to be used with this traversal
    */
   utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
-
-  const DataLayoutOption::Value _dataLayout;
-
-  const bool _useNewton3;
 };
 
 }  // namespace autopas

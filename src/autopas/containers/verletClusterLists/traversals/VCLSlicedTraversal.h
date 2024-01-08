@@ -66,10 +66,6 @@ class VCLSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_sliced; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   void loadDataLayout() override {
     if (this->_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);

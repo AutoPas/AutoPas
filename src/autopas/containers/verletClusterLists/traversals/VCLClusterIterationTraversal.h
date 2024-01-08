@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/TraversalBase.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
@@ -20,7 +20,7 @@ namespace autopas {
 
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VCLClusterIterationTraversal : public TraversalInterface,
+class VCLClusterIterationTraversal : public TraversalBase,
                                      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -34,16 +34,11 @@ class VCLClusterIterationTraversal : public TraversalInterface,
    */
   explicit VCLClusterIterationTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize,
                                         DataLayoutOption::Value dataLayout, bool useNewton3)
-      : _functor(pairwiseFunctor),
-        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3),
-        _dataLayout(dataLayout),
-        _useNewton3(useNewton3) {}
+      : TraversalBase(dataLayout, useNewton3),
+        _functor(pairwiseFunctor),
+        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return _dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return _useNewton3; }
 
   [[nodiscard]] bool isApplicable() const override {
     return (_dataLayout == DataLayoutOption::aos || _dataLayout == DataLayoutOption::soa) and not _useNewton3;
@@ -74,7 +69,5 @@ class VCLClusterIterationTraversal : public TraversalInterface,
  private:
   PairwiseFunctor *_functor;
   internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
-  const DataLayoutOption::Value _dataLayout;
-  const bool _useNewton3;
 };
 }  // namespace autopas

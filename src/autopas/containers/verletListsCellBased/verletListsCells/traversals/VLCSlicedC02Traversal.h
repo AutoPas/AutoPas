@@ -54,10 +54,6 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
 
   void traverseParticlePairs() override;
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (typeOfList) {
       case (ContainerOption::verletListsCells):

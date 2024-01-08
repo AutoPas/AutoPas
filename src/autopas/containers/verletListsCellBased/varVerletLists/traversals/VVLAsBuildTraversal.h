@@ -7,6 +7,7 @@
 #pragma once
 
 #include "VVLTraversalInterface.h"
+#include "autopas/containers/TraversalBase.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/neighborLists/asBuild/VerletNeighborListAsBuild.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -21,8 +22,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The type of the functor to use for the iteration.
  */
 template <class ParticleCell, class Particle, class PairwiseFunctor>
-class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<Particle>>,
-                            public TraversalInterface {
+class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<Particle>>, public TraversalBase {
  private:
   /**
    * Internal iterate method for AoS.
@@ -44,11 +44,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
    * @param useNewton3 Whether or not this traversal uses newton 3.
    */
   explicit VVLAsBuildTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3)
-      : _functor(pairwiseFunctor), _soa{nullptr}, _dataLayout(dataLayout), _useNewton3(useNewton3) {}
-
-  [[nodiscard]] bool getUseNewton3() const override { return _useNewton3; }
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return _dataLayout; }
+      : TraversalBase(dataLayout, useNewton3), _functor(pairwiseFunctor), _soa{nullptr} {}
 
   void initTraversal() override {
     auto &neighborList = *(this->_neighborList);
@@ -94,9 +90,6 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
    * A pointer to the SoA to iterate over if DataLayout is soa.
    */
   SoA<typename Particle::SoAArraysType> *_soa;
-
-  const DataLayoutOption::Value _dataLayout;
-  const bool _useNewton3;
 };
 
 template <class ParticleCell, class Particle, class PairwiseFunctor>

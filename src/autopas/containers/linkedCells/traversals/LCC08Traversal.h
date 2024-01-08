@@ -48,10 +48,6 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   /**
    * C08 traversals are always usable.
    * @return

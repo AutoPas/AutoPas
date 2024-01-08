@@ -49,10 +49,6 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
     return (this->_dataLayout == DataLayoutOption::aos || this->_dataLayout == DataLayoutOption::soa);
   }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlp_c08; }
 
   /**

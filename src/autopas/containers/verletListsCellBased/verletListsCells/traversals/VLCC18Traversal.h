@@ -66,10 +66,6 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
     return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
   }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   /**
    * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here

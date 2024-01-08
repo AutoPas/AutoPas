@@ -71,10 +71,6 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
    */
   [[nodiscard]] bool isApplicable() const override { return true; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   /**
    * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    */

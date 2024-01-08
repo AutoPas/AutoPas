@@ -46,10 +46,6 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_combined_SoA; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return this->_dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return this->_useNewton3; }
-
   /**
    * lc_c04_combined_SoA traversals are only usable with dataLayout SoA.
    * @todo Currently there is a bug when cellsize factor is smaller than 1:

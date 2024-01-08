@@ -10,7 +10,7 @@
 #include <array>
 #include <vector>
 
-#include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/TraversalBase.h"
 
 namespace autopas {
 
@@ -21,13 +21,15 @@ namespace autopas {
  * @tparam ParticleCell type of cells.
  */
 template <class ParticleCell>
-class CellPairTraversal : public TraversalInterface {
+class CellPairTraversal : public TraversalBase {
  public:
   /**
    * Constructor of CellPairTraversal.
    * @param dims the dimensions of the cellblock.
    */
-  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims), _cells(nullptr) {}
+  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims, const DataLayoutOption::Value dataLayout,
+                             const bool useNewton3)
+      : TraversalBase(dataLayout, useNewton3), _cellsPerDimension(dims), _cells(nullptr) {}
 
   /**
    * Destructor of CellPairTraversal.

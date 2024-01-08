@@ -35,11 +35,9 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            const double interactionLength, const std::array<double, 3> &cellLength,
                            DataLayoutOption::Value dataLayout, bool useNewton3)
-      : CellPairTraversal<ParticleCell>(dims),
+      : CellPairTraversal<ParticleCell>(dims, dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
-        _dataLayout(dataLayout),
-        _useNewton3(useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
@@ -111,10 +109,6 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * cell length in CellBlock3D.
    */
   const std::array<double, 3> _cellLength;
-
-  const DataLayoutOption::Value _dataLayout;
-
-  const bool _useNewton3;
 
   /**
    * overlap of interacting cells. Array allows asymmetric cell sizes.
