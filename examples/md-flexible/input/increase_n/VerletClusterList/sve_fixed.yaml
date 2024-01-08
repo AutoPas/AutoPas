@@ -4,7 +4,7 @@ container                        :  [VerletClusterLists]
 #verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [SoA]
-traversal                        :  [lc_c08]
+traversal                        :  [vcl_clusterIteration]
 tuning-strategy                  :  full-search
 tuning-interval                  :  2500
 tuning-samples                   :  1
