@@ -1355,7 +1355,7 @@ class MieFunctorFixed
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
-  static constexpr int mode = 0;
+  static constexpr uint8_t mode = 0;
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
 
