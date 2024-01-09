@@ -28,7 +28,7 @@ namespace autopas {
 * @tparam useNewton3
  */
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCC08CellHandler3B {
+class LCC08CellHandler3BOptimized {
  public:
   /**
   * Constructor of the LCC08CellHandler3B.
@@ -39,7 +39,7 @@ class LCC08CellHandler3B {
   * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
   * in that case the interactionLength is needed!
    */
-  explicit LCC08CellHandler3B(Functor *functor, const std::array<unsigned long, 3> &cellsPerDimension,
+  explicit LCC08CellHandler3BOptimized(Functor *functor, const std::array<unsigned long, 3> &cellsPerDimension,
                               const double interactionLength, const std::array<double, 3> &cellLength,
                               const std::array<unsigned long, 3> &overlap)
       : _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
@@ -101,7 +101,7 @@ class LCC08CellHandler3B {
 };
 
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::processBaseCell(
+inline void LCC08CellHandler3BOptimized<ParticleCell, Functor, dataLayout, useNewton3>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long baseIndex) {
   for (auto const &[offset1, offset2, offset3, r] : _cellOffsets) {
     const unsigned long index1 = baseIndex + offset1;
@@ -127,7 +127,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::p
 }
 
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::computeOffsets(
+inline void LCC08CellHandler3BOptimized<ParticleCell, Functor, dataLayout, useNewton3>::computeOffsets(
     const std::array<unsigned long, 3> &cellsPerDimension) {
   using namespace utils::ArrayMath::literals;
   long ovX = static_cast<long>(this->_overlap[0]) + 1l;
