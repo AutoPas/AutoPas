@@ -31,8 +31,8 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
    */
   explicit VLCCellPairC08CellHandler(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      double interactionLength, const std::array<double, 3> &cellLength,
-                                     const std::array<unsigned long, 3> &overlap, DataLayoutOption::Value dataLayout,
-                                     bool useNewton3)
+                                     const std::array<unsigned long, 3> &overlap,
+                                     const DataLayoutOption::Value dataLayout, const bool useNewton3)
       : LCC08CellHandler<ParticleCell, PairwiseFunctor>(pairwiseFunctor, dims, interactionLength, cellLength, overlap,
                                                         dataLayout, useNewton3) {
     this->computeOffsets(dims);

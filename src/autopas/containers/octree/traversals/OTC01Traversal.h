@@ -41,7 +41,7 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
    */
   explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
-                          DataLayoutOption::Value dataLayout, bool useNewton3)
+                          const DataLayoutOption::Value dataLayout, const bool useNewton3)
       : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,

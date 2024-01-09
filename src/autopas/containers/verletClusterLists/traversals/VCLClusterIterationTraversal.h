@@ -33,7 +33,7 @@ class VCLClusterIterationTraversal : public TraversalBase,
    * @param useNewton3 If newton 3 should be used. Currently, only false is supported.
    */
   explicit VCLClusterIterationTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize,
-                                        DataLayoutOption::Value dataLayout, bool useNewton3)
+                                        const DataLayoutOption::Value dataLayout, const bool useNewton3)
       : TraversalBase(dataLayout, useNewton3),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}

@@ -33,8 +33,8 @@ class CellFunctor {
    * verlet lists, this should be cutoff+skin.
    * @param useNewton3
    */
-  explicit CellFunctor(ParticleFunctor *f, const double sortingCutoff, DataLayoutOption::Value dataLayout,
-                       bool useNewton3)
+  explicit CellFunctor(ParticleFunctor *f, const double sortingCutoff, const DataLayoutOption::Value dataLayout,
+                       const bool useNewton3)
       : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**

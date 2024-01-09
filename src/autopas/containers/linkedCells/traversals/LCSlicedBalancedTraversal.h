@@ -45,7 +45,7 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
    */
   explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      const double interactionLength, const std::array<double, 3> &cellLength,
-                                     DataLayoutOption::Value dataLayout, bool useNewton3)
+                                     const DataLayoutOption::Value dataLayout, const bool useNewton3)
       : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, true>(dims, pairwiseFunctor, interactionLength,
                                                                           cellLength, dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,

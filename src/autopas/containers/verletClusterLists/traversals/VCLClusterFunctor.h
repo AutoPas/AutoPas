@@ -25,8 +25,8 @@ class VCLClusterFunctor {
    * @param functor The functor to use internally.
    * @param clusterSize Number of particles per cluster.
    */
-  explicit VCLClusterFunctor(PairwiseFunctor *functor, size_t clusterSize, DataLayoutOption::Value dataLayout,
-                             bool useNewton3)
+  explicit VCLClusterFunctor(PairwiseFunctor *functor, size_t clusterSize, const DataLayoutOption::Value dataLayout,
+                             const bool useNewton3)
       : _functor(functor), _clusterSize(clusterSize), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**

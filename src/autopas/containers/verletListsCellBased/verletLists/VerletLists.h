@@ -121,7 +121,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                                                        this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
-    const DataLayoutOption dataLayout;
+    DataLayoutOption dataLayout;
     if (_buildVerletListType == BuildVerletListType::VerletAoS) {
       dataLayout = DataLayoutOption::aos;
     } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {

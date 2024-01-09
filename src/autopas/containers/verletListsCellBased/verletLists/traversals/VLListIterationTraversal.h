@@ -32,8 +32,8 @@ class VLListIterationTraversal : public TraversalBase, public VLTraversalInterfa
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout,
-                                    bool useNewton3)
+  explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor, const DataLayoutOption::Value dataLayout,
+                                    const bool useNewton3)
       : TraversalBase(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }

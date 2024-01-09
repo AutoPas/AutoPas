@@ -30,8 +30,8 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
    */
-  explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff, DataLayoutOption::Value dataLayout,
-                                 bool useNewton3)
+  explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff,
+                                 const DataLayoutOption::Value dataLayout, const bool useNewton3)
       : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
