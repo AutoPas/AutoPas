@@ -1104,7 +1104,6 @@ class LJMultisiteFunctorAVX512_Mask
  public:
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
-   * TODO: This is just a copy of the AoSThreadData from the LJFunctor. This maybe needs adjustments.
    */
   class AoSThreadData {
    public:
