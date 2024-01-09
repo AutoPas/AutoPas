@@ -11,7 +11,7 @@ tuning-samples                   :  1
 #tuning-max-evidence              :  10
 functor                          :  Mie AVX fixed
 newton3                          :  [disabled]
-cutoff                           :  3
+cutoff                           :  2.5
 box-min                          :  [0, 0, 0]
 box-max                          :  [51, 51, 51]
 cell-size                        :  [1]
