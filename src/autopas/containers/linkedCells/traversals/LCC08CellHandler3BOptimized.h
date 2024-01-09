@@ -135,6 +135,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   long ovZ = static_cast<long>(this->_overlap[2]) + 1l;
 
   static std::chrono::duration<double> accumulatedDuration = std::chrono::duration<double>::zero();
+  static long hitCounter = 1l;
 
   // Start the timer
   auto startTime = std::chrono::high_resolution_clock::now();
@@ -153,6 +154,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   auto emplaceOffset = [&](long x1, long y1, long z1, long x2, long y2, long z2, long x3, long y3, long z3) {
     if (is_valid_distance(x2, y2, z2, x3, y3, z3)) {
       if (is_valid_distance(x1, y1, z1, x3, y3, z3)) {
+        hitCounter++;
         std::array<double, 3> sortingDirection = {(x1 + x2) * cellLength1, (y1 + y2) * cellLength2,(z1 + z2) * cellLength3};
         _cellOffsets.emplace_back(cells[x1][y1][z1], cells[x2][y2][z2], cells[x3][y3][z3],
                                   utils::ArrayMath::normalize(sortingDirection));
@@ -488,7 +490,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
 
   accumulatedDuration += std::chrono::high_resolution_clock::now() - startTime;
   std::cout << "Accumulated execution time in computeOffsets: " << accumulatedDuration.count()
-              << " seconds. Size : " << _cellOffsets.size() << std::endl;
+              << " seconds. Size : " << _cellOffsets.size() << " Triplets after distance check : "<< hitCounter << std::endl;
 
 }
 }  // namespace autopas
