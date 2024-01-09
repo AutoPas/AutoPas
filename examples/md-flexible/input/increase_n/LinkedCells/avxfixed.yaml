@@ -15,7 +15,7 @@ cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [51, 51, 51]
 cell-size                        :  [1]
-deltaT                           :  0.0001
+deltaT                           :  0
 iterations                       :  10
 boundary-type                    :  [periodic,periodic,periodic]
 globalForce                      :  [0,0,0]
@@ -35,10 +35,10 @@ Objects:
       particle-mass: 1
       particle-type-id: 0
 
-vtk-filename                     :  performance
+#vtk-filename                     :  performance
 #vtk-write-frequency              :  100
 #vtk-output-folder                :  vtkOutputFolder
-no-flops                         :  false
+no-flops                         :  true
 no-end-config                    :  true
 log-level                        :  info
 no-progress-bar 				 :  true
