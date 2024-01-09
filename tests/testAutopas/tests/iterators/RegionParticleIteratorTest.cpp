@@ -7,6 +7,7 @@
 
 #include "IteratorTestHelper.h"
 #include "autopas/AutoPasDecl.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "testingHelpers/EmptyFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
 
@@ -194,9 +195,7 @@ TEST_F(RegionParticleIteratorTest, testForceSequential) {
   std::vector<std::vector<size_t>> encounteredIds(numThreads);
   {
     const NumThreadGuard numThreadGuard(numThreads);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for
-#endif
+    AUTOPAS_OPENMP(parallel for)
     for (int t = 0; t < numThreads; ++t) {
       for (auto iter = autoPas.getRegionIterator(
                searchBoxMin, searchBoxMax,

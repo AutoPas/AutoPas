@@ -65,7 +65,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoALoadExtract) {
   DensityFunctorType densityFunctor;
 
   // load soa
-  densityFunctor.SoALoader(cell, soa, 0);
+  densityFunctor.SoALoader(cell, soa, 0, /*skipSoAResize*/ false);
 
   auto massptr = soa.begin<sphLib::SPHParticle::AttributeNames::mass>();
   auto densityptr = soa.begin<sphLib::SPHParticle::AttributeNames::density>();
@@ -130,7 +130,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoALoadExtract) {
   HydroForceFunctorType hydroForceFunctor;
 
   // load soa
-  hydroForceFunctor.SoALoader(cell, soa, 0);
+  hydroForceFunctor.SoALoader(cell, soa, 0, /*skipSoAResize*/ false);
 
   auto *const massptr = soa.begin<sphLib::SPHParticle::AttributeNames::mass>();
   auto *const densityptr = soa.begin<sphLib::SPHParticle::AttributeNames::density>();
@@ -246,7 +246,7 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
   // ------------- soa ------------------ (using newton3)
 
   // load soa
-  densityFunctor.SoALoader(cellUsingSoA, cellUsingSoA._particleSoABuffer, 0);
+  densityFunctor.SoALoader(cellUsingSoA, cellUsingSoA._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // functors (single cell)
   densityFunctor.SoAFunctorSingle(cellUsingSoA._particleSoABuffer, true);
@@ -310,7 +310,7 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
   // ------------- soa ------------------ (using newton3)
 
   // load soa
-  hydroForceFunctor.SoALoader(cellUsingSoA, cellUsingSoA._particleSoABuffer, 0);
+  hydroForceFunctor.SoALoader(cellUsingSoA, cellUsingSoA._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // functors (single cell)
   hydroForceFunctor.SoAFunctorSingle(cellUsingSoA._particleSoABuffer, true);
@@ -370,8 +370,8 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
   // ------------- soa ------------------ (using newton3)
 
   // load soa
-  densityFunctor.SoALoader(cellUsingSoA1, cellUsingSoA1._particleSoABuffer, 0);
-  densityFunctor.SoALoader(cellUsingSoA2, cellUsingSoA2._particleSoABuffer, 0);
+  densityFunctor.SoALoader(cellUsingSoA1, cellUsingSoA1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  densityFunctor.SoALoader(cellUsingSoA2, cellUsingSoA2._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // functors (single cell)
   densityFunctor.SoAFunctorPair(cellUsingSoA1._particleSoABuffer, cellUsingSoA2._particleSoABuffer, true);
@@ -461,8 +461,8 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
   // ------------- soa ------------------ (using newton3)
 
   // load soa
-  hydroForceFunctor.SoALoader(cellUsingSoA1, cellUsingSoA1._particleSoABuffer, 0);
-  hydroForceFunctor.SoALoader(cellUsingSoA2, cellUsingSoA2._particleSoABuffer, 0);
+  hydroForceFunctor.SoALoader(cellUsingSoA1, cellUsingSoA1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  hydroForceFunctor.SoALoader(cellUsingSoA2, cellUsingSoA2._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // functors (single cell)
   hydroForceFunctor.SoAFunctorPair(cellUsingSoA1._particleSoABuffer, cellUsingSoA2._particleSoABuffer, true);

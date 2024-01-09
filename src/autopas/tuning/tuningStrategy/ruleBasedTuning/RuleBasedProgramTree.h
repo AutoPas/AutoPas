@@ -122,7 +122,7 @@ struct ConfigurationPattern {
   }
 
   template <class T, class... SetT>
-  static void addHelper(T value, SetT &... sets) {
+  static void addHelper(T value, SetT &...sets) {
     (addHelper2(value, sets), ...);
   }
 };
