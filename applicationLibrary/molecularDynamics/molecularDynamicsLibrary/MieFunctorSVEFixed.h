@@ -1054,7 +1054,7 @@
 #endif
 
 
-    const uint8_t mode = 0;
+    static constexpr uint8_t mode = 0;
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS{0.}, _cnepsilonAoS{0.}, _cmepsilonAoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
 
