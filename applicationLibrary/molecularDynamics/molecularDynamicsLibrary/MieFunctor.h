@@ -406,6 +406,7 @@ class MieFunctor
           }
         }
         else if constexpr (mode==1){
+          SoAFloatPrecision square = fract;
           miem = m_exp & 1 ? sqrt(fract) : 1;
           mien = n_exp & 1 ? sqrt(fract) : 1;
 
@@ -419,7 +420,7 @@ class MieFunctor
             if (n_exp & 1) {
               mien = mien * fract;
             }
-            fract = fract * fract;
+            square = square * square;
             m_exp >>= 1;
             n_exp >>= 1;
           }
@@ -650,6 +651,7 @@ class MieFunctor
           }
         }
         else if constexpr (mode==1){
+          SoAFloatPrecision square = fract;
           miem = m_exp & 1 ? sqrt(fract) : 1;
           mien = n_exp & 1 ? sqrt(fract) : 1;
 
@@ -663,7 +665,7 @@ class MieFunctor
             if (n_exp & 1) {
               mien = mien * fract;
             }
-            fract = fract * fract;
+            square = square * square;
             m_exp >>= 1;
             n_exp >>= 1;
           }
@@ -1079,6 +1081,7 @@ class MieFunctor
             }
           }
           else if constexpr (mode==1){
+            SoAFloatPrecision square = fract;
             miem = m_exp & 1 ? sqrt(fract) : 1;
             mien = n_exp & 1 ? sqrt(fract) : 1;
 
@@ -1092,7 +1095,7 @@ class MieFunctor
               if (n_exp & 1) {
                 mien = mien * fract;
               }
-              fract = fract * fract;
+              square = square * square;
               m_exp >>= 1;
               n_exp >>= 1;
             }
@@ -1215,6 +1218,7 @@ class MieFunctor
         }
       }
       else if constexpr (mode==1){
+        SoAFloatPrecision square = fract;
         miem = m_exp & 1 ? sqrt(fract) : 1;
         mien = n_exp & 1 ? sqrt(fract) : 1;
 
@@ -1228,7 +1232,7 @@ class MieFunctor
           if (n_exp & 1) {
             mien = mien * fract;
           }
-          fract = fract * fract;
+          square = square * square;
           m_exp >>= 1;
           n_exp >>= 1;
         }
