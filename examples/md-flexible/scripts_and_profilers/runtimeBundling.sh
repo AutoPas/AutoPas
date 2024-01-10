@@ -33,10 +33,12 @@ createInputFile () {
 
   #build helper strings
   siteTypes="0"
+  possibleOtherSitePositions=("filler" "[0.01, 0, 0]" "[-0.01, 0, 0]" "[0, 0.01, 0]" "[0, -0.01, 0]") #filler since index starts at 1
   sitePositions="[0, 0, 0]"
   for ((i=1; i<site_count; i++)); do
       siteTypes+=", 0"
-      sitePositions+=", [0, 0, 0]"
+      sitePositions+=", "
+      sitePositions+=${possibleOtherSitePositions[i]}
   done
   spacing=$(echo "scale=10; 1/${density}" | bc)
 

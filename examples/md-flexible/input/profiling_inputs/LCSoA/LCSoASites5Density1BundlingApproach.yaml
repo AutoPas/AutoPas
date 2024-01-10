@@ -32,16 +32,17 @@ Molecules:
     site-types                   :  [ 0, 0, 0, 0, 0 ]
     relative-site-positions      :  [ [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0] ]
     moment-of-inertia            :  [ 1., 1., 1. ]
-Objects:                         
+Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0
       box-length                 :  [8, 8, 8]
       bottomLeftCorner           :  [0.5, 0.5, 0.5]
-      particle-spacing           :  1
+      particle-spacing           :  1.0000000000
       velocity                   :  [0, 0, 0]
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  true
-vtk-filename                     :  VLSoASites5Density1BundlingApproach.yaml
+vtk-filename                     :  LCSoASites5Density1BundlingApproach.yaml
 vtk-write-frequency              :  100
+
