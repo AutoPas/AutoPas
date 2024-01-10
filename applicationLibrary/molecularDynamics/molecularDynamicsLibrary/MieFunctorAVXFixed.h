@@ -1299,7 +1299,7 @@
 
 
   #endif
-    static constexpr uint8_t mode = 0;
+    static constexpr uint8_t mode = 1;
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS, _cnepsilonAoS, _cmepsilonAoS, _sigmaSquaredAoS, _shift6AoS = 0;
     static constexpr uint16_t _nexpAoS = 12;
