@@ -692,7 +692,7 @@ T Simulation::applyWithChosenFunctor(F f) {
 
     case MDFlexConfig::FunctorOption::mie_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_MIE_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(MieFunctorTypeSVE{cutoff, 12,6, particlePropertiesLibrary});
+      return f(MieFunctorTypeSVE{cutoff, 12, 6, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for MieFunctor SVE. Activate it via `cmake "
