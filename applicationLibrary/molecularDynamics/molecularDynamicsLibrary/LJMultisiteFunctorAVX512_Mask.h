@@ -138,9 +138,9 @@ class LJMultisiteFunctorAVX512_Mask
     }
   }
 #else
-      : autopas::Functor<Particle, LJMultisiteFunctorAVX512_STS<Particle, applyShift, useNewton3, calculateGlobals,
+      : autopas::Functor<Particle, LJMultisiteFunctorAVX512_Mask<Particle, applyShift, useNewton3, calculateGlobals,
                                                             relevantForTuning>>(cutoff) {
-    autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX512 support!");
+    autopas::utils::ExceptionHandler::exception("LJMultisiteFunctorAVX512_Mask was compiled without AVX512 support!");
   }
 #endif
 
