@@ -156,7 +156,7 @@ namespace autopas::compatibleTraversals {
           TraversalOption::vcl_c01_balanced,
           TraversalOption::vcl_cluster_iteration,
           TraversalOption::vl_list_iteration,
-          TraversalOption::vl_list_iteration_3b,
+          //TraversalOption::vl_list_iteration_3b,
           TraversalOption::vl_list_intersection_3b,
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01,

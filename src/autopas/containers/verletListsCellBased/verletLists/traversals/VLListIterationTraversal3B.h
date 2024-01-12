@@ -41,7 +41,7 @@ class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOpti
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] bool isApplicable() const override {
-    return (not useNewton3) and dataLayout == DataLayoutOption::aos;
+    return /*(not useNewton3) and*/ dataLayout == DataLayoutOption::aos;
   }
 
   void initTraversal() override {
@@ -58,7 +58,6 @@ class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOpti
     }
   }
 
-  //TODO update SOA and OPENMP branches for triwise-traversal
   void traverseParticleTriplets() override {
     auto &aosNeighborLists = *(this->_aosNeighborLists);
     auto &soaNeighborLists = *(this->_soaNeighborLists);
@@ -73,6 +72,10 @@ class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOpti
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
               Particle &particle = *(bucketIter->first);
+              if(particle.isHalo()){
+                // skip Halo paraticles, as N3 is disabled
+                continue;
+              }
               auto neighborPtrIter1 = bucketIter->second.begin();
               for (; neighborPtrIter1 != bucketIter->second.end(); ++neighborPtrIter1) {
                 auto neighborPtrIter2 = neighborPtrIter1;
@@ -89,9 +92,12 @@ class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOpti
         {
           for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
             Particle &particle = *particlePtr;
+            if((not useNewton3) and particle.isHalo()){
+              // skip Halo Particles for N3 disabled
+              continue;
+            }
             auto neighborPtrIter1 = neighborPtrList.begin();
             for (; neighborPtrIter1 != neighborPtrList.end(); ++neighborPtrIter1) {
-              // TODO (non-Newton-3) second iterator has to start at the particl after the first iterator
               auto neighborPtrIter2 = neighborPtrIter1;
               for(++neighborPtrIter2 ; neighborPtrIter2 != neighborPtrList.end(); ++neighborPtrIter2){
                 Particle &neighbor1 = *(*neighborPtrIter1);
