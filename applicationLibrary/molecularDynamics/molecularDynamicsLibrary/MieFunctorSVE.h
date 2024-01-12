@@ -41,7 +41,43 @@
       : public autopas::Functor<
             Particle, mieFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
     using SoAArraysType = typename Particle::SoAArraysType;
+   private:
+    /**
+       * Computes and sets the DoubbleAdditionChain for th eexponents
+     */
+    void initDoubleAdditionChain(){
+      uint16_t  a,b;
+      a = (_mexpAoS > _nexpAoS) ? _nexpAoS : _mexpAoS;
+      b = (_mexpAoS > _nexpAoS) ? _mexpAoS : _nexpAoS;
 
+      int chain = 0;
+      int pointer = 1;
+      int i = 0;
+
+      for(;a || b != 1;i++,pointer <<= 1) {
+        if (a <= b / 2) {
+          i++;
+          if (b & 1) {
+            chain |= pointer;
+          }
+          pointer <<= 1;
+          b >>= 1 ;
+        } else {
+
+          auto diff = b - a;
+          b = a;
+          a = diff;
+          chain |= pointer;
+        }
+      }
+
+      int rev_chain = 0;
+      for (int k = 0; k < i; k++,chain >>= 1) {
+        rev_chain = (rev_chain<<1) | (chain & 1);
+      }
+      doubleAdditionChain = rev_chain;
+      chain_len = i;
+    }
    public:
     /**
    * Deleted default constructor
@@ -70,6 +106,7 @@
       if (calculateGlobals) {
         _aosThreadData.resize(autopas::autopas_get_max_threads());
       }
+      initDoubleAdditionChain();
     }
 #else
         : autopas::Functor<
@@ -193,12 +230,12 @@
           n_exp>>=1;
         }
       }
-     /*
+
       else if(mode==2) {
-        auto chain = doubleAdditionChain;
+        auto chain = 1;
         auto base = sqrt(fract);
         double a = 1.0, b = base;
-        for(uint16_t k=0;k<chain_len;k++,chain>>=1){
+        for(uint16_t k=0;k<2;k++,chain>>=1){
 
           if(chain&1){
             auto tmp = b*a;
@@ -218,7 +255,6 @@
         Mie_n = b;
 
       }
-      */
 
 
       double Mie = (cnepsilon * Mie_n - cmepsilon * Mie_m);
@@ -548,6 +584,29 @@
           m_exp >>= 1;
           n_exp >>= 1;
         }
+      }
+      else if constexpr(mode==2) {
+        auto chain = doubleAdditionChain;
+        svfloat64_t base =  svsqrt_x(pgC, mie2);
+        svfloat64_t a = _one, b = base;
+        for(size_t k=0;k<chain_len;k++,chain>>=1){
+          if(chain&1){
+            svfloat64_t tmp = svmul_x(pgC, b, a);
+            a = b;
+            b = tmp;
+          }
+          else{
+            chain>>=1;
+            k++;
+            b = svmul_x(pgC, b,b);
+            if(chain&1){
+              b = svmul_x(pgC, b, base);
+            }
+          }
+        }
+        miem = a;
+        mien = b;
+
       }
 
       const svfloat64_t nmien = svmul_x(pgC, cnepsilons, mien);
@@ -1057,10 +1116,12 @@
 #endif
 
 
-    static constexpr uint8_t mode = 1;
+    static constexpr uint8_t mode = 2;
     const double _cutoffSquaredAoS = 0;
     double _cepsilonAoS{0.}, _cnepsilonAoS{0.}, _cmepsilonAoS{0.}, _sigmaSquaredAoS{0.}, _shift6AoS{0.};
     const uint16_t _nexpAoS,_mexpAoS = 0;
+    uint16_t doubleAdditionChain;
+    uint16_t chain_len;
 
     ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
