@@ -587,7 +587,7 @@
         auto chain = doubleAdditionChain;
         svfloat64_t base =  svsqrt_x(pgC, mie2);
         svfloat64_t a = svdup_f64(_one);
-        svfloat64_t b = svdup_f64(base);
+        svfloat64_t b = base;
         for(size_t k=0;k<chain_len;k++,chain>>=1){
           if(chain&1){
             svfloat64_t tmp = svmul_x(pgC, b, a);
