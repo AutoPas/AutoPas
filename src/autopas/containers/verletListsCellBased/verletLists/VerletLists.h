@@ -10,6 +10,7 @@
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC08NeighborListBuilding3B.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
@@ -133,7 +134,23 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    this->updateVerletListsAoS(traversal->getUseNewton3());
+    this->updateVerletListsAoS3B(traversal->getUseNewton3());
+
+    switch(traversal->getTraversalType()){
+      case TraversalOption::vl_list_intersection_3b:{
+        // sort neighborLists for efficient intersecting
+        // @todo paralelize sorting
+        for(auto &[particlePtr, neighborPtrList]: _aosNeighborLists){
+          std::sort(neighborPtrList.begin(), neighborPtrList.end());
+        }
+        break;
+      }
+      default:{
+        // nothing to do
+      }
+        
+    }
+
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
@@ -179,6 +196,44 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       }
       default:
         utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+                                           _buildVerletListType);
+        break;
+    }
+
+    _soaListIsValid = false;
+  }
+
+  virtual void updateVerletListsAoS3B(bool useNewton3) {
+    generateAoSNeighborLists();
+    typename VerletListHelpers<Particle>::VerletListGeneratorFunctor f(_aosNeighborLists,
+                                                                       this->getCutoff() + this->getVerletSkin());
+
+    /// @todo autotune traversal
+    switch (_buildVerletListType) {
+      case BuildVerletListType::VerletAoS: {
+        utils::withStaticBool(useNewton3, [&](auto theBool) {
+          auto traversal =
+              LCC08NeighborListBuilding3B<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
+                             DataLayoutOption::aos, theBool>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+                  this->_linkedCells.getCellBlock().getCellLength());
+          this->_linkedCells.iteratePairwise(&traversal);
+        });
+        break;
+      }
+      case BuildVerletListType::VerletSoA: {
+        utils::withStaticBool(useNewton3, [&](auto theBool) {
+          auto traversal =
+              LCC08NeighborListBuilding3B<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
+                             DataLayoutOption::soa, theBool>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+                  this->_linkedCells.getCellBlock().getCellLength());
+          this->_linkedCells.iteratePairwise(&traversal);
+        });
+        break;
+      }
+      default:
+        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS3B(): unsupported BuildVerletListType: {}",
                                            _buildVerletListType);
         break;
     }
