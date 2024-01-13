@@ -181,7 +181,6 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
                     const auto dist23 = cellDistance(x2, y2, z2, x3, y3, z3);
                     const double dist23Squared = utils::ArrayMath::dot(dist23, dist23);
                     if (dist23Squared > interactionLengthSquare) continue;
-                    hitCounter++;
                     const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
                         x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
 
@@ -194,6 +193,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
                     if (offset1 > offset2 or offset2 >= offset3) continue;
 
                     if ((x1 == 0 or x2 == 0 or x3 == 0) and(y1 == 0 or y2 == 0 or y3 == 0) and (z1 == 0 or z2 == 0 or z3 == 0)) {
+                      hitCounter++;
 
                       const std::array<double, 3> sortDirection = {(x1 + x2) * this->_cellLength[0],
                                                                    (y1 + y2) * this->_cellLength[1],
