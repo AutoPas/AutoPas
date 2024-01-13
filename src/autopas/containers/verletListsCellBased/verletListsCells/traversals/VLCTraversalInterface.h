@@ -26,6 +26,14 @@ namespace autopas {
 template <class Particle, class NeighborList>
 class VLCTraversalInterface {
  public:
+  VLCTraversalInterface() = delete;
+
+  /**
+   * Constructor of the VLCTraversalInterface.
+   * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
+   */
+  VLCTraversalInterface(const ContainerOption::Value typeOfList) : _typeOfList(typeOfList) {}
+
   /**
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
@@ -82,6 +90,8 @@ class VLCTraversalInterface {
    * Structure of arrays to be used if the data layout is SoA.
    */
   SoA<typename Particle::SoAArraysType> *_soa;
+
+  const ContainerOption::Value _typeOfList;
 
  private:
   /**

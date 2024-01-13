@@ -29,9 +29,8 @@ namespace autopas {
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  * @tparam NeighborList type of the neighbor list
- * @tparam typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
  */
-template <class ParticleCell, class PairwiseFunctor, class NeighborList, ContainerOption::Value typeOfList>
+template <class ParticleCell, class PairwiseFunctor, class NeighborList>
 class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>,
                               public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
@@ -44,18 +43,21 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param dataLayout
    * @param useNewton3
+   * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
    */
   explicit VLCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                  double interactionLength, const std::array<double, 3> &cellLength,
-                                 const DataLayoutOption::Value dataLayout, const bool useNewton3)
+                                 const DataLayoutOption::Value dataLayout, const bool useNewton3,
+                                 const ContainerOption::Value typeOfList)
       : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                                dataLayout, useNewton3, false),
+        VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
-    switch (typeOfList) {
+    switch (this->_typeOfList) {
       case (ContainerOption::verletListsCells):
         return TraversalOption::vlc_sliced_c02;
       case (ContainerOption::pairwiseVerletLists):
@@ -79,8 +81,8 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
   PairwiseFunctor *_functor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, class NeighborList, ContainerOption::Value typeOfList>
-inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, NeighborList, typeOfList>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor, class NeighborList>
+inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticlePairs() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }
