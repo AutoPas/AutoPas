@@ -155,7 +155,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
       AutoPasLog(DEBUG, "Slice loads: [{}]", loadStr);
     }
 
-    if (spaciallyForward) {
+    if constexpr (spaciallyForward) {
       // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
       this->_sliceThickness.back() -= this->_overlapLongestAxis;
     }

@@ -87,7 +87,7 @@ void SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>::c
 
   std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
 
-  if (not spaciallyForward) {
+  if constexpr (not spaciallyForward) {
     overLapps23 = {0ul, 0ul};
   }
 

@@ -81,7 +81,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
       _sliceThickness[i] += rest / (remSlices - i);
       rest -= rest / (remSlices - i);
     }
-    if (spaciallyForward) {
+    if constexpr (spaciallyForward) {
       // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
       _sliceThickness.back() -= _overlapLongestAxis;
     }
@@ -173,7 +173,7 @@ inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward
     const std::array<unsigned long, 3> &dims) {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
-    if (not spaciallyForward) {
+    if constexpr (not spaciallyForward) {
       // there is potentially overlap in both directions.
       _overlap[d] *= 2;
     }
