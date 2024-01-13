@@ -151,6 +151,8 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
     auto dist = cellDistance(x1, y1, z1, x2, y2, z2);
     return utils::ArrayMath::dot(dist, dist) > interactionlengthsq;
   };
+  std::cout << "Interaction Length : " << _interactionLength << ", Cell Length : " << _cellLength[0] << "  " <<
+      _cellLength[1] << "  " << _cellLength[2];
 
   const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
   _cellOffsets.emplace_back(0, 0, 0, std::array<double, 3>{1., 1., 1.});
