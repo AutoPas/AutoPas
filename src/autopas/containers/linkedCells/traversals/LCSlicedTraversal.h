@@ -31,7 +31,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, true>,
+class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>,
                           public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -45,8 +45,8 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
   explicit LCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                              const double interactionLength, const std::array<double, 3> &cellLength,
                              const DataLayoutOption::Value dataLayout, const bool useNewton3)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, true>(dims, pairwiseFunctor, interactionLength,
-                                                                      cellLength, dataLayout, useNewton3),
+      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                                dataLayout, useNewton3, true),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 

@@ -34,7 +34,7 @@ namespace autopas {
  * @tparam typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
  */
 template <class ParticleCell, class PairwiseFunctor, class NeighborList, ContainerOption::Value typeOfList>
-class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, false>,
+class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>,
                                    public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
   /**
@@ -50,8 +50,8 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   explicit VLCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                       double interactionLength, const std::array<double, 3> &cellLength,
                                       const DataLayoutOption::Value dataLayout, const bool useNewton3)
-      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, false>(dims, pairwiseFunctor, interactionLength,
-                                                                           cellLength, dataLayout, useNewton3),
+      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
+                                                                    cellLength, dataLayout, useNewton3, false),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;

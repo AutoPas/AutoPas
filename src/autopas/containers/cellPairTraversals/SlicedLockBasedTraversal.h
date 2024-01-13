@@ -27,11 +27,9 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
- * c08)
  */
-template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
-class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward> {
+template <class ParticleCell, class PairwiseFunctor>
+class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -40,12 +38,15 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairw
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
+   * c08)
    */
   explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                     const double interactionLength, const std::array<double, 3> &cellLength,
-                                    const DataLayoutOption::Value dataLayout, const bool useNewton3)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>(dims, pairwiseFunctor, interactionLength,
-                                                                              cellLength, dataLayout, useNewton3) {}
+                                    const DataLayoutOption::Value dataLayout, const bool useNewton3,
+                                    const bool spaciallyForward)
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                            dataLayout, useNewton3, spaciallyForward) {}
 
  protected:
   /**
@@ -63,9 +64,9 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairw
   inline void slicedTraversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
+template <class ParticleCell, class PairwiseFunctor>
 template <typename LoopBody>
-void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>::slicedTraversal(LoopBody &&loopBody) {
+void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();
@@ -74,7 +75,7 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>::
 
   // 0) check if applicable
   const auto overLapps23 = [&]() -> std::array<size_t, 2> {
-    if constexpr (spaciallyForward) {
+    if (this->_spaciallyForward) {
       return {this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
     } else {
       return {0ul, 0ul};

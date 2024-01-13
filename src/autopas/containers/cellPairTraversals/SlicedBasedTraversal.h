@@ -24,10 +24,8 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
- * c08).
  */
-template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
+template <class ParticleCell, class PairwiseFunctor>
 class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
  public:
   /**
@@ -37,10 +35,13 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
+   * c08).
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double interactionLength, const std::array<double, 3> &cellLength,
-                                const DataLayoutOption::Value dataLayout, const bool useNewton3)
+                                const DataLayoutOption::Value dataLayout, const bool useNewton3,
+                                const bool spaciallyForward)
       : CellPairTraversal<ParticleCell>(dims, dataLayout, useNewton3),
         _overlap{},
         _dimsPerLength{},
@@ -48,6 +49,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
         _cellLength(cellLength),
         _overlapLongestAxis(0),
         _sliceThickness{},
+        _spaciallyForward(spaciallyForward),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {
     this->init(dims);
   }
@@ -81,7 +83,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
       _sliceThickness[i] += rest / (remSlices - i);
       rest -= rest / (remSlices - i);
     }
-    if constexpr (spaciallyForward) {
+    if (_spaciallyForward) {
       // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
       _sliceThickness.back() -= _overlapLongestAxis;
     }
@@ -151,6 +153,8 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   std::vector<unsigned long> _sliceThickness;
 
+  const bool _spaciallyForward;
+
  private:
   /**
    * Interaction length (cutoff + skin).
@@ -168,12 +172,11 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
-inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>::init(
-    const std::array<unsigned long, 3> &dims) {
+template <class ParticleCell, class PairwiseFunctor>
+inline void SlicedBasedTraversal<ParticleCell, PairwiseFunctor>::init(const std::array<unsigned long, 3> &dims) {
   for (unsigned int d = 0; d < 3; d++) {
     _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
-    if constexpr (not spaciallyForward) {
+    if (not _spaciallyForward) {
       // there is potentially overlap in both directions.
       _overlap[d] *= 2;
     }

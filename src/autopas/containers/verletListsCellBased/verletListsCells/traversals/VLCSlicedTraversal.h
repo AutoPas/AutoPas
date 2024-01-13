@@ -37,7 +37,7 @@ namespace autopas {
  */
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList, ContainerOption::Value typeOfList>
-class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, false>,
+class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>,
                            public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
   /**
@@ -53,8 +53,8 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
   explicit VLCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                               double interactionLength, const std::array<double, 3> &cellLength,
                               const DataLayoutOption::Value dataLayout, const bool useNewton3)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, false>(dims, pairwiseFunctor, interactionLength,
-                                                                       cellLength, dataLayout, useNewton3),
+      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                                dataLayout, useNewton3, false),
         _functor(pairwiseFunctor) {}
 
   void traverseParticlePairs() override;

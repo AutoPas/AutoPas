@@ -26,8 +26,8 @@ namespace autopas {
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
-template <class ParticleCell, class PairwiseFunctor, bool spaciallyForward>
-class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>,
+template <class ParticleCell, class PairwiseFunctor>
+class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>,
                                      public BalancedTraversal {
  public:
   /**
@@ -36,9 +36,10 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
    */
   explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                         const double interactionLength, const std::array<double, 3> &cellLength,
-                                        const DataLayoutOption::Value dataLayout, const bool useNewton3)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, spaciallyForward>(
-            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3) {
+                                        const DataLayoutOption::Value dataLayout, const bool useNewton3,
+                                        const bool spaciallyForward)
+      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                                dataLayout, useNewton3, spaciallyForward) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
     this->_dynamic = false;
   }
@@ -155,7 +156,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
       AutoPasLog(DEBUG, "Slice loads: [{}]", loadStr);
     }
 
-    if constexpr (spaciallyForward) {
+    if (this->_spaciallyForward) {
       // decreases last _sliceThickness by _overlapLongestAxis to account for the way we handle base cells
       this->_sliceThickness.back() -= this->_overlapLongestAxis;
     }

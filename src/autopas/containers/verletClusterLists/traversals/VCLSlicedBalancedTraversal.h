@@ -22,7 +22,7 @@ namespace autopas {
  * @tparam PairwiseFunctor
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, false>,
+class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>,
                                    public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
@@ -60,8 +60,8 @@ class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
                                       const double interactionLength, const std::array<double, 3> &cellLength,
                                       size_t clusterSize, const DataLayoutOption::Value dataLayout,
                                       const bool useNewton3)
-      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor, false>(dims, pairwiseFunctor, interactionLength,
-                                                                           cellLength, dataLayout, useNewton3),
+      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
+                                                                    cellLength, dataLayout, useNewton3, false),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
