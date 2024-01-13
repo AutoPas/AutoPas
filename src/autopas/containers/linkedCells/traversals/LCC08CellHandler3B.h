@@ -136,7 +136,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   using namespace utils::ArrayMath::literals;
 
   static std::chrono::duration<double> accumulatedDuration = std::chrono::duration<double>::zero();
-
+  static long hitCounter = 0l;
   // Start the timer
   auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -181,7 +181,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
                     const auto dist23 = cellDistance(x2, y2, z2, x3, y3, z3);
                     const double dist23Squared = utils::ArrayMath::dot(dist23, dist23);
                     if (dist23Squared > interactionLengthSquare) continue;
-
+                    hitCounter++;
                     const long offset1 = utils::ThreeDimensionalMapping::threeToOneD(
                         x1, y1, z1, utils::ArrayUtils::static_cast_copy_array<long>(cellsPerDimension));
 
@@ -209,12 +209,8 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
       }
     }
   }
-  accumulatedDuration += std::chrono::high_resolution_clock::now() - startTime;
-
-  // If needed, you can print the accumulated time after each call
-  std::cout << "Accumulated execution time in computeOffsets: " << accumulatedDuration.count() << " seconds." << std::endl;
-
-
+  std::cout << "Hits for overlap " << _overlap[0] << " : " << hitCounter << std::endl;
+  hitCounter = 0;
 }
 
 }  // namespace autopas

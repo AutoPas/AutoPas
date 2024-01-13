@@ -63,7 +63,7 @@ public:
  /**
    * @copydoc autopas::CellTraversal::setUseSorting()
   */
- void setUseSorting(bool useSorting) override { _cellHandler.setUseSorting(useSorting); }
+ void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
 
 private:
