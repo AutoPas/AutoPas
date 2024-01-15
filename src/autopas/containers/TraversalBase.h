@@ -19,6 +19,11 @@ class TraversalBase : public TraversalInterface {
  public:
   TraversalBase() = delete;
 
+  /**
+   * Constructor of the TraversalBase class.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   */
   TraversalBase(const DataLayoutOption::Value dataLayout, const bool useNewton3)
       : _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
@@ -35,7 +40,14 @@ class TraversalBase : public TraversalInterface {
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return _dataLayout; }
 
  protected:
+  /**
+   * The datalayout used by this traversal.
+   */
   const DataLayoutOption::Value _dataLayout;
+
+  /**
+   * If this traversal makes use of newton3.
+   */
   const bool _useNewton3;
 };
 

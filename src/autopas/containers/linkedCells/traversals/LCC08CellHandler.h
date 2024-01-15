@@ -33,6 +33,8 @@ class LCC08CellHandler {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
@@ -84,8 +86,14 @@ class LCC08CellHandler {
    */
   const std::array<unsigned long, 3> _overlap;
 
+  /**
+   * The datalayout to be used.
+   */
   const DataLayoutOption::Value _dataLayout;
 
+  /**
+   * If newton3 should be used or not.
+   */
   const bool _useNewton3;
 
  private:

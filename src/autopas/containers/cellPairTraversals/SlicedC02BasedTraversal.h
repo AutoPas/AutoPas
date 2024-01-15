@@ -34,13 +34,7 @@ class SlicedC02BasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairwi
  public:
   /**
    * Constructor of the colored sliced traversal.
-   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
-   * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param interactionLength Interaction length (cutoff + skin).
-   * @param cellLength cell length.
-   * @param spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
-   * c08)
+   * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
   explicit SlicedC02BasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                    const double interactionLength, const std::array<double, 3> &cellLength,

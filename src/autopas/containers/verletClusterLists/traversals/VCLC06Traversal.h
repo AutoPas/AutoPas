@@ -54,6 +54,8 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor>,
    * Constructor of the VCLClusterIterationTraversal.
    * @param pairwiseFunctor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize,
                            const DataLayoutOption::Value dataLayout, const bool useNewton3)

@@ -91,6 +91,9 @@ class VLCTraversalInterface {
    */
   SoA<typename Particle::SoAArraysType> *_soa;
 
+  /**
+   * The type of neighbor list as an enum value.
+   */
   const ContainerOption::Value _typeOfList;
 
  private:

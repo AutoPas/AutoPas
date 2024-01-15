@@ -31,7 +31,8 @@ class CellFunctor {
    * @param sortingCutoff This parameter indicates the maximal distance the sorted particles are to interact. This
    * parameter is only relevant for optimization (sorting). This parameter normally should be the cutoff, for building
    * verlet lists, this should be cutoff+skin.
-   * @param useNewton3
+   * @param dataLayout The data layout to be used.
+   * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
   explicit CellFunctor(ParticleFunctor *f, const double sortingCutoff, const DataLayoutOption::Value dataLayout,
                        const bool useNewton3)

@@ -27,6 +27,8 @@ class C08TraversalColorChangeNotify : public LCC08Traversal<ParticleCell, Pairwi
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param observer The observer to notify when a color change happens during the traversal.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   C08TraversalColorChangeNotify(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 const double interactionLength, const std::array<double, 3> &cellLength,

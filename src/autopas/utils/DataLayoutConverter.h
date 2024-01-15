@@ -22,6 +22,7 @@ class DataLayoutConverter {
    * Constructor
    * @tparam Functor Functor Type
    * @param functor responsible for the conversion
+   * @param dataLayout The data layout to be used.
    */
   explicit DataLayoutConverter(FunctorSoaWrapper *functor, DataLayoutOption::Value dataLayout)
       : _functor(functor), _dataLayout(dataLayout) {}

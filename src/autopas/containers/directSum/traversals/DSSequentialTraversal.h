@@ -29,6 +29,8 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    * Constructor for the DirectSum traversal.
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff,
                                  const DataLayoutOption::Value dataLayout, const bool useNewton3)
