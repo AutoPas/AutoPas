@@ -15,7 +15,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  DocumentationCheck:
+  DocCheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        # make sure the scripts are executed with bash (needed for [[) and not sh.
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check for missing userdoc updates
+        uses: AutoPas/DocTagChecker@dev
+        with: 
+          baseBranch: master
+          userDocsDir: docs/userdoc
+
+  DoxygenCheck:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
