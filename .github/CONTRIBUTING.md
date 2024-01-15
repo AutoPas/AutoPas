@@ -185,3 +185,12 @@ To update the grammar, simply run [`generateRuleLanguage.sh`](/src/autopas/tunin
 To update the parser, the easiest way to do this is via the CLion plugin for Antlr4. Just right-click the g4 file -> 'Configure ANTLR' (Output directory, input grammar file, namespace `autopas_generated_rule_syntax`, language) and then right click the g4 again -> 'Generate ANTLR Recognizer'. Don't forget to apply clang-format afterward.
 
 **WARNING** The CLion plugin and Antlr version must match!. For example for Antlr version 4.9.1 the plugin version 1.16 is needed, otherwise incompatible parser code is generated. See [Antlr plugin's GitHub page](https://github.com/antlr/intellij-plugin-v4/releases) for what is compatible and get the plugin's binary from the [jetbrains plugin webpage](https://plugins.jetbrains.com/plugin/7358-antlr-v4/versions).
+
+## Documentation
+
+TODO
+
+- Userdoc related files
+- Style: files without path, folders full path and trailing `/`
+- Links in userdoc should work in doxygen AND on github -> urls to github
+- Links in dev doc github suffices -> relative paths
