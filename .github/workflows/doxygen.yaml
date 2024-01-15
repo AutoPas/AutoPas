@@ -29,7 +29,7 @@ jobs:
         uses: AutoPas/DocTagChecker@dev
         with: 
           baseBranch: master
-          userDocsDir: docs/userdoc
+          userDocsDirs: docs/userdoc
 
   DoxygenCheck:
     runs-on: ubuntu-latest
