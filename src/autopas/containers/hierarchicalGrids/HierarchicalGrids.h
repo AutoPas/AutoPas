@@ -16,6 +16,7 @@
 #include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
 
 #include <vector>
+#include <deque>
 
 namespace autopas {
 
@@ -42,7 +43,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     //
     // @todo !!! cellSizeFactor has to be adapted !!!
     //
-    hierarchyLevels.reserve(_numberOfLevels);
+    //hierarchyLevels.reserve(_numberOfLevels);
     for (unsigned int level = 0; level < _numberOfLevels; level++) {
       hierarchyLevels.emplace_back(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator);
     }
@@ -244,6 +245,22 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
       }
 
+  template <typename Lambda>
+  void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
+                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    
+    hierarchyLevels[0].forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
+
+    }
+
+  template <typename Lambda, typename A>
+  void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
+                      const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
+    
+    hierarchyLevels[0].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
+
+    }
+
 
   /**
    * @todo
@@ -436,7 +453,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   * @brief Vector containing the HGrid's different hierarchy levels of Linked Cells.
   * 
   */
-  std::vector<LinkedCells<Particle>> hierarchyLevels;
+  //static std::vector<LinkedCells<Particle>> hierarchyLevels;
+  std::deque<LinkedCells<Particle>> hierarchyLevels;
 
   //std::vector<LinkedCells<Particle>> crossLevels;
 

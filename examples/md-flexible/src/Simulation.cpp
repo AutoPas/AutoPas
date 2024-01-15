@@ -14,6 +14,9 @@
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
+#include "autopas/containers/hierarchicalGrids/HierarchicalGridsHelpers.h"
+#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
+
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
@@ -82,6 +85,10 @@ size_t getTerminalWidth() {
 }
 }  // namespace
 
+unsigned int autopas::HierarchicalGridsHelpers::_numberOfHGLevels = 1;  
+template<>
+double demLib::DEMFunctor<ParticleType>::_factorSubtractExcessForces = 1;
+
 Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
     : _configuration(configuration),
@@ -105,6 +112,9 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     _logFile->open(_configuration.logFileName.value);
     _outputStream = &(*_logFile);
   }
+
+
+
 
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);

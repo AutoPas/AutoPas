@@ -16,10 +16,26 @@ namespace autopas {
  */
 class HierarchicalGridsHelpers {
   public:
+
+    static void setNumberOfLevels(unsigned int levels) {
+
+      _numberOfHGLevels = levels;
+
+    }
+
+    static unsigned int getNumberOfLevels() {
+
+      return _numberOfHGLevels;
+
+    }
+
+
+  //private:
     /**
      * Contains the number of levels to be set up for the HierarchicalGrids
      */
-    static unsigned int numberOfLevels;
+    static unsigned int _numberOfHGLevels;
 
 }; //HierarchicalGridsHelpers
+ 
 } // Namespace autopas

@@ -162,7 +162,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     case ContainerOption::hierarchicalGrids: {
       container = std::make_unique<HierarchicalGrids<Particle>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
-          containerInfo.cellSizeFactor, containerInfo.loadEstimator, HierarchicalGridsHelpers::numberOfLevels);
+          containerInfo.cellSizeFactor, containerInfo.loadEstimator, HierarchicalGridsHelpers::getNumberOfLevels());
       break;
     }
     default: {

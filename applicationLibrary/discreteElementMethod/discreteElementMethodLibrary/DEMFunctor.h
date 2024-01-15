@@ -857,6 +857,7 @@ private:
   double _dampingRatio = 0.1;
 
 };
-//double DEMFunctor<???>::_factorSubtractExcessForces{1.0};
+
+//double DEMFunctor<Particle>::_factorSubtractExcessForces{1.0};
 
 }; //namespace demLib
