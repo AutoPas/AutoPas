@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  DocCheck:
+  DocTagCheck:
     runs-on: ubuntu-latest
     defaults:
       run:
