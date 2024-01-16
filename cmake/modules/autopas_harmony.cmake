@@ -24,7 +24,16 @@ ExternalProject_Add(
     CONFIGURE_COMMAND ""
     LOG_BUILD ON
     LOG_INSTALL ON
-    BUILD_COMMAND ${MAKE_EXE}
+    # make sure make uses the same compilers as the rest of the CMake project
+    BUILD_COMMAND ${CMAKE_COMMAND} -E env
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER}
+      ${MAKE_EXE}
+    # no install step needed since we just link against the unpacked headers
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E env
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER}
+      ${MAKE_EXE} install
 )
 
 # Get GTest source and binary directories from CMake project

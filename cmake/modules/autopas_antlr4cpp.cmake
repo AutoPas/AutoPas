@@ -22,7 +22,11 @@ if (NOT UUID_FOUND)
         BUILD_IN_SOURCE TRUE
         INSTALL_DIR "install"
         CONFIGURE_COMMAND "./configure" ${UUID_CONFIG_PARAMS}
-        BUILD_COMMAND ${MAKE_EXE}
+        # make sure make uses the same compilers as the rest of the CMake project
+        BUILD_COMMAND ${CMAKE_COMMAND} -E env
+          CC=${CMAKE_C_COMPILER}
+          CXX=${CMAKE_CXX_COMPILER}
+          ${MAKE_EXE}
     )
 
 else()
