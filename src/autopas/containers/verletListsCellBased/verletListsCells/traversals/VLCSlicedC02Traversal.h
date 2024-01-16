@@ -62,6 +62,8 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
         return TraversalOption::vlc_sliced_c02;
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_sliced_c02;
+      default:
+        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type!");
     }
     // should never be reached.
     return TraversalOption();
