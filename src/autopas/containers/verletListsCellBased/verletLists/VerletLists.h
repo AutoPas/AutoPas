@@ -139,9 +139,16 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     switch(traversal->getTraversalType()){
       case TraversalOption::vl_list_intersection_3b:{
         // sort neighborLists for efficient intersecting
-        // @todo paralelize sorting
-        for(auto &[particlePtr, neighborPtrList]: _aosNeighborLists){
-          std::sort(neighborPtrList.begin(), neighborPtrList.end());
+        /// @todo paralelize sorting
+        size_t buckets = _aosNeighborLists.bucket_count();
+
+        AUTOPAS_OPENMP(parallel for schedule(dynamic))
+        for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
+          auto endIter = _aosNeighborLists.end(bucketId);
+          for(auto bucketIter = _aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter){
+            auto& neighborPtrList = bucketIter->second;
+            std::sort(neighborPtrList.begin(), neighborPtrList.end());
+          }
         }
         break;
       }

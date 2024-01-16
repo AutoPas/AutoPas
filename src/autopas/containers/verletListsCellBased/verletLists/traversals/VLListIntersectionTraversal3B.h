@@ -66,17 +66,16 @@ class VLListIntersectionTraversal3B : public TraversalInterface<InteractionTypeO
     auto &soaNeighborLists = *(this->_soaNeighborLists);
     switch (dataLayout) {
       case DataLayoutOption::aos: {
-        //@todo add parelelization
-//#if defined(AUTOPAS_OPENMP)
+        /// @todo add parelelization
         if (not useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
-//#pragma omp parallel for schedule(dynamic)
+          AUTOPAS_OPENMP(parallel for schedule(dynamic))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
               Particle &particle = *(bucketIter->first);
-              if(particle.isHalo()){
+              if(not particle.isOwned()){
                 // skip Halo particles as N3 is disabled
                 continue;
               }
@@ -100,27 +99,14 @@ class VLListIntersectionTraversal3B : public TraversalInterface<InteractionTypeO
               }
             }
           }
-        } else
-//#endif
-        {
-          for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
-            Particle &particle = *particlePtr;
-            auto neighborPtrIter1 = neighborPtrList.begin();
-            for (; neighborPtrIter1 != neighborPtrList.end(); ++neighborPtrIter1) {
-              auto neighborPtrIter2 = neighborPtrIter1;
-              for(++neighborPtrIter2 ; neighborPtrIter2 != neighborPtrList.end(); ++neighborPtrIter2){
-                Particle &neighbor1 = *(*neighborPtrIter1);
-                Particle &neighbor2 = *(*neighborPtrIter2);
-                _functor->AoSFunctor(particle, neighbor1, neighbor2, useNewton3);
-              }
-            }
-          }
+        } else {
+          // list intersection does not work with the current way neighborlists are built for N3 case
         }
         return;
       }
 
       case DataLayoutOption::soa: {
-        utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIterationTraversal3B.");
+        utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIntersectionTraversal3B.");
       }
       default: {
         utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout);

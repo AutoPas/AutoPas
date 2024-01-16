@@ -63,16 +63,15 @@ class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOpti
     auto &soaNeighborLists = *(this->_soaNeighborLists);
     switch (dataLayout) {
       case DataLayoutOption::aos: {
-#if defined(AUTOPAS_OPENMP)
         if (not useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
-#pragma omp parallel for schedule(dynamic)
+          AUTOPAS_OPENMP(parallel for schedule(dynamic))
           for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
               Particle &particle = *(bucketIter->first);
-              if(particle.isHalo()){
+              if(not particle.isOwned()){
                 // skip Halo paraticles, as N3 is disabled
                 continue;
               }
@@ -87,12 +86,10 @@ class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOpti
               }
             }
           }
-        } else
-#endif
-        {
+        } else{
           for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
             Particle &particle = *particlePtr;
-            if((not useNewton3) and particle.isHalo()){
+            if((not useNewton3) and (not particle.isOwned())){
               // skip Halo Particles for N3 disabled
               continue;
             }
