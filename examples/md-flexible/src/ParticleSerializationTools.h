@@ -12,7 +12,7 @@
 #include "TypeDefinitions.h"
 
 /**
- * Provides tools to de-/serialize particles of type autopas::MoleculeLJ<double>.
+ * Provides tools to de-/serialize particles of type ParticleType.
  */
 namespace ParticleSerializationTools {
 /**

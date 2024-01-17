@@ -165,6 +165,10 @@ using LJFunctorTypeAbstract =
         mdLib::LJMultisiteFunctorAVX512_GS<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX512_MASK
         mdLib::LJMultisiteFunctorAV512_MASK<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+
+#else
+#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+    mdLib::LJMultisiteFunctor<ParticleType, true>;
 #endif
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
@@ -175,6 +179,9 @@ using LJFunctorTypeAbstract =
         mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
         mdLib::LJFunctorSVE<ParticleType, true, true>;
+#else
+#include "molecularDynamicsLibrary/LJFunctor.h"
+    mdLib::LJFunctor<ParticleType, true, true>;
 #endif
 
 #endif
