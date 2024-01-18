@@ -1,3 +1,4 @@
+
 # cmake-format configuration file
 # based on cmake_format/doc/usage.rst
 
