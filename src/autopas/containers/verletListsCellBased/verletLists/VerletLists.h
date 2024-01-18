@@ -137,7 +137,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     this->updateVerletListsAoS3B(traversal->getUseNewton3());
 
     switch(traversal->getTraversalType()){
-      case TraversalOption::vl_list_intersection_3b:{
+      case TraversalOption::vl_list_intersection_sorted_3b:{
         // sort neighborLists for efficient intersecting
         /// @todo paralelize sorting
         size_t buckets = _aosNeighborLists.bucket_count();

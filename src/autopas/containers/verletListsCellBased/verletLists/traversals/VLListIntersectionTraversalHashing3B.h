@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <algorithm>
+#include <unordered_set>
 
 #include "VLTraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
@@ -26,7 +26,7 @@ namespace autopas {
  * @tparam useNewton3
  */
 template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VLListIntersectionTraversal3B : public TraversalInterface<InteractionTypeOption::threeBody>,
+class VLListIntersectionTraversalHashing3B : public TraversalInterface<InteractionTypeOption::threeBody>,
                                  public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
@@ -35,9 +35,9 @@ class VLListIntersectionTraversal3B : public TraversalInterface<InteractionTypeO
    * Constructor for Verlet Traversal
    * @param triwiseFunctor Functor to be used with this Traversal
    */
-  explicit VLListIntersectionTraversal3B(TriwiseFunctor *triwiseFunctor) : _functor(triwiseFunctor) {}
+  explicit VLListIntersectionTraversalHashing3B(TriwiseFunctor *triwiseFunctor) : _functor(triwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_intersection_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_intersection_hashing_3b; }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
@@ -50,14 +50,14 @@ class VLListIntersectionTraversal3B : public TraversalInterface<InteractionTypeO
   void initTraversal() override {
     auto &cells = *(this->_cells);
     if (dataLayout == DataLayoutOption::soa) {
-      utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIterationTraversal3B.");
+      utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIntersectionTraversalHashing3B.");
     }
   }
 
   void endTraversal() override {
     auto &cells = *(this->_cells);
     if (dataLayout == DataLayoutOption::soa) {
-      utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIterationTraversal3B.");
+      utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIntersectionTraversalHashing3B.");
     }
   }
 
@@ -80,22 +80,23 @@ class VLListIntersectionTraversal3B : public TraversalInterface<InteractionTypeO
                 continue;
               }
               auto &neighborList = bucketIter->second;
+
+              auto hashedNeighbors = std::unordered_set(neighborList.begin(), neighborList.end(), 2 * neighborList.size());
+              
               auto neighborPtrIter1 = neighborList.begin();
               for (; neighborPtrIter1 != neighborList.end(); ++neighborPtrIter1) {
                 Particle &neighbor1 = *(*neighborPtrIter1);
                 auto &neighborList1 = (aosNeighborLists.find(&neighbor1))->second;
-
-                std::size_t maxIntersectionSize = std::min(neighborList1.size(), neighborList.size());
-                auto intersectingNeighbors = std::vector<Particle*>(maxIntersectionSize);
-                auto intersectionIter = neighborPtrIter1;
-                auto intersectionEndIter = std::set_intersection(++intersectionIter, neighborList.end()
-                 , neighborList1.begin(), neighborList1.end(), intersectingNeighbors.begin());
                 
-                for(auto neighborPtrIter2 = intersectingNeighbors.begin(); neighborPtrIter2 != intersectionEndIter; ++neighborPtrIter2){
-                    Particle &neighbor2 = *(*neighborPtrIter2);
-                    _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+                for(auto neighborPtr2 : neighborList1){
+                    if(hashedNeighbors.find(neighborPtr2) != hashedNeighbors.end()){
+                      Particle &neighbor2 = *neighborPtr2;
+                      _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+                    }
                 }
-                    
+                
+                // remove neighbor1 to avoid future calculation of (particle, neighbor2, neighbor1)
+                hashedNeighbors.erase(&neighbor1);
               }
             }
           }
@@ -106,7 +107,7 @@ class VLListIntersectionTraversal3B : public TraversalInterface<InteractionTypeO
       }
 
       case DataLayoutOption::soa: {
-        utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIntersectionTraversal3B.");
+        utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIntersectionTraversalHashing3B.");
       }
       default: {
         utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout);
