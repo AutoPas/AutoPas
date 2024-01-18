@@ -28,7 +28,7 @@ jobs:
       - name: Check for missing userdoc updates
         uses: AutoPas/DocTagChecker@dev
         with: 
-          baseBranch: master
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
           userDocsDirs: docs/userdoc
 
   DoxygenCheck:
