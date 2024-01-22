@@ -38,5 +38,5 @@ This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGRESUL
 ## Related Files and Folders
 - find/me/haha/
 - src/autopas/utils/logging/
-- blaa
-- blub
+- blaa.cpp
+- blub.h
