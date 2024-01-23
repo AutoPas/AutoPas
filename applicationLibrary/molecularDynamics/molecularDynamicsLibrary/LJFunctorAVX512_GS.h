@@ -505,6 +505,107 @@ class LJFunctorAVX512_GS
   }
 
 #ifdef __AVX512F__
+  template <bool newton3, bool remainderCase, bool isVerlet>
+  inline void SoACutoffCompressionKernel(const size_t j, __m512i &interactionIndices, int &numAssignedRegisters, const __mmask8 *isOwnedMask1, const int64_t *const __restrict ownedStatePtr2,
+                                         const __m512d &x1, const __m512d &y1, const __m512d &z1, const double *const __restrict x2ptr,
+                                         const double *const __restrict y2ptr, const double *const __restrict z2ptr,
+                                         double *const __restrict fx2ptr, double *const __restrict fy2ptr,
+                                         double *const __restrict fz2ptr, const double *const __restrict mixingPtr, const size_t *const typeID2ptr,
+                                         __m512d &fxacc, __m512d &fyacc, __m512d &fzacc, __m512d *virialSumX, __m512d *virialSumY,
+                                         __m512d *virialSumZ, __m512d *potentialEnergySum, const unsigned int remainder = 0, __m512i *neighborIndices = nullptr) {
+
+    const __mmask8 remainderMask = remainderCase ? _remainderMasks[8-remainder] : __mmask8(255);
+
+    // for verlet case, this is neighborIndices; for non-verlet case, this is just indices j -> j + vecLength - 1
+    const __m512i loopIndices = isVerlet ? *neighborIndices : _mm512_add_epi64(_mm512_set1_epi64(j), _accendingIndices);
+
+    const __m512d x2 = remainderCase ? (isVerlet ?
+                              _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &x2ptr[0], 8) :
+                              _mm512_maskz_loadu_pd(remainderMask, &x2ptr[j])) :
+                  (isVerlet ?
+                            _mm512_i64gather_pd(*neighborIndices, &x2ptr[0], 8) :
+                            _mm512_loadu_pd(&x2ptr[j]));
+
+    const __m512d y2 = remainderCase ? (isVerlet ?
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &y2ptr[0], 8) :
+                                                 _mm512_maskz_loadu_pd(remainderMask, &y2ptr[j])) :
+                                     (isVerlet ?
+                                               _mm512_i64gather_pd(*neighborIndices, &y2ptr[0], 8) :
+                                               _mm512_loadu_pd(&y2ptr[j]));
+
+    const __m512d z2 = remainderCase ? (isVerlet ?
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &z2ptr[0], 8) :
+                                                 _mm512_maskz_loadu_pd(remainderMask, &z2ptr[j])) :
+                                     (isVerlet ?
+                                               _mm512_i64gather_pd(*neighborIndices, &z2ptr[0], 8) :
+                                               _mm512_loadu_pd(&z2ptr[j]));
+
+    const __m512d displacementX = _mm512_sub_pd(x1, x2);
+    const __m512d displacementY = _mm512_sub_pd(y1, y2);
+    const __m512d displacementZ = _mm512_sub_pd(z1, z2);
+
+    const __m512d distanceSquaredX = _mm512_mul_pd(displacementX, displacementX);
+    const __m512d distanceSquaredY = _mm512_mul_pd(displacementY, displacementY);
+    const __m512d distanceSquaredZ = _mm512_mul_pd(displacementZ, displacementZ);
+
+    const __m512d distanceSquared =
+        _mm512_add_pd(distanceSquaredX, _mm512_add_pd(distanceSquaredY, distanceSquaredZ));
+
+    const __mmask8 cutoffMask = _mm512_cmp_pd_mask(distanceSquared, _cutoffSquared, _CMP_LE_OS);
+
+    const __m512i ownershipState2 = _mm512_loadu_epi64(&ownedStatePtr2[j]);
+
+    const __mmask8 isNotDummy = _mm512_cmp_epi64_mask(ownershipState2, _ownedStateDummyMM512i, _MM_CMPINT_NE);
+
+    // combinedMask = mask AND isNotDummy
+    const __mmask8 combinedMask = _mm512_kand(cutoffMask, isNotDummy);
+
+    // population count: count the number of 1s in the mask.
+    // I am unsure what is the most performant solution here. E.g. C++ 20 offers std::popcount. There are also intrinsics,
+    // however they would require casting __mmask8 (8 bits) to something bigger.
+    const int popCountMask = std::bitset<8>(combinedMask).count();
+
+    if (numAssignedRegisters + popCountMask < 8) {
+      // Compress indices leading to interactions to left of register
+      // E.g. [0,1,0,0,0,0,1,0] & [8,9,10,11,12,13,14,15] -> [9,14,0,0,0,0,0,0]
+      const __m512i newInteractonIndices = _mm512_maskz_compress_epi64(combinedMask, loopIndices);
+
+      // Append new indices to old indices
+      // E.g. [0,0,0,0,0,3,4,7] & [9,14,0,0,0,0,0,0] -> [0,0,0,3,4,7,9,14]
+      interactionIndices = _mm512_alignr_epi64(interactionIndices, newInteractonIndices, 8-popCountMask);
+
+      // update count
+      numAssignedRegisters += popCountMask;
+    } else {
+      // Compress indices leading to interactions to left of register
+      // E.g. [1,1,0,1,0,0,1,0] & [16,17,18,19,20,21,22,23] -> [16,17,19,22,0,0,0,0]
+      const __m512i newInteractonIndices = _mm512_maskz_compress_epi64(combinedMask, loopIndices);
+
+      // Append new indices to old indices to fill remaining regsiters of interactionIndices
+      // E.g. [0,0,0,3,4,7,9,14] & [16,17,19,22,0,0,0,0] -> [3,4,7,9,14,16,17,19]
+      interactionIndices = _mm512_alignr_epi64(interactionIndices, newInteractonIndices, 8-numAssignedRegisters);
+
+      // kernel
+      SoAKernel<newton3, remainderCase, isVerlet>(j, isOwnedMask1, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr,
+                                    z2ptr, fx2ptr, fy2ptr, fz2ptr, mixingPtr, typeID2ptr, fxacc, fyacc, fzacc, &virialSumX,
+                                    &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+
+      // shift the remaining indices such that the rightmost index is at element 7
+      // we need a mask to remove the indices that have already been processed
+      // E.g. with above -> [0,0,0,0,0,0,0,1] (only one "overflow" register)
+      const __mmask8 alreadyProcessedMask = _remainderMasks[popCountMask+numAssignedRegisters-8];
+
+      // E.g. [16,17,19,22,0,0,0,0] -> [0,0,0,0,16,17,19,22] -> (mask) [0,0,0,0,0,0,0,22]
+      interactionIndices = _mm512_maskz_alignr_epi64(alreadyProcessedMask, _zeroI, interactionIndices, 8-popCountMask);
+
+      // update count
+      numAssignedRegisters += popCountMask - 8;
+    }
+
+  }
+#endif
+
+#ifdef __AVX512F__
   /**
    * Actual inner kernel of the SoAFunctors.
    *
