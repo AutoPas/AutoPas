@@ -12,6 +12,7 @@
 #endif
 
 #include <array>
+#include <bit>
 
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
@@ -276,7 +277,8 @@ class LJFunctorAVX512_GS
       //    Kernel
       //    Use leftover in to begin anew
 
-      __m512i interactionIndices = _zero;
+      __m512i interactionIndices = _zeroI;
+      int numAssignedRegisters = 0; // = number of non-empty registers in interactionIndices
 
       size_t j = 0;
       // floor soa numParticles to multiple of vecLength
@@ -310,15 +312,50 @@ class LJFunctorAVX512_GS
         // combinedMask = mask AND isNotDummy
         const __mmask8 combinedMask = _mm512_kand(cutoffMask, isNotDummy);
 
+        // population count: count the number of 1s in the mask.
+        // I am unsure what is the most performant solution here. E.g. C++ 20 offers std::popcount. There are also intrinsics,
+        // however they would require casting __mmask8 (8 bits) to something bigger.
+        const int popCountMask = std::bitset<8>(combinedMask).count();
+
+        if (numAssignedRegisters + popCountMask < 8) {
+          // Compress indices leading to interactions to left of register
+          // E.g. [0,1,0,0,0,0,1,0] & [8,9,10,11,12,13,14,15] -> [9,14,0,0,0,0,0,0]
+          const __m512i newInteractonIndices = _mm512_maskz_compress_epi64(combinedMask, loopIndices);
+
+          // Append new indices to old indices
+          // E.g. [0,0,0,0,0,3,4,7] & [9,14,0,0,0,0,0,0] -> [0,0,0,3,4,7,9,14]
+          interactionIndices = _mm512_alignr_epi64(interactionIndices, newInteractonIndices, 8-popCountMask);
+
+          // update count
+          numAssignedRegisters += popCountMask;
+        } else {
+          // Compress indices leading to interactions to left of register
+          // E.g. [1,1,0,1,0,0,1,0] & [16,17,18,19,20,21,22,23] -> [16,17,19,22,0,0,0,0]
+          const __m512i newInteractonIndices = _mm512_maskz_compress_epi64(combinedMask, loopIndices);
+
+          // Append new indices to old indices to fill remaining regsiters of interactionIndices
+          // E.g. [0,0,0,3,4,7,9,14] & [16,17,19,22,0,0,0,0] -> [3,4,7,9,14,16,17,19]
+          interactionIndices = _mm512_alignr_epi64(interactionIndices, newInteractonIndices, 8-numAssignedRegisters);
+
+          // kernel
+          SoAKernel<true, false, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
+                                        zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
+                                        &virialAccY, &virialAccZ, &potentialEnergyAcc, 0);
+
+          // shift the remaining indices such that the rightmost index is at element 7
+          // we need a remainder mask to remove the indices that have already been processed
+          // E.g. with above -> [0,0,0,0,0,0,0,1] (only one "overflow" register)
+          const __mmask8 remainderMask = _remainderMasks[popCountMask+numAssignedRegisters-8];
+
+          // E.g. [16,17,19,22,0,0,0,0] -> [0,0,0,0,16,17,19,22] -> (mask) [0,0,0,0,0,0,0,22]
+          interactionIndices = _mm512_maskz_alignr_epi64(remainderMask, _zeroI, interactionIndices, 8-popCountMask);
+
+          // update count
+          numAssignedRegisters += popCountMask - 8;
+        }
 
 
-        interactionIndices = _mm512_mask_compress_epi64(interactionIndices, combinedMask, loopIndices);
 
-
-
-        SoAKernel<true, false, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
-                               &virialAccY, &virialAccZ, &potentialEnergyAcc, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
@@ -514,21 +551,21 @@ class LJFunctorAVX512_GS
     // todo: can we convert this ugly logic into a lambda function with zero overhead
 
     const __m512d x2 = remainderCase ? (isVerlet ?
-                                                 _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &x2ptr[0], 8) :
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &x2ptr[0], 8) :
                                                 _mm512_maskz_loadu_pd(remainderMask, &x2ptr[j])) :
                                      (isVerlet ?
                                                _mm512_i64gather_pd(*neighborIndices, &x2ptr[0], 8) :
                                                _mm512_loadu_pd(&x2ptr[j]));
 
     const __m512d y2 = remainderCase ? (isVerlet ?
-                                                 _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &y2ptr[0], 8) :
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &y2ptr[0], 8) :
                                                  _mm512_maskz_loadu_pd(remainderMask, &y2ptr[j])) :
                                      (isVerlet ?
                                                _mm512_i64gather_pd(*neighborIndices, &y2ptr[0], 8) :
                                                _mm512_loadu_pd(&y2ptr[j]));
 
     const __m512d z2 = remainderCase ? (isVerlet ?
-                                                 _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &z2ptr[0], 8) :
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &z2ptr[0], 8) :
                                                  _mm512_maskz_loadu_pd(remainderMask, &z2ptr[j])) :
                                      (isVerlet ?
                                                _mm512_i64gather_pd(*neighborIndices, &z2ptr[0], 8) :
@@ -553,7 +590,7 @@ class LJFunctorAVX512_GS
     const __mmask8 cutoffMask = _mm512_cmp_pd_mask(distanceSquared, _cutoffSquared, _CMP_LE_OS);
 
     const __m512i ownershipState2 = remainderCase ? (isVerlet ?
-                                                 _mm512_mask_i64gather_epi64(_zero, remainderMask, *neighborIndices, &ownedStatePtr2[0], 8) :
+                                                 _mm512_mask_i64gather_epi64(_zeroD, remainderMask, *neighborIndices, &ownedStatePtr2[0], 8) :
                                                  _mm512_maskz_loadu_epi64(remainderMask, &ownedStatePtr2[j])) :
                                      (isVerlet ?
                                                _mm512_i64gather_epi64(*neighborIndices, &ownedStatePtr2[0], 8) :
@@ -574,19 +611,19 @@ class LJFunctorAVX512_GS
     // Uses base address of mixingPtr (+0/1/2), gathered data is offset by siteTypeIndicesScaled x 64 bits x 8.
     // We need scaled site-types due to the way the mixing data is stored - todo change this
     const __m512i typeIndices = remainderCase ? (isVerlet ?
-                                                              _mm512_mask_i64gather_epi64(_zero, remainderMask, *neighborIndices, &typeID2ptr[0], 8) :
+                                                              _mm512_mask_i64gather_epi64(_zeroD, remainderMask, *neighborIndices, &typeID2ptr[0], 8) :
                                                               _mm512_maskz_loadu_epi64(remainderMask, &typeID2ptr[j])) :
                                                   (isVerlet ?
                                                             _mm512_i64gather_epi64(*neighborIndices, &typeID2ptr[0], 8) :
                                                             _mm512_loadu_epi64(&typeID2ptr[j]));
 
-    const __m512i typeIndicesScaled = _mm512_mullox_epi64(typeIndices, _three);
+    const __m512i typeIndicesScaled = _mm512_mullox_epi64(typeIndices, _threeD);
 
-    const __m512d epsilon24 = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, typeIndicesScaled, mixingPtr, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr, 8);
-    const __m512d sigmaSquared = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, typeIndicesScaled, mixingPtr+1, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+1, 8);
-    const __m512d shift6 = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8);
+    const __m512d epsilon24 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr, 8);
+    const __m512d sigmaSquared = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+1, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+1, 8);
+    const __m512d shift6 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8);
 
-    const __m512d invDistSquared = _mm512_div_pd(_one, distanceSquared);
+    const __m512d invDistSquared = _mm512_div_pd(_oneD, distanceSquared);
     const __m512d lj2 = _mm512_mul_pd(sigmaSquared, invDistSquared); // = (sigma/dist)^2
     const __m512d lj6 = _mm512_mul_pd(_mm512_mul_pd(lj2, lj2), lj2); // = (sigma/dist)^6
     const __m512d lj12 = _mm512_mul_pd(lj6, lj6); // = (sigma/dist)^12
@@ -610,15 +647,15 @@ class LJFunctorAVX512_GS
     if constexpr (newton3) {
       if constexpr (remainderCase) {
         if constexpr (isVerlet) {
-          const __m512d forceSumJX = _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &fx2ptr[0], 8);
+          const __m512d forceSumJX = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fx2ptr[0], 8);
           const __m512d newForceSumJX = _mm512_sub_pd(forceSumJX, forceX);
           _mm512_mask_i64scatter_pd(&fx2ptr[j], remainderMask, *neighborIndices, newForceSumJX, 8);
 
-          const __m512d forceSumJY = _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &fy2ptr[0], 8);
+          const __m512d forceSumJY = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fy2ptr[0], 8);
           const __m512d newForceSumJY = _mm512_sub_pd(forceSumJY, forceY);
           _mm512_mask_i64scatter_pd(&fy2ptr[j], remainderMask, *neighborIndices, newForceSumJY, 8);
 
-          const __m512d forceSumJZ = _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &fz2ptr[0], 8);
+          const __m512d forceSumJZ = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fz2ptr[0], 8);
           const __m512d newForceSumJZ = _mm512_sub_pd(forceSumJZ, forceZ);
           _mm512_mask_i64scatter_pd(&fz2ptr[j], remainderMask, *neighborIndices, newForceSumJZ, 8);
         } else {
@@ -1040,9 +1077,11 @@ class LJFunctorAVX512_GS
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 #ifdef __AVX512F__
-  const __m512d _zero{_mm512_set1_pd(0.)};
-  const __m512d _one{_mm512_set1_pd(1.)};
-  const __m512d _three{_mm512_set1_pd(3.)};
+  const __m512d _zeroD{_mm512_set1_pd(0.)};
+  const __m512d _oneD{_mm512_set1_pd(1.)};
+  const __m512d _threeD{_mm512_set1_pd(3.)};
+  const __m512i _zeroI{_mm512_set1_epi64(0)};
+    
   /**
    * Masks for the remainder cases to avoid loading data beyond the end of the vectors.
    * Masks are generated with decimal numbers, whose binary equivalent consists of 8 0s or 1s, representing which registers
