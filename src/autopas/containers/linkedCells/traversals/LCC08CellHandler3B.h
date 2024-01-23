@@ -136,7 +136,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
   using namespace utils::ArrayMath::literals;
 
   static std::chrono::duration<double> accumulatedDuration = std::chrono::duration<double>::zero();
-  static long hitCounter = 0l;
+  static long hitCounter = 1l;
   // Start the timer
   auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -211,7 +211,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
       }
     }
   }
-  std::cout << "Hits for overlap " << _overlap[0] << " : " << hitCounter << std::endl;
+  std::cout << " ,  Hits for overlap " << _overlap[0] << " : " << hitCounter << std::endl;
   hitCounter = 1;
 }
 
