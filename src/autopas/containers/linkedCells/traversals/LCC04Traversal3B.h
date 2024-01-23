@@ -232,6 +232,7 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseSi
  const long startY = startOfThisColor[1], endY = _end[1];
  const long startZ = startOfThisColor[2], endZ = _end[2];
 
+ auto counter = 0;
 // first cartesian grid
 // grids are interlinked: one grid fills the gaps in the other grid
 #if defined(AUTOPAS_OPENMP)
@@ -248,9 +249,11 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseSi
 
        const std::array<long, 3> base3DIndex = {x, y, z};
        processBasePack32(cells, base3DIndex);
+       counter++;
      }
    }
  }
+ std::cout << "C04 32 packs counter : " << counter << std::endl;
 }
 
 }  // namespace autopas
