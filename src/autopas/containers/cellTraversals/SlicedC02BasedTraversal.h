@@ -86,6 +86,8 @@ void SlicedC02BasedTraversal<ParticleCell, Functor, interactionType, dataLayout,
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();
+
+  std::cout << "Number of Slices C02 : " << numSlices << "    Thickness : " << this->_sliceThickness[0] << std::endl;
   // check if applicable
 
   std::array<size_t, 2> overLapps23{this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
