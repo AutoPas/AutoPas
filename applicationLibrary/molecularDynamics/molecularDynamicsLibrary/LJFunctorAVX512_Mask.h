@@ -244,19 +244,20 @@ class LJFunctorAVX512_Mask
 
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
-      // ownedStatePtr contains int64_t, so we broadcast these to make an __m512i.
-      // _mm512_set1_epi64 broadcasts a 64-bit integer, we use this instruction to have vecLength values!
+
       __m512i ownedStateI = _mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[i]));
-      const __mmask8 isOwnedMaskI = _mm512_cmp_epi64_mask(ownedStateI, _ownedStateOwnedMM256i, _MM_CMPINT_EQ);
+      const __mmask8 isOwnedMaskI = _mm512_cmp_epi64_mask(ownedStateI, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
 
       __m512d fxacc = _mm512_setzero_pd();
       __m512d fyacc = _mm512_setzero_pd();
       __m512d fzacc = _mm512_setzero_pd();
 
       // Load positions of molecule i into full vector
-      const __m512d x1 = _mm512_set1_pd(&xptr[i]);
-      const __m512d y1 = _mm512_set1_pd(&yptr[i]);
-      const __m512d z1 = _mm512_set1_pd(&zptr[i]);
+      const __m512d x1 = _mm512_set1_pd(xptr[i]);
+      const __m512d y1 = _mm512_set1_pd(yptr[i]);
+      const __m512d z1 = _mm512_set1_pd(zptr[i]);
+
+      const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(typeIDptr[i], 0);
 
       size_t j = 0;
       // floor soa numParticles to multiple of vecLength
@@ -264,15 +265,15 @@ class LJFunctorAVX512_Mask
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<true, false, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
+                               zptr, fxptr, fyptr, fzptr, mixingPtr, typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
                                &virialAccY, &virialAccZ, &potentialEnergyAcc, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
       const int remainder = (int)(i & (vecLength - 1));
       if (remainder > 0) {
-        SoAKernel<true, true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, &typeIDptr[i], typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
+        SoAKernel<true, true, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
+                              zptr, fxptr, fyptr, fzptr, mixingPtr, typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
                               &virialAccY, &virialAccZ, &potentialEnergyAcc, remainder);
       }
 
@@ -351,31 +352,32 @@ class LJFunctorAVX512_Mask
 
       static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                     "OwnershipStates underlying type should be int64_t!");
-      // ownedStatePtr1 contains int64_t, so we broadcast these to make an __m512i.
-      // _mm512_set1_epi64 broadcasts a 64-bit integer, we use this instruction to have vecLength values!
+
       __m512i ownedStateI = _mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr1[i]));
-      const __mmask8 isOwnedMaskI = _mm512_cmp_epi64_mask(ownedStateI, _ownedStateOwnedMM256i, _MM_CMPINT_EQ);
+      const __mmask8 isOwnedMaskI = _mm512_cmp_epi64_mask(ownedStateI, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
 
       __m512d fxacc = _mm512_setzero_pd();
       __m512d fyacc = _mm512_setzero_pd();
       __m512d fzacc = _mm512_setzero_pd();
 
       // Load positions of molecule i into full vector
-      const __m512d x1 = _mm512_set1_pd(&x1ptr[i]);
-      const __m512d y1 = _mm512_set1_pd(&y1ptr[i]);
-      const __m512d z1 = _mm512_set1_pd(&z1ptr[i]);
+      const __m512d x1 = _mm512_set1_pd(x1ptr[i]);
+      const __m512d y1 = _mm512_set1_pd(y1ptr[i]);
+      const __m512d z1 = _mm512_set1_pd(z1ptr[i]);
+
+      const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(typeID1ptr[i], 0);
 
       // floor soa2 numParticles to multiple of vecLength
       size_t j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += vecLength) {
-        SoAKernel<newton3, false, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
+        SoAKernel<newton3, false, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, mixingPtr, typeID2ptr, fxacc, fyacc, fzacc,
                                   &virialAccX, &virialAccY, &virialAccZ, &potentialEnergyAcc, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, mixingPtr, typeID2ptr, fxacc, fyacc, fzacc,
                                  &virialAccX, &virialAccY, &virialAccZ, &potentialEnergyAcc, rest);
 
       // We accumulated the forces acting on molecule i across a full vector. We horizontally reduce this, fDacc, to sumfD
@@ -448,34 +450,34 @@ class LJFunctorAVX512_Mask
    * @param remainder
    */
   template <bool newton3, bool remainderCase, bool isVerlet>
-  inline void SoAKernel(const size_t j, const __mmask8 *isOwnedMask1, const int64_t *const __restrict ownedStatePtr2,
+  inline void SoAKernel(const size_t j, const __mmask8 &isOwnedMask1, const int64_t *const __restrict ownedStatePtr2,
                         const __m512d &x1, const __m512d &y1, const __m512d &z1, const double *const __restrict x2ptr,
                         const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                         double *const __restrict fx2ptr, double *const __restrict fy2ptr,
                         double *const __restrict fz2ptr, const double *const __restrict mixingPtr, const size_t *const typeID2ptr,
                         __m512d &fxacc, __m512d &fyacc, __m512d &fzacc, __m512d *virialSumX, __m512d *virialSumY,
-                        __m512d *virialSumZ, __m512d *potentialEnergySum, const unsigned int remainder = 0, __m512i *neighborIndices = nullptr) {
+                        __m512d *virialSumZ, __m512d *potentialEnergySum, const unsigned int remainder = 0, const __m512i *neighborIndices = nullptr) {
 
     const __mmask8 remainderMask = remainderCase ? _remainderMasks[8-remainder] : __mmask8(255);
 
     // todo: can we convert this ugly logic into a lambda function with zero overhead
 
     const __m512d x2 = remainderCase ? (isVerlet ?
-                                                 _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &x2ptr[0], 8) :
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &x2ptr[0], 8) :
                                                 _mm512_maskz_loadu_pd(remainderMask, &x2ptr[j])) :
                                      (isVerlet ?
                                                _mm512_i64gather_pd(*neighborIndices, &x2ptr[0], 8) :
                                                _mm512_loadu_pd(&x2ptr[j]));
 
     const __m512d y2 = remainderCase ? (isVerlet ?
-                                                 _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &y2ptr[0], 8) :
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &y2ptr[0], 8) :
                                                  _mm512_maskz_loadu_pd(remainderMask, &y2ptr[j])) :
                                      (isVerlet ?
                                                _mm512_i64gather_pd(*neighborIndices, &y2ptr[0], 8) :
                                                _mm512_loadu_pd(&y2ptr[j]));
 
     const __m512d z2 = remainderCase ? (isVerlet ?
-                                                 _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &z2ptr[0], 8) :
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &z2ptr[0], 8) :
                                                  _mm512_maskz_loadu_pd(remainderMask, &z2ptr[j])) :
                                      (isVerlet ?
                                                _mm512_i64gather_pd(*neighborIndices, &z2ptr[0], 8) :
@@ -500,7 +502,7 @@ class LJFunctorAVX512_Mask
     const __mmask8 cutoffMask = _mm512_cmp_pd_mask(distanceSquared, _cutoffSquared, _CMP_LE_OS);
 
     const __m512i ownershipState2 = remainderCase ? (isVerlet ?
-                                                 _mm512_mask_i64gather_epi64(_zero, remainderMask, *neighborIndices, &ownedStatePtr2[0], 8) :
+                                                 _mm512_mask_i64gather_epi64(_zeroI, remainderMask, *neighborIndices, &ownedStatePtr2[0], 8) :
                                                  _mm512_maskz_loadu_epi64(remainderMask, &ownedStatePtr2[j])) :
                                      (isVerlet ?
                                                _mm512_i64gather_epi64(*neighborIndices, &ownedStatePtr2[0], 8) :
@@ -521,19 +523,19 @@ class LJFunctorAVX512_Mask
     // Uses base address of mixingPtr (+0/1/2), gathered data is offset by siteTypeIndicesScaled x 64 bits x 8.
     // We need scaled site-types due to the way the mixing data is stored - todo change this
     const __m512i typeIndices = remainderCase ? (isVerlet ?
-                                                              _mm512_mask_i64gather_epi64(_zero, remainderMask, *neighborIndices, &typeID2ptr[0], 8) :
+                                                              _mm512_mask_i64gather_epi64(_zeroI, remainderMask, *neighborIndices, &typeID2ptr[0], 8) :
                                                               _mm512_maskz_loadu_epi64(remainderMask, &typeID2ptr[j])) :
                                                   (isVerlet ?
                                                             _mm512_i64gather_epi64(*neighborIndices, &typeID2ptr[0], 8) :
                                                             _mm512_loadu_epi64(&typeID2ptr[j]));
 
-    const __m512i typeIndicesScaled = _mm512_mullox_epi64(typeIndices, _three);
+    const __m512i typeIndicesScaled = _mm512_mullox_epi64(typeIndices, _threeI);
 
-    const __m512d epsilon24 = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, typeIndicesScaled, mixingPtr, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr, 8);
-    const __m512d sigmaSquared = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, typeIndicesScaled, mixingPtr+1, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+1, 8);
-    const __m512d shift6 = remainderCase ? _mm512_mask_i64gather_pd(_zero, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8);
+    const __m512d epsilon24 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr, 8);
+    const __m512d sigmaSquared = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+1, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+1, 8);
+    const __m512d shift6 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8);
 
-    const __m512d invDistSquared = _mm512_div_pd(_one, distanceSquared);
+    const __m512d invDistSquared = _mm512_div_pd(_oneD, distanceSquared); // todo investigate if this should be replaced to improve pipelining
     const __m512d lj2 = _mm512_mul_pd(sigmaSquared, invDistSquared); // = (sigma/dist)^2
     const __m512d lj6 = _mm512_mul_pd(_mm512_mul_pd(lj2, lj2), lj2); // = (sigma/dist)^6
     const __m512d lj12 = _mm512_mul_pd(lj6, lj6); // = (sigma/dist)^12
@@ -557,15 +559,15 @@ class LJFunctorAVX512_Mask
     if constexpr (newton3) {
       if constexpr (remainderCase) {
         if constexpr (isVerlet) {
-          const __m512d forceSumJX = _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &fx2ptr[0], 8);
+          const __m512d forceSumJX = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fx2ptr[0], 8);
           const __m512d newForceSumJX = _mm512_sub_pd(forceSumJX, forceX);
           _mm512_mask_i64scatter_pd(&fx2ptr[j], remainderMask, *neighborIndices, newForceSumJX, 8);
 
-          const __m512d forceSumJY = _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &fy2ptr[0], 8);
+          const __m512d forceSumJY = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fy2ptr[0], 8);
           const __m512d newForceSumJY = _mm512_sub_pd(forceSumJY, forceY);
           _mm512_mask_i64scatter_pd(&fy2ptr[j], remainderMask, *neighborIndices, newForceSumJY, 8);
 
-          const __m512d forceSumJZ = _mm512_mask_i64gather_pd(_zero, remainderMask, *neighborIndices, &fz2ptr[0], 8);
+          const __m512d forceSumJZ = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fz2ptr[0], 8);
           const __m512d newForceSumJZ = _mm512_sub_pd(forceSumJZ, forceZ);
           _mm512_mask_i64scatter_pd(&fz2ptr[j], remainderMask, *neighborIndices, newForceSumJZ, 8);
         } else {
@@ -621,14 +623,14 @@ class LJFunctorAVX512_Mask
       const __m512d potentialEnergy = remainderCase ? _mm512_maskz_fmadd_pd(remainderMask, epsilon24, lj12m6, shift6) : _mm512_fmadd_pd(epsilon24, lj12m6, shift6);
 
       // Add above to accumulators iff molecule 1 is owned, using isOwnedMask1
-      *virialSumX = _mm512_mask_add_pd(*virialSumX, *isOwnedMask1, *virialSumX, virialX);
-      *virialSumY = _mm512_mask_add_pd(*virialSumY, *isOwnedMask1, *virialSumY, virialY);
-      *virialSumZ = _mm512_mask_add_pd(*virialSumZ, *isOwnedMask1, *virialSumZ, virialZ);
-      *potentialEnergySum = _mm512_mask_add_pd(*potentialEnergySum, *isOwnedMask1, *potentialEnergySum, potentialEnergy);
+      *virialSumX = _mm512_mask_add_pd(*virialSumX, isOwnedMask1, *virialSumX, virialX);
+      *virialSumY = _mm512_mask_add_pd(*virialSumY, isOwnedMask1, *virialSumY, virialY);
+      *virialSumZ = _mm512_mask_add_pd(*virialSumZ, isOwnedMask1, *virialSumZ, virialZ);
+      *potentialEnergySum = _mm512_mask_add_pd(*potentialEnergySum, isOwnedMask1, *potentialEnergySum, potentialEnergy);
 
       // If newton3, do the same again iff molecules in 2 are owned
       if constexpr (newton3) {
-        const __mmask8 isOwnedMask2 = _mm512_cmp_epi64_mask(ownershipState2, _ownedStateOwnedMM256i, _MM_CMPINT_EQ);
+        const __mmask8 isOwnedMask2 = _mm512_cmp_epi64_mask(ownershipState2, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
 
         *virialSumX = _mm512_mask_add_pd(*virialSumX, isOwnedMask2, *virialSumX, virialX);
         *virialSumY = _mm512_mask_add_pd(*virialSumY, isOwnedMask2, *virialSumY, virialY);
@@ -680,21 +682,22 @@ class LJFunctorAVX512_Mask
     const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     // accumulators
-    __m256d virialSumX = _mm256_setzero_pd();
-    __m256d virialSumY = _mm256_setzero_pd();
-    __m256d virialSumZ = _mm256_setzero_pd();
-    __m256d potentialEnergySum = _mm256_setzero_pd();
-    __m256d fxacc = _mm256_setzero_pd();
-    __m256d fyacc = _mm256_setzero_pd();
-    __m256d fzacc = _mm256_setzero_pd();
+    __m512d virialAccX = _mm512_setzero_pd();
+    __m512d virialAccY = _mm512_setzero_pd();
+    __m512d virialAccZ = _mm512_setzero_pd();
+    __m512d potentialEnergyAcc = _mm512_setzero_pd();
+    __m512d fxacc = _mm512_setzero_pd();
+    __m512d fyacc = _mm512_setzero_pd();
+    __m512d fzacc = _mm512_setzero_pd();
 
-    // broadcast particle 1
-    const auto x1 = _mm256_broadcast_sd(&xptr[indexFirst]);
-    const auto y1 = _mm256_broadcast_sd(&yptr[indexFirst]);
-    const auto z1 = _mm256_broadcast_sd(&zptr[indexFirst]);
-    // ownedStatePtr contains int64_t, so we broadcast these to make an __m256i.
-    // _mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
-    __m256i ownedStateI = _mm256_set1_epi64x(static_cast<int64_t>(ownedStatePtr[indexFirst]));
+    const auto x1 = _mm512_set1_pd(xptr[indexFirst]);
+    const auto y1 = _mm512_set1_pd(yptr[indexFirst]);
+    const auto z1 = _mm512_set1_pd(zptr[indexFirst]);
+
+    __m512i ownedStateI = _mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[indexFirst]));
+    const __mmask8 isOwnedMaskI = _mm512_cmp_epi64_mask(ownedStateI, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
+
+    const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(typeIDptr[indexFirst], 0);
 
 
     // load vecLength neighbors
@@ -706,10 +709,10 @@ class LJFunctorAVX512_Mask
     // a & ~(b - 1) == a - (a mod b)
     for (; j < (neighborList.size() & ~(vecLength - 1)); j += vecLength) {
       const __m512i neighborIndices = _mm512_loadu_epi64(&neighborList[j]);
-      SoAKernel<newton3, false, true>(0, ownedStateI, ownedStatePtr, x1, y1, z1,
+      SoAKernel<newton3, false, true>(0, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1,
                                 xptr, yptr, zptr, fxptr, fyptr, fzptr,
-                                &typeIDptr[indexFirst], typeIDptr, fxacc, fyacc, fzacc, &virialSumX,
-                                &virialSumY, &virialSumZ, &potentialEnergySum, 0, neighborIndices);
+                                      mixingPtr, typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
+                                &virialAccY, &virialAccZ, &potentialEnergyAcc, 0, &neighborIndices);
     }
     // Remainder loop
     // If b is a power of 2 the following holds:
@@ -719,28 +722,16 @@ class LJFunctorAVX512_Mask
       const __mmask8 remainderMask = _remainderMasks[8-remainder];
       const __m512i neighborIndices = _mm512_maskz_loadu_epi64(remainderMask, &neighborList[j]);
 
-      SoAKernel<newton3, true>(0, ownedStateI, ownedStatePtr, x1, y1, z1,
+      SoAKernel<newton3, true, true>(0, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1,
                                xptr, yptr, zptr, fxptr, fyptr, fzptr,
-                               &typeIDptr[indexFirst], typeIDptr, fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
-                               &virialSumZ, &potentialEnergySum, remainder, neighborIndices);
+                               mixingPtr, typeIDptr, fxacc, fyacc, fzacc, &virialAccX, &virialAccY,
+                               &virialAccZ, &potentialEnergyAcc, remainder, &neighborIndices);
     }
 
-    // horizontally reduce fDacc to sumfD
-    const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
-    const __m256d hSumfz = _mm256_hadd_pd(fzacc, fzacc);
-
-    const __m128d hSumfxfyLow = _mm256_extractf128_pd(hSumfxfy, 0);
-    const __m128d hSumfzLow = _mm256_extractf128_pd(hSumfz, 0);
-
-    const __m128d hSumfxfyHigh = _mm256_extractf128_pd(hSumfxfy, 1);
-    const __m128d hSumfzHigh = _mm256_extractf128_pd(hSumfz, 1);
-
-    const __m128d sumfxfyVEC = _mm_add_pd(hSumfxfyLow, hSumfxfyHigh);
-    const __m128d sumfzVEC = _mm_add_pd(hSumfzLow, hSumfzHigh);
-
-    const double sumfx = sumfxfyVEC[0];
-    const double sumfy = sumfxfyVEC[1];
-    const double sumfz = _mm_cvtsd_f64(sumfzVEC);
+    // We accumulated the forces acting on molecule i across a full vector. We horizontally reduce this, fDacc, to sumfD
+    const double sumfx = _mm512_reduce_add_pd(fxacc);
+    const double sumfy = _mm512_reduce_add_pd(fyacc);
+    const double sumfz = _mm512_reduce_add_pd(fzacc);
 
     fxptr[indexFirst] += sumfx;
     fyptr[indexFirst] += sumfy;
@@ -749,36 +740,24 @@ class LJFunctorAVX512_Mask
     if constexpr (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
 
-      // horizontally reduce virialSumX and virialSumY
-      const __m256d hSumVirialxy = _mm256_hadd_pd(virialSumX, virialSumY);
-      const __m128d hSumVirialxyLow = _mm256_extractf128_pd(hSumVirialxy, 0);
-      const __m128d hSumVirialxyHigh = _mm256_extractf128_pd(hSumVirialxy, 1);
-      const __m128d hSumVirialxyVec = _mm_add_pd(hSumVirialxyHigh, hSumVirialxyLow);
-
-      // horizontally reduce virialSumZ and potentialEnergySum
-      const __m256d hSumVirialzPotentialEnergy = _mm256_hadd_pd(virialSumZ, potentialEnergySum);
-      const __m128d hSumVirialzPotentialEnergyLow = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 0);
-      const __m128d hSumVirialzPotentialEnergyHigh = _mm256_extractf128_pd(hSumVirialzPotentialEnergy, 1);
-      const __m128d hSumVirialzPotentialEnergyVec =
-          _mm_add_pd(hSumVirialzPotentialEnergyHigh, hSumVirialzPotentialEnergyLow);
-
-      // globals = {virialX, virialY, virialZ, potentialEnergy}
-      double globals[4];
-      _mm_store_pd(&globals[0], hSumVirialxyVec);
-      _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
+      // Reduce global accumulators
+      const double virialSumX = _mm512_reduce_add_pd(virialAccX);
+      const double virialSumY = _mm512_reduce_add_pd(virialAccY);
+      const double virialSumZ = _mm512_reduce_add_pd(virialAccZ);
+      const double potentialEnergySum = _mm512_reduce_add_pd(potentialEnergyAcc);
 
       // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
       // false, since for newton3 disabled we divide by two later on.
-      if (newton3) {
-        _aosThreadData[threadnum].virialSumN3[0] += globals[0] * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += globals[1] * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += globals[2] * 0.5;
-        _aosThreadData[threadnum].potentialEnergySumN3 += globals[3] * 0.5;
+      if constexpr (newton3) {
+        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
+        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
       } else {
-        _aosThreadData[threadnum].virialSumNoN3[0] += globals[0];
-        _aosThreadData[threadnum].virialSumNoN3[1] += globals[1];
-        _aosThreadData[threadnum].virialSumNoN3[2] += globals[2];
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += globals[3];
+        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
+        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
+        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
+        _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
       }
     }
     // interact with i with 4 neighbors
@@ -964,8 +943,7 @@ class LJFunctorAVX512_Mask
         : virialSumNoN3{0., 0., 0.},
           virialSumN3{0., 0., 0.},
           potentialEnergySumNoN3{0.},
-          potentialEnergySumN3{0.},
-          __remainingTo64{} {}
+          potentialEnergySumN3{0.} {}
     void setZero() {
       virialSumNoN3 = {0., 0., 0.};
       virialSumN3 = {0., 0., 0.};
@@ -978,18 +956,16 @@ class LJFunctorAVX512_Mask
     std::array<double, 3> virialSumN3;
     double potentialEnergySumNoN3;
     double potentialEnergySumN3;
-
-   private:
-    // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
   };
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
 #ifdef __AVX512F__
-  const __m512d _zero{_mm512_set1_pd(0.)};
-  const __m512d _one{_mm512_set1_pd(1.)};
-  const __m512d _three{_mm512_set1_pd(3.)};
+  const __m512d _zeroD{_mm512_set1_pd(0.)};
+  const __m512d _oneD{_mm512_set1_pd(1.)};
+  const __m512i _zeroI{_mm512_set1_epi64(1)};
+  const __m512i _threeI{_mm512_set1_epi64(3.)};
+
   /**
    * Masks for the remainder cases to avoid loading data beyond the end of the vectors.
    * Masks are generated with decimal numbers, whose binary equivalent consists of 8 0s or 1s, representing which registers
@@ -1006,15 +982,15 @@ class LJFunctorAVX512_Mask
       __mmask8(1),   // = 00000001
   };
   const __m512i _ownedStateDummyMM512i{_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::dummy))};
-  const __m512i _ownedStateOwnedMM256i{_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::owned))};
+  const __m512i _ownedStateOwnedMM512i{_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::owned))};
   const __m512d _cutoffSquared{};
   __m512d _shift6 = _mm512_setzero_pd();
   __m512d _epsilon24{};
   __m512d _sigmaSquared{};
 #endif
 
-  const double _cutoffSquaredAoS = 0;
-  double _epsilon24AoS, _sigmaSquaredAoS, _shift6AoS = 0;
+  const double _cutoffSquaredAoS = 0.;
+  double _epsilon24AoS = 0., _sigmaSquaredAoS = 1., _shift6AoS = 0.;
 
   ParticlePropertiesLibrary<double, size_t> *_PPLibrary = nullptr;
 
