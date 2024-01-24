@@ -27,6 +27,7 @@ namespace mdLib {
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * This Version is implemented using AVX512 intrinsics using a mask to not add force contributions from pairs of molecules beyond the cutoff.
+ * todo: add protections for maschines without AVX512DQ
  * @tparam Particle The type of particle.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
@@ -533,7 +534,8 @@ class LJFunctorAVX512_Mask
 
     const __m512d epsilon24 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr, 8);
     const __m512d sigmaSquared = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+1, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+1, 8);
-    const __m512d shift6 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8);
+    const __m512d shift6 = applyShift ? (remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8))
+        : _zeroD;
 
     const __m512d invDistSquared = _mm512_div_pd(_oneD, distanceSquared); // todo investigate if this should be replaced to improve pipelining
     const __m512d lj2 = _mm512_mul_pd(sigmaSquared, invDistSquared); // = (sigma/dist)^2
@@ -620,7 +622,8 @@ class LJFunctorAVX512_Mask
       const __m512d virialZ = remainderCase ? _mm512_maskz_mul_pd(remainderMask, forceZ, displacementZ) : _mm512_mul_pd(forceZ, displacementZ);
 
       // Global Potential
-      const __m512d potentialEnergy = remainderCase ? _mm512_maskz_fmadd_pd(remainderMask, epsilon24, lj12m6, shift6) : _mm512_fmadd_pd(epsilon24, lj12m6, shift6);
+      const __mmask8 potEnergyMask = remainderCase ? _kand_mask8(remainderMask, combinedMask) : combinedMask;
+      const __m512d potentialEnergy = _mm512_maskz_fmadd_pd(potEnergyMask, epsilon24, lj12m6, shift6);
 
       // Add above to accumulators iff molecule 1 is owned, using isOwnedMask1
       *virialSumX = _mm512_mask_add_pd(*virialSumX, isOwnedMask1, *virialSumX, virialX);
