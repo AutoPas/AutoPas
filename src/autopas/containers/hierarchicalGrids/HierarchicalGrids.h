@@ -272,6 +272,25 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
     // Iterate over cross levels
 
+    // Distribute particles over the hierarchical grid
+    for(auto iterParticle = hierarchyLevels[0].begin(); iterParticle.isValid(); ++iterParticle) {
+
+      // get level the particle should be inserted to
+      unsigned int targetLevel = getHierarchyLevelOfParticle(*iterParticle);
+
+      // add particles to their respective levels
+      if (targetLevel > 0) {
+        addParticleToGridLevel(*iterParticle, targetLevel);
+      }
+      else {
+        continue;
+      }
+      
+      // and delete them from the top level
+      hierarchyLevels[0].deleteParticle(*iterParticle);
+
+    }
+
     // Get the number of hierarchy cross-levels
     unsigned int numberOfCrossLevels = getNumberOfCrossLevels(_numberOfLevels);
 
@@ -306,6 +325,25 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       hierarchyLevels[level].iteratePairwise(traversal); // add traversal option
     }
     demLib::DEMFunctor<Particle>::endExcessForceSubtraction();
+
+    
+    // Distribute particles back to the top level hierarchical grid
+    // (Thus, iterLevels can start at 1)
+    for (unsigned int iterLevels = 1; iterLevels < _numberOfLevels; iterLevels++) {
+      
+      //iterate over all particles in a given level
+      for(auto iterParticle = hierarchyLevels[iterLevels].begin(); iterParticle.isValid(); ++iterParticle) {
+
+        //add the particle to the top level
+        addParticleToGridLevel(*iterParticle, 0);
+
+        //and delete it from the level it resided in beforehand
+        hierarchyLevels[iterLevels].deleteParticle(*iterParticle);
+
+      }
+
+    }
+
 
   }
 
@@ -408,7 +446,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   unsigned int getHierarchyLevelOfParticle(const ParticleType &p) {
     
     // Get the radius of the particle in question
-    auto particleRad = p.getRad();
+    auto particleRad = 0.1;//p.getRad();
 
     unsigned int level;
 
@@ -427,6 +465,18 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     }
     // Break and return the level
     return level - 1;
+  }
+
+  void setHierarchicalGridBorders(std::vector<double> boundaries) {
+
+    hierarchicalGridBorders = boundaries;
+
+  }
+
+  std::vector<double> getHierarchicalGridBorders() {
+
+    return hierarchicalGridBorders;
+
   }
 
 
@@ -462,7 +512,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * @brief Number of levels (hierarchies) in the H-Grid
    * 
    */
-  unsigned int _numberOfLevels = 1;
+  unsigned int _numberOfLevels;
 
   std::array<double, 3> _boxMin; 
   std::array<double, 3> _boxMax; 
