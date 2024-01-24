@@ -332,7 +332,9 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 
 
   //update the site position based on the position and rotation of the molecule
-  //@TODO: multithread
+#ifdef AUTOPAS_OPENMP
+#pragma omp parallel default(none) shared(autoPasContainer, moleculeContainer, particlePropertiesLibrary)
+#endif
   for(auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
    MoleculeType& molecule = moleculeContainer.get(iter->getMoleculeId());
    const auto r = molecule.getR();
