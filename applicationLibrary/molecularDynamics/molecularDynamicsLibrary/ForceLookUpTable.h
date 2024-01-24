@@ -20,26 +20,46 @@ template <IntervalType intervalType, InterpolationType interpolationType, Functo
 class ForceLookUpTable {
  public:
 
+
   ForceLookUpTable() {
-      AutoPasLog(DEBUG, "Default constructor called.");
+      //AutoPasLog(DEBUG, "Default constructor called.");
   }
+  /*
+
+  template <>
+  ForceLookUpTable<evenSpacing> (floatType cutoffSquared, floatType sigmaSquared, floatType epsilon24, intType numberOfPoints) {
+    AutoPasLog(DEBUG, "Even spacing constructor called.");
+    this->cutoffSquared = cutoffSquared;
+    this->sigmaSquared = sigmaSquared;
+    this->epsilon24 = epsilon24;
+    this->numberOfPoints = numberOfPoints;
+
+    evenSpacingInitializer(numberOfPoints);
+  }*/
+
+
 
   // list: cutoffSquared, sigmaSquared, epsilon24, ... (numberOfPoints)
   // Extremely unreadable and user-error-prone
+
   ForceLookUpTable(std::initializer_list<floatType> args) {
-    AutoPasLog(DEBUG, "LUT created.");
+    //AutoPasLog(DEBUG, "LUT created.");
     if (args.size() < 3) {  // Fail gracefully
-      AutoPasLog(CRITICAL, "Args only has {} elements, but needs at least 3.", args.size());
+      //AutoPasLog(CRITICAL, "Args only has {} elements, but needs at least 3.", args.size());
       return;
     }
+    cutoffSquared = args.begin()[0];
+    sigmaSquared = args.begin()[1];
+    epsilon24 = args.begin()[2];
     if constexpr (intervalType == evenSpacing) {
       if (args.size() != 4) {  // Fail
-        AutoPasLog(CRITICAL, "Args has {} elements, but needs 4 for even spacing.", args.size());
+        //AutoPasLog(CRITICAL, "Args has {} elements, but needs 4 for even spacing.", args.size());
         return;
       }
       evenSpacingInitializer(static_cast<intType>(args.begin()[3]));
     }
   }
+
 
 
   floatType retrieveSingleValue(floatType distanceSquared) {
@@ -64,11 +84,11 @@ class ForceLookUpTable {
 
   void evenSpacingInitializer(intType nOP) {
     if (nOP == 0) { // Fail gracefully
-      AutoPasLog(CRITICAL, "Don't set number of points to 0 when using evenSpacing.");
+      //AutoPasLog(CRITICAL, "Don't set number of points to 0 when using evenSpacing.");
       return;
     }
     numberOfPoints = nOP;
-    pointDistance = sqrt(cutoffSquared) / numberOfPoints; // May break when floatType is not double. cutoffSquared obviously can't be negative.
+    pointDistance = cutoffSquared / numberOfPoints; // May break when floatType is not double. cutoffSquared obviously can't be negative.
     if constexpr (functorType == LJAoS) {
       fillTableLJEvenSpacing();
     }
@@ -88,7 +108,10 @@ class ForceLookUpTable {
     if constexpr (intervalType == evenSpacing) {
       if (dr2 == cutoffSquared)
         return lut.at(numberOfPoints-1);
-      return lut.at(std::floor(dr2 / pointDistance)); // How slow is std::floor?
+      auto ret = lut.at(std::floor(dr2 / pointDistance)); // How slow is std::floor?
+      auto accurate = LJFunctor(dr2);
+      AutoPasLog(DEBUG, "Return {} instead of {}", ret, accurate);
+      return ret;
     }
   }
 

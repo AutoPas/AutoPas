@@ -6,10 +6,10 @@ container                            :  [LinkedCells] # DirectSum
 # data-layout-3b                       :  [AoS]
 
 # Uncomment to combine pairwise and 3-body interaction
-functor                              :  lj-avx
-traversal                            :  [lc_c01, lc_c08, lc_sliced]
-newton3                              :  [enabled, disabled]
-data-layout                          :  [AoS, SoA]
+functor                              :  lj
+traversal                            :  [lc_c01]
+newton3                              :  [disabled]
+data-layout                          :  [AoS]
 
 verlet-rebuild-frequency             :  10
 verlet-skin-radius-per-timestep      :  0.02
@@ -33,25 +33,20 @@ Sites:
     mass                             :  1.
     nu                               :  0.073 # Value for Argon
 Objects:
-  CubeClosestPacked:
+  CubeGrid:
     0:
-      box-length                     :  [10, 10, 10]
-      bottomLeftCorner               :  [0, 0, 0]
-      particle-spacing               :  1.35
-      velocity                       :  [0, 0, 0]
-      particle-type-id               :  0
-thermostat:
-  initialTemperature                 :  1.1
-  targetTemperature                  :  1.1
-  deltaTemperature                   :  0.5
-  thermostatInterval                 :  25
-  addBrownianMotion                  :  true
+      particles-per-dimension: [ 2, 1, 1 ]
+      particle-spacing: 1.1225
+      bottomLeftCorner: [ 0, 0, 0 ]
+      velocity: [ 0, 0, 0 ]
+      particle-type-id: 0
 
-log-level                            :  warn
-no-flops                             :  false
+
+log-level                            :  debug
+no-flops                             :  true
 no-end-config                        :  true
-no-progress-bar                      :  false
-vtk-filename                         :  3BodyTest
-vtk-output-folder                    :  3BodyTestOutput
+no-progress-bar                      :  true
+vtk-filename                         :  LUTtest
+vtk-output-folder                    :  LUTtestOutput
 vtk-write-frequency                  :  10
 #log-file                            : log.txt

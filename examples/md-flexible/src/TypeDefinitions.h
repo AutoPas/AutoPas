@@ -36,6 +36,11 @@
 
 #endif
 
+/**
+ * Look-up Table types
+ */
+
+
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
@@ -63,7 +68,7 @@ using ParticleType = mdLib::MoleculeLJ;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #else
-using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, true>;
 #endif
 
 #endif

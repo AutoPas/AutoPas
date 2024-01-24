@@ -197,24 +197,23 @@ class AxilrodTellerFunctor
     if (distSquaredIJ > _cutoffSquared or distSquaredJK > _cutoffSquared or distSquaredKI > _cutoffSquared) {
       return;
     }
-
-    // Dot products of both distance vectors going from one particle
+    // LUT begin
     const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
     const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
     const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
-
     const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
 
     const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
     const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
     const double factor = 3.0 * nu / allDistsTo5;
 
-    const auto forceIDirectionJK = displacementJK * IJDotKI * (IJDotJK - JKDotKI);
+    const auto forceIDirectionJK = displacementJK * IJDotKI * (IJDotJK - JKDotKI); // return from LUT (* factor)
     const auto forceIDirectionIJ =
-        displacementIJ * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ);
+        displacementIJ * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ); // return from LUT (* factor)
     const auto forceIDirectionKI =
-        displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI);
+        displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI); // return from LUT (* factor)
 
+    // factor also needs to be included in LUT
     const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
     i.addF(forceI);
 

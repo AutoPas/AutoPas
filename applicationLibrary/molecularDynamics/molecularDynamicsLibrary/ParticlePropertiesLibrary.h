@@ -31,7 +31,7 @@ class ParticlePropertiesLibrary {
    * Constructor
    * @param cutoff Cutoff for the Potential
    */
-  explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff(cutoff) {}
+  explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff{cutoff} {}
 
   /**
    * Copy Constructor.
@@ -299,8 +299,10 @@ class ParticlePropertiesLibrary {
   }
 
   void initializeLookUpTables() {
+
+    // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
     if (_storeLJData) {
-      _LJLookUpTable = ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType>({_cutoff*_cutoff, _sigmas[0]*_sigmas[0], _epsilons[0], 5.0});
+      _LJLookUpTable = ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 5.0});
     }
   }
 
@@ -346,7 +348,6 @@ class ParticlePropertiesLibrary {
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
   std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
 
-  // Can this be static?
   ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType> _LJLookUpTable;
 
 };

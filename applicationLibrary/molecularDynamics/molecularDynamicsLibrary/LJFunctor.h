@@ -32,12 +32,12 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, bool applyShift = false, bool useMixing = false,
+template <class Particle, bool applyShift = false, bool useMixing = false, bool useLUT = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true, bool useLUT = false>
+          bool relevantForTuning = true>
 class LJFunctor
     : public autopas::PairwiseFunctor<
-          Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, useLUT>> {
+          Particle, LJFunctor<Particle, applyShift, useMixing, useLUT, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -62,7 +62,7 @@ class LJFunctor
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
       : autopas::PairwiseFunctor<
-            Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            Particle, LJFunctor<Particle, applyShift, useMixing, useLUT, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -147,6 +147,7 @@ class LJFunctor
 
     if constexpr (useLUT) {
       // How to check for mixing if useMixing is always enabled?
+      AutoPasLog(DEBUG, "Used LUT with {}", dr2);
       fac = _PPLibrary->getLJLUT().retrieveSingleValue(dr2);
       if (calculateGlobals) {
         // this is a problem
