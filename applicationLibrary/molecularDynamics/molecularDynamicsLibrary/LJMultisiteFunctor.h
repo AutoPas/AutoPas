@@ -369,6 +369,18 @@ class LJMultisiteFunctor
     siteForceY.reserve((siteCount));
     siteForceZ.reserve((siteCount));
 
+    //gets referenced via siteIndex, siteMaskDummyCondition[siteIndex] == false if the owning molecule is a dummy condition
+    std::vector<char, autopas::AlignedAllocator<char>> siteMaskDummyCondition{};
+    {
+      size_t siteIndex = 0;
+      for (size_t mol = 0; mol < soa.size(); ++mol) {
+        const auto isMolNotDummy = ownedStatePtr[mol] != autopas::OwnershipState::dummy;
+        // insert boolean numSites times
+        siteMaskDummyCondition.insert(siteMaskDummyCondition.end(), _PPLibrary->getNumSites(typeptr[mol]),
+                                       isMolNotDummy);
+      }
+    }
+
     if constexpr (calculateGlobals) {
       // this is only needed for vectorization when calculating globals
       isSiteOwned.reserve(siteCount);
@@ -431,39 +443,6 @@ class LJMultisiteFunctor
       const size_t siteIndexMolB = siteIndexMolA + noSitesInMolA;  // index of first site in molB
       const size_t noSitesB = (siteCount - siteIndexMolB);         // Number of sites in molecules that A interacts with
 
-      // create mask over every mol 'above' molA  (char to keep arrays aligned)
-      std::vector<char, autopas::AlignedAllocator<char>> molMask;
-      molMask.reserve(soa.size() - (molA + 1));
-
-#pragma omp simd
-      for (size_t molB = molA + 1; molB < soa.size(); ++molB) {
-        const auto ownedStateB = ownedStatePtr[molB];
-
-        const auto displacementCoMX = xptr[molA] - xptr[molB];
-        const auto displacementCoMY = yptr[molA] - yptr[molB];
-        const auto displacementCoMZ = zptr[molA] - zptr[molB];
-
-        const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-        const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-        const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-
-        const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-
-        // mask sites of molecules beyond cutoff or if molecule is a dummy
-        molMask[molB - (molA + 1)] =
-            distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
-      }
-
-      // generate mask for each site in the mols 'above' molA from molecular mask
-      std::vector<char, autopas::AlignedAllocator<char>> siteMask;
-      siteMask.reserve(noSitesB);
-
-      for (size_t molB = molA + 1; molB < soa.size(); ++molB) {
-        for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[molB]); ++siteB) {
-          siteMask.emplace_back(molMask[molB - (molA + 1)]);
-        }
-      }
-
       // calculate LJ forces
       for (size_t siteA = siteIndexMolA; siteA < siteIndexMolB; ++siteA) {
         if (useMixing) {
@@ -516,7 +495,8 @@ class LJMultisiteFunctor
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
           const auto lj12m6 = lj12 - lj6;
-          const auto scalarMultiple = siteMask[siteB] ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
+          const auto siteCutoffAndDummyCondition = siteMaskDummyCondition[globalSiteBIndex] && (distanceSquared <= cutoffSquared);
+          const auto scalarMultiple = siteCutoffAndDummyCondition ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
           // calculate forces
           const auto forceX = scalarMultiple * displacementX;
@@ -537,7 +517,7 @@ class LJMultisiteFunctor
             const auto virialX = displacementX * forceX;
             const auto virialY = displacementY * forceY;
             const auto virialZ = displacementZ * forceZ;
-            const auto potentialEnergy6 = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
+            const auto potentialEnergy6 = siteCutoffAndDummyCondition ? (epsilon24 * lj12m6 + shift6) : 0.;
 
             // Add to the potential energy sum for each particle which is owned.
             // This results in obtaining 12 * the potential energy for the SoA.
@@ -968,6 +948,18 @@ class LJMultisiteFunctor
     exactSitePositionBy.reserve(siteCountB);
     exactSitePositionBz.reserve(siteCountB);
 
+    //gets referenced via siteIndex, siteMaskDummyConditionB[siteIndex] == false if the owning molecule is a dummy condition
+    std::vector<char, autopas::AlignedAllocator<char>> siteMaskDummyConditionB{};
+    {
+      size_t siteIndexB = 0;
+      for (size_t molB = 0; molB < soaB.size(); ++molB) {
+        const auto isMolNotDummy = ownedStatePtrB[molB] != autopas::OwnershipState::dummy;
+        // insert boolean numSites times
+        siteMaskDummyConditionB.insert(siteMaskDummyConditionB.end(), _PPLibrary->getNumSites(typeptrB[molB]),
+                                       isMolNotDummy);
+      }
+    }
+
     if constexpr (useMixing) {
       siteTypesB.reserve(siteCountB);
     }
@@ -1047,38 +1039,6 @@ class LJMultisiteFunctor
       const auto rotatedSitePositionsA = autopas::utils::quaternion::rotateVectorOfPositions(
           {q0Aptr[molA], q1Aptr[molA], q2Aptr[molA], q3Aptr[molA]}, unrotatedSitePositionsA);
 
-      // create mask over every mol in cell B (char to keep arrays aligned)
-      std::vector<char, autopas::AlignedAllocator<char>> molMask;
-      molMask.reserve(soaB.size());
-
-#pragma omp simd
-      for (size_t molB = 0; molB < soaB.size(); ++molB) {
-        const auto ownedStateB = ownedStatePtrB[molB];
-
-        const auto displacementCoMX = xAptr[molA] - xBptr[molB];
-        const auto displacementCoMY = yAptr[molA] - yBptr[molB];
-        const auto displacementCoMZ = zAptr[molA] - zBptr[molB];
-
-        const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-        const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-        const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-
-        const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-
-        // mask sites of molecules beyond cutoff or if molecule is a dummy
-        molMask[molB] = distanceSquaredCoM <= cutoffSquared and ownedStateB != autopas::OwnershipState::dummy;
-      }
-
-      // generate mask for each site in cell B from molecular mask
-      std::vector<char, autopas::AlignedAllocator<char>> siteMask;
-      siteMask.reserve(siteCountB);
-
-      for (size_t molB = 0; molB < soaB.size(); ++molB) {
-        for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptrB[molB]); ++siteB) {
-          siteMask.emplace_back(molMask[molB]);
-        }
-      }
-
       // sums used for molA
       SoAFloatPrecision forceSumX = 0.;
       SoAFloatPrecision forceSumY = 0.;
@@ -1132,7 +1092,8 @@ class LJMultisiteFunctor
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
           const auto lj12m6 = lj12 - lj6;
-          const auto scalarMultiple = siteMask[siteB] ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
+          const auto siteCutoffAndDummyCondition = siteMaskDummyConditionB[siteB] && (distanceSquared <= cutoffSquared);
+          const auto scalarMultiple = siteCutoffAndDummyCondition ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
           // calculate forces
           const auto forceX = scalarMultiple * displacementX;
@@ -1162,7 +1123,7 @@ class LJMultisiteFunctor
 
           // globals
           if constexpr (calculateGlobals) {
-            const auto potentialEnergy6 = siteMask[siteB] ? (epsilon24 * lj12m6 + shift6) : 0.;
+            const auto potentialEnergy6 = siteCutoffAndDummyCondition ? (epsilon24 * lj12m6 + shift6) : 0.;
             const auto virialX = displacementX * forceX;
             const auto virialY = displacementY * forceY;
             const auto virialZ = displacementZ * forceZ;
@@ -1422,39 +1383,13 @@ class LJMultisiteFunctor
 
     // -- main force calculation --
 
-    // - calculate mol mask -
-    std::vector<char, autopas::AlignedAllocator<char>> molMask;
-    molMask.reserve(neighborListSize);
-
-#pragma omp simd
+    //create site-Mask, that is set to 0, when the corresponding molecule is a dummy mol
+    std::vector<char, autopas::AlignedAllocator<char>> siteMaskDummyCondition{};
     for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
       const auto neighborMolIndex = neighborList[neighborMol];  // index of neighbor mol in soa
-
-      const auto ownedState = ownedStatePtr[neighborMolIndex];
-
-      const auto displacementCoMX = xptr[indexPrime] - xptr[neighborMolIndex];
-      const auto displacementCoMY = yptr[indexPrime] - yptr[neighborMolIndex];
-      const auto displacementCoMZ = zptr[indexPrime] - zptr[neighborMolIndex];
-
-      const auto distanceSquaredCoMX = displacementCoMX * displacementCoMX;
-      const auto distanceSquaredCoMY = displacementCoMY * displacementCoMY;
-      const auto distanceSquaredCoMZ = displacementCoMZ * displacementCoMZ;
-
-      const auto distanceSquaredCoM = distanceSquaredCoMX + distanceSquaredCoMY + distanceSquaredCoMZ;
-
-      // mask molecules beyond cutoff or if molecule is a dummy
-      molMask[neighborMol] = distanceSquaredCoM <= cutoffSquared and ownedState != autopas::OwnershipState::dummy;
-    }
-
-    // generate mask for each site from molecular mask
-    std::vector<char, autopas::AlignedAllocator<char>> siteMask;
-    siteMask.reserve(siteCountNeighbors);
-
-    for (size_t neighborMol = 0; neighborMol < neighborListSize; ++neighborMol) {
-      const auto neighborMolIndex = neighborList[neighborMol];  // index of neighbor mol in soa
-      for (size_t siteB = 0; siteB < _PPLibrary->getNumSites(typeptr[neighborMolIndex]); ++siteB) {
-        siteMask.emplace_back(molMask[neighborMol]);
-      }
+      const auto isNotDummyMol = ownedStatePtr[neighborMolIndex]!= autopas::OwnershipState::dummy;
+      siteMaskDummyCondition.insert(siteMaskDummyCondition.end(), _PPLibrary->getNumSites(typeptr[neighborMolIndex]),
+                                    isNotDummyMol);
     }
 
     // sums used for prime mol
@@ -1520,7 +1455,8 @@ class LJMultisiteFunctor
         const auto lj6 = lj2 * lj2 * lj2;
         const auto lj12 = lj6 * lj6;
         const auto lj12m6 = lj12 - lj6;
-        const auto scalarMultiple = siteMask[neighborSite] ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
+        const auto siteCutoffAndDummyCondition = siteMaskDummyCondition[neighborSite] && (distanceSquared <= cutoffSquared);
+        const auto scalarMultiple = siteCutoffAndDummyCondition ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
         // calculate forces
         const auto forceX = scalarMultiple * displacementX;
@@ -1550,7 +1486,7 @@ class LJMultisiteFunctor
 
         // calculate globals
         if constexpr (calculateGlobals) {
-          const auto potentialEnergy6 = siteMask[neighborSite] ? (epsilon24 * lj12m6 + shift6) : 0.;
+          const auto potentialEnergy6 = siteCutoffAndDummyCondition ? (epsilon24 * lj12m6 + shift6) : 0.;
           const auto virialX = displacementX * forceX;
           const auto virialY = displacementY * forceY;
           const auto virialZ = displacementZ * forceZ;
