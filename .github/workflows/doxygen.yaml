@@ -26,11 +26,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Check for missing userdoc updates
-        uses: AutoPas/DocTagChecker@dev
+        uses: AutoPas/DocTagChecker@main
         with: 
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           userDocsDirs: docs/userdoc
-
+          recursive: true
+          docFileExtensions: md
+          srcFileExtensions: cpp h txt
   DoxygenCheck:
     runs-on: ubuntu-latest
     strategy:
