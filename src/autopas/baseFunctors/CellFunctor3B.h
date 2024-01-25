@@ -503,21 +503,18 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
 
     for (auto &p1Iter : cell1Sorted._particles) {
       Particle &p1 = *p1Iter.second;
-      cell1Count++;
 
       for (auto &p2Iter : cell2Sorted._particles) {
         if (std::abs(p1Iter.first - p2Iter.first) > _sortingCutoff) {
           break;
         }
         Particle &p2 = *p2Iter.second;
-        cell2Count++;
 
         for (auto &p3Iter : cell3Sorted._particles) {
           if (std::abs(p2Iter.first - p3Iter.first) > _sortingCutoff ||
               std::abs(p1Iter.first - p3Iter.first) > _sortingCutoff) {
             break;
           }
-          cell3Count++;
 
           Particle &p3 = *p3Iter.second;
           _functor->AoSFunctor(p1, p2, p3, true);
@@ -527,13 +524,15 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
   } else {
     for (auto p1Iter = cell1.begin(); p1Iter != cell1.end(); ++p1Iter) {
       Particle &p1 = *p1Iter;
+      cell1Count++;
 
       for (auto p2Iter = cell2.begin(); p2Iter != cell2.end(); ++p2Iter) {
         Particle &p2 = *p2Iter;
+        cell2Count++;
 
         for (auto p3Iter = cell3.begin(); p3Iter != cell3.end(); ++p3Iter) {
           Particle &p3 = *p3Iter;
-
+          cell3Count++;
           _functor->AoSFunctor(p1, p2, p3, true);
         }
       }
