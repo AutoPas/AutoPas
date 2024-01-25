@@ -538,7 +538,7 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       }
     }
   }
-  //std::cout << "Particles for cells 1 2 3 : " << cell1Count << "  " << cell2Count << "  " << cell3Count << std::endl;
+  std::cout << "Particles for cells 1 2 3 : " << cell1Count << "  " << cell2Count << "  " << cell3Count << std::endl;
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,

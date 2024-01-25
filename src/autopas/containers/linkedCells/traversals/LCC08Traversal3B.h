@@ -73,9 +73,9 @@ private:
 template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
 inline void LCC08Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseParticleTriplets() {
  auto &cells = *(this->_cells);
- std::cout << "Cells : " << cells.size() << std::endl;
+ std::cout << "\nCells : " << cells.size() << std::endl;
  for (int i = 0; i < cells.size(); ++i) {
-   std::cout << cells[i].size();
+   std::cout << cells[i].size() << " ";
  }
  this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
