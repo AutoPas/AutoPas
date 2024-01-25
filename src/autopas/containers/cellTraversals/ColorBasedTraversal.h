@@ -160,14 +160,14 @@ inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayo
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-      std::cout << "\ncolor " << col << "\nstart x y z : " << start_x << " " << start_y << " " << start_z << "\nend x y z : "
+     /* std::cout << "\ncolor " << col << "\nstart x y z : " << start_x << " " << start_y << " " << start_z << "\nend x y z : "
           << end_x << " " << end_y << " " << end_z << std::endl;
-      std::cout << "stride x y z : " << stride_x << " " << stride_y << " " << stride_z << std::endl;
+      std::cout << "stride x y z : " << stride_x << " " << stride_y << " " << stride_z << std::endl;*/
       const auto bodies_x = (end_x - start_x) / stride_x;
       const auto bodies_y = (end_y - start_y) / stride_y;
       const auto bodies_z = (end_z - start_z) / stride_z;
-      std::cout << "loopbodies x y z total : " << bodies_x << " " << bodies_y << " " << bodies_z << " " <<
-          bodies_x * bodies_y * bodies_z << std::endl;
+      //std::cout << "loopbodies x y z total : " << bodies_x << " " << bodies_y << " " << bodies_z << " " <<
+        //  bodies_x * bodies_y * bodies_z << std::endl;
       auto counter1 = 0;
       auto counter2 = 0;
       if (collapseDepth == 2) {
