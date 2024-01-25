@@ -211,7 +211,7 @@ inline void LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3>::c
       }
     }
   }
-  std::cout << " ,  Hits for overlap " << _overlap[0] << " : " << hitCounter << std::endl;
+// std::cout << " ,  Hits for overlap " << _overlap[0] << " : " << hitCounter << std::endl;
   hitCounter = 1;
 }
 

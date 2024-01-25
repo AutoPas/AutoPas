@@ -492,6 +492,9 @@ template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutO
 void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
                    bidirectional>::processCellTripleAoSN3(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3,
                                                           const std::array<double, 3> &sortingDirection) {
+  auto cell1Count = 0;
+  auto cell2Count = 0;
+  auto cell3Count = 0;
   if ((cell1.size() + cell2.size() + cell3.size() > _sortingThreshold) and
       sortingDirection != std::array<double, 3>{0., 0., 0.}) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
@@ -500,18 +503,22 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
 
     for (auto &p1Iter : cell1Sorted._particles) {
       Particle &p1 = *p1Iter.second;
+      cell1Count++;
 
       for (auto &p2Iter : cell2Sorted._particles) {
         if (std::abs(p1Iter.first - p2Iter.first) > _sortingCutoff) {
           break;
         }
         Particle &p2 = *p2Iter.second;
+        cell2Count++;
 
         for (auto &p3Iter : cell3Sorted._particles) {
           if (std::abs(p2Iter.first - p3Iter.first) > _sortingCutoff ||
               std::abs(p1Iter.first - p3Iter.first) > _sortingCutoff) {
             break;
           }
+          cell3Count++;
+
           Particle &p3 = *p3Iter.second;
           _functor->AoSFunctor(p1, p2, p3, true);
         }
@@ -532,6 +539,7 @@ void CellFunctor3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewto
       }
     }
   }
+  std::cout << "Particles for cells 1 2 3 : " << cell1Count << "  " << cell2Count << "  " << cell3Count << std::endl;
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
