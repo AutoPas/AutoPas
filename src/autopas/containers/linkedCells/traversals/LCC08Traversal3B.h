@@ -74,10 +74,20 @@ template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout,
 inline void LCC08Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseParticleTriplets() {
  auto &cells = *(this->_cells);
  auto particles = 0;
+ auto nonnullcells = 0;
  std::cout << "\nCells : " << cells.size() << std::endl;
+
  for (int i = 0; i < cells.size(); ++i) {
-   particles += cells[i].size();
-   std::cout << cells[i].size() << " ";
+   auto current = cells[i].size();
+   if (current != 0) {
+     nonnullcells++;
+     particles += current;
+   }
+   std::cout << current;
+   if (i % 20 == 0) {
+     std::cout << std::endl;
+   }
+
  }
  double particlespercell = particles/cells.size;
  std::cout << "Particles per cell : " << particlespercell << std::endl;
