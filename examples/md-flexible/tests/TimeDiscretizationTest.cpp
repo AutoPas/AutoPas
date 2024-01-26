@@ -87,13 +87,13 @@ void initPPL(ParticlePropertiesLibrary<> &PPL) {
 TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
   auto autoPas = std::make_shared<autopas::AutoPas<ParticleType>>();
   auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
-  auto moleculeContainer = MoleculeContainer();
 
   initPPL(*PPL);
 #if MD_FLEXIBLE_MODE!=MULTISITE or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   fillWithParticlesAndInit(*autoPas);
 
 #else
+  auto moleculeContainer = MoleculeContainer();
   fillWithParticlesAndInit(*autoPas, moleculeContainer, *PPL);
 #endif
 

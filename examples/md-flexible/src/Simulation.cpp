@@ -671,6 +671,9 @@ void Simulation::logMeasurements() {
                 << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
       std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
+    std::cout << "CSV appendix: (,Total accumulated,ForceUpdateTotal,)" << std::endl;
+    //std::cout << "," << timerToString("",total,maximumNumberOfDigits) << "," << timerToString("",forceUpdateTotal, maximumNumberOfDigits) << std::endl;
+    std::cout << "," << std::setw(6) <<  ((double)total * 1e-9) << "," << std::setw(6) << ((double)forceUpdateTotal * 1e-9) << std::endl;
   }
 }
 
