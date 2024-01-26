@@ -20,24 +20,29 @@ containerPrefixes=("LC" "VL" "VCL") #"VL", "LC", "VCL"
 newton3OfContainer=("enabled" "disabled" "disabled")
 
 data_layout="SoA" #"SoA","AoS"
-#site_counts=(1 2 3 4 5 6 7 8)
-site_counts=(5)
-densities=(0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0)
+#site_counts=(1 2 5)
+#densities=(0.5 0.75)
 num_threads=("4" "8")
-functor="BundlingApproach" #"NewFunc","OldFunc", "SingleSiteEmulator", "BundlingApproach"
-functorDescriptionInFile="Lennard-Jones Bundling-Approach"
+functor="OldFunc" #"NewFunc","OldFunc", "SingleSiteEmulator", "BundlingApproach"
+functorDescriptionInFile="Lennard-Jones" # Bundling-Approach"
 samples="0 1"
-#newton3States=("enabled")
+#newton3States=("disabled" "enabled")
 
 path_to_input_file="./"
 
 createInputFile () {
   #containerIndex data_layout site_count density num_threads functor functorDescriptionInFile
+  local containerIndexLocal=("${!1}")
+  local dataLayoutLocal=("${!2}")
+  local siteCountLocal=("${!3}")
+  local densityLocal=("${!4}")
+  local functorLocal=("${!5}")
+  local filenameLocal=("${!6}")
+  local filenameWithoutYamlLocal=("${!7}")
 
   #build helper strings
   siteTypes="0"
-  possibleOtherSitePositions=("filler" "[0.01, 0, 0]" "[-0.01, 0, 0]" "[0, 0.01, 0]" "[0, -0.01, 0]"
-  "[0, 0, 0.01]" "[0, 0, -0.01]" "[0.01, 0.01, 0]" "[0.01, -0.01, 0]" "[-0.01, 0.01, 0]" "[-0.01, -0.01, 0]") #filler since index starts at 1
+  possibleOtherSitePositions=("filler" "[0.01, 0, 0]" "[-0.01, 0, 0]" "[0, 0.01, 0]" "[0, -0.01, 0]") #filler since index starts at 1
   sitePositions="[0, 0, 0]"
 
   for ((i=1; i<site_count; i++)); do
@@ -45,17 +50,18 @@ createInputFile () {
       sitePositions+=", "
       sitePositions+=${possibleOtherSitePositions[i]}
   done
-  spacing=$(echo "e( l(${density})/3 )" | bc -l)  #this term is computing density^(-1/3). the exponent (-1/3) was missing in the previous version, that was a mistake
+  #spacing=$(echo "scale=10; 1/${density}" | bc)
+  spacing=$(echo "scale=10; 1/ (e (l(${density})/3))" | bc -l) #this term is computing density^(-1/3). the exponent (-1/3) was missing in the previous version, that was a mistake
 
   echo "# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 # md-flexible compiled for multi-site molecules.
 # container                        :  [LinkedCells, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
-container						 : [${containerTypes[containerIndex]}]
-#traversal                         :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
-traversal						 : [${traversalOfContainer[containerIndex]}]
-data-layout                      :  [${data_layout}] #[AoS, SoA]
-# newton3                        :  [disabled, enabled]
-newton3                          : [${newton3OfContainer[containerIndex]}]
+container						 : [${containerTypes[containerIndexLocal]}]
+#traversal						 : [${traversalOfContainer[containerIndexLocal]}]
+traversal                            :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+data-layout                      :  [${dataLayoutLocal}] #[AoS, SoA]
+# newton3                          :  [disabled, enabled]
+newton3                          : [${newton3OfContainer[containerIndexLocal]}]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.02
 verlet-cluster-size              :  4
@@ -93,9 +99,9 @@ Objects:
 no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  true
-vtk-filename                     :  ${filename}
+vtk-filename                     :  ${filenameWithoutYamlLocal}
 vtk-write-frequency              :  100
-" >| "${containerPrefixes[$containerIndex]}${data_layout}Sites${site_count}TrueDensity${density}${functor}Newton3${newton3OfContainer[containerIndex]}.yaml"
+" >| ${filenameLocal}
 }
 
 takeMeasurementsAccordingToParameters(){
@@ -107,14 +113,15 @@ for containerIndex in "${containerIndices[@]}"; do
     for density in "${densities_local[@]}"; do
       for threads in "${num_threads[@]}";do
         #for newton3State in "${newton3States[@]}";do
-        filename="${containerPrefixes[$containerIndex]}${data_layout}Sites${site_count}TrueDensity${density}${functor}Newton3${newton3OfContainer[containerIndex]}.yaml"
+        filename="${containerPrefixes[$containerIndex]}${data_layout}Sites${site_count}TrueDensity${density}${functor}Newton3${newton3OfContainer[$containerIndex]}.yaml"
+        filenameWithoutYaml="${containerPrefixes[$containerIndex]}${data_layout}Sites${site_count}TrueDensity${density}${functor}Newton3${newton3OfContainer[$containerIndex]}"
         #echo "test" >| notYetThere${containerIndex}_${site_count}_${density}.txt
-        createInputFile
+        createInputFile containerIndex data_layout site_count density functor filename filenameWithoutYaml
         for sample in $samples; do
           echo ""
 
           echo "Handling ${filename} with ${threads} threads"
-          #OMP_NUM_THREADS=${threads} ./md-flexible --yaml-filename "${filename}"
+          OMP_NUM_THREADS=${threads} ./md-flexible --yaml-filename "${filename}"
           echo ""
         done
         echo "-----------------------------------------------"
