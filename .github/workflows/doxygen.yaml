@@ -25,7 +25,7 @@ jobs:
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           userDocsDirs: docs/userdoc
-          recursive: true
+          recurseUserDocDirs: true
           docFileExtensions: md
           # c++ files and cmake files
           srcFileExtensions: cpp h txt cmake
