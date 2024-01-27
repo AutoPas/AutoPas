@@ -14,6 +14,7 @@ Particles saved in an AutoPas container can be in one of the following states:
 * **dummy**: Particles that are deleted or that act as filler for certain algorithms. These particles do not affect the force calculation.
 
 ## Related Files and Folders
-- ParticleBase.h
+- LogicHandler.h
 - OwnershipState.h
+- ParticleBase.h
 - markParticleAsDeleted.h
