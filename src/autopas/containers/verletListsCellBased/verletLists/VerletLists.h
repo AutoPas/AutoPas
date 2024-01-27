@@ -11,6 +11,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08NeighborListBuilding3B.h"
+#include "autopas/containers/linkedCells/traversals/LCC01Traversal3B.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
@@ -77,7 +78,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
-                                                         _soaNeighborLists);
+                                                         _soaNeighborLists, _pairwiseAosNeighborLists);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletLists::computeInteractions");
@@ -93,7 +94,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
       verletTraversalInterface->setCellsAndNeighborLists(this->_linkedCells.getCells(), _aosNeighborLists,
-                                                         _soaNeighborLists);
+                                                         _soaNeighborLists, _pairwiseAosNeighborLists);
     } else {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletLists::computeInteractions");
@@ -134,10 +135,11 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    this->updateVerletListsAoS3B(traversal->getUseNewton3());
-
+    
     switch(traversal->getTraversalType()){
       case TraversalOption::vl_list_intersection_sorted_3b:{
+        this->updateVerletListsAoS3B(traversal->getUseNewton3());
+
         // sort neighborLists for efficient intersecting
         /// @todo paralelize sorting
         size_t buckets = _aosNeighborLists.bucket_count();
@@ -152,8 +154,12 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         }
         break;
       }
+      case TraversalOption::vl_pair_list_iteration_3b:{
+        this->updatePairwiseVerletListsAoS3B(traversal->getUseNewton3());
+        break;
+      }
       default:{
-        // nothing to do
+        this->updateVerletListsAoS3B(traversal->getUseNewton3());
       }
         
     }
@@ -248,6 +254,44 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     _soaListIsValid = false;
   }
 
+  virtual void updatePairwiseVerletListsAoS3B(bool useNewton3) {
+    generatePairwiseAoSNeighborLists();
+    typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor f(_pairwiseAosNeighborLists,
+                                                                               this->getCutoff() + this->getVerletSkin());
+
+    /// @todo autotune traversal
+    switch (_buildVerletListType) {
+      case BuildVerletListType::VerletAoS: {
+        utils::withStaticBool(useNewton3, [&](auto theBool) {
+          auto traversal =
+              LCC01Traversal3B<LinkedParticleCell, typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
+                             DataLayoutOption::aos, theBool>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+                  this->_linkedCells.getCellBlock().getCellLength());
+          this->_linkedCells.iterateTriwise(&traversal);
+        });
+        break;
+      }
+      case BuildVerletListType::VerletSoA: {
+        // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
+        AutoPasLog(WARN, "Pairwise Verlet-Lists can only be built with AoS DataLayout, using that instead!");
+        utils::withStaticBool(useNewton3, [&](auto theBool) {
+          auto traversal =
+              LCC01Traversal3B<LinkedParticleCell, typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
+                             DataLayoutOption::aos, theBool>(
+                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+                  this->_linkedCells.getCellBlock().getCellLength());
+          this->_linkedCells.iterateTriwise(&traversal);
+        });
+        break;
+      }
+      default:
+        utils::ExceptionHandler::exception("VerletLists::updatePairwiseVerletListsAoS3B(): unsupported BuildVerletListType: {}",
+                                           _buildVerletListType);
+        break;
+    }
+  }
+
   /**
    * Clears and then generates the AoS neighbor lists.
    * The Id Map is used to map the id of a particle to the actual particle.
@@ -264,6 +308,17 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     }
 
     return numParticles;
+  }
+
+  /**
+   * Clears and then generates the pairwise AoS neighbor lists.
+   */
+  void generatePairwiseAoSNeighborLists(){
+    _pairwiseAosNeighborLists.clear();
+    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+      // create the pairwise verlet list entries for all particles
+      _pairwiseAosNeighborLists[&(*iter)];
+    }
   }
 
   /**
@@ -309,6 +364,11 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * Neighbor Lists: Map of particle pointers to vector of particle pointers.
    */
   typename VerletListHelpers<Particle>::NeighborListAoSType _aosNeighborLists;
+
+  /**
+   * Pairwise Neighbor Lists: Map of particle pointers to vector of pairs of particle pointers.
+   */
+  typename VerletListHelpers<Particle>::PairwiseNeighborListAoSType _pairwiseAosNeighborLists;
 
   /**
    * Mapping of every particle, represented by its pointer, to an index.

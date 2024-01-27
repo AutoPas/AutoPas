@@ -150,6 +150,12 @@ class TraversalOption : public Option<TraversalOption> {
      * Does not support Newton3.
      */
     vl_list_intersection_hashing_3b,
+    /**
+     * VLListIntersectionTraversalHashing3b :  Distribute processing of neighbor lists dynamically to threads.
+     * Iterates over neighborlists that store all possible neighbor pairs.
+     * Does not support Newton3.
+     */
+    vl_pair_list_iteration_3b,
 
 
     // VerletListCells Traversals:
@@ -264,7 +270,8 @@ class TraversalOption : public Option<TraversalOption> {
                                                                     Value::lc_c01_3b, 
                                                                     Value::vl_list_iteration_3b, 
                                                                     Value::vl_list_intersection_sorted_3b,
-                                                                    Value::vl_list_intersection_hashing_3b}; 
+                                                                    Value::vl_list_intersection_hashing_3b,
+                                                                    Value::vl_pair_list_iteration_3b}; 
                                                           }
 
   /**
@@ -329,6 +336,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vl_list_iteration_3b, "vl_list_iteration_3b"},
         {TraversalOption::vl_list_intersection_sorted_3b, "vl_list_intersection_sorted_3b"},
         {TraversalOption::vl_list_intersection_hashing_3b, "vl_list_intersection_hashing_3b"},
+        {TraversalOption::vl_pair_list_iteration_3b, "vl_pair_list_iteration_3b"},
 
         // VerletListCells Traversals:
         {TraversalOption::vlc_sliced, "vlc_sliced"},

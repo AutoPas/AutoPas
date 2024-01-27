@@ -9,6 +9,7 @@
 #include <atomic>
 
 #include "autopas/baseFunctors/PairwiseFunctor.h"
+#include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 namespace autopas {
@@ -24,6 +25,11 @@ class VerletListHelpers {
    * Neighbor list AoS style.
    */
   using NeighborListAoSType = std::unordered_map<Particle *, std::vector<Particle *>>;
+
+  /**
+   * Pairwise Neighbor list AoS style.
+   */
+  using PairwiseNeighborListAoSType = std::unordered_map<Particle *, std::vector<std::pair<Particle *, Particle *>>>;
 
   /**
    * This functor can generate verlet lists using the typical pairwise traversal.
@@ -180,6 +186,83 @@ class VerletListHelpers {
 
    private:
     NeighborListAoSType &_verletListsAoS;
+    double _interactionLengthSquared;
+  };
+
+  class PairwiseVerletListGeneratorFunctor : public TriwiseFunctor<Particle, PairwiseVerletListGeneratorFunctor> {
+   public:
+    /**
+     * Structure of the SoAs defined by the particle.
+     */
+    using SoAArraysType = typename Particle::SoAArraysType;
+
+    /**
+     * Constructor
+     * @param pairwiseVerletListsAoS
+     * @param interactionLength
+     */
+    PairwiseVerletListGeneratorFunctor(PairwiseNeighborListAoSType &pairwiseVerletListsAoS, double interactionLength)
+        : TriwiseFunctor<Particle, PairwiseVerletListGeneratorFunctor>(interactionLength),
+          _pairwiseVerletListsAoS(pairwiseVerletListsAoS),
+          _interactionLengthSquared(interactionLength * interactionLength) {}
+
+    bool isRelevantForTuning() override { return false; }
+
+    bool allowsNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VLCAllCellsGeneratorFunctor::allowsNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    bool allowsNonNewton3() override {
+      utils::ExceptionHandler::exception(
+          "VLCAllCellsGeneratorFunctor::allowsNonNewton3() is not implemented, because it should not be called.");
+      return true;
+    }
+
+    void AoSFunctor(Particle &i, Particle &j, Particle &k, bool /*newton3*/) override {
+      using namespace autopas::utils::ArrayMath::literals;
+
+      if (i.isDummy() or j.isDummy() or k.isDummy()) {
+        return;
+      }
+      auto distIj = i.getR() - j.getR();
+      auto distIk = i.getR() - k.getR();
+      auto distJk = j.getR() - k.getR();
+
+      double distsquareIj = utils::ArrayMath::dot(distIj, distIj);
+      double distsquareIk = utils::ArrayMath::dot(distIk, distIk);
+      double distsquareJk = utils::ArrayMath::dot(distJk, distJk);
+      if (distsquareIj < _interactionLengthSquared and distsquareIk < _interactionLengthSquared and distsquareJk < _interactionLengthSquared) {
+        // this is thread safe, only if particle i is accessed by only one
+        // thread at a time. which is ensured, as particle i resides in a
+        // specific cell and each cell is only accessed by one thread at a time
+        // (ensured by traversals)
+        // also the list is not allowed to be resized!
+
+        _pairwiseVerletListsAoS.at(&i).push_back(std::make_pair(&j, &k));
+        // no newton3 here, as AoSFunctor(j,i,k) andAoSFunctor (k,i,j) will also be called if newton3 is disabled.
+      }
+    }
+
+    /**
+     * @copydoc autopas::Functor::getNeededAttr()
+     */
+    constexpr static std::array<typename Particle::AttributeNames, 4> getNeededAttr() {
+      return std::array<typename Particle::AttributeNames, 4>{
+          Particle::AttributeNames::ptr, Particle::AttributeNames::posX, Particle::AttributeNames::posY,
+          Particle::AttributeNames::posZ};
+    }
+
+    /**
+     * @copydoc autopas::Functor::getComputedAttr()
+     */
+    constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+      return std::array<typename Particle::AttributeNames, 0>{/*Nothing*/};
+    }
+
+   private:
+    PairwiseNeighborListAoSType &_pairwiseVerletListsAoS;
     double _interactionLengthSquared;
   };
 

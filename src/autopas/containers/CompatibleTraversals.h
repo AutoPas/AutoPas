@@ -99,7 +99,8 @@ namespace autopas::compatibleTraversals {
 [[maybe_unused]] static const std::set<TraversalOption> &allVLCompatibleTraversals3B() {
   static const std::set<TraversalOption> s{TraversalOption::vl_list_iteration_3b,
                                            TraversalOption::vl_list_intersection_sorted_3b,
-                                           TraversalOption::vl_list_intersection_hashing_3b};
+                                           TraversalOption::vl_list_intersection_hashing_3b,
+                                           TraversalOption::vl_pair_list_iteration_3b};
   return s;
 }
 
@@ -160,6 +161,7 @@ namespace autopas::compatibleTraversals {
           //TraversalOption::vl_list_iteration_3b,
           TraversalOption::vl_list_intersection_sorted_3b,
           TraversalOption::vl_list_intersection_hashing_3b,
+          TraversalOption::vl_pair_list_iteration_3b,
           TraversalOption::vlc_c01,
           TraversalOption::vlp_c01,
           TraversalOption::lc_c01_3b};
