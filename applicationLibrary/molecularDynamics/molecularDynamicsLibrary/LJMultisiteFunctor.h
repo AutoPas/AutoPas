@@ -470,7 +470,9 @@ class LJMultisiteFunctor
         SoAFloatPrecision torqueSumY = 0.;
         SoAFloatPrecision torqueSumZ = 0.;
 
+#if not defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#endif
         for (size_t siteB = 0; siteB < noSitesB; ++siteB) {
           const size_t globalSiteBIndex = siteB + siteIndexMolB;
 
@@ -1069,7 +1071,9 @@ class LJMultisiteFunctor
         const auto exactSitePositionAy = rotatedSitePositionAy + yAptr[molA];
         const auto exactSitePositionAz = rotatedSitePositionAz + zAptr[molA];
 
+#if not defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
 #pragma omp simd reduction (+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#endif
         for (size_t siteB = 0; siteB < siteCountB; ++siteB) {
           const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[siteB] : const_sigmaSquared;
           const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[siteB] : const_epsilon24;
@@ -1431,8 +1435,9 @@ class LJMultisiteFunctor
           }
         }
       }
-
+#if not defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
 #pragma omp simd reduction(+ : forceSumX, forceSumY, forceSumZ, torqueSumX, torqueSumY, torqueSumZ)
+#endif
       for (size_t neighborSite = 0; neighborSite < siteCountNeighbors; ++neighborSite) {
         const SoAFloatPrecision sigmaSquared = useMixing ? sigmaSquareds[neighborSite] : const_sigmaSquared;
         const SoAFloatPrecision epsilon24 = useMixing ? epsilon24s[neighborSite] : const_epsilon24;

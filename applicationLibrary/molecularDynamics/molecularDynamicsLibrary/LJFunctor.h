@@ -253,7 +253,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
+#if not defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#endif
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
@@ -440,7 +442,9 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
+#if not defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#endif
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -832,7 +836,9 @@ class LJFunctor
         }
 
         // gather position of particle j
+#if not defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
 #pragma omp simd safelen(vecsize)
+#endif
         for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
           xArr[tmpj] = xptr[neighborListPtr[joff + tmpj]];
           yArr[tmpj] = yptr[neighborListPtr[joff + tmpj]];
@@ -840,7 +846,9 @@ class LJFunctor
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
+#if not defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
+#endif
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
@@ -907,7 +915,9 @@ class LJFunctor
         }
         // scatter the forces to where they belong, this is only needed for newton3
         if (newton3) {
+#if not defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
 #pragma omp simd safelen(vecsize)
+#endif
           for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
             const size_t j = neighborListPtr[joff + tmpj];
             fxptr[j] -= fxArr[tmpj];

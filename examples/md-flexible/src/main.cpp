@@ -73,6 +73,12 @@ int main(int argc, char **argv) {
     std::cout<<"MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH not defined"<< std::endl;
 #endif
 
+#if defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
+  std::cout<<"OMP AutoVectorization disabled" << std::endl;
+#else
+  std::cout<<"OMP AutoVectorization NOT disabled" << std::endl;
+#endif
+
     simulation.run();
     simulation.finalize();
 
