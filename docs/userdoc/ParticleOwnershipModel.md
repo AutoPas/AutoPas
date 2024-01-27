@@ -1,4 +1,5 @@
 # Particle Ownership Model
+
 Particles saved in an AutoPas container can be in one of the following states:
 * **owned**: Particles that belong to this AutoPas instance.
   These particles are typically inside the boundary of the AutoPas instance.
