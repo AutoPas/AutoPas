@@ -123,16 +123,11 @@ class LJFunctorAVX512_Mask
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
-    auto sigmaSquared = _sigmaSquaredAoS;
-    auto epsilon24 = _epsilon24AoS;
+    const auto sigmaMixed = (particleA.getsigmaDiv2() + particleB.getsigmaDiv2());
+    const auto sigmaSquared = sigmaMixed * sigmaMixed;
+    const auto epsilon24 = 24 * particleA.getSquareRootEpsilon() * particleB.getSquareRootEpsilon();
     auto shift6 = _shift6AoS;
-    if constexpr (useMixing) {
-      sigmaSquared = _PPLibrary->getMixingSigmaSquared(particleA.getTypeId(), particleB.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(particleA.getTypeId(), particleB.getTypeId());
-      if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6(particleA.getTypeId(), particleB.getTypeId());
-      }
-    }
+
     auto displacement = particleA.getR() - particleB.getR();
     double distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
@@ -227,7 +222,8 @@ class LJFunctorAVX512_Mask
     auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict sqrtEpsilonPtr = soa.template begin<Particle::AttributeNames::squareRootEpsilon>();
+    const auto *const __restrict sigmaDiv2Ptr = soa.template begin<Particle::AttributeNames::sigmaDiv2>();
 
     // Set up globals accumulators. Each double is then reduced to a single double at the end of this function.
     __m512d virialAccX = _mm512_setzero_pd();
@@ -258,7 +254,8 @@ class LJFunctorAVX512_Mask
       const __m512d y1 = _mm512_set1_pd(yptr[i]);
       const __m512d z1 = _mm512_set1_pd(zptr[i]);
 
-      const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(typeIDptr[i], 0);
+      const __m512d sqrtEpsilon1Mul24 = _mm512_set1_pd(sqrtEpsilonPtr[i] * 24.);
+      const __m512d sigmaDiv21 = _mm512_set1_pd(sigmaDiv2Ptr[i]);
 
       size_t j = 0;
       // floor soa numParticles to multiple of vecLength
@@ -266,7 +263,7 @@ class LJFunctorAVX512_Mask
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<true, false, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, mixingPtr, typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
+                               zptr, fxptr, fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, fxacc, fyacc, fzacc, &virialAccX,
                                &virialAccY, &virialAccZ, &potentialEnergyAcc, 0);
       }
       // If b is a power of 2 the following holds:
@@ -274,7 +271,7 @@ class LJFunctorAVX512_Mask
       const int remainder = (int)(i & (vecLength - 1));
       if (remainder > 0) {
         SoAKernel<true, true, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, mixingPtr, typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
+                              zptr, fxptr, fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, fxacc, fyacc, fzacc, &virialAccX,
                               &virialAccY, &virialAccZ, &potentialEnergyAcc, remainder);
       }
 
@@ -336,8 +333,10 @@ class LJFunctorAVX512_Mask
     auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeID1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    const auto *const __restrict typeID2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict sqrtEpsilon1Ptr = soa1.template begin<Particle::AttributeNames::squareRootEpsilon>();
+    const auto *const __restrict sigmaDiv21Ptr = soa1.template begin<Particle::AttributeNames::sigmaDiv2>();
+    const auto *const __restrict sqrtEpsilon2Ptr = soa2.template begin<Particle::AttributeNames::squareRootEpsilon>();
+    const auto *const __restrict sigmaDiv22Ptr = soa2.template begin<Particle::AttributeNames::sigmaDiv2>();
 
     // Set up globals accumulators. Each double is then reduced to a single double at the end of this function.
     __m512d virialAccX = _mm512_setzero_pd();
@@ -366,19 +365,20 @@ class LJFunctorAVX512_Mask
       const __m512d y1 = _mm512_set1_pd(y1ptr[i]);
       const __m512d z1 = _mm512_set1_pd(z1ptr[i]);
 
-      const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(typeID1ptr[i], 0);
+      const __m512d sqrtEpsilon1Mul24 = _mm512_set1_pd(sqrtEpsilon1Ptr[i] * 24.);
+      const __m512d sigmaDiv21 = _mm512_set1_pd(sigmaDiv21Ptr[i]);
 
       // floor soa2 numParticles to multiple of vecLength
       size_t j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += vecLength) {
         SoAKernel<newton3, false, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, mixingPtr, typeID2ptr, fxacc, fyacc, fzacc,
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilon2Ptr, sigmaDiv22Ptr, fxacc, fyacc, fzacc,
                                   &virialAccX, &virialAccY, &virialAccZ, &potentialEnergyAcc, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true, false>(j, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, mixingPtr, typeID2ptr, fxacc, fyacc, fzacc,
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilon2Ptr, sigmaDiv22Ptr, fxacc, fyacc, fzacc,
                                  &virialAccX, &virialAccY, &virialAccZ, &potentialEnergyAcc, rest);
 
       // We accumulated the forces acting on molecule i across a full vector. We horizontally reduce this, fDacc, to sumfD
@@ -455,7 +455,7 @@ class LJFunctorAVX512_Mask
                         const __m512d &x1, const __m512d &y1, const __m512d &z1, const double *const __restrict x2ptr,
                         const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                         double *const __restrict fx2ptr, double *const __restrict fy2ptr,
-                        double *const __restrict fz2ptr, const double *const __restrict mixingPtr, const size_t *const typeID2ptr,
+                        double *const __restrict fz2ptr, const __m512d &sqrtEpsilon1Mul24, const __m512d &sigmaDiv21, const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaDiv2Ptr,
                         __m512d &fxacc, __m512d &fyacc, __m512d &fzacc, __m512d *virialSumX, __m512d *virialSumY,
                         __m512d *virialSumZ, __m512d *potentialEnergySum, const unsigned int remainder = 0, const __m512i *neighborIndices = nullptr) {
 
@@ -523,22 +523,26 @@ class LJFunctorAVX512_Mask
       return;
     }
 
-    // gather mixing parameters.
-    // Uses base address of mixingPtr (+0/1/2), gathered data is offset by siteTypeIndicesScaled x 64 bits x 8.
-    // We need scaled site-types due to the way the mixing data is stored - todo change this
-    const __m512i typeIndices = remainderCase ? (isVerlet ?
-                                                              _mm512_mask_i64gather_epi64(_zeroI, remainderMask, *neighborIndices, &typeID2ptr[0], 8) :
-                                                              _mm512_maskz_loadu_epi64(remainderMask, &typeID2ptr[j])) :
-                                                  (isVerlet ?
-                                                            _mm512_i64gather_epi64(*neighborIndices, &typeID2ptr[0], 8) :
-                                                            _mm512_loadu_epi64(&typeID2ptr[j]));
+    const __m512d sigmaDiv22 = remainderCase ? (isVerlet ?
+                                                         _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &sigmaDiv2Ptr[0], 8) :
+                                                         _mm512_maskz_loadu_pd(remainderMask, &sigmaDiv2Ptr[j])) :
+                                             (isVerlet ?
+                                                       _mm512_i64gather_pd(*neighborIndices, &sigmaDiv2Ptr[0], 8) :
+                                                       _mm512_loadu_pd(&sigmaDiv2Ptr[j]));
 
-    const __m512i typeIndicesScaled = _mm512_mullox_epi64(typeIndices, _threeI);
+    const __m512d sqrtEpsilon2 = remainderCase ? (isVerlet ?
+                                                 _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &sqrtEpsilonPtr[0], 8) :
+                                                 _mm512_maskz_loadu_pd(remainderMask, &sqrtEpsilonPtr[j])) :
+                                     (isVerlet ?
+                                               _mm512_i64gather_pd(*neighborIndices, &sqrtEpsilonPtr[0], 8) :
+                                               _mm512_loadu_pd(&sqrtEpsilonPtr[j]));
 
-    const __m512d epsilon24 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr, 8);
-    const __m512d sigmaSquared = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+1, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+1, 8);
-    const __m512d shift6 = applyShift ? (remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8))
-        : _zeroD;
+    const __m512d sigmaMixed = _mm512_add_pd(sigmaDiv21, sigmaDiv22);
+
+    const __m512d epsilon24 = _mm512_mul_pd(sqrtEpsilon1Mul24, sqrtEpsilon2);
+
+    const __m512d sigmaSquared = _mm512_mul_pd(sigmaMixed, sigmaMixed);
+
 
     const __m512d lj2 = _mm512_mul_pd(sigmaSquared, invDistSquared); // = (sigma/dist)^2
     const __m512d lj6 = _mm512_mul_pd(_mm512_mul_pd(lj2, lj2), lj2); // = (sigma/dist)^6
@@ -625,7 +629,7 @@ class LJFunctorAVX512_Mask
 
       // Global Potential
       const __mmask8 potEnergyMask = remainderCase ? _kand_mask8(remainderMask, combinedMask) : combinedMask;
-      const __m512d potentialEnergy = _mm512_maskz_fmadd_pd(potEnergyMask, epsilon24, lj12m6, shift6);
+      const __m512d potentialEnergy = _mm512_maskz_fmadd_pd(potEnergyMask, epsilon24, lj12m6, _zeroD); // todo replace this back with shift6
 
       // Add above to accumulators iff molecule 1 is owned, using isOwnedMask1
       *virialSumX = _mm512_mask_add_pd(*virialSumX, isOwnedMask1, *virialSumX, virialX);
@@ -684,7 +688,8 @@ class LJFunctorAVX512_Mask
     auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
     auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
 
-    const auto *const __restrict typeIDptr = soa.template begin<Particle::AttributeNames::typeId>();
+    const auto *const __restrict sqrtEpsilonPtr = soa.template begin<Particle::AttributeNames::squareRootEpsilon>();
+    const auto *const __restrict sigmaDiv2Ptr = soa.template begin<Particle::AttributeNames::sigmaDiv2>();
 
     // accumulators
     __m512d virialAccX = _mm512_setzero_pd();
@@ -702,7 +707,8 @@ class LJFunctorAVX512_Mask
     __m512i ownedStateI = _mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[indexFirst]));
     const __mmask8 isOwnedMaskI = _mm512_cmp_epi64_mask(ownedStateI, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
 
-    const double *const __restrict mixingPtr = _PPLibrary->getMixingDataPtr(typeIDptr[indexFirst], 0);
+    const __m512d sqrtEpsilon1Mul24 = _mm512_set1_pd(sqrtEpsilonPtr[indexFirst] * 24.);
+    const __m512d sigmaDiv21 = _mm512_set1_pd(sigmaDiv2Ptr[indexFirst]);
 
 
     // load vecLength neighbors
@@ -716,7 +722,7 @@ class LJFunctorAVX512_Mask
       const __m512i neighborIndices = _mm512_loadu_epi64(&neighborList[j]);
       SoAKernel<newton3, false, true>(0, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1,
                                 xptr, yptr, zptr, fxptr, fyptr, fzptr,
-                                      mixingPtr, typeIDptr, fxacc, fyacc, fzacc, &virialAccX,
+                                      sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, fxacc, fyacc, fzacc, &virialAccX,
                                 &virialAccY, &virialAccZ, &potentialEnergyAcc, 0, &neighborIndices);
     }
     // Remainder loop
@@ -729,7 +735,7 @@ class LJFunctorAVX512_Mask
 
       SoAKernel<newton3, true, true>(0, isOwnedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1,
                                xptr, yptr, zptr, fxptr, fyptr, fzptr,
-                               mixingPtr, typeIDptr, fxacc, fyacc, fzacc, &virialAccX, &virialAccY,
+                                     sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, fxacc, fyacc, fzacc, &virialAccX, &virialAccY,
                                &virialAccZ, &potentialEnergyAcc, remainder, &neighborIndices);
     }
 
@@ -774,19 +780,19 @@ class LJFunctorAVX512_Mask
    * @copydoc autopas::Functor::getNeededAttr()
    */
   constexpr static auto getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 9>{
+    return std::array<typename Particle::AttributeNames, 10>{
         Particle::AttributeNames::id,     Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
         Particle::AttributeNames::posZ,   Particle::AttributeNames::forceX, Particle::AttributeNames::forceY,
-        Particle::AttributeNames::forceZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+        Particle::AttributeNames::forceZ, Particle::AttributeNames::squareRootEpsilon, Particle::AttributeNames::sigmaDiv2, Particle::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename Particle::AttributeNames, 6>{
+    return std::array<typename Particle::AttributeNames, 7>{
         Particle::AttributeNames::id,   Particle::AttributeNames::posX,   Particle::AttributeNames::posY,
-        Particle::AttributeNames::posZ, Particle::AttributeNames::typeId, Particle::AttributeNames::ownershipState};
+        Particle::AttributeNames::posZ, Particle::AttributeNames::squareRootEpsilon, Particle::AttributeNames::sigmaDiv2, Particle::AttributeNames::ownershipState};
   }
 
   /**

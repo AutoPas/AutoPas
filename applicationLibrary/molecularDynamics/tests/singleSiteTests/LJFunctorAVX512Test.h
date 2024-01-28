@@ -12,7 +12,7 @@
 #include "autopas/AutoPasDecl.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX512_Mask.h"
-#include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ_NoPPL.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
@@ -37,7 +37,7 @@ class LJFunctorAVX512Test : public AutoPasTestBase {
    * @param allOwned true if all generated molecules are owned. If false, molecule ownership will alternate in the order
    * owned -> halo -> dummy -> owned -> ...
    */
-  void generateMolecules(std::vector<mdLib::MoleculeLJ> *molecules, std::array<double, 3> offset,
+  void generateMolecules(std::vector<mdLib::MoleculeLJ_NoPPL> *molecules, std::array<double, 3> offset,
                          bool allOwned);
 
   /**
@@ -54,7 +54,7 @@ class LJFunctorAVX512Test : public AutoPasTestBase {
    * @param cutoff
    */
   template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-  void testAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib::MoleculeLJ molB,
+  void testAoSForceCalculation(mdLib::MoleculeLJ_NoPPL molA, mdLib::MoleculeLJ_NoPPL molB,
                                ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff);
 
   /**
@@ -70,7 +70,7 @@ class LJFunctorAVX512Test : public AutoPasTestBase {
    * @param cutoff
    */
   template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
-  void testSuiteAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib::MoleculeLJ molB,
+  void testSuiteAoSForceCalculation(mdLib::MoleculeLJ_NoPPL molA, mdLib::MoleculeLJ_NoPPL molB,
                                     ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff);
 
   /**
@@ -93,7 +93,7 @@ class LJFunctorAVX512Test : public AutoPasTestBase {
    * @param cutoff
    */
   template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoACellAgainstAoS(std::vector<mdLib::MoleculeLJ> molecules,
+  void testSoACellAgainstAoS(std::vector<mdLib::MoleculeLJ_NoPPL> molecules,
                              ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff);
 
   /**
@@ -110,8 +110,8 @@ class LJFunctorAVX512Test : public AutoPasTestBase {
    * @param cutoff
    */
   template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoACellPairAgainstAoS(std::vector<mdLib::MoleculeLJ> moleculesA,
-                                 std::vector<mdLib::MoleculeLJ> moleculesB,
+  void testSoACellPairAgainstAoS(std::vector<mdLib::MoleculeLJ_NoPPL> moleculesA,
+                                 std::vector<mdLib::MoleculeLJ_NoPPL> moleculesB,
                                  ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff);
 
   /**
@@ -127,6 +127,6 @@ class LJFunctorAVX512Test : public AutoPasTestBase {
    * @param cutoff
    */
   template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-  void testSoAVerletAgainstAoS(std::vector<mdLib::MoleculeLJ> molecules,
+  void testSoAVerletAgainstAoS(std::vector<mdLib::MoleculeLJ_NoPPL> molecules,
                                ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff);
 };

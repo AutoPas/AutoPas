@@ -11,6 +11,9 @@
 #define PARTICLES_PER_DIM 7 // This should not be a multiple of 2
 #define AOS_VS_SOA_ACCURACY 1e-8
 
+constexpr std::array<double,3> _epsilons{1., 0.5, 0.2};
+constexpr std::array<double,3> _sigmas{1., 0.5, 1.4};
+
 void LJFunctorAVX512Test::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
   PPL->addSiteType(0, 1, 1, 1);
   PPL->addSiteType(1, 0.5, 0.5, 0.7);
@@ -18,7 +21,7 @@ void LJFunctorAVX512Test::generatePPL(ParticlePropertiesLibrary<double, size_t> 
   PPL->calculateMixingCoefficients();
 }
 
-void LJFunctorAVX512Test::generateMolecules(std::vector<mdLib::MoleculeLJ> *molecules,
+void LJFunctorAVX512Test::generateMolecules(std::vector<mdLib::MoleculeLJ_NoPPL> *molecules,
                                                std::array<double, 3> offset = {0, 0, 0}, bool allOwned = true) {
   molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
@@ -30,7 +33,8 @@ void LJFunctorAVX512Test::generateMolecules(std::vector<mdLib::MoleculeLJ> *mole
         molecules->at(index).setR({(double)i + offset[0], (double)j + offset[1], (double)k + offset[2]});
         molecules->at(index).setF({0, 0, 0});
         molecules->at(index).setV({0, 0, 0});
-        molecules->at(index).setTypeId(index % 3);
+        molecules->at(index).setSquareRootEpsilon(sqrt(_epsilons[index % 3]));
+        molecules->at(index).setsigmaDiv2(_sigmas[index % 3] / 2.);
         if (allOwned) {
           molecules->at(index).setOwnershipState(autopas::OwnershipState::owned);
         } else {
@@ -48,13 +52,10 @@ void LJFunctorAVX512Test::generateMolecules(std::vector<mdLib::MoleculeLJ> *mole
 }
 
 template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-void LJFunctorAVX512Test::testAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib::MoleculeLJ molB,
+void LJFunctorAVX512Test::testAoSForceCalculation(mdLib::MoleculeLJ_NoPPL molA, mdLib::MoleculeLJ_NoPPL molB,
                                                      ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff) {
   using namespace autopas::utils::ArrayMath::literals;
   using autopas::utils::ArrayMath::dot;
-
-  const auto molTypeA = molA.getTypeId();
-  const auto molTypeB = molB.getTypeId();
 
   // determine expected forces (+ globals)
   std::array<double, 3> expectedForceA{};
@@ -77,8 +78,9 @@ void LJFunctorAVX512Test::testAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib:
 
   if (distanceSquared < cutoff * cutoff) {
 
-    const auto sigmaSquared = PPL.getMixingData(molA.getTypeId(), molB.getID()).sigmaSquared;
-    const auto epsilon24 = PPL.getMixingData(molA.getTypeId(), molB.getID()).epsilon24;
+    const auto sigmaMixed = molA.getsigmaDiv2() + molB.getsigmaDiv2();
+    const auto sigmaSquared = sigmaMixed * sigmaMixed;
+    const auto epsilon24 = 24 * molA.getSquareRootEpsilon() * molB.getSquareRootEpsilon();
 
     const auto invDistSquared = 1. / distanceSquared;
     const auto lj2 = sigmaSquared * invDistSquared;
@@ -94,7 +96,7 @@ void LJFunctorAVX512Test::testAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib:
     }
 
     if constexpr (calculateGlobals) {
-      const auto shift6 = applyShift ? PPL.getMixingData(molA.getTypeId(), molB.getTypeId()).shift6 : 0;
+      const auto shift6 = applyShift ? 0 : 0; // todo fix
       const auto shift = shift6 / 6.;
       const auto epsilon4 = epsilon24 / 6.;
 
@@ -117,7 +119,7 @@ void LJFunctorAVX512Test::testAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib:
   // calculate forces and torques using AoS functor
 
   // create functor
-  functorType<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
+  functorType<mdLib::MoleculeLJ_NoPPL, applyShift, true, autopas::FunctorN3Modes::Both,
                             calculateGlobals, true> functor(cutoff, PPL);
 
   functor.initTraversal();
@@ -150,8 +152,8 @@ void LJFunctorAVX512Test::testAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib:
 }
 
 template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType>
-void LJFunctorAVX512Test::testSuiteAoSForceCalculation(mdLib::MoleculeLJ molA,
-                                                          mdLib::MoleculeLJ molB,
+void LJFunctorAVX512Test::testSuiteAoSForceCalculation(mdLib::MoleculeLJ_NoPPL molA,
+                                                          mdLib::MoleculeLJ_NoPPL molB,
                                                           ParticlePropertiesLibrary<double, size_t> &PPL,
                                                           double cutoff) {
   // N3L Disabled, No Calculating Globals
@@ -174,13 +176,13 @@ void LJFunctorAVX512Test::testSuiteAoSForceCalculation(mdLib::MoleculeLJ molA,
 }
 
 template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-void LJFunctorAVX512Test::testSoACellAgainstAoS(std::vector<mdLib::MoleculeLJ> molecules,
+void LJFunctorAVX512Test::testSoACellAgainstAoS(std::vector<mdLib::MoleculeLJ_NoPPL> molecules,
                                                    ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff) {
-  using mdLib::MoleculeLJ;
+  using mdLib::MoleculeLJ_NoPPL;
 
-  functorType<MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+  functorType<MoleculeLJ_NoPPL, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
       functorAoS(cutoff, PPL);
-  functorType<MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+  functorType<MoleculeLJ_NoPPL, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
       functorSoA(cutoff, PPL);
 
   auto moleculesAoS = molecules;
@@ -202,7 +204,7 @@ void LJFunctorAVX512Test::testSoACellAgainstAoS(std::vector<mdLib::MoleculeLJ> m
   functorAoS.endTraversal(newton3);
 
   // generate SoA Cell
-  autopas::FullParticleCell<MoleculeLJ> cellSoA;
+  autopas::FullParticleCell<MoleculeLJ_NoPPL> cellSoA;
   for (auto &&mol : moleculesSoA) {
     cellSoA.addParticle(mol);
   }
@@ -249,14 +251,14 @@ void LJFunctorAVX512Test::testSoACellAgainstAoS(std::vector<mdLib::MoleculeLJ> m
 }
 
 template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-void LJFunctorAVX512Test::testSoACellPairAgainstAoS(std::vector<mdLib::MoleculeLJ> moleculesA,
-                                                       std::vector<mdLib::MoleculeLJ> moleculesB,
+void LJFunctorAVX512Test::testSoACellPairAgainstAoS(std::vector<mdLib::MoleculeLJ_NoPPL> moleculesA,
+                                                       std::vector<mdLib::MoleculeLJ_NoPPL> moleculesB,
                                                        ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff) {
-  using mdLib::MoleculeLJ;
+  using mdLib::MoleculeLJ_NoPPL;
 
-  functorType<MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+  functorType<MoleculeLJ_NoPPL, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
       functorAoS(cutoff, PPL);
-  functorType<MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+  functorType<MoleculeLJ_NoPPL, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
       functorSoA(cutoff, PPL);
 
   auto moleculesAoSA = moleculesA;
@@ -281,11 +283,11 @@ void LJFunctorAVX512Test::testSoACellPairAgainstAoS(std::vector<mdLib::MoleculeL
   functorAoS.endTraversal(newton3);
 
   // generate SoA Cells
-  autopas::FullParticleCell<MoleculeLJ> cellSoAA;
+  autopas::FullParticleCell<MoleculeLJ_NoPPL> cellSoAA;
   for (auto &&mol : moleculesSoAA) {
     cellSoAA.addParticle(mol);
   }
-  autopas::FullParticleCell<MoleculeLJ> cellSoAB;
+  autopas::FullParticleCell<MoleculeLJ_NoPPL> cellSoAB;
   for (auto &&mol : moleculesSoAB) {
     cellSoAB.addParticle(mol);
   }
@@ -346,13 +348,13 @@ void LJFunctorAVX512Test::testSoACellPairAgainstAoS(std::vector<mdLib::MoleculeL
 }
 
 template <template<class, bool, bool, autopas::FunctorN3Modes, bool, bool> class functorType, bool newton3, bool calculateGlobals, bool applyShift>
-void LJFunctorAVX512Test::testSoAVerletAgainstAoS(std::vector<mdLib::MoleculeLJ> molecules,
+void LJFunctorAVX512Test::testSoAVerletAgainstAoS(std::vector<mdLib::MoleculeLJ_NoPPL> molecules,
                                                      ParticlePropertiesLibrary<double, size_t> &PPL, double cutoff) {
-  using mdLib::MoleculeLJ;
+  using mdLib::MoleculeLJ_NoPPL;
 
-  functorType<MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+  functorType<MoleculeLJ_NoPPL, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
       functorAoS(cutoff, PPL);
-  functorType<MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+  functorType<MoleculeLJ_NoPPL, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
       functorSoA(cutoff, PPL);
 
   auto moleculesAoS = molecules;
@@ -392,7 +394,7 @@ void LJFunctorAVX512Test::testSoAVerletAgainstAoS(std::vector<mdLib::MoleculeLJ>
   functorAoS.endTraversal(newton3);
 
   // generate SoA Cell
-  autopas::FullParticleCell<MoleculeLJ> cellSoA;
+  autopas::FullParticleCell<MoleculeLJ_NoPPL> cellSoA;
   for (auto &&mol : moleculesSoA) {
     cellSoA.addParticle(mol);
   }
@@ -445,7 +447,7 @@ void LJFunctorAVX512Test::testSoAVerletAgainstAoS(std::vector<mdLib::MoleculeLJ>
  * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
  */
 TEST_F(LJFunctorAVX512Test, AoSTest) {
-  using mdLib::MoleculeLJ;
+  using mdLib::MoleculeLJ_NoPPL;
 
   const double cutoff = 2.5;
 
@@ -453,46 +455,46 @@ TEST_F(LJFunctorAVX512Test, AoSTest) {
 
   // Molecules to be used in the tests (explanation of choices documented when tests are run).
   // For ease of readability, each molecule has its own molType, even when duplicated.
-  MoleculeLJ mol0;
+  MoleculeLJ_NoPPL mol0;
   mol0.setR({0., 0., 0.});
   mol0.setF({0., 0., 0.});
-  mol0.setTypeId(0);
-  PPL.addSiteType(0, 1., 1., 1.);
+  mol0.setSquareRootEpsilon(1.);
+  mol0.setsigmaDiv2(0.5);
   mol0.setOwnershipState(autopas::OwnershipState::owned);
 
-  MoleculeLJ mol1;
+  MoleculeLJ_NoPPL mol1;
   mol1.setR({1., 1., 1.});
   mol1.setF({0., 0., 0.});
-  mol1.setTypeId(1);
-  PPL.addSiteType(1, 1., 1., 1.);
+  mol1.setSquareRootEpsilon(1.);
+  mol1.setsigmaDiv2(0.5);
   mol1.setOwnershipState(autopas::OwnershipState::owned);
 
-  MoleculeLJ mol2;
+  MoleculeLJ_NoPPL mol2;
   mol2.setR({1., 0.5, 0.});
   mol2.setF({0., 0., 0.});
-  mol2.setTypeId(2);
-  PPL.addSiteType(2, 0.5, 0.5, 1.);
+  mol2.setSquareRootEpsilon(sqrt(0.5));
+  mol2.setsigmaDiv2(0.25);
   mol2.setOwnershipState(autopas::OwnershipState::owned);
 
-  MoleculeLJ mol3;
+  MoleculeLJ_NoPPL mol3;
   mol3.setR({0., 0., 1.});
   mol3.setF({0., 0., 0.});
-  mol3.setTypeId(3);
-  PPL.addSiteType(3, 1., 1., 1.);
+  mol3.setSquareRootEpsilon(1.);
+  mol3.setsigmaDiv2(0.5);
   mol3.setOwnershipState(autopas::OwnershipState::halo);
 
-  MoleculeLJ mol4;
+  MoleculeLJ_NoPPL mol4;
   mol4.setR({0., 0.8, 0.});
   mol4.setF({0., 0., 0.});
-  mol4.setTypeId(4);
-  PPL.addSiteType(4, 1., 1., 1.);
+  mol4.setSquareRootEpsilon(1.);
+  mol4.setsigmaDiv2(0.5);
   mol4.setOwnershipState(autopas::OwnershipState::dummy);
 
-  MoleculeLJ mol5;
+  MoleculeLJ_NoPPL mol5;
   mol5.setR({2.5, 2.5, 2.5});
   mol5.setF({0., 0., 0.});
-  mol5.setTypeId(5);
-  PPL.addSiteType(5, 1., 1., 1.);
+  mol5.setSquareRootEpsilon(1.);
+  mol5.setsigmaDiv2(0.5);
   mol5.setOwnershipState(autopas::OwnershipState::dummy);
 
   PPL.calculateMixingCoefficients();
@@ -506,7 +508,7 @@ TEST_F(LJFunctorAVX512Test, AoSTest) {
  * Tests that the AoS functor bypasses molecules that are dummies. Tests AutoVec, AVX512_Mask, AVX512_GS
  */
 TEST_F(LJFunctorAVX512Test, AoSDummyTest) {
-  using mdLib::MoleculeLJ;
+  using mdLib::MoleculeLJ_NoPPL;
 
   const double cutoff = 2.5;
 
@@ -514,28 +516,31 @@ TEST_F(LJFunctorAVX512Test, AoSDummyTest) {
   PPL.addSiteType(0, 1., 1., 1.);
   PPL.calculateMixingCoefficients();
 
-  MoleculeLJ mol0;
+  MoleculeLJ_NoPPL mol0;
   mol0.setR({0., 0., 0.});
   mol0.setF({0., 0., 0.});
-  mol0.setTypeId(0);
+  mol0.setSquareRootEpsilon(1.);
+  mol0.setsigmaDiv2(0.5);
   mol0.setOwnershipState(autopas::OwnershipState::owned);
 
-  MoleculeLJ mol1;
+  MoleculeLJ_NoPPL mol1;
   mol1.setR({-1., 0., 0.});
   mol1.setF({0., 0., 0.});
-  mol1.setTypeId(0);
+  mol1.setSquareRootEpsilon(1.);
+  mol1.setsigmaDiv2(0.5);
   mol1.setOwnershipState(autopas::OwnershipState::dummy);
 
- MoleculeLJ mol2;
+ MoleculeLJ_NoPPL mol2;
   mol2.setR({1., 0., 0.});
   mol2.setF({0., 0., 0.});
-  mol2.setTypeId(0);
+  mol2.setSquareRootEpsilon(1.);
+  mol2.setsigmaDiv2(0.5);
   mol2.setOwnershipState(autopas::OwnershipState::dummy);
 
   // AutoVec
 
   // create functor
-  mdLib::LJFunctorAVX512_Mask<mdLib::MoleculeLJ, true, true, autopas::FunctorN3Modes::Both, true, true> functor(cutoff, PPL);
+  mdLib::LJFunctorAVX512_Mask<mdLib::MoleculeLJ_NoPPL, true, true, autopas::FunctorN3Modes::Both, true, true> functor(cutoff, PPL);
 
   // newton3 on
   functor.initTraversal();
@@ -577,12 +582,12 @@ TEST_F(LJFunctorAVX512Test, AoSDummyTest) {
  * Tests SoAFunctorSingle using AoS functor as a reference.
  */
 TEST_F(LJFunctorAVX512Test, MultisiteLJFunctorTest_AoSVsSoASingle) {
-  using mdLib::MoleculeLJ;
+  using mdLib::MoleculeLJ_NoPPL;
 
   const double cutoff = 3.1;
 
-  std::vector<mdLib::MoleculeLJ> allOwnedMolecules;
-  std::vector<mdLib::MoleculeLJ> mixedOwnershipMolecules;
+  std::vector<mdLib::MoleculeLJ_NoPPL> allOwnedMolecules;
+  std::vector<mdLib::MoleculeLJ_NoPPL> mixedOwnershipMolecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
@@ -638,14 +643,14 @@ TEST_F(LJFunctorAVX512Test, MultisiteLJFunctorTest_AoSVsSoASingle) {
  * Tests SoAFunctorPair using AoS functor as a reference.
  */
 TEST_F(LJFunctorAVX512Test, MultisiteLJFunctorTest_AoSVsSoAPair) {
-  using mdLib::MoleculeLJ;
+  using mdLib::MoleculeLJ_NoPPL;
 
   const double cutoff = 5.1;
 
-  std::vector<mdLib::MoleculeLJ> allOwnedMoleculesA;
-  std::vector<mdLib::MoleculeLJ> allOwnedMoleculesB;
-  std::vector<mdLib::MoleculeLJ> mixedOwnershipMoleculesA;
-  std::vector<mdLib::MoleculeLJ> mixedOwnershipMoleculesB;
+  std::vector<mdLib::MoleculeLJ_NoPPL> allOwnedMoleculesA;
+  std::vector<mdLib::MoleculeLJ_NoPPL> allOwnedMoleculesB;
+  std::vector<mdLib::MoleculeLJ_NoPPL> mixedOwnershipMoleculesA;
+  std::vector<mdLib::MoleculeLJ_NoPPL> mixedOwnershipMoleculesB;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
@@ -692,12 +697,12 @@ TEST_F(LJFunctorAVX512Test, MultisiteLJFunctorTest_AoSVsSoAPair) {
  * Tests SoAFunctorVerlet using AoS functor as a reference.
  */
 TEST_F(LJFunctorAVX512Test, MultisiteLJFunctorTest_AoSVsSoAVerlet) {
-  using mdLib::MoleculeLJ;
+  using mdLib::MoleculeLJ_NoPPL;
 
   const double cutoff = 3.1;
 
-  std::vector<mdLib::MoleculeLJ> allOwnedMolecules;
-  std::vector<mdLib::MoleculeLJ> mixedOwnershipMolecules;
+  std::vector<mdLib::MoleculeLJ_NoPPL> allOwnedMolecules;
+  std::vector<mdLib::MoleculeLJ_NoPPL> mixedOwnershipMolecules;
   ParticlePropertiesLibrary<double, size_t> PPL(cutoff);
 
   generatePPL(&PPL);
