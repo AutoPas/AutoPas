@@ -495,6 +495,9 @@ class LJFunctorAVX512_Mask
     const __m512d distanceSquared =
         _mm512_add_pd(distanceSquaredX, _mm512_add_pd(distanceSquaredY, distanceSquaredZ));
 
+    const __m512d invDistSquared = _mm512_div_pd(_oneD, distanceSquared); // todo investigate if this should be replaced to improve pipelining
+
+
     // mask = distanceSquared < _cutoffSquared
 
     // _CMP_LE_OS == Less-Equal-then (ordered, signaling)
@@ -537,7 +540,6 @@ class LJFunctorAVX512_Mask
     const __m512d shift6 = applyShift ? (remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8))
         : _zeroD;
 
-    const __m512d invDistSquared = _mm512_div_pd(_oneD, distanceSquared); // todo investigate if this should be replaced to improve pipelining
     const __m512d lj2 = _mm512_mul_pd(sigmaSquared, invDistSquared); // = (sigma/dist)^2
     const __m512d lj6 = _mm512_mul_pd(_mm512_mul_pd(lj2, lj2), lj2); // = (sigma/dist)^6
     const __m512d lj12 = _mm512_mul_pd(lj6, lj6); // = (sigma/dist)^12
