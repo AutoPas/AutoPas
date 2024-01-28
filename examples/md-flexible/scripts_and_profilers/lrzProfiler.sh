@@ -22,7 +22,7 @@ newton3OfContainer=("enabled" "disabled" "disabled")
 data_layout="SoA" #"SoA","AoS"
 #site_counts=(1 2 5)
 #densities=(0.5 0.75)
-num_threads=("4" "8")
+num_threads=("4")
 functor="OldFunc" #"NewFunc","OldFunc", "SingleSiteEmulator", "BundlingApproach"
 functorDescriptionInFile="Lennard-Jones" # Bundling-Approach"
 samples="0 1"
@@ -57,8 +57,8 @@ createInputFile () {
 # md-flexible compiled for multi-site molecules.
 # container                        :  [LinkedCells, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
 container						 : [${containerTypes[containerIndexLocal]}]
-#traversal						 : [${traversalOfContainer[containerIndexLocal]}]
-traversal                            :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+#traversal                            :  [ds_sequential, lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_cluster_iteration, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+traversal						 : [${traversalOfContainer[containerIndexLocal]}]
 data-layout                      :  [${dataLayoutLocal}] #[AoS, SoA]
 # newton3                          :  [disabled, enabled]
 newton3                          : [${newton3OfContainer[containerIndexLocal]}]
@@ -72,7 +72,7 @@ tuning-samples                   :  10
 functor                          :  ${functorDescriptionInFile}
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
-box-max                          :  [20, 20, 20]
+box-max                          :  [16, 16, 16]
 cell-size                        :  [2]
 deltaT                           :  0.0
 iterations                       :  12000
@@ -92,7 +92,7 @@ Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0
-      box-length                 :  [19, 19, 19]
+      box-length                 :  [15, 15, 15]
       bottomLeftCorner           :  [0.5, 0.5, 0.5]
       particle-spacing           :  ${spacing}
       velocity                   :  [0, 0, 0]
