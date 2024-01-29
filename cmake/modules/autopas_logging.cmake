@@ -35,7 +35,7 @@ if (AUTOPAS_LOG_ITERATIONS OR AUTOPAS_LOG_ALL)
 endif ()
 
 # option for TuningResultLogger
-option(AUTOPAS_LOG_TUNINGRESULTS "Generate a csv tracking the decisions of the auto tuner." ON)
+option(AUTOPAS_LOG_TUNINGRESULTS "Generate a csv tracking the decisions of the auto tuner." OFF)
 if (AUTOPAS_LOG_TUNINGRESULTS OR AUTOPAS_LOG_ALL)
     target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_TUNINGRESULTS)
     message(STATUS "TuningResultLogger enabled.")
