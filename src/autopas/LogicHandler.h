@@ -544,6 +544,17 @@ class LogicHandler {
   std::tuple<const std::vector<FullParticleCell<Particle>> &, const std::vector<FullParticleCell<Particle>> &>
   getParticleBuffers() const;
 
+  /**
+   * Getter for the mean rebuild frequency.
+   * Helpful for determining the frequency for the dynamic containers
+   * @return value of the mean frequency as double
+   */
+  [[nodiscard]] double getMeanRebuildFrequency() const {
+    return _rebuildDistances.empty() ? 0
+                                     : (std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0) * 1.0) /
+                                           _rebuildDistances.size();
+  }
+
  private:
   /**
    * Initialize or update the spacial locks used during the remainder traversal.
@@ -710,6 +721,8 @@ class LogicHandler {
    * Number of particles in a VCL cluster.
    */
   unsigned int _verletClusterSize;
+
+  std::vector<int> _rebuildDistances;
 
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor

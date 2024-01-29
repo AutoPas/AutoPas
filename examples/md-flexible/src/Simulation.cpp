@@ -598,6 +598,8 @@ void Simulation::logMeasurements() {
       std::cout << "  GFLOPs/sec                         : "
                 << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
       std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+      std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency()
+                << std::endl;
     }
   }
 }
