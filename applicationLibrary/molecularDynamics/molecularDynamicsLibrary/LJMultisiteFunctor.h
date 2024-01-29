@@ -497,7 +497,7 @@ class LJMultisiteFunctor
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
           const auto lj12m6 = lj12 - lj6;
-          const auto siteCutoffAndDummyCondition = siteMaskDummyCondition[globalSiteBIndex] && (distanceSquared <= cutoffSquared);
+          const auto siteCutoffAndDummyCondition = siteMaskDummyCondition[globalSiteBIndex] and (distanceSquared <= cutoffSquared);
           const auto scalarMultiple = siteCutoffAndDummyCondition ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
           // calculate forces
@@ -1096,7 +1096,7 @@ class LJMultisiteFunctor
           const auto lj6 = lj2 * lj2 * lj2;
           const auto lj12 = lj6 * lj6;
           const auto lj12m6 = lj12 - lj6;
-          const auto siteCutoffAndDummyCondition = siteMaskDummyConditionB[siteB] && (distanceSquared <= cutoffSquared);
+          const auto siteCutoffAndDummyCondition = siteMaskDummyConditionB[siteB] and (distanceSquared <= cutoffSquared);
           const auto scalarMultiple = siteCutoffAndDummyCondition ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
           // calculate forces
@@ -1460,7 +1460,7 @@ class LJMultisiteFunctor
         const auto lj6 = lj2 * lj2 * lj2;
         const auto lj12 = lj6 * lj6;
         const auto lj12m6 = lj12 - lj6;
-        const auto siteCutoffAndDummyCondition = siteMaskDummyCondition[neighborSite] && (distanceSquared <= cutoffSquared);
+        const auto siteCutoffAndDummyCondition = siteMaskDummyCondition[neighborSite] and (distanceSquared <= cutoffSquared);
         const auto scalarMultiple = siteCutoffAndDummyCondition ? epsilon24 * (lj12 + lj12m6) * invDistSquared : 0.;
 
         // calculate forces

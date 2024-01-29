@@ -42,7 +42,8 @@ createInputFile () {
 
   #build helper strings
   siteTypes="0"
-  possibleOtherSitePositions=("filler" "[0.01, 0, 0]" "[-0.01, 0, 0]" "[0, 0.01, 0]" "[0, -0.01, 0]") #filler since index starts at 1
+  possibleOtherSitePositions=("filler" "[0.01, 0, 0]" "[-0.01, 0, 0]" "[0, 0.01, 0]" "[0, -0.01, 0]" "[0, 0, 0.01]" "[0, 0, -0.01]"
+                                    "[0.01, 0.01, 0]" "[0.01, -0.01, 0]" "[-0.01, 0.01, 0]" "[-0.01, -0.01, 0]") #filler since index starts at 1
   sitePositions="[0, 0, 0]"
 
   for ((i=1; i<site_count; i++)); do
@@ -51,7 +52,7 @@ createInputFile () {
       sitePositions+=${possibleOtherSitePositions[i]}
   done
   #spacing=$(echo "scale=10; 1/${density}" | bc)
-  spacing=$(echo "scale=10; 1/ (e (l(${density})/3))" | bc -l) #this term is computing density^(-1/3). the exponent (-1/3) was missing in the previous version, that was a mistake
+  spacing=$(echo "scale=10; (e (l(2)/6))/ (e (l(${density})/3))" | bc -l) #this term is computing 2^(1/6)*density^(-1/3). the exponent (-1/3) was missing in the previous version, that was a mistake
 
   echo "# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 # md-flexible compiled for multi-site molecules.
@@ -72,10 +73,10 @@ tuning-samples                   :  10
 functor                          :  ${functorDescriptionInFile}
 cutoff                           :  2
 box-min                          :  [0, 0, 0]
-box-max                          :  [16, 16, 16]
+box-max                          :  [21, 21, 21]
 cell-size                        :  [2]
 deltaT                           :  0.0
-iterations                       :  12000
+iterations                       :  100
 boundary-type                    : [periodic, periodic, periodic]
 Sites:
   0:
@@ -92,7 +93,7 @@ Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0
-      box-length                 :  [15, 15, 15]
+      box-length                 :  [20, 20, 20]
       bottomLeftCorner           :  [0.5, 0.5, 0.5]
       particle-spacing           :  ${spacing}
       velocity                   :  [0, 0, 0]
