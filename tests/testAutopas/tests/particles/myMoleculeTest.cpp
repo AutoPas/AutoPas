@@ -49,3 +49,24 @@ TEST(myMoleculeTest, testConstructorAndGetters) {
   ASSERT_EQ(id, m.getID());
   ASSERT_EQ(myvar, m.getMyvar());
 }
+
+TEST(myMoleculeTest, testMovingParticles) {
+  const std::array<double, 3> zero{{0.0, 0.0, 0.0}};
+  const double maxAllowedDistSquared = 1;
+  {
+    MyMolecule m(zero, zero, 0, 0);
+    EXPECT_TRUE(m.setRDistanceOk({0.5, 0.0, 0.0}, maxAllowedDistSquared));
+  }
+  {
+    MyMolecule m(zero, zero, 0, 0);
+    EXPECT_FALSE(m.setRDistanceOk({1.5, 0.0, 0.0}, maxAllowedDistSquared));
+  }
+  {
+    MyMolecule m(zero, zero, 0, 0);
+    EXPECT_TRUE(m.addRDistanceOk({0.5, 0.0, 0.0}, maxAllowedDistSquared));
+  }
+  {
+    MyMolecule m(zero, zero, 0, 0);
+    EXPECT_FALSE(m.addRDistanceOk({1.5, 0.0, 0.0}, maxAllowedDistSquared));
+  }
+}
