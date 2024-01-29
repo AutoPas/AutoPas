@@ -153,12 +153,47 @@ class ParticleBase {
   void setR(const std::array<double, 3> &r) { _r = r; }
 
   /**
+   * Add a distance vector to the position of the particle and check if the distance between the old and new position
+   * is less than a given max distance.
+   * This max distance usually should be the skin per timestep divided by two.
+   *
+   * @param r vector to be added
+   * @param maxDistSquared The maximum allowed movement distance squared.
+   * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
+   */
+  bool setRDistanceOk(const std::array<double, 3> &r, double maxDistSquared) {
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto distanceVec = r - _r;
+    const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
+    setR(r);
+    return distanceSquared < maxDistSquared;
+  }
+
+  /**
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
   void addR(const std::array<double, 3> &r) {
     using namespace autopas::utils::ArrayMath::literals;
     _r += r;
+  }
+
+  /**
+   * Add a distance vector to the position of the particle and check if the distance between the old and new position
+   * is less than a given max distance.
+   * This max distance usually should be the skin per timestep divided by two.
+   *
+   * @param r vector to be added
+   * @param maxDistSquared The maximum allowed movement distance squared.
+   * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
+   */
+  bool addRDistanceOk(const std::array<double, 3> &r, double maxDistSquared) {
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto oldR = _r;
+    addR(r);
+    const auto distanceVec = _r - oldR;
+    const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
+    return distanceSquared < maxDistSquared;
   }
 
   /**
