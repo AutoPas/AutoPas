@@ -515,8 +515,10 @@ class LJFunctorAVX512_Mask
     // isNotDummy = ownershipStateB != dummy
     const __mmask8 isNotDummy = _mm512_cmp_epi64_mask(ownershipState2, _ownedStateDummyMM512i, _MM_CMPINT_NE);
 
-    // combinedMask = mask AND isNotDummy
-    const __mmask8 combinedMask = _mm512_kand(cutoffMask, isNotDummy);
+    // combinedMaskTmp = mask AND isNotDummy
+    const __mmask8 combinedMaskTmp = _mm512_kand(cutoffMask, isNotDummy);
+
+    const __mmask8 combinedMask = remainderCase ? _mm512_kand(combinedMaskTmp, remainderMask) : combinedMaskTmp;
 
     // if everything is masked away return from this function.
     if (combinedMask == 0) {
@@ -546,21 +548,19 @@ class LJFunctorAVX512_Mask
 
     const __m512d lj2 = _mm512_mul_pd(sigmaSquared, invDistSquared); // = (sigma/dist)^2
     const __m512d lj6 = _mm512_mul_pd(_mm512_mul_pd(lj2, lj2), lj2); // = (sigma/dist)^6
-    const __m512d lj12 = _mm512_mul_pd(lj6, lj6); // = (sigma/dist)^12
-    const __m512d lj12m6 = _mm512_sub_pd(lj12, lj6); // = (sigma/dist)^12 - (sigma/dist)^6
+//    const __m512d lj12 = _mm512_mul_pd(lj6, lj6); // = (sigma/dist)^12
+//    const __m512d lj12m6 = _mm512_sub_pd(lj12, lj6); // = (sigma/dist)^12 - (sigma/dist)^6
+    const __m512d lj12m6 = _mm512_fmsub_pd(lj6, lj6, lj6); // = (sigma/dist)^12 - (sigma/dist)^6
 
-    const __m512d twolj12m6 = _mm512_add_pd(lj12m6, lj12); // = 2 * (sigma/dist)^12 - (sigma/dist)^6
+//    const __m512d twolj12m6 = _mm512_add_pd(lj12m6, lj12); // = 2 * (sigma/dist)^12 - (sigma/dist)^6
+    const __m512d twolj12m6 = _mm512_fmadd_pd(lj6, lj6, lj12m6); // = 2 * (sigma/dist)^12 - (sigma/dist)^6
     const __m512d lj12m6alj12mEps24 = _mm512_mul_pd(twolj12m6, epsilon24); // = 24 * epsilon * ( twolj12m6 )
     const __m512d scalar = _mm512_mul_pd(lj12m6alj12mEps24, invDistSquared); // = LJ scalar to be multiplied to displacement
 
     // Determine forces and mask out molecules beyond cutoff or are dummies
-    const __m512d forceX = _mm512_maskz_mul_pd((combinedMask), scalar, displacementX);
-    const __m512d forceY = _mm512_maskz_mul_pd((combinedMask), scalar, displacementY);
-    const __m512d forceZ = _mm512_maskz_mul_pd((combinedMask), scalar, displacementZ);
-
-    fxacc = remainderCase ? _mm512_mask_add_pd(fxacc, remainderMask, fxacc, forceX) : _mm512_add_pd( fxacc, forceX);
-    fyacc = remainderCase ? _mm512_mask_add_pd(fyacc, remainderMask, fyacc, forceY) : _mm512_add_pd( fyacc, forceY);
-    fzacc = remainderCase ? _mm512_mask_add_pd(fzacc, remainderMask, fzacc, forceZ) : _mm512_add_pd( fzacc, forceZ);
+    fxacc = _mm512_mask3_fmadd_pd(scalar, displacementX, fxacc, combinedMask) ;
+    fyacc = _mm512_mask3_fmadd_pd(scalar, displacementY, fyacc, combinedMask) ;
+    fzacc = _mm512_mask3_fmadd_pd(scalar, displacementZ, fzacc, combinedMask) ;
 
 
     // Newton 3 optimization upon particle js
@@ -568,53 +568,53 @@ class LJFunctorAVX512_Mask
       if constexpr (remainderCase) {
         if constexpr (isVerlet) {
           const __m512d forceSumJX = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fx2ptr[0], 8);
-          const __m512d newForceSumJX = _mm512_sub_pd(forceSumJX, forceX);
+          const __m512d newForceSumJX = _mm512_mask3_fnmadd_pd(scalar, displacementX, forceSumJX, combinedMask);
           _mm512_mask_i64scatter_pd(&fx2ptr[j], remainderMask, *neighborIndices, newForceSumJX, 8);
 
           const __m512d forceSumJY = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fy2ptr[0], 8);
-          const __m512d newForceSumJY = _mm512_sub_pd(forceSumJY, forceY);
+          const __m512d newForceSumJY = _mm512_mask3_fnmadd_pd(scalar, displacementY, forceSumJY, combinedMask);
           _mm512_mask_i64scatter_pd(&fy2ptr[j], remainderMask, *neighborIndices, newForceSumJY, 8);
 
           const __m512d forceSumJZ = _mm512_mask_i64gather_pd(_zeroD, remainderMask, *neighborIndices, &fz2ptr[0], 8);
-          const __m512d newForceSumJZ = _mm512_sub_pd(forceSumJZ, forceZ);
+          const __m512d newForceSumJZ = _mm512_mask3_fnmadd_pd(scalar, displacementZ, forceSumJZ, combinedMask);
           _mm512_mask_i64scatter_pd(&fz2ptr[j], remainderMask, *neighborIndices, newForceSumJZ, 8);
         } else {
           const __m512d forceSumJX = _mm512_maskz_loadu_pd(remainderMask, &fx2ptr[j]);
-          const __m512d newForceSumJX = _mm512_sub_pd(forceSumJX, forceX);
+          const __m512d newForceSumJX = _mm512_mask3_fnmadd_pd(scalar, displacementX, forceSumJX, combinedMask);
           _mm512_mask_storeu_pd(&fx2ptr[j], remainderMask, newForceSumJX);
 
           const __m512d forceSumJY = _mm512_maskz_loadu_pd(remainderMask, &fy2ptr[j]);
-          const __m512d newForceSumJY = _mm512_sub_pd(forceSumJY, forceY);
+          const __m512d newForceSumJY = _mm512_mask3_fnmadd_pd(scalar, displacementY, forceSumJY, combinedMask);
           _mm512_mask_storeu_pd(&fy2ptr[j], remainderMask, newForceSumJY);
 
           const __m512d forceSumJZ = _mm512_maskz_loadu_pd(remainderMask, &fz2ptr[j]);
-          const __m512d newForceSumJZ = _mm512_sub_pd(forceSumJZ, forceZ);
+          const __m512d newForceSumJZ = _mm512_mask3_fnmadd_pd(scalar, displacementZ, forceSumJZ, combinedMask);
           _mm512_mask_storeu_pd(&fz2ptr[j], remainderMask, newForceSumJZ);
         }
       } else {
         if constexpr (isVerlet) {
           const __m512d forceSumJX = _mm512_i64gather_pd(*neighborIndices, &fx2ptr[0], 8);
-          const __m512d newForceSumJX = _mm512_sub_pd(forceSumJX, forceX);
+          const __m512d newForceSumJX = _mm512_mask3_fnmadd_pd(scalar, displacementX, forceSumJX, combinedMask);
           _mm512_i64scatter_pd(&fx2ptr[j], *neighborIndices, newForceSumJX, 8);
 
           const __m512d forceSumJY = _mm512_i64gather_pd(*neighborIndices, &fy2ptr[0], 8);
-          const __m512d newForceSumJY = _mm512_sub_pd(forceSumJY, forceY);
+          const __m512d newForceSumJY = _mm512_mask3_fnmadd_pd(scalar, displacementY, forceSumJY, combinedMask);
           _mm512_i64scatter_pd(&fy2ptr[j], *neighborIndices, newForceSumJY, 8);
 
           const __m512d forceSumJZ = _mm512_i64gather_pd(*neighborIndices, &fz2ptr[0], 8);
-          const __m512d newForceSumJZ = _mm512_sub_pd(forceSumJZ, forceZ);
+          const __m512d newForceSumJZ = _mm512_mask3_fnmadd_pd(scalar, displacementZ, forceSumJZ, combinedMask);
           _mm512_i64scatter_pd(&fz2ptr[j], *neighborIndices, newForceSumJZ, 8);
         } else {
           const __m512d forceSumJX = _mm512_loadu_pd(&fx2ptr[j]);
-          const __m512d newForceSumJX = _mm512_sub_pd(forceSumJX, forceX);
+          const __m512d newForceSumJX = _mm512_mask3_fnmadd_pd(scalar, displacementX, forceSumJX, combinedMask);
           _mm512_storeu_pd(&fx2ptr[j], newForceSumJX);
 
           const __m512d forceSumJY = _mm512_loadu_pd(&fy2ptr[j]);
-          const __m512d newForceSumJY = _mm512_sub_pd(forceSumJY, forceY);
+          const __m512d newForceSumJY = _mm512_mask3_fnmadd_pd(scalar, displacementY, forceSumJY, combinedMask);
           _mm512_storeu_pd(&fy2ptr[j], newForceSumJY);
 
           const __m512d forceSumJZ = _mm512_loadu_pd(&fz2ptr[j]);
-          const __m512d newForceSumJZ = _mm512_sub_pd(forceSumJZ, forceZ);
+          const __m512d newForceSumJZ = _mm512_mask3_fnmadd_pd(scalar, displacementZ, forceSumJZ, combinedMask);
           _mm512_storeu_pd(&fz2ptr[j], newForceSumJZ);
         }
       }
@@ -623,29 +623,29 @@ class LJFunctorAVX512_Mask
 
     if constexpr (calculateGlobals) {
       // Global Virial
-      const __m512d virialX = remainderCase ? _mm512_maskz_mul_pd(remainderMask, forceX, displacementX) : _mm512_mul_pd(forceX, displacementX);
-      const __m512d virialY = remainderCase ? _mm512_maskz_mul_pd(remainderMask, forceY, displacementY) : _mm512_mul_pd(forceY, displacementY);
-      const __m512d virialZ = remainderCase ? _mm512_maskz_mul_pd(remainderMask, forceZ, displacementZ) : _mm512_mul_pd(forceZ, displacementZ);
-
-      // Global Potential
-      const __mmask8 potEnergyMask = remainderCase ? _kand_mask8(remainderMask, combinedMask) : combinedMask;
-      const __m512d potentialEnergy = _mm512_maskz_fmadd_pd(potEnergyMask, epsilon24, lj12m6, _zeroD); // todo replace this back with shift6
-
-      // Add above to accumulators iff molecule 1 is owned, using isOwnedMask1
-      *virialSumX = _mm512_mask_add_pd(*virialSumX, isOwnedMask1, *virialSumX, virialX);
-      *virialSumY = _mm512_mask_add_pd(*virialSumY, isOwnedMask1, *virialSumY, virialY);
-      *virialSumZ = _mm512_mask_add_pd(*virialSumZ, isOwnedMask1, *virialSumZ, virialZ);
-      *potentialEnergySum = _mm512_mask_add_pd(*potentialEnergySum, isOwnedMask1, *potentialEnergySum, potentialEnergy);
-
-      // If newton3, do the same again iff molecules in 2 are owned
-      if constexpr (newton3) {
-        const __mmask8 isOwnedMask2 = _mm512_cmp_epi64_mask(ownershipState2, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
-
-        *virialSumX = _mm512_mask_add_pd(*virialSumX, isOwnedMask2, *virialSumX, virialX);
-        *virialSumY = _mm512_mask_add_pd(*virialSumY, isOwnedMask2, *virialSumY, virialY);
-        *virialSumZ = _mm512_mask_add_pd(*virialSumZ, isOwnedMask2, *virialSumZ, virialZ);
-        *potentialEnergySum = _mm512_mask_add_pd(*potentialEnergySum, isOwnedMask2, *potentialEnergySum, potentialEnergy);
-      }
+//      const __m512d virialX = remainderCase ? _mm512_maskz_mul_pd(remainderMask, forceX, displacementX) : _mm512_mul_pd(forceX, displacementX);
+//      const __m512d virialY = remainderCase ? _mm512_maskz_mul_pd(remainderMask, forceY, displacementY) : _mm512_mul_pd(forceY, displacementY);
+//      const __m512d virialZ = remainderCase ? _mm512_maskz_mul_pd(remainderMask, forceZ, displacementZ) : _mm512_mul_pd(forceZ, displacementZ);
+//
+//      // Global Potential
+//      const __mmask8 potEnergyMask = remainderCase ? _kand_mask8(remainderMask, combinedMask) : combinedMask;
+//      const __m512d potentialEnergy = _mm512_maskz_fmadd_pd(potEnergyMask, epsilon24, lj12m6, _zeroD); // todo replace this back with shift6
+//
+//      // Add above to accumulators iff molecule 1 is owned, using isOwnedMask1
+//      *virialSumX = _mm512_mask_add_pd(*virialSumX, isOwnedMask1, *virialSumX, virialX);
+//      *virialSumY = _mm512_mask_add_pd(*virialSumY, isOwnedMask1, *virialSumY, virialY);
+//      *virialSumZ = _mm512_mask_add_pd(*virialSumZ, isOwnedMask1, *virialSumZ, virialZ);
+//      *potentialEnergySum = _mm512_mask_add_pd(*potentialEnergySum, isOwnedMask1, *potentialEnergySum, potentialEnergy);
+//
+//      // If newton3, do the same again iff molecules in 2 are owned
+//      if constexpr (newton3) {
+//        const __mmask8 isOwnedMask2 = _mm512_cmp_epi64_mask(ownershipState2, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
+//
+//        *virialSumX = _mm512_mask_add_pd(*virialSumX, isOwnedMask2, *virialSumX, virialX);
+//        *virialSumY = _mm512_mask_add_pd(*virialSumY, isOwnedMask2, *virialSumY, virialY);
+//        *virialSumZ = _mm512_mask_add_pd(*virialSumZ, isOwnedMask2, *virialSumZ, virialZ);
+//        *potentialEnergySum = _mm512_mask_add_pd(*potentialEnergySum, isOwnedMask2, *potentialEnergySum, potentialEnergy);
+//      }
 
     }
   }
