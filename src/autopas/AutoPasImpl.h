@@ -39,7 +39,7 @@ AutoPas<Particle>::AutoPas(std::ostream &logOutputStream) {
   InstanceCounter::count++;
   // remove potentially existing logger
   autopas::Logger::unregister();
-  // initialize the Logger
+  // initialize the Loggerq
   autopas::Logger::create(logOutputStream);
   // The logger is normally only flushed on successful program termination.
   // This line ensures flushing when log messages of level warning or more severe are created.
@@ -86,8 +86,6 @@ void AutoPas<Particle>::init() {
   }
 
   _logicHandlerInfo.sortingThreshold = _sortingThreshold;
-  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
-      _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 
   // If an interval was given for the cell size factor, change it to the relevant values.
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
@@ -119,10 +117,9 @@ void AutoPas<Particle>::init() {
         if (_useTuningStrategyLoggerProxy) {
           tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
         }
-        _autoTuners.insert({InteractionTypeOption::pairwise,
+        _autoTuners.emplace(InteractionTypeOption::pairwise,
                             std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                                 _verletRebuildFrequency, _outputSuffix)});
-        _logicHandler->initPairwise(_autoTuners[InteractionTypeOption::pairwise].get());
+                                                                 _verletRebuildFrequency, _outputSuffix));
         break;
       }
       case InteractionTypeOption::threeBody: {
@@ -138,10 +135,9 @@ void AutoPas<Particle>::init() {
         if (_useTuningStrategyLoggerProxy) {
           tuningStrategies3B.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
         }
-        _autoTuners.insert({InteractionTypeOption::threeBody,
+        _autoTuners.emplace(InteractionTypeOption::threeBody,
                             std::make_unique<autopas::AutoTuner>(tuningStrategies3B, searchSpace3B, _autoTunerInfo,
-                                                                 _verletRebuildFrequency, _outputSuffix)});
-        _logicHandler->initTriwise(_autoTuners[InteractionTypeOption::threeBody].get());
+                                                                 _verletRebuildFrequency, _outputSuffix));
         break;
       }
       default: {
@@ -150,6 +146,8 @@ void AutoPas<Particle>::init() {
       }
     }
   }
+  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
+      _autoTuners, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
 
 template <class Particle>

@@ -941,7 +941,7 @@ class AutoPas {
 
   /**
    * Set the list of allowed interaction types.
-   * AutoPas will initialize
+   * AutoPas will initialize AutoTuners for the allowed interaction types.
    * For possible newton 3 choices see options::interactionTypeOption::Value.
    * @param allowedInteractionTypeOptions
    */
