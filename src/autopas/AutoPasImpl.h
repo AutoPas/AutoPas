@@ -39,7 +39,7 @@ AutoPas<Particle>::AutoPas(std::ostream &logOutputStream) {
   InstanceCounter::count++;
   // remove potentially existing logger
   autopas::Logger::unregister();
-  // initialize the Loggerq
+  // initialize the Logger
   autopas::Logger::create(logOutputStream);
   // The logger is normally only flushed on successful program termination.
   // This line ensures flushing when log messages of level warning or more severe are created.
