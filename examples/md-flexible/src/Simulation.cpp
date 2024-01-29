@@ -661,9 +661,10 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS=ON`.");
 #endif
     }
+      // todo below is a easy fix only!
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-      return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorTypeAVX512_Mask {cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
