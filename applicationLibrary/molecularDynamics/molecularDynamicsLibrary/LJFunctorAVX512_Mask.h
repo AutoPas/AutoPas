@@ -548,12 +548,10 @@ class LJFunctorAVX512_Mask
 
     const __m512d lj2 = _mm512_mul_pd(sigmaSquared, invDistSquared); // = (sigma/dist)^2
     const __m512d lj6 = _mm512_mul_pd(_mm512_mul_pd(lj2, lj2), lj2); // = (sigma/dist)^6
-//    const __m512d lj12 = _mm512_mul_pd(lj6, lj6); // = (sigma/dist)^12
-//    const __m512d lj12m6 = _mm512_sub_pd(lj12, lj6); // = (sigma/dist)^12 - (sigma/dist)^6
-    const __m512d lj12m6 = _mm512_fmsub_pd(lj6, lj6, lj6); // = (sigma/dist)^12 - (sigma/dist)^6
+    const __m512d lj12 = _mm512_mul_pd(lj6, lj6); // = (sigma/dist)^12
+    const __m512d lj12m6 = _mm512_sub_pd(lj12, lj6); // = (sigma/dist)^12 - (sigma/dist)^6
 
-//    const __m512d twolj12m6 = _mm512_add_pd(lj12m6, lj12); // = 2 * (sigma/dist)^12 - (sigma/dist)^6
-    const __m512d twolj12m6 = _mm512_fmadd_pd(lj6, lj6, lj12m6); // = 2 * (sigma/dist)^12 - (sigma/dist)^6
+    const __m512d twolj12m6 = _mm512_add_pd(lj12m6, lj12); // = 2 * (sigma/dist)^12 - (sigma/dist)^6
     const __m512d lj12m6alj12mEps24 = _mm512_mul_pd(twolj12m6, epsilon24); // = 24 * epsilon * ( twolj12m6 )
     const __m512d scalar = _mm512_mul_pd(lj12m6alj12mEps24, invDistSquared); // = LJ scalar to be multiplied to displacement
 
