@@ -8,7 +8,7 @@ selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
 data-layout-3b                   :  [AoS]
 traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ] # Please see AllOptions.yaml for a comprehensive list of traversals
-traversal-3b                     :  [lc_c08_3b] #, lc_c04_3b, lc_sliced_3b, lc_sliced_c02_3b] # ds_sequential_3b
+traversal-3b                     :  [lc_c08_3b, lc_c04_3b] # , lc_sliced_3b, lc_sliced_c02_3b] # ds_sequential_3b
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
@@ -22,9 +22,9 @@ newton3-3b                       :  [enabled]
 cutoff                           :  3
 box-min                          :  [0, 0, 0]
 box-max                          :  [7.25, 7.25, 7.25]
-cell-size                        :  [1.0, 0.5, 0.33]
+cell-size                        :  [0.5, 0.33]
 deltaT                           :  0.0005
-iterations                       :  10
+iterations                       :  100
 boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
 Sites:
@@ -65,4 +65,4 @@ Objects:
 #vtk-output-folder                :  vtkOutputFolder
 #no-flops                         :  false
 #no-end-config                    :  true
-#log-level                        :  info
+log-level                        :  info

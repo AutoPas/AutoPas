@@ -28,7 +28,7 @@ if (AUTOPAS_LOG_PREDICTIONS OR AUTOPAS_LOG_ALL)
 endif ()
 
 # option for IterationLogger
-option(AUTOPAS_LOG_ITERATIONS "Generate a csv tracking the performance of iteratePairwise calls." OFF)
+option(AUTOPAS_LOG_ITERATIONS "Generate a csv tracking the performance of iteratePairwise calls." ON)
 if (AUTOPAS_LOG_ITERATIONS OR AUTOPAS_LOG_ALL)
     target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_ITERATIONS)
     message(STATUS "IterationLogger enabled.")
