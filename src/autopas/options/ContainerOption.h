@@ -54,15 +54,30 @@ class ContainerOption : public Option<ContainerOption> {
      */
     verletLists,
     /**
+     * DynamicVerletLists : Similar to VerletLists but neighbor lists are not updated in fixed intervals but based on
+     * the particles' movements
+     */
+    dynamicVerletLists,
+    /**
      * VerletListsCells : Similar to VerletLists but Lists are associated with the underlying cells to achieve location
      * information. Parallelization options similar to LinkedCells.
      */
     verletListsCells,
     /**
+     * DynamicVerletLists : Similar to VerletListsCells but neighbor lists are not updated in fixed intervals but based
+     * on the particles' movements
+     */
+    dynamicVerletListsCells,
+    /**
      * PairwiseVerletLists : Also similar to VerletLists but the lists are associated to each pair of neighboring cells.
      * Improves data locality and cache efficiency.
      */
-    pairwiseVerletLists,
+    pairwiseVerletLists,    
+    /**
+     * DynamicPairwiseVerletLists : Similar to PairwiseVerletLists but neighbor lists are not updated in fixed intervals
+     * but based on the particles' movements
+     */
+    dynamicPairwiseVerletLists,
     /**
      * Octree : Particles are put into an octree. This data structure is optimized if the data is non-uniformly
      * distributed since it is space adaptive
@@ -105,7 +120,10 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::linkedCells, "LinkedCells"},
         {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
         {ContainerOption::verletLists, "VerletLists"},
+        {ContainerOption::dynamicVerletLists, "DynamicVerletLists"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
+        {ContainerOption::dynamicVerletListsCells, "DynamicVerletListsCells"},
+        {ContainerOption::dynamicPairwiseVerletLists, "DynamicPairwiseVerletLists"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
