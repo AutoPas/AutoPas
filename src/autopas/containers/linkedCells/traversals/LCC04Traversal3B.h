@@ -253,7 +253,7 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseSi
      }
    }
  }
- std::cout << "C04 32 packs color " << color << " : " << counter << std::endl;
+ //std::cout << "C04 32 packs color " << color << " : " << counter << std::endl;
 }
 
 }  // namespace autopas

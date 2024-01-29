@@ -198,7 +198,8 @@ inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayo
           }
         }
       }
-      std::cout << "loop 1 : " << counter1 << "   loop 2 : " << counter2 << std::endl;
+      //
+      // std::cout << "loop 1 : " << counter1 << "   loop 2 : " << counter2 << std::endl;
 
     }
 
