@@ -75,7 +75,6 @@ inline void LCC08Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::tra
  auto &cells = *(this->_cells);
  auto particles = 0;
  auto nonnullcells = 0;
- std::cout << "\nCells : " << cells.size() << std::endl;
 
  for (int i = 0; i < cells.size(); ++i) {
    auto current = cells[i].size();
@@ -83,15 +82,12 @@ inline void LCC08Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::tra
      nonnullcells++;
      particles += current;
    }
-   std::cout << current;
-   if (i % 20 == 0) {
-     std::cout << std::endl;
-   }
  }
- std::cout << std::endl;
  double particlespercell = particles/cells.size();
- std::cout << "Particles per cell (total) : " << particlespercell << "  Nonnull cells : " << nonnullcells <<
-     "  Particles per cell (nonnull) : " << particles/nonnullcells << std::endl;
+ std::cout << "\nCells : " << cells.size() << "   Particles : " << particles <<
+     "  Particles per cell :" << particlespercell << std::endl;
+ //std::cout << "Particles per cell (total) : " << particlespercell << "  Nonnull cells : " << nonnullcells <<
+   //  "  Particles per cell (nonnull) : " << particles/nonnullcells << std::endl;
  this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
    unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
    _cellHandler.processBaseCell(cells, baseIndex);
