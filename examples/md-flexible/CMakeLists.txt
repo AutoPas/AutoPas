@@ -41,6 +41,9 @@ target_compile_definitions(
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
 string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
 if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
+    if (MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+        message(WARNING "AVX512 Functor with masking has not been implemented for Single-Site Molecules")
+    endif()
     if (MD_FLEXIBLE_FUNCTOR_AVX512_GS)
         message(WARNING "AVX512 Functor with gather/scatter instructions has not been implemented for Single-Site Molecules")
     endif()
