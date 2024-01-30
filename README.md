@@ -24,6 +24,7 @@ Please look at our [user documentation pages](https://github.com/AutoPas/AutoPas
 
 ## Developing AutoPas
 Please look at our [contribution guidelines](https://github.com/AutoPas/AutoPas/blob/master/.github/CONTRIBUTING.md).
+A guide how to build AutoPas can be found [here](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/Building.md).
 
 ## Acknowledgements
 This work was financially supported by:
