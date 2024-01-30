@@ -140,9 +140,9 @@ bool AutoPas<Particle>::computeInteractions(Functor *f) {
   }
 
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    return _logicHandler->iteratePairwisePipeline(f);
+    return _logicHandler->template computeInteractionsPipeline<Functor, InteractionTypeOption::pairwise>(f);
   } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-    return _logicHandler->iterateTriwisePipeline(f);
+    return _logicHandler->template computeInteractionsPipeline<Functor, InteractionTypeOption::threeBody>(f);
   } else {
     utils::ExceptionHandler::exception(
         "Functor is not valid. Only 2-body and 3-body functors are supported. Please use a functor derived from "

@@ -384,7 +384,7 @@ class LogicHandler {
   }
 
   /**
-   * This function covers the full pipeline of all mechanics happening during the pairwise iteration.
+   * This function covers the full pipeline of all mechanics happening during the computation of particle interactions.
    * This includes:
    * - selecting a configuration
    *   - gather live info, homogeneity, and max density
@@ -392,40 +392,19 @@ class LogicHandler {
    *   - check applicability
    *   - instantiation of traversal and container
    * - triggering iteration and tuning result logger
-   * - pairwise iteration
+   * - computing the interactions
    *   - init and end traversal
    *   - remainder traversal
    *   - measurements
    * - pass measurements to tuner
    *
    * @tparam Functor
+   * @tparam interactionType
    * @param functor
    * @return True if this was a tuning iteration.
    */
-  template <class Functor>
-  bool iteratePairwisePipeline(Functor *functor);
-
-  /**
-   * This function covers the full pipeline of all mechanics happening during the triwise iteration.
-   * This includes:
-   * - selecting a configuration
-   *   - gather live info, homogeneity, and max density
-   *   - get next config (tuning)
-   *   - check applicability
-   *   - instantiation of traversal and container
-   * - triggering iteration and tuning result logger
-   * - triwise iteration
-   *   - init and end traversal
-   *   - remainder traversal
-   *   - measurements
-   * - pass measurements to tuner
-   *
-   * @tparam Functor
-   * @param functor 3-body functor
-   * @return True if this was a tuning iteration.
-   */
-  template <class Functor>
-  bool iterateTriwisePipeline(Functor *functor);
+  template <class Functor, InteractionTypeOption::Value interactionType>
+  bool computeInteractionsPipeline(Functor *functor);
 
   /**
    * Create the additional vectors vector for a given iterator behavior.
@@ -1325,20 +1304,13 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor) {
   bool stillTuning = false;
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface<interactionType>>> traversalPtrOpt{};
-  AutoTuner *tuner;
-
-  if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    tuner = _autoTunerRefs[InteractionTypeOption::pairwise].get();
-  } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-    tuner = _autoTunerRefs[InteractionTypeOption::threeBody].get();
-  } else {
-    return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
-  }
+  auto &autoTuner = _autoTunerRefs[interactionType];
 
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
-    configuration = tuner->getCurrentConfig();
+    configuration = autoTuner->getCurrentConfig();
+    // This is needed to synchronize container types between multiple interaction types.
     if (_containerSelector.getCurrentContainer().getContainerType() != configuration.container) {
       _containerSelector.selectContainer(
           configuration.container,
@@ -1369,25 +1341,25 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor) {
           }
         });
   } else {
-    if (tuner->needsHomogeneityAndMaxDensityBeforePrepare()) {
+    if (autoTuner->needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
       const auto [homogeneity, maxDensity] =
           autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
       timerCalculateHomogeneity.stop();
-      tuner->addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
+      autoTuner->addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
 
-    const auto needsLiveInfo = tuner->prepareIteration();
+    const auto needsLiveInfo = autoTuner->prepareIteration();
 
     if (needsLiveInfo) {
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-      tuner->receiveLiveInfo(info);
+      autoTuner->receiveLiveInfo(info);
     }
 
-    std::tie(configuration, stillTuning) = tuner->getNextConfig();
+    std::tie(configuration, stillTuning) = autoTuner->getNextConfig();
 
     // loop as long as we don't get a valid configuration
     bool rejectIndefinitely = false;
@@ -1399,36 +1371,38 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor) {
         break;
       }
       // if no config is left after rejecting this one an exception is thrown here.
-      std::tie(configuration, stillTuning) = tuner->rejectConfig(configuration, rejectIndefinitely);
+      std::tie(configuration, stillTuning) = autoTuner->rejectConfig(configuration, rejectIndefinitely);
     }
   }
 
   // log tuning status for current tuner
-  _synchronizer.recordTuningState(interactionType, stillTuning);
+  if (functor.isRelevantForTuning()) {
+    _synchronizer.recordTuningState(interactionType, stillTuning);
+  }
 
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }
 
 template <typename Particle>
-template <class Functor>
-bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
-  if (not _interactionTypes.count(InteractionTypeOption::pairwise)) {
+template <class Functor, InteractionTypeOption::Value interactionType>
+bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
+  if (not _interactionTypes.count(interactionType)) {
     autopas::utils::ExceptionHandler::exception(
-        "LogicHandler::iteratePairwisePipeline(): LogicHandler was not initialized for pairwise interactions.");
+        "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: {}.", interactionType);
   }
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] =
-      selectConfiguration<InteractionTypeOption::pairwise>(*functor);
+      selectConfiguration<interactionType>(*functor);
   tuningTimer.stop();
-  auto &autoTuner = _autoTunerRefs[InteractionTypeOption::pairwise];
+  auto &autoTuner = _autoTunerRefs[interactionType];
   autoTuner->logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 
-  /// Pairwise iteration
+  /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
   const IterationMeasurements measurements =
-      computeInteractions(*functor, *traversalPtr.get());
+      computeInteractions(*functor, *traversalPtr);
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {
@@ -1443,87 +1417,15 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   };
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
-  AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeIteratePairwise);
-  AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", measurements.timeRemainderTraversal);
-  AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", measurements.timeRebuild);
-  AutoPasLog(DEBUG, "AutoPas::iteratePairwise took {} ns", measurements.timeTotal);
-  if (measurements.energyMeasurementsPossible) {
-    AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
-               measurements.energyPkg, measurements.energyRam);
+  if constexpr (interactionType == InteractionTypeOption::Value::pairwise) {
+    AutoPasLog(DEBUG, "Container::iteratePairwise   took {} ns", measurements.timeIteratePairwise);
   }
-  _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning,
-                                measurements.timeIteratePairwise, measurements.timeRemainderTraversal,
-                                measurements.timeRebuild, measurements.timeTotal, tuningTimer.getTotalTime(),
-                                measurements.energyPsys, measurements.energyPkg, measurements.energyRam);
-
-  /// Pass on measurements
-  // if this was a major iteration add measurements and bump counters
-  if (functor->isRelevantForTuning()) {
-    if (stillTuning) {
-      switch (autoTuner->getTuningMetric()) {
-        case TuningMetricOption::time:
-          autoTuner->addMeasurement(measurements.timeTotal, not neighborListsAreValid());
-          break;
-        case TuningMetricOption::energy:
-          autoTuner->addMeasurement(measurements.energyTotal, not neighborListsAreValid());
-          break;
-      }
-    } else {
-      AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
-    }
-
-    // this function depends on LogicHandler's and the AutoTuner's iteration counters,
-    // that should not have been updated yet.
-    if (not neighborListsAreValid() /*we have done a rebuild now*/) {
-      // list is now valid
-      _neighborListsAreValid.store(true, std::memory_order_relaxed);
-      _stepsSinceLastListRebuild = 0;
-    }
-    ++_stepsSinceLastListRebuild;
+  else if constexpr (interactionType == InteractionTypeOption::Value::threeBody) {
+    AutoPasLog(DEBUG, "Container::iterateTriwise    took {} ns", measurements.timeIteratePairwise);
   }
-  return stillTuning;
-}
-
-template <typename Particle>
-template <class Functor>
-bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
-  if (not _interactionTypes.count(InteractionTypeOption::threeBody)) {
-    autopas::utils::ExceptionHandler::exception(
-        "LogicHandler::iterateTriwisePipeline(): LogicHandler was not initialized for 3-body interactions.");
-  }
-  /// Selection of configuration (tuning if necessary)
-  utils::Timer tuningTimer;
-  tuningTimer.start();
-  //  bool stillTuning = true;
-  const auto [configuration, traversalPtr, stillTuning] =
-      selectConfiguration<InteractionTypeOption::threeBody>(*functor);
-  tuningTimer.stop();
-  AutoPasLog(DEBUG, "Selecting a configuration took {} ns.", tuningTimer.getTotalTime());
-  auto &autoTuner = _autoTunerRefs[InteractionTypeOption::threeBody];
-  autoTuner->logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
-
-  /// Triwise iteration
-  AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  const IterationMeasurements measurements =
-      computeInteractions(*functor, *traversalPtr.get());
-
-  /// Debug Output
-  auto bufferSizeListing = [](const auto &buffers) -> std::string {
-    std::stringstream ss;
-    size_t sum = 0;
-    for (const auto &buffer : buffers) {
-      ss << buffer.size() << ", ";
-      sum += buffer.size();
-    }
-    ss << " Total: " << sum;
-    return ss.str();
-  };
-  AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
-  AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
-  AutoPasLog(DEBUG, "Container::iterateTriwise took {} ns", measurements.timeIteratePairwise);
-  AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", measurements.timeRemainderTraversal);
-  AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", measurements.timeRebuild);
-  AutoPasLog(DEBUG, "AutoPas::iterateTriwise took {} ns", measurements.timeTotal);
+  AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
+  AutoPasLog(DEBUG, "RebuildNeighborLists         took {} ns", measurements.timeRebuild);
+  AutoPasLog(DEBUG, "AutoPas::computeInteractions took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
                measurements.energyPkg, measurements.energyRam);
