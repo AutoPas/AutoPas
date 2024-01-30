@@ -851,92 +851,71 @@ class AutoPas {
 
   /**
    * Get the list of allowed traversals.
+   * @param interactionType Get allowed traversals for this interaction type.
+   * @def interactionType Default interaction type is pairwise.
    * @return
    */
-  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals() const { return _allowedTraversals; }
+  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedTraversals.at(interactionType);
+  }
 
   /**
    * Set the list of allowed traversals.
    * For possible traversals choices see options::TraversalOption::Value.
    * @param allowedTraversals
+   * @param interactionType Set allowed traversals for this interaction type.
+   * @def interactionType Default interaction type is pairwise.
    */
-  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals) {
-    _allowedTraversals = allowedTraversals;
+  void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals,
+                            const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    _allowedTraversals[interactionType] = allowedTraversals;
   }
 
   /**
    * Get the list of allowed data layouts.
    * @return
+   * @param interactionType Get allowed data layouts for this interaction type.
+   * @def interactionType Default interaction type is pairwise.
    */
-  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts() const { return _allowedDataLayouts; }
+  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedDataLayouts.at(interactionType);
+  }
 
   /**
    * Set the list of allowed data layouts.
-   * For possible data layout choices see options::DataLayoutOption::Value.
+   * For possible data layouts choices see options::DataLayoutOption::Value.
    * @param allowedDataLayouts
+   * @param interactionType Set allowed data layouts for this interaction type.
+   * @def interactionType Default interaction type is pairwise.
    */
-  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts) {
-    _allowedDataLayouts = allowedDataLayouts;
+  void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
+                            const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    _allowedDataLayouts[interactionType] = allowedDataLayouts;
   }
 
   /**
    * Get the list of allowed newton 3 options.
+   * @param interactionType Get allowed newton 3 options for this interaction type.
+   * @def interactionType Default interaction type is pairwise.
    * @return
    */
-  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options() const { return _allowedNewton3Options; }
+  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options(
+      const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
+    return _allowedNewton3Options.at(interactionType);
+  }
 
   /**
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
+   * @param interactionType Set allowed newton 3 options for this interaction type.
+   * @def interactionType Default interaction type is pairwise.
    */
-  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
-    _allowedNewton3Options = allowedNewton3Options;
-  }
-
-  /**
-   * Get the list of allowed traversals.
-   * @return
-   */
-  [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals3B() const { return _allowedTraversals3B; }
-
-  /**
-   * Set the list of allowed traversals.
-   * For possible traversals choices see options::TraversalOption::Value.
-   * @param allowedTraversals
-   */
-  void setAllowedTraversals3B(const std::set<TraversalOption> &allowedTraversals) {
-    _allowedTraversals3B = allowedTraversals;
-  }
-
-  /**
-   * Get the list of allowed data layouts.
-   * @return
-   */
-  [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts3B() const { return _allowedDataLayouts3B; }
-
-  /**
-   * Set the list of allowed data layouts.
-   * For possible data layout choices see options::DataLayoutOption::Value.
-   * @param allowedDataLayouts
-   */
-  void setAllowedDataLayouts3B(const std::set<DataLayoutOption> &allowedDataLayouts) {
-    _allowedDataLayouts3B = allowedDataLayouts;
-  }
-
-  /**
-   * Get the list of allowed newton 3 options.
-   * @return
-   */
-  [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options3B() const { return _allowedNewton3Options3B; }
-
-  /**
-   * Set the list of allowed newton 3 options.
-   * For possible newton 3 choices see options::Newton3Option::Value.
-   * @param allowedNewton3Options
-   */
-  void setAllowedNewton3Options3B(const std::set<Newton3Option> &allowedNewton3Options) {
-    _allowedNewton3Options3B = allowedNewton3Options;
+  void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options,
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    _allowedNewton3Options[interactionType] = allowedNewton3Options;
   }
 
   /**
@@ -1098,30 +1077,22 @@ class AutoPas {
    * List of pairwise traversals AutoPas can choose from.
    * For possible traversal choices see options::TraversalOption::Value.
    */
-  std::set<TraversalOption> _allowedTraversals{TraversalOption::getMostOptions()};
-  /**
-   * List of 3-body traversals AutoPas can choose from.
-   * For possible traversal choices see options::TraversalOption3B::Value.
-   */
-  std::set<TraversalOption> _allowedTraversals3B{TraversalOption::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<TraversalOption>> _allowedTraversals{
+      {InteractionTypeOption::pairwise, TraversalOption::getMostPairwiseOptions()},
+      {InteractionTypeOption::threeBody, TraversalOption::getMostTriwiseOptions()}};
   /**
    * List of data layouts AutoPas can choose from for pairwise interactions.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
-  std::set<DataLayoutOption> _allowedDataLayouts{DataLayoutOption::getMostOptions()};
-  /**
-   * List of data layouts AutoPas can choose from for 3-body interactions.
-   * For possible data layout choices see options::DataLayoutOption::Value.
-   */
-  std::set<DataLayoutOption> _allowedDataLayouts3B{DataLayoutOption::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedDataLayouts{
+      {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
+      {InteractionTypeOption::threeBody, DataLayoutOption::getMostOptions()}};
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */
-  std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
-  /**
-   * Whether AutoPas is allowed to exploit Newton's third law of motion for 3-body interactions.
-   */
-  std::set<Newton3Option> _allowedNewton3Options3B{Newton3Option::getMostOptions()};
+  std::unordered_map<InteractionTypeOption::Value, std::set<Newton3Option>> _allowedNewton3Options{
+      {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
+      {InteractionTypeOption::threeBody, Newton3Option::getMostOptions()}};
   /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.

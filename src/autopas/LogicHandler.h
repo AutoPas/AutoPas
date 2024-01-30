@@ -50,7 +50,8 @@ class LogicHandler {
    * @param rebuildFrequency
    * @param outputSuffix
    */
-  LogicHandler(std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &autotuners, const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
+  LogicHandler(std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &autotuners,
+               const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
       : _autoTunerRefs(autotuners),
         _logicHandlerInfo(logicHandlerInfo),
         _neighborListRebuildFrequency{rebuildFrequency},
@@ -887,10 +888,10 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
   // TODO: might need to be separated for 3-body - maybe move logic to AutoTuner
-  auto needPairRebuild =
-      _interactionTypes.count(InteractionTypeOption::pairwise) != 0 && _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists();
-  auto needTriRebuild =
-      _interactionTypes.count(InteractionTypeOption::threeBody) != 0 && _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists();
+  auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 &&
+                         _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists();
+  auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 &&
+                        _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists();
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
@@ -1207,7 +1208,8 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   timerRemainderTraversal.stop();
   functor.endTraversal(configuration.newton3);
 
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = _autoTunerRefs[InteractionTypeOption::threeBody]->sampleEnergy();
+  const auto [energyPsys, energyPkg, energyRam, energyTotal] =
+      _autoTunerRefs[InteractionTypeOption::threeBody]->sampleEnergy();
 
   timerTotal.stop();
 

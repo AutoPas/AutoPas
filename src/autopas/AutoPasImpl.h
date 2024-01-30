@@ -101,51 +101,28 @@ void AutoPas<Particle>::init() {
     }
   }();
 
+  // Create autotuners for each interaction type
   for (const auto &interactionType : _allowedInteractionTypeOptions) {
-    switch (interactionType) {
-      case InteractionTypeOption::pairwise: {
-        const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
-            _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
-            &cellSizeFactors, InteractionTypeOption::pairwise);
+    const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
+        _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
+        _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
+        interactionType);
 
-        AutoTuner::TuningStrategiesListType tuningStrategies;
-        tuningStrategies.reserve(_tuningStrategyOptions.size());
-        for (const auto &strategy : _tuningStrategyOptions) {
-          tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
-              searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
-        }
-        if (_useTuningStrategyLoggerProxy) {
-          tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
-        }
-        _autoTuners.emplace(InteractionTypeOption::pairwise,
-                            std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                                 _verletRebuildFrequency, _outputSuffix));
-        break;
-      }
-      case InteractionTypeOption::threeBody: {
-        const auto searchSpace3B = SearchSpaceGenerators::cartesianProduct(
-            _allowedContainers, _allowedTraversals3B, _allowedLoadEstimators, _allowedDataLayouts3B,
-            _allowedNewton3Options3B, &cellSizeFactors, InteractionTypeOption::threeBody);
-        AutoTuner::TuningStrategiesListType tuningStrategies3B;
-        tuningStrategies3B.reserve(_tuningStrategyOptions.size());
-        for (const auto &strategy : _tuningStrategyOptions) {
-          tuningStrategies3B.emplace_back(TuningStrategyFactory::generateTuningStrategy(
-              searchSpace3B, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
-        }
-        if (_useTuningStrategyLoggerProxy) {
-          tuningStrategies3B.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
-        }
-        _autoTuners.emplace(InteractionTypeOption::threeBody,
-                            std::make_unique<autopas::AutoTuner>(tuningStrategies3B, searchSpace3B, _autoTunerInfo,
-                                                                 _verletRebuildFrequency, _outputSuffix));
-        break;
-      }
-      default: {
-        utils::ExceptionHandler::exception("Invalid interactionType ({}) that cannot be handled by autopas.",
-                                           interactionType.to_string());
-      }
+    AutoTuner::TuningStrategiesListType tuningStrategies;
+    tuningStrategies.reserve(_tuningStrategyOptions.size());
+    for (const auto &strategy : _tuningStrategyOptions) {
+      tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
+          searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
     }
+    if (_useTuningStrategyLoggerProxy) {
+      tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
+    }
+    _autoTuners.emplace(interactionType,
+                        std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+                                                             _verletRebuildFrequency, _outputSuffix));
   }
+
+  // Create logic handler
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
       _autoTuners, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
