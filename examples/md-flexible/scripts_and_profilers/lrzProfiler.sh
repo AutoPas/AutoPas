@@ -18,6 +18,7 @@ containerTypes=("LinkedCells" "VerletLists" "VerletClusterLists")
 traversalOfContainer=("lc_c08" "vl_list_iteration" "vcl_c06")
 containerPrefixes=("LC" "VL" "VCL") #"VL", "LC", "VCL"
 newton3OfContainer=("enabled" "disabled" "disabled")
+newton3OfContainerBool=(1 0 1)
 
 data_layout="SoA" #"SoA","AoS"
 #site_counts=(1 2 5)
@@ -27,6 +28,18 @@ functor="OldFunc" #"NewFunc","OldFunc", "SingleSiteEmulator", "BundlingApproach"
 functorDescriptionInFile="Lennard-Jones" # Bundling-Approach"
 samples="0 1"
 #newton3States=("disabled" "enabled")
+
+declare -A densityToMolCount
+densityToMolCount["0.1"]=935
+densityToMolCount["0.2"]=1715
+densityToMolCount["0.3"]=2520
+densityToMolCount["0.4"]=3560
+densityToMolCount["0.5"]=4311
+densityToMolCount["0.6"]=5301
+densityToMolCount["0.7"]=5920
+densityToMolCount["0.8"]=6970
+densityToMolCount["0.9"]=7700
+densityToMolCount["1.0"]=8316
 
 path_to_input_file="./"
 
@@ -122,7 +135,8 @@ for containerIndex in "${containerIndices[@]}"; do
           echo ""
 
           echo "Handling ${filename} with ${threads} threads"
-          OMP_NUM_THREADS=${threads} ./md-flexible --yaml-filename "${filename}"
+          #OMP_NUM_THREADS=${threads} ./md-flexible --yaml-filename "${filename}"
+          echo "${threads},${densityToMolCount[$density]},${newton3OfContainerBool[containerIndex]}"
           echo ""
         done
         echo "-----------------------------------------------"
