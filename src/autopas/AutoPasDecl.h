@@ -891,7 +891,7 @@ class AutoPas {
    * @def interactionType Default interaction type is pairwise.
    */
   void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
-                            const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
     _allowedDataLayouts[interactionType] = allowedDataLayouts;
   }
 
@@ -914,7 +914,7 @@ class AutoPas {
    * @def interactionType Default interaction type is pairwise.
    */
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options,
-                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+                                const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
     _allowedNewton3Options[interactionType] = allowedNewton3Options;
   }
 
@@ -930,13 +930,13 @@ class AutoPas {
 
   /**
    * Getter for the currently selected configuration.
-   * @return Configuration object currently used for <pairwise interactions, 3-body interactions>.
+   * @return Configuration objects currently used for respective interaction types.
    */
-  [[nodiscard]] std::set<Configuration> getCurrentConfig() const {
+  [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, Configuration> getCurrentConfig() const {
     // TODO: Avoid copying
-    std::set<Configuration> currentConfigs;
+    std::unordered_map<InteractionTypeOption::Value, Configuration> currentConfigs;
     for (auto &[type, tuner] : _autoTuners) {
-      currentConfigs.insert(tuner->getCurrentConfig());
+      currentConfigs[type] = tuner->getCurrentConfig();
     }
     return currentConfigs;
   }

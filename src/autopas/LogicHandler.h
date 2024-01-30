@@ -648,22 +648,22 @@ class LogicHandler {
   };
 
   /**
-   * Triggers the core steps of the pairwise iteration:
+   * Triggers the core steps of computing the particle interactions:
    *    - functor init- / end traversal
    *    - rebuilding of neighbor lists
    *    - container.computeInteractions()
    *    - remainder traversal
    *    - time and energy measurements.
    *
-   * @tparam PairwiseFunctor
+   * @tparam Functor
+   * @tparam interactionType
    * @param functor
    * @param traversal
    * @return Struct containing time and energy measurements. If no energy measurements were possible the respective
    * fields are filled with NaN.
    */
-  template <class PairwiseFunctor>
-  IterationMeasurements iteratePairwise(PairwiseFunctor &functor,
-                                        TraversalInterface<InteractionTypeOption::pairwise> &traversal);
+  template <class Functor, InteractionTypeOption::Value interactionType>
+  IterationMeasurements computeInteractions(Functor &functor, TraversalInterface<interactionType> &traversal);
 
   /**
    * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
@@ -731,24 +731,6 @@ class LogicHandler {
   template <bool newton3, class PairwiseFunctor>
   void remainderHelperBufferHaloBuffer(PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
                                        std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
-
-  /**
-   * Triggers the core steps of the triwise iteration:
-   *    - functor init- / end traversal
-   *    - rebuilding of neighbor lists
-   *    - container.iterateTriwise()
-   *    - remainder traversal
-   *    - time and energy measurements.
-   *
-   * @tparam TriwiseFunctor
-   * @param functor
-   * @param traversal
-   * @return Struct containing time and energy measurements. If no energy measurements were possible the respective
-   * fields are filled with NaN.
-   */
-  template <class TriwiseFunctor>
-  IterationMeasurements iterateTriwise(TriwiseFunctor &functor,
-                                       TraversalInterface<InteractionTypeOption::threeBody> &traversal);
 
   /**
    * Performs the interactions ParticleContainer::iterateTriwise() did not cover.
@@ -941,17 +923,17 @@ LogicHandler<Particle>::getParticleBuffers() const {
 }
 
 template <typename Particle>
-template <class PairwiseFunctor>
-typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
-    PairwiseFunctor &functor, TraversalInterface<InteractionTypeOption::pairwise> &traversal) {
-  auto &autoTuner = _autoTunerRefs[InteractionTypeOption::pairwise];
+template <class Functor, InteractionTypeOption::Value interactionType>
+typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::computeInteractions(
+    Functor &functor, TraversalInterface<interactionType> &traversal) {
+  auto &autoTuner = _autoTunerRefs[interactionType];
   const bool doListRebuild = not neighborListsAreValid();
   const auto &configuration = autoTuner->getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
-  autopas::utils::Timer timerIteratePairwise;
+  autopas::utils::Timer timerComputeInteractions;
   autopas::utils::Timer timerRemainderTraversal;
 
   const bool energyMeasurementsPossible = autoTuner->resetEnergy();
@@ -963,28 +945,43 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
     container.rebuildNeighborLists(&traversal);
     timerRebuild.stop();
   }
-  timerIteratePairwise.start();
-  container.iteratePairwise(&traversal);
-  timerIteratePairwise.stop();
+
+  timerComputeInteractions.start();
+  if constexpr (interactionType == InteractionTypeOption::pairwise) {
+    container.iteratePairwise(&traversal);
+  } else if constexpr (interactionType == InteractionTypeOption::threeBody) {
+    container.iterateTriwise(&traversal);
+  }
+  timerComputeInteractions.stop();
 
   timerRemainderTraversal.start();
-  withStaticContainerType(container, [&](auto &actualContainerType) {
-    if (configuration.newton3) {
-      doRemainderTraversal<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-    } else {
-      doRemainderTraversal<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-    }
-  });
+  if constexpr (interactionType == InteractionTypeOption::pairwise) {
+    withStaticContainerType(container, [&](auto &actualContainerType) {
+      if (configuration.newton3) {
+        doRemainderTraversal<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      } else {
+        doRemainderTraversal<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      }
+    });
+  } else if constexpr (interactionType == InteractionTypeOption::threeBody) {
+    withStaticContainerType(container, [&](auto &actualContainerType) {
+      if (configuration.newton3) {
+        doRemainderTraversal3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      } else {
+        doRemainderTraversal3B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      }
+    });
+  }
   timerRemainderTraversal.stop();
-  functor.endTraversal(configuration.newton3);
 
+  functor.endTraversal(configuration.newton3);
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner->sampleEnergy();
 
   timerTotal.stop();
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
-  return {timerIteratePairwise.getTotalTime(),
+  return {timerComputeInteractions.getTotalTime(),
           timerRemainderTraversal.getTotalTime(),
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
@@ -1169,61 +1166,6 @@ void LogicHandler<Particle>::remainderHelperBufferHaloBuffer(
       f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
     }
   }
-}
-
-template <typename Particle>
-template <class TriwiseFunctor>
-typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iterateTriwise(
-    TriwiseFunctor &functor, TraversalInterface<InteractionTypeOption::threeBody> &traversal) {
-  const bool doListRebuild = not neighborListsAreValid();
-  const auto &configuration = _autoTunerRefs[InteractionTypeOption::threeBody]->getCurrentConfig();
-  auto &container = _containerSelector.getCurrentContainer();
-
-  autopas::utils::Timer timerTotal;
-  autopas::utils::Timer timerRebuild;
-  autopas::utils::Timer timerIterateTriwise;
-  autopas::utils::Timer timerRemainderTraversal;
-
-  const bool energyMeasurementsPossible = _autoTunerRefs[InteractionTypeOption::threeBody]->resetEnergy();
-  timerTotal.start();
-
-  functor.initTraversal();
-  if (doListRebuild) {
-    timerRebuild.start();
-    container.rebuildNeighborLists(&traversal);
-    timerRebuild.stop();
-  }
-  timerIterateTriwise.start();
-  container.iterateTriwise(&traversal);
-  timerIterateTriwise.stop();
-
-  timerRemainderTraversal.start();
-  withStaticContainerType(container, [&](auto &actualContainerType) {
-    if (configuration.newton3) {
-      doRemainderTraversal3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-    } else {
-      doRemainderTraversal3B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-    }
-  });
-  timerRemainderTraversal.stop();
-  functor.endTraversal(configuration.newton3);
-
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] =
-      _autoTunerRefs[InteractionTypeOption::threeBody]->sampleEnergy();
-
-  timerTotal.stop();
-
-  constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
-  constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
-  return {timerIterateTriwise.getTotalTime(),
-          timerRemainderTraversal.getTotalTime(),
-          timerRebuild.getTotalTime(),
-          timerTotal.getTotalTime(),
-          energyMeasurementsPossible,
-          energyMeasurementsPossible ? energyPsys : nanD,
-          energyMeasurementsPossible ? energyPkg : nanD,
-          energyMeasurementsPossible ? energyRam : nanD,
-          energyMeasurementsPossible ? energyTotal : nanL};
 }
 
 template <class Particle>
@@ -1485,7 +1427,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
 
   /// Pairwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  const IterationMeasurements measurements = iteratePairwise(*functor, *traversalPtr.get());
+  const IterationMeasurements measurements =
+      computeInteractions(*functor, *traversalPtr.get());
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {
@@ -1561,7 +1504,8 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
 
   /// Triwise iteration
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  const IterationMeasurements measurements = iterateTriwise(*functor, *traversalPtr.get());
+  const IterationMeasurements measurements =
+      computeInteractions(*functor, *traversalPtr.get());
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {
