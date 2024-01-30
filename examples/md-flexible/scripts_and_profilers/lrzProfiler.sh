@@ -13,7 +13,7 @@
 
 #module load slurm_setup
 
-containerIndices=(0 1)
+containerIndices=(1 0)
 containerTypes=("LinkedCells" "VerletLists" "VerletClusterLists")
 traversalOfContainer=("lc_c08" "vl_list_iteration" "vcl_c06")
 containerPrefixes=("LC" "VL" "VCL") #"VL", "LC", "VCL"
@@ -136,7 +136,7 @@ for containerIndex in "${containerIndices[@]}"; do
 
           echo "Handling ${filename} with ${threads} threads"
           #OMP_NUM_THREADS=${threads} ./md-flexible --yaml-filename "${filename}"
-          echo "${threads},${densityToMolCount[$density]},${newton3OfContainerBool[containerIndex]}"
+          echo "${site_count},${densityToMolCount[$density]},${threads},${newton3OfContainerBool[containerIndex]}"
           echo ""
         done
         echo "-----------------------------------------------"
