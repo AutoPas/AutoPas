@@ -122,7 +122,6 @@ takeMeasurementsAccordingToParameters(){
   local site_counts_local=("${!1}")
   local densities_local=("${!2}")
 
-for containerIndex in "${containerIndices[@]}"; do
   for site_count in "${site_counts_local[@]}"; do
     for density in "${densities_local[@]}"; do
       for threads in "${num_threads[@]}";do
@@ -135,7 +134,7 @@ for containerIndex in "${containerIndices[@]}"; do
           echo ""
 
           echo "Handling ${filename} with ${threads} threads"
-          #OMP_NUM_THREADS=${threads} ./md-flexible --yaml-filename "${filename}"
+          OMP_NUM_THREADS=${threads} ./md-flexible --yaml-filename "${filename}"
           echo "${site_count},${densityToMolCount[$density]},${threads},${newton3OfContainerBool[containerIndex]}"
           echo ""
         done
@@ -145,17 +144,41 @@ for containerIndex in "${containerIndices[@]}"; do
       done
     done
   done
-done
 }
 
+echo ""
+echo "------------------------------------------------------------"
+echo "             Verlet Lists iterating over densities"
+echo "------------------------------------------------------------"
+echo ""
 site_counts=(5)
 densities=(0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0)
+containerIndex=1  #VerletList
 takeMeasurementsAccordingToParameters site_counts[@] densities[@]
 echo ""
 echo "------------------------------------------------------------"
-echo "             Iterating over site counts now"
+echo "             Verlet Lists iterating over site counts"
 echo "------------------------------------------------------------"
 echo ""
 site_counts=(1 2 3 4 5 6 7 8)
 densities=(0.8)
+containerIndex=1  #VerletList
+takeMeasurementsAccordingToParameters site_counts[@] densities[@]
+echo ""
+echo "------------------------------------------------------------"
+echo "             Linked Cells iterating over densities"
+echo "------------------------------------------------------------"
+echo ""
+site_counts=(5)
+densities=(0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0)
+containerIndex=0  #Linked Cells
+takeMeasurementsAccordingToParameters site_counts[@] densities[@]
+echo ""
+echo "------------------------------------------------------------"
+echo "            Linked Cells iterating over site counts"
+echo "------------------------------------------------------------"
+echo ""
+site_counts=(1 2 3 4 5 6 7 8)
+densities=(0.8)
+containerIndex=0  #Linked Cells
 takeMeasurementsAccordingToParameters site_counts[@] densities[@]
