@@ -1,25 +1,31 @@
-# Internal Verlet-like container behavior
+# Container Interface Model
 
-The behavior described in this section is normally opaque to users of AutoPas.
-The only exception to this rule is that particles should not be moved more than skin/2 within the specified Verlet rebuild frequency.
-This restriction is due to the internally used Verlet-like container behavior in which the actual container is not updated in every time step and particles are not necessarily sorted into the correct cells.
-This allows the reuse of neighbor lists throughout multiple time steps and is necessary for a performant implementation of our Verlet containers.
+The behavior described in this section is completely hidden from AutoPas users.
+To ensure functionality, particles must not move more than `skin / 2` within the specified Verlet rebuild frequency.
+This was initially implemented in [PR 642](https://github.com/AutoPas/AutoPas/pull/642) so more details can be found there.
 
-We do, however, still provide a linked cells-like interface to a user of AutoPas, i.e., a container appears to be updated every time step, leaving particles are returned at every time step and particles can be deleted and added independently to the internal state of the container.
-Internally we make this possible, by using partial container updates, which collect leaving particles while marking left particles and halo particles as dummy.
-Additionally, we maintain a particle buffer that allows to add particles to AutoPas without modifying the underlying container.
-This particle buffer is considered in the force calculation and when iterating through particles.
+## External Linked Cells-like interface
+For a AutoPas user from the outside, it appears that the particle container is fully updated every time they call `AutoPas::updateContainer`.
+Particles leaving the domain are always returned, and particles can be added and deleted at any time.
+For periodic boundary conditions, or in an MPI-parallel simulation, the user, is responsible for inserting the appropriate halo particles.
 
-Another performance optimization is made possible by allowing to reuse the neighbor list entries of halo particles of previous time steps.
-While the actual particles have already been implicitly deleted (marked as dummy), they still exist.
-For their reuse, we try to add halo particles in their original memory location.
-If that is, however, not possible, we add them to another particle buffer (the haloParticleBuffer).
+## Internal Verlet-like container behavior
+For Verlet list-based containers to perform efficiently this is a problem, because they rely on their list references to not change until the next list rebuild.
+So our solution is to internally use a Verlet-like behavior,  where the actual container is not updated in every time step, leading to particles not necessarily being sorted into their new cells.
+We achieve this by avoiding container data structure changes during all updates that do not involve a potential rebuild of neighbor lists.
+This means that particles which would normally be deleted, like those leaving the domain, or halos are only marked for deletion (`OwnershipState::dummy`).
+They are only really removed during a container update at the end of a rebuild interval or container change.
 
-Additional information can be found in [PR 642](https://github.com/AutoPas/AutoPas/pull/642)
+### `LogicHandler` Buffers
+The `LogicHandler` maintains particle buffers that allow the addition of particles to AutoPas without modifying the underlying container.
+These buffers are taken into account for the pairwise iteration as well as any other iterators.
+There is one pair of buffers for `owned` and `halo` particles per thread to allow parallel particle insertion.
 
-## Inserting additional particles
-Additional particles (e.g. through a grand-canonical thermostat), can be inserted at any point in the simulation loop.
-For periodic boundary conditions, or in an MPI-parallel simulation, you, as the user, are responsible for inserting the appropriate halo particles.
+### Reinsert Halos
+As mentioned above, halo particles are not deleted immediately but only marked as `dummy`.
+Should the halo particle be reinserted, we look in the vicinity of its coordinates if there is a `dummy` particle with the same `id` we replace it with the new particle.
+If nothing is found, the particle is added to a `LogicHandler` halo buffer.
+This effectively updates halo particles instead of deleting and reinserting them, making our data structures more stable.
 
 ## Related Files and Folders
 - LeavingParticleCollector.h
