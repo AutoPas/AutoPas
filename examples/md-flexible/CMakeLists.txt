@@ -5,7 +5,9 @@ file(
         "src/*.h"
 )
 
-add_executable(md-flexible ${MDFlex_SRC})
+add_executable(md-flexible ${MDFlex_SRC}
+        ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/ATLookUpTable.h
+        ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LookUpTableTypes.h)
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 

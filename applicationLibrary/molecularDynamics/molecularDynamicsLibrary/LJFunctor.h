@@ -148,7 +148,7 @@ class LJFunctor
     if constexpr (useLUT) {
       // How to check for mixing if useMixing is always enabled?
       AutoPasLog(DEBUG, "Used LUT with {}", dr2);
-      fac = _PPLibrary->getLJLUT().retrieveSingleValue(dr2);
+      fac = _PPLibrary->getLJLUT().retrieveValue(dr2);
       if (calculateGlobals) {
         // this is a problem
         AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");

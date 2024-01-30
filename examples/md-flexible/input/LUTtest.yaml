@@ -10,6 +10,13 @@ functor                              :  lj
 traversal                            :  [lc_c01]
 newton3                              :  [disabled]
 data-layout                          :  [AoS]
+# lut-enable : [true, false]
+# LJ-LUT :
+#   Interval :
+#     Even-Spacing :
+#       distance : 0,125
+#   interpolation : next-neighbour
+#
 
 verlet-rebuild-frequency             :  10
 verlet-skin-radius-per-timestep      :  0.02

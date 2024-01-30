@@ -11,9 +11,12 @@
 #include <set>
 #include <vector>
 
+#include "src/TypeDefinitions.h" //ToDO: Is this right?
+#include "LJLookUpTable.h"
+#include "ATLookUpTable.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "ForceLookUpTable.h"
+
 
 /**
  * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location
@@ -299,14 +302,16 @@ class ParticlePropertiesLibrary {
   }
 
   void initializeLookUpTables() {
-
     // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
+    if (_epsilons.size()>1 || _sigmas.size()>1)
+      throw autopas::utils::ExceptionHandler::AutoPasException(
+          "Cannot use multiple particle types with Look-up Table.");
     if (_storeLJData) {
-      _LJLookUpTable = ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 5.0});
+      _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 5.0});
     }
   }
 
-  ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType> getLJLUT() {
+  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getLJLUT() {
     return _LJLookUpTable;
   }
 
@@ -348,7 +353,7 @@ class ParticlePropertiesLibrary {
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
   std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
 
-  ForceLookUpTable::ForceLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, ForceLookUpTable::LJAoS, floatType, intType> _LJLookUpTable;
+  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _LJLookUpTable;
 
 };
 

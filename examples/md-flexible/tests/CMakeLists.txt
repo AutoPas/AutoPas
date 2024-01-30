@@ -25,7 +25,8 @@ list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeIntera
 list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*templateInstantiations/computeInteractionsFlopCounterFunctor3B.cpp")
 list(FILTER MDFlexTest_SRC EXCLUDE REGEX ".*Simulation.((cpp)|h)")
 
-add_executable(mdFlexTests ${MDFlexTest_SRC})
+add_executable(mdFlexTests ${MDFlexTest_SRC}
+        ../../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/ATLookUpTable.h)
 
 target_compile_definitions(
     mdFlexTests PRIVATE

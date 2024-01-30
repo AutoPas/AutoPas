@@ -5,7 +5,8 @@ file(
     "*.h"
 )
 
-add_executable(runTests ${MY_SRC})
+add_executable(runTests ${MY_SRC}
+        ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/ATLookUpTable.h)
 
 target_compile_definitions(runTests PRIVATE)
 

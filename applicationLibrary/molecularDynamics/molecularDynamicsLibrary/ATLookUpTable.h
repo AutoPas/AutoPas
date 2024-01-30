@@ -1,48 +1,29 @@
 //
-// Created by jan on 1/1/24.
+// Created by jan on 1/26/24.
 //
 
-#ifndef AUTOPAS_FORCELOOKUPTABLE_H
-#define AUTOPAS_FORCELOOKUPTABLE_H
+#ifndef AUTOPAS_ATLOOKUPTABLE_H
+#define AUTOPAS_ATLOOKUPTABLE_H
 
 #include <cmath>
 #include <vector>
 
 #include "autopas/utils/logging/Logger.h"
+#include "LookUpTableTypes.h"
 
 namespace ForceLookUpTable {
-enum FunctorType { LJAoS };
-enum IntervalType { evenSpacing };
-enum InterpolationType { nextNeighbor };
 
-
-template <IntervalType intervalType, InterpolationType interpolationType, FunctorType functorType, typename floatType = double, typename intType = unsigned long>
-class ForceLookUpTable {
+template <IntervalType intervalType, InterpolationType interpolationType, typename floatType = double, typename intType = unsigned long>
+class ATLookUpTable {
  public:
-
-
-  ForceLookUpTable() {
-      //AutoPasLog(DEBUG, "Default constructor called.");
+  ATLookUpTable() {
+    //AutoPasLog(DEBUG, "Default constructor called.");
   }
-  /*
-
-  template <>
-  ForceLookUpTable<evenSpacing> (floatType cutoffSquared, floatType sigmaSquared, floatType epsilon24, intType numberOfPoints) {
-    AutoPasLog(DEBUG, "Even spacing constructor called.");
-    this->cutoffSquared = cutoffSquared;
-    this->sigmaSquared = sigmaSquared;
-    this->epsilon24 = epsilon24;
-    this->numberOfPoints = numberOfPoints;
-
-    evenSpacingInitializer(numberOfPoints);
-  }*/
-
-
 
   // list: cutoffSquared, sigmaSquared, epsilon24, ... (numberOfPoints)
   // Extremely unreadable and user-error-prone
 
-  ForceLookUpTable(std::initializer_list<floatType> args) {
+  ATLookUpTable(std::initializer_list<floatType> args) {
     //AutoPasLog(DEBUG, "LUT created.");
     if (args.size() < 3) {  // Fail gracefully
       //AutoPasLog(CRITICAL, "Args only has {} elements, but needs at least 3.", args.size());
@@ -56,19 +37,19 @@ class ForceLookUpTable {
         //AutoPasLog(CRITICAL, "Args has {} elements, but needs 4 for even spacing.", args.size());
         return;
       }
-      evenSpacingInitializer(static_cast<intType>(args.begin()[3]));
+      numberOfPoints = static_cast<intType>(args.begin()[3]);
+      if (numberOfPoints == 0)
+        throw autopas::utils::ExceptionHandler::AutoPasException("At least one point needed for LUT.");
+      pointDistance = cutoffSquared / numberOfPoints;
+      fillTableEvenSpacing();
     }
   }
 
-
-
-  floatType retrieveSingleValue(floatType distanceSquared) {
+  floatType retrieveValue(floatType distanceSquared) {
     if constexpr (interpolationType == nextNeighbor) {
-      return nextNeighborSingle(distanceSquared);
+      return getNextNeighbor(distanceSquared);
     }
   }
-
-
 
  private:
   std::vector<floatType> lut; // If we need to save the points, just use every other spot for point and then data
@@ -80,31 +61,17 @@ class ForceLookUpTable {
   floatType sigmaSquared;
   floatType epsilon24;
 
-  // Initializers
-
-  void evenSpacingInitializer(intType nOP) {
-    if (nOP == 0) { // Fail gracefully
-      //AutoPasLog(CRITICAL, "Don't set number of points to 0 when using evenSpacing.");
-      return;
-    }
-    numberOfPoints = nOP;
-    pointDistance = cutoffSquared / numberOfPoints; // May break when floatType is not double. cutoffSquared obviously can't be negative.
-    if constexpr (functorType == LJAoS) {
-      fillTableLJEvenSpacing();
-    }
-  }
-
   // Fill functions
 
-  void fillTableLJEvenSpacing () {
-      for (auto i = 0; i<numberOfPoints; i++) {
-        lut.push_back(LJFunctor((i+1) * pointDistance));
-      }
+  void fillTableEvenSpacing () {
+    for (auto i = 0; i<numberOfPoints; i++) {
+      lut.push_back(LJFunctor((i+1) * pointDistance));
+    }
   };
 
   // Interpolation functions
 
-  floatType nextNeighborSingle(floatType dr2) {
+  floatType getNextNeighbor(floatType dr2) {
     if constexpr (intervalType == evenSpacing) {
       if (dr2 == cutoffSquared)
         return lut.at(numberOfPoints-1);
@@ -115,7 +82,7 @@ class ForceLookUpTable {
     }
   }
 
-  // Functor stubs
+  // Functor stub
 
   floatType LJFunctor(floatType dr2) {
     floatType invdr2 = 1. / dr2;
@@ -130,4 +97,5 @@ class ForceLookUpTable {
 
 }
 
-#endif  // AUTOPAS_FORCELOOKUPTABLE_H
+
+#endif  // AUTOPAS_ATLOOKUPTABLE_H

@@ -36,11 +36,6 @@
 
 #endif
 
-/**
- * Look-up Table types
- */
-
-
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
@@ -129,6 +124,67 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 #endif
 
 #endif
+
+
+/**
+ * Look-up Table types
+ */
+
+#include "molecularDynamicsLibrary/LJLookUpTable.h"
+
+#if defined(MD_USE_LJ_LUT)
+
+const bool USE_LJ_LUT = true;
+
+#if LJ_LUT_INTERVALL == EVEN_SPACING
+
+#if LJ_LUT_INTERPOLATION_FUNCTION == NEXT_NEIGHBOR
+
+using LJLookUpTableType = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
+
+#elif LJ_LUT_INTERPOLATION_FUNCTION
+
+using LJLookUpTableType = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, FloatPrecision, size_t>;
+
+#endif // LJ_LUT_INTERPOLATION_FUNCTION
+
+#endif // LJ_LUT_INTERVALL
+
+#else
+
+using LJLookUpTableType = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
+
+const bool USE_LJ_LUT =  false;
+
+#endif // MD_USE_LJ_LUT
+
+#include "molecularDynamicsLibrary/ATLookUpTable.h"
+
+#if defined(MD_USE_AT_LUT)
+
+const bool USE_AT_LUT = true;
+
+#if AT_LUT_INTERVALL == EVEN_SPACING
+
+#if AT_LUT_INTERPOLATION_FUNCTION == NEXT_NEIGHBOR
+
+using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
+
+#elif AT_LUT_INTERPOLATION_FUNCTION == LINEAR
+
+using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, FloatPrecision, size_t;
+
+#endif // AT_LUT_INTERPOLATION_FUNCTION
+
+#endif // AT_LUT_INTERVALL
+
+#else
+
+using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
+
+const bool USE_AT_LUT = false;
+
+#endif // MD_USE_AT_LUT
 
 /**
  * Type of the Particle Properties Library.
