@@ -176,3 +176,51 @@ TEST_F(CellBlock3DTest, testCellOwnership) {
     }
   }
 }
+
+/**
+ * Tests if the cell bounding box is calculated correctly by calling getCellBoundingBox with 1D and 3D indices
+ * and comparing it to the precalculated values.
+ */
+TEST_F(CellBlock3DTest, testGetCellBoundingBox) {
+  using namespace autopas::utils::ArrayMath::literals;
+
+  constexpr double desiredCellLength = 0.2;
+  constexpr double cellSizeFactor = 1.0;
+  constexpr size_t cellsPerDimensionWithoutHalo = 3;
+  constexpr size_t cellsPerDimensionWithHalo = cellsPerDimensionWithoutHalo + 2;
+  constexpr std::array<double, 3> boxMin = {0.1, 0.1, 0.1};
+  constexpr std::array<double, 3> boxMax = boxMin + cellsPerDimensionWithoutHalo * desiredCellLength;
+  autopas::internal::CellBlock3D<FMCell> cellBlock{_vec1, boxMin, boxMax, desiredCellLength, cellSizeFactor};
+
+  // helper function to avoid code duplication
+  // calls getCellBoundingBox with 1D and 3D indices and compares it to the expected values
+  const auto testCellBoundingBox = [&](const std::array<size_t, 3> &cellIndex3D,
+                                       const std::array<double, 3> &expectedMin,
+                                       const std::array<double, 3> &expectedMax) {
+    // inner helper function
+    const auto actualTest = [&](const auto cellIndex) {
+      using autopas::utils::ArrayUtils::operator<<;
+      auto [actualMin, actualMax] = cellBlock.getCellBoundingBox(cellIndex);
+      EXPECT_THAT(actualMin, testing::Pointwise(testing::DoubleNear(1e-15), expectedMin));
+      EXPECT_THAT(actualMax, testing::Pointwise(testing::DoubleNear(1e-15), expectedMax));
+      if (HasFailure()) {
+        std::cout << "Failed for cellIndex: " << cellIndex << std::endl;
+      }
+    };
+    const auto cellIndex1D = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+        cellIndex3D, {cellsPerDimensionWithHalo, cellsPerDimensionWithHalo, cellsPerDimensionWithHalo});
+    actualTest(cellIndex1D);
+    actualTest(cellIndex3D);
+  };
+
+  // first cell in the halo box
+  testCellBoundingBox({0, 0, 0}, boxMin - desiredCellLength, boxMin);
+  // first cell in the actual box
+  testCellBoundingBox({1, 1, 1}, boxMin, boxMin + desiredCellLength);
+  // last cell in the actual box
+  testCellBoundingBox({cellsPerDimensionWithHalo - 2, cellsPerDimensionWithHalo - 2, cellsPerDimensionWithHalo - 2},
+                      boxMax - desiredCellLength, boxMax);
+  // last cell in the halo box
+  testCellBoundingBox({cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1}, boxMax,
+                      boxMax + desiredCellLength);
+}
