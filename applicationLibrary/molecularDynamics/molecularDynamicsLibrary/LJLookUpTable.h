@@ -71,14 +71,23 @@ class LJLookUpTable {
       for (auto i = 0; i<numberOfPoints; i++) {
         lut.push_back(LJFunctor((i+1) * pointDistance));
       }
+      // Using std::cout because Logger isn't initiated yet, when constructors are called.
+      std::cout <<  "Table filled evenly spaced with distance " << pointDistance << "\n Content: ";
+      for (auto i=0; i<numberOfPoints; i++) {
+        std::cout << i << " : " << (i+1) * pointDistance << " : " << lut.at(i) << " | ";
+      }
+      std::cout << "\n";
   };
 
   // Interpolation functions
 
   floatType getNextNeighbor(floatType dr2) {
     if constexpr (intervalType == evenSpacing) {
-      if (dr2 == cutoffSquared)
-        return lut.at(numberOfPoints-1);
+      if (dr2 == cutoffSquared) {
+        auto ret = lut.at(numberOfPoints - 1);
+        AutoPasLog(DEBUG, "dr2 was cutoffSquared. Returning {}", ret);
+        return ret;
+      }
       auto ret = lut.at(std::floor(dr2 / pointDistance)); // How slow is std::floor?
       auto accurate = LJFunctor(dr2);
       AutoPasLog(DEBUG, "Return {} instead of {}", ret, accurate);
@@ -87,18 +96,28 @@ class LJLookUpTable {
   }
 
   floatType getLinear(floatType dr2) {
+    AutoPasLog(DEBUG, "Linear! Point distance: {} | Number of points {} | dr2 {}", pointDistance, numberOfPoints, dr2);
     if constexpr (intervalType == evenSpacing) {
-      if (dr2 == cutoffSquared)
-        return lut.at(numberOfPoints-1);
-      if (dr2 % pointDistance == 0)
+      if (dr2 == cutoffSquared) {
+        AutoPasLog(DEBUG, "dr2 is cutoff");
+        return lut.at(numberOfPoints - 1);
+      }
+      if (std::fmod(dr2, pointDistance) == 0) {
+        AutoPasLog(DEBUG, "dr2 is multiple of pointDistance! Remainder is {}", std::fmod(dr2, pointDistance));
         return lut.at(dr2 / pointDistance);
-      if (dr2 < pointDistance)
+      }
+      if (dr2 < pointDistance) {
+        AutoPasLog(DEBUG, "dr2 was less than pointDistance.");
         return lut.at(0);
+      }
       floatType lowerX = std::floor(dr2 / pointDistance);
       floatType upperX = std::ceil(dr2 / pointDistance);
       floatType lowerY = lut.at(lowerX);
       floatType upperY = lut.at(upperX);
-      return lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX);
+      auto ret = lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX);
+      AutoPasLog(DEBUG, "lowerX: {} | upperX: {} | lowerY {} | upperY {}", lowerX, upperX, lowerY, upperY);
+      AutoPasLog(DEBUG, "Input: {} | Return: {} | Correct: {}", dr2, ret, LJFunctor(dr2));
+      return ret;
     }
   }
 
@@ -112,7 +131,6 @@ class LJLookUpTable {
     floatType lj12m6 = lj12 - lj6;
     return epsilon24 * (lj12 + lj12m6) * invdr2;
   }
-
 };
 
 }

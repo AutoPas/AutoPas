@@ -307,7 +307,7 @@ class ParticlePropertiesLibrary {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Cannot use multiple particle types with Look-up Table.");
     if (_storeLJData) {
-      _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 5.0});
+      _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 4.0});
     }
   }
 

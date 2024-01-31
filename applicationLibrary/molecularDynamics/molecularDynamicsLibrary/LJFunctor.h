@@ -134,6 +134,8 @@ class LJFunctor
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
+    //AutoPasLog(DEBUG, "Calculate with dr2: {}", dr2);
+
     if (dr2 > _cutoffSquared) {
       return;
     }
