@@ -67,6 +67,7 @@ class AxilrodTellerFunctor
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
+        _cutoffSquaredPd{simde_mm512_set1_pd(cutoff * cutoff)},
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
@@ -200,7 +201,7 @@ class AxilrodTellerFunctor
   }
 
   // TODO simde
-//#define AVX512_NATIVE
+  // #define AVX512_NATIVE
 
   inline double simde_mm512_reduce_add_pd(__m512d a) {
 #ifdef AVX512_NATIVE
@@ -229,8 +230,8 @@ class AxilrodTellerFunctor
         static_cast<double *>(base_addr)[vindex_buffer[i]] = buffer[i];
       }
     }
-  }
 #endif
+  }
 
   inline void simde_mm512_i64scatter_pd(void *base_addr, __m512i vindex, __m512d a, const int scale) {
 #ifdef AVX512_NATIVE
@@ -243,8 +244,8 @@ class AxilrodTellerFunctor
     for (int i = 0; i < vecLength; ++i) {
       static_cast<double *>(base_addr)[vindex_buffer[i]] = buffer[i];
     }
-  }
 #endif
+  }
 
   inline bool SoAParticlesInCutoff(const double *const x1ptr, const double *const y1ptr, const double *const z1ptr,
                                    const double *const x2ptr, const double *const y2ptr, const double *const z2ptr,
@@ -284,8 +285,11 @@ class AxilrodTellerFunctor
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
+    std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
+    indicesK.reserve(soa.size());
+
     if constexpr (not useMixing) {
-      _nu_pd = simde_mm512_set1_pd(_nu);
+      _nuPd = simde_mm512_set1_pd(_nu);
     }
 
     for (size_t i = 0; i < soa.size(); ++i) {
@@ -327,7 +331,7 @@ class AxilrodTellerFunctor
         const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
-        std::vector<size_t> indicesK;
+        indicesK.clear();
         for (size_t k = j + 1; k < soa.size(); ++k) {
           if (ownedStatePtr[k] == autopas::OwnershipState::dummy or
               not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, j, k) or
@@ -373,7 +377,7 @@ class AxilrodTellerFunctor
   }
 
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
-  void SoAKernel(const std::vector<size_t> &indicesK, const size_t kStart, const simde__m512d &x1,
+  void SoAKernel(const std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> &indicesK, const size_t kStart, const simde__m512d &x1,
                  const simde__m512d &y1, const simde__m512d &z1, const simde__m512d &x2, const simde__m512d &y2,
                  const simde__m512d &z2, const double *const __restrict x3ptr, const double *const __restrict y3ptr,
                  const double *const __restrict z3ptr, const size_t type1, const size_t type2,
@@ -383,7 +387,7 @@ class AxilrodTellerFunctor
                  double *const __restrict fx3ptr, double *const __restrict fy3ptr, double *const __restrict fz3ptr,
                  unsigned int rest = 0) {
     const simde__m512i vindex = remainderIsMasked ? simde_mm512_maskz_loadu_epi64(_masks[rest - 1], &indicesK[kStart])
-                                                  : simde_mm512_loadu_si512(&indicesK[kStart]);
+                                                  : simde_mm512_load_si512(&indicesK[kStart]);
 
     const simde__m512d x3 = remainderIsMasked ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest - 1], vindex, x3ptr, 8)
                                               : simde_mm512_i64gather_pd(vindex, x3ptr, 8);
@@ -450,7 +454,7 @@ class AxilrodTellerFunctor
     const simde__m512d dr5 = simde_mm512_mul_pd(dr5PART, dr2sqrt);
 
     if constexpr (useMixing) {
-      _nu_pd = simde_mm512_set_pd(
+      _nuPd = simde_mm512_set_pd(
           not remainderIsMasked or rest > 7 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[kStart + 7]]) : 0,
           not remainderIsMasked or rest > 6 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[kStart + 6]]) : 0,
           not remainderIsMasked or rest > 5 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[kStart + 5]]) : 0,
@@ -461,7 +465,7 @@ class AxilrodTellerFunctor
           _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[kStart + 0]]));
     }
     const simde__m512d invdr5 =
-        remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest - 1], _nu_pd, dr5) : simde_mm512_div_pd(_nu_pd, dr5);
+        remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest - 1], _nuPd, dr5) : simde_mm512_div_pd(_nuPd, dr5);
     const simde__m512d invdr53 = simde_mm512_mul_pd(_three, invdr5);
 
     const simde__m512d drj2_drk2 = simde_mm512_sub_pd(drj2, drk2);
@@ -654,8 +658,11 @@ class AxilrodTellerFunctor
     [[maybe_unused]] auto *const __restrict type1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict type2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
+    std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
+    indicesK.reserve(soa2.size());
+
     if constexpr (not useMixing) {
-      _nu_pd = simde_mm512_set1_pd(_nu);
+      _nuPd = simde_mm512_set1_pd(_nu);
     }
 
     for (size_t i = 0; i < soa1.size(); ++i) {
@@ -700,7 +707,7 @@ class AxilrodTellerFunctor
         const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
-        std::vector<size_t> indicesK;
+        indicesK.clear();
         for (size_t k = 0; k < soa2.size(); ++k) {
           if (ownedState2ptr[k] == autopas::OwnershipState::dummy or
               not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x2ptr, y2ptr, z2ptr, j, k) or
@@ -755,7 +762,7 @@ class AxilrodTellerFunctor
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
         // particle 3 from soa 2
-        std::vector<size_t> indicesK;
+        indicesK.clear();
         for (size_t k = j + 1; k < soa2.size(); ++k) {
           if (ownedState2ptr[k] == autopas::OwnershipState::dummy or
               not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x2ptr, y2ptr, z2ptr, i, k) or
@@ -833,8 +840,10 @@ class AxilrodTellerFunctor
     [[maybe_unused]] auto *const __restrict type2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
     [[maybe_unused]] auto *const __restrict type3ptr = soa3.template begin<Particle::AttributeNames::typeId>();
 
+    std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
+
     if constexpr (not useMixing) {
-      _nu_pd = simde_mm512_set1_pd(_nu);
+      _nuPd = simde_mm512_set1_pd(_nu);
     }
 
     for (size_t i = 0; i < soa1.size(); ++i) {
@@ -877,7 +886,7 @@ class AxilrodTellerFunctor
         const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
-        std::vector<size_t> indicesK;
+        indicesK.clear();
         for (size_t k = 0; k < soa3.size(); ++k) {
           if (ownedState3ptr[k] == autopas::OwnershipState::dummy or
               not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x3ptr, y3ptr, z3ptr, i, k) or
@@ -1112,12 +1121,18 @@ class AxilrodTellerFunctor
   bool _postProcessed;
 
   const simde__m512d _zero{simde_mm512_setzero_pd()};
+  const simde__m512i _zeroI{simde_mm512_setzero_si512()};
   const simde__m512d _three{simde_mm512_set1_pd(3.0)};
   const simde__m512d _five{simde_mm512_set1_pd(5.0)};
-  simde__m512d _nu_pd;
+  simde__m512d _nuPd;
 
   static constexpr int vecLength = 8;
-  const simde__mmask8 _masks[vecLength - 1]{0b00000001, 0b00000011, 0b00000111, 0b00001111,
-                                            0b00011111, 0b00111111, 0b01111111};
+  const simde__mmask8 _masks[vecLength]{0b00000001, 0b00000011, 0b00000111, 0b00001111,
+                                        0b00011111, 0b00111111, 0b01111111, 0b11111111};
+
+  simde__m512i _accendingIndices{simde_mm512_set_epi64(0, 1, 2, 3, 4, 5, 6, 7)};
+  const simde__m512d _cutoffSquaredPd;
+  const simde__m512i _ownedStateDummyEpi64{
+      simde_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::dummy))};
 };
 }  // namespace mdLib
