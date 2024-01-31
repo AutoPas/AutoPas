@@ -221,6 +221,6 @@ TEST_F(CellBlock3DTest, testGetCellBoundingBox) {
   testCellBoundingBox({cellsPerDimensionWithHalo - 2, cellsPerDimensionWithHalo - 2, cellsPerDimensionWithHalo - 2},
                       boxMax - desiredCellLength, boxMax);
   // last cell in the halo box
-  testCellBoundingBox({cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1}, boxMax,
-                      boxMax + desiredCellLength);
+  testCellBoundingBox({cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1, cellsPerDimensionWithHalo - 1},
+                      boxMax, boxMax + desiredCellLength);
 }
