@@ -328,7 +328,7 @@ class ParticleContainerInterface {
    * @param cellIndex Index of the cell the particle is located in.
    * @param particleIndex Particle index within the cell.
    * @param iteratorBehavior Which ownership states should be considered for the next particle.
-   * @return Pointer to the particle and its indices.
+   * @return Pointer to the particle and its indices. tuple<Particle*, cellIndex, particleIndex>
    * If a index pair is given that does not exist but is also not beyond the last cell, the next fitting particle shall
    * be returned.
    * Example: If [4,2] does not exist, [5,1] shall be returned
