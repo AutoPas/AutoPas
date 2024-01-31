@@ -91,6 +91,7 @@ class LJLookUpTable {
       auto ret = lut.at(std::floor(dr2 / pointDistance)); // How slow is std::floor?
       auto accurate = LJFunctor(dr2);
       AutoPasLog(DEBUG, "Return {} instead of {}", ret, accurate);
+      AutoPasLog(DEBUG, "Error: {}", accurate - ret);
       return ret;
     }
   }
@@ -98,25 +99,28 @@ class LJLookUpTable {
   floatType getLinear(floatType dr2) {
     AutoPasLog(DEBUG, "Linear! Point distance: {} | Number of points {} | dr2 {}", pointDistance, numberOfPoints, dr2);
     if constexpr (intervalType == evenSpacing) {
-      if (dr2 == cutoffSquared) {
-        AutoPasLog(DEBUG, "dr2 is cutoff");
+      if (dr2 >= cutoffSquared - pointDistance / 2) {
+        AutoPasLog(DEBUG, "dr2 {} is over last point {}. Returning {} Correct {}", dr2, cutoffSquared - pointDistance / 2, lut.at(numberOfPoints-1), LJFunctor(dr2));
+        AutoPasLog(DEBUG, "Error {}", LJFunctor(dr2) - lut.at(numberOfPoints - 1));
         return lut.at(numberOfPoints - 1);
+      }
+      if (dr2 <= (pointDistance / 2)) {
+        AutoPasLog(DEBUG, "dr2 {} was less or equal than half pointDistance {}. Returning {} Correct {}", dr2, pointDistance, lut.at(0), LJFunctor(dr2));
+        AutoPasLog(DEBUG, "Error: {}", LJFunctor(dr2) - lut.at(0));
+        return lut.at(0);
       }
       if (std::fmod(dr2, pointDistance) == 0) {
         AutoPasLog(DEBUG, "dr2 is multiple of pointDistance! Remainder is {}", std::fmod(dr2, pointDistance));
         return lut.at(dr2 / pointDistance);
       }
-      if (dr2 < pointDistance) {
-        AutoPasLog(DEBUG, "dr2 was less than pointDistance.");
-        return lut.at(0);
-      }
-      floatType lowerX = std::floor(dr2 / pointDistance);
-      floatType upperX = std::ceil(dr2 / pointDistance);
+      floatType lowerX = std::floor((dr2 - pointDistance / 2) / pointDistance);
+      floatType upperX = std::ceil((dr2 - pointDistance / 2) / pointDistance);
       floatType lowerY = lut.at(lowerX);
       floatType upperY = lut.at(upperX);
-      auto ret = lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX);
-      AutoPasLog(DEBUG, "lowerX: {} | upperX: {} | lowerY {} | upperY {}", lowerX, upperX, lowerY, upperY);
-      AutoPasLog(DEBUG, "Input: {} | Return: {} | Correct: {}", dr2, ret, LJFunctor(dr2));
+      lowerX = lowerX * pointDistance + pointDistance / 2;
+      upperX = upperX * pointDistance + pointDistance / 2;
+      auto ret = lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX); // Content: 0 : 0.5 : 5760 | 1 : 1.5 : -1.93141 | 2 : 2.5 : -0.535757 | 3 : 3.5 : -0.152473
+      AutoPasLog(DEBUG, "lowerX: {} | upperX: {} | lowerY {} | upperY {}\n                            Input: {} | Return: {} | Correct: {} | Error {}", lowerX, upperX, lowerY, upperY, dr2, ret, LJFunctor(dr2), LJFunctor(dr2) - ret);
       return ret;
     }
   }

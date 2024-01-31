@@ -307,11 +307,11 @@ class ParticlePropertiesLibrary {
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Cannot use multiple particle types with Look-up Table.");
     if (_storeLJData) {
-      _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 4.0});
+      _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 4.0});
     }
   }
 
-  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getLJLUT() {
+  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>& getLJLUT() {
     return _LJLookUpTable;
   }
 
@@ -353,7 +353,7 @@ class ParticlePropertiesLibrary {
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
   std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
 
-  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _LJLookUpTable;
+  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType> _LJLookUpTable;
 
 };
 
