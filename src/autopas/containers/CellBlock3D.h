@@ -447,16 +447,18 @@ inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<Parti
   for (int d = 0; d < 3; d++) {
     // defaults
     boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
-    boxmax[d] = (index3d[d] + 1) * this->_cellLength[d] + _haloBoxMin[d];
 
-    // stupid rounding errors. Make sure that the lower corner is set correctly!
+    // stupid rounding errors. Snap values to the exact box values.
     if (index3d[d] == 0) {
       boxmin[d] = _haloBoxMin[d];
-      boxmax[d] = this->_cellLength[d];
     } else if (index3d[d] == _cellsPerInteractionLength) {
+      // Case: we are at the lower boundary of the non-halo box
       boxmin[d] = _boxMin[d];
     }
-    // no else, as this might ALSO be 1
+
+    boxmax[d] = boxmin[d] + this->_cellLength[d];
+
+    // This is not an else to the if block above, if there is only one cell
     if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - _cellsPerInteractionLength - 1) {
       boxmax[d] = _boxMax[d];
     } else if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - 1) {
