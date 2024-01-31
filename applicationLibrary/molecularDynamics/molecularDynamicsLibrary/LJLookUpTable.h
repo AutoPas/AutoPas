@@ -69,12 +69,12 @@ class LJLookUpTable {
 
   void fillTableEvenSpacing () {
       for (auto i = 0; i<numberOfPoints; i++) {
-        lut.push_back(LJFunctor((i+1) * pointDistance));
+        lut.push_back(LJFunctor( (pointDistance/2) + (i * pointDistance)));
       }
       // Using std::cout because Logger isn't initiated yet, when constructors are called.
       std::cout <<  "Table filled evenly spaced with distance " << pointDistance << "\n Content: ";
       for (auto i=0; i<numberOfPoints; i++) {
-        std::cout << i << " : " << (i+1) * pointDistance << " : " << lut.at(i) << " | ";
+        std::cout << i << " : " << (pointDistance/2) + (i * pointDistance) << " : " << lut.at(i) << " | ";
       }
       std::cout << "\n";
   };
