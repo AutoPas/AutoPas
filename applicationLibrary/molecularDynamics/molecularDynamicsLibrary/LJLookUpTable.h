@@ -88,6 +88,11 @@ class LJLookUpTable {
         AutoPasLog(DEBUG, "dr2 was cutoffSquared. Returning {}", ret);
         return ret;
       }
+      // Compute perfect value for lowest dr2 where error is greatest
+      if (dr2 < pointDistance / 2) {
+        AutoPasLog(DEBUG, "dr2 is less than half pointDistance. Computing perfect value {}", LJFunctor(dr2));
+        return LJFunctor(dr2);
+      }
       auto ret = lut.at(std::floor(dr2 / pointDistance)); // How slow is std::floor?
       auto accurate = LJFunctor(dr2);
       AutoPasLog(DEBUG, "Return {} instead of {}", ret, accurate);
@@ -105,8 +110,8 @@ class LJLookUpTable {
         return lut.at(numberOfPoints - 1);
       }
       if (dr2 <= (pointDistance / 2)) {
-        AutoPasLog(DEBUG, "dr2 {} was less or equal than half pointDistance {}. Returning {} Correct {}", dr2, pointDistance, lut.at(0), LJFunctor(dr2));
-        AutoPasLog(DEBUG, "Error: {}", LJFunctor(dr2) - lut.at(0));
+        AutoPasLog(DEBUG, "dr2 {} was less or equal than half pointDistance {}. Returning perfect value {}", dr2, pointDistance / 2, LJFunctor(dr2));
+        //AutoPasLog(DEBUG, "Error: {}", LJFunctor(dr2) - lut.at(0));
         return lut.at(0);
       }
       if (std::fmod(dr2, pointDistance) == 0) {
