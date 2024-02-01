@@ -89,6 +89,8 @@ private:
  LCC08CellHandler3B<ParticleCell, Functor, dataLayout, useNewton3> _cellHandler;
 
  const std::array<long, 3> _end;
+
+ int cells_per_color = 0;
 };
 
 /**
@@ -168,6 +170,7 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::processBas
    if (isIn) {
      const unsigned long ulIndex = threeToOneD(index, signedDims);
      _cellHandler.processBaseCell(cells, ulIndex);
+     cells_per_color++;
      counter++;
    }
  }
@@ -256,7 +259,8 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseSi
      }
    }
  }
- std::cout << "C04 32 packs color " << color << " : " << counter << std::endl;
+ std::cout << "C04 32 packs color " << color << " : " << counter << "  Cells : " << cells_per_color << std::endl;
+ cells_per_color = 0;
 }
 
 }  // namespace autopas
