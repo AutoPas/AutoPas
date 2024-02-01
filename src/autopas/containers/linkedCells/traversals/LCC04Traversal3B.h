@@ -156,6 +156,7 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::processBas
  std::array<long, 3> index;
  const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension);
 
+ auto counter = 0;
  for (auto Offset32Pack : _cellOffsets32Pack) {
    // compute 3D index
    bool isIn = true;
@@ -167,7 +168,9 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::processBas
    if (isIn) {
      const unsigned long ulIndex = threeToOneD(index, signedDims);
      _cellHandler.processBaseCell(cells, ulIndex);
+     counter++;
    }
+   std::cout << counter << " ";
  }
 }
 
@@ -253,7 +256,7 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseSi
      }
    }
  }
- //std::cout << "C04 32 packs color " << color << " : " << counter << std::endl;
+ std::cout << "C04 32 packs color " << color << " : " << counter << std::endl;
 }
 
 }  // namespace autopas
