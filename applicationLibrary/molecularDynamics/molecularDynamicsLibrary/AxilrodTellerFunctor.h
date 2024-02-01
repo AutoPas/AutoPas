@@ -197,7 +197,7 @@ class AxilrodTellerFunctor
     if (distSquaredIJ > _cutoffSquared or distSquaredJK > _cutoffSquared or distSquaredKI > _cutoffSquared) {
       return;
     }
-    // LUT begin
+    // LUT beginA
     const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
     const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
     const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
@@ -216,6 +216,10 @@ class AxilrodTellerFunctor
     // factor also needs to be included in LUT
     const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
     i.addF(forceI);
+
+    // Easy part, what else do we need?
+    // -> forceI, J, K
+    // Directions?
 
     auto forceJ = forceI;
     auto forceK = forceI;

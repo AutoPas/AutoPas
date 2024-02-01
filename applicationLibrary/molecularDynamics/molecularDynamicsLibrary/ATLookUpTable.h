@@ -64,9 +64,7 @@ class ATLookUpTable {
   // Fill functions
 
   void fillTableEvenSpacing () {
-    for (auto i = 0; i<numberOfPoints; i++) {
-      lut.push_back(LJFunctor((i+1) * pointDistance));
-    }
+
   };
 
   // Interpolation functions
@@ -84,14 +82,7 @@ class ATLookUpTable {
 
   // Functor stub
 
-  floatType LJFunctor(floatType dr2) {
-    floatType invdr2 = 1. / dr2;
-    floatType lj6 = sigmaSquared * invdr2;
-    lj6 = lj6 * lj6 * lj6;
-    floatType lj12 = lj6 * lj6;
-    floatType lj12m6 = lj12 - lj6;
-    return epsilon24 * (lj12 + lj12m6) * invdr2;
-  }
+
 
 };
 

@@ -355,6 +355,7 @@ class ParticlePropertiesLibrary {
 
   ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _LJLookUpTable;
 
+
 };
 
 template <typename floatType, typename intType>
