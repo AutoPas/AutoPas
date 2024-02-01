@@ -177,7 +177,7 @@ namespace autopas::compatibleTraversals {
     case ContainerOption::dynamicVerletLists: {
       return allVLCompatibleTraversals();
     }
-    case ContainerOption::verletListsCells: 
+    case ContainerOption::verletListsCells:
     case ContainerOption::dynamicVerletListsCells: {
       return allVLCCompatibleTraversals();
     }
@@ -187,7 +187,7 @@ namespace autopas::compatibleTraversals {
     case ContainerOption::linkedCellsReferences: {
       return allRLCCompatibleTraversals();
     }
-    case ContainerOption::pairwiseVerletLists: 
+    case ContainerOption::pairwiseVerletLists:
     case ContainerOption::dynamicPairwiseVerletLists: {
       return allVLPCompatibleTraversals();
     }

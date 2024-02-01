@@ -702,8 +702,8 @@ class LogicHandler {
   /**
    * Checks if in the next iteration the neighbor lists have to be rebuilt.
    *
-   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the auto tuner tests
-   * a new configuration.
+   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
+   * auto tuner tests a new configuration.
    *
    * @return True iff the neighbor lists will not be rebuild.
    */
@@ -800,7 +800,8 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or not getContainer().neighborListsAreValid()) {
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
+      not getContainer().neighborListsAreValid()) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);

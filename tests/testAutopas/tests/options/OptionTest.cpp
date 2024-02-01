@@ -48,7 +48,10 @@ TEST(OptionTest, parseContainerOptionsTest) {
       {autopas::ContainerOption::varVerletListsAsBuild, "varVerletListsAsBuild"},
       {autopas::ContainerOption::verletClusterLists, "vclusterlists"},
       {autopas::ContainerOption::verletLists, "verletLists"},
+      {autopas::ContainerOption::dynamicVerletLists, "DynamicVerletLists"},
       {autopas::ContainerOption::verletListsCells, "verletLists-cells"},
+      {autopas::ContainerOption::dynamicVerletListsCells, "DynamicVerletListsCells"},
+      {autopas::ContainerOption::dynamicPairwiseVerletLists, "DynamicPairwiseVerletLists"},
       {autopas::ContainerOption::linkedCellsReferences, "linkedCellsreferenc"},
       {autopas::ContainerOption::pairwiseVerletLists, "pairwiseVerlet"},
       {autopas::ContainerOption::octree, "octree"}};

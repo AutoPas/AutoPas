@@ -538,17 +538,17 @@ class AutoPas {
 
   /**
    * Function to check if the container is dynamic
-   * To be used for setting fastParticlesWarn which needs to distinguish betweeen static and dynamic container 
+   * To be used for setting fastParticlesWarn which needs to distinguish betweeen static and dynamic container
    * @return true if container is dynamic
    */
-  bool checkIfDynamicallyRebuilding() { 
-    if (getContainerType() == static_cast<int>(autopas::options::ContainerOption::Value::dynamicVerletLists) or getContainerType() == static_cast<int>(autopas::options::ContainerOption::Value::dynamicVerletListsCells)) {
+  bool checkIfDynamicallyRebuilding() {
+    if (getContainerType() == static_cast<int>(autopas::options::ContainerOption::Value::dynamicVerletLists) or
+        getContainerType() == static_cast<int>(autopas::options::ContainerOption::Value::dynamicVerletListsCells)) {
       return true;
-    }
-    else {
+    } else {
       return false;
     }
-    };
+  };
 
   /**
    * Returns the number of particles in this container.

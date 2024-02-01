@@ -61,7 +61,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    * @copydoc VLCNeighborListInterface::getNumberOfParticles()
    */
   size_t getNumberOfParticles() const override { return _aosNeighborList.size(); }
-  
+
   /**
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.

@@ -14,10 +14,10 @@
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/DynamicVerletListsCells.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
 namespace autopas {
 /**

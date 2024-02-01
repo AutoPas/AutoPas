@@ -166,7 +166,7 @@ class ParticleContainerInterface {
    * @return A bool for valid
    */
   virtual bool neighborListsAreValid() = 0;
-  
+
   /**
    * Deletes all halo particles.
    */

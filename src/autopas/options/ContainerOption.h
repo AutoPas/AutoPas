@@ -72,7 +72,7 @@ class ContainerOption : public Option<ContainerOption> {
      * PairwiseVerletLists : Also similar to VerletLists but the lists are associated to each pair of neighboring cells.
      * Improves data locality and cache efficiency.
      */
-    pairwiseVerletLists,    
+    pairwiseVerletLists,
     /**
      * DynamicPairwiseVerletLists : Similar to PairwiseVerletLists but neighbor lists are not updated in fixed intervals
      * but based on the particles' movements

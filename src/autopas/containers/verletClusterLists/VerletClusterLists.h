@@ -774,7 +774,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  bool neighborListsAreValid() override { return true; }  
+  bool neighborListsAreValid() override { return true; }
 
   /**
    * Helper method to iterate over all clusters.
