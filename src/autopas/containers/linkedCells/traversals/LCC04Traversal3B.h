@@ -170,8 +170,8 @@ void LCC04Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::processBas
      _cellHandler.processBaseCell(cells, ulIndex);
      counter++;
    }
-   std::cout << counter << " ";
  }
+ std::cout << counter << " ";
 }
 
 /**
