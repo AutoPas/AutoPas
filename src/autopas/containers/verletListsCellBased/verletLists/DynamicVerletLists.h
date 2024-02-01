@@ -65,6 +65,11 @@ class DynamicVerletLists : public VerletLists<Particle> {
     VerletLists<Particle>::rebuildNeighborLists(traversal);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getContainerType()
+   */
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::dynamicVerletLists; }
+
  private:
   void generateRebuildPositionMap() {
     _particlePtr2rebuildPositionBuffer.clear();

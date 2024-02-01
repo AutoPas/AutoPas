@@ -96,7 +96,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   }
 
   size_t index = 0;
-  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false, false);
+  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only change in one direction is expected
     EXPECT_EQ(iter->getR()[0], referencePositions1[index][0]);
@@ -128,7 +128,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
                                                                   {1, 1, 0.105}, {0, 0, 1.105}, {1, 0, 1.105},
                                                                   {0, 1, 1.105}, {1, 1, 1.105}};
 
-  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false, false);
+  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
   index = 0;
 
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
@@ -140,7 +140,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   }
 
   // Check that force is reset correctly to some non-zero global force.
-  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {-4.5, 2.3, 0.01}, false, false);
+  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {-4.5, 2.3, 0.01}, false);
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     EXPECT_DOUBLE_EQ(iter->getF()[0], -4.5);
     EXPECT_DOUBLE_EQ(iter->getF()[1], 2.3);
@@ -482,11 +482,11 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
 #else
   autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, 0));
 #endif
-  EXPECT_NO_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true, true))
+  EXPECT_NO_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true))
       << "Updating the position of a slow particle should not throw an exception.";
   // fast particle -> exception
   autoPas->begin()->setV({1., 0., 0.});
-  EXPECT_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true, true),
+  EXPECT_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true),
                std::runtime_error)
       << "The particle moved farther than the allowed change in position but no exception was thrown.";
 }
