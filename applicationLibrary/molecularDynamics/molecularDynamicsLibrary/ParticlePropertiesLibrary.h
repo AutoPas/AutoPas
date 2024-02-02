@@ -309,10 +309,17 @@ class ParticlePropertiesLibrary {
     if (_storeLJData) {
       _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 4.0});
     }
+    if (_storeATData) {
+      _ATLookUpTable = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 4.0});
+    }
   }
 
   ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getLJLUT() {
     return _LJLookUpTable;
+  }
+
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getATLUT() {
+    return _ATLookUpTable;
   }
 
 
@@ -354,6 +361,7 @@ class ParticlePropertiesLibrary {
   std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
 
   ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _LJLookUpTable;
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _ATLookUpTable;
 
 
 };

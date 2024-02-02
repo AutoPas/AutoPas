@@ -92,11 +92,11 @@ namespace mdLib {
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  */
-template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class Particle, bool useMixing = false, bool useLUT = false,autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false>
 class AxilrodTellerFunctor
     : public autopas::TriwiseFunctor<Particle,
-                                     AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>> {
+                                     AxilrodTellerFunctor<Particle, useMixing, useLUT, useNewton3, calculateGlobals>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -120,7 +120,7 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>>(
+      : autopas::TriwiseFunctor<Particle, AxilrodTellerFunctor<Particle, useMixing, useLUT, useNewton3, calculateGlobals>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -198,48 +198,72 @@ class AxilrodTellerFunctor
       return;
     }
     // LUT beginA
-    const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
-    const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
-    const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
-    const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
 
-    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-    const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-    const double factor = 3.0 * nu / allDistsTo5;
+    const std::array<double, 3> forceI = {0., 0., 0.};
+    std::array<double, 3> forceJ;
+    std::array<double, 3> forceK;
+    double factor;
+    double allDistsSquared;
+    double allDotProducts;
+    double potentialEnergy = 0.;
 
-    const auto forceIDirectionJK = displacementJK * IJDotKI * (IJDotJK - JKDotKI); // return from LUT (* factor)
-    const auto forceIDirectionIJ =
-        displacementIJ * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI + 5.0 * allDotProducts / distSquaredIJ); // return from LUT (* factor)
-    const auto forceIDirectionKI =
-        displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK - 5.0 * allDotProducts / distSquaredKI); // return from LUT (* factor)
 
-    // factor also needs to be included in LUT
-    const auto forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
-    i.addF(forceI);
+    if constexpr (useLUT) {
+      AutoPasLog(DEBUG, "Used LUT with {} | {} | {}", displacementIJ, displacementJK, displacementKI);
+      auto values = _PPLibrary->getATLUT().retrieveValue(displacementIJ, displacementJK, displacementKI);
+      forceI = values.first.at(0);
+      forceJ = values.first.at(1);
+      forceK = values.first.at(2);
+      potentialEnergy = values.second;
+    }
+    else {
+      const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
+      const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
+      const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
+      allDotProducts = IJDotKI * IJDotJK * JKDotKI;
 
-    // Easy part, what else do we need?
-    // -> forceI, J, K
-    // Directions?
+      allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+      const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+      factor = 3.0 * nu / allDistsTo5;
 
-    auto forceJ = forceI;
-    auto forceK = forceI;
-    if (newton3) {
-      const auto forceJDirectionKI = displacementKI * IJDotJK * (JKDotKI - IJDotKI);
-      const auto forceJDirectionIJ =
-          displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI - 5.0 * allDotProducts / distSquaredIJ);
-      const auto forceJDirectionJK =
-          displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
+      const auto forceIDirectionJK = displacementJK * IJDotKI * (IJDotJK - JKDotKI);  // return from LUT (* factor)
+      const auto forceIDirectionIJ =
+          displacementIJ * (IJDotJK * JKDotKI - distSquaredJK * distSquaredKI +
+                            5.0 * allDotProducts / distSquaredIJ);  // return from LUT (* factor)
+      const auto forceIDirectionKI =
+          displacementKI * (-IJDotJK * JKDotKI + distSquaredIJ * distSquaredJK -
+                            5.0 * allDotProducts / distSquaredKI);  // return from LUT (* factor)
 
-      forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
-      j.addF(forceJ);
+      // factor also needs to be included in LUT
+      forceI = (forceIDirectionJK + forceIDirectionIJ + forceIDirectionKI) * factor;
+      i.addF(forceI);
 
-      forceK = (forceI + forceJ) * (-1.0);
-      k.addF(forceK);
+      // Easy part, what else do we need?
+      // -> forceI, J, K
+      // Directions?
+
+      forceJ = forceI;
+      forceK = forceI;
+      if (newton3) {
+        const auto forceJDirectionKI = displacementKI * IJDotJK * (JKDotKI - IJDotKI);
+        const auto forceJDirectionIJ = displacementIJ * (-IJDotKI * JKDotKI + distSquaredJK * distSquaredKI -
+                                                         5.0 * allDotProducts / distSquaredIJ);
+        const auto forceJDirectionJK =
+            displacementJK * (IJDotKI * JKDotKI - distSquaredIJ * distSquaredKI + 5.0 * allDotProducts / distSquaredJK);
+
+        forceJ = (forceJDirectionKI + forceJDirectionIJ + forceJDirectionJK) * factor;
+        j.addF(forceJ);
+
+        forceK = (forceI + forceJ) * (-1.0);
+        k.addF(forceK);
+      }
     }
 
     if constexpr (calculateGlobals) {
       // Calculate third of total potential energy from 3-body interaction
-      const double potentialEnergy = factor * (allDistsSquared - 3.0 * allDotProducts) / 9.0;
+      if constexpr (!useLUT) {
+        potentialEnergy = factor * (allDistsSquared - 3.0 * allDotProducts) / 9.0;
+      }
 
       // Virial is calculated as f_i * r_i
       // see Thompson et al.: https://doi.org/10.1063/1.3245303
