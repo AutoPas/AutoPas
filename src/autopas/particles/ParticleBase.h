@@ -188,17 +188,16 @@ class ParticleBase {
    * is less than a given max distance.
    * This max distance usually should be the skin per timestep divided by two.
    *
+   * @note uses setRDistanceCheck()
+   *
    * @param r vector to be added
-   * @param maxDistSquared The maximum allowed movement distance squared.
+   * @param maxDistSquared The maximum expected movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
   bool addRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
-    const auto oldR = _r;
-    addR(r);
-    const auto distanceVec = _r - oldR;
-    const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
-    return distanceSquared < maxDistSquared;
+    const auto newR = _r + r;
+    return setRDistanceCheck(newR, maxDistSquared);
   }
 
   /**
