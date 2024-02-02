@@ -161,7 +161,7 @@ class ParticleBase {
    * @param maxDistSquared The maximum allowed movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
-  bool setRDistanceOk(const std::array<double, 3> &r, double maxDistSquared) {
+  bool setRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto distanceVec = r - _r;
     const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
@@ -187,7 +187,7 @@ class ParticleBase {
    * @param maxDistSquared The maximum allowed movement distance squared.
    * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
    */
-  bool addRDistanceOk(const std::array<double, 3> &r, double maxDistSquared) {
+  bool addRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
     using namespace autopas::utils::ArrayMath::literals;
     const auto oldR = _r;
     addR(r);

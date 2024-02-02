@@ -38,7 +38,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
     // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
-    if (not iter->addRDistanceOk(displacement, maxAllowedDistanceMovedSquared) and maxAllowedDistanceMovedSquared > 0) {
+    if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and maxAllowedDistanceMovedSquared > 0) {
       const auto distanceMoved = std::sqrt(dot(displacement, displacement));
       // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
       // the whole rebuild frequency is farther than the skin we lose interactions.

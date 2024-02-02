@@ -55,18 +55,18 @@ TEST(myMoleculeTest, testMovingParticles) {
   const double maxAllowedDistSquared = 1;
   {
     MyMolecule m(zero, zero, 0, 0);
-    EXPECT_TRUE(m.setRDistanceOk({0.5, 0.0, 0.0}, maxAllowedDistSquared));
+    EXPECT_TRUE(m.setRDistanceCheck({0.5, 0.0, 0.0}, maxAllowedDistSquared));
   }
   {
     MyMolecule m(zero, zero, 0, 0);
-    EXPECT_FALSE(m.setRDistanceOk({1.5, 0.0, 0.0}, maxAllowedDistSquared));
+    EXPECT_FALSE(m.setRDistanceCheck({1.5, 0.0, 0.0}, maxAllowedDistSquared));
   }
   {
     MyMolecule m(zero, zero, 0, 0);
-    EXPECT_TRUE(m.addRDistanceOk({0.5, 0.0, 0.0}, maxAllowedDistSquared));
+    EXPECT_TRUE(m.addRDistanceCheck({0.5, 0.0, 0.0}, maxAllowedDistSquared));
   }
   {
     MyMolecule m(zero, zero, 0, 0);
-    EXPECT_FALSE(m.addRDistanceOk({1.5, 0.0, 0.0}, maxAllowedDistSquared));
+    EXPECT_FALSE(m.addRDistanceCheck({1.5, 0.0, 0.0}, maxAllowedDistSquared));
   }
 }
