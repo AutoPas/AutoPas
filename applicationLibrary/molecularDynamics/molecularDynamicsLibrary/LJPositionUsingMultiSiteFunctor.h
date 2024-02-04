@@ -189,10 +189,10 @@ public:
    const auto paR = particleA.getR();
    const auto pbR = particleB.getR();
 
-#if not defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
    const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
    const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
 
+#if not defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
    if (distanceSquaredCoM > _cutoffSquared) {
      return;
    }

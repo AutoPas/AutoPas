@@ -4,6 +4,7 @@
 #SBATCH -D ./
 #SBATCH --clusters=cm2  #not entirely sure what these 2 lines do yet ^^
 #SBATCH --partition=cm2_std
+#SBATCH --cpus-per-task=4
 #SBATCH --get-user-env
 #SBATCH --mail-type=end
 #SBATCH --mem=200mb
