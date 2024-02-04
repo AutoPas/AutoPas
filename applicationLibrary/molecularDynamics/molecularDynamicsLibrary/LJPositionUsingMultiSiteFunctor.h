@@ -188,12 +188,15 @@ public:
    // Don't calculate force if particleB outside cutoff of particleA
    const auto paR = particleA.getR();
    const auto pbR = particleB.getR();
+
+#if not defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
    const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
    const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
 
    if (distanceSquaredCoM > _cutoffSquared) {
      return;
    }
+#endif
 
    // get number of sites
    //const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
@@ -229,6 +232,12 @@ public:
        //const auto displacement = autopas::utils::ArrayMath::add(
        //    autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
        const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
+
+#if defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
+       if (distanceSquared > _cutoffSquared) {
+          continue;
+       }
+#endif
 
        //if(!std::equal(displacement_copy.begin(), displacement_copy.end(), displacement.begin(), [&](auto lhs, auto rhs){
        //      return (((lhs-rhs) < 0.001) and ((-(lhs-rhs))<0.001));
