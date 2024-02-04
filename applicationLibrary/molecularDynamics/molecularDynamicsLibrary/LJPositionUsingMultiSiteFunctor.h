@@ -226,11 +226,8 @@ public:
      for (int j = 0; j < numSitesB; j++) {
        const auto relSitePosA = particleA.getRelativeSitePosition(i);
        const auto relSitePosB = particleB.getRelativeSitePosition(j);
-       const auto absSitePosA = autopas::utils::ArrayMath::add(particleA.getR(), relSitePosA);
-       const auto absSitePosB = autopas::utils::ArrayMath::add(particleB.getR(), relSitePosB);
-       const auto displacement = autopas::utils::ArrayMath::sub(absSitePosA, absSitePosB);
-       //const auto displacement = autopas::utils::ArrayMath::add(
-       //    autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
+       const auto displacement = autopas::utils::ArrayMath::add(
+           autopas::utils::ArrayMath::sub(displacementCoM, relSitePosB), relSitePosA);
        const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
 #if defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)

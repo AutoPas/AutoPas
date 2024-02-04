@@ -49,6 +49,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_TORQUE_AFTER_FORCE}>:MD_FLEXIBLE_TORQUE_AFTER_FORCE>
+        $<$<BOOL:${MD_FLEXIBLE_STS_AOS_FUNCTOR}>:MD_FLEXIBLE_STS_AOS_FUNCTOR>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---

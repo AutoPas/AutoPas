@@ -79,6 +79,12 @@ int main(int argc, char **argv) {
   std::cout<<"OMP AutoVectorization NOT disabled" << std::endl;
 #endif
 
+#if defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
+  std::cout<<"Using StS-cutoff in AoS-functor" << std::endl;
+#else
+  std::cout<<"Using CoM-cutoff in AoS-functor" << std::endl;
+#endif
+
     simulation.run();
     simulation.finalize();
 

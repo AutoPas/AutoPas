@@ -174,11 +174,11 @@ class LJMultisiteFunctor
       return;
     }
 
-#if not defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
     // Don't calculate force if particleB outside cutoff of particleA
     const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
     const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
 
+#if not defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
     if (distanceSquaredCoM > _cutoffSquared) {
       return;
     }
