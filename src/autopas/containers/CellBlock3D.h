@@ -458,8 +458,8 @@ inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<Parti
 
     boxmax[d] = boxmin[d] + this->_cellLength[d];
 
-    // This must not be an else to the if block above.
-    // If the above is true, this can also be true if there is e.g. only one cell
+    // This must not be an else to the if block above as both cases can be true.
+    // e.g. if there is only one cell
     if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - _cellsPerInteractionLength - 1) {
       boxmax[d] = _boxMax[d];
     } else if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - 1) {
