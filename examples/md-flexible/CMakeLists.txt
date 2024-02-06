@@ -20,6 +20,12 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_AVX512_MASK "If instruction set is available, compile AVX512 Functor using masks, without calculation of global values. In the multi-site case, the cutoff is based of site-to-site distances." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AVX512_GS "If instruction set is available, compile AVX512 Functor using gather/scatter instructions, without calculation of global values. In the multi-site case, the cutoff is based on center-of-mass to center-of-mass distances." OFF)
+
+
+# todo clean this up
+option(MD_FLEXIBLE_FUNCTOR_AVX_STS "If instruction set is available and Multi-site mode is activated, compile AVX512 Multisite Functor with Site-to-Site cutoffs" OFF)
 
 target_compile_definitions(
         md-flexible
@@ -28,13 +34,22 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX512_MASK}>:MD_FLEXIBLE_FUNCTOR_AVX512_MASK>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX512_GS}>:MD_FLEXIBLE_FUNCTOR_AVX512_GS>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
 string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
-if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
+if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
+    if (MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+        message(WARNING "AVX512 Functor with masking has not been implemented for Single-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_AVX512_GS)
+        message(WARNING "AVX512 Functor with gather/scatter instructions has not been implemented for Single-Site Molecules")
+    endif()
+elseif (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     if (MD_FLEXIBLE_FUNCTOR_AVX)
-        message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+        message(WARNING "AVX Lennard-Jones functor has not been implemented for Multi-Site Molecules. If your machine can use AVX512 instructions, consider using a variant of the AVX512 functor.")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
