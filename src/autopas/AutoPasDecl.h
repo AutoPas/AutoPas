@@ -385,9 +385,10 @@ class AutoPas {
   [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
-   * iterate over all particles in a specified region
-   * for(auto iter = container.getRegionIterator(lowCorner,
-   * highCorner);iter.isValid();++iter)
+   * Iterate over all particles in a specified region
+   * ```cpp
+   * for (auto iter = container.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) { }
+   * ```
    * @param lowerCorner lower corner of the region
    * @param higherCorner higher corner of the region
    * @param behavior the behavior of the iterator. You can specify whether to iterate over owned particles, halo
