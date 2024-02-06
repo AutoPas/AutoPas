@@ -241,9 +241,7 @@ class ParticleContainerInterface {
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
-   * End expression for all containers, this simply returns false.
-   * Allows range-based for loops.
-   * @return false
+   * @copydoc autopas::AutoPas::end()
    */
   [[nodiscard]] constexpr bool end() const { return false; }
 

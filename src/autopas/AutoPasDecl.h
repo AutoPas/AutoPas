@@ -373,9 +373,13 @@ class AutoPas {
   ConstIteratorT cbegin(IteratorBehavior behavior = IteratorBehavior::ownedOrHalo) const { return begin(behavior); }
 
   /**
-   * Helper to enable range-based for loops for the AutoPas object.
-   * ParticleIterator::operator==() compares its own validity state against this value. Hence, as soon as the iterator
-   * is invalid the loop ends.
+   * Dummy to make range-based for loops work.
+   *
+   * Range-Based for loops use the incremented begin() expression and compare it against the end() expression.
+   * ContainerIterator implements ContainerIterator::operator==() that accepts a bool as right hand side argument,
+   * which is triggered by this end() function.
+   * This operator then proceeds to check the validity of the iterator itself.
+   *
    * @return false
    */
   [[nodiscard]] constexpr bool end() const { return false; }
