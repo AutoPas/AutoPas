@@ -1,3 +1,4 @@
+
 /**
  * @file LinkedCellsTest.h
  * @author seckler
@@ -22,10 +23,9 @@ class LinkedCellsTest : public AutoPasTestBase {
   /// using keepListsValid = std::tuple_element_t<1, TestingType>;
   using LinkedCellsType = typename TestingType::first_t;
   using KeepListsValid = typename TestingType::second_t;
-  LinkedCellsTest() : _linkedCells({0., 0., 0.}, {10., 10., 10.}, 1., 0., 1.) {}
+  LinkedCellsTest() {}
 
  protected:
-  LinkedCellsType _linkedCells;
   bool _keepListsValid{KeepListsValid()};
 
   void checkParticleIDsInCells(

@@ -11,7 +11,7 @@
 TYPED_TEST_SUITE_P(LinkedCellsTest);
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
-  decltype(this->_linkedCells) linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
+  typename TestFixture::LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
 
   // create owned particles
   const autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
@@ -87,18 +87,25 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
 }
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
+  const std::array<double, 3> boxMin{0., 0., 0.};
+  const std::array<double, 3> boxMax{10., 10., 10.};
+  const double cutoff{1.};
+  const double skinPerTimestep{0.0};
+  const double rebuildFrequency{1.};
+  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency);
+
   int id = 1;
   for (const double x : {0., 5., 9.999}) {
     for (const double y : {0., 5., 9.999}) {
       for (const double z : {0., 5., 9.999}) {
         const autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
-        EXPECT_NO_THROW(this->_linkedCells.addParticle(p));  // inside, therefore ok!
+        EXPECT_NO_THROW(linkedCells.addParticle(p));  // inside, therefore ok!
       }
     }
   }
   std::set<unsigned long> movedIDs;
   // we move particles that are close to the boundary to outside the container and remember their IDs
-  for (auto iter = this->_linkedCells.begin(); iter.isValid(); ++iter) {
+  for (auto iter = linkedCells.begin(); iter.isValid(); ++iter) {
     for (unsigned short dim = 0; dim < 3; ++dim) {
       if (iter->getR()[dim] < 0.5) {
         auto r = iter->getR();
@@ -119,7 +126,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   // now update the container!
   const auto invalidParticles = linkedCells.updateContainer(this->_keepListsValid);
   // the particles should no longer be in the inner cells!
-  for (auto iter = this->_linkedCells.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+  for (auto iter = linkedCells.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     EXPECT_EQ(movedIDs.count(iter->getID()), 0)
         << "Particle " << iter->getID() << " at " << autopas::utils::ArrayUtils::to_string(iter->getR())
         << " is still in an inner cell although it was moved!";
@@ -146,7 +153,7 @@ struct two_values {
   using second_t = second;
 };
 
-// defines the types of _linkedCells and _keepListsValid
+// defines the types of linkedCells and _keepListsValid
 struct LC_KeepListsValid : two_values<autopas::LinkedCells<Particle>, std::true_type> {};
 struct LC_DontKeepListsValid : two_values<autopas::LinkedCells<Particle>, std::false_type> {};
 struct LCRef_KeepListsValid : two_values<autopas::LinkedCellsReferences<Particle>, std::true_type> {};
