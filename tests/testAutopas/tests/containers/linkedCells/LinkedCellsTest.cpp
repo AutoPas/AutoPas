@@ -14,17 +14,17 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   decltype(this->_linkedCells) linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
 
   // create owned particles
-  autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
-  autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
-  autopas::Particle p3({1.6, 1.5, 1.5}, {0, 0, 0}, 2);
-  autopas::Particle p4({2.5, 1.5, 1.5}, {0, 0, 0}, 3);
-  autopas::Particle p5({2.5, 2.5, 2.5}, {0, 0, 0}, 4);
+  const autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
+  const autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
+  const autopas::Particle p3({1.6, 1.5, 1.5}, {0, 0, 0}, 2);
+  const autopas::Particle p4({2.5, 1.5, 1.5}, {0, 0, 0}, 3);
+  const autopas::Particle p5({2.5, 2.5, 2.5}, {0, 0, 0}, 4);
 
   // These are going to be halo particles
-  autopas::Particle p6({-0.5, 1.5, 1.5}, {0, 0, 0}, 5);
-  autopas::Particle p7({3.5, 1.5, 1.5}, {0, 0, 0}, 6);
-  autopas::Particle p8({1.5, -0.5, 1.5}, {0, 0, 0}, 7);
-  autopas::Particle p9({1.5, 1.5, -0.5}, {0, 0, 0}, 8);
+  const autopas::Particle p6({-0.5, 1.5, 1.5}, {0, 0, 0}, 5);
+  const autopas::Particle p7({3.5, 1.5, 1.5}, {0, 0, 0}, 6);
+  const autopas::Particle p8({1.5, -0.5, 1.5}, {0, 0, 0}, 7);
+  const autopas::Particle p9({1.5, 1.5, -0.5}, {0, 0, 0}, 8);
 
   // we insert owned and halo particles alternating. This way we can check if references are updated correctly when
   // using LinkedCellsReferences
@@ -88,10 +88,10 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   int id = 1;
-  for (double x : {0., 5., 9.999}) {
-    for (double y : {0., 5., 9.999}) {
-      for (double z : {0., 5., 9.999}) {
-        autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+  for (const double x : {0., 5., 9.999}) {
+    for (const double y : {0., 5., 9.999}) {
+      for (const double z : {0., 5., 9.999}) {
+        const autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
         EXPECT_NO_THROW(this->_linkedCells.addParticle(p));  // inside, therefore ok!
       }
     }
@@ -117,7 +117,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   }
 
   // now update the container!
-  auto invalidParticles = this->_linkedCells.updateContainer(this->_keepListsValid);
+  const auto invalidParticles = linkedCells.updateContainer(this->_keepListsValid);
   // the particles should no longer be in the inner cells!
   for (auto iter = this->_linkedCells.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     EXPECT_EQ(movedIDs.count(iter->getID()), 0)
@@ -127,7 +127,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
 
   // the particles should now be inside the invalidParticles vector!
   EXPECT_EQ(movedIDs.size(), invalidParticles.size());
-  for (auto &particle : invalidParticles) {
+  for (const auto &particle : invalidParticles) {
     EXPECT_EQ(movedIDs.count(particle.getID()), 1)
         << "Particle " << particle.getID() << " at " << autopas::utils::ArrayUtils::to_string(particle.getR())
         << " was not returned by updateContainer()!";
