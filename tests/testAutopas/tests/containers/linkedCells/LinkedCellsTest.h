@@ -1,4 +1,3 @@
-
 /**
  * @file LinkedCellsTest.h
  * @author seckler
