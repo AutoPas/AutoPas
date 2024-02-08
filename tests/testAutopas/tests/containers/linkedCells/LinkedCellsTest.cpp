@@ -11,86 +11,120 @@
 TYPED_TEST_SUITE_P(LinkedCellsTest);
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
-  typename TestFixture::LinkedCellsType linkedCells({0., 0., 0.}, {3., 3., 3.}, 1., 0., 1.);
+  using namespace autopas::utils::ArrayMath::literals;
+
+  const std::array<double, 3> zero{0., 0., 0.};
+  const std::array<double, 3> boxMin = zero;
+  const std::array<double, 3> boxMax{4.5, 4.5, 4.5};
+  // set values so we have 3x3x3 cells + halo = 5x5x5
+  const double cutoff{1.0};
+  const double skinPerTimestep{0.1};
+  const double rebuildFrequency{5.};
+  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency);
 
   // create owned particles
-  const autopas::Particle p1({0.5, 0.5, 0.5}, {0, 0, 0}, 0);
-  const autopas::Particle p2({1.5, 1.5, 1.5}, {0, 0, 0}, 1);
-  const autopas::Particle p3({1.6, 1.5, 1.5}, {0, 0, 0}, 2);
-  const autopas::Particle p4({2.5, 1.5, 1.5}, {0, 0, 0}, 3);
-  const autopas::Particle p5({2.5, 2.5, 2.5}, {0, 0, 0}, 4);
+  const std::vector<autopas::Particle> ownedParticles{
+      // clang-format off
+      {{0.5, 0.5, 0.5}, zero, 0},
+      {{1.5, 1.5, 1.5}, zero, 1},
+      {{1.6, 1.5, 1.5}, zero, 2},
+      {{4.4, 1.5, 1.5}, zero, 3},
+      {{4.0, 4.0, 4.0}, zero, 4},
+      // clang-format on
+  };
 
   // These are going to be halo particles
-  const autopas::Particle p6({-0.5, 1.5, 1.5}, {0, 0, 0}, 5);
-  const autopas::Particle p7({3.5, 1.5, 1.5}, {0, 0, 0}, 6);
-  const autopas::Particle p8({1.5, -0.5, 1.5}, {0, 0, 0}, 7);
-  const autopas::Particle p9({1.5, 1.5, -0.5}, {0, 0, 0}, 8);
+  const std::vector<autopas::Particle> haloParticles{
+      {{-0.5, +1.5, +1.5}, zero, 5},
+      {{+5.0, +1.5, +1.5}, zero, 6},
+      {{+1.5, -0.5, +1.5}, zero, 7},
+      {{+1.5, +1.5, -0.5}, zero, 8},
+  };
+
+  // calculate the cell IDs for each particle
+  std::unordered_map<size_t, size_t> particleIdToCellIdMap;
+  for (const auto &particleCollection : {ownedParticles, haloParticles}) {
+    for (const auto &particle : particleCollection) {
+      const auto cellID = linkedCells.getCellBlock().get1DIndexOfPosition(particle.getR());
+      particleIdToCellIdMap[particle.getID()] = cellID;
+    }
+  }
+  ASSERT_EQ(particleIdToCellIdMap.size(), ownedParticles.size() + haloParticles.size())
+      << "There should be exactly one cellID per particleID.\n"
+         "Either the test is set up wrong or get1DIndexOfPosition is broken.";
 
   // we insert owned and halo particles alternating. This way we can check if references are updated correctly when
   // using LinkedCellsReferences
-  linkedCells.addParticle(p1);
-  linkedCells.addHaloParticle(p6);
-  linkedCells.addParticle(p2);
-  linkedCells.addHaloParticle(p7);
-  linkedCells.addParticle(p3);
-  linkedCells.addHaloParticle(p8);
-  linkedCells.addParticle(p4);
-  linkedCells.addHaloParticle(p9);
-  linkedCells.addParticle(p5);
+  linkedCells.addParticle(ownedParticles[0]);
+  linkedCells.addHaloParticle(haloParticles[0]);
+  linkedCells.addParticle(ownedParticles[1]);
+  linkedCells.addHaloParticle(haloParticles[1]);
+  linkedCells.addParticle(ownedParticles[2]);
+  linkedCells.addHaloParticle(haloParticles[2]);
+  linkedCells.addParticle(ownedParticles[3]);
+  linkedCells.addHaloParticle(haloParticles[3]);
+  linkedCells.addParticle(ownedParticles[4]);
 
-  this->checkParticleIDsInCells(linkedCells,
-                                {{12ul, {{8, autopas::OwnershipState::halo}}},
-                                 {31ul, {{0, autopas::OwnershipState::owned}}},
-                                 {52ul, {{7, autopas::OwnershipState::halo}}},
-                                 {60ul, {{5, autopas::OwnershipState::halo}}},
-                                 {62ul, {{1, autopas::OwnershipState::owned}, {2, autopas::OwnershipState::owned}}},
-                                 {63ul, {{3, autopas::OwnershipState::owned}}},
-                                 {64ul, {{6, autopas::OwnershipState::halo}}},
-                                 {93ul, {{4, autopas::OwnershipState::owned}}}},
-                                true, __LINE__);
+  this->checkParticleIDsInCells(
+      linkedCells,
+      {{particleIdToCellIdMap[8], {{8, autopas::OwnershipState::halo}}},
+       {particleIdToCellIdMap[0], {{0, autopas::OwnershipState::owned}}},
+       {particleIdToCellIdMap[7], {{7, autopas::OwnershipState::halo}}},
+       {particleIdToCellIdMap[5], {{5, autopas::OwnershipState::halo}}},
+       {particleIdToCellIdMap[3], {{3, autopas::OwnershipState::owned}}},
+       {particleIdToCellIdMap[1], {{1, autopas::OwnershipState::owned}, {2, autopas::OwnershipState::owned}}},
+       {particleIdToCellIdMap[6], {{6, autopas::OwnershipState::halo}}},
+       {particleIdToCellIdMap[4], {{4, autopas::OwnershipState::owned}}}},
+      true, __LINE__);
 
   // // new locations for owned particles
-  linkedCells.getCells()[31].begin()->setR({1.5, 0.5, 0.5});
-  linkedCells.getCells()[62].begin()->setR({2.5, 1.5, 0.5});
-  linkedCells.getCells()[63].begin()->setR({-0.5, -0.5, -0.5});
-  linkedCells.getCells()[93].begin()->setR({1.6, 0.5, 0.5});
+  linkedCells.getCells()[particleIdToCellIdMap[0]].begin()->addR({+2.0, +0.0, +0.0});  // move to {1.5, 0.5, 0.5}
+  linkedCells.getCells()[particleIdToCellIdMap[1]].begin()->addR({-1.0, -0.0, -0.0});  // move to {-0.5, 1.5, 1.5}
+  linkedCells.getCells()[particleIdToCellIdMap[3]].begin()->addR({+0.2, +0.0, -1.0});  // move to {5.0, 1.5, 0.5}
+  linkedCells.getCells()[particleIdToCellIdMap[4]].begin()->addR({-0.9, -2.0, -2.0});  // move to {1.6, 0.5, 0.5}
 
   std::vector<Particle> invalidParticles;
   EXPECT_NO_THROW(invalidParticles = linkedCells.updateContainer(this->_keepListsValid));
 
-  ASSERT_EQ(invalidParticles.size(), 1);
+  EXPECT_EQ(invalidParticles.size(), 1);
   EXPECT_EQ(invalidParticles[0].getID(), 3);
 
   if (this->_keepListsValid) {
     // if the lists are kept valid, particles are NOT moved between cells!
     // halo particles should now be dummies
     // particle 3 should be a leaving particle and therefore a dummy
-    this->checkParticleIDsInCells(linkedCells,
-                                  {{12ul, {{8, autopas::OwnershipState::dummy}}},
-                                   {31ul, {{0, autopas::OwnershipState::owned}}},
-                                   {52ul, {{7, autopas::OwnershipState::dummy}}},
-                                   {60ul, {{5, autopas::OwnershipState::dummy}}},
-                                   {62ul, {{1, autopas::OwnershipState::owned}, {2, autopas::OwnershipState::owned}}},
-                                   {63ul, {{3, autopas::OwnershipState::dummy}}},
-                                   {64ul, {{6, autopas::OwnershipState::dummy}}},
-                                   {93ul, {{4, autopas::OwnershipState::owned}}}},
-                                  true, __LINE__);
+    this->checkParticleIDsInCells(
+        linkedCells,
+        {{particleIdToCellIdMap[8], {{8, autopas::OwnershipState::dummy}}},
+         {particleIdToCellIdMap[0], {{0, autopas::OwnershipState::owned}}},
+         {particleIdToCellIdMap[7], {{7, autopas::OwnershipState::dummy}}},
+         {particleIdToCellIdMap[5], {{5, autopas::OwnershipState::dummy}}},
+         {particleIdToCellIdMap[3], {{3, autopas::OwnershipState::dummy}}},
+         {particleIdToCellIdMap[1], {{1, autopas::OwnershipState::owned}, {2, autopas::OwnershipState::owned}}},
+         {particleIdToCellIdMap[6], {{6, autopas::OwnershipState::dummy}}},
+         {particleIdToCellIdMap[4], {{4, autopas::OwnershipState::owned}}}},
+        true, __LINE__);
   } else {
     // if the lists are not kept valid, particles should be moved between cells, so update the cells!
     // halo particles should be removed by updateContainer() at this point
-    this->checkParticleIDsInCells(linkedCells,
-                                  {{32ul, {{0, autopas::OwnershipState::owned}, {4, autopas::OwnershipState::owned}}},
-                                   {38ul, {{1, autopas::OwnershipState::owned}}},
-                                   {62ul, {{2, autopas::OwnershipState::owned}}}},
-                                  false /*here, we do not know the order!*/, __LINE__);
+    this->checkParticleIDsInCells(
+        linkedCells,
+        {
+            {particleIdToCellIdMap[0] + 1, {{0, autopas::OwnershipState::owned}}},  // moved one cell to the right
+            {particleIdToCellIdMap[1] - 1, {{1, autopas::OwnershipState::owned}}},  // moved one cell to the left
+            {particleIdToCellIdMap[2], {{2, autopas::OwnershipState::owned}}},      // didn't change cell
+            {particleIdToCellIdMap[4] - (0 + 1 * 5 + 1 * 5 * 5),
+             {{4, autopas::OwnershipState::owned}}},  // moved one cell to the front and one down
+        },
+        false /*here, we do not know the order!*/, __LINE__);
   }
 }
 
 TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   const std::array<double, 3> boxMin{0., 0., 0.};
   const std::array<double, 3> boxMax{10., 10., 10.};
-  const double cutoff{1.};
-  const double skinPerTimestep{0.0};
+  const double cutoff{1.5};
+  const double skinPerTimestep{1.};  // particles are moved by up to 0.5 and lists might be kept valid
   const double rebuildFrequency{1.};
   typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency);
 
