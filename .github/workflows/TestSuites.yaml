@@ -125,7 +125,7 @@ jobs:
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DAUTOPAS_ENABLE_ALLLBL=${UseMPI} \
             ..
-          entrypoint.sh cmake --build . --parallel 2 
+          entrypoint.sh cmake --build . --parallel 3 
       - name: Run tests ${{ matrix.part }}/2
         run: |
           # If single-site & No MPI, run every other AutoPas and example test
