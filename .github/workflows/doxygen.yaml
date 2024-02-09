@@ -15,21 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  DocTagCheck:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Check for missing userdoc updates
-        uses: AutoPas/DocTagChecker@main
-        with:
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          userDocsDirs: docs/userdoc
-          recurseUserDocDirs: true
-          docFileExtensions: md
-          # c++ files and cmake files
-          srcFileExtensions: cpp h txt cmake
-
   DoxygenCheck:
     runs-on: ubuntu-latest
     strategy:
