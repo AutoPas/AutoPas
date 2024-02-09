@@ -789,6 +789,7 @@ class LogicHandler {
    */
   unsigned int _stepsSinceLastListRebuild{std::numeric_limits<unsigned int>::max()};
 
+  unsigned int _relevantFunctorCalls{0};
   /**
    * The current iteration number.
    */
@@ -849,10 +850,12 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
   // TODO: might need to be separated for 3-body - maybe move logic to AutoTuner
-  auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 &&
-                         _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists();
+  auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
+                         _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists() and
+                         not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
   auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 &&
-                        _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists();
+                        _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
+                            not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
@@ -1459,6 +1462,13 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
       _stepsSinceLastListRebuild = 0;
     }
     ++_stepsSinceLastListRebuild;
+    ++_relevantFunctorCalls;
+    // In case of pairwise plus triwise interactions, assume that each functor is called exactly once per timestep.
+    if (_relevantFunctorCalls % _interactionTypes.size() == 0) {
+      ++_iteration;
+    }
+    bool needToWait = checkTuningStates(interactionType);
+    autoTuner->bumpIterationCounters(needToWait);
   }
   return stillTuning;
 }
