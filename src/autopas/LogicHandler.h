@@ -296,7 +296,10 @@ class LogicHandler {
       buffer.reserve(numHaloParticlesPerBuffer);
     }
 
-    _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
+    // Only reserve memory if we rebuild afterward. Otherwise, we might invalidate any existing particle references.
+    if (not neighborListsAreValid()) {
+      _containerSelector.getCurrentContainer().reserve(numParticles, numHaloParticles);
+    }
   }
 
   /**
@@ -1559,7 +1562,6 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
-    ++_stepsSinceLastListRebuild;
   }
   return stillTuning;
 }
@@ -1635,7 +1637,6 @@ bool LogicHandler<Particle>::iterateTriwisePipeline(Functor *functor) {
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
-    ++_stepsSinceLastListRebuild;
   }
   return stillTuning;
 }
