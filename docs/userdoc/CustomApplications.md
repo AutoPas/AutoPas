@@ -1,4 +1,5 @@
 # Custom Applications
+
 AutoPas can be used for arbitrary particle simulations.
 The repository comes with a few example applications that can be found in [`applicationLibrary`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary). 
 To create a new custom application, custom particle and functor classes have to be created. 

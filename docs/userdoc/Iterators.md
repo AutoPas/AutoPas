@@ -1,4 +1,5 @@
 # Iterating Through Particles
+
 Iterators to iterate over particle are provided.
 The particle can be accesses using the dereference operators `iter->` or `*iter`.
 When created inside a OpenMP parallel region, work is automatically spread over all threads.

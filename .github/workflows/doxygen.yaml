@@ -17,22 +17,19 @@ concurrency:
 jobs:
   DocTagCheck:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        # make sure the scripts are executed with bash (needed for [[) and not sh.
-        shell: bash
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Check for missing userdoc updates
         uses: AutoPas/DocTagChecker@main
-        with: 
+        with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           userDocsDirs: docs/userdoc
-          recursive: true
+          recurseUserDocDirs: true
           docFileExtensions: md
-          srcFileExtensions: cpp h txt
+          # c++ files and cmake files
+          srcFileExtensions: cpp h txt cmake
+
   DoxygenCheck:
     runs-on: ubuntu-latest
     strategy:

@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "autopas/particles/Particle.h"
+#include "tests/autopasInterface/AutoPasTest.h"
 
 using namespace autopas;
 
@@ -35,7 +36,9 @@ class MyMolecule : public Particle {
   int _myvar;
 };
 
-TEST(myMoleculeTest, testConstructorAndGetters) {
+class MyMoleculeTest : public AutoPasTest {};
+
+TEST_F(MyMoleculeTest, testConstructorAndGetters) {
   std::array<double, 3> r({1.1, 2.2, 3.3});
   int myvar = 5;
   std::array<double, 3> vel({4.4, 5.5, 6.6});
@@ -48,4 +51,25 @@ TEST(myMoleculeTest, testConstructorAndGetters) {
   }
   ASSERT_EQ(id, m.getID());
   ASSERT_EQ(myvar, m.getMyvar());
+}
+
+TEST_F(MyMoleculeTest, testMovingParticles) {
+  const std::array<double, 3> zero{{0.0, 0.0, 0.0}};
+  const double maxAllowedDistSquared = 1;
+  {
+    MyMolecule m(zero, zero, 0, 0);
+    EXPECT_TRUE(m.setRDistanceCheck({0.5, 0.0, 0.0}, maxAllowedDistSquared));
+  }
+  {
+    MyMolecule m(zero, zero, 0, 0);
+    EXPECT_FALSE(m.setRDistanceCheck({1.5, 0.0, 0.0}, maxAllowedDistSquared));
+  }
+  {
+    MyMolecule m(zero, zero, 0, 0);
+    EXPECT_TRUE(m.addRDistanceCheck({0.5, 0.0, 0.0}, maxAllowedDistSquared));
+  }
+  {
+    MyMolecule m(zero, zero, 0, 0);
+    EXPECT_FALSE(m.addRDistanceCheck({1.5, 0.0, 0.0}, maxAllowedDistSquared));
+  }
 }

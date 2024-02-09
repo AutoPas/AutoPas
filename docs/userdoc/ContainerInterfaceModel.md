@@ -1,4 +1,5 @@
-### Internal Verlet-like container behavior
+# Internal Verlet-like container behavior
+
 The behavior described in this section is normally opaque to users of AutoPas.
 The only exception to this rule is that particles should not be moved more than skin/2 within the specified Verlet rebuild frequency.
 This restriction is due to the internally used Verlet-like container behavior in which the actual container is not updated in every time step and particles are not necessarily sorted into the correct cells.
@@ -16,7 +17,7 @@ If that is, however, not possible, we add them to another particle buffer (the h
 
 Additional information can be found in [PR 642](https://github.com/AutoPas/AutoPas/pull/642)
 
-### Inserting additional particles
+## Inserting additional particles
 Additional particles (e.g. through a grand-canonical thermostat), can be inserted at any point in the simulation loop.
 For periodic boundary conditions, or in an MPI-parallel simulation, you, as the user, are responsible for inserting the appropriate halo particles.
 
