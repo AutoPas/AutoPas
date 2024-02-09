@@ -74,10 +74,10 @@ class VLPairListIterationTraversal3B : public TraversalInterface<InteractionType
                 // skip Halo paraticles, as N3 is disabled
                 continue;
               }
-              auto neighborPtrPairIter = bucketIter->second.begin();
-              for (; neighborPtrPairIter != bucketIter->second.end(); ++neighborPtrPairIter) {
-                Particle &neighbor1 = *(neighborPtrPairIter->first);
-                Particle &neighbor2 = *(neighborPtrPairIter->second);
+
+              for (auto &neighborPtrPair : bucketIter->second) {
+                Particle &neighbor1 = *(neighborPtrPair.first);
+                Particle &neighbor2 = *(neighborPtrPair.second);
                 _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
               }
             }

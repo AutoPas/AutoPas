@@ -81,11 +81,10 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface<Interacti
               }
               auto &neighborList = bucketIter->second;
 
-              auto hashedNeighbors = std::unordered_set(neighborList.begin(), neighborList.end(), 2 * neighborList.size());
+              auto hashedNeighbors = std::unordered_set(neighborList.begin(), neighborList.end());
               
-              auto neighborPtrIter1 = neighborList.begin();
-              for (; neighborPtrIter1 != neighborList.end(); ++neighborPtrIter1) {
-                Particle &neighbor1 = *(*neighborPtrIter1);
+              for (auto neighborPtr1 : neighborList) {
+                Particle &neighbor1 = *neighborPtr1;
                 auto &neighborList1 = (aosNeighborLists.find(&neighbor1))->second;
                 
                 for(auto neighborPtr2 : neighborList1){
