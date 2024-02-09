@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Check for missing userdoc updates
-        uses: AutoPas/DocTagChecker@main
+        uses: AutoPas/DocTagChecker@footerMessage
         with:
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           userDocsDirs: docs/userdoc
