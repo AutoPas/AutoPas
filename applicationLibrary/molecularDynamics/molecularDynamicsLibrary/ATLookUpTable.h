@@ -8,6 +8,7 @@
 #include <cmath>
 #include <vector>
 
+#include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/logging/Logger.h"
 #include "LookUpTableTypes.h"
 
@@ -24,11 +25,35 @@ class ATLookUpTable {
   // Extremely unreadable and user-error-prone
 
   ATLookUpTable(std::initializer_list<floatType> args) {
-    //AutoPasLog(DEBUG, "LUT created.");
+    std::cout << "LUT created.\n";
     if (args.size() < 3) {  // Fail gracefully
       //AutoPasLog(CRITICAL, "Args only has {} elements, but needs at least 3.", args.size());
       return;
     }
+//    auto f =  ATFunctor(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0);
+//    auto t = ATFunctor(2.0, 1.0, 1.0, 3.0, 2.0, 2.0, 4.0, 3.0, 3.0);
+//    std::cout << f.second << " " << t.second << " : " << f.first[0][0] << " " << t.first[0][0] << " | " << f.first[0][1] << " " << t.first[0][1] << " | " << f.first[0][2] << " " << t.first[0][2] << " | " << f.first[1][0] << " " << t.first[1][0] << " | " << f.first[1][1] << " " << t.first[1][1] << " | " << f.first[1][2] << " " << t.first[1][2] << " | " << f.first[2][0] << " " << t.first[2][0] << " | " << f.first[2][1] << " " << t.first[2][1] << " | " << f.first[2][2] << " " << t.first[2][2] << "\n";
+//    std::cout << (f.second == t.second && f.first[0][0] == t.first[0][0] && f.first[0][1] == t.first[0][1] && f.first[0][2] == t.first[0][2] && f.first[1][0] == t.first[1][0] && f.first[1][1] == t.first[1][1] && f.first[1][2] == t.first[1][2] && f.first[2][0] == t.first[2][0] && f.first[2][1] == t.first[2][1] && f.first[2][2] == t.first[2][2]) << "\n";
+//    f =  ATFunctor(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0);
+//    t = ATFunctor(1.0, 2.0, 1.0, 2.0, 3.0, 2.0, 3.0, 4.0, 3.0);
+//    std::cout << f.second << " " << t.second << " : " << f.first[0][0] << " " << t.first[0][0] << " | " << f.first[0][1] << " " << t.first[0][1] << " | " << f.first[0][2] << " " << t.first[0][2] << " | " << f.first[1][0] << " " << t.first[1][0] << " | " << f.first[1][1] << " " << t.first[1][1] << " | " << f.first[1][2] << " " << t.first[1][2] << " | " << f.first[2][0] << " " << t.first[2][0] << " | " << f.first[2][1] << " " << t.first[2][1] << " | " << f.first[2][2] << " " << t.first[2][2] << "\n";
+//    std::cout << (f.second == t.second && f.first[0][0] == t.first[0][0] && f.first[0][1] == t.first[0][1] && f.first[0][2] == t.first[0][2] && f.first[1][0] == t.first[1][0] && f.first[1][1] == t.first[1][1] && f.first[1][2] == t.first[1][2] && f.first[2][0] == t.first[2][0] && f.first[2][1] == t.first[2][1] && f.first[2][2] == t.first[2][2]) << "\n";
+//    f =  ATFunctor(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0);
+//    t = ATFunctor(1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0);
+//    std::cout << f.second << " " << t.second << " : " << f.first[0][0] << " " << t.first[0][0] << " | " << f.first[0][1] << " " << t.first[0][1] << " | " << f.first[0][2] << " " << t.first[0][2] << " | " << f.first[1][0] << " " << t.first[1][0] << " | " << f.first[1][1] << " " << t.first[1][1] << " | " << f.first[1][2] << " " << t.first[1][2] << " | " << f.first[2][0] << " " << t.first[2][0] << " | " << f.first[2][1] << " " << t.first[2][1] << " | " << f.first[2][2] << " " << t.first[2][2] << "\n";
+//    std::cout << (f.second == t.second && f.first[0][0] == t.first[0][0] && f.first[0][1] == t.first[0][1] && f.first[0][2] == t.first[0][2] && f.first[1][0] == t.first[1][0] && f.first[1][1] == t.first[1][1] && f.first[1][2] == t.first[1][2] && f.first[2][0] == t.first[2][0] && f.first[2][1] == t.first[2][1] && f.first[2][2] == t.first[2][2]) << "\n";
+//    f =  ATFunctor(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0);
+//    t = ATFunctor(0.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0);
+//    std::cout << f.second << " " << t.second << " : " << f.first[0][0] << " " << t.first[0][0] << " | " << f.first[0][1] << " " << t.first[0][1] << " | " << f.first[0][2] << " " << t.first[0][2] << " | " << f.first[1][0] << " " << t.first[1][0] << " | " << f.first[1][1] << " " << t.first[1][1] << " | " << f.first[1][2] << " " << t.first[1][2] << " | " << f.first[2][0] << " " << t.first[2][0] << " | " << f.first[2][1] << " " << t.first[2][1] << " | " << f.first[2][2] << " " << t.first[2][2] << "\n";
+//    std::cout << (f.second == t.second && f.first[0][0] == t.first[0][0] && f.first[0][1] == t.first[0][1] && f.first[0][2] == t.first[0][2] && f.first[1][0] == t.first[1][0] && f.first[1][1] == t.first[1][1] && f.first[1][2] == t.first[1][2] && f.first[2][0] == t.first[2][0] && f.first[2][1] == t.first[2][1] && f.first[2][2] == t.first[2][2]) << "\n";
+//    f =  ATFunctor(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0);
+//    t = ATFunctor(1.0, 0.0, 1.0, 2.0, 1.0, 2.0, 3.0, 2.0, 3.0);
+//    std::cout << f.second << " " << t.second << " : " << f.first[0][0] << " " << t.first[0][0] << " | " << f.first[0][1] << " " << t.first[0][1] << " | " << f.first[0][2] << " " << t.first[0][2] << " | " << f.first[1][0] << " " << t.first[1][0] << " | " << f.first[1][1] << " " << t.first[1][1] << " | " << f.first[1][2] << " " << t.first[1][2] << " | " << f.first[2][0] << " " << t.first[2][0] << " | " << f.first[2][1] << " " << t.first[2][1] << " | " << f.first[2][2] << " " << t.first[2][2] << "\n";
+//    std::cout << (f.second == t.second && f.first[0][0] == t.first[0][0] && f.first[0][1] == t.first[0][1] && f.first[0][2] == t.first[0][2] && f.first[1][0] == t.first[1][0] && f.first[1][1] == t.first[1][1] && f.first[1][2] == t.first[1][2] && f.first[2][0] == t.first[2][0] && f.first[2][1] == t.first[2][1] && f.first[2][2] == t.first[2][2]) << "\n";
+//    f =  ATFunctor(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0);
+//    t = ATFunctor(1.0, 1.0, 0.0, 2.0, 2.0, 1.0, 3.0, 3.0, 2.0);
+//    std::cout << f.second << " " << t.second << " : " << f.first[0][0] << " " << t.first[0][0] << " | " << f.first[0][1] << " " << t.first[0][1] << " | " << f.first[0][2] << " " << t.first[0][2] << " | " << f.first[1][0] << " " << t.first[1][0] << " | " << f.first[1][1] << " " << t.first[1][1] << " | " << f.first[1][2] << " " << t.first[1][2] << " | " << f.first[2][0] << " " << t.first[2][0] << " | " << f.first[2][1] << " " << t.first[2][1] << " | " << f.first[2][2] << " " << t.first[2][2] << "\n";
+//    std::cout << (f.second == t.second && f.first[0][0] == t.first[0][0] && f.first[0][1] == t.first[0][1] && f.first[0][2] == t.first[0][2] && f.first[1][0] == t.first[1][0] && f.first[1][1] == t.first[1][1] && f.first[1][2] == t.first[1][2] && f.first[2][0] == t.first[2][0] && f.first[2][1] == t.first[2][1] && f.first[2][2] == t.first[2][2]) << "\n";
     cutoffSquared = args.begin()[0];
     nu = args.begin()[1];
     if constexpr (intervalType == evenSpacing) {
@@ -44,9 +69,10 @@ class ATLookUpTable {
     }
   }
 
-  std::pair<std::array<std::array<floatType, 3>, 3>, floatType> retrieveValue(std::array<double, 3>& displacementIJ, std::array<double, 3>& displacementJK, std::array<double, 3>& displacementKI) {
+  std::pair<std::array<std::array<floatType, 3>, 3>, floatType> retrieveValue(const std::array<double, 3>& displacementIJ, const std::array<double, 3>& displacementJK, const std::array<double, 3>& displacementKI) {
+    AutoPasLog(DEBUG, "Retrieved value from AT-LUT");
     if constexpr (interpolationType == nextNeighbor) {
-      return getNextNeighbor(displacementIJ, displacementJK, displacementKI);
+      return getNextNeighbor(displacementIJ[0], displacementIJ[1], displacementIJ[2], displacementJK[0], displacementJK[1], displacementJK[2], displacementKI[0], displacementKI[1], displacementKI[2]);
     }
   }
 
@@ -79,46 +105,111 @@ class ATLookUpTable {
   // Fill functions
 
   void fillTableEvenSpacing () {
-    floatType i1, i2, i3, j1, j2, j3, k1, k2, k3 = (pointDistance / 2) - cutoffSquared;
-    for (auto ic1 = 0; ic1 < numberOfPoints; ic1++) {
-      for (auto ic2 = 0; ic2 < numberOfPoints; ic2++) {
-        for (auto ic3 = 0; ic3 < numberOfPoints; ic3++) {
-          for (auto jc1 = 0; jc1 < numberOfPoints; jc1++) {
+    std::cout << "Building Table\n";
+    std::cout << "Number of points: " << numberOfPoints << " Point distance: " << pointDistance << "\n";
+    floatType i1, i2, i3, j1, j2, j3, k1, k2, k3;
+    i1 = i2 = i3 = j1 = j2 = j3 = k1 = k2 = k3 = (pointDistance / 2) - cutoffSquared;
+    uint64_t dupes = 0;
+    for (auto kc3 = 0; kc3 < numberOfPoints; kc3++) {
+      for (auto kc2 = 0; kc2 < numberOfPoints; kc2++) {
+        for (auto kc1 = 0; kc1 < numberOfPoints; kc1++) {
+          for (auto jc3 = 0; jc3 < numberOfPoints; jc3++) {
             for (auto jc2 = 0; jc2 < numberOfPoints; jc2++) {
-              for (auto jc3 = 0; jc3 < numberOfPoints; jc3++) {
-                for (auto kc1 = 0; kc1 < numberOfPoints; kc1++) {
-                  for (auto kc2 = 0; kc2 < numberOfPoints; kc2++) {
-                    for (auto kc3 = 0; kc3 < numberOfPoints; kc3++) {
-                      lut.at(getIndexNoP(ic1, ic2, ic3, jc1, jc2, jc3, kc1, kc2, kc3)) = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
-                      kc3 += pointDistance;
+              for (auto jc1 = 0; jc1 < numberOfPoints; jc1++) {
+                for (auto ic3 = 0; ic3 < numberOfPoints; ic3++) {
+                  for (auto ic2 = 0; ic2 < numberOfPoints; ic2++) {
+                    for (auto ic1 = 0; ic1 < numberOfPoints; ic1++) {
+                      auto n = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
+                      for (auto i = 0; i<lut.size(); i++) {
+                        auto val = lut[i];
+                        if (n.second == val.second && n.first[0][0] == val.first[0][0] && n.first[0][1] == val.first[0][1] && n.first[0][2] == val.first[0][2] && n.first[1][0] == val.first[1][0] && n.first[1][1] == val.first[1][1] && n.first[1][2] == val.first[1][2] && n.first[2][0] == val.first[2][0] && n.first[2][1] == val.first[2][1] && n.first[2][2] == val.first[2][2]) {
+                          std::cout << "Duplicate: " << i1 << " " << i2 << " " << i3 << " | " << j1 << " " << j2 << " "
+                                    << j3 << " | " << k1 << " " << k2 << " " << k3 << "\n";
+                          dupes++;
+                        }
+                      }
+                      lut.push_back(n);
+                      i1 += pointDistance;
                     }
-                    kc2 += pointDistance;
+                    i2 += pointDistance;
                   }
-                  kc1 += pointDistance;
+                  i3 += pointDistance;
                 }
-                jc3 += pointDistance;
+                j1 += pointDistance;
               }
-              jc2 += pointDistance;
+              j2 += pointDistance;
             }
-            jc1 += pointDistance;
+            j3 += pointDistance;
           }
-          ic3 += pointDistance;
+          k1 += pointDistance;
         }
-        ic2 += pointDistance;
+        k2 += pointDistance;
       }
-      ic1 += pointDistance;
+      std::cout << "Done with kc3=" << kc3 << "k3=" << k3 <<  "\n";
+      k3 += pointDistance;
     }
+    auto first = 0;
+    auto total = 0;
+    auto nan = 0;
+    auto last = 0;
+    for (auto i=0; i<lut.size(); i++) {
+      if (!std::isnan(lut.at(i).second)) {
+        if (first == 0)
+          first = i;
+        last = i;
+        total++;
+      }
+      else {
+        nan++;
+      }
+    }
+    std::cout << "First: " << first << " Last: " << last << " Total: " << total << " Nan: " << nan << " Duplicates: " << dupes << "\n";
   };
 
   // Interpolation functions
 
   std::pair<std::array<std::array<floatType, 3>, 3>, floatType> getNextNeighbor(floatType i1, floatType i2, floatType i3, floatType j1, floatType j2, floatType j3, floatType k1, floatType k2, floatType k3) {
+    auto accurate = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
     if constexpr (intervalType == evenSpacing) {
-      if (dr2 == cutoffSquared)
-        return lut.at(numberOfPoints-1);
-      auto ret = lut.at(std::floor(dr2 / pointDistance)); // How slow is std::floor?
-      auto accurate = LJFunctor(dr2);
-      AutoPasLog(DEBUG, "Return {} instead of {}", ret, accurate);
+      i1 += cutoffSquared;
+      i2 += cutoffSquared;
+      i3 += cutoffSquared;
+      j1 += cutoffSquared;
+      j2 += cutoffSquared;
+      j3 += cutoffSquared;
+      k1 += cutoffSquared;
+      k2 += cutoffSquared;
+      k3 += cutoffSquared;
+      size_t ii1 = std::floor(i1 / pointDistance);
+      size_t ii2 = std::floor(i2 / pointDistance);
+      size_t ii3 = std::floor(i3 / pointDistance);
+      size_t ij1 = std::floor(j1 / pointDistance);
+      size_t ij2 = std::floor(j2 / pointDistance);
+      size_t ij3 = std::floor(j3 / pointDistance);
+      size_t ik1 = std::floor(k1 / pointDistance);
+      size_t ik2 = std::floor(k2 / pointDistance);
+      size_t ik3 = std::floor(k3 / pointDistance);
+      if (ii1 == numberOfPoints)
+        ii1--;
+      if (ii2 == numberOfPoints)
+        ii2--;
+      if (ii3 == numberOfPoints)
+        ii3--;
+      if (ij1 == numberOfPoints)
+        ij1--;
+      if (ij2 == numberOfPoints)
+        ij2--;
+      if (ij3 == numberOfPoints)
+        ij3--;
+      if (ik1 == numberOfPoints)
+        ik1--;
+      if (ik2 == numberOfPoints)
+        ik2--;
+      if (ik3 == numberOfPoints)
+        ik3--;
+
+      auto ret = lut.at(getIndexNoP(ii1, ii2, ii3, ij1, ij2, ij3, ik1, ik2, ik3)); // How slow is std::floor?
+      //AutoPasLog(DEBUG, "Return {} instead of {}", ret, accurate);
       return ret;
     }
   }
@@ -126,10 +217,11 @@ class ATLookUpTable {
   // Functor stub
 
   std::pair<std::array<std::array<floatType, 3>, 3>, floatType> ATFunctor(floatType i1, floatType i2, floatType i3, floatType j1, floatType j2, floatType j3, floatType k1, floatType k2, floatType k3) {
+    using namespace autopas::utils::ArrayMath::literals;
 
-    const auto displacementIJ = {j1 - i1, j2 - i2, j3 - i3};
-    const auto displacementJK = {k1 - j1, k2 - j2, k3 - j3};
-    const auto displacementKI = {i1 - k1, i2 - k2, i3 - k3};
+    const std::array<floatType, 3> displacementIJ{j1 - i1, j2 - i2, j3 - i3};
+    const std::array<floatType, 3> displacementJK{k1 - j1, k2 - j2, k3 - j3};
+    const std::array<floatType, 3> displacementKI{i1 - k1, i2 - k2, i3 - k3};
 
     const double distSquaredIJ = autopas::utils::ArrayMath::dot(displacementIJ, displacementIJ);
     const double distSquaredJK = autopas::utils::ArrayMath::dot(displacementJK, displacementJK);
@@ -170,7 +262,7 @@ class ATLookUpTable {
     forceK = (forceI + forceJ) * (-1.0);
     const auto potentialEnergy = factor * (allDistsSquared - 3.0 * allDotProducts) / 9.0;
 
-    return std::make_pair({forceI, forceJ, forceK}, potentialEnergy);
+    return std::make_pair(std::array{forceI, forceJ, forceK}, potentialEnergy);
   }
 
 

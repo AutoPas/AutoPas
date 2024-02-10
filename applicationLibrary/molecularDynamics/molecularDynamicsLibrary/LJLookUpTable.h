@@ -96,7 +96,9 @@ class LJLookUpTable {
       auto ret = lut.at(std::floor(dr2 / pointDistance)); // How slow is std::floor?
       auto accurate = LJFunctor(dr2);
       AutoPasLog(DEBUG, "Return {} instead of {}", ret, accurate);
-      AutoPasLog(DEBUG, "Error: {}", accurate - ret);
+      static float totalError;
+      totalError += abs(accurate - ret);
+      AutoPasLog(DEBUG, "Error: {} | totalError {}", accurate - ret, totalError);
       return ret;
     }
   }
@@ -112,7 +114,7 @@ class LJLookUpTable {
       if (dr2 <= (pointDistance / 2)) {
         AutoPasLog(DEBUG, "dr2 {} was less or equal than half pointDistance {}. Returning perfect value {}", dr2, pointDistance / 2, LJFunctor(dr2));
         //AutoPasLog(DEBUG, "Error: {}", LJFunctor(dr2) - lut.at(0));
-        return lut.at(0);
+        return LJFunctor(dr2);
       }
       if (std::fmod(dr2, pointDistance) == 0) {
         AutoPasLog(DEBUG, "dr2 is multiple of pointDistance! Remainder is {}", std::fmod(dr2, pointDistance));
@@ -125,7 +127,9 @@ class LJLookUpTable {
       lowerX = lowerX * pointDistance + pointDistance / 2;
       upperX = upperX * pointDistance + pointDistance / 2;
       auto ret = lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX); // Content: 0 : 0.5 : 5760 | 1 : 1.5 : -1.93141 | 2 : 2.5 : -0.535757 | 3 : 3.5 : -0.152473
-      AutoPasLog(DEBUG, "lowerX: {} | upperX: {} | lowerY {} | upperY {}\n                            Input: {} | Return: {} | Correct: {} | Error {}", lowerX, upperX, lowerY, upperY, dr2, ret, LJFunctor(dr2), LJFunctor(dr2) - ret);
+      static float totalError;
+      totalError += abs(LJFunctor(dr2) - ret);
+      AutoPasLog(DEBUG, "lowerX: {} | upperX: {} | lowerY {} | upperY {}\n                            Input: {} | Return: {} | Correct: {} | Error {} | totalError {}", lowerX, upperX, lowerY, upperY, dr2, ret, LJFunctor(dr2), LJFunctor(dr2) - ret, totalError);
       return ret;
     }
   }

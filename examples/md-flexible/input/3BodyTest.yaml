@@ -1,12 +1,12 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
 container                            :  [LinkedCells] # DirectSum
-# functor-3b                           :  axilrod-teller
-# traversal-3b                         :  [lc_c01_3b] # ds_sequential_3b
-# newton3-3b                           :  [enabled, disabled]
-# data-layout-3b                       :  [AoS]
+functor-3b                           :  axilrod-teller
+traversal-3b                         :  [lc_c01_3b] # ds_sequential_3b
+newton3-3b                           :  [enabled, disabled]
+data-layout-3b                       :  [AoS]
 
 # Uncomment to combine pairwise and 3-body interaction
-functor                              :  lj-avx
+functor                              :  lj
 traversal                            :  [lc_c01, lc_c08, lc_sliced]
 newton3                              :  [enabled, disabled]
 data-layout                          :  [AoS, SoA]
@@ -47,11 +47,11 @@ thermostat:
   thermostatInterval                 :  25
   addBrownianMotion                  :  true
 
-log-level                            :  warn
+log-level                            :  debug
 no-flops                             :  false
 no-end-config                        :  true
 no-progress-bar                      :  false
 vtk-filename                         :  3BodyTest
 vtk-output-folder                    :  3BodyTestOutput
-vtk-write-frequency                  :  10
+vtk-write-frequency                  :  100
 #log-file                            : log.txt

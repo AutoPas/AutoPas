@@ -185,7 +185,7 @@ class AxilrodTellerFunctor
       nu = _PPLibrary->getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
     }
 
-    const auto displacementIJ = j.getR() - i.getR();
+    const auto displacementIJ = j.getR() - i.getR(); // {j1 - i1, j2 - i2, j3 - i3}
     const auto displacementJK = k.getR() - j.getR();
     const auto displacementKI = i.getR() - k.getR();
 
@@ -199,7 +199,7 @@ class AxilrodTellerFunctor
     }
     // LUT beginA
 
-    const std::array<double, 3> forceI = {0., 0., 0.};
+    std::array<double, 3> forceI = {0., 0., 0.};
     std::array<double, 3> forceJ;
     std::array<double, 3> forceK;
     double factor;
@@ -209,7 +209,7 @@ class AxilrodTellerFunctor
 
 
     if constexpr (useLUT) {
-      AutoPasLog(DEBUG, "Used LUT with {} | {} | {}", displacementIJ, displacementJK, displacementKI);
+      //AutoPasLog(DEBUG, "Used LUT with {} | {} | {}", displacementIJ, displacementJK, displacementKI);
       auto values = _PPLibrary->getATLUT().retrieveValue(displacementIJ, displacementJK, displacementKI);
       forceI = values.first.at(0);
       forceJ = values.first.at(1);
