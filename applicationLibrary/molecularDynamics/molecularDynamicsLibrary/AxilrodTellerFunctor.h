@@ -92,7 +92,7 @@ namespace mdLib {
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  */
-template <class Particle, bool useMixing = false, bool useLUT = false,autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class Particle, bool useMixing = false, bool useLUT = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false>
 class AxilrodTellerFunctor
     : public autopas::TriwiseFunctor<Particle,
@@ -217,6 +217,7 @@ class AxilrodTellerFunctor
       potentialEnergy = values.second;
     }
     else {
+      //std::cout << "Didn't use LUT\n";
       const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
       const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
       const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);

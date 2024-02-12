@@ -47,11 +47,11 @@ thermostat:
   thermostatInterval                 :  25
   addBrownianMotion                  :  true
 
-log-level                            :  debug
+log-level                            :  critical
 no-flops                             :  false
 no-end-config                        :  true
-no-progress-bar                      :  false
+no-progress-bar                      :  true
 vtk-filename                         :  3BodyTest
 vtk-output-folder                    :  3BodyTestOutput
-vtk-write-frequency                  :  100
+vtk-write-frequency                  :  1000000000
 #log-file                            : log.txt
