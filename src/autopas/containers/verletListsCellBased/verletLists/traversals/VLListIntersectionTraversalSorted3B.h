@@ -8,6 +8,7 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 
 #include "VLTraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
@@ -70,32 +71,40 @@ class VLListIntersectionTraversalSorted3B : public TraversalInterface<Interactio
         if (not useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic))
-          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-            auto endIter = aosNeighborLists.end(bucketId);
-            for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-              Particle &particle = *(bucketIter->first);
-              if(not particle.isOwned()){
-                // skip Halo particles as N3 is disabled
-                continue;
-              }
-              auto &neighborList = bucketIter->second;
-              auto neighborPtrIter1 = neighborList.begin();
-              for (; neighborPtrIter1 != neighborList.end(); ++neighborPtrIter1) {
-                Particle &neighbor1 = *(*neighborPtrIter1);
-                auto &neighborList1 = (aosNeighborLists.find(&neighbor1))->second;
+          AUTOPAS_OPENMP(parallel for schedule(dynamic)){
+            for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
+              // create a buffer for all intersections
+              auto intersectingNeighbors = std::vector<Particle*>();
 
-                std::size_t maxIntersectionSize = std::min(neighborList1.size(), neighborList.size());
-                auto intersectingNeighbors = std::vector<Particle*>(maxIntersectionSize);
-                auto intersectionIter = neighborPtrIter1;
-                auto intersectionEndIter = std::set_intersection(++intersectionIter, neighborList.end()
-                 , neighborList1.begin(), neighborList1.end(), intersectingNeighbors.begin());
-                
-                for(auto neighborPtrIter2 = intersectingNeighbors.begin(); neighborPtrIter2 != intersectionEndIter; ++neighborPtrIter2){
-                    Particle &neighbor2 = *(*neighborPtrIter2);
-                    _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+              auto endIter = aosNeighborLists.end(bucketId);
+              for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
+                Particle &particle = *(bucketIter->first);
+                if(not particle.isOwned()){
+                  // skip Halo particles as N3 is disabled
+                  continue;
                 }
-                    
+                auto &neighborList = bucketIter->second;
+                auto neighborPtrIter1 = neighborList.begin();
+                for (; neighborPtrIter1 != neighborList.end(); ++neighborPtrIter1) {
+                  Particle &neighbor1 = *(*neighborPtrIter1);
+                  auto &neighborList1 = (aosNeighborLists.find(&neighbor1))->second;
+
+                  std::size_t maxIntersectionSize = std::min(neighborList1.size(), neighborList.size());
+                  //  make sure the buffer has enough space
+                  intersectingNeighbors.reserve(maxIntersectionSize);
+
+                  auto intersectionIter = neighborPtrIter1;
+                  auto intersectionEndIter = std::set_intersection(++intersectionIter, neighborList.end()
+                  , neighborList1.begin(), neighborList1.end(), std::back_inserter(intersectingNeighbors));
+                  
+                  for(auto neighborPtrIter2 = intersectingNeighbors.begin(); neighborPtrIter2 != intersectingNeighbors.end(); ++neighborPtrIter2){
+                      Particle &neighbor2 = *(*neighborPtrIter2);
+                      _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+                  }
+
+                  // clear buffer for next loop-iteration
+                  intersectingNeighbors.clear();     
+                }
               }
             }
           }
