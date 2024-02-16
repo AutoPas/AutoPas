@@ -29,8 +29,7 @@ class CellPairTraversal : public TraversalInterface {
    * @param dataLayout The data layout with which this traversal should be initialised.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims, DataLayoutOption::Value dataLayout,
-                             bool useNewton3)
+  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _cellsPerDimension(dims), _cells(nullptr) {}
 
   /**

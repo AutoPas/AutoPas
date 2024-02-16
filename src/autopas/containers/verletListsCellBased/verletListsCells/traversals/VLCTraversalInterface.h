@@ -52,7 +52,7 @@ class VLCTraversalInterface {
    */
   template <class PairwiseFunctor>
   void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor,
-                        DataLayoutOption::Value dataLayout, bool useNewton3) {
+                        DataLayoutOption dataLayout, bool useNewton3) {
     processCellListsImpl<PairwiseFunctor>(neighborLists, cellIndex, pairwiseFunctor, dataLayout, useNewton3);
   }
 
@@ -108,8 +108,8 @@ class VLCTraversalInterface {
    */
   template <class PairwiseFunctor>
   void processCellListsImpl(VLCAllCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
-                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3) {
-    if (dataLayout == DataLayoutOption::Value::aos) {
+                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
+    if (dataLayout == DataLayoutOption::aos) {
       auto &internalList = neighborList.getAoSNeighborList();
       for (auto &[particlePtr, neighbors] : internalList[cellIndex]) {
         Particle &particle = *particlePtr;
@@ -141,8 +141,8 @@ class VLCTraversalInterface {
    */
   template <class PairwiseFunctor>
   void processCellListsImpl(VLCCellPairNeighborList<Particle> &neighborList, unsigned long cellIndex,
-                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3) {
-    if (dataLayout == DataLayoutOption::Value::aos) {
+                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
+    if (dataLayout == DataLayoutOption::aos) {
       auto &internalList = neighborList.getAoSNeighborList();
       for (auto &cellPair : internalList[cellIndex]) {
         for (auto &[particlePtr, neighbors] : cellPair) {
@@ -155,7 +155,7 @@ class VLCTraversalInterface {
       }
     }
 
-    else if (dataLayout == DataLayoutOption::Value::soa) {
+    else if (dataLayout == DataLayoutOption::soa) {
       auto &_soaList = neighborList.getSoANeighborList();
       // iterate over soa and call soaFunctorVerlet for each of the neighbor lists
       for (auto &cellPair : _soaList[cellIndex]) {

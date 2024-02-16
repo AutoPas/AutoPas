@@ -36,7 +36,7 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
    */
   explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                         double interactionLength, const std::array<double, 3> &cellLength,
-                                        DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward)
+                                        DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                                 dataLayout, useNewton3, spaciallyForward) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.

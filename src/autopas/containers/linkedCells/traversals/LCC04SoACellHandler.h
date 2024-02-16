@@ -41,7 +41,7 @@ class LCC04SoACellHandler {
    */
   explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
                                double interactionLength, const std::array<double, 3> &cellLength,
-                               DataLayoutOption::Value dataLayout, bool useNewton3,
+                               DataLayoutOption dataLayout, bool useNewton3,
                                const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _interactionLength(interactionLength),
         _cellLength(cellLength),
@@ -138,7 +138,7 @@ class LCC04SoACellHandler {
   /**
    * The datalayout used by this traversal.
    */
-  DataLayoutOption::Value _dataLayout;
+  DataLayoutOption _dataLayout;
 
   /**
    * If this traversal makes use of newton3.

@@ -36,7 +36,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            double interactionLength, const std::array<double, 3> &cellLength,
-                           DataLayoutOption::Value dataLayout, bool useNewton3)
+                           DataLayoutOption dataLayout, bool useNewton3)
       : CellPairTraversal<ParticleCell>(dims, dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),

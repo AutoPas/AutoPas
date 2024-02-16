@@ -26,8 +26,7 @@ class TraversalInterface {
    * @param dataLayout The data layout with which this traversal should be initialised.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  TraversalInterface(DataLayoutOption::Value dataLayout, bool useNewton3)
-      : _dataLayout(dataLayout), _useNewton3(useNewton3) {}
+  TraversalInterface(DataLayoutOption dataLayout, bool useNewton3) : _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
    * Return a enum representing the name of the traversal class.
@@ -72,7 +71,7 @@ class TraversalInterface {
   /**
    * The datalayout used by this traversal.
    */
-  DataLayoutOption::Value _dataLayout;
+  DataLayoutOption _dataLayout;
 
   /**
    * If this traversal makes use of newton3.

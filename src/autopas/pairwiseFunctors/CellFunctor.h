@@ -34,7 +34,7 @@ class CellFunctor {
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
-  explicit CellFunctor(ParticleFunctor *f, double sortingCutoff, DataLayoutOption::Value dataLayout, bool useNewton3)
+  explicit CellFunctor(ParticleFunctor *f, double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
       : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
@@ -57,7 +57,7 @@ class CellFunctor {
    * Getter
    * @return
    */
-  [[nodiscard]] DataLayoutOption::Value getDataLayout() const { return _dataLayout; }
+  [[nodiscard]] DataLayoutOption getDataLayout() const { return _dataLayout; }
 
   /**
    * Getter
@@ -128,7 +128,7 @@ class CellFunctor {
    */
   size_t _sortingThreshold{8};
 
-  DataLayoutOption::Value _dataLayout;
+  DataLayoutOption _dataLayout;
 
   bool _useNewton3;
 };

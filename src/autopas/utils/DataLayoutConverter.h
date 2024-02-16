@@ -24,7 +24,7 @@ class DataLayoutConverter {
    * @param functor responsible for the conversion
    * @param dataLayout The data layout to be used.
    */
-  explicit DataLayoutConverter(FunctorSoaWrapper *functor, DataLayoutOption::Value dataLayout)
+  explicit DataLayoutConverter(FunctorSoaWrapper *functor, DataLayoutOption dataLayout)
       : _functor(functor), _dataLayout(dataLayout) {}
 
   /**
@@ -69,7 +69,7 @@ class DataLayoutConverter {
    */
   FunctorSoaWrapper *_functor;
 
-  DataLayoutOption::Value _dataLayout;
+  DataLayoutOption _dataLayout;
 };
 
 }  // namespace autopas::utils

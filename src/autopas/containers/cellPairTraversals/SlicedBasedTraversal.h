@@ -42,7 +42,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 double interactionLength, const std::array<double, 3> &cellLength,
-                                DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward)
+                                DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : CellPairTraversal<ParticleCell>(dims, dataLayout, useNewton3),
         _overlap{},
         _dimsPerLength{},

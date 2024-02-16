@@ -57,7 +57,7 @@ class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
    */
   explicit VCLSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                  double interactionLength, const std::array<double, 3> &cellLength, size_t clusterSize,
-                                 DataLayoutOption::Value dataLayout, bool useNewton3)
+                                 DataLayoutOption dataLayout, bool useNewton3)
       : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                                dataLayout, useNewton3, false),
         _functor(pairwiseFunctor),

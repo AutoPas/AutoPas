@@ -27,8 +27,7 @@ class VCLClusterFunctor {
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
-  explicit VCLClusterFunctor(PairwiseFunctor *functor, size_t clusterSize, DataLayoutOption::Value dataLayout,
-                             bool useNewton3)
+  explicit VCLClusterFunctor(PairwiseFunctor *functor, size_t clusterSize, DataLayoutOption dataLayout, bool useNewton3)
       : _functor(functor), _clusterSize(clusterSize), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
@@ -92,7 +91,7 @@ class VCLClusterFunctor {
  private:
   PairwiseFunctor *_functor;
   size_t _clusterSize;
-  DataLayoutOption::Value _dataLayout;
+  DataLayoutOption _dataLayout;
   bool _useNewton3;
 };
 

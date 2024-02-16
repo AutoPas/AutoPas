@@ -43,7 +43,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
    * @param dataLayout The data layout to use.
    * @param useNewton3 Whether or not this traversal uses newton 3.
    */
-  explicit VVLAsBuildTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3)
+  explicit VVLAsBuildTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor), _soa{nullptr} {}
 
   void initTraversal() override {

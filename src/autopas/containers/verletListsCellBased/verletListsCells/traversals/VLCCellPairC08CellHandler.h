@@ -31,7 +31,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
    */
   explicit VLCCellPairC08CellHandler(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      double interactionLength, const std::array<double, 3> &cellLength,
-                                     const std::array<unsigned long, 3> &overlap, DataLayoutOption::Value dataLayout,
+                                     const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout,
                                      bool useNewton3)
       : LCC08CellHandler<ParticleCell, PairwiseFunctor>(pairwiseFunctor, dims, interactionLength, cellLength, overlap,
                                                         dataLayout, useNewton3) {
@@ -49,7 +49,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
    * @param dims number of cells per dimension
    */
   void processCellListsC08(VLCCellPairNeighborList<typename ParticleCell::ParticleType> &neighborList,
-                           unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value layout,
+                           unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption layout,
                            SoA<typename ParticleCell::ParticleType::SoAArraysType> *soa,
                            const std::array<unsigned long, 3> &dims) {
     const auto &aosNeighborList = neighborList.getAoSNeighborList();

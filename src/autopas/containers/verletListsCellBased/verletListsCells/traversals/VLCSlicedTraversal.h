@@ -52,7 +52,7 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
    */
   explicit VLCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                               double interactionLength, const std::array<double, 3> &cellLength,
-                              DataLayoutOption::Value dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
+                              DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
       : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                                 dataLayout, useNewton3, false),
         VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
