@@ -69,7 +69,7 @@ class DataLayoutConverter {
    */
   FunctorSoaWrapper *_functor;
 
-  const DataLayoutOption::Value _dataLayout;
+  DataLayoutOption::Value _dataLayout;
 };
 
 }  // namespace autopas::utils

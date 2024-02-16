@@ -40,8 +40,8 @@ class LCC04SoACellHandler {
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
-                               const double interactionLength, const std::array<double, 3> &cellLength,
-                               const DataLayoutOption::Value dataLayout, const bool useNewton3,
+                               double interactionLength, const std::array<double, 3> &cellLength,
+                               DataLayoutOption::Value dataLayout, bool useNewton3,
                                const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _interactionLength(interactionLength),
         _cellLength(cellLength),
@@ -135,9 +135,15 @@ class LCC04SoACellHandler {
    */
   PairwiseFunctor *_pairwiseFunctor;
 
-  const DataLayoutOption::Value _dataLayout;
+  /**
+   * The datalayout used by this traversal.
+   */
+  DataLayoutOption::Value _dataLayout;
 
-  const bool _useNewton3;
+  /**
+   * If this traversal makes use of newton3.
+   */
+  bool _useNewton3;
 
   /**
    * Writes buffer content back to cell.

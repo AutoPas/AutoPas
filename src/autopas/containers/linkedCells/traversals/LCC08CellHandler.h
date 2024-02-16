@@ -39,9 +39,9 @@ class LCC08CellHandler {
    * in that case the interactionLength is needed!
    */
   explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
-                            const double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap, const DataLayoutOption::Value dataLayout,
-                            const bool useNewton3)
+                            double interactionLength, const std::array<double, 3> &cellLength,
+                            const std::array<unsigned long, 3> &overlap, DataLayoutOption::Value dataLayout,
+                            bool useNewton3)
       : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
         _cellPairOffsets{},
@@ -89,12 +89,12 @@ class LCC08CellHandler {
   /**
    * The datalayout to be used.
    */
-  const DataLayoutOption::Value _dataLayout;
+  DataLayoutOption::Value _dataLayout;
 
   /**
    * If newton3 should be used or not.
    */
-  const bool _useNewton3;
+  bool _useNewton3;
 
  private:
   /**

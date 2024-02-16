@@ -43,9 +43,8 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
    * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
    */
   explicit VLCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const double interactionLength, const std::array<double, 3> &cellLength,
-                           const DataLayoutOption::Value dataLayout, const bool useNewton3,
-                           const ContainerOption::Value typeOfList)
+                           double interactionLength, const std::array<double, 3> &cellLength,
+                           DataLayoutOption::Value dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
         VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),

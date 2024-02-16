@@ -36,9 +36,8 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Pairw
    * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
   explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                    const double interactionLength, const std::array<double, 3> &cellLength,
-                                    const DataLayoutOption::Value dataLayout, const bool useNewton3,
-                                    const bool spaciallyForward)
+                                    double interactionLength, const std::array<double, 3> &cellLength,
+                                    DataLayoutOption::Value dataLayout, bool useNewton3, bool spaciallyForward)
       : SlicedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                             dataLayout, useNewton3, spaciallyForward) {}
 

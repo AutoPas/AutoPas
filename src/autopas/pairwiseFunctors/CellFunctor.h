@@ -34,8 +34,7 @@ class CellFunctor {
    * @param dataLayout The data layout to be used.
    * @param useNewton3 Parameter to specify whether newton3 is used or not.
    */
-  explicit CellFunctor(ParticleFunctor *f, const double sortingCutoff, const DataLayoutOption::Value dataLayout,
-                       const bool useNewton3)
+  explicit CellFunctor(ParticleFunctor *f, double sortingCutoff, DataLayoutOption::Value dataLayout, bool useNewton3)
       : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
 
   /**
@@ -129,9 +128,9 @@ class CellFunctor {
    */
   size_t _sortingThreshold{8};
 
-  const DataLayoutOption::Value _dataLayout;
+  DataLayoutOption::Value _dataLayout;
 
-  const bool _useNewton3;
+  bool _useNewton3;
 };
 
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
@@ -142,7 +141,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::setSortingThresh
 template <class ParticleCell, class ParticleFunctor, bool bidirectional>
 void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(ParticleCell &cell) {
   if ((_dataLayout == DataLayoutOption::soa and cell._particleSoABuffer.size() == 0) or
-      (_dataLayout == DataLayoutOption::aos and cell.size() == 0)) {
+      (_dataLayout == DataLayoutOption::aos and cell.isEmpty())) {
     return;
   }
 
@@ -172,7 +171,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
     ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((_dataLayout == DataLayoutOption::soa and
        (cell1._particleSoABuffer.size() == 0 and cell2._particleSoABuffer.size() == 0)) or
-      (_dataLayout == DataLayoutOption::aos and (cell1.size() == 0 and cell2.size() == 0))) {
+      (_dataLayout == DataLayoutOption::aos and (cell1.isEmpty() and cell2.isEmpty()))) {
     return;
   }
 

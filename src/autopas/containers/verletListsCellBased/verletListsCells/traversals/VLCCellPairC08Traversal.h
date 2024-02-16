@@ -37,7 +37,7 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
    */
   explicit VLCCellPairC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                    double interactionLength, const std::array<double, 3> &cellLength,
-                                   const DataLayoutOption::Value dataLayout, const bool useNewton3)
+                                   DataLayoutOption::Value dataLayout, bool useNewton3)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
         _functor(pairwiseFunctor),

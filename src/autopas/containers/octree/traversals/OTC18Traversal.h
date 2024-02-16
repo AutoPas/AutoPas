@@ -43,7 +43,7 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit OTC18Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
-                          const DataLayoutOption::Value dataLayout, const bool useNewton3)
+                          DataLayoutOption::Value dataLayout, bool useNewton3)
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
       : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),

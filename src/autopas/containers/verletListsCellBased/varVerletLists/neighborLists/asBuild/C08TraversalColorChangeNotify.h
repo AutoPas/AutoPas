@@ -31,9 +31,8 @@ class C08TraversalColorChangeNotify : public LCC08Traversal<ParticleCell, Pairwi
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   C08TraversalColorChangeNotify(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                const double interactionLength, const std::array<double, 3> &cellLength,
-                                ColorChangeObserver *observer, const DataLayoutOption::Value dataLayout,
-                                const bool useNewton3)
+                                double interactionLength, const std::array<double, 3> &cellLength,
+                                ColorChangeObserver *observer, DataLayoutOption::Value dataLayout, bool useNewton3)
       : LCC08Traversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength, dataLayout,
                                                       useNewton3),
         _observer(observer) {}

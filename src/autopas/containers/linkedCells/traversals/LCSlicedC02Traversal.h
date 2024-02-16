@@ -43,8 +43,8 @@ class LCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairwi
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                const double interactionLength, const std::array<double, 3> &cellLength,
-                                const DataLayoutOption::Value dataLayout, const bool useNewton3)
+                                double interactionLength, const std::array<double, 3> &cellLength,
+                                DataLayoutOption::Value dataLayout, bool useNewton3)
       : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                                dataLayout, useNewton3, true),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,

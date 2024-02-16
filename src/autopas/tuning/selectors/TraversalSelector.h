@@ -75,15 +75,14 @@ class TraversalSelector {
   static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
                                                                PairwiseFunctor &pairwiseFunctor,
                                                                const TraversalSelectorInfo &traversalInfo,
-                                                               const DataLayoutOption dataLayout,
-                                                               const bool useNewton3);
+                                                               DataLayoutOption dataLayout, bool useNewton3);
 };
 
 template <class ParticleCell>
 template <class PairwiseFunctor>
 std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &traversalInfo,
-    const DataLayoutOption dataLayout, const bool useNewton3) {
+    DataLayoutOption dataLayout, bool useNewton3) {
   switch (traversalType) {
     // Direct sum
     case TraversalOption::ds_sequential: {

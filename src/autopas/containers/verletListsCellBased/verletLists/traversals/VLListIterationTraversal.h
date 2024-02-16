@@ -7,7 +7,6 @@
 #pragma once
 
 #include "VLTraversalInterface.h"
-#include "autopas/containers/TraversalBase.h"
 #include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -22,7 +21,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationTraversal : public TraversalBase, public VLTraversalInterface<ParticleCell> {
+class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -32,9 +31,9 @@ class VLListIterationTraversal : public TraversalBase, public VLTraversalInterfa
    * @param dataLayout
    * @param useNewton3
    */
-  explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor, const DataLayoutOption::Value dataLayout,
-                                    const bool useNewton3)
-      : TraversalBase(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
+  explicit VLListIterationTraversal(PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout,
+                                    bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _functor(pairwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_iteration; }
 

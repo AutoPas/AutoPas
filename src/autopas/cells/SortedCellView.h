@@ -28,9 +28,13 @@ template <class ParticleCellType>
 class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleType> {
  public:
   /**
+   * The particle type for this view is the particle type from the cell.
+   */
+  using ParticleType = typename ParticleCellType::ParticleType;
+  /**
    * Type that holds or refers to the actual particles.
    */
-  using StorageType = std::vector<typename ParticleCellType::ParticleType *>;
+  using StorageType = std::vector<ParticleType *>;
   /**
    * Constructs a FullSortedParticleCell.
    * @param cell Cell whose particles are sorted.
@@ -52,7 +56,7 @@ class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleTy
   /**
    * @copydoc ParticleCell::addParticle()
    */
-  void addParticle(const typename ParticleCellType::ParticleType &p) override {}
+  void addParticle(const ParticleType &p) override {}
 
   /**
    * @copydoc autopas::FullParticleCell::begin()
@@ -131,19 +135,19 @@ class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleTy
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  typename ParticleCellType::ParticleType &at(size_t index) { return _particles.at(index); }
+  ParticleType &at(size_t index) { return _particles.at(index); }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  const typename ParticleCellType::ParticleType &at(size_t index) const { return _particles.at(index); }
+  const ParticleType &at(size_t index) const { return _particles.at(index); }
 
   /**
    * Sorted vector of projected positions and particle pointers.
    */
-  std::vector<std::pair<double, typename ParticleCellType::ParticleType *>> _particles;
+  std::vector<std::pair<double, ParticleType *>> _particles;
 
   /**
    * Underlying cell.
