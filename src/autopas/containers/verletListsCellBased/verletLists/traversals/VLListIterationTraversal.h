@@ -74,7 +74,7 @@ class VLListIterationTraversal : public TraversalInterface, public VLTraversalIn
   void traverseParticlePairs() override {
     auto &aosNeighborLists = *(this->_aosNeighborLists);
     auto &soaNeighborLists = *(this->_soaNeighborLists);
-    switch (_dataLayout) {
+    switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         // If we use parallelization,
         if (not _useNewton3) {
