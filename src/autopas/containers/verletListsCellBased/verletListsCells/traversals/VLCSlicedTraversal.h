@@ -67,7 +67,8 @@ class VLCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwis
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_sliced;
       default:
-        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type!");
+        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: " +
+                                                    ContainerOption::getOptionNames()[this->_typeOfList]);
     }
     // should never be reached.
     return TraversalOption();

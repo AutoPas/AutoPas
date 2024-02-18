@@ -32,7 +32,7 @@ class VLCTraversalInterface {
    * Constructor of the VLCTraversalInterface.
    * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
    */
-  VLCTraversalInterface(const ContainerOption::Value typeOfList) : _typeOfList(typeOfList) {}
+  VLCTraversalInterface(ContainerOption typeOfList) : _typeOfList(typeOfList) {}
 
   /**
    * Sets the verlet list for the traversal to iterate over.
@@ -94,7 +94,7 @@ class VLCTraversalInterface {
   /**
    * The type of neighbor list as an enum value.
    */
-  const ContainerOption::Value _typeOfList;
+  ContainerOption _typeOfList;
 
  private:
   /**

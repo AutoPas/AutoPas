@@ -157,7 +157,7 @@ class SlicedBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Whether the base step only covers neigboring cells tha are spacially forward (for example c08).
    */
-  const bool _spaciallyForward;
+  bool _spaciallyForward;
 
  private:
   /**
