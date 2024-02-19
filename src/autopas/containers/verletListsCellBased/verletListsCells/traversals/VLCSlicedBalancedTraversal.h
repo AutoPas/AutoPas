@@ -64,8 +64,8 @@ class VLCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_sliced_balanced;
       default:
-        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: " +
-                                                    ContainerOption::getOptionNames()[this->_typeOfList]);
+        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: {}",
+                                                    this->_typeOfList.to_string());
     }
     // should never be reached.
     return TraversalOption();

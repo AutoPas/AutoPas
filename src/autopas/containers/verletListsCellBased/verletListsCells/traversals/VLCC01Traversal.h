@@ -55,8 +55,8 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor>,
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_c01;
       default:
-        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: " +
-                                                    ContainerOption::getOptionNames()[this->_typeOfList]);
+        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: {}",
+                                                    this->_typeOfList.to_string());
     }
     // should never be reached.
     return TraversalOption();
