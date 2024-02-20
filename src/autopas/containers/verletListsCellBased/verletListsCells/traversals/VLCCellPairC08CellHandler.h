@@ -14,11 +14,9 @@ namespace autopas {
  * This class provides the base logic for the c08 traversal for VLCCellPairNeighborList.
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> {
+template <class ParticleCell, class PairwiseFunctor>
+class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, PairwiseFunctor> {
  public:
   /**
    * Constructor of the VLCCellPairC08CellHandler. The offsets for the base step are computed here using the
@@ -28,12 +26,15 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
+   * @param dataLayout
+   * @param useNewton3
    */
   explicit VLCCellPairC08CellHandler(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      double interactionLength, const std::array<double, 3> &cellLength,
-                                     const std::array<unsigned long, 3> &overlap)
-      : LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>(
-            pairwiseFunctor, dims, interactionLength, cellLength, overlap) {
+                                     const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout,
+                                     bool useNewton3)
+      : LCC08CellHandler<ParticleCell, PairwiseFunctor>(pairwiseFunctor, dims, interactionLength, cellLength, overlap,
+                                                        dataLayout, useNewton3) {
     this->computeOffsets(dims);
   }
 
@@ -48,7 +49,7 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
    * @param dims number of cells per dimension
    */
   void processCellListsC08(VLCCellPairNeighborList<typename ParticleCell::ParticleType> &neighborList,
-                           unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value layout,
+                           unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor, DataLayoutOption layout,
                            SoA<typename ParticleCell::ParticleType::SoAArraysType> *soa,
                            const std::array<unsigned long, 3> &dims) {
     const auto &aosNeighborList = neighborList.getAoSNeighborList();
@@ -69,23 +70,23 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
       // check if cell2 exists (in cell1's neighbor list)
       if (cell2Local != globalToLocalIndex[offsetCell1].end()) {
         // if aos, send every pair of interacting particles to functor
-        if constexpr (dataLayout == DataLayoutOption::aos) {
+        if (layout == DataLayoutOption::aos) {
           // vector of pairs {particle, list}
           const auto &currentList = aosNeighborList[offsetCell1][cell2Local->second];
           for (auto &[particleBasePtr, particleList] : currentList) {
             for (auto *particlePartnerPtr : particleList) {
-              pairwiseFunctor->AoSFunctor(*particleBasePtr, *particlePartnerPtr, useNewton3);
+              pairwiseFunctor->AoSFunctor(*particleBasePtr, *particlePartnerPtr, this->_useNewton3);
             }
           }
         }
 
         // if soa, send particle and corresponding neighbor list to the functor
-        else if constexpr (dataLayout == DataLayoutOption::soa) {
+        else if (layout == DataLayoutOption::soa) {
           // vector of pairs {particle, list}
           const auto &currentList = soaNeighborList[offsetCell1][cell2Local->second];
           for (const auto &[particleIndex, particleList] : currentList) {
             if (not particleList.empty()) {
-              pairwiseFunctor->SoAFunctorVerlet(*soa, particleIndex, particleList, useNewton3);
+              pairwiseFunctor->SoAFunctorVerlet(*soa, particleIndex, particleList, this->_useNewton3);
             }
           }
         }
@@ -93,28 +94,28 @@ class VLCCellPairC08CellHandler : public LCC08CellHandler<ParticleCell, Pairwise
 
       // if newton3 is off, find cell1 in cell2's neighbor list ("switch" the pair from above) and repeat the
       // interaction from above
-      if constexpr (not useNewton3) {
+      if (not this->_useNewton3) {
         const auto cell2LocalNoN3 = globalToLocalIndex[offsetCell2].find(offsetCell1);
         // exclude interaction within same cell - already handled in
         if (cell2LocalNoN3 != globalToLocalIndex[offsetCell2].end() and offsetCell1 != offsetCell2) {
           // if aos, send every pair of interacting particles to functor
-          if constexpr (dataLayout == DataLayoutOption::aos) {
+          if (layout == DataLayoutOption::aos) {
             // vector of pairs {particle, list}
             const auto &currentList = aosNeighborList[offsetCell2][cell2LocalNoN3->second];
             for (auto &[particleBasePtr, particleList] : currentList) {
               for (auto *particlePartnerPtr : particleList) {
-                pairwiseFunctor->AoSFunctor(*particleBasePtr, *particlePartnerPtr, useNewton3);
+                pairwiseFunctor->AoSFunctor(*particleBasePtr, *particlePartnerPtr, this->_useNewton3);
               }
             }
           }
 
           // if soa, send particle and corresponding neighbor list to the functor
-          else if constexpr (dataLayout == DataLayoutOption::soa) {
+          else if (layout == DataLayoutOption::soa) {
             // vector of pairs {particle, list}
             const auto &currentList = soaNeighborList[offsetCell2][cell2LocalNoN3->second];
             for (const auto &[particleIndex, particleList] : currentList) {
               if (not particleList.empty()) {
-                pairwiseFunctor->SoAFunctorVerlet(*soa, particleIndex, particleList, useNewton3);
+                pairwiseFunctor->SoAFunctorVerlet(*soa, particleIndex, particleList, this->_useNewton3);
               }
             }
           }
