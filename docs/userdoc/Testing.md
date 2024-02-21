@@ -1,22 +1,22 @@
 # Testing
 
-AutoPas uses [googletest](https://github.com/google/googletest) as its testing framework, which exposes tests to [ctest](https://cmake.org/cmake/help/latest/manual/ctest.1.html), the CMake test driver.
+AutoPas uses [googletest](https://github.com/google/googletest) as its testing framework, which exposes tests to [`ctest`](https://cmake.org/cmake/help/latest/manual/ctest.1.html), the CMake test driver.
 
 We do not distinguish between unit/integration/smoke/etc. in the tests directory `/tests/`. However, our tests, in general, fall into a few categories:
 - Regular GTests
 
-  Everything in [`/tests/testAutopas/`](/tests/testAutopas/)
+  Everything in [`/tests/testAutopas/`](https://github.com/AutoPas/AutoPas/blob/master/tests/testAutopas/)
 
 - GTests with MPI
 
-  Everything in [`/tests/MPIParallelAutoPasTests/`](/tests/MPIParallelAutoPasTests/)
+  Everything in [`/tests/MPIParallelAutoPasTests/`](https://github.com/AutoPas/AutoPas/blob/master/tests/MPIParallelAutoPasTests/)
 
 - Test involving examples
 
-  Declared in the examples' CMakeLists files. [E.g. md-flexible](/examples/md-flexible/CMakeLists.txt).
+  Declared in the examples' CMakeLists files. [E.g. md-flexible](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/CMakeLists.txt).
 
 - GTests for examples
-  This only exists for md-flexible in `examples/md-flexible/tests`. See md-flexible's [README](/examples/md-flexible/README.md) for more information.
+  This only exists for md-flexible in `examples/md-flexible/tests`. See md-flexible's [README](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/README.md) for more information.
 
 ## Running Tests
 
