@@ -212,3 +212,54 @@ TEST_F(RegionParticleIteratorTest, testForceSequential) {
         << "Thread " << t << " did not find the correct IDs.";
   }
 }
+
+/**
+ * Checks if a region iterator finds a particle that is stored in a
+ */
+TEST_F(RegionParticleIteratorTest, testParticleMisplacement) {
+  using namespace autopas::utils::ArrayMath::literals;
+  // Helper struct to represent region iterator boxes.
+  struct Box {
+    std::array<double, 3> min;
+    std::array<double, 3> max;
+  };
+
+  autopas::AutoPas<Molecule> autoPas{};
+  // Get a 10x10x10 box
+  // TODO this test has to be generalized to every container
+  defaultInit(autoPas, autopas::ContainerOption::linkedCells, 1.);
+  const auto shortDistance = autoPas.getVerletSkinPerTimestep() * 0.1;
+
+  // start inside near the edge, end outside
+  const std::array<double, 3> posStart = {shortDistance, shortDistance, shortDistance};
+  constexpr Box searchBoxStart = {{0., 0., 0.}, {1., 1., 1.}};
+
+  // Move particle by 2*shortDistance in the x direction. Now it's outside the container box.
+  const std::array<double, 3> posEnd = {-shortDistance, shortDistance, shortDistance};
+  // The new box should cover the area in the halo region where the particle moved to.
+  const Box searchBoxEnd = {{-shortDistance * 10., 0., 0.}, {-shortDistance / 2., 1., 1.}};
+
+  ASSERT_FALSE(autopas::utils::boxesOverlap(searchBoxStart.min, searchBoxStart.max, searchBoxEnd.min, searchBoxEnd.max))
+      << "Search boxes should not overlap. If they do the test is written wrong.";
+
+  // Helper function to check if a region iterator finds the one particle with ID 0 in the given region.
+  auto testRegion = [&](const std::array<double, 3> &min, const std::array<double, 3> &max,
+                        const std::string &context) {
+    size_t numParticlesFound = 0;
+    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOrHalo); iter.isValid();
+         ++iter) {
+      ++numParticlesFound;
+      EXPECT_EQ(iter->getID(), 0) << "There should only be one particle with ID 0.\n" << context;
+    }
+    EXPECT_EQ(numParticlesFound, 1) << "Exactly one particle was inserted in the domain\n" << context;
+  };
+
+  // Actual test section
+  // Place a particle and make sure the region iterator finds it.
+  autoPas.addParticle({posStart, {0., 0., 0.}, 0});
+  testRegion(searchBoxStart.min, searchBoxStart.max, "Before particle is moved.");
+
+  // Move the particle outside the data structure element (for LC: cell) where it is currently stored
+  autoPas.begin(autopas::IteratorBehavior::ownedOrHalo)->setR(posEnd);
+  testRegion(searchBoxEnd.min, searchBoxEnd.max, "After particle was moved.");
+}
