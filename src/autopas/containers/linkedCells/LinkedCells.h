@@ -247,6 +247,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
+        // if particles might have moved extend search box for cells here
+        // TODO
         return {_cellBlock.get1DIndexOfPosition(boxMin), _cellBlock.get1DIndexOfPosition(boxMax)};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
