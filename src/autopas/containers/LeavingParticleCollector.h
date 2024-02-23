@@ -20,6 +20,7 @@ namespace autopas::LeavingParticleCollector {
 /**
  * For a given container that supports `getCutoff()`, `getBoxMin()` and `getBoxMax()`,
  * calculates a set of 6 non-overlapping boxes that fully cover the halo.
+ * These boxes extend into the container to catch halo particles which have moved inside the container.
  *
  * @note this function is public for testing purposes.
  *
