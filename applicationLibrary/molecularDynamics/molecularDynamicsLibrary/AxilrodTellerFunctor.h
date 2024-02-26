@@ -185,7 +185,7 @@ class AxilrodTellerFunctor
       nu = _PPLibrary->getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
     }
 
-    const auto displacementIJ = j.getR() - i.getR(); // {j1 - i1, j2 - i2, j3 - i3}
+    const auto displacementIJ = j.getR() - i.getR(); // {j1 - i1, j2 - i2, j3 - i3} (5 ,1) (1 ,5) (2, 2) = (-5, -1) (-1, -5) (-2, -2)
     const auto displacementJK = k.getR() - j.getR();
     const auto displacementKI = i.getR() - k.getR();
 
