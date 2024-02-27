@@ -103,8 +103,23 @@ class ATLookUpTable {
 
   // Vector Index
 
-  int getIndexNoP(size_t j1, size_t j2, size_t j3, size_t k1, size_t k2, size_t k3) {
-    return j1 + j2 * two + j3 * three + k1 * four + k2 * five + k3 * six;
+  int getIndexNoP(size_t a, size_t b, size_t c) {
+    // Is there something better?!
+    size_t index;
+    for (auto i = 0; i<a; i++) {
+      for (auto j = 0; j<i; j++) {
+        for (auto k = 0; k<j; k++) {
+          index++;
+        }
+      }
+    }
+    for (auto i = 0; i < b; i++) {
+      for (auto j = 0; j < i; j++) {
+        index++;
+      }
+    }
+    index += c;
+    return lut[index];
   }
 
 
@@ -114,29 +129,18 @@ class ATLookUpTable {
   void fillTableEvenSpacing () {
     std::cout << "Building Table\n";
     std::cout << "Number of points: " << numberOfPoints << " Point distance: " << pointDistance << "\n";
-    floatType i1, i2, i3, j1, j2, j3, k1, k2, k3;
-    j1 = j2 = j3 = k1 = k2 = k3 = (pointDistance / 2) - 2 * cutoffSquared; // Why 2 * cutoffSquared?
-    uint64_t dupes = 0;
-    for (auto kc3 = 0; kc3 < numberOfPoints; kc3++) {
-      for (auto kc2 = 0; kc2 < numberOfPoints; kc2++) {
-        for (auto kc1 = 0; kc1 < numberOfPoints; kc1++) {
-          for (auto jc3 = 0; jc3 < numberOfPoints; jc3++) {
-            for (auto jc2 = 0; jc2 < numberOfPoints; jc2++) {
-              for (auto jc1 = 0; jc1 < numberOfPoints; jc1++) {
-                auto n = ATFunctor(0, 0, 0, j1, j2, j3, k1, k2, k3);
-                lut.push_back(n);
-                j1 += pointDistance;
-              }
-              j2 += pointDistance;
-            }
-            j3 += pointDistance;
-          }
-          k1 += pointDistance;
+    floatType j1, k1, k2;
+
+    for (floatType distA = pointDistance / 2; distA < cutoffSquared; distA += pointDistance) {
+      for (floatType distB = pointDistance / 2; distB <= distA; distB += pointDistance) {
+        for (floatType distC = pointDistance / 2; distC <= distB; distC += pointDistance) {
+          floatType cX, cY;
+          cX = (distB * distB - distC * distC + distA * distA) / (2 * distA);
+          cY = std::sqrt(distB * distB - ((distB * distB - distC * distC + distA * distA) * (distB * distB - distC * distC + distA * distA)) / (4 * distA * distA));
+          Entry val = ATFunctor(0, 0, 0, distA, 0, 0, cX, cY, 0);
+          lut.push_back(val);
         }
-        k2 += pointDistance;
       }
-      std::cout << "Done with kc3=" << kc3 << " k3=" << k3 << "\n";
-      k3 += pointDistance;
     }
     auto first = 0;
     auto total = 0;
@@ -153,7 +157,7 @@ class ATLookUpTable {
         nan++;
       }
     }
-    std::cout << "First: " << first << " Last: " << last << " Total: " << total << " Nan: " << nan << " Duplicates: " << dupes << " Size: "<< lut.size() << "\n";
+    std::cout << "First: " << first << " Last: " << last << " Total: " << total << " Nan: " << nan << " Size: "<< lut.size() << "\n";
   };
 
   // Interpolation functions
@@ -162,6 +166,16 @@ class ATLookUpTable {
     //using namespace autopas::utils::ArrayMath::literals;
     //auto accurate = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
     AutoPasLog(DEBUG, "Input was {} {} {} | {} {} {} | {} {} {}", i1, i2, i3, j1, j2, j3, k1, k2, k3);
+
+    /*
+     * 1. Round distances
+     * 2. Get forces from lut
+     * 3. Find rotation of triangle
+     * 4. Rotate force vectors
+     * 5. Return
+     */
+
+
     //static Entry totalRelError;
     if constexpr (intervalType == evenSpacing) {
       j1 -= i1;
