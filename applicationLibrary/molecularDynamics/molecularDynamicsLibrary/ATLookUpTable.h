@@ -80,10 +80,10 @@ class ATLookUpTable {
     }
   }
 
-  Entry retrieveValue(const std::array<double, 3>& displacementIJ, const std::array<double, 3>& displacementJK, const std::array<double, 3>& displacementKI) {
+  Entry retrieveValue(const std::array<double, 3>& displacementIJ, const std::array<double, 3>& displacementJK, const std::array<double, 3>& displacementKI, floatType distSquaredIJ, floatType distSquaredJK, floatType distSquaredKI) {
     AutoPasLog(DEBUG, "Retrieved value from AT-LUT");
     if constexpr (interpolationType == nextNeighbor) {
-      return getNextNeighbor(displacementIJ[0], displacementIJ[1], displacementIJ[2], displacementJK[0], displacementJK[1], displacementJK[2], displacementKI[0], displacementKI[1], displacementKI[2]);
+      return getNextNeighbor(displacementIJ[0], displacementIJ[1], displacementIJ[2], displacementJK[0], displacementJK[1], displacementJK[2], displacementKI[0], displacementKI[1], displacementKI[2], distSquaredIJ, distSquaredJK, distSquaredKI);
     }
   }
 
@@ -156,10 +156,10 @@ class ATLookUpTable {
 
   // Interpolation functions
 
-  Entry getNextNeighbor(floatType i1, floatType i2, floatType i3, floatType j1, floatType j2, floatType j3, floatType k1, floatType k2, floatType k3) {
+  Entry getNextNeighbor(floatType i1, floatType i2, floatType i3, floatType j1, floatType j2, floatType j3, floatType k1, floatType k2, floatType k3, floatType distSquaredIJ, floatType distSquaredJK, floatType distSquaredKI) {
     //using namespace autopas::utils::ArrayMath::literals;
     //auto accurate = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
-    AutoPasLog(DEBUG, "Input was {} {} {} | {} {} {} | {} {} {}", i1, i2, i3, j1, j2, j3, k1, k2, k3);
+    AutoPasLog(DEBUG, "Input was {} {} {} | {} {} {} | {} {} {} | dist: IJ {} JK {} KI {}", i1, i2, i3, j1, j2, j3, k1, k2, k3, distSquaredIJ, distSquaredJK, distSquaredKI);
 
     /*
      * 1. Round distances
@@ -172,41 +172,22 @@ class ATLookUpTable {
 
     //static Entry totalRelError;
     if constexpr (intervalType == evenSpacing) {
-      j1 -= i1;
-      j2 -= i2;
-      j3 -= i3;
-      k1 -= i1;
-      k2 -= i2;
-      k3 -= i3;
-      //AutoPasLog(DEBUG, "Subtracted: {} {} {} | {} {} {}", j1, j2, j3, k1, k2, k3);
-      // 2 * cutoffSquared als member
-      j1 += 2 * cutoffSquared;
-      j2 += 2 * cutoffSquared;
-      j3 += 2 * cutoffSquared;
-      k1 += 2 * cutoffSquared;
-      k2 += 2 * cutoffSquared;
-      k3 += 2 * cutoffSquared;
-      // / pointDistance als member
-      size_t ij1 = std::floor(j1 / pointDistance);
-      size_t ij2 = std::floor(j2 / pointDistance);
-      size_t ij3 = std::floor(j3 / pointDistance);
-      size_t ik1 = std::floor(k1 / pointDistance);
-      size_t ik2 = std::floor(k2 / pointDistance);
-      size_t ik3 = std::floor(k3 / pointDistance);
-      if (ij1 == numberOfPoints)
-        ij1--;
-      if (ij2 == numberOfPoints)
-        ij2--;
-      if (ij3 == numberOfPoints)
-        ij3--;
-      if (ik1 == numberOfPoints)
-        ik1--;
-      if (ik2 == numberOfPoints)
-        ik2--;
-      if (ik3 == numberOfPoints)
-        ik3--;
+      floatType IJround = std::floor(distSquaredIJ / numberOfPoints);
+      floatType JKround = std::floor(distSquaredJK / numberOfPoints);
+      floatType KIround = std::floor(distSquaredKI / numberOfPoints);
 
-      auto ret = lut[(getIndexNoP(ij1, ij2, ij3, ik1, ik2, ik3))]; // How slow is std::floor?
+      if (IJround == numberOfPoints)
+        IJround--;
+      if (JKround == numberOfPoints)
+        JKround--;
+      if (KIround == numberOfPoints)
+        KIround--;
+
+      Entry forces = lut[getIndexNoP(IJround, JKround, KIround)];
+
+      // TODO: find angle and turn forces
+
+      // How slow is std::floor?
 //      auto relErr = relError(ret, accurate);
 //      totalRelError.first[0] += relErr.first[0];
 //      totalRelError.first[1] += relErr.first[1];
@@ -215,7 +196,7 @@ class ATLookUpTable {
 //      AutoPasLog(DEBUG, "Total rel Error: {}", totalRelError);
       //AutoPasLog(DEBUG, "Return {} instead of {}\nAbs: {} Rel: {}", ret, accurate, absError(ret, accurate), relError(ret, accurate));
       //AutoPasLog(DEBUG, "Used {} {} {} | {} {} {}", (pointDistance / 2) - 2*cutoffSquared + ij1 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ij2 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ij3 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ik1 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ik2 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ik3 * pointDistance);
-      return ret;
+      return forces;
     }
   }
 
