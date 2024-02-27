@@ -28,7 +28,7 @@ namespace autopas {
  */
 template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VLListIntersectionTraversalSorted3B : public TraversalInterface<InteractionTypeOption::threeBody>,
-                                 public VLTraversalInterface<ParticleCell> {
+                                            public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -38,15 +38,15 @@ class VLListIntersectionTraversalSorted3B : public TraversalInterface<Interactio
    */
   explicit VLListIntersectionTraversalSorted3B(TriwiseFunctor *triwiseFunctor) : _functor(triwiseFunctor) {}
 
-  [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_list_intersection_sorted_3b; }
+  [[nodiscard]] TraversalOption getTraversalType() const override {
+    return TraversalOption::vl_list_intersection_sorted_3b;
+  }
 
   [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (not useNewton3) and dataLayout == DataLayoutOption::aos;
-  }
+  [[nodiscard]] bool isApplicable() const override { return (not useNewton3) and dataLayout == DataLayoutOption::aos; }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -70,16 +70,17 @@ class VLListIntersectionTraversalSorted3B : public TraversalInterface<Interactio
         /// @todo add parelelization
         if (not useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
-          /// @todo find a sensible chunk size
-          AUTOPAS_OPENMP(parallel for schedule(dynamic)){
-            for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-              // create a buffer for all intersections
-              auto intersectingNeighbors = std::vector<Particle*>();
 
+          AUTOPAS_OPENMP(parallel) {
+            // create a buffer per Thread for all intersections
+            auto intersectingNeighbors = std::vector<Particle *>();
+
+            AUTOPAS_OPENMP(for schedule(dynamic))
+            for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
               auto endIter = aosNeighborLists.end(bucketId);
               for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
                 Particle &particle = *(bucketIter->first);
-                if(not particle.isOwned()){
+                if (not particle.isOwned()) {
                   // skip Halo particles as N3 is disabled
                   continue;
                 }
@@ -94,16 +95,18 @@ class VLListIntersectionTraversalSorted3B : public TraversalInterface<Interactio
                   intersectingNeighbors.reserve(maxIntersectionSize);
 
                   auto intersectionIter = neighborPtrIter1;
-                  auto intersectionEndIter = std::set_intersection(++intersectionIter, neighborList.end()
-                  , neighborList1.begin(), neighborList1.end(), std::back_inserter(intersectingNeighbors));
-                  
-                  for(auto neighborPtrIter2 = intersectingNeighbors.begin(); neighborPtrIter2 != intersectingNeighbors.end(); ++neighborPtrIter2){
-                      Particle &neighbor2 = *(*neighborPtrIter2);
-                      _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
+                  auto intersectionEndIter =
+                      std::set_intersection(++intersectionIter, neighborList.end(), neighborList1.begin(),
+                                            neighborList1.end(), std::back_inserter(intersectingNeighbors));
+
+                  for (auto neighborPtrIter2 = intersectingNeighbors.begin();
+                       neighborPtrIter2 != intersectingNeighbors.end(); ++neighborPtrIter2) {
+                    Particle &neighbor2 = *(*neighborPtrIter2);
+                    _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
                   }
 
                   // clear buffer for next loop-iteration
-                  intersectingNeighbors.clear();     
+                  intersectingNeighbors.clear();
                 }
               }
             }
@@ -115,7 +118,8 @@ class VLListIntersectionTraversalSorted3B : public TraversalInterface<Interactio
       }
 
       case DataLayoutOption::soa: {
-        utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLListIntersectionTraversalSorted3B.");
+        utils::ExceptionHandler::exception(
+            "SoA dataLayout not implemented yet for VLListIntersectionTraversalSorted3B.");
       }
       default: {
         utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout);

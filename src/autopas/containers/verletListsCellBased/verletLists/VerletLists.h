@@ -9,12 +9,12 @@
 #include "VerletListHelpers.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
-#include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC08NeighborListBuilding3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal3B.h"
-#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalSorted3B.h"
+#include "autopas/containers/linkedCells/traversals/LCC08NeighborListBuilding3B.h"
+#include "autopas/containers/linkedCells/traversals/LCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal3B.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
@@ -136,9 +136,9 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
-    
-    switch(traversal->getTraversalType()){
-      case TraversalOption::vl_list_intersection_sorted_3b:{
+
+    switch (traversal->getTraversalType()) {
+      case TraversalOption::vl_list_intersection_sorted_3b: {
         this->updateVerletListsAoS3B(traversal->getUseNewton3());
 
         // sort neighborLists for efficient intersecting
@@ -148,130 +148,78 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         AUTOPAS_OPENMP(parallel for schedule(dynamic))
         for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
           auto endIter = _aosNeighborLists.end(bucketId);
-          for(auto bucketIter = _aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter){
-            auto& neighborPtrList = bucketIter->second;
+          for (auto bucketIter = _aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
+            auto &neighborPtrList = bucketIter->second;
             std::sort(neighborPtrList.begin(), neighborPtrList.end());
           }
         }
         break;
       }
-      case TraversalOption::vl_pair_list_iteration_3b:{
-        // build 3Body verletLists through intersection traversal
-        updateVerletListsAoS3B(false);
-        size_t buckets = _aosNeighborLists.bucket_count();
-        // sort lists
-        AUTOPAS_OPENMP(parallel for schedule(dynamic))
-        for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-          auto endIter = _aosNeighborLists.end(bucketId);
-          for(auto bucketIter = _aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter){
-            auto& neighborPtrList = bucketIter->second;
-            std::sort(neighborPtrList.begin(), neighborPtrList.end());
-          }
-        }
-
-
-        generatePairwiseAoSNeighborLists();
-        
-        /// @todo find a sensible chunk size
-        AUTOPAS_OPENMP(parallel for schedule(dynamic)){
-          for (size_t bucketId = 0; bucketId < buckets; bucketId++) {
-            // create a buffer for all intersections
-            auto intersectingNeighbors = std::vector<Particle*>();
-
-            auto endIter = _aosNeighborLists.end(bucketId);
-            for (auto bucketIter = _aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
-              Particle &particle = *(bucketIter->first);
-              if(not particle.isOwned()){
-                // skip Halo particles as N3 is disabled
-                continue;
-              }
-              auto &neighborList = bucketIter->second;
-              auto neighborPtrIter1 = neighborList.begin();
-              for (; neighborPtrIter1 != neighborList.end(); ++neighborPtrIter1) {
-                Particle &neighbor1 = *(*neighborPtrIter1);
-                auto &neighborList1 = (_aosNeighborLists.find(&neighbor1))->second;
-
-                std::size_t maxIntersectionSize = std::min(neighborList1.size(), neighborList.size());
-                //  make sure the buffer has enough space
-                intersectingNeighbors.reserve(maxIntersectionSize);
-
-                auto intersectionIter = neighborPtrIter1;
-                auto intersectionEndIter = std::set_intersection(++intersectionIter, neighborList.end()
-                , neighborList1.begin(), neighborList1.end(), std::back_inserter(intersectingNeighbors));
-                  
-                for(auto neighborPtrIter2 = intersectingNeighbors.begin(); neighborPtrIter2 != intersectingNeighbors.end(); ++neighborPtrIter2){
-                  Particle &neighbor2 = *(*neighborPtrIter2);
-                  _pairwiseAosNeighborLists.find(&particle)->second.push_back(std::pair<Particle*, Particle*>(&neighbor1, &neighbor2));
-                }
-
-                // clear buffer for next loop-iteration
-                intersectingNeighbors.clear();     
-              }
-            }
-          }
-        }
-        
-        /*updateVerletListsAoS3B(false);
-        generatePairwiseAoSNeighborLists();
-        typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor f(_pairwiseAosNeighborLists,
-                                                                               this->getCutoff() + this->getVerletSkin());
-
-        auto traversal = VLListIntersectionTraversalSorted3B<LinkedParticleCell, typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
-                             DataLayoutOption::aos, false>(&f);
-        this->iterateTriwise(&traversal);*/
-
-        //use 3Body linked Cells traversal and verlet-list-generator-functor to build lists
-        //this->updatePairwiseVerletListsAoS3B(traversal->getUseNewton3());
-        
+      case TraversalOption::vl_pair_list_iteration_3b: {
+        // build 3Body verletLists through VLIteration traversal
+        this->updatePairwiseVerletListsAoS3B(traversal->getUseNewton3());
         break;
       }
-      case TraversalOption::vl_list_iteration_3b:{
-        if(traversal->getUseNewton3()){
+      case TraversalOption::vl_list_iteration_3b: {
+        if (traversal->getUseNewton3()) {
           // with Newton3 Halo-Neighborlists are needed
           this->updateVerletListsAoS3B(traversal->getUseNewton3());
-        }else{
+        } else {
           // no Newton3 version does not require Halo-Neighborlists
           this->updateVerletListsAoS(traversal->getUseNewton3());
         }
       }
-      default:{
+      default: {
         this->updateVerletListsAoS3B(traversal->getUseNewton3());
       }
-        
     }
 
-    //code for neighborlist stats:
+    // code for neighborlist stats:
     /*double averageLength;
-    size_t maxLength = 0, numberOfLists = 0;
-    u_int64_t totalSizeBytes = 0, totalLength = 0;
+    size_t maxLength = 0, numberOfListsOwned = 0, numberOfListsHalo = 0;
+    u_int64_t totalSizeBytesOwned = 0, totalSizeBytesHalo = 0, totalLengthOwned = 0, totalLengthHalo = 0;
 
-    if(traversal->getTraversalType() != TraversalOption::vl_pair_list_iteration_3b){
-      for(auto &entry : _aosNeighborLists){
+    if (traversal->getTraversalType() != TraversalOption::vl_pair_list_iteration_3b) {
+      for (auto &entry : _aosNeighborLists) {
         auto &list = entry.second;
 
-        totalLength += list.size();
-        totalSizeBytes += (list.size() * sizeof(Particle*));
+        if(entry.first->isOwned()){
+          totalLengthOwned += list.size();
+          totalSizeBytesOwned += (list.size() * sizeof(Particle *));
+          numberOfListsOwned++;
+        }else{
+          totalLengthHalo += list.size();
+          totalSizeBytesHalo += (list.size() * sizeof(Particle *));
+          numberOfListsHalo++;
+        }
 
         maxLength = list.size() > maxLength ? list.size() : maxLength;
-
-        numberOfLists++;
       }
-    }else{
-      for(auto &entry : _pairwiseAosNeighborLists){
+    } else {
+      for (auto &entry : _pairwiseAosNeighborLists) {
         auto &list = entry.second;
 
-        totalLength += list.size();
-        totalSizeBytes += (list.size() * sizeof(std::pair<Particle*, Particle*>));
+        if(entry.first->isOwned()){
+          totalLengthOwned += list.size();
+          totalSizeBytesOwned += (list.size() * sizeof(std::pair<Particle *, Particle *>));
+          numberOfListsOwned++;
+        }else{
+          totalLengthHalo += list.size();
+          totalSizeBytesHalo += (list.size() * sizeof(std::pair<Particle *, Particle *>));
+          numberOfListsHalo++;
+        }
 
         maxLength = list.size() > maxLength ? list.size() : maxLength;
-
-        numberOfLists++;
       }
     }
-    
-    averageLength = totalLength / numberOfLists;
 
-    AutoPasLog(INFO, "NeighborList stats for both Halo and Owned particles: averageLength, maxLength, totalSizeBytes, numberOfLists,\n{},{},{},{}", averageLength, maxLength, totalSizeBytes, numberOfLists);
+    averageLength = (totalLengthOwned + totalLengthHalo) / (numberOfListsOwned + numberOfListsHalo);
+
+    AutoPasLog(INFO,
+               "NeighborList stats for both Halo and Owned particles: averageLength, maxLength, totalSizeBytesOwned, "
+               "numberOfListsOwned, totalSizeBytesHalo, numberOfListsHalo\n{},{},{},{},{},{}",
+               averageLength, maxLength, totalSizeBytesOwned, numberOfListsOwned, totalSizeBytesHalo,
+    numberOfListsHalo);
     */
 
     // the neighbor list is now valid
@@ -339,22 +287,22 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC08NeighborListBuilding3B<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
-                             DataLayoutOption::aos, theBool>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
+          auto traversal = LCC08NeighborListBuilding3B<LinkedParticleCell,
+                                                       typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
+                                                       DataLayoutOption::aos, theBool>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
       }
       case BuildVerletListType::VerletSoA: {
         utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC08NeighborListBuilding3B<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
-                             DataLayoutOption::soa, theBool>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
+          auto traversal = LCC08NeighborListBuilding3B<LinkedParticleCell,
+                                                       typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
+                                                       DataLayoutOption::soa, theBool>(
+              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+              this->_linkedCells.getCellBlock().getCellLength());
           this->_linkedCells.iteratePairwise(&traversal);
         });
         break;
@@ -373,39 +321,34 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @param useNewton3
    */
   virtual void updatePairwiseVerletListsAoS3B(bool useNewton3) {
+    updateVerletListsAoS3B(false);
     generatePairwiseAoSNeighborLists();
-    typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor f(_pairwiseAosNeighborLists,
-                                                                               this->getCutoff() + this->getVerletSkin());
+    typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor f(
+        _pairwiseAosNeighborLists, this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
     switch (_buildVerletListType) {
       case BuildVerletListType::VerletAoS: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC01Traversal3B<LinkedParticleCell, typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
-                             DataLayoutOption::aos, theBool>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iterateTriwise(&traversal);
-        });
+        auto traversal =
+            VLListIterationTraversal3B<LinkedParticleCell,
+                                       typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
+                                       DataLayoutOption::aos, false>(&f);
+        this->iterateTriwise(&traversal);
         break;
       }
       case BuildVerletListType::VerletSoA: {
         // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
-        AutoPasLog(WARN, "Pairwise Verlet-Lists can only be built with AoS DataLayout, using that instead!");
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC01Traversal3B<LinkedParticleCell, typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
-                             DataLayoutOption::aos, theBool>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iterateTriwise(&traversal);
-        });
+        AutoPasLog(WARN, "Pairwise Verlet-Lists can currently only be built with AoS DataLayout, using that instead!");
+        auto traversal =
+            VLListIterationTraversal3B<LinkedParticleCell,
+                                       typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
+                                       DataLayoutOption::aos, false>(&f);
+        this->iterateTriwise(&traversal);
         break;
       }
       default:
-        utils::ExceptionHandler::exception("VerletLists::updatePairwiseVerletListsAoS3B(): unsupported BuildVerletListType: {}",
-                                           _buildVerletListType);
+        utils::ExceptionHandler::exception(
+            "VerletLists::updatePairwiseVerletListsAoS3B(): unsupported BuildVerletListType: {}", _buildVerletListType);
         break;
     }
   }
@@ -431,7 +374,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   /**
    * Clears and then generates the pairwise AoS neighbor lists.
    */
-  void generatePairwiseAoSNeighborLists(){
+  void generatePairwiseAoSNeighborLists() {
     _pairwiseAosNeighborLists.clear();
     for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
       // create the pairwise verlet list entries for all particles
