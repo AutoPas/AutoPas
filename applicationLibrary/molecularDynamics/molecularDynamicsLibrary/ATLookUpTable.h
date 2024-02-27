@@ -106,19 +106,13 @@ class ATLookUpTable {
   int getIndexNoP(size_t a, size_t b, size_t c) {
     // Is there something better?!
     size_t index;
-    for (auto i = 0; i<a; i++) {
-      for (auto j = 0; j<i; j++) {
-        for (auto k = 0; k<j; k++) {
-          index++;
-        }
-      }
+    // optimize this
+    for (auto ia = 1; ia <= a; ia++) {
+      index += (ia * (ia + 1)) / 2;
     }
-    for (auto i = 0; i < b; i++) {
-      for (auto j = 0; j < i; j++) {
-        index++;
-      }
-    }
+    index += (b * (b + 1)) / 2;
     index += c;
+    AutoPasLog(DEBUG, "For {} {} {} return index {}", a, b, c, index);
     return lut[index];
   }
 
