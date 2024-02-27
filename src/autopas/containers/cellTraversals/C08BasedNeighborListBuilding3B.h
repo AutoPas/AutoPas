@@ -24,7 +24,8 @@ namespace autopas {
  */
 template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
           DataLayoutOption::Value dataLayout, bool useNewton3>
-class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3> {
+class C08BasedNeighborListBuilding3B
+    : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -34,8 +35,8 @@ class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, 
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    */
-  explicit C08BasedNeighborListBuilding3B(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
-                             const std::array<double, 3> &cellLength)
+  explicit C08BasedNeighborListBuilding3B(const std::array<unsigned long, 3> &dims, Functor *functor,
+                                          const double interactionLength, const std::array<double, 3> &cellLength)
       : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(
             dims, functor, interactionLength, cellLength) {}
 
@@ -51,8 +52,8 @@ class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, 
 template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
           DataLayoutOption::Value dataLayout, bool useNewton3>
 template <typename LoopBody>
-inline void C08BasedNeighborListBuilding3B<ParticleCell, Functor, interactionType, dataLayout, useNewton3>::c08Traversal(
-    LoopBody &&loopBody) {
+inline void C08BasedNeighborListBuilding3B<ParticleCell, Functor, interactionType, dataLayout,
+                                           useNewton3>::c08Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // last cells also have to be traversed to have correct Neighborlist building between Halo Cells

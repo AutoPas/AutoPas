@@ -157,7 +157,6 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vl_pair_list_iteration_3b,
 
-
     // VerletListCells Traversals:
     /**
      * VLCC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
@@ -266,13 +265,14 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for 3-body interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b, 
-                                                                    Value::lc_c01_3b, 
-                                                                    Value::vl_list_iteration_3b, 
-                                                                    Value::vl_list_intersection_sorted_3b,
-                                                                    Value::vl_list_intersection_hashing_3b,
-                                                                    Value::vl_pair_list_iteration_3b}; 
-                                                          }
+  static std::set<TraversalOption> getAllTriwiseOptions() {
+    return {Value::ds_sequential_3b,
+            Value::lc_c01_3b,
+            Value::vl_list_iteration_3b,
+            Value::vl_list_intersection_sorted_3b,
+            Value::vl_list_intersection_hashing_3b,
+            Value::vl_pair_list_iteration_3b};
+  }
 
   /**
    * Set of all pairwise traversals without discouraged options.

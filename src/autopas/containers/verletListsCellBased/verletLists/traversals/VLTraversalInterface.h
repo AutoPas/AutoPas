@@ -36,7 +36,8 @@ class VLTraversalInterface {
       std::vector<LinkedParticleCell> &cells,
       typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::NeighborListAoSType &aosNeighborLists,
       std::vector<std::vector<size_t, autopas::AlignedAllocator<size_t>>> &soaNeighborLists,
-      typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::PairwiseNeighborListAoSType &pairwiseAosNeighborLists) {
+      typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::PairwiseNeighborListAoSType
+          &pairwiseAosNeighborLists) {
     _cells = &cells;
     _aosNeighborLists = &aosNeighborLists;
     _soaNeighborLists = &soaNeighborLists;
@@ -60,8 +61,8 @@ class VLTraversalInterface {
   /**
    * The AoS neighbor list of the verlet lists container.
    */
-  typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::PairwiseNeighborListAoSType *_pairwiseAosNeighborLists =
-      nullptr;
+  typename VerletListHelpers<typename LinkedParticleCell::ParticleType>::PairwiseNeighborListAoSType
+      *_pairwiseAosNeighborLists = nullptr;
 };
 
 }  // namespace autopas

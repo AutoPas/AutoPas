@@ -35,7 +35,8 @@ class CellFunctorNeighborListBuild3B {
    * parameter is only relevant for optimization (sorting). This parameter normally should be the cutoff, for building
    * verlet lists, this should be cutoff+skin.
    */
-  explicit CellFunctorNeighborListBuild3B(ParticleFunctor *f, const double sortingCutoff) : _functor(f), _sortingCutoff(sortingCutoff) {}
+  explicit CellFunctorNeighborListBuild3B(ParticleFunctor *f, const double sortingCutoff)
+      : _functor(f), _sortingCutoff(sortingCutoff) {}
 
   /**
    * Process the interactions inside one cell.
@@ -131,15 +132,15 @@ class CellFunctorNeighborListBuild3B {
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value DataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3, bidirectional>::setSortingThreshold(
-    size_t sortingThreshold) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, DataLayout, useNewton3,
+                                    bidirectional>::setSortingThreshold(size_t sortingThreshold) {
   _sortingThreshold = sortingThreshold;
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCell(
-    ParticleCell &cell) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
+                                    bidirectional>::processCell(ParticleCell &cell) {
   if ((dataLayout == DataLayoutOption::soa and cell._particleSoABuffer.size() == 0) or
       (dataLayout == DataLayoutOption::aos and cell.size() == 0)) {
     return;
@@ -163,9 +164,9 @@ void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dat
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellPair(
-
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
+                                    bidirectional>::processCellPair(ParticleCell &cell1, ParticleCell &cell2,
+                                                                    const std::array<double, 3> &sortingDirection) {
   if ((dataLayout == DataLayoutOption::soa and
        (cell1._particleSoABuffer.size() == 0 or cell2._particleSoABuffer.size() == 0)) or
       (dataLayout == DataLayoutOption::aos and (cell1.size() == 0 or cell2.size() == 0))) {
@@ -173,7 +174,6 @@ void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dat
   }
 
   // removed avoiding force callculations for full Halo Cells for full building of 3Body-Neighborlists of Halo-Particles
-  
 
   switch (dataLayout) {
     case DataLayoutOption::aos:
@@ -196,8 +196,8 @@ void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dat
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
 template <bool newton3>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellAoS(
-    ParticleCell &cell) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
+                                    bidirectional>::processCellAoS(ParticleCell &cell) {
   // helper function
   const auto interactParticles = [&](auto &p1, auto &p2) {
     if constexpr (newton3) {
@@ -236,8 +236,8 @@ void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dat
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellPairAoSN3(
-    ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::
+    processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
     SortedCellView<Particle, ParticleCell> cell1Sorted(cell1, sortingDirection);
     SortedCellView<Particle, ParticleCell> cell2Sorted(cell2, sortingDirection);
@@ -261,9 +261,8 @@ void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dat
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
-                 bidirectional>::processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2,
-                                                        const std::array<double, 3> &sortingDirection) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::
+    processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
   // helper function
   const auto interactParticlesNoN3 = [&](auto &p1, auto &p2) {
     _functor->AoSFunctor(p1, p2, false);
@@ -295,15 +294,15 @@ void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dat
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellPairSoAN3(
-    ParticleCell &cell1, ParticleCell &cell2) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
+                                    bidirectional>::processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
 void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
-                 bidirectional>::processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
+                                    bidirectional>::processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2) {
   _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
   if constexpr (bidirectional) {
     _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
@@ -312,15 +311,15 @@ void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dat
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellSoAN3(
-    ParticleCell &cell) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
+                                    bidirectional>::processCellSoAN3(ParticleCell &cell) {
   _functor->SoAFunctorSingle(cell._particleSoABuffer, true);
 }
 
 template <class Particle, class ParticleCell, class ParticleFunctor, DataLayoutOption::Value dataLayout,
           bool useNewton3, bool bidirectional>
-void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3, bidirectional>::processCellSoANoN3(
-    ParticleCell &cell) {
+void CellFunctorNeighborListBuild3B<Particle, ParticleCell, ParticleFunctor, dataLayout, useNewton3,
+                                    bidirectional>::processCellSoANoN3(ParticleCell &cell) {
   _functor->SoAFunctorSingle(cell._particleSoABuffer, false);  // the functor has to enable this...
 }
 }  // namespace autopas::internal

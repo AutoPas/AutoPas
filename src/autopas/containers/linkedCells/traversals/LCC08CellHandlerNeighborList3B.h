@@ -38,9 +38,10 @@ class LCC08CellHandlerNeighborList3B {
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC08CellHandlerNeighborList3B(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
-                            const double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap)
+  explicit LCC08CellHandlerNeighborList3B(PairwiseFunctor *pairwiseFunctor,
+                                          const std::array<unsigned long, 3> &cellsPerDimension,
+                                          const double interactionLength, const std::array<double, 3> &cellLength,
+                                          const std::array<unsigned long, 3> &overlap)
       : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
         _cellPairOffsets{},
         _interactionLength(interactionLength),
@@ -86,8 +87,8 @@ class LCC08CellHandlerNeighborList3B {
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctorNeighborListBuild3B<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                        /*bidirectional*/ true>
+  internal::CellFunctorNeighborListBuild3B<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor,
+                                           dataLayout, useNewton3, /*bidirectional*/ true>
       _cellFunctor;
 
   /**
@@ -108,9 +109,9 @@ inline void LCC08CellHandlerNeighborList3B<ParticleCell, PairwiseFunctor, dataLa
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;
 
-    if(cellIndex1 >= cells.size() or cellIndex2 >= cells.size()){
-        // check that index is not outOfBounds because we call processBaseCell on outer-most Halo-Cells as well
-        continue;
+    if (cellIndex1 >= cells.size() or cellIndex2 >= cells.size()) {
+      // check that index is not outOfBounds because we call processBaseCell on outer-most Halo-Cells as well
+      continue;
     }
 
     ParticleCell &cell1 = cells[cellIndex1];

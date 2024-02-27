@@ -24,7 +24,7 @@ namespace autopas {
  */
 template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOption::threeBody>,
-                                 public VLTraversalInterface<ParticleCell> {
+                                   public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -71,14 +71,14 @@ class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOpti
             auto endIter = aosNeighborLists.end(bucketId);
             for (auto bucketIter = aosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
               Particle &particle = *(bucketIter->first);
-              if(not particle.isOwned()){
+              if (not particle.isOwned()) {
                 // skip Halo paraticles, as N3 is disabled
                 continue;
               }
               auto neighborPtrIter1 = bucketIter->second.begin();
               for (; neighborPtrIter1 != bucketIter->second.end(); ++neighborPtrIter1) {
                 auto neighborPtrIter2 = neighborPtrIter1;
-                for(++neighborPtrIter2; neighborPtrIter2 != bucketIter->second.end(); ++neighborPtrIter2){
+                for (++neighborPtrIter2; neighborPtrIter2 != bucketIter->second.end(); ++neighborPtrIter2) {
                   Particle &neighbor1 = *(*neighborPtrIter1);
                   Particle &neighbor2 = *(*neighborPtrIter2);
                   _functor->AoSFunctor(particle, neighbor1, neighbor2, false);
@@ -86,17 +86,17 @@ class VLListIterationTraversal3B : public TraversalInterface<InteractionTypeOpti
               }
             }
           }
-        } else{
+        } else {
           for (auto &[particlePtr, neighborPtrList] : aosNeighborLists) {
             Particle &particle = *particlePtr;
-            if((not useNewton3) and (not particle.isOwned())){
+            if ((not useNewton3) and (not particle.isOwned())) {
               // skip Halo Particles for N3 disabled
               continue;
             }
             auto neighborPtrIter1 = neighborPtrList.begin();
             for (; neighborPtrIter1 != neighborPtrList.end(); ++neighborPtrIter1) {
               auto neighborPtrIter2 = neighborPtrIter1;
-              for(++neighborPtrIter2 ; neighborPtrIter2 != neighborPtrList.end(); ++neighborPtrIter2){
+              for (++neighborPtrIter2; neighborPtrIter2 != neighborPtrList.end(); ++neighborPtrIter2) {
                 Particle &neighbor1 = *(*neighborPtrIter1);
                 Particle &neighbor2 = *(*neighborPtrIter2);
                 _functor->AoSFunctor(particle, neighbor1, neighbor2, useNewton3);

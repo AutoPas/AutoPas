@@ -24,7 +24,7 @@ namespace autopas {
  */
 template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class VLPairListIterationTraversal3B : public TraversalInterface<InteractionTypeOption::threeBody>,
-                                 public VLTraversalInterface<ParticleCell> {
+                                       public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -40,9 +40,7 @@ class VLPairListIterationTraversal3B : public TraversalInterface<InteractionType
 
   [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
-  [[nodiscard]] bool isApplicable() const override {
-    return (not useNewton3) and dataLayout == DataLayoutOption::aos;
-  }
+  [[nodiscard]] bool isApplicable() const override { return (not useNewton3) and dataLayout == DataLayoutOption::aos; }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -70,7 +68,7 @@ class VLPairListIterationTraversal3B : public TraversalInterface<InteractionType
             auto endIter = pairwiseAosNeighborLists.end(bucketId);
             for (auto bucketIter = pairwiseAosNeighborLists.begin(bucketId); bucketIter != endIter; ++bucketIter) {
               Particle &particle = *(bucketIter->first);
-              if(not particle.isOwned()){
+              if (not particle.isOwned()) {
                 // skip Halo paraticles, as N3 is disabled
                 continue;
               }
@@ -82,7 +80,7 @@ class VLPairListIterationTraversal3B : public TraversalInterface<InteractionType
               }
             }
           }
-        } else{
+        } else {
           utils::ExceptionHandler::exception("VLPairListIterationTraversal3B does not support Newton3.");
         }
         return;

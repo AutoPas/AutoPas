@@ -233,7 +233,8 @@ class VerletListHelpers {
       double distsquareIj = utils::ArrayMath::dot(distIj, distIj);
       double distsquareIk = utils::ArrayMath::dot(distIk, distIk);
       double distsquareJk = utils::ArrayMath::dot(distJk, distJk);
-      if (distsquareIj < _interactionLengthSquared and distsquareIk < _interactionLengthSquared and distsquareJk < _interactionLengthSquared) {
+      if (distsquareIj < _interactionLengthSquared and distsquareIk < _interactionLengthSquared and
+          distsquareJk < _interactionLengthSquared) {
         // this is thread safe, only if particle i is accessed by only one
         // thread at a time. which is ensured, as particle i resides in a
         // specific cell and each cell is only accessed by one thread at a time

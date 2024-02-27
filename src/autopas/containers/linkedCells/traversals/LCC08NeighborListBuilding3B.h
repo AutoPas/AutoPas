@@ -28,7 +28,8 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
 class LCC08NeighborListBuilding3B
-    : public C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
+    : public C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout,
+                                            useNewton3>,
       public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -40,9 +41,9 @@ class LCC08NeighborListBuilding3B
    * @param cellLength cell length.
    */
   explicit LCC08NeighborListBuilding3B(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          const double interactionLength, const std::array<double, 3> &cellLength)
-      : C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
+                                       const double interactionLength, const std::array<double, 3> &cellLength)
+      : C08BasedNeighborListBuilding3B<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout,
+                                       useNewton3>(dims, pairwiseFunctor, interactionLength, cellLength),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
 
   void traverseParticlePairs() override;
@@ -69,7 +70,8 @@ class LCC08NeighborListBuilding3B
 };
 
 template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08NeighborListBuilding3B<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+inline void
+LCC08NeighborListBuilding3B<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
