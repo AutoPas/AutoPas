@@ -70,12 +70,7 @@ class ATLookUpTable {
       numberOfPoints = static_cast<intType>(args.begin()[2]);
       if (numberOfPoints == 0)
         throw autopas::utils::ExceptionHandler::AutoPasException("At least one point needed for LUT.");
-      pointDistance = (cutoffSquared * 4) / numberOfPoints;
-      two = numberOfPoints;
-      three = two * numberOfPoints;
-      four = three * numberOfPoints;
-      five = four * numberOfPoints;
-      six = five * numberOfPoints;
+      pointDistance = cutoffSquared / numberOfPoints;
       fillTableEvenSpacing();
     }
   }
@@ -92,11 +87,6 @@ class ATLookUpTable {
   intType numberOfPoints; // For even spacing
   floatType pointDistance; // For even spacing
   floatType cutoffSquared;
-  size_t two;
-  size_t three;
-  size_t four;
-  size_t five;
-  size_t six;
 
   // Temporary until we know what we are doing
   floatType nu;
@@ -164,9 +154,11 @@ class ATLookUpTable {
     /*
      * 1. Round distances
      * 2. Get forces from lut
-     * 3. Find rotation of triangle
-     * 4. Rotate force vectors
-     * 5. Return
+     * 3. Sort points from longest to shortest
+     * 4. Translate triangle so the longest point is at origin and get entry from LUT
+     * 5. Find rotation of triangle
+     * 6. Rotate force vectors
+     * 7. Return
      */
 
 
@@ -183,9 +175,85 @@ class ATLookUpTable {
       if (KIround == numberOfPoints)
         KIround--;
 
-      Entry forces = lut[getIndexNoP(IJround, JKround, KIround)];
+      // Sort points from longest to shortest
+
+      auto I = 0;
+      auto J = 0;
+      auto K = 0;
+
+      IJround >= JKround ? K++ : I++;
+      JKround > KIround ? I++ : J++;
+      KIround > IJround ? J++ : K++;
+
+      Entry forces;
+      floatType targetNormalX;
+      floatType targetNormalY;
+      floatType targetNormalZ;
+
+      // 4. Translate triangle so the longest point is at origin and get entry from LUT
+
+      if (I == 0) {
+        j1 -= i1;
+        k1 -= i1;
+        j2 -= i2;
+        k2 -= i2;
+        j3 -= i3;
+        k3 -= i3;
+        i1 = 0;
+        i2 = 0;
+        i3 = 0;
+        targetNormalX = j2 * k3 - j3 * k2;
+        targetNormalY = j3 * k1 - j1 * k3;
+        targetNormalZ = j1 * k2 - j2 * k1;
+        if (J == 1) {
+          forces = lut[getIndexNoP(IJround, KIround, JKround)];
+        }
+        else {
+          forces = lut[getIndexNoP(KIround, IJround, JKround)];
+        }
+      }
+      else if (J == 0) {
+        i1 -= j1;
+        k1 -= j1;
+        i2 -= j2;
+        k2 -= j2;
+        i3 -= j3;
+        k3 -= j3;
+        j1 = 0;
+        j2 = 0;
+        j3 = 0;
+        targetNormalX = i2 * k3 - i3 * k2;
+        targetNormalY = i3 * k1 - j1 * k3;
+        targetNormalZ = i1 * k2 - i2 * k1;
+        if (I == 1)
+          forces = lut[getIndexNoP(IJround, JKround, KIround)];
+        else
+          forces = lut[getIndexNoP(JKround, IJround, KIround)];
+      }
+      else {
+        i1 -= k1;
+        j1 -= k1;
+        i2 -= k2;
+        j2 -= k2;
+        i3 -= k3;
+        j3 -= k3;
+        k1 = 0;
+        k2 = 0;
+        k3 = 0;
+        targetNormalX = j2 * i3 - j3 * i2;
+        targetNormalY = j3 * i1 - j1 * i3;
+        targetNormalZ = j1 * i2 - j2 * i1;
+        if (I == 1)
+          forces = lut[getIndexNoP(KIround, JKround, IJround)];
+        else
+          forces = lut[getIndexNoP(JKround, KIround, IJround)];
+      }
+
 
       // TODO: find angle and turn forces
+
+      // 5. Find rotation of triangle
+
 
       // How slow is std::floor?
 //      auto relErr = relError(ret, accurate);
