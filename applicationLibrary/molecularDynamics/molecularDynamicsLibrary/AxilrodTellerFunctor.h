@@ -269,97 +269,10 @@ class AxilrodTellerFunctor
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
-    if (soa.size() == 0) {
-      return;
-    }
-
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-
-    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
-
-    std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
-    indicesK.reserve(soa.size());
-
-    if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
-    }
-
-    for (size_t i = 0; i < soa.size(); ++i) {
-      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
-        continue;
-      }
-
-      const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(zptr[i]);
-
-      simde__m512d fxiacc = simde_mm512_setzero_pd();
-      simde__m512d fyiacc = simde_mm512_setzero_pd();
-      simde__m512d fziacc = simde_mm512_setzero_pd();
-
-      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
-      for (size_t j = i + 1; j < soa.size(); ++j) {
-        if (ownedStatePtr[j] == autopas::OwnershipState::dummy or
-            not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, i, j)) {
-          continue;
-        }
-
-        const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(zptr[j]);
-
-        simde__m512d fxjacc = simde_mm512_setzero_pd();
-        simde__m512d fyjacc = simde_mm512_setzero_pd();
-        simde__m512d fzjacc = simde_mm512_setzero_pd();
-
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
-
-        const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
-        const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
-        const simde__m512d drzij2 = simde_mm512_mul_pd(drzij, drzij);
-
-        const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
-        const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
-
-        indicesK.clear();
-        for (size_t k = j + 1; k < soa.size(); ++k) {
-          if (ownedStatePtr[k] == autopas::OwnershipState::dummy or
-              not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, j, k) or
-              not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, k, i)) {
-            continue;
-          }
-
-          indicesK.push_back(k);
-        }
-
-        size_t kIndex = 0;
-        for (; kIndex < (indicesK.size() & ~(vecLength - 1)); kIndex += vecLength) {
-          SoAKernel<true, true, false>(indicesK, kIndex, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i],
-                                       typeptr[j], typeptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc,
-                                       fyjacc, fzjacc, fxptr, fyptr, fzptr);
-        }
-        if (kIndex < indicesK.size()) {
-          SoAKernel<true, true, true>(indicesK, kIndex, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i],
-                                      typeptr[j], typeptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc,
-                                      fyjacc, fzjacc, fxptr, fyptr, fzptr, indicesK.size() - kIndex);
-        }
-        fxptr[j] += simde_mm512_reduce_add_pd(fxjacc);
-        fyptr[j] += simde_mm512_reduce_add_pd(fyjacc);
-        fzptr[j] += simde_mm512_reduce_add_pd(fzjacc);
-      }
-      fxptr[i] += simde_mm512_reduce_add_pd(fxiacc);
-      fyptr[i] += simde_mm512_reduce_add_pd(fyiacc);
-      fzptr[i] += simde_mm512_reduce_add_pd(fziacc);
+    if (newton3) {
+      SoAFunctorSingleImpl<true>(soa);
+    } else {
+      SoAFunctorSingleImpl<false>(soa);
     }
   }
 
@@ -368,11 +281,31 @@ class AxilrodTellerFunctor
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
-    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
     if (newton3) {
       SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
       SoAFunctorPairImpl<false>(soa1, soa2);
+    }
+  }
+
+  /**
+   * Functor for structure of arrays (SoA)
+   *
+   * This functor calculates the forces
+   * between all particles of soa1 and soa2 and soa3.
+   *
+   * @param soa1 First structure of arrays.
+   * @param soa2 Second structure of arrays.
+   * @param soa3 Third structure of arrays.
+   * @param newton3 defines whether or whether not to use newton 3
+   */
+  void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                        autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
+    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
+    if (newton3) {
+      SoAFunctorTripleImpl<true>(soa1, soa2, soa3);
+    } else {
+      SoAFunctorTripleImpl<false>(soa1, soa2, soa3);
     }
   }
 
@@ -604,28 +537,109 @@ class AxilrodTellerFunctor
     }
   }
 
+ private:
   /**
-   * Functor for structure of arrays (SoA)
+   * Implementation function of SoAFunctorSingle(soa, newton3)
    *
-   * This functor calculates the forces
-   * between all particles of soa1 and soa2 and soa3.
-   *
-   * @param soa1 First structure of arrays.
-   * @param soa2 Second structure of arrays.
-   * @param soa3 Third structure of arrays.
-   * @param newton3 defines whether or whether not to use newton 3
+   * @tparam newton3
+   * @param soa
    */
-  void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                        autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
-    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
-    if (newton3) {
-      SoAFunctorTripleImpl<true>(soa1, soa2, soa3);
-    } else {
-      SoAFunctorTripleImpl<false>(soa1, soa2, soa3);
+  template <bool newton3>
+  void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
+    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
+    if (soa.size() == 0) {
+      return;
+    }
+
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
+    indicesK.reserve(soa.size());
+
+    if constexpr (not useMixing) {
+      _nuPd = simde_mm512_set1_pd(_nu);
+    }
+
+    for (size_t i = 0; i < soa.size(); ++i) {
+      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
+      const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
+      const simde__m512d z1 = simde_mm512_set1_pd(zptr[i]);
+
+      simde__m512d fxiacc = simde_mm512_setzero_pd();
+      simde__m512d fyiacc = simde_mm512_setzero_pd();
+      simde__m512d fziacc = simde_mm512_setzero_pd();
+
+      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
+      for (size_t j = i + 1; j < soa.size(); ++j) {
+        if (ownedStatePtr[j] == autopas::OwnershipState::dummy or
+            not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, i, j)) {
+          continue;
+        }
+
+        const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
+        const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
+        const simde__m512d z2 = simde_mm512_set1_pd(zptr[j]);
+
+        simde__m512d fxjacc = simde_mm512_setzero_pd();
+        simde__m512d fyjacc = simde_mm512_setzero_pd();
+        simde__m512d fzjacc = simde_mm512_setzero_pd();
+
+        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
+        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
+        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+
+        const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
+        const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
+        const simde__m512d drzij2 = simde_mm512_mul_pd(drzij, drzij);
+
+        const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
+        const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
+
+        indicesK.clear();
+        for (size_t k = j + 1; k < soa.size(); ++k) {
+          if (ownedStatePtr[k] == autopas::OwnershipState::dummy or
+              not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, j, k) or
+              not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, k, i)) {
+            continue;
+          }
+
+          indicesK.push_back(k);
+        }
+
+        size_t kIndex = 0;
+        for (; kIndex < (indicesK.size() & ~(vecLength - 1)); kIndex += vecLength) {
+          SoAKernel<true, true, false>(indicesK, kIndex, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i],
+                                       typeptr[j], typeptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc,
+                                       fyjacc, fzjacc, fxptr, fyptr, fzptr);
+        }
+        if (kIndex < indicesK.size()) {
+          SoAKernel<true, true, true>(indicesK, kIndex, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i],
+                                      typeptr[j], typeptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc,
+                                      fyjacc, fzjacc, fxptr, fyptr, fzptr, indicesK.size() - kIndex);
+        }
+        fxptr[j] += simde_mm512_reduce_add_pd(fxjacc);
+        fyptr[j] += simde_mm512_reduce_add_pd(fyjacc);
+        fzptr[j] += simde_mm512_reduce_add_pd(fzjacc);
+      }
+      fxptr[i] += simde_mm512_reduce_add_pd(fxiacc);
+      fyptr[i] += simde_mm512_reduce_add_pd(fyiacc);
+      fzptr[i] += simde_mm512_reduce_add_pd(fziacc);
     }
   }
 
- private:
   /**
    * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
    *
