@@ -59,6 +59,8 @@ class LogicHandler {
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
+        _numberOfHGLevels(logicHandlerInfo.numberOfHGLevels),
+        _particleRadiusRange(logicHandlerInfo.particleRadiusRange),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
@@ -67,7 +69,7 @@ class LogicHandler {
     const auto configuration = _autoTuner.getCurrentConfig();
     const ContainerSelectorInfo containerSelectorInfo{
         configuration.cellSizeFactor, logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
-        _verletClusterSize, configuration.loadEstimator};
+        _verletClusterSize, configuration.loadEstimator, _numberOfHGLevels, _particleRadiusRange};
     _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
     checkMinimalSize();
 
@@ -710,6 +712,14 @@ class LogicHandler {
    * Number of particles in a VCL cluster.
    */
   unsigned int _verletClusterSize;
+  /**
+   * Number of the Hierarchical Grid (H-Grid) levels (DEM only).
+   */
+  unsigned int _numberOfHGLevels;
+  /**
+   * Possible particle radii(DEM only). First value serves as lower cutoff value.
+   */
+  std::array<double, 2> _particleRadiusRange;
 
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
@@ -1231,7 +1241,8 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
       conf.container,
       ContainerSelectorInfo(conf.cellSizeFactor,
                             _containerSelector.getCurrentContainer().getVerletSkin() / _neighborListRebuildFrequency,
-                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator));
+                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator, 
+                            _numberOfHGLevels, _particleRadiusRange));
   const auto &container = _containerSelector.getCurrentContainer();
   const auto traversalInfo = container.getTraversalSelectorInfo();
 

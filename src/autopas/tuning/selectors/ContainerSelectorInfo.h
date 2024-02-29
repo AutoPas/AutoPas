@@ -24,7 +24,9 @@ class ContainerSelectorInfo {
         verletSkinPerTimestep(0.),
         verletRebuildFrequency(0),
         verletClusterSize(64),
-        loadEstimator(autopas::LoadEstimatorOption::none) {}
+        loadEstimator(autopas::LoadEstimatorOption::none),
+        numberOfHGLevels(1),
+        particleRadiusRange{0.0, 1.0} {}
 
   /**
    * Constructor.
@@ -38,12 +40,15 @@ class ContainerSelectorInfo {
    */
   explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkinPerTimestep,
                                  unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
-                                 autopas::LoadEstimatorOption loadEstimator)
+                                 autopas::LoadEstimatorOption loadEstimator,
+                                 unsigned int numberOfHGLevels, std::array<double, 2> particleRadiusRange)
       : cellSizeFactor(cellSizeFactor),
         verletSkinPerTimestep(verletSkinPerTimestep),
         verletRebuildFrequency(verletRebuildFrequency),
         verletClusterSize(verletClusterSize),
-        loadEstimator(loadEstimator) {}
+        loadEstimator(loadEstimator),
+        numberOfHGLevels(numberOfHGLevels),
+        particleRadiusRange(particleRadiusRange) {}
 
   /**
    * Equality between ContainerSelectorInfo
@@ -52,7 +57,8 @@ class ContainerSelectorInfo {
    */
   bool operator==(const ContainerSelectorInfo &other) const {
     return cellSizeFactor == other.cellSizeFactor and verletSkinPerTimestep == other.verletSkinPerTimestep and
-           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator;
+           verletClusterSize == other.verletClusterSize and loadEstimator == other.loadEstimator and
+           numberOfHGLevels == other.numberOfHGLevels and particleRadiusRange == other.particleRadiusRange;
   }
 
   /**
@@ -71,9 +77,10 @@ class ContainerSelectorInfo {
    * @return
    */
   bool operator<(const ContainerSelectorInfo &other) {
-    return std::tie(cellSizeFactor, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, loadEstimator) <
+    return std::tie(cellSizeFactor, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, loadEstimator,
+                    numberOfHGLevels, particleRadiusRange) <
            std::tie(other.cellSizeFactor, other.verletSkinPerTimestep, other.verletRebuildFrequency,
-                    other.verletClusterSize, other.loadEstimator);
+                    other.verletClusterSize, other.loadEstimator, other.numberOfHGLevels, other.particleRadiusRange);
   }
 
   /**
@@ -96,6 +103,14 @@ class ContainerSelectorInfo {
    * Load estimator for balanced sliced traversals.
    */
   autopas::LoadEstimatorOption loadEstimator;
+  /**
+   * Number of the Hierarchical Grid (H-Grid) levels (DEM only).
+   */
+  unsigned int numberOfHGLevels;
+  /**
+   * Lower value of possible particle radii(DEM only). Serves as lower cutoff value.
+   */
+  std::array<double, 2> particleRadiusRange;
 };
 
 }  // namespace autopas

@@ -990,6 +990,26 @@ class AutoPas {
    * @return sorting-threshold
    */
   size_t getSortingThreshold() const { return _sortingThreshold; }
+    /**
+   * Get number of H-Grid levels.
+   * @return
+   */
+  [[nodiscard]] unsigned int getNumberOfHGLevels() const { return _logicHandlerInfo.numberOfHGLevels; }
+  /**
+   * Set number of H-Grid levels.
+   * @param numberOfHGLevels
+   */
+  void setNumberOfHGLevels(unsigned int numberOfHGLevels) { _logicHandlerInfo.numberOfHGLevels = numberOfHGLevels; }
+  /**
+   * Get possible particle radii(DEM only).
+   * @return
+   */
+  [[nodiscard]] std::array<double, 2> getParticleRadiusRange() const { return _logicHandlerInfo.particleRadiusRange; }
+  /**
+   * Set possible particle radii(DEM only).
+   * @param particleRadiusRange
+   */
+  void setParticleRadiusRange(std::array<double, 2> ParticleRadiusRange) { _logicHandlerInfo.particleRadiusRange = ParticleRadiusRange; }
 
  private:
   autopas::ParticleContainerInterface<Particle> &getContainer();

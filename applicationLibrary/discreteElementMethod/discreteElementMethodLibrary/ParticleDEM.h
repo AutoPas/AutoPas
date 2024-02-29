@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "autopas/particles/Particle.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace demLib {
 
@@ -43,7 +44,7 @@ class ParticleDEM final : public autopas::Particle {
    */
   explicit ParticleDEM(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long particleId, 
                         floatType rad = 0.0, floatType mass = 1.0, floatType young = 0.0, floatType poisson=0.0)
-      : Particle(pos, v, particleId), _radius(rad), _mass(mass), _young(young), _poisson(poisson) {}
+      : autopas::Particle(pos, v, particleId), _radius(rad), _mass(mass), _young(young), _poisson(poisson) {}
 
 
   /**
@@ -92,7 +93,7 @@ class ParticleDEM final : public autopas::Particle {
       floatType /*forceX*/, floatType /*forceY*/, floatType /*forceZ*/, 
       floatType /*oldForceX*/, floatType /*oldForceY*/, floatType /*oldForceZ*/, 
       floatType /*rad*/, floatType /*mass*/, floatType /*young*/, floatType /*poisson*/,
-      size_t /*typeid*/, OwnershipState /*ownershipState*/>::Type;
+      size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
 
   /**
@@ -154,7 +155,7 @@ class ParticleDEM final : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
-      utils::ExceptionHandler::exception("ParticleDEM::get() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("ParticleDEM::get() unknown attribute {}", attribute);
     }
   }
 
@@ -206,7 +207,7 @@ class ParticleDEM final : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
-      utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
     }
   }
 

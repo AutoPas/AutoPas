@@ -39,5 +39,13 @@ class LogicHandlerInfo {
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t sortingThreshold{8};
+  /**
+   * Number of the Hierarchical Grid (H-Grid) levels (DEM only).
+   */
+  unsigned int numberOfHGLevels{1};
+  /**
+   * Possible particle radii(DEM only). First value serves as lower cutoff value.
+   */
+  std::array<double, 2> particleRadiusRange{0.0, 1.0};
 };
 }  // namespace autopas

@@ -37,6 +37,26 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
                                       bool fastParticlesThrow);
 
 /**
+ * Calculate and update the position for every particle using the Störmer-Verlet Algorithm. DEM version.
+ *
+ * Specifically, the formula for this is
+ *      x_{n+1} = x_n + delta_t * v_n + delta_t^2 / ( 2 * mass) * f_n
+ *                      {   velTerm }   {        forceTerm          }
+ *
+ * In addition, pushes the force stored in the force vector to the old force vector and sets the force vector to the
+ * global force in preparation for the calculate forces stage.
+ *
+ * @param autoPasContainer The container for which to update the positions.
+ * @param deltaT The time step width.
+ * @param globalForce Base force value to which every particle is reset.
+ * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
+ * (>skin/2/rebuildFrequency).
+ */
+void calculatePositionsAndResetForcesDEM(autopas::AutoPas<ParticleType> &autoPasContainer,
+                                         const double &deltaT, const std::array<double, 3> &globalForce,
+                                         bool fastParticlesThrow);
+
+/**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
  * Rozmanov, 2010, Robust rotational-velocity-Verlet integration methods (https://doi.org/10.1103/PhysRevE.81.056706)
  * (method A); with slight adaptations to account for md-flexible primarily using (angular) velocities rather than
@@ -67,6 +87,17 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
  */
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
+
+/**
+ * Calculate and update the velocity for every DEM particle using the the Störmer-Verlet Algorithm.
+ *
+ * Specifically
+ *      v_{n+1} = v_n + delta_t / (2 * mass) * (F_n + F_{n-1})
+ *
+ * @param autoPasContainer The container for which to update the velocities.
+ * @param deltaT The time step width.
+ */
+void calculateVelocitiesDEM(autopas::AutoPas<ParticleType> &autoPasContainer, const double &deltaT);
 
 /**
  * Calculate and update the angular velocity for every particle.
