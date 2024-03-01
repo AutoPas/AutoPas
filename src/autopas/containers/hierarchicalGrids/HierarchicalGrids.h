@@ -302,65 +302,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
     }
 
-    /**
-   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
-   *
-   * @tparam regionIter
-   * @param cellIndex
-   * @param particleIndex
-   * @param iteratorBehavior
-   * @param boxMin
-   * @param boxMax
-   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
-   */
-  template <bool regionIter>
-  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
-                                                               IteratorBehavior iteratorBehavior,
-                                                               const std::array<double, 3> &boxMin,
-                                                               const std::array<double, 3> &boxMax) const {
-    // first and last relevant cell index
-    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
-      if constexpr (regionIter) {
-        return {_cellBlock.get1DIndexOfPosition(boxMin), _cellBlock.get1DIndexOfPosition(boxMax)};
-      } else {
-        if (not(iteratorBehavior & IteratorBehavior::halo)) {
-          // only potentially owned region
-          return {_cellBlock.getFirstOwnedCellIndex(), _cellBlock.getLastOwnedCellIndex()};
-        } else {
-          // whole range of cells
-          return {0, this->_cells.size() - 1};
-        }
-      }
-    }();
-
-    // if we are at the start of an iteration ...
-    if (cellIndex == 0 and particleIndex == 0) {
-      cellIndex =
-          startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
-    }
-    // abort if the start index is already out of bounds
-    if (cellIndex >= this->_cells.size()) {
-      return {nullptr, 0, 0};
-    }
-    // check the data behind the indices
-    if (particleIndex >= this->_cells[cellIndex].size() or
-        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-            this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
-      // either advance them to something interesting or invalidate them.
-      std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
-    }
-
-    // shortcut if the given index doesn't exist
-    if (cellIndex > endCellIndex) {
-      return {nullptr, 0, 0};
-    }
-    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
-
-    return {retPtr, cellIndex, particleIndex};
-  }
-
-
+   
 
   void distributeParticlesToHGLevels() {
 
@@ -561,15 +503,6 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
   }
 
-  /**
-   * @copydoc autopas::ParticleContainerInterface::getParticle()
-   */
-  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
-                                                            IteratorBehavior iteratorBehavior) const override {
-
-    return _hierarchyLevels[0].getParticle(cellIndex, particleIndex, iteratorBehavior); 
-
-  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getParticle()
@@ -579,8 +512,96 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const override {
 
-    return _hierarchyLevels[0].getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+    return getParticleImpl<true>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
 
+  /**
+   * @copydoc autopas::ParticleContainerInterface::getParticle()
+   */
+  std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
+                                                            IteratorBehavior iteratorBehavior) const override {
+
+    // this is not a region iter hence we stretch the bounding box to the numeric max
+    constexpr std::array<double, 3> boxMin{std::numeric_limits<double>::lowest(), std::numeric_limits<double>::lowest(),
+                                           std::numeric_limits<double>::lowest()};
+
+    constexpr std::array<double, 3> boxMax{std::numeric_limits<double>::max(), std::numeric_limits<double>::max(),
+                                           std::numeric_limits<double>::max()};
+    return getParticleImpl<false>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+  }
+
+   /**
+   * Container specific implementation for getParticle. See ParticleContainerInterface::getParticle().
+   *
+   * @tparam regionIter
+   * @param cellIndex
+   * @param particleIndex
+   * @param iteratorBehavior
+   * @param boxMin
+   * @param boxMax
+   * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
+   */
+  template <bool regionIter>
+  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+                                                               IteratorBehavior iteratorBehavior,
+                                                               const std::array<double, 3> &boxMin,
+                                                               const std::array<double, 3> &boxMax) const {
+    // first and last relevant cell index
+    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
+      if constexpr (regionIter) {
+        return {this->_cellBlock.get1DIndexOfPosition(boxMin), 
+                encodeCellAndLevel(this->size()-1, this->back()._cellBlock.get1DIndexOfPosition(boxMax))};
+      } else {
+        if (not(iteratorBehavior & IteratorBehavior::halo)) {
+          // only potentially owned region
+          return {this->_cellBlock.getFirstOwnedCellIndex(), 
+                  encodeCellAndLevel(this->size()-1, this->back()_cellBlock.getLastOwnedCellIndex())};
+        } else {
+          // whole range of cells
+          return {0, encodeCellAndLevel(this->size()-1, this->back()._cells.size() - 1)};
+        }
+      }
+    }();
+
+    //@TODO: Continue
+
+    // if we are at the start of an iteration ...
+    if (cellIndex == 0 and particleIndex == 0) {
+      cellIndex =
+          startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
+    }
+    // abort if the start index is already out of bounds
+    if (cellIndex >= this->_cells.size()) {
+      return {nullptr, 0, 0};
+    }
+    // check the data behind the indices
+    if (particleIndex >= this->_cells[cellIndex].size() or
+        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
+            this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
+      // either advance them to something interesting or invalidate them.
+      std::tie(cellIndex, particleIndex) =
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+    }
+
+    // shortcut if the given index doesn't exist
+    if (cellIndex > endCellIndex) {
+      return {nullptr, 0, 0};
+    }
+    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+
+    return {retPtr, cellIndex, particleIndex};
+  }
+
+  size_t encodeCellAndLevel(unsigned int level, unsigned int cellIndex) {
+    return cellIndex + _levelOffset * level;
+  }
+
+  std::tuple<size_t, size_t> decodeCellAndLevel(size_t encodedCellPlusLevel) {
+
+    size_t level = encodedCellPlusLevel / _levelOffset;
+    size_t cellID = encodedCellPlusLevel - level;
+
+    return {level, cellID};
   }
 
   /**
@@ -692,6 +713,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * 
    */
   std::vector<double> _hierarchicalGridBorders;
+
+  const unsigned int _levelOffset = 1e14;
 
 };
   
