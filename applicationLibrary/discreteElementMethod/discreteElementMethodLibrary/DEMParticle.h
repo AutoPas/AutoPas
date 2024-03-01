@@ -1,5 +1,5 @@
 /**
- * @file ParticleDEM.h
+ * @file DEMParticle.h
  * @author Hoppe (hoppef@hsu-hh.de)
  * @brief Main file for all DEM functionality
  * @version 0.1
@@ -18,18 +18,16 @@ namespace demLib {
 
 /**
  * @brief Particle class for the DEM functor
- * 
- * @tparam floatType 
+ *
  */
-template <typename floatType = double>
-class ParticleDEM final : public autopas::Particle {
+class DEMParticle final : public autopas::Particle {
  public:
 
   /**
    * @brief Default constructor for a new Particle DEM object.
    * 
    */
-  ParticleDEM() = default;
+  DEMParticle() = default;
 
   /**
    * @brief Construct a new Particle DEM object.
@@ -42,8 +40,8 @@ class ParticleDEM final : public autopas::Particle {
    * @param young Particle Young's modulus
    * @param poisson Particle Poisson's ratio
    */
-  explicit ParticleDEM(std::array<floatType, 3> pos, std::array<floatType, 3> v, unsigned long particleId, 
-                        floatType rad = 0.0, floatType mass = 1.0, floatType young = 0.0, floatType poisson=0.0)
+  explicit DEMParticle(std::array<double, 3> pos, std::array<double, 3> v, unsigned long particleId, 
+                        double rad = 0.0, double mass = 1.0, double young = 0.0, double poisson=0.0)
       : autopas::Particle(pos, v, particleId), _radius(rad), _mass(mass), _young(young), _poisson(poisson) {}
 
 
@@ -51,7 +49,7 @@ class ParticleDEM final : public autopas::Particle {
    * @brief Destroy the Particle DEM object
    * 
    */
-  ~ParticleDEM() final = default;
+  ~DEMParticle() final = default;
 
 
   /**
@@ -87,12 +85,12 @@ class ParticleDEM final : public autopas::Particle {
    * 
    */
   using SoAArraysType = typename autopas::utils::SoAType<
-      ParticleDEM<floatType> *, size_t /*id*/, 
-      floatType /*posX*/, floatType /*posY*/, floatType /*posZ*/,
-      floatType /*velocityX*/, floatType /*velocityY*/, floatType /*velocityZ*/, 
-      floatType /*forceX*/, floatType /*forceY*/, floatType /*forceZ*/, 
-      floatType /*oldForceX*/, floatType /*oldForceY*/, floatType /*oldForceZ*/, 
-      floatType /*rad*/, floatType /*mass*/, floatType /*young*/, floatType /*poisson*/,
+      DEMParticle *, size_t /*id*/, 
+      double /*posX*/, double /*posY*/, double /*posZ*/,
+      double /*velocityX*/, double /*velocityY*/, double /*velocityZ*/, 
+      double /*forceX*/, double /*forceY*/, double /*forceZ*/, 
+      double /*oldForceX*/, double /*oldForceY*/, double /*oldForceZ*/, 
+      double /*rad*/, double /*mass*/, double /*young*/, double /*poisson*/,
       size_t /*typeid*/, autopas::OwnershipState /*ownershipState*/>::Type;
 
 
@@ -155,7 +153,7 @@ class ParticleDEM final : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
-      autopas::utils::ExceptionHandler::exception("ParticleDEM::get() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("DEMParticle::get() unknown attribute {}", attribute);
     }
   }
 
@@ -207,7 +205,7 @@ class ParticleDEM final : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
-      autopas::utils::ExceptionHandler::exception("MoleculeLJ::set() unknown attribute {}", attribute);
+      autopas::utils::ExceptionHandler::exception("DEMParticle::set() unknown attribute {}", attribute);
     }
   }
 
@@ -230,56 +228,56 @@ class ParticleDEM final : public autopas::Particle {
    * 
    * @return Current particle radius
    */
-  [[nodiscard]] floatType getRad() const { return _radius; }
+  [[nodiscard]] double getRad() const { return _radius; }
 
   /**
    * @brief Set the particle radius
    * 
    * @param New particle radius
    */
-  void setRad(const floatType &radius) { _radius = radius; }
+  void setRad(const double &radius) { _radius = radius; }
 
   /**
    * @brief Get the particle mass
    * 
    * @return Current particle mass
    */
-  [[nodiscard]] floatType getMass() const { return _mass; }
+  [[nodiscard]] double getMass() const { return _mass; }
 
   /**
    * @brief Set the particle mass
    * 
    * @param New particle mass
    */
-  void setMass(const floatType &mass) { _mass = mass; }
+  void setMass(const double &mass) { _mass = mass; }
 
   /**
    * @brief Get the Young's modulus of the particle
    * 
    * @return Current Young's modulus
    */
-  [[nodiscard]] floatType getYoung() const { return _young; }
+  [[nodiscard]] double getYoung() const { return _young; }
 
   /**
    * @brief Set the Young's modulus of the particle
    * 
    * @param New Young's modulus
    */
-  void setYoung(const floatType &young) { _young = young; }
+  void setYoung(const double &young) { _young = young; }
 
   /**
    * @brief Get the particle's Poisson ratio
    * 
    * @return Current Poisson ratio
    */
-  [[nodiscard]] floatType getPoisson() const { return _poisson; }
+  [[nodiscard]] double getPoisson() const { return _poisson; }
 
   /**
    * @brief Set the particle's Poisson ratio
    * 
    * @param New Poisson ratio
    */
-  void setPoisson(const floatType &poisson) { _poisson = poisson; }
+  void setPoisson(const double &poisson) { _poisson = poisson; }
 
   [[nodiscard]] size_t getTypeId() const { return _typeId; }
 
@@ -298,13 +296,13 @@ class ParticleDEM final : public autopas::Particle {
    * @brief Particle radius
    * 
    */
-  floatType _radius = 0.0;
+  double _radius = 0.0;
 
   /**
    * @brief Particle mass
    * 
    */
-  floatType _mass = 1.0;
+  double _mass = 1.0;
 
   /**
    * @brief Young's modulus E of the particle
@@ -316,7 +314,7 @@ class ParticleDEM final : public autopas::Particle {
    * Higher E means stiffer material.
    * 
    */
-  floatType _young = 0.0;
+  double _young = 0.0;
 
   /**
    * @brief Poisson's ratio nu
@@ -327,13 +325,13 @@ class ParticleDEM final : public autopas::Particle {
    * Solid materials are in the range of nu = 0.2 to 0.3.
    * 
    */
-  floatType _poisson = 0.0;
+  double _poisson = 0.0;
 
   /**
    * @brief Old Force of the particle experiences as 3D vector.
    * 
    */
-  std::array<floatType, 3> _oldF = {0., 0., 0.};
+  std::array<double, 3> _oldF = {0., 0., 0.};
 
 };
 

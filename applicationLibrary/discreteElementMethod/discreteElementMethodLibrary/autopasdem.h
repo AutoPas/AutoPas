@@ -11,6 +11,6 @@
 
 #pragma once
 
-#include "ParticleDEM.h"
+#include "DEMParticle.h"
 #include "DEMFunctor.h"
 

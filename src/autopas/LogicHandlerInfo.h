@@ -43,9 +43,5 @@ class LogicHandlerInfo {
    * Number of the Hierarchical Grid (H-Grid) levels (DEM only).
    */
   unsigned int numberOfHGLevels{1};
-  /**
-   * Possible particle radii(DEM only). First value serves as lower cutoff value.
-   */
-  std::array<double, 2> particleRadiusRange{0.0, 1.0};
 };
 }  // namespace autopas

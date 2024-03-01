@@ -51,7 +51,7 @@ target_link_libraries(SPHLibrary PUBLIC autopas)
 target_include_directories(SPHLibrary PUBLIC ./sph)
 
 
-# --- sph ---
+# --- dem ---
 
 file(
         GLOB_RECURSE

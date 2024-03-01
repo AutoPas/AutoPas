@@ -145,8 +145,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
   _autoPasContainer->setNumberOfHGLevels(_configuration.numberOfHGLevels.value);
-  _autoPasContainer->setParticleRadiusRange({_configuration.particleRadii.value[0], 
-                                             _configuration.particleRadii.value[1]});
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
   const auto *fillerBeforeSuffix =

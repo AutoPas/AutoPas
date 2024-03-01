@@ -17,7 +17,7 @@
 #else
 
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
-#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/ParticleDEM.h"
+#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMParticle.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "molecularDynamicsLibrary/LJFunctor.h"
@@ -50,7 +50,7 @@ using FloatPrecision = double;
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
 //using ParticleType = mdLib::MoleculeLJ;
-using ParticleType = demLib::ParticleDEM<FloatPrecision>;
+using ParticleType = demLib::DEMParticle;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
