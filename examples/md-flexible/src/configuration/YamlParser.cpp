@@ -223,6 +223,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if (strArg.find("dem") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::DEM;
         } else {
           throw std::runtime_error("Unrecognized functor!");
         }
@@ -762,7 +764,25 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             parseSequenceOneElementExpected(node[key], "Pass Exactly one load balancer option!"));
 
         config.loadBalancer.value = *parsedOptions.begin();
-      } else {
+      } else if (key == config.numberOfHGLevels.name) {
+        expected = "Unsigned Integer > 0";
+        description = config.numberOfHGLevels.description;
+
+        config.numberOfHGLevels.value = node[key].as<long>();
+        if (config.numberOfHGLevels.value < 1) {
+          throw std::runtime_error("The number of Hierarchical Grid levels has to be a positive integer > 0.");
+        }
+
+      } else if (key == config.particleRadii.name) {
+        expected = "YAML-sequence of two floats 0 < r_min <= r_max. Example: [0.5, 1.5].";;
+        description = config.particleRadii.description;
+
+        config.particleRadii.value = {node[key][0].as<double>(), node[key][1].as<double>()};
+        if (config.particleRadii.value[0] <= 0.) {
+          throw std::runtime_error("The minimum radius of the particles in has to be a positive integer > 0.");
+        }
+
+      }  else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;
         errors.push_back(ss.str());

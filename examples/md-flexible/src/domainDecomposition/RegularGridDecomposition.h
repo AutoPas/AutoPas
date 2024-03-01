@@ -143,6 +143,18 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL);
 
+    /**
+   * Reflects DEM particles within a reflective skin along the inside of a boundary.
+   *
+   * Particle reflection occurs by interacting the particle with particle mirrored onto the other side of the boundary.
+   * Iteraction occurs using the AoS variant of the chosen functor. Particle reflection only occurs if the particle
+   * would experience a repulsive effect (i.e. is within the 6th root of sigma from the border).
+   *
+   * @param autoPasContainer: The container, where the migrating particles originate from.
+   * @param PPL: Particle Properties Library (needed to get particle's sigma)
+   */
+  void reflectDEMParticlesAtBoundaries(AutoPasType &autoPasContainer);
+
  private:
   /**
    * The number of neighbors of a rectangular domain.

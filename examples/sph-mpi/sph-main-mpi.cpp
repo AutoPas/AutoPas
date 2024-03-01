@@ -16,6 +16,11 @@
 using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
+
+unsigned int autopas::HierarchicalGridsHelpers::_numberOfHGLevels = 1;  
+template<>
+double demLib::DEMFunctor<Particle>::_factorSubtractExcessForces = 1;
+
 void SetupIC(AutoPasContainer &sphSystem, double *end_time, const std::array<double, 3> &bBoxMax) {
   // Place SPH particles
   std::cout << "setup... started" << std::endl;
