@@ -189,21 +189,10 @@ class ATLookUpTable {
 
       // 4. Translate triangle so the longest point is at origin and get entry from LUT
 
-      floatType rot1AxisX;
-      floatType rot1AxisY;
-      floatType rot1AxisZ;
-      floatType cX = 0;
-      floatType cY = 1;
-      floatType cZ = 0;
-      floatType angleRot1;
-      floatType targetBX;
-      floatType targetBY;
-      floatType targetBZ;
-      floatType targetCX;
-      floatType targetCY;
-      floatType targetCZ;
       std::tuple<floatType, floatType, floatType, floatType> rot1Quaternion;
       std::tuple<floatType, floatType, floatType, floatType> rot1InverseQuaternion;
+      std::tuple<floatType, floatType, floatType, floatType> rot2Quaternion;
+      std::tuple<floatType, floatType, floatType, floatType> rot2InverseQuaternion;
 
       if (I == 0) {
         j1 -= i1;
@@ -233,43 +222,51 @@ class ATLookUpTable {
           }
           else {
             auto targetB = norm(j1, j2, j3);
-            // Get rotation axis by cross product
-            // targetB x B (targetB is from ijk) B = (1,0,0)
-            rot1AxisX = 0;
-            rot1AxisY = targetB[3];
-            rot1AxisZ = -targetB[2];
-            // Cosine is a*b / |a|*|b| but here both a and b are normed, also b2 and b3 are 0
-            angleRot1 = std::acos(targetB[1]);
-            // Divide by half to get half angle for quaternion
-            angleRot1 /= 2;
-            // targetB[1] st
-            rot1Quaternion[0] = targetB[1];
-            auto sine = std::sin(angleRot1);
-            rot1Quaternion[1] = 0;
-            rot1Quaternion[2] = rot1AxisY * sine;
-            rot1Quaternion[3] = rot1AxisZ * sine;
-            rot1InverseQuaternion[0] = rot1Quaternion[0];
-            rot1InverseQuaternion[1] = -rot1Quaternion[1];
-            rot1InverseQuaternion[2] = -rot1Quaternion[2];
-            rot1InverseQuaternion[3] = -rot1Quaternion[3];
-
-            // Rotate targetB onto B' (Calculate where targetC will end up as we only need this) and then find how to rotate C' onto targetC and rotate forces
             auto targetC = norm(k1, k2, k3);
-            auto tempQuat = quaternionMultiply(rot1Quaternion, {0, targetC[0], targetC[1], targetC[2]});
-            tempQuat = quaternionMultiply(tempQuat, rot1InverseQuaternion);
-            targetC[0] = tempQuat[1];
-            targetC[1] = tempQuat[2];
-            targetC[2] = tempQuat[3];
 
-            AutoPasLog(DEBUG, "TargetC x should be 0, is {}", targetC[0]);
+            // Find quaternion that rotates target B to (1,0,0)
+            auto norm = std::sqrt((1 + targetB[0] * 1 + targetB[0]) + (targetB[2] * targetB[2]) + (targetB[1] * targetB[1]));
+            rot1Quaternion = {1 + targetB[0] / norm, 0, targetB[2] / norm, -targetB[1] / norm};
+            rot1InverseQuaternion = {rot1Quaternion[0], 0, -rot1Quaternion[2], -rot1Quaternion[3]};
 
-            // Calculate angle between C and targetC, we can ignore the x-coordinate, because they should be equal
+            // Rotate targetB for debugging purposes
+            // Rotations are optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving targetB[0] is 0 and can be removed
+            // invQuat * targetB
+            std::tuple<floatType, floatType, floatType, floatType> tempQuat = {
+                -rot1InverseQuaternion[1]*targetB[1] - rot1InverseQuaternion[2]*targetB[2] - rot1InverseQuaternion[3]*targetB[3],
+                rot1InverseQuaternion[0]*targetB[1] - rot1InverseQuaternion[2]*targetB[3] + rot1InverseQuaternion[3]*targetB[2],
+                rot1InverseQuaternion[0]*targetB[2] + rot1InverseQuaternion[1]*targetB[3] - rot1InverseQuaternion[3]*targetB[1],
+                rot1InverseQuaternion[0]*targetB[3] - rot1InverseQuaternion[1]*targetB[2] + rot1InverseQuaternion[2]*targetB[1]
+            };
+            // tempQuat * quat
+            tempQuat = {
+                tempQuat[0]*rot1Quaternion[0] - tempQuat[1]*rot1Quaternion[1] - tempQuat[2]*rot1Quaternion[2] - tempQuat[3]*rot1Quaternion[3],
+                tempQuat[0]*rot1Quaternion[1] + tempQuat[1]*rot1Quaternion[0] - tempQuat[2]*rot1Quaternion[3] + tempQuat[3]*rot1Quaternion[2],
+                tempQuat[0]*rot1Quaternion[2] + tempQuat[1]*rot1Quaternion[3] + tempQuat[2]*rot1Quaternion[0] - tempQuat[3]*rot1Quaternion[1],
+                tempQuat[0]*rot1Quaternion[3] - tempQuat[1]*rot1Quaternion[2] + tempQuat[2]*rot1Quaternion[1] + tempQuat[3]*rot1Quaternion[0]
+            };
+            targetB = {tempQuat[1], tempQuat[2], tempQuat[3]};
+            AutoPasLog(DEBUG, "TargetB is {}", targetB);
 
-            floatType cosRot2 =
+            // Rotate targetC
+            // invQuat * targetC
+            tempQuat = {
+                -rot1InverseQuaternion[1]*targetC[1] - rot1InverseQuaternion[2]*targetC[2] - rot1InverseQuaternion[3]*targetC[3],
+                rot1InverseQuaternion[0]*targetC[1] - rot1InverseQuaternion[2]*targetC[3] + rot1InverseQuaternion[3]*targetC[2],
+                rot1InverseQuaternion[0]*targetC[2] + rot1InverseQuaternion[1]*targetC[3] - rot1InverseQuaternion[3]*targetC[1],
+                rot1InverseQuaternion[0]*targetC[3] - rot1InverseQuaternion[1]*targetC[2] + rot1InverseQuaternion[2]*targetC[1]
+            };
+            // tempQuat * quat
+            tempQuat = {
+                tempQuat[0]*rot1Quaternion[0] - tempQuat[1]*rot1Quaternion[1] - tempQuat[2]*rot1Quaternion[2] - tempQuat[3]*rot1Quaternion[3],
+                tempQuat[0]*rot1Quaternion[1] + tempQuat[1]*rot1Quaternion[0] - tempQuat[2]*rot1Quaternion[3] + tempQuat[3]*rot1Quaternion[2],
+                tempQuat[0]*rot1Quaternion[2] + tempQuat[1]*rot1Quaternion[3] + tempQuat[2]*rot1Quaternion[0] - tempQuat[3]*rot1Quaternion[1],
+                tempQuat[0]*rot1Quaternion[3] - tempQuat[1]*rot1Quaternion[2] + tempQuat[2]*rot1Quaternion[1] + tempQuat[3]*rot1Quaternion[0]
+            };
+            targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
+            AutoPasLog(DEBUG, "TargetC is {}", targetC);
 
-
-
-            // Rotate forces so C is on targetC
+            // Find quaternion that rotates C onto targetC
 
             // Rotate forces by the inverse of the B rotation
 
@@ -406,9 +403,9 @@ class ATLookUpTable {
   inline std::tuple<floatType, floatType, floatType, floatType> quaternionMultiply(std::tuple<floatType, floatType, floatType, floatType> v1, std::tuple<floatType, floatType, floatType, floatType> v2) {
     std::tuple<floatType, floatType, floatType, floatType> ret;
     ret[0] = v1[0]*v2[0] - v1[1]*v2[1] - v1[2]*v2[2] - v1[3]*v2[3];
-    ret[1] = v1[0]*v2[1] - v1[1]*v2[0] - v1[2]*v2[3] - v1[3]*v2[2];
-    ret[2] = v1[0]*v2[2] - v1[1]*v2[3] - v1[2]*v2[0] - v1[3]*v2[1];
-    ret[3] = v1[0]*v2[3] - v1[1]*v2[2] - v1[2]*v2[1] - v1[3]*v2[0];
+    ret[1] = v1[0]*v2[1] + v1[1]*v2[0] - v1[2]*v2[3] + v1[3]*v2[2];
+    ret[2] = v1[0]*v2[2] + v1[1]*v2[3] + v1[2]*v2[0] - v1[3]*v2[1];
+    ret[3] = v1[0]*v2[3] - v1[1]*v2[2] + v1[2]*v2[1] + v1[3]*v2[0];
 
     return ret;
   }
