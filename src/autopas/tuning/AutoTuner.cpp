@@ -197,61 +197,65 @@ std::tuple<Configuration, bool> AutoTuner::rejectConfig(const Configuration &rej
 
 void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
-  if (getCurrentNumSamples() < _maxSamples) {
-    AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
-    if (neighborListRebuilt) {
-      _samplesRebuildingNeighborLists.push_back(sample);
-    } else {
-      _samplesNotRebuildingNeighborLists.push_back(sample);
-    }
-    // if this was the last sample for this configuration:
-    //  - calculate the evidence from the collected samples
-    //  - log what was collected
-    //  - remove the configuration from the queue
-    if (getCurrentNumSamples() == _maxSamples) {
-      const long reducedValue = estimateRuntimeFromSamples();
-      _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
+  // sanity check
+  if (getCurrentNumSamples() >= _maxSamples) {
+    autopas::utils::ExceptionHandler::exception(
+        "AutoTuner::addMeasurement(): Trying to add new measurements but there are already enough!"
+        "tuneConfiguration() should have been called before to process and flush samples.");
+  }
+  AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
+  if (neighborListRebuilt) {
+    _samplesRebuildingNeighborLists.push_back(sample);
+  } else {
+    _samplesNotRebuildingNeighborLists.push_back(sample);
+  }
+  // if this was the last sample for this configuration:
+  //  - calculate the evidence from the collected samples
+  //  - log what was collected
+  //  - remove the configuration from the queue
+  if (getCurrentNumSamples() == _maxSamples) {
+    const long reducedValue = estimateRuntimeFromSamples();
+    _evidenceCollection.addEvidence(currentConfig, {_iteration, _tuningPhase, reducedValue});
 
-      // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
-      const auto smoothedValue =
-          std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5));
+    // smooth evidence to remove high outliers. If smoothing results in a higher value use the original value.
+    const auto smoothedValue =
+        std::min(reducedValue, smoothing::smoothLastPoint(*_evidenceCollection.getEvidence(currentConfig), 5));
 
-      // replace collected evidence with smoothed value to improve next smoothing
-      _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;
+    // replace collected evidence with smoothed value to improve next smoothing
+    _evidenceCollection.modifyLastEvidence(currentConfig).value = smoothedValue;
 
-      std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
-        tuningStrategy->addEvidence(getCurrentConfig(), _evidenceCollection.modifyLastEvidence(currentConfig));
-      });
+    std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
+      tuningStrategy->addEvidence(getCurrentConfig(), _evidenceCollection.modifyLastEvidence(currentConfig));
+    });
 
-      // print config, times and reduced value
-      AutoPasLog(
-          DEBUG, "Collected {} for {}",
-          [&]() {
-            switch (this->_tuningMetric) {
-              case TuningMetricOption::time:
-                return "times";
-              case TuningMetricOption::energy:
-                return "energy consumption";
-            }
-            autopas::utils::ExceptionHandler::exception("AutoTuner::addMeasurement(): Unknown tuning metric.");
-            return "Unknown tuning metric";
-          }(),
-          [&]() {
-            std::ostringstream ss;
-            // print config
-            ss << currentConfig << " : ";
-            // print all timings
-            ss << utils::ArrayUtils::to_string(_samplesRebuildingNeighborLists, " ",
-                                               {"With rebuilding neighbor lists [ ", " ] "});
-            ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
-                                               {"Without rebuilding neighbor lists [ ", " ] "});
-            ss << "Smoothed value: " << smoothedValue;
-            return ss.str();
-          }());
+    // print config, times and reduced value
+    AutoPasLog(
+        DEBUG, "Collected {} for {}",
+        [&]() {
+          switch (this->_tuningMetric) {
+            case TuningMetricOption::time:
+              return "times";
+            case TuningMetricOption::energy:
+              return "energy consumption";
+          }
+          autopas::utils::ExceptionHandler::exception("AutoTuner::addMeasurement(): Unknown tuning metric.");
+          return "Unknown tuning metric";
+        }(),
+        [&]() {
+          std::ostringstream ss;
+          // print config
+          ss << currentConfig << " : ";
+          // print all timings
+          ss << utils::ArrayUtils::to_string(_samplesRebuildingNeighborLists, " ",
+                                             {"With rebuilding neighbor lists [ ", " ] "});
+          ss << utils::ArrayUtils::to_string(_samplesNotRebuildingNeighborLists, " ",
+                                             {"Without rebuilding neighbor lists [ ", " ] "});
+          ss << "Smoothed value: " << smoothedValue;
+          return ss.str();
+        }());
 
-      _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists,
-                                      _samplesNotRebuildingNeighborLists, _iteration, reducedValue, smoothedValue);
-    }
+    _tuningDataLogger.logTuningData(currentConfig, _samplesRebuildingNeighborLists, _samplesNotRebuildingNeighborLists,
+                                    _iteration, reducedValue, smoothedValue);
   }
 }
 
