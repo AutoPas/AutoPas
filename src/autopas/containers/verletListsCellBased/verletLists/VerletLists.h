@@ -160,15 +160,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         this->updatePairwiseVerletListsAoS3B(traversal->getUseNewton3());
         break;
       }
-      case TraversalOption::vl_list_iteration_3b: {
-        if (traversal->getUseNewton3()) {
-          // with Newton3 Halo-Neighborlists are needed
-          this->updateVerletListsAoS3B(traversal->getUseNewton3());
-        } else {
-          // no Newton3 version does not require Halo-Neighborlists
-          this->updateVerletListsAoS(traversal->getUseNewton3());
-        }
-      }
       default: {
         this->updateVerletListsAoS3B(traversal->getUseNewton3());
       }
@@ -219,8 +210,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                "NeighborList stats for both Halo and Owned particles: averageLength, maxLength, totalSizeBytesOwned, "
                "numberOfListsOwned, totalSizeBytesHalo, numberOfListsHalo\n{},{},{},{},{},{}",
                averageLength, maxLength, totalSizeBytesOwned, numberOfListsOwned, totalSizeBytesHalo,
-    numberOfListsHalo);
-    */
+    numberOfListsHalo);*/
 
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
