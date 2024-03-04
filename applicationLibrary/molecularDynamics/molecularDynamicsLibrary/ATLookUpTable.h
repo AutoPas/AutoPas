@@ -164,9 +164,9 @@ class ATLookUpTable {
 
     //static Entry totalRelError;
     if constexpr (intervalType == evenSpacing) {
-      floatType IJround = std::floor(distSquaredIJ / numberOfPoints);
-      floatType JKround = std::floor(distSquaredJK / numberOfPoints);
-      floatType KIround = std::floor(distSquaredKI / numberOfPoints);
+      floatType IJround = std::floor(distSquaredIJ / pointDistance);
+      floatType JKround = std::floor(distSquaredJK / pointDistance);
+      floatType KIround = std::floor(distSquaredKI / pointDistance);
 
       if (IJround == numberOfPoints)
         IJround--;
@@ -186,11 +186,24 @@ class ATLookUpTable {
       KIround > IJround ? J++ : K++;
 
       Entry forces;
-      floatType targetNormalX;
-      floatType targetNormalY;
-      floatType targetNormalZ;
 
       // 4. Translate triangle so the longest point is at origin and get entry from LUT
+
+      floatType rot1AxisX;
+      floatType rot1AxisY;
+      floatType rot1AxisZ;
+      floatType cX = 0;
+      floatType cY = 1;
+      floatType cZ = 0;
+      floatType angleRot1;
+      floatType targetBX;
+      floatType targetBY;
+      floatType targetBZ;
+      floatType targetCX;
+      floatType targetCY;
+      floatType targetCZ;
+      std::tuple<floatType, floatType, floatType, floatType> rot1Quaternion;
+      std::tuple<floatType, floatType, floatType, floatType> rot1InverseQuaternion;
 
       if (I == 0) {
         j1 -= i1;
@@ -202,11 +215,71 @@ class ATLookUpTable {
         i1 = 0;
         i2 = 0;
         i3 = 0;
-        targetNormalX = j2 * k3 - j3 * k2;
-        targetNormalY = j3 * k1 - j1 * k3;
-        targetNormalZ = j1 * k2 - j2 * k1;
+
+        // Use B and C being (1,0,0) and (0,1,0) because that way they are already unit vectors but the angle calculations stay the same
+
         if (J == 1) {
           forces = lut[getIndexNoP(IJround, KIround, JKround)];
+
+
+          // Check if J = B or J = -B
+          if (j2 == 0 && j3 == 0) {
+            if (j1 > 0) {
+              // Same
+            }
+            else {
+              // Opposite -> Flip
+            }
+          }
+          else {
+            auto targetB = norm(j1, j2, j3);
+            // Get rotation axis by cross product
+            // targetB x B (targetB is from ijk) B = (1,0,0)
+            rot1AxisX = 0;
+            rot1AxisY = targetB[3];
+            rot1AxisZ = -targetB[2];
+            // Cosine is a*b / |a|*|b| but here both a and b are normed, also b2 and b3 are 0
+            angleRot1 = std::acos(targetB[1]);
+            // Divide by half to get half angle for quaternion
+            angleRot1 /= 2;
+            // targetB[1] st
+            rot1Quaternion[0] = targetB[1];
+            auto sine = std::sin(angleRot1);
+            rot1Quaternion[1] = 0;
+            rot1Quaternion[2] = rot1AxisY * sine;
+            rot1Quaternion[3] = rot1AxisZ * sine;
+            rot1InverseQuaternion[0] = rot1Quaternion[0];
+            rot1InverseQuaternion[1] = -rot1Quaternion[1];
+            rot1InverseQuaternion[2] = -rot1Quaternion[2];
+            rot1InverseQuaternion[3] = -rot1Quaternion[3];
+
+            // Rotate targetB onto B' (Calculate where targetC will end up as we only need this) and then find how to rotate C' onto targetC and rotate forces
+            auto targetC = norm(k1, k2, k3);
+            auto tempQuat = quaternionMultiply(rot1Quaternion, {0, targetC[0], targetC[1], targetC[2]});
+            tempQuat = quaternionMultiply(tempQuat, rot1InverseQuaternion);
+            targetC[0] = tempQuat[1];
+            targetC[1] = tempQuat[2];
+            targetC[2] = tempQuat[3];
+
+            AutoPasLog(DEBUG, "TargetC x should be 0, is {}", targetC[0]);
+
+            // Calculate angle between C and targetC, we can ignore the x-coordinate, because they should be equal
+
+            floatType cosRot2 =
+
+
+
+            // Rotate forces so C is on targetC
+
+            // Rotate forces by the inverse of the B rotation
+
+
+
+
+
+
+          }
+
         }
         else {
           forces = lut[getIndexNoP(KIround, IJround, JKround)];
@@ -222,9 +295,7 @@ class ATLookUpTable {
         j1 = 0;
         j2 = 0;
         j3 = 0;
-        targetNormalX = i2 * k3 - i3 * k2;
-        targetNormalY = i3 * k1 - j1 * k3;
-        targetNormalZ = i1 * k2 - i2 * k1;
+
         if (I == 1)
           forces = lut[getIndexNoP(IJround, JKround, KIround)];
         else
@@ -240,9 +311,7 @@ class ATLookUpTable {
         k1 = 0;
         k2 = 0;
         k3 = 0;
-        targetNormalX = j2 * i3 - j3 * i2;
-        targetNormalY = j3 * i1 - j1 * i3;
-        targetNormalZ = j1 * i2 - j2 * i1;
+
         if (I == 1)
           forces = lut[getIndexNoP(KIround, JKround, IJround)];
         else
@@ -250,9 +319,7 @@ class ATLookUpTable {
       }
 
 
-      // TODO: find angle and turn forces
-
-      // 5. Find rotation of triangle
+      // TODO: fin
 
 
       // How slow is std::floor?
@@ -329,6 +396,21 @@ class ATLookUpTable {
   Entry relError(Entry e, Entry acc) {
     using namespace autopas::utils::ArrayMath::literals;
     return std::make_pair(std::array{(e.first[0] - acc.first[0]) / acc.first[0], (e.first[1] - acc.first[1]) / acc.first[1], (e.first[2] - acc.first[2]) / acc.first[2]},std::abs(e.second - acc.second));
+  }
+
+  inline std::tuple<floatType, floatType, floatType> norm(floatType x1, floatType x2, floatType x3) {
+    floatType div = std::sqrt(x1 * x1 + x2 * x2 + x3 * x3);
+    return {x1 / div, x2 / div, x3 / div};
+  }
+
+  inline std::tuple<floatType, floatType, floatType, floatType> quaternionMultiply(std::tuple<floatType, floatType, floatType, floatType> v1, std::tuple<floatType, floatType, floatType, floatType> v2) {
+    std::tuple<floatType, floatType, floatType, floatType> ret;
+    ret[0] = v1[0]*v2[0] - v1[1]*v2[1] - v1[2]*v2[2] - v1[3]*v2[3];
+    ret[1] = v1[0]*v2[1] - v1[1]*v2[0] - v1[2]*v2[3] - v1[3]*v2[2];
+    ret[2] = v1[0]*v2[2] - v1[1]*v2[3] - v1[2]*v2[0] - v1[3]*v2[1];
+    ret[3] = v1[0]*v2[3] - v1[1]*v2[2] - v1[2]*v2[1] - v1[3]*v2[0];
+
+    return ret;
   }
 
 
