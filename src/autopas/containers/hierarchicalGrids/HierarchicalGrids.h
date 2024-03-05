@@ -112,10 +112,9 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   void addParticleImpl(const ParticleType &p) override {
 
-    //unsigned int level = getHierarchyLevelOfParticle(p);
-    //addParticleToGridLevel(p, level);
-
-    _hierarchyLevels[0].addParticleImpl(p);
+    // Get level of the particle and add it to the corresponding level
+    unsigned int level = getHierarchyLevelOfParticle(p);
+    addParticleToGridLevel(p, level);
 
   }
 
@@ -156,26 +155,21 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
 
-    //unsigned int level = getHierarchyLevelOfParticle(haloParticle);
-    //_hierarchyLevels[level].addHaloParticle(haloParticle);
-
-    _hierarchyLevels[0].addHaloParticleImpl(haloParticle);
+    // Get level of halo particle and add it to the corresponding level
+    unsigned int level = getHierarchyLevelOfParticle(haloParticle);
+    _hierarchyLevels[level].addHaloParticle(haloParticle);
 
   }
 
   public:
   /** 
-   * @brief Update a halo particle of the container with the given haloParticle.
-   * 
-   * @param haloParticle Particle to be updated.
-   * @return Returns true if the particle was updated, false if no particle could be found.
+   * @copydoc autopas::ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
 
-    //unsigned int level = getHierarchyLevelOfParticle(haloParticle);
-    //return _hierarchyLevels[level].updateHaloParticle(haloParticle);
-
-    return _hierarchyLevels[0].updateHaloParticle(haloParticle);
+    // Get the level of the halo particle and update
+    unsigned int level = getHierarchyLevelOfParticle(haloParticle);
+    return _hierarchyLevels[level].updateHaloParticle(haloParticle);
 
   }
 
@@ -192,52 +186,41 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * Deletes all halo particles.
    */
   void deleteHaloParticles() override {
-    //for (unsigned int level = 0; level < _hierarchyLevels.size(); level++) {
-    //  _hierarchyLevels[level].deleteHaloParticles();
-    //}
-    _hierarchyLevels[0].deleteHaloParticles();
+    for (auto & hgLevel : _hierarchyLevels) {
+      hgLevel.deleteHaloParticles();
+    }
   }
 
   /**
    * Deletes all particles.
    */
   void deleteAllParticles() override {
-    //for (unsigned int level = 0; level < _hierarchyLevels.size(); level++) {
-    //  _hierarchyLevels[level].deleteAllParticles();
-    //}
-    _hierarchyLevels[0].deleteAllParticles();
+    for (auto & hgLevel : _hierarchyLevels) {
+      hgLevel.deleteAllParticles();
+    }
   }
 
   /**
-   * Get the number of particles with respect to the specified IteratorBehavior.
-   * @warning: Since this function counts the number of the respective particles in the internal particle storage, this
-   * is in O(n) + lock is required. Only use it when it is absolutely necessary to have the exact number of different
-   * particle types like owned or halo. If it is enough to have the whole number of particles (owned + halo + dummy),
-   * the function size() can be used.
-   * @param behavior Behavior of the iterator, see IteratorBehavior.
-   * @return Number of particles in the container.
+   * @copydoc autopas::ParticleContainerInterface::getNumberOfParticles()
    */
   [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const override {
-    //size_t numParticles = 0ul;
-    //for (unsigned int level = 0; level < _hierarchyLevels.size(); level++) {
-    //  numParticles += _hierarchyLevels[level].getNumberOfParticles(behavior);
-    //}
-    //return numParticles;
-    return _hierarchyLevels[0].getNumberOfParticles(behavior);
+    size_t numParticles = 0ul;
+    for (auto & hgLevel : _hierarchyLevels) {
+      numParticles += hgLevel.getNumberOfParticles(behavior);
+    }
+    return numParticles;
     
   }
 
   /**
-   * Get the total number of particles saved in the container (owned + halo + dummy).
-   * @return Number of particles saved in the container (owned + halo + dummy).
+   *@copydoc autopas::ParticleContainerInterface::size()
    */
   [[nodiscard]] size_t size() const override {
-    /*size_t numParticles = 0ul;
-    for (unsigned int level = 0; level < _hierarchyLevels.size(); level++) {
-      numParticles += _hierarchyLevels[level].size();
+    size_t numParticles = 0ul;
+    for (auto & hgLevel : _hierarchyLevels) {
+      numParticles += hgLevel.size();
     }
-    return numParticles;*/
-    return _hierarchyLevels[0].size();
+    return numParticles;
   }
 
   /**
@@ -247,9 +230,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<ParticleType, true, false>::ParticleVecType *additionalVectors = nullptr) override {
         
-        return _hierarchyLevels[0].begin(behavior, additionalVectors);
-
-      }
+    return ContainerIterator<ParticleType, true, false>(*this, behavior, additionalVectors);
+  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::begin()
@@ -259,9 +241,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       IteratorBehavior behavior = autopas::IteratorBehavior::ownedOrHalo,
       typename ContainerIterator<ParticleType, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
         
-        return _hierarchyLevels[0].begin(behavior, additionalVectors);
-
-      }
+    return ContainerIterator<ParticleType, false, false>(*this, behavior, additionalVectors);
+  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
@@ -270,9 +251,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
 
-        return _hierarchyLevels[0].getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
-
-      }
+    return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+  }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::getRegionIterator()
@@ -282,27 +262,36 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
 
-        return _hierarchyLevels[0].getRegionIterator(lowerCorner, higherCorner, behavior, additionalVectors);
+    return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
+  }
 
-      }
-
+  /**
+   * @copydoc autopas::LinkedCells::forEachInRegion()
+   */
   template <typename Lambda>
   void forEachInRegion(Lambda forEachLambda, const std::array<double, 3> &lowerCorner,
                        const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     
-    _hierarchyLevels[0].forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
-
+    // Apply Lambda to each level 
+    for (auto & hgLevel : _hierarchyLevels) {
+      hgLevel.forEachInRegion(forEachLambda, lowerCorner, higherCorner, behavior);
     }
 
+  }
+
+  /**
+   * @copydoc autopas::LinkedCells::reduceInRegion()
+   */
   template <typename Lambda, typename A>
   void reduceInRegion(Lambda reduceLambda, A &result, const std::array<double, 3> &lowerCorner,
                       const std::array<double, 3> &higherCorner, IteratorBehavior behavior) {
     
-    _hierarchyLevels[0].reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
-
+    // Apply reduction to each level
+    for (auto & hgLevel : _hierarchyLevels) {
+      hgLevel.reduceInRegion(reduceLambda, result, lowerCorner, higherCorner, behavior);
     }
 
-   
+  } 
 
   void distributeParticlesToHGLevels() {
 
