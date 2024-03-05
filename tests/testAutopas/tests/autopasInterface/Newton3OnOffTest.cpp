@@ -121,8 +121,9 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
     });
   }
   // "SC" = single cell
-  const auto [callsNewton3SC, callsNewton3Pair] = eval<true>(dataLayout, container, traversalOption);
-  const auto [callsNonNewton3SC, callsNonNewton3Pair] = eval<false>(dataLayout, container, traversalOption);
+  const auto [callsNewton3SC, callsNewton3Pair] = eval(dataLayout, /*useNewton3*/ true, container, traversalOption);
+  const auto [callsNonNewton3SC, callsNonNewton3Pair] =
+      eval(dataLayout, /*useNewton3*/ false, container, traversalOption);
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
     // within one cell no N3 optimization.
@@ -151,9 +152,9 @@ void Newton3OnOffTest::iterate(Container &container, Traversal traversal) {
   container.iteratePairwise(traversal.get());
 }
 
-template <bool useNewton3, class Container, class Traversal>
-std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataLayout, Container &container,
-                                                 Traversal traversalOption) {
+template <class Container, class Traversal>
+std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataLayout, bool useNewton3,
+                                                 Container &container, Traversal traversalOption) {
   std::atomic<unsigned int> callsSC(0ul);
   std::atomic<unsigned int> callsPair(0ul);
   EXPECT_CALL(mockFunctor, allowsNewton3()).WillRepeatedly(Return(useNewton3));
