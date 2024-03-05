@@ -26,7 +26,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   /**
    *  Type of the ParticleCell.
    */
-  using ParticleCell = Particle; //FullParticleCell<Particle>;
+  using ParticleCell = FullParticleCell<Particle>;
 
   /**
    *  Type of the Particle.
@@ -542,68 +542,71 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * @return tuple<ParticlePointer, CellIndex, ParticleIndex>
    */
   template <bool regionIter>
-  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t cellIndex, size_t particleIndex,
+  std::tuple<const Particle *, size_t, size_t> getParticleImpl(size_t encodedLevelAndCellIndex, size_t particleIndex,
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
-    // first and last relevant cell index
-    const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
-      if constexpr (regionIter) {
-        return {this->_cellBlock.get1DIndexOfPosition(boxMin), 
-                encodeCellAndLevel(this->size()-1, this->back()._cellBlock.get1DIndexOfPosition(boxMax))};
+    
+    const Particle *retPtr = nullptr;
+    size_t currentCellIndex;
+    size_t currentParticleIndex;
+    size_t currentLevelAndCellIndex;
+
+    //decode HG-level and cellIndex
+    auto [currentLevel, cellIndex] = decodeCellAndLevel(encodedLevelAndCellIndex);
+
+    //and get the particle in the corresponding HG-level 
+    if constexpr (regionIter) {
+      std::tie(retPtr, currentCellIndex, currentParticleIndex) = 
+          _hierarchyLevels[currentLevel].getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+    } else {
+      std::tie(retPtr, currentCellIndex, currentParticleIndex) = 
+          _hierarchyLevels[currentLevel].getParticle(cellIndex, particleIndex, iteratorBehavior);
+    }
+
+    // Check where we are
+    // If _hierarchyLevels[currentLevel].getParticle(...) returned a nullptr, we are out of
+    // bounds on the current level of the hierarchical grid.
+    if (retPtr == nullptr) { 
+      // If the current level was the smallest grid level, we are done iterating
+      if (currentLevel == _hierarchyLevels.size() - 1) {
+
+        return {nullptr, 0, 0};
+
       } else {
-        if (not(iteratorBehavior & IteratorBehavior::halo)) {
-          // only potentially owned region
-          return {this->_cellBlock.getFirstOwnedCellIndex(), 
-                  encodeCellAndLevel(this->size()-1, this->back()_cellBlock.getLastOwnedCellIndex())};
-        } else {
-          // whole range of cells
-          return {0, encodeCellAndLevel(this->size()-1, this->back()._cells.size() - 1)};
-        }
+      // If currentLevel was not the smallest grid level, we finished iterating over this
+      // specific level and we have to advance to following one.
+      
+      // Increase current level by one
+      currentLevel += 1;
+
+      // Obtain the first particle of the following level
+      if constexpr (regionIter) {
+        std::tie(retPtr, currentCellIndex, currentParticleIndex) = 
+            _hierarchyLevels[currentLevel].getParticle(0, 0, iteratorBehavior, boxMin, boxMax);
+      } else {
+        std::tie(retPtr, currentCellIndex, currentParticleIndex) = 
+            _hierarchyLevels[currentLevel].getParticle(0, 0, iteratorBehavior);
       }
-    }();
 
-    //@TODO: Continue
+      // Encode the level and cell index
+      currentLevelAndCellIndex = encodeCellAndLevel(currentLevel, currentCellIndex);
 
-    // if we are at the start of an iteration ...
-    if (cellIndex == 0 and particleIndex == 0) {
-      cellIndex =
-          startCellIndex + ((iteratorBehavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num());
-    }
-    // abort if the start index is already out of bounds
-    if (cellIndex >= this->_cells.size()) {
-      return {nullptr, 0, 0};
-    }
-    // check the data behind the indices
-    if (particleIndex >= this->_cells[cellIndex].size() or
-        not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
-            this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
-      // either advance them to something interesting or invalidate them.
-      std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+      // And return for the following iteration
+      return {retPtr, currentLevelAndCellIndex, currentParticleIndex};
+
+      }
     }
 
-    // shortcut if the given index doesn't exist
-    if (cellIndex > endCellIndex) {
-      return {nullptr, 0, 0};
-    }
-    const Particle *retPtr = &this->_cells[cellIndex][particleIndex];
+    // If retPtr is NOT a nullptr, we are still iterating over the current level 
+    //
+    // Encode the level and cell index
+    currentLevelAndCellIndex = encodeCellAndLevel(currentLevel, currentCellIndex);
 
-    return {retPtr, cellIndex, particleIndex};
+    // And return for the following iteration
+    return {retPtr, currentLevelAndCellIndex, currentParticleIndex};
   }
-
-  size_t encodeCellAndLevel(unsigned int level, unsigned int cellIndex) {
-    return cellIndex + _levelOffset * level;
-  }
-
-  std::tuple<size_t, size_t> decodeCellAndLevel(size_t encodedCellPlusLevel) {
-
-    size_t level = encodedCellPlusLevel / _levelOffset;
-    size_t cellID = encodedCellPlusLevel - level;
-
-    return {level, cellID};
-  }
-
+  
   /**
    * @copydoc autopas::ParticleContainerInterface::deleteParticle()
    */
@@ -690,6 +693,45 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   }
 
   /**
+   * Encodes a level number and a cell index as a combined value. The logic behind this is
+   * encodedCellAndLevel = cellIndex + _levelOffset * level
+   * with _levelOffset = 1e15 (see below).
+   * 
+   * @note This fails if the number of cells in a level is larger than _levelOffset
+   * 
+   * @param level 
+   * @param cellIndex 
+   * @return size_t Encoded cell and level
+   */
+  size_t encodeCellAndLevel(size_t level, size_t cellIndex) const {
+
+    // Exception if current level contains too many cells
+    if (cellIndex >= _levelOffset) {
+      utils::ExceptionHandler::exception(
+        "HierarchicalGrids: Trying to encode a cellIndex which is larger than _levelOffset = 1e15,\n"
+        "i.e. the current HG-level contains too many cells.\n"
+        "Current level: {}", level);
+    }
+    
+    
+    return cellIndex + _levelOffset * level;
+  }
+
+  /**
+   * Decode a encoded cellID and HG level.
+   * 
+   * @param encodedCellPlusLevel 
+   * @return std::tuple<size_t, size_t> level, cellID
+   */
+  std::tuple<size_t, size_t> decodeCellAndLevel(size_t encodedCellPlusLevel) const {
+
+    size_t level = encodedCellPlusLevel / _levelOffset;
+    size_t cellID = encodedCellPlusLevel - level * _levelOffset;
+
+    return {level, cellID};
+  }
+
+  /**
   * @brief Vector containing the HGrid's different hierarchy levels of Linked Cells.
   * 
   * @note This can not be a std::vector<LinkedCells<Particle>> because there is no copy constructor for LinkedCells. 
@@ -714,7 +756,12 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   std::vector<double> _hierarchicalGridBorders;
 
-  const unsigned int _levelOffset = 1e14;
+  /**
+   * Level offset required for encoding and decoding the current HG-level and the cellIndex 
+   * @see HierarchicalGrids::getParticleImpl.
+   * 
+   */
+  const size_t _levelOffset = 1e15;
 
 };
   
