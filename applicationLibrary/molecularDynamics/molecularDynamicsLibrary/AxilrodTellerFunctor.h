@@ -210,7 +210,7 @@ class AxilrodTellerFunctor
 
     if constexpr (useLUT) {
       //AutoPasLog(DEBUG, "Used LUT with {} | {} | {}", displacementIJ, displacementJK, displacementKI);
-      auto values = _PPLibrary->getATLUT().retrieveValue(displacementIJ, displacementJK, displacementKI, distSquaredIJ, distSquaredJK, distSquaredKI);
+      auto values = _PPLibrary->getATLUT().retrieveValue(i.getR() , j.getR(), k.getR(), distSquaredIJ, distSquaredJK, distSquaredKI);
       forceI = values.first.at(0);
       forceJ = values.first.at(1);
       forceK = values.first.at(2);

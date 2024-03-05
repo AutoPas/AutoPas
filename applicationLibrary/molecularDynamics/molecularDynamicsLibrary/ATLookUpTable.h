@@ -75,10 +75,10 @@ class ATLookUpTable {
     }
   }
 
-  Entry retrieveValue(const std::array<double, 3>& displacementIJ, const std::array<double, 3>& displacementJK, const std::array<double, 3>& displacementKI, floatType distSquaredIJ, floatType distSquaredJK, floatType distSquaredKI) {
+  Entry retrieveValue(const std::array<double, 3>& positionI, const std::array<double, 3>& positionJ, const std::array<double, 3>& positionK, floatType distSquaredIJ, floatType distSquaredJK, floatType distSquaredKI) {
     AutoPasLog(DEBUG, "Retrieved value from AT-LUT");
     if constexpr (interpolationType == nextNeighbor) {
-      return getNextNeighbor(displacementIJ[0], displacementIJ[1], displacementIJ[2], displacementJK[0], displacementJK[1], displacementJK[2], displacementKI[0], displacementKI[1], displacementKI[2], distSquaredIJ, distSquaredJK, distSquaredKI);
+      return getNextNeighbor(positionI[0], positionI[1], positionI[2], positionJ[0], positionJ[1], positionJ[2], positionK[0], positionK[1], positionK[2], distSquaredIJ, distSquaredJK, distSquaredKI);
     }
   }
 
@@ -115,10 +115,14 @@ class ATLookUpTable {
     for (floatType distA = pointDistance / 2; distA < cutoffSquared; distA += pointDistance) {
       for (floatType distB = pointDistance / 2; distB <= distA; distB += pointDistance) {
         for (floatType distC = pointDistance / 2; distC <= distB; distC += pointDistance) {
+          // TODO: What is going on here?
           floatType cX, cY;
           cX = (distB * distB - distC * distC + distA * distA) / (2 * distA);
           cY = std::sqrt(distB * distB - ((distB * distB - distC * distC + distA * distA) * (distB * distB - distC * distC + distA * distA)) / (4 * distA * distA));
           Entry val = ATFunctor(0, 0, 0, distA, 0, 0, cX, cY, 0);
+          if (std::isnan(val.second)) {
+            std::cout << "NaN with values: " << distA << " " << distB << " " << distC << " cX is " << cX << " cY is " << cY << std::endl;
+          }
           lut.push_back(val);
         }
       }
