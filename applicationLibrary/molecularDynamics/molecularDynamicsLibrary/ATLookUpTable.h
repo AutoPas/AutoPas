@@ -97,16 +97,13 @@ class ATLookUpTable {
     // Is there something better?!
     size_t index;
     // optimize this
-    for (auto ia = 1; ia <= a; ia++) {
+    /* for (auto ia = 1; ia <= a; ia++) {
       index += (ia * (ia + 1)) / 2;
-    }
-    index += (b * (b + 1)) / 2;
-    index += c;
+    } */
+    index = (a * (a+1) * (a+2)) / 6 + (b * (b + 1)) / 2 + c;
     AutoPasLog(DEBUG, "For {} {} {} return index {}", a, b, c, index);
     return lut[index];
   }
-
-
 
   // Fill functions
 
@@ -197,167 +194,29 @@ class ATLookUpTable {
       std::array<floatType, 4> rot2InverseQuaternion;
 
       if (I == 0) {
-        j1 -= i1;
-        k1 -= i1;
-        j2 -= i2;
-        k2 -= i2;
-        j3 -= i3;
-        k3 -= i3;
-        i1 = 0;
-        i2 = 0;
-        i3 = 0;
-
-        // Use B and C being (1,0,0) and (0,1,0) because that way they are already unit vectors but the angle calculations stay the same
-
         if (J == 1) {
-          // Check if J = B or J = -B: Should only be needed for optimization, maybe not at all because it is so unlikely
-          /* if (j2 == 0 && j3 == 0) {
-            if (j1 > 0) {
-              // Same
-            }
-            else {
-              // Opposite -> Flip
-            }
-          }
-          else {*/
-            auto targetB = norm3(j1, j2, j3);
-            auto targetC = norm3(k1, k2, k3);
-
-            // Find quaternion that rotates target B to (1,0,0)
-            auto norm = std::sqrt((1 + targetB[0] * 1 + targetB[0]) + (targetB[2] * targetB[2]) + (targetB[1] * targetB[1]));
-            rot1Quaternion = {(1 + targetB[0]) / norm, 0, targetB[2] / norm, -targetB[1] / norm};
-            rot1InverseQuaternion = {rot1Quaternion[0], 0, -rot1Quaternion[2], -rot1Quaternion[3]};
-
-            // Rotate targetB for debugging purposes
-            // Rotations are optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving quatTargetB[0] is 0 and can be removed
-            // invQuat * quatTargetB
-            std::array<floatType, 4> tempQuat = {
-                -rot1InverseQuaternion[1]*targetB[0] - rot1InverseQuaternion[2]*targetB[1] - rot1InverseQuaternion[3]*targetB[2],
-                rot1InverseQuaternion[0]*targetB[0] - rot1InverseQuaternion[2]*targetB[2] + rot1InverseQuaternion[3]*targetB[1],
-                rot1InverseQuaternion[0]*targetB[1] + rot1InverseQuaternion[1]*targetB[2] - rot1InverseQuaternion[3]*targetB[0],
-                rot1InverseQuaternion[0]*targetB[2] - rot1InverseQuaternion[1]*targetB[1] + rot1InverseQuaternion[2]*targetB[0]
-            };
-            // tempQuat * quat
-            tempQuat = quaternionMultiply(tempQuat, rot1Quaternion);
-            targetB = {tempQuat[1], tempQuat[2], tempQuat[3]};
-            AutoPasLog(DEBUG, "TargetB is {}", targetB);
-
-            // Rotate targetC
-            // invQuat * quatTargetC
-            tempQuat = {
-                -rot1InverseQuaternion[1]*targetC[0] - rot1InverseQuaternion[2]*targetC[1] - rot1InverseQuaternion[3]*targetC[2],
-                rot1InverseQuaternion[0]*targetC[0] - rot1InverseQuaternion[2]*targetC[2] + rot1InverseQuaternion[3]*targetC[1],
-                rot1InverseQuaternion[0]*targetC[1] + rot1InverseQuaternion[1]*targetC[2] - rot1InverseQuaternion[3]*targetC[0],
-                rot1InverseQuaternion[0]*targetC[2] - rot1InverseQuaternion[1]*targetC[1] + rot1InverseQuaternion[2]*targetC[0]
-            };
-            // tempQuat * quat
-            tempQuat = quaternionMultiply(tempQuat, rot1Quaternion);
-            targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
-            AutoPasLog(DEBUG, "TargetC is {}", targetC);
-
-            // Find 2-D transformation that rotates C onto targetC
-            // Use C = (tagetC[0], sqrt(target[1]^2 + target[2]^2), 0) to ensure rotation around the xy-axis at the cost of some operations.
-            // TODO: Try optimizing the 2D rotation
-
-            auto C1 = std::sqrt(targetC[1] * targetC[1] + targetC[2] * targetC[2]);
-
-            norm = std::sqrt(((1 + targetC[0] * targetC[0] +  targetC[1] * C1) * (1 + targetC[0] * targetC[0] +  targetC[1] * C1)) + ((C1*targetC[2]) * (C1*targetC[2])) + ((targetC[0] * targetC[2]) * (targetC[0] * targetC[2])) + ((targetC[0] * targetC[1] - C1 * targetC[0]) * (targetC[0] * targetC[1] - C1 * targetC[0])));
-            rot2Quaternion = {(1 + targetC[0] * targetC[0] +  targetC[1] * C1) / norm, (C1*targetC[2]) / norm, -(targetC[0] * targetC[2]) / norm, (targetC[0] * targetC[1] - C1 * targetC[0]) / norm};
-            rot2InverseQuaternion = {rot2Quaternion[0], -rot2Quaternion[1], -rot2Quaternion[2], -rot2Quaternion[3]};
-
-            // Rotate C for debugging purposes
-            // Rotations are optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving quatC[0] is 0 and can be removed
-            // invQuat * quatC
-            tempQuat = {
-                -rot2InverseQuaternion[1]*targetC[0] - rot2InverseQuaternion[2]*C1,
-                rot2InverseQuaternion[0]*targetC[0] + rot2InverseQuaternion[3]*C1,
-                rot2InverseQuaternion[0]*C1 - rot2InverseQuaternion[3]*targetC[0],
-                -rot2InverseQuaternion[1]*C1 + rot2InverseQuaternion[2]*targetC[0]
-            };
-            // tempQuat * quat
-            tempQuat = quaternionMultiply(tempQuat, rot2Quaternion);
-
-            AutoPasLog(DEBUG, "quatC is {}", tempQuat);
-
-            // Initialize forceQuaternion and rotate one force after the other
-            forces = lut[getIndexNoP(IJround, KIround, JKround)];
-            Entry ret{};
-
-            // invQuat2 * tempQuat
-            for (auto i=0; i<3; i++) {
-              tempQuat = {0.0, forces.first[i][0], forces.first[i][1], forces.first[i][2]};
-              tempQuat = {-rot2InverseQuaternion[1] * tempQuat[1] - rot2InverseQuaternion[2] * tempQuat[2] - rot2InverseQuaternion[3] * tempQuat[3],
-                          rot2InverseQuaternion[0] * tempQuat[1] - rot2InverseQuaternion[2] * tempQuat[3] + rot2InverseQuaternion[3] * tempQuat[2],
-                          rot2InverseQuaternion[0] * tempQuat[2] + rot2InverseQuaternion[1] * tempQuat[3] - rot2InverseQuaternion[3] * tempQuat[1],
-                          rot2InverseQuaternion[0] * tempQuat[3] - rot2InverseQuaternion[1] * tempQuat[2] + rot2InverseQuaternion[2] * tempQuat[1]
-              };
-              // tempQuat * Quat2
-              tempQuat = quaternionMultiply(tempQuat, rot2Quaternion);
-
-              // tempQuat now
-              AutoPasLog(DEBUG, "After first rotation {}: {}", i, tempQuat);
-              tempQuat[0] = 0;
-
-              // Rotate force onto original position
-              // quat1 * force
-
-              tempQuat = {-rot1Quaternion[1] * tempQuat[1] - rot1Quaternion[2] * tempQuat[2] - rot1Quaternion[3] * tempQuat[3],
-                          rot1Quaternion[0] * tempQuat[1] - rot1Quaternion[2] * tempQuat[3] + rot1Quaternion[3] * tempQuat[2],
-                          rot1Quaternion[0] * tempQuat[2] + rot1Quaternion[1] * tempQuat[3] - rot1Quaternion[3] * tempQuat[1],
-                          rot1Quaternion[0] * tempQuat[3] - rot1Quaternion[1] * tempQuat[2] + rot1Quaternion[2] * tempQuat[1]
-              };
-              // force * invQuat1
-              tempQuat = quaternionMultiply(tempQuat, rot1InverseQuaternion);
-
-              // Forces should be rotated now
-              ret.first[i][0] = tempQuat[1];
-              ret.first[i][1] = tempQuat[2];
-              ret.first[i][2] = tempQuat[3];
-            }
-            ret.second = forces.second;
-            return ret;
+          return rotate(i1, i2, i3, j1, j2, j3, k1, k2, k3, getIndexNoP(IJround, KIround, JKround));
         }
         else {
-          forces = lut[getIndexNoP(KIround, IJround, JKround)];
+          return rotate(i1, i2, i3, k1, k2, k3, j1, j2, j3, getIndexNoP(KIround, IJround, JKround));
         }
       }
       else if (J == 0) {
-        i1 -= j1;
-        k1 -= j1;
-        i2 -= j2;
-        k2 -= j2;
-        i3 -= j3;
-        k3 -= j3;
-        j1 = 0;
-        j2 = 0;
-        j3 = 0;
-
-        if (I == 1)
-          forces = lut[getIndexNoP(IJround, JKround, KIround)];
-        else
-          forces = lut[getIndexNoP(JKround, IJround, KIround)];
+        if (I == 1) {
+          return rotate(j1, j2, j3, i1, i2, i3, k1, k2, k3, getIndexNoP(IJround, JKround, KIround));
+        }
+        else {
+          return rotate(j1, j2, j3, k1, k2, k3, i1, i2, i3, getIndexNoP(JKround, IJround, KIround));
+        }
       }
       else {
-        i1 -= k1;
-        j1 -= k1;
-        i2 -= k2;
-        j2 -= k2;
-        i3 -= k3;
-        j3 -= k3;
-        k1 = 0;
-        k2 = 0;
-        k3 = 0;
-
-        if (I == 1)
-          forces = lut[getIndexNoP(KIround, JKround, IJround)];
-        else
-          forces = lut[getIndexNoP(JKround, KIround, IJround)];
+        if (I == 1) {
+          return rotate(k1, k2, k3, i1, i2, i3, j1, j2, j3, getIndexNoP(KIround, JKround, IJround));
+        }
+        else {
+          return rotate(k1, k2, k3, j1, j2, j3, i1, i2, i3, getIndexNoP(JKround, KIround, IJround));
+        }
       }
-
-
-      // TODO: fin
-
-
       // How slow is std::floor?
 //      auto relErr = relError(ret, accurate);
 //      totalRelError.first[0] += relErr.first[0];
@@ -464,6 +323,8 @@ class ATLookUpTable {
 
     auto targetB = norm3(b1, b2, b3);
     auto targetC = norm3(c1, c2, c3);
+
+    // Use B and C being (1,0,0) and (0,1,0) because that way they are already unit vectors but the angle calculations stay the same
 
     // Find quaternion that rotates target B to (1,0,0)
     auto norm = std::sqrt((1 + targetB[0] * 1 + targetB[0]) + (targetB[2] * targetB[2]) + (targetB[1] * targetB[1]));
