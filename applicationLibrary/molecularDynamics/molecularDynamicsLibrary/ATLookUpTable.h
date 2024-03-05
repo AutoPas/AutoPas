@@ -187,12 +187,14 @@ class ATLookUpTable {
 
       Entry forces;
 
+      // TODO: Put everything after determining the order of i j and k in a separate (inline) function
+
       // 4. Translate triangle so the longest point is at origin and get entry from LUT
 
-      std::tuple<floatType, floatType, floatType, floatType> rot1Quaternion;
-      std::tuple<floatType, floatType, floatType, floatType> rot1InverseQuaternion;
-      std::tuple<floatType, floatType, floatType, floatType> rot2Quaternion;
-      std::tuple<floatType, floatType, floatType, floatType> rot2InverseQuaternion;
+      std::array<floatType, 4> rot1Quaternion;
+      std::array<floatType, 4> rot1InverseQuaternion;
+      std::array<floatType, 4>rot2Quaternion;
+      std::array<floatType, 4> rot2InverseQuaternion;
 
       if (I == 0) {
         j1 -= i1;
@@ -232,7 +234,7 @@ class ATLookUpTable {
             // Rotate targetB for debugging purposes
             // Rotations are optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving targetB[0] is 0 and can be removed
             // invQuat * targetB
-            std::tuple<floatType, floatType, floatType, floatType> tempQuat = {
+            std::array<floatType, 4> tempQuat = {
                 -rot1InverseQuaternion[1]*targetB[1] - rot1InverseQuaternion[2]*targetB[2] - rot1InverseQuaternion[3]*targetB[3],
                 rot1InverseQuaternion[0]*targetB[1] - rot1InverseQuaternion[2]*targetB[3] + rot1InverseQuaternion[3]*targetB[2],
                 rot1InverseQuaternion[0]*targetB[2] + rot1InverseQuaternion[1]*targetB[3] - rot1InverseQuaternion[3]*targetB[1],
@@ -266,9 +268,13 @@ class ATLookUpTable {
             targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
             AutoPasLog(DEBUG, "TargetC is {}", targetC);
 
-            // Find quaternion that rotates C onto targetC
+            // Find 2-D transformation that rotates C onto targetC
+            // Use C = (tagetC[0], 1, 0) to ensure rotation around the xy-axis at the cost of a norm-operation.
+            // TODO: Try optimizing the 2D rotation
 
-            // Rotate forces by the inverse of the B rotation
+
+
+
 
 
 
@@ -395,12 +401,12 @@ class ATLookUpTable {
     return std::make_pair(std::array{(e.first[0] - acc.first[0]) / acc.first[0], (e.first[1] - acc.first[1]) / acc.first[1], (e.first[2] - acc.first[2]) / acc.first[2]},std::abs(e.second - acc.second));
   }
 
-  inline std::tuple<floatType, floatType, floatType> norm(floatType x1, floatType x2, floatType x3) {
+  inline std::array<floatType, 4> norm(floatType x1, floatType x2, floatType x3) {
     floatType div = std::sqrt(x1 * x1 + x2 * x2 + x3 * x3);
     return {x1 / div, x2 / div, x3 / div};
   }
 
-  inline std::tuple<floatType, floatType, floatType, floatType> quaternionMultiply(std::tuple<floatType, floatType, floatType, floatType> v1, std::tuple<floatType, floatType, floatType, floatType> v2) {
+  inline std::array<floatType, 4> quaternionMultiply(std::array<floatType, 4> v1, std::array<floatType, 4> v2) {
     std::tuple<floatType, floatType, floatType, floatType> ret;
     ret[0] = v1[0]*v2[0] - v1[1]*v2[1] - v1[2]*v2[2] - v1[3]*v2[3];
     ret[1] = v1[0]*v2[1] + v1[1]*v2[0] - v1[2]*v2[3] + v1[3]*v2[2];
