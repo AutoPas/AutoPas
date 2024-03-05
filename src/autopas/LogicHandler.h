@@ -717,7 +717,7 @@ class LogicHandler {
   size_t _sortingThreshold;
 
   /**
-   * Reference to the AutoTuner that owns the container, ...
+   * Reference to the AutoTuner which is managed by the AutoPas main interface.
    */
   autopas::AutoTuner &_autoTuner;
 
