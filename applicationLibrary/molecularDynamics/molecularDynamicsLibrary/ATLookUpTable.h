@@ -223,22 +223,22 @@ class ATLookUpTable {
             }
           }
           else {
-            auto targetB = norm(j1, j2, j3);
-            auto targetC = norm(k1, k2, k3);
+            auto targetB = norm3(j1, j2, j3);
+            auto targetC = norm3(k1, k2, k3);
 
             // Find quaternion that rotates target B to (1,0,0)
             auto norm = std::sqrt((1 + targetB[0] * 1 + targetB[0]) + (targetB[2] * targetB[2]) + (targetB[1] * targetB[1]));
-            rot1Quaternion = {1 + targetB[0] / norm, 0, targetB[2] / norm, -targetB[1] / norm};
+            rot1Quaternion = {(1 + targetB[0]) / norm, 0, targetB[2] / norm, -targetB[1] / norm};
             rot1InverseQuaternion = {rot1Quaternion[0], 0, -rot1Quaternion[2], -rot1Quaternion[3]};
 
             // Rotate targetB for debugging purposes
-            // Rotations are optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving targetB[0] is 0 and can be removed
-            // invQuat * targetB
+            // Rotations are optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving quatTargetB[0] is 0 and can be removed
+            // invQuat * quatTargetB
             std::array<floatType, 4> tempQuat = {
-                -rot1InverseQuaternion[1]*targetB[1] - rot1InverseQuaternion[2]*targetB[2] - rot1InverseQuaternion[3]*targetB[3],
-                rot1InverseQuaternion[0]*targetB[1] - rot1InverseQuaternion[2]*targetB[3] + rot1InverseQuaternion[3]*targetB[2],
-                rot1InverseQuaternion[0]*targetB[2] + rot1InverseQuaternion[1]*targetB[3] - rot1InverseQuaternion[3]*targetB[1],
-                rot1InverseQuaternion[0]*targetB[3] - rot1InverseQuaternion[1]*targetB[2] + rot1InverseQuaternion[2]*targetB[1]
+                -rot1InverseQuaternion[1]*targetB[0] - rot1InverseQuaternion[2]*targetB[1] - rot1InverseQuaternion[3]*targetB[2],
+                rot1InverseQuaternion[0]*targetB[0] - rot1InverseQuaternion[2]*targetB[2] + rot1InverseQuaternion[3]*targetB[1],
+                rot1InverseQuaternion[0]*targetB[1] + rot1InverseQuaternion[1]*targetB[2] - rot1InverseQuaternion[3]*targetB[0],
+                rot1InverseQuaternion[0]*targetB[2] - rot1InverseQuaternion[1]*targetB[1] + rot1InverseQuaternion[2]*targetB[0]
             };
             // tempQuat * quat
             tempQuat = {
@@ -251,12 +251,12 @@ class ATLookUpTable {
             AutoPasLog(DEBUG, "TargetB is {}", targetB);
 
             // Rotate targetC
-            // invQuat * targetC
+            // invQuat * quatTargetC
             tempQuat = {
-                -rot1InverseQuaternion[1]*targetC[1] - rot1InverseQuaternion[2]*targetC[2] - rot1InverseQuaternion[3]*targetC[3],
-                rot1InverseQuaternion[0]*targetC[1] - rot1InverseQuaternion[2]*targetC[3] + rot1InverseQuaternion[3]*targetC[2],
-                rot1InverseQuaternion[0]*targetC[2] + rot1InverseQuaternion[1]*targetC[3] - rot1InverseQuaternion[3]*targetC[1],
-                rot1InverseQuaternion[0]*targetC[3] - rot1InverseQuaternion[1]*targetC[2] + rot1InverseQuaternion[2]*targetC[1]
+                -rot1InverseQuaternion[1]*targetC[0] - rot1InverseQuaternion[2]*targetC[1] - rot1InverseQuaternion[3]*targetC[2],
+                rot1InverseQuaternion[0]*targetC[0] - rot1InverseQuaternion[2]*targetC[2] + rot1InverseQuaternion[3]*targetC[1],
+                rot1InverseQuaternion[0]*targetC[1] + rot1InverseQuaternion[1]*targetC[2] - rot1InverseQuaternion[3]*targetC[0],
+                rot1InverseQuaternion[0]*targetC[2] - rot1InverseQuaternion[1]*targetC[1] + rot1InverseQuaternion[2]*targetC[0]
             };
             // tempQuat * quat
             tempQuat = {
@@ -269,8 +269,35 @@ class ATLookUpTable {
             AutoPasLog(DEBUG, "TargetC is {}", targetC);
 
             // Find 2-D transformation that rotates C onto targetC
-            // Use C = (tagetC[0], 1, 0) to ensure rotation around the xy-axis at the cost of a norm-operation.
+            // Use C = (tagetC[0], sqrt(target[1]^2 + target[2]^2), 0) to ensure rotation around the xy-axis at the cost of some operations.
             // TODO: Try optimizing the 2D rotation
+
+            auto C1 = std::sqrt(targetC[1] * targetC[1] + targetC[2] * targetC[2]);
+
+            norm = std::sqrt(((1 + targetC[0] * targetC[0] +  targetC[1] * C1) * (1 + targetC[0] * targetC[0] +  targetC[1] * C1)) + ((C1*targetC[2]) * (C1*targetC[2])) + ((targetC[0] * targetC[2]) * (targetC[0] * targetC[2])) + ((targetC[0] * targetC[1] - C1 * targetC[0]) * (targetC[0] * targetC[1] - C1 * targetC[0])));
+            rot2Quaternion = {(1 + targetC[0] * targetC[0] +  targetC[1] * C1) / norm, (C1*targetC[2]) / norm, -(targetC[0] * targetC[2]) / norm, (targetC[0] * targetC[1] - C1 * targetC[0]) / norm};
+            rot2InverseQuaternion = {rot2Quaternion[0], -rot2Quaternion[1], -rot2Quaternion[2], -rot2Quaternion[3]};
+
+            // Rotate C for debugging purposes
+            // Rotations are optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving quatC[0] is 0 and can be removed
+            // invQuat * quatC
+            tempQuat = {
+                -rot2InverseQuaternion[1]*targetC[0] - rot2InverseQuaternion[2]*C1,
+                rot2InverseQuaternion[0]*targetC[0] + rot2InverseQuaternion[3]*C1,
+                rot2InverseQuaternion[0]*C1 - rot2InverseQuaternion[3]*targetC[0],
+                -rot2InverseQuaternion[1]*C1 + rot2InverseQuaternion[2]*targetC[0]
+            };
+            // tempQuat * quat
+            tempQuat = {
+                tempQuat[0]*rot1Quaternion[0] - tempQuat[1]*rot1Quaternion[1] - tempQuat[2]*rot1Quaternion[2] - tempQuat[3]*rot1Quaternion[3],
+                tempQuat[0]*rot1Quaternion[1] + tempQuat[1]*rot1Quaternion[0] - tempQuat[2]*rot1Quaternion[3] + tempQuat[3]*rot1Quaternion[2],
+                tempQuat[0]*rot1Quaternion[2] + tempQuat[1]*rot1Quaternion[3] + tempQuat[2]*rot1Quaternion[0] - tempQuat[3]*rot1Quaternion[1],
+                tempQuat[0]*rot1Quaternion[3] - tempQuat[1]*rot1Quaternion[2] + tempQuat[2]*rot1Quaternion[1] + tempQuat[3]*rot1Quaternion[0]
+            };
+
+            AutoPasLog(DEBUG, "quatC is {}", tempQuat);
+
+            // Now that we have the two pairs of quaternions, rotate the forces
 
 
 
@@ -401,7 +428,7 @@ class ATLookUpTable {
     return std::make_pair(std::array{(e.first[0] - acc.first[0]) / acc.first[0], (e.first[1] - acc.first[1]) / acc.first[1], (e.first[2] - acc.first[2]) / acc.first[2]},std::abs(e.second - acc.second));
   }
 
-  inline std::array<floatType, 4> norm(floatType x1, floatType x2, floatType x3) {
+  inline std::array<floatType, 3> norm3(floatType x1, floatType x2, floatType x3) {
     floatType div = std::sqrt(x1 * x1 + x2 * x2 + x3 * x3);
     return {x1 / div, x2 / div, x3 / div};
   }
