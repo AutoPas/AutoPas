@@ -27,6 +27,8 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    * @param v Velocity of the molecule.
    * @param moleculeId Unique Id of the molecule.
    * @param typeId TypeId of the molecule.
+   * @param squareRootEpsilon sqrt(epsilon of molecule)
+   * @param sigmaDiv2 sigma of molecule/2
    */
   MoleculeLJ_NoPPL(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
                    double squareRootEpsilon = 1., double sigmaDiv2 = 0.5);
@@ -116,7 +118,7 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
     } else if constexpr (attribute == AttributeNames::squareRootEpsilon) {
       return getSquareRootEpsilon();
     } else if constexpr (attribute == AttributeNames::sigmaDiv2) {
-      return getsigmaDiv2();
+      return getSigmaDiv2();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
@@ -182,13 +184,65 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    */
   void setOldF(const std::array<double, 3> &oldForce);
 
+  /** ---- Mixing Parameters (Non-Efficient) ---- **/
+
+  /**
+   * Get epsilon.
+   * @warning this molecule stores sqrt(epsilon) and so this function performs a square on the stored result. Use getSquareRootEpsilon
+   * in performance critical regions which require the square root of epsilon.
+   * @return epsilon
+   */
+  [[nodiscard]] const double getEpsilon() const;
+
+  /**
+   * Set epsilon.
+   * @warning this molecule stores sqrt(epsilon) and so this function performs a square root and should not be used in performance
+   * critical regions.
+   * @param epsilon
+   */
+  void setEpsilon(const double &epsilon);
+
+  /**
+   * Get sigma.
+   * @warning this molecule stores sigma/2 and so this function performs a multiplication on the stored result. Use getSigmaDiv2
+   * in performance critical regions which require sigma/2.
+   * @return sigma
+   */
+  [[nodiscard]] const double getSigma() const;
+
+  /**
+   * Set sigma.
+   * @warning this molecule stores sigma/2 and so this function performs a division and should not be used in performance
+   * critical regions.
+   * @param sigma
+   */
+  void setSigma(const double &sigma);
+
+  /** ---- Mixing Parameters (Efficient) ---- **/
+
+  /**
+   * Get sqrt(epsilon).
+   * @return sqrt(epsilon)
+   */
   [[nodiscard]] const double &getSquareRootEpsilon() const;
 
+  /**
+   * Set sqrt(epsilon)
+   * @param squareRootEpsilon
+   */
   void setSquareRootEpsilon(const double &squareRootEpsilon);
 
-  [[nodiscard]] const double &getsigmaDiv2() const;
+  /**
+   * Get sigma/2
+   * @return sigma/2
+   */
+  [[nodiscard]] const double &getSigmaDiv2() const;
 
-  void setsigmaDiv2(const double &_sigmaDiv2);
+  /**
+   * Set sigma/2
+   * @param _sigmaDiv2
+   */
+  void setSigmaDiv2(const double &_sigmaDiv2);
 
 
   /**
@@ -205,7 +259,14 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
   std::array<double, 3> _oldF = {0., 0., 0.};
 
  private:
+  /**
+   * sqrt(epsilon). Used directly in force calculation to avoid square roots in kernel.
+   */
   double _squareRootEpsilon{0.};
+
+  /**
+   * sigma/2. Used directly in force calculation to avoid divisions in kernel.
+   */
   double _sigmaDiv2{0.};
 };
 
