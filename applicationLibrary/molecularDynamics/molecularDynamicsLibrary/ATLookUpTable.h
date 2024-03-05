@@ -115,14 +115,14 @@ class ATLookUpTable {
     for (floatType distA = pointDistance / 2; distA < cutoffSquared; distA += pointDistance) {
       for (floatType distB = pointDistance / 2; distB <= distA; distB += pointDistance) {
         for (floatType distC = pointDistance / 2; distC <= distB; distC += pointDistance) {
-          // TODO: What is going on here?
+          // Lots of numbers, because many combinations don't actually make a triangle (Triangle inequality b + c <= a)
           floatType cX, cY;
           cX = (distB * distB - distC * distC + distA * distA) / (2 * distA);
-          cY = std::sqrt(distB * distB - ((distB * distB - distC * distC + distA * distA) * (distB * distB - distC * distC + distA * distA)) / (4 * distA * distA));
+          cY = std::sqrt((distB * distB) - ((cX * cX) / (4 * distA * distA)));
           Entry val = ATFunctor(0, 0, 0, distA, 0, 0, cX, cY, 0);
-          if (std::isnan(val.second)) {
+          /* if (std::isnan(val.second)) {
             std::cout << "NaN with values: " << distA << " " << distB << " " << distC << " cX is " << cX << " cY is " << cY << std::endl;
-          }
+          } */
           lut.push_back(val);
         }
       }
