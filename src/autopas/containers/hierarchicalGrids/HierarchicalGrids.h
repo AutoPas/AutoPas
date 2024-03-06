@@ -306,7 +306,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
         // add particles to their respective levels
         addParticleToGridLevel(*iterParticle, targetLevel);
 
-        // and delete it from the carrier level
+        // and delete it from the carrier level.
         internal::deleteParticle(iterParticle);
       }
 
@@ -479,7 +479,23 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   [[nodiscard]] std::vector<ParticleType> updateContainer(bool keepNeighborListsValid) override {
 
-    return _hierarchyLevels[0].updateContainer(keepNeighborListsValid);
+    // Set up vector collecting all particles returned by applying updateContainer()
+    // to the HG-levels
+    std::vector<ParticleType> collectParticles;
+    // TODO: needs smarter heuristic than this. Taken from autopas::LinkedCells::updateContainer()
+    collectParticles.reserve(128);
+
+    for (auto & hgLevel : _hierarchyLevels) {
+      // Iterate over the HG-levels, update each level and collect the returned particles
+      std::vector<ParticleType> collectParticlesOfLevel = hgLevel.updateContainer(keepNeighborListsValid);
+
+      // Merge with global vector
+      collectParticles.insert(collectParticles.end(), collectParticlesOfLevel.begin(),
+                                                      collectParticlesOfLevel.end());
+    }
+    
+
+    return collectParticles;
 
   }
 
@@ -601,14 +617,21 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   bool deleteParticle(Particle &particle) override {
 
-    return _hierarchyLevels[0].deleteParticle(particle);
+    // get level of particle and delete it from there
+    size_t level = getHierarchyLevelOfParticle(particle);
+    return _hierarchyLevels[level].deleteParticle(particle);
 
   }
 
   /**
    * @copydoc autopas::ParticleContainerInterface::deleteParticle()
+   * 
+   * @note This version only works correctly if the cellIndex is actually an 
+   * encoded cell and level index
    */
-  bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
+  bool deleteParticle(size_t encodedCellAndLevelIndex, size_t particleIndex) override {
+
+    auto [level, cellIndex] = decodeCellAndLevel(encodedCellAndLevelIndex);
 
     return _hierarchyLevels[0].deleteParticle(cellIndex, particleIndex);
 
