@@ -116,7 +116,7 @@ class ATLookUpTable {
       for (floatType distB = pointDistance / 2; distB <= distA; distB += pointDistance) {
         for (floatType distC = pointDistance / 2; distC <= distB; distC += pointDistance) {
           // Lots of numbers, because many combinations don't actually make a triangle (Triangle inequality b + c >= a)
-          // TODO: Still an error, because there are less triangles than expected; Edit: Now more triangles than expected
+          // TODO: Still an error, because there are less triangles than expected; Edit: Now more triangles than expected; Edit2: Maybe not because we aren't going linearly over the search space
           floatType cX, cY;
           // Use roots because distABC are technically distanceSquared
           // This code is now slower for no reason, but more readable, so it will remain until everything has been debugged
@@ -242,6 +242,9 @@ class ATLookUpTable {
       std::array<std::array<floatType, 3>, 3> finalNormalized = {norm3(final.first[0][0], final.first[0][1], final.first[0][2]), norm3(final.first[1][0], final.first[1][1], final.first[1][2]), norm3(final.first[2][0], final.first[2][1], final.first[2][2])};
       AutoPasLog(DEBUG, "Perfect normalized: {} {} {} | {} {} {} | {} {} {}", compareNormalized[0][0], compareNormalized[0][1], compareNormalized[0][2], compareNormalized[1][0], compareNormalized[1][1], compareNormalized[1][2], compareNormalized[2][0], compareNormalized[2][1], compareNormalized[2][2]);
       AutoPasLog(DEBUG, "Return  normalized: {} {} {} | {} {} {} | {} {} {}", finalNormalized[0][0], finalNormalized[0][1], finalNormalized[0][2], finalNormalized[1][0], finalNormalized[1][1], finalNormalized[1][2], finalNormalized[2][0], finalNormalized[2][1], finalNormalized[2][2]);
+      AutoPasLog(DEBUG, "Perfect value: {}", compareEntry);
+      AutoPasLog(DEBUG, "Return  value: {}", final);
+      AutoPasLog(DEBUG, "Relative Error: {}", relError(final, compareEntry));
 
       return final;
       // How slow is std::floor?
