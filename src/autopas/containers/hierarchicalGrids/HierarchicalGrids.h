@@ -293,43 +293,6 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
   } 
 
-  void distributeParticlesToHGLevels() {
-
-      AUTOPAS_OPENMP(parallel)
-      for (auto iterParticle = _hierarchyLevels[0].begin(); iterParticle.isValid(); ++iterParticle) {
-        // get level the particle should be inserted to
-        unsigned int targetLevel = getHierarchyLevelOfParticle(*iterParticle);
-
-        // No need to distribute particles, which are supposed to be in level = 0
-        if (targetLevel == 0) { continue; }
-
-        // add particles to their respective levels
-        addParticleToGridLevel(*iterParticle, targetLevel);
-
-        // and delete it from the carrier level.
-        internal::deleteParticle(iterParticle);
-      }
-
-  }
-
-  void distributeParticlesToCarrierLevel() {
-
-    //iterate over all HG levels
-    for (unsigned int iterLevels = 1; iterLevels < _hierarchyLevels.size(); iterLevels++) {
-      
-      //iterate over all particles in a given level
-      for(auto iterParticle = _hierarchyLevels[iterLevels].begin(); iterParticle.isValid(); ++iterParticle) {
-
-        //add the particle to the carrier level
-        _hierarchyLevels[0].addParticleImpl(*iterParticle);
-
-      }
-      _hierarchyLevels[iterLevels].deleteAllParticles();
-
-    }
-
-  }
-
   void iterateAllHGLevels(TraversalInterface *traversal) {
 
     // @idea: Reduce the number of threads per level and parallelize as much as 
@@ -417,30 +380,11 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   void iteratePairwise(TraversalInterface *traversal) override {
 
-    // Distribute particles over the hierarchical grid levels, if more than one HG level is present
-    if (_hierarchyLevels.size() > 1) {
-      
-      distributeParticlesToHGLevels();
-
-    }
-    // Else skip the distribution and just iteratePairwise over the carrier level and return
-    else {
-      
-      _hierarchyLevels[0].iteratePairwise(traversal);
-
-      return;
-
-    }
-
     // Iterate over hierarchy levels 
     iterateAllHGLevels(traversal);
 
     // Iterate over cross levels 
     iterateAllCrossLevels(traversal);
-
-    
-    // Distribute particles back to the top level hierarchical grid
-    distributeParticlesToCarrierLevel();
 
   }
 
