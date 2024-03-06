@@ -118,7 +118,6 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
   }
 
-  public:
   /**
    * @brief Adds a particle to a given level of the hierarchical grid
    * 
@@ -145,7 +144,6 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
   }
 
-  protected:
   /**
    * @brief Adds a particle to the container that lies in the halo region of the container.
    * 
@@ -293,6 +291,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
   } 
 
+  protected:
+
   void iterateAllHGLevels(TraversalInterface *traversal) {
 
     // @idea: Reduce the number of threads per level and parallelize as much as 
@@ -307,70 +307,49 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
   void iterateAllCrossLevels(TraversalInterface *traversal) {
 
-    demLib::DEMFunctor<Particle>::initCrossLevelTraversal();
-
     for (unsigned int largerLevel = 0; largerLevel < _hierarchyLevels.size(); largerLevel++) {
       for (unsigned int smallerLevel = largerLevel + 1; smallerLevel < _hierarchyLevels.size(); smallerLevel++) {
 
-        // If one of the HG levels is empty there is no need to traverse over the cross-level, 
-        // since no particle interaction should be found. Hence, continue;
-        const bool largerLevelEmpty = _hierarchyLevels[largerLevel].size() == 0;
-        const bool smallerLevelEmpty = _hierarchyLevels[smallerLevel].size() == 0;
-        if (largerLevelEmpty or smallerLevelEmpty){
-          continue;
-        }
-        
-        
-        const double crossLevelCellSize = ( _hierarchyLevels[largerLevel].getCutoff() + 
-                                            _hierarchyLevels[smallerLevel].getCutoff() ) / 2.0;
-
-        //Create cross-level
-        autopas::LinkedCells<Particle> crossLevel(_boxMin, _boxMax, crossLevelCellSize, _skinPerTimestep, _rebuildFrequency, 
-                                                  _cellSizeFactor, _loadEstimator);
-        
-        //Very ugly trick: Make particle radii of the larger level negative
-        //Add large particles
-        for(auto iterLarger = _hierarchyLevels[largerLevel].begin(); iterLarger.isValid(); ++iterLarger) {
-          const double particleRad = - 1.0 * iterLarger->getRad();
-          iterLarger->setRad(particleRad);
-          crossLevel.addParticleImpl(*iterLarger);
-          }
-        _hierarchyLevels[largerLevel].deleteAllParticles();
-        
-
-        //Add small particles
-        for(auto iterSmaller = _hierarchyLevels[smallerLevel].begin(); iterSmaller.isValid(); ++iterSmaller) {
-          crossLevel.addParticleImpl(*iterSmaller);
-        }
-        _hierarchyLevels[smallerLevel].deleteAllParticles();
-
-        // Iterate pairwise over the cross-level
-        crossLevel.iteratePairwise(traversal);
-
-        // Move particles back to their level
-        AUTOPAS_OPENMP(parallel)
-        for (auto iterCross = crossLevel.begin(); iterCross.isValid(); ++iterCross) {
-
-          const double particleRad = iterCross->getRad();
-
-          //if targetLevel = largerLevel, particle has negative radius. Hence, reverse the ugly trick
-          if (particleRad < 0.) {
-            
-            iterCross->setRad(std::abs(particleRad));
-          }
-
-          unsigned int targetLevel = getHierarchyLevelOfParticle(*iterCross);
-
-          addParticleToGridLevel(*iterCross, targetLevel);
-        }
-        
-        crossLevel.deleteAllParticles();
+        iterateOverCrossLevels(traversal, largerLevel, smallerLevel);
 
       }
     }
-
-    demLib::DEMFunctor<Particle>::endCrossLevelTraversal();
+    
   }
+
+  void iterateOverCrossLevels(TraversalInterface *traversal, unsigned int firstLevel, unsigned int secondLevel) {
+
+    // Box size of particle interations
+    const double crossLevelCellSize = ( _hierarchicalGridBorders[firstLevel] + _hierarchicalGridBorders[secondLevel] ) / 2.0;
+    demLib::DEMFunctor<Particle> demFunctor(crossLevelCellSize);
+
+    //iterate over all particles in a given larger level
+    // @note Maybe parallelize iteration over second level?
+    AUTOPAS_OPENMP(parallel)
+    for(auto iterFirstLVLParticles = _hierarchyLevels[firstLevel].begin(); iterFirstLVLParticles.isValid(); ++iterFirstLVLParticles) {
+
+      // Get particle position of larger particle
+      const std::array<double, 3> posLarger = iterFirstLVLParticles->getR();
+
+      // Get lower and higher corner of box around the larger particle containing possible interaction partners
+      // in the smaller level
+      const std::array<double, 3> lowerBoxCorner = autopas::utils::ArrayMath::subScalar(posLarger, crossLevelCellSize);
+      const std::array<double, 3> higherBoxCorner = autopas::utils::ArrayMath::addScalar(posLarger, crossLevelCellSize);
+
+      for (auto iterSecondLVLParticles = 
+          _hierarchyLevels[secondLevel].getRegionIterator(lowerBoxCorner, higherBoxCorner, autopas::IteratorBehavior::ownedOrHalo); 
+                iterSecondLVLParticles.isValid(); ++iterSecondLVLParticles) {
+
+        // Calculate forces
+        // @note Maybe use different functor?
+        demFunctor.AoSFunctor(*iterFirstLVLParticles, *iterSecondLVLParticles, true);
+      }
+
+    }
+
+  }
+
+  public:
 
   /**
    * @todo
@@ -630,23 +609,6 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
 
   private:
-
-  /**
-   * @brief Get the number Of cross-levels of the H-Grid
-   * 
-   * @param levels 
-   * @return unsigned int 
-   */
-  unsigned int getNumberOfCrossLevels(unsigned int levels) {
-
-    unsigned int numberOfCrossLevels = 0;
-    for (unsigned int i = 1; i < levels; i++)
-    {
-      numberOfCrossLevels += i;
-    }
-    
-    return numberOfCrossLevels;
-  }
 
   /**
    * Encodes a level number and a cell index as a combined value. The logic behind this is
