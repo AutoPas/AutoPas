@@ -116,11 +116,17 @@ class ATLookUpTable {
       for (floatType distB = pointDistance / 2; distB <= distA; distB += pointDistance) {
         for (floatType distC = pointDistance / 2; distC <= distB; distC += pointDistance) {
           // Lots of numbers, because many combinations don't actually make a triangle (Triangle inequality b + c >= a)
-          // TODO: Still an error, because there are less triangles than expected
+          // TODO: Still an error, because there are less triangles than expected; Edit: Now more triangles than expected
           floatType cX, cY;
-          cX = (distB * distB - distC * distC + distA * distA) / (2 * distA);
-          cY = std::sqrt((distB * distB) - (cX * cX));
-          Entry val = ATFunctor(0, 0, 0, distA, 0, 0, cX, cY, 0);
+          // Use roots because distABC are technically distanceSquared
+          // This code is now slower for no reason, but more readable, so it will remain until everything has been debugged
+          floatType rootA, rootB, rootC;
+          rootA = std::sqrt(distA);
+          rootB = std::sqrt(distB);
+          rootC = std::sqrt(distC);
+          cX = (rootB * rootB - rootC * rootC + rootA * rootA) / (2 * rootA);
+          cY = std::sqrt((rootB * rootB) - (cX * cX));
+          Entry val = ATFunctor(0, 0, 0, rootA, 0, 0, cX, cY, 0);
           /* if (std::isnan(val.second)) {
             std::cout << "NaN with values: " << distA << " " << distB << " " << distC << " cX is " << cX << " cY is " << cY << std::endl;
           } */
