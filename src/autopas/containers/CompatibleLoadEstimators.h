@@ -32,7 +32,8 @@ static std::set<autopas::LoadEstimatorOption> allCompatibleLoadEstimators(autopa
       return std::set<autopas::LoadEstimatorOption>{LoadEstimatorOption::none,
                                                     LoadEstimatorOption::squaredParticlesPerCell};
     }
-    case ContainerOption::verletListsCells: {
+    case ContainerOption::verletListsCells:
+    case ContainerOption::dynamicVerletListsCells: {
       return std::set<autopas::LoadEstimatorOption>{LoadEstimatorOption::none,
                                                     LoadEstimatorOption::squaredParticlesPerCell,
                                                     LoadEstimatorOption::neighborListLength};
