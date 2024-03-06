@@ -93,7 +93,7 @@ class ATLookUpTable {
 
   // Vector Index
 
-  int getIndexNoP(size_t a, size_t b, size_t c) {
+  size_t getIndexNoP(size_t a, size_t b, size_t c) {
     // Is there something better?!
     size_t index;
     // optimize this
@@ -102,7 +102,7 @@ class ATLookUpTable {
     } */
     index = (a * (a+1) * (a+2)) / 6 + (b * (b + 1)) / 2 + c;
     AutoPasLog(DEBUG, "For {} {} {} return index {}", a, b, c, index);
-    return lut[index];
+    return index;
   }
 
   // Fill functions
@@ -115,10 +115,11 @@ class ATLookUpTable {
     for (floatType distA = pointDistance / 2; distA < cutoffSquared; distA += pointDistance) {
       for (floatType distB = pointDistance / 2; distB <= distA; distB += pointDistance) {
         for (floatType distC = pointDistance / 2; distC <= distB; distC += pointDistance) {
-          // Lots of numbers, because many combinations don't actually make a triangle (Triangle inequality b + c <= a)
+          // Lots of numbers, because many combinations don't actually make a triangle (Triangle inequality b + c >= a)
+          // TODO: Still an error, because there are less triangles than expected
           floatType cX, cY;
           cX = (distB * distB - distC * distC + distA * distA) / (2 * distA);
-          cY = std::sqrt((distB * distB) - ((cX * cX) / (4 * distA * distA)));
+          cY = std::sqrt((distB * distB) - (cX * cX));
           Entry val = ATFunctor(0, 0, 0, distA, 0, 0, cX, cY, 0);
           /* if (std::isnan(val.second)) {
             std::cout << "NaN with values: " << distA << " " << distB << " " << distC << " cX is " << cX << " cY is " << cY << std::endl;
@@ -176,6 +177,8 @@ class ATLookUpTable {
       if (KIround == numberOfPoints)
         KIround--;
 
+      AutoPasLog(DEBUG, "IJround: {}    JKround: {}    KIround: {}", IJround, JKround, KIround);
+
       // Sort points from longest to shortest
 
       auto I = 0;
@@ -186,41 +189,55 @@ class ATLookUpTable {
       JKround > KIround ? I++ : J++;
       KIround > IJround ? J++ : K++;
 
+      AutoPasLog(DEBUG, "Points: I: {}    J: {}   K: {}", I, J , K);
+
       Entry forces;
-
-      // TODO: Put everything after determining the order of i j and k in a separate (inline) function, only calculate index beforehand and put that as argument as well
-
-      // 4. Translate triangle so the longest point is at origin and get entry from LUT
 
       std::array<floatType, 4> rot1Quaternion;
       std::array<floatType, 4> rot1InverseQuaternion;
       std::array<floatType, 4>rot2Quaternion;
       std::array<floatType, 4> rot2InverseQuaternion;
 
+      Entry ret;
+      Entry final;
+
       if (I == 0) {
         if (J == 1) {
-          return rotate(i1, i2, i3, j1, j2, j3, k1, k2, k3, getIndexNoP(IJround, KIround, JKround));
+          ret = rotate(i1, i2, i3, j1, j2, j3, k1, k2, k3, getIndexNoP(IJround, KIround, JKround));
+          final = ret;
         }
         else {
-          return rotate(i1, i2, i3, k1, k2, k3, j1, j2, j3, getIndexNoP(KIround, IJround, JKround));
+          ret = rotate(i1, i2, i3, k1, k2, k3, j1, j2, j3, getIndexNoP(KIround, IJround, JKround));
+          final = {{ret.first[0], ret.first[2], ret.first[1]}, ret.second};
         }
       }
       else if (J == 0) {
         if (I == 1) {
-          return rotate(j1, j2, j3, i1, i2, i3, k1, k2, k3, getIndexNoP(IJround, JKround, KIround));
+          ret = rotate(j1, j2, j3, i1, i2, i3, k1, k2, k3, getIndexNoP(IJround, JKround, KIround));
+          final = {{ret.first[1], ret.first[0], ret.first[2]}, ret.second};
         }
         else {
-          return rotate(j1, j2, j3, k1, k2, k3, i1, i2, i3, getIndexNoP(JKround, IJround, KIround));
+          ret = rotate(j1, j2, j3, k1, k2, k3, i1, i2, i3, getIndexNoP(JKround, IJround, KIround));
+          final = {{ret.first[2], ret.first[0], ret.first[1]}, ret.second};
         }
       }
       else {
         if (I == 1) {
-          return rotate(k1, k2, k3, i1, i2, i3, j1, j2, j3, getIndexNoP(KIround, JKround, IJround));
+          ret = rotate(k1, k2, k3, i1, i2, i3, j1, j2, j3, getIndexNoP(KIround, JKround, IJround));
+          final = {{ret.first[1], ret.first[2], ret.first[0]}, ret.second};
         }
         else {
-          return rotate(k1, k2, k3, j1, j2, j3, i1, i2, i3, getIndexNoP(JKround, KIround, IJround));
+          ret = rotate(k1, k2, k3, j1, j2, j3, i1, i2, i3, getIndexNoP(JKround, KIround, IJround));
+          final = {{ret.first[2], ret.first[1], ret.first[0]}, ret.second};
         }
       }
+      Entry compareEntry = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
+      std::array<std::array<floatType, 3>, 3> compareNormalized = {norm3(compareEntry.first[0][0], compareEntry.first[0][1], compareEntry.first[0][2]), norm3(compareEntry.first[1][0], compareEntry.first[1][1], compareEntry.first[1][2]), norm3(compareEntry.first[2][0], compareEntry.first[2][1], compareEntry.first[2][2])};
+      std::array<std::array<floatType, 3>, 3> finalNormalized = {norm3(final.first[0][0], final.first[0][1], final.first[0][2]), norm3(final.first[1][0], final.first[1][1], final.first[1][2]), norm3(final.first[2][0], final.first[2][1], final.first[2][2])};
+      AutoPasLog(DEBUG, "Perfect normalized: {} {} {} | {} {} {} | {} {} {}", compareNormalized[0][0], compareNormalized[0][1], compareNormalized[0][2], compareNormalized[1][0], compareNormalized[1][1], compareNormalized[1][2], compareNormalized[2][0], compareNormalized[2][1], compareNormalized[2][2]);
+      AutoPasLog(DEBUG, "Return  normalized: {} {} {} | {} {} {} | {} {} {}", finalNormalized[0][0], finalNormalized[0][1], finalNormalized[0][2], finalNormalized[1][0], finalNormalized[1][1], finalNormalized[1][2], finalNormalized[2][0], finalNormalized[2][1], finalNormalized[2][2]);
+
+      return final;
       // How slow is std::floor?
 //      auto relErr = relError(ret, accurate);
 //      totalRelError.first[0] += relErr.first[0];
@@ -302,7 +319,7 @@ class ATLookUpTable {
   }
 
   inline std::array<floatType, 4> quaternionMultiply(std::array<floatType, 4> v1, std::array<floatType, 4> v2) {
-    std::tuple<floatType, floatType, floatType, floatType> ret;
+    std::array<floatType, 4> ret;
     ret[0] = v1[0]*v2[0] - v1[1]*v2[1] - v1[2]*v2[2] - v1[3]*v2[3];
     ret[1] = v1[0]*v2[1] + v1[1]*v2[0] - v1[2]*v2[3] + v1[3]*v2[2];
     ret[2] = v1[0]*v2[2] + v1[1]*v2[3] + v1[2]*v2[0] - v1[3]*v2[1];
@@ -325,13 +342,19 @@ class ATLookUpTable {
     c2 -= a2;
     c2 -= a3;
 
+    AutoPasLog(DEBUG, "B: {} {} {}    C: {} {} {}", b1, b2, b3, c1, c2, c3);
+
     auto targetB = norm3(b1, b2, b3);
     auto targetC = norm3(c1, c2, c3);
+    AutoPasLog(DEBUG, "targetB normalized: {}", targetB);
+    AutoPasLog(DEBUG, "targetC normalized: {}", targetC);
+    // Works until here
 
     // Use B and C being (1,0,0) and (0,1,0) because that way they are already unit vectors but the angle calculations stay the same
 
     // Find quaternion that rotates target B to (1,0,0)
-    auto norm = std::sqrt((1 + targetB[0] * 1 + targetB[0]) + (targetB[2] * targetB[2]) + (targetB[1] * targetB[1]));
+    auto norm = std::sqrt(((1 + targetB[0]) * (1 + targetB[0])) + (targetB[2] * targetB[2]) + (targetB[1] * targetB[1]));
+    AutoPasLog(DEBUG, "Quaternion norm is {}", norm);
     rot1Quaternion = {(1 + targetB[0]) / norm, 0, targetB[2] / norm, -targetB[1] / norm};
     rot1InverseQuaternion = {rot1Quaternion[0], 0, -rot1Quaternion[2], -rot1Quaternion[3]};
 
@@ -347,7 +370,7 @@ class ATLookUpTable {
     // tempQuat * quat
     tempQuat = quaternionMultiply(tempQuat, rot1Quaternion);
     targetB = {tempQuat[1], tempQuat[2], tempQuat[3]};
-    AutoPasLog(DEBUG, "TargetB is {}", targetB);
+    AutoPasLog(DEBUG, "TargetB after rotation should be x 0 0 is {}", targetB);
 
     // Rotate targetC
     // invQuat * quatTargetC
@@ -360,7 +383,7 @@ class ATLookUpTable {
     // tempQuat * quat
     tempQuat = quaternionMultiply(tempQuat, rot1Quaternion);
     targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
-    AutoPasLog(DEBUG, "TargetC is {}", targetC);
+    AutoPasLog(DEBUG, "TargetC after first rotation is {}", targetC);
 
     // Find 2-D transformation that rotates C onto targetC
     // Use C = (tagetC[0], sqrt(target[1]^2 + target[2]^2), 0) to ensure rotation around the xy-axis at the cost of some operations.
@@ -368,8 +391,8 @@ class ATLookUpTable {
 
     auto C1 = std::sqrt(targetC[1] * targetC[1] + targetC[2] * targetC[2]);
 
-    norm = std::sqrt(((1 + targetC[0] * targetC[0] +  targetC[1] * C1) * (1 + targetC[0] * targetC[0] +  targetC[1] * C1)) + ((C1*targetC[2]) * (C1*targetC[2])) + ((targetC[0] * targetC[2]) * (targetC[0] * targetC[2])) + ((targetC[0] * targetC[1] - C1 * targetC[0]) * (targetC[0] * targetC[1] - C1 * targetC[0])));
-    rot2Quaternion = {(1 + targetC[0] * targetC[0] +  targetC[1] * C1) / norm, (C1*targetC[2]) / norm, -(targetC[0] * targetC[2]) / norm, (targetC[0] * targetC[1] - C1 * targetC[0]) / norm};
+    norm = std::sqrt(((1 + targetC[0] * targetC[0] + targetC[1] * C1) * (1 + targetC[0] * targetC[0] + targetC[1] * C1)) + ((C1*targetC[2]) * (C1*targetC[2])) + ((targetC[0] * targetC[2]) * (targetC[0] * targetC[2])) + ((targetC[0] * targetC[1] - C1 * targetC[0]) * (targetC[0] * targetC[1] - C1 * targetC[0])));
+    rot2Quaternion = {(1 + targetC[0] * targetC[0] + targetC[1] * C1) / norm, (C1*targetC[2]) / norm, -(targetC[0] * targetC[2]) / norm, (targetC[0] * targetC[1] - C1 * targetC[0]) / norm};
     rot2InverseQuaternion = {rot2Quaternion[0], -rot2Quaternion[1], -rot2Quaternion[2], -rot2Quaternion[3]};
 
     // Rotate C for debugging purposes
@@ -393,11 +416,13 @@ class ATLookUpTable {
     // invQuat2 * tempQuat
     for (auto i=0; i<3; i++) {
       tempQuat = {0.0, forces.first[i][0], forces.first[i][1], forces.first[i][2]};
+      AutoPasLog(DEBUG, "Force quat {} before rotation", tempQuat);
       tempQuat = {-rot2InverseQuaternion[1] * tempQuat[1] - rot2InverseQuaternion[2] * tempQuat[2] - rot2InverseQuaternion[3] * tempQuat[3],
                   rot2InverseQuaternion[0] * tempQuat[1] - rot2InverseQuaternion[2] * tempQuat[3] + rot2InverseQuaternion[3] * tempQuat[2],
                   rot2InverseQuaternion[0] * tempQuat[2] + rot2InverseQuaternion[1] * tempQuat[3] - rot2InverseQuaternion[3] * tempQuat[1],
                   rot2InverseQuaternion[0] * tempQuat[3] - rot2InverseQuaternion[1] * tempQuat[2] + rot2InverseQuaternion[2] * tempQuat[1]
       };
+      AutoPasLog(DEBUG, "After first half rotation {}: {}", i, tempQuat);
       // tempQuat * Quat2
       tempQuat = quaternionMultiply(tempQuat, rot2Quaternion);
 
@@ -413,8 +438,11 @@ class ATLookUpTable {
                   rot1Quaternion[0] * tempQuat[2] + rot1Quaternion[1] * tempQuat[3] - rot1Quaternion[3] * tempQuat[1],
                   rot1Quaternion[0] * tempQuat[3] - rot1Quaternion[1] * tempQuat[2] + rot1Quaternion[2] * tempQuat[1]
       };
+      AutoPasLog(DEBUG, "After second half rotation {}: {}", i, tempQuat);
       // force * invQuat1
       tempQuat = quaternionMultiply(tempQuat, rot1InverseQuaternion);
+
+      AutoPasLog(DEBUG, "After second rotation {}: {}", i, tempQuat);
 
       // Forces should be rotated now
       ret.first[i][0] = tempQuat[1];

@@ -217,7 +217,7 @@ class AxilrodTellerFunctor
       potentialEnergy = values.second;
     }
     else {
-      //std::cout << "Didn't use LUT\n";
+      AutoPasLog(DEBUG, "Didn't use LUT");
       const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
       const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
       const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
