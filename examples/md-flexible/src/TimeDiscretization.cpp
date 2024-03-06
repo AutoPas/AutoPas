@@ -5,6 +5,11 @@
  */
 #include "TimeDiscretization.h"
 
+#include <cmath>
+#include <iostream>
+#include <stdexcept>
+
+#include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace TimeDiscretization {
@@ -34,22 +39,19 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
-
-    if (fastParticlesWarn) {
+    // sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
+    if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and fastParticlesWarn) {
+      const auto distanceMoved = std::sqrt(dot(displacement, displacement));
       // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
       // the whole rebuild frequency is farther than the skin we lose interactions.
-      const auto distanceMovedSquared = dot(displacement, displacement);
-      if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
-#pragma omp critical
-        std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared)
-                  << " > " << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
-                  << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
-        if (fastParticlesThrow) {
-          throwException = true;
-        }
+      AUTOPAS_OPENMP(critical)
+      std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << distanceMoved << " > "
+                << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
+                << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
+      if (fastParticlesThrow) {
+        throwException = true;
       }
     }
-    iter->addR(displacement);
   }
 
   if (throwException) {

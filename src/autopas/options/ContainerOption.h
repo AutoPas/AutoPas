@@ -123,10 +123,10 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::dynamicVerletLists, "DynamicVerletLists"},
         {ContainerOption::verletListsCells, "VerletListsCells"},
         {ContainerOption::dynamicVerletListsCells, "DynamicVerletListsCells"},
-        {ContainerOption::dynamicPairwiseVerletLists, "DynamicPairwiseVerletLists"},
         {ContainerOption::verletClusterLists, "VerletClusterLists"},
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
+        {ContainerOption::dynamicPairwiseVerletLists, "DynamicPairwiseVerletLists"},
         {ContainerOption::octree, "Octree"},
     };
   };

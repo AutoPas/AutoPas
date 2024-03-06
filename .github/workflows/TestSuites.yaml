@@ -1,14 +1,12 @@
 # Workflow for unit tests
 name: CI
 
-# Controls when the action will run.
+# This Workflow is triggered by any PR or a direct push to master.
 on:
   push:
-    # pushes to master
     branches: [ master ]
   pull_request:
-    # PRs to master
-    # branches: [ master ]
+
 # abort old runs if a new one is started
 concurrency:
   group: ${{ github.head_ref }}-tests
@@ -89,7 +87,7 @@ jobs:
           - config: [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF   , OFF]
             md-flex-mode: multisite
             part: 1
-    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
+    name: Matrix - ${{ matrix.config[1] }}|${{ matrix.config[4] }}|${{ matrix.md-flex-mode }}|OpenMP=${{ matrix.config[5] }}|ASan=${{ matrix.config[6] }}|TSan=${{ matrix.config[7] }} (${{ matrix.part }}/2)
     container: autopas/${{ matrix.config[0] }}
     env:
         TSAN_OPTIONS: "ignore_noninstrumented_modules=1"
@@ -125,7 +123,7 @@ jobs:
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DAUTOPAS_ENABLE_ALLLBL=${UseMPI} \
             ..
-          entrypoint.sh cmake --build . --parallel 1 
+          entrypoint.sh cmake --build . --parallel 8 
       - name: Run tests ${{ matrix.part }}/2
         run: |
           # If single-site & No MPI, run every other AutoPas and example test

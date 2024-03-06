@@ -30,7 +30,6 @@ namespace TimeDiscretization {
  * @param globalForce Base force value to which every particle is reset.
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/2/rebuildFrequency).
- * @param fastParticlesWarn bool value to decide whether to check for fast particles in the simulation
  */
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,

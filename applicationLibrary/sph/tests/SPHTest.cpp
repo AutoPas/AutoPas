@@ -714,24 +714,22 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
   }
 
   if (dataLayoutOption == autopas::DataLayoutOption::aos) {
-    autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::aos, true>
-        traversalLJ(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr,
-                    linkedCells.getInteractionLength(), linkedCells.getCellBlock().getCellLength());
+    autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJ(
+        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr, linkedCells.getInteractionLength(),
+        linkedCells.getCellBlock().getCellLength(), autopas::DataLayoutOption::aos, true);
 
-    autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType,
-                                      autopas::DataLayoutOption::aos, true>
-        traversalLJVerlet(&fnctr);
+    autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJVerlet(
+        &fnctr, autopas::DataLayoutOption::aos, true);
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
     verletLists.iteratePairwise(&traversalLJVerlet);
     linkedCells.iteratePairwise(&traversalLJ);
   } else {
-    autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType, autopas::DataLayoutOption::soa, true>
-        traversalLJ(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr,
-                    linkedCells.getInteractionLength(), linkedCells.getCellBlock().getCellLength());
-    autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType,
-                                      autopas::DataLayoutOption::soa, true>
-        traversalLJVerlet(&fnctr);
+    autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJ(
+        linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr, linkedCells.getInteractionLength(),
+        linkedCells.getCellBlock().getCellLength(), autopas::DataLayoutOption::soa, true);
+    autopas::VLListIterationTraversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJVerlet(
+        &fnctr, autopas::DataLayoutOption::soa, true);
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
     verletLists.iteratePairwise(&traversalLJVerlet);
