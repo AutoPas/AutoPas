@@ -221,13 +221,9 @@ class AxilrodTellerFunctor
 #ifdef AVX512_NATIVE
     _mm512_mask_i64scatter_pd(base_addr, vindex, a, scale);
 #else
-    std::array<double, vecLength> buffer = {0.0};
-    std::array<uint64_t, vecLength> vindex_buffer = {0ul};
-    simde_mm512_storeu_pd(buffer.data(), a);
-    simde_mm512_storeu_epi64(vindex_buffer.data(), vindex);
     for (int i = 0; i < vecLength; ++i) {
       if (k & (1 << i)) {
-        static_cast<double *>(base_addr)[vindex_buffer[i]] = buffer[i];
+        static_cast<double *>(base_addr)[vindex[i]] = a[i];
       }
     }
 #endif
@@ -237,13 +233,20 @@ class AxilrodTellerFunctor
 #ifdef AVX512_NATIVE
     _mm512_i64scatter_pd(base_addr, vindex, a, scale);
 #else
-    std::array<double, vecLength> buffer = {0.0};
-    std::array<uint64_t, vecLength> vindex_buffer = {0ul};
-    simde_mm512_storeu_pd(buffer.data(), a);
-    simde_mm512_storeu_epi64(vindex_buffer.data(), vindex);
     for (int i = 0; i < vecLength; ++i) {
-      static_cast<double *>(base_addr)[vindex_buffer[i]] = buffer[i];
+      static_cast<double *>(base_addr)[vindex[i]] = a[i];
     }
+#endif
+  }
+
+  inline simde__m512i simde_mm512_alignr_epi64(simde__m512i a, simde__m512i b, const int imm8) {
+#ifdef AVX512_NATIVE
+    _mm512_alignr_epi64(a, b, imm8);
+#else
+    std::array<int64_t, 2 *vecLength> buffer = {0};
+    simde_mm512_storeu_epi64(buffer.data() + vecLength, a);
+    simde_mm512_storeu_epi64(buffer.data(), b);
+    return simde_mm512_loadu_epi64(buffer.data() + imm8);
 #endif
   }
 
