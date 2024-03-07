@@ -538,6 +538,9 @@ class AxilrodTellerFunctor
         }
       }
     }
+    if constexpr (calculateGlobals) {
+      autopas::utils::ExceptionHandler::exception("Globals not yet implemented."); // TODO
+    }
   }
 
  private:
@@ -640,6 +643,9 @@ class AxilrodTellerFunctor
       fxptr[i] += simde_mm512_reduce_add_pd(fxiacc);
       fyptr[i] += simde_mm512_reduce_add_pd(fyiacc);
       fzptr[i] += simde_mm512_reduce_add_pd(fziacc);
+    }
+    if constexpr (calculateGlobals) {
+      autopas::utils::ExceptionHandler::exception("Globals not yet implemented."); // TODO
     }
   }
 
@@ -813,6 +819,9 @@ class AxilrodTellerFunctor
       fy1ptr[i] += simde_mm512_reduce_add_pd(fyiacc);
       fz1ptr[i] += simde_mm512_reduce_add_pd(fziacc);
     }
+    if constexpr (calculateGlobals) {
+      autopas::utils::ExceptionHandler::exception("Globals not yet implemented."); // TODO
+    }
   }
 
   /**
@@ -936,6 +945,9 @@ class AxilrodTellerFunctor
       fx1ptr[i] += simde_mm512_reduce_add_pd(fxiacc);
       fy1ptr[i] += simde_mm512_reduce_add_pd(fyiacc);
       fz1ptr[i] += simde_mm512_reduce_add_pd(fziacc);
+    }
+    if constexpr (calculateGlobals) {
+      autopas::utils::ExceptionHandler::exception("Globals not yet implemented."); // TODO
     }
   }
 
