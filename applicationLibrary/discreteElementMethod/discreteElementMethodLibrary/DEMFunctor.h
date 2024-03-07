@@ -110,21 +110,8 @@ public:
     }
 
     // Get particle radii
-    double radI = i.getRad();
-    double radJ = j.getRad();
-
-    // UVery ugly trick: if the cross levels are traversed, we want to ignore particles originating
-    // from the same HG level. Particles coming from the large level have been given a negative radius.
-    // Thus, particles originating from different levels can be identified by multiplying their radii, 
-    // which results in a positive value for particles of the same origin levels.
-    if (_crossLevelTraversal and radI * radJ > 0.) {
-      return;
-    }
-    // if the value is negative, particles are of a different HG-level and the radii have to be made 
-    // positive for the claculation. 
-    // Note that the radius stored in the particles is still negativ!!
-    radI = std::abs(radI);
-    radJ = std::abs(radJ);
+    const double radI = i.getRad();
+    const double radJ = j.getRad();
 
     //distance between ParticleCenters
     const auto dr = autopas::utils::ArrayMath::sub(i.getR(), j.getR()); 
@@ -266,12 +253,8 @@ public:
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
         const SoAFloatPrecision dr  = sqrt( dr2 );
 
-        SoAFloatPrecision radI = radptr[i];
-        SoAFloatPrecision radJ = radptr[j];
-
-        const bool mask_sameLevelParticles = _crossLevelTraversal and radI * radJ > 0.;
-        radI = std::abs(radI);
-        radJ = std::abs(radJ);
+        const SoAFloatPrecision radI = radptr[i];
+        const SoAFloatPrecision radJ = radptr[j];
 
         const SoAFloatPrecision rad = radI + radJ;
 
@@ -308,8 +291,7 @@ public:
         const SoAFloatPrecision penDepth = rad - dr;
 
         // Normal force factor
-        SoAFloatPrecision normalFactorForce = mask ? 4./3. * youngEq * sqrt(radEq * penDepth) : 0.;
-        normalFactorForce = mask_sameLevelParticles ? 0. : normalFactorForce;
+        const SoAFloatPrecision normalFactorForce = mask ? 4./3. * youngEq * sqrt(radEq * penDepth) : 0.;
 
         // Normal damping factor
         const SoAFloatPrecision normalFactorDamping = _dampingRatio * 2.0 * sqrt( massEq * normalFactorForce);
@@ -436,12 +418,8 @@ private:
         const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
         const SoAFloatPrecision dr  = sqrt( dr2 );
 
-        SoAFloatPrecision radI = rad1ptr[i];
-        SoAFloatPrecision radJ = rad2ptr[j];
-
-        const bool mask_sameLevelParticles = _crossLevelTraversal and radI * radJ > 0.;
-        radI = std::abs(radI);
-        radJ = std::abs(radJ);
+        const SoAFloatPrecision radI = rad1ptr[i];
+        const SoAFloatPrecision radJ = rad2ptr[j];
 
         const SoAFloatPrecision rad = radI + radJ;
 
@@ -478,9 +456,7 @@ private:
         const SoAFloatPrecision penDepth = rad - dr;
 
         // Normal force factor
-        SoAFloatPrecision normalFactorForce = mask ? 4./3. * youngEq * sqrt(radEq * penDepth) : 0.;
-        normalFactorForce = mask_sameLevelParticles ? 0. : normalFactorForce;
-
+        const SoAFloatPrecision normalFactorForce = mask ? 4./3. * youngEq * sqrt(radEq * penDepth) : 0.;
 
         // Normal damping factor
         const SoAFloatPrecision normalFactorDamping = _dampingRatio * 2.0 * sqrt( massEq * normalFactorForce);
@@ -726,12 +702,8 @@ private:
           const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
           const SoAFloatPrecision dr = sqrt(dr2);
 
-          SoAFloatPrecision radI = radtmp[j];
-          SoAFloatPrecision radJ = radArr[j];
-
-          const bool mask_sameLevelParticles = _crossLevelTraversal and radI * radJ > 0.;
-          radI = std::abs(radI);
-          radJ = std::abs(radJ);
+          const SoAFloatPrecision radI = radtmp[j];
+          const SoAFloatPrecision radJ = radArr[j];
 
           const SoAFloatPrecision rad = radI + radJ;
 
@@ -768,8 +740,7 @@ private:
           const SoAFloatPrecision penDepth = rad - dr;
 
           // Normal force factor
-          SoAFloatPrecision normalFactorForce = mask ? 4./3. * youngEq * sqrt(radEq * penDepth) : 0;
-          normalFactorForce = mask_sameLevelParticles ? 0. : normalFactorForce;
+          const SoAFloatPrecision normalFactorForce = mask ? 4./3. * youngEq * sqrt(radEq * penDepth) : 0;
 
           // Normal damping factor
           const SoAFloatPrecision normalFactorDamping = _dampingRatio * 2.0 * sqrt( massEq * normalFactorForce);
@@ -822,16 +793,9 @@ private:
       const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
       const SoAFloatPrecision dr = sqrt(dr2);
 
-      SoAFloatPrecision radI = radptr[indexFirst];
-      SoAFloatPrecision radJ = radptr[j];
+      const SoAFloatPrecision radI = radptr[indexFirst];
+      const SoAFloatPrecision radJ = radptr[j];
 
-      // Skip if particles of the same HG-level
-      if (_crossLevelTraversal and radI * radJ > 0.) {
-        continue;
-      }
-
-      radI = std::abs(radI);
-      radJ = std::abs(radJ);
       const SoAFloatPrecision rad = radI + radJ;
 
       // Skip if particles do not intersect or have the same position

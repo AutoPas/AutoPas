@@ -87,8 +87,6 @@ size_t getTerminalWidth() {
 }
 }  // namespace
 
-template<>
-bool demLib::DEMFunctor<ParticleType>::_crossLevelTraversal = false;
 
 Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)

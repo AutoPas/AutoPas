@@ -305,37 +305,39 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     }
   }
 
-  void iterateAllCrossLevels(TraversalInterface *traversal) {
+  void iterateAllCrossLevels() {
 
     for (unsigned int largerLevel = 0; largerLevel < _hierarchyLevels.size(); largerLevel++) {
       for (unsigned int smallerLevel = largerLevel + 1; smallerLevel < _hierarchyLevels.size(); smallerLevel++) {
 
-        iterateOverCrossLevels(traversal, largerLevel, smallerLevel);
+        iterateOverCrossLevels(largerLevel, smallerLevel);
 
       }
     }
     
   }
 
-  void iterateOverCrossLevels(TraversalInterface *traversal, unsigned int firstLevel, unsigned int secondLevel) {
-
-    // Box size of particle interations
-    const double crossLevelCellSize = ( _hierarchicalGridBorders[firstLevel] + _hierarchicalGridBorders[secondLevel] ) / 2.0;
-    demLib::DEMFunctor<Particle> demFunctor(crossLevelCellSize);
+  void iterateOverCrossLevels(unsigned int firstLevel, unsigned int secondLevel) {
 
     //iterate over all particles in a given larger level
     // @note Maybe parallelize iteration over second level?
-    AUTOPAS_OPENMP(parallel)
+    //AUTOPAS_OPENMP(parallel firstprivate(demFunctor)) // <- cannot parallelize here, since this leads to erroneous forces
     for(auto iterFirstLVLParticles = _hierarchyLevels[firstLevel].begin(); iterFirstLVLParticles.isValid(); ++iterFirstLVLParticles) {
 
-      // Get particle position of larger particle
+      // Get position and radius of larger particle
       const std::array<double, 3> posLarger = iterFirstLVLParticles->getR();
+      const double radLarger = iterFirstLVLParticles->getRad();
+
+      // Box size of particle interations
+      const double crossLevelCellSize = ( radLarger + _hierarchicalGridBorders[secondLevel] );
+      demLib::DEMFunctor<Particle> demFunctor(crossLevelCellSize);
 
       // Get lower and higher corner of box around the larger particle containing possible interaction partners
       // in the smaller level
       const std::array<double, 3> lowerBoxCorner = autopas::utils::ArrayMath::subScalar(posLarger, crossLevelCellSize);
       const std::array<double, 3> higherBoxCorner = autopas::utils::ArrayMath::addScalar(posLarger, crossLevelCellSize);
-
+      
+      AUTOPAS_OPENMP(parallel firstprivate(demFunctor))
       for (auto iterSecondLVLParticles = 
           _hierarchyLevels[secondLevel].getRegionIterator(lowerBoxCorner, higherBoxCorner, autopas::IteratorBehavior::ownedOrHalo); 
                 iterSecondLVLParticles.isValid(); ++iterSecondLVLParticles) {
@@ -363,7 +365,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     iterateAllHGLevels(traversal);
 
     // Iterate over cross levels 
-    iterateAllCrossLevels(traversal);
+    // @note No traversal needed, since forces between HG-levels are calculated directly
+    iterateAllCrossLevels();
 
   }
 
