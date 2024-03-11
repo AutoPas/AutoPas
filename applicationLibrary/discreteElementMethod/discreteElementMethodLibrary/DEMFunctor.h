@@ -79,15 +79,6 @@ public:
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-
-  static void initCrossLevelTraversal() {
-    _crossLevelTraversal = true;
-  }
-
-  static void endCrossLevelTraversal() {
-    _crossLevelTraversal = false;
-  }
-
   /**
    * @brief DEM Functor for an AoS
    * 
@@ -869,11 +860,6 @@ private:
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
-
-  // defines whether and, if yes, how much of the excess forces obtained by iterating 
-  // over the H-Grid should be subtracted
-  // The logic is: true => _factorSubtractExcessForces = - (numberGridLevels - 2)
-  static bool _crossLevelTraversal;
 
   // Damping ratio
   double _dampingRatio = 0.1;
