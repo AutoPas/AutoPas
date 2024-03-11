@@ -61,6 +61,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     // Note: _hierarchyLevels has to be a std::deque, which does not support reserve()
     _hierarchicalGridBorders.reserve(numberOfLevels);
 
+    _crossLevelInteractions.reserve(getNumberOfCrossLevelInteractions());
+
     for (unsigned int level = 0; level < numberOfLevels; level++) {
 
       const double gridBorder = radiusMax - radiusSegment * level;
@@ -307,17 +309,22 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
   void iterateAllCrossLevels() {
 
-    for (unsigned int largerLevel = 0; largerLevel < _hierarchyLevels.size(); largerLevel++) {
-      for (unsigned int smallerLevel = largerLevel + 1; smallerLevel < _hierarchyLevels.size(); smallerLevel++) {
+    AUTOPAS_OPENMP(parallel)
+    for (auto & levelPairs : _crossLevelInteractions) {
 
-        iterateOverCrossLevels(largerLevel, smallerLevel);
+      size_t largerLevel, smallerLevel;
+      std::tie(largerLevel, smallerLevel) = levelPairs;
 
-      }
+      iterateOverCrossLevels(largerLevel, smallerLevel);
+
     }
     
   }
 
   void iterateOverCrossLevels(unsigned int firstLevel, unsigned int secondLevel) {
+
+
+    demLib::DEMFunctor<Particle> demFunctor(1.);
 
     //iterate over all particles in a given larger level
     // @note Maybe parallelize iteration over second level?
@@ -330,7 +337,6 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
       // Box size of particle interations
       const double crossLevelCellSize = ( radLarger + _hierarchicalGridBorders[secondLevel] );
-      demLib::DEMFunctor<Particle> demFunctor(crossLevelCellSize);
 
       // Get lower and higher corner of box around the larger particle containing possible interaction partners
       // in the smaller level
@@ -653,11 +659,52 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   }
 
   /**
+   * Calculate the number of cross-level interactions for the present number of hierarchy levels
+   * 
+   * @return size_t number of cross-level interactions
+   */
+  size_t getNumberOfCrossLevelInteractions() const {
+
+    size_t numberOfCrossLevels = 0;
+
+    for (unsigned int largerLevel = 0; largerLevel < _hierarchyLevels.size(); largerLevel++) {
+      for (unsigned int smallerLevel = largerLevel + 1; smallerLevel < _hierarchyLevels.size(); smallerLevel++) {
+
+        numberOfCrossLevels++;
+
+      }
+    }
+
+    return numberOfCrossLevels;
+
+  }
+
+  /**
+   * Set the cross-level interaction pairs, i.e. the which larger level is checked with which smaller level
+   * 
+   */
+  void setCrossLevelInteractionPairs() {
+
+    for (unsigned int largerLevel = 0; largerLevel < _hierarchyLevels.size(); largerLevel++) {
+      for (unsigned int smallerLevel = largerLevel + 1; smallerLevel < _hierarchyLevels.size(); smallerLevel++) {
+
+        _crossLevelInteractions.emplace_back(largerLevel, smallerLevel);
+
+      }
+    }
+
+  }
+
+
+
+  /**
   * @brief Vector containing the HGrid's different hierarchy levels of Linked Cells.
   * 
   * @note This can not be a std::vector<LinkedCells<Particle>> because there is no copy constructor for LinkedCells. 
   */
   std::deque<LinkedCells<Particle>> _hierarchyLevels;
+
+  std::vector<std::tuple<size_t, size_t>> _crossLevelInteractions;
 
   std::array<double, 3> _boxMin; 
   std::array<double, 3> _boxMax; 
