@@ -69,8 +69,8 @@ class ContainerOption : public Option<ContainerOption> {
      */
     octree,
     /**
-     * hierarchicalGrids : Based on a set of LinkedCells grid with varying grid sizes into which differently sized 
-     * particles can be sorted. 
+     * hierarchicalGrids : Based on a set of LinkedCells grid with varying grid sizes into which differently sized
+     * particles can be sorted.
      */
     hierarchicalGrids,
   };
@@ -105,18 +105,16 @@ class ContainerOption : public Option<ContainerOption> {
    * @return map option -> string representation
    */
   static std::map<ContainerOption, std::string> getOptionNames() {
-    return {
-        {ContainerOption::directSum, "DirectSum"},
-        {ContainerOption::linkedCells, "LinkedCells"},
-        {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
-        {ContainerOption::verletLists, "VerletLists"},
-        {ContainerOption::verletListsCells, "VerletListsCells"},
-        {ContainerOption::verletClusterLists, "VerletClusterLists"},
-        {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
-        {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
-        {ContainerOption::octree, "Octree"},
-        {ContainerOption::hierarchicalGrids, "HierarchicalGrids"}
-    };
+    return {{ContainerOption::directSum, "DirectSum"},
+            {ContainerOption::linkedCells, "LinkedCells"},
+            {ContainerOption::linkedCellsReferences, "LinkedCellsReferences"},
+            {ContainerOption::verletLists, "VerletLists"},
+            {ContainerOption::verletListsCells, "VerletListsCells"},
+            {ContainerOption::verletClusterLists, "VerletClusterLists"},
+            {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
+            {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
+            {ContainerOption::octree, "Octree"},
+            {ContainerOption::hierarchicalGrids, "HierarchicalGrids"}};
   };
 
  private:

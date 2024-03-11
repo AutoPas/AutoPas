@@ -143,7 +143,7 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL);
 
-    /**
+  /**
    * Reflects DEM particles within a reflective skin along the inside of a boundary.
    *
    * Particle reflection occurs by interacting the particle with particle mirrored onto the other side of the boundary.
