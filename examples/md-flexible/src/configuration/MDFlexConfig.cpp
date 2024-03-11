@@ -304,7 +304,7 @@ std::string MDFlexConfig::to_string() const {
     case FunctorOption::DEM: {
       os << "Discrete Element Method" << endl;
       break;
-    } 
+    }
   }
   printOption(newton3Options);
   printOption(cutoff);

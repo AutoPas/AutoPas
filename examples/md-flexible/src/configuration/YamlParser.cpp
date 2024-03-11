@@ -774,7 +774,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         }
 
       } else if (key == config.particleRadii.name) {
-        expected = "YAML-sequence of two floats 0 < r_min <= r_max. Example: [0.5, 1.5].";;
+        expected = "YAML-sequence of two floats 0 < r_min <= r_max. Example: [0.5, 1.5].";
         description = config.particleRadii.description;
 
         config.particleRadii.value = {node[key][0].as<double>(), node[key][1].as<double>()};
@@ -782,7 +782,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           throw std::runtime_error("The minimum radius of the particles in has to be a positive integer > 0.");
         }
 
-      }  else {
+      } else {
         std::stringstream ss;
         ss << "YamlParser: Unrecognized option in input YAML: " + key << std::endl;
         errors.push_back(ss.str());
