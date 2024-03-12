@@ -1188,7 +1188,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
           case TuningMetricOption::energy:
             return measurements.energyTotal;
         }
-      };
+      }();
       _autoTuner.addMeasurement(measurement, not neighborListsAreValid());
     } else {
       AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
