@@ -7,14 +7,11 @@
 
 #ifdef __AVX__
 
-
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 #include "molecularDynamicsLibrary/MieFunctorAVX.h"
-
-
 
 template <class SoAType>
 bool MieFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -84,7 +81,7 @@ bool MieFunctorAVXTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
 }
 
 void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXTwoCells(bool newton3, bool doDeleteSomeParticles,
-                                                           bool useUnalignedViews) {
+                                                                bool useUnalignedViews) {
   FMCell cell1AVX;
   FMCell cell2AVX;
 
@@ -111,7 +108,7 @@ void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXTwoCells(bool newton3, bo
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::MieFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorAVX(_cutoff,12,6);
+  mdLib::MieFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorAVX(_cutoff, 12, 6);
   mieFunctorAVX.setParticleProperties(_epsilon, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -134,7 +131,7 @@ void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXTwoCells(bool newton3, bo
 
   if (useUnalignedViews) {
     mieFunctorAVX.SoAFunctorPair(cell1MieAVX._particleSoABuffer.constructView(1, cell1MieAVX.numParticles()),
-                                  cell2MieAVX._particleSoABuffer.constructView(1, cell2MieAVX.numParticles()), newton3);
+                                 cell2MieAVX._particleSoABuffer.constructView(1, cell2MieAVX.numParticles()), newton3);
     ljFunctorAVX.SoAFunctorPair(cell1AVX._particleSoABuffer.constructView(1, cell1AVX.numParticles()),
                                 cell2AVX._particleSoABuffer.constructView(1, cell2AVX.numParticles()), newton3);
   } else {
@@ -163,7 +160,7 @@ void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXTwoCells(bool newton3, bo
 }
 
 void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXOneCell(bool newton3, bool doDeleteSomeParticles,
-                                                          bool useUnalignedViews) {
+                                                               bool useUnalignedViews) {
   FMCell cellAVX;
 
   size_t numParticles = 7;
@@ -182,7 +179,7 @@ void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXOneCell(bool newton3, boo
   FMCell cellMieAVX(cellAVX);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::MieFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorAVX(_cutoff,12,6);
+  mdLib::MieFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorAVX(_cutoff, 12, 6);
   mieFunctorAVX.setParticleProperties(_epsilon, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -259,8 +256,9 @@ void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXVerlet(bool newton3, bool
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  mdLib::MieFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> mieFunctorAVX(_cutoff,12,6);
-  mieFunctorAVX.setParticleProperties(_epsilon , _sigma * _sigma);
+  mdLib::MieFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> mieFunctorAVX(
+      _cutoff, 12, 6);
+  mieFunctorAVX.setParticleProperties(_epsilon, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(
       _cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -280,7 +278,7 @@ void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXVerlet(bool newton3, bool
     mieFunctorAVX.SoAFunctorVerlet(cellMieAVX._particleSoABuffer, i, neighborLists[i], newton3);
     ljFunctorAVX.SoAFunctorVerlet(cellAVX._particleSoABuffer, i, neighborLists[i], newton3);
   }
-//Note that the calculated forces wont be compared, but the old forces. The knew forces are in t
+  // Note that the calculated forces wont be compared, but the old forces. The knew forces are in t
   ASSERT_TRUE(SoAParticlesEqual(cellAVX._particleSoABuffer, cellMieAVX._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
@@ -296,9 +294,6 @@ void MieFunctorAVXTest::testMieFunctorAVXVSLJFunctorAVXVerlet(bool newton3, bool
   EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), mieFunctorAVX.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorAVX.getVirial(), mieFunctorAVX.getVirial(), tolerance) << "global virial";
 }
-
-
-
 
 void MieFunctorAVXTest::testMieFunctorAVXAoS(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellAVX;
@@ -320,8 +315,8 @@ void MieFunctorAVXTest::testMieFunctorAVXAoS(bool newton3, bool doDeleteSomePart
   FMCell cellMieAVX(cellAVX);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::MieFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorAVX(_cutoff,12,6);
-  mieFunctorAVX.setParticleProperties(_epsilon , _sigma * _sigma);
+  mdLib::MieFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorAVX(_cutoff, 12, 6);
+  mieFunctorAVX.setParticleProperties(_epsilon, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
@@ -367,7 +362,6 @@ TEST_P(MieFunctorAVXTest, testMieFunctorAVXVSLJFunctorAVXTwoCellsUseUnalignedVie
   auto [newton3, doDeleteSomeParticle] = GetParam();
   testMieFunctorAVXAoS(newton3, doDeleteSomeParticle);
 }
-
 
 TEST_P(MieFunctorAVXTest, testMieFunctorAVXVSLJFunctorAVXVerlet) {
   auto [newton3, doDeleteSomeParticle] = GetParam();

@@ -41,11 +41,11 @@ class ParticlePropertiesLibrary {
    */
 
   explicit ParticlePropertiesLibrary(const double cutoff, const uint16_t n_exp, const uint16_t m_exp)
-      : _cutoff(cutoff), _m_exp(m_exp), _n_exp(n_exp){
-   const double c = static_cast<double>(n_exp) / static_cast<double>(n_exp - _m_exp);
-    _epsilon_coeff = c * pow(static_cast<double>(n_exp) / static_cast<double>(_m_exp), static_cast<double>(_m_exp) / (n_exp - _m_exp));
+      : _cutoff(cutoff), _m_exp(m_exp), _n_exp(n_exp) {
+    const double c = static_cast<double>(n_exp) / static_cast<double>(n_exp - _m_exp);
+    _epsilon_coeff = c * pow(static_cast<double>(n_exp) / static_cast<double>(_m_exp),
+                             static_cast<double>(_m_exp) / (n_exp - _m_exp));
   }
-
 
   /**
    * Copy Constructor.
@@ -237,7 +237,6 @@ class ParticlePropertiesLibrary {
     return _computedMixingDataMie[i * _numRegisteredSiteTypes + j].cnepsilon;
   }
 
-
   /**
    * Returns the precomputed mixed epsilon * c * m.
    * @param  i Id of site one.
@@ -262,7 +261,9 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  inline auto getMixingDataMie(intType i, intType j) const { return _computedMixingDataMie[i * _numRegisteredSiteTypes + j]; }
+  inline auto getMixingDataMie(intType i, intType j) const {
+    return _computedMixingDataMie[i * _numRegisteredSiteTypes + j];
+  }
 
   /**
    * Get a pointer to Mixing Data for one pair of site types.
@@ -344,17 +345,15 @@ class ParticlePropertiesLibrary {
    */
   static double calcShiftMie(double cepsilon, double sigmaSquared, double cutoffSquared, uint16_t n, uint16_t m);
 
-
  private:
   intType _numRegisteredSiteTypes{0};
   intType _numRegisteredMolTypes{0};
   const double _cutoff;
-  uint16_t _n_exp = 12;
+  uint16_t _n_exp = 13;
   uint16_t _m_exp = 6;
   double _epsilon_coeff = 24;
 
  public:
-
   void setFunctorProperties(uint16_t n, uint16_t m, double epsilonCoeff) {
     _epsilon_coeff = epsilonCoeff;
     _n_exp = n;
@@ -394,7 +393,7 @@ class ParticlePropertiesLibrary {
 
   std::vector<PackedMixingData, autopas::AlignedAllocator<PackedMixingData>> _computedMixingData;
 
-  bool mie = true;
+  const bool mie = true;
 };
 
 template <typename floatType, typename intType>
@@ -465,7 +464,7 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
     autopas::utils::ExceptionHandler::AutoPasException(
         "ParticlePropertiesLibrary::calculateMixingCoefficients was called without any site types being registered!");
   }
-  if(mie){
+  if (mie) {
     calculateMixingCoefficientsMie();
   }
 
@@ -488,17 +487,16 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficients(
 
       const floatType shift6 = calcShift6(epsilon24, sigmaSquared, cutoffSquared);
       _computedMixingData[globalIndex].shift6 = shift6;
-
     }
   }
 }
-
 
 template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficientsMie() {
   if (_numRegisteredSiteTypes == 0) {
     autopas::utils::ExceptionHandler::AutoPasException(
-        "ParticlePropertiesLibrary::calculateMixingCoefficientsMie was called without any site types being registered!");
+        "ParticlePropertiesLibrary::calculateMixingCoefficientsMie was called without any site types being "
+        "registered!");
   }
 
   _computedMixingDataMie.resize(_numRegisteredSiteTypes * _numRegisteredSiteTypes);
@@ -507,31 +505,30 @@ void ParticlePropertiesLibrary<floatType, intType>::calculateMixingCoefficientsM
 
   for (size_t firstIndex = 0ul; firstIndex < _numRegisteredSiteTypes; ++firstIndex) {
     for (size_t secondIndex = 0ul; secondIndex < _numRegisteredSiteTypes; ++secondIndex) {
-    auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
+      auto globalIndex = _numRegisteredSiteTypes * firstIndex + secondIndex;
 
-    //epsilon
-    const floatType epsilon = sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
-    _computedMixingDataMie[globalIndex].epsilon = epsilon;
+      // epsilon
+      const floatType epsilon = sqrt(_epsilons[firstIndex] * _epsilons[secondIndex]);
+      _computedMixingDataMie[globalIndex].epsilon = epsilon;
 
-    // cepsilon
-    const floatType cepsilon = _epsilon_coeff * epsilon;
-    _computedMixingDataMie[globalIndex].cepsilon = cepsilon;
+      // cepsilon
+      const floatType cepsilon = _epsilon_coeff * epsilon;
+      _computedMixingDataMie[globalIndex].cepsilon = cepsilon;
 
-    const floatType cnepsilon = _n_exp * cepsilon;
-    _computedMixingDataMie[globalIndex].cnepsilon = cnepsilon;
+      const floatType cnepsilon = _n_exp * cepsilon;
+      _computedMixingDataMie[globalIndex].cnepsilon = cnepsilon;
 
-    const floatType cmepsilon = _m_exp * cepsilon;
-    _computedMixingDataMie[globalIndex].cmepsilon = cmepsilon;
+      const floatType cmepsilon = _m_exp * cepsilon;
+      _computedMixingDataMie[globalIndex].cmepsilon = cmepsilon;
 
-    // sigma
-    const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
-    const floatType sigmaSquared = sigma * sigma;
-    _computedMixingDataMie[globalIndex].sigmaSquared = sigmaSquared;
+      // sigma
+      const floatType sigma = (_sigmas[firstIndex] + _sigmas[secondIndex]) / 2.0;
+      const floatType sigmaSquared = sigma * sigma;
+      _computedMixingDataMie[globalIndex].sigmaSquared = sigmaSquared;
 
-    // shift6 for Mie
+      // shift6 for Mie
       const floatType shift6 = calcShiftMie(cepsilon, sigmaSquared, cutoffSquared, _n_exp, _m_exp);
       _computedMixingDataMie[globalIndex].shift6 = shift6;
-
     }
   }
 }
@@ -626,26 +623,25 @@ double ParticlePropertiesLibrary<floatType, intType>::calcShift6(double epsilon2
 
 template <typename floatType, typename intType>
 double ParticlePropertiesLibrary<floatType, intType>::calcShiftMie(double cepsilon, double sigmaSquared,
-                                                                 double cutoffSquared, uint16_t n, uint16_t m) {
+                                                                   double cutoffSquared, uint16_t n, uint16_t m) {
   const auto sigmaDivCutoffPow2 = sigmaSquared / cutoffSquared;
 
   double sigmaDivCutoffPowm = 1;
-  if(m % 2 == 1){
+  if (m % 2 == 1) {
     sigmaDivCutoffPowm = sqrt(sigmaDivCutoffPow2);
   }
 
-  for(int k = 1; k < m;k+=2) {
+  for (int k = 1; k < m; k += 2) {
     sigmaDivCutoffPowm *= sigmaDivCutoffPow2;
   }
 
   double sigmaDivCutoffPown = 1;
-  if(n % 2 == 1){
+  if (n % 2 == 1) {
     sigmaDivCutoffPown = sqrt(sigmaDivCutoffPow2);
   }
-  for(int k = 1; k< n;k+=2) {
+  for (int k = 1; k < n; k += 2) {
     sigmaDivCutoffPown *= sigmaDivCutoffPow2;
   }
-  const auto shift6 = 6*cepsilon * (sigmaDivCutoffPowm - sigmaDivCutoffPown);
+  const auto shift6 = 6 * cepsilon * (sigmaDivCutoffPowm - sigmaDivCutoffPown);
   return shift6;
 }
-

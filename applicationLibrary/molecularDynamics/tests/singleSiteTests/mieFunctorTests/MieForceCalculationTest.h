@@ -32,7 +32,8 @@ class MieForceCalculationTest : public AutoPasTestBase {
    * each molecule in the end
    * @param tolerance error tolerance
    */
-   void testMie(uint16_t n, uint16_t m, double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
-              std::array<std::array<double, 3>, 4> expectedForces, double tolerance);
+  void testMie(uint16_t n, uint16_t m, double particleSpacing, double cutoff,
+               autopas::DataLayoutOption dataLayoutOption, std::array<std::array<double, 3>, 4> expectedForces,
+               double tolerance);
 };
 #endif

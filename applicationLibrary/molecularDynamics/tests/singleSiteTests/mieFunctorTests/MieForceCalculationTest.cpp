@@ -10,14 +10,14 @@
 #include "molecularDynamicsLibrary/MieFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
-
-
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
     mdLib::MieFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ false, /*relevantForTuning*/ true> *);
+                      /*globals*/ false, /*relevantForTuning*/ true> *);
 
-void MieForceCalculationTest::testMie(uint16_t n, uint16_t m, double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption, std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
+void MieForceCalculationTest::testMie(uint16_t n, uint16_t m, double particleSpacing, double cutoff,
+                                      autopas::DataLayoutOption dataLayoutOption,
+                                      std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
   autopas::AutoPas<Molecule> autoPas;
   std::array<double, 3> boxMin = {0., 0., 0.};
   std::array<double, 3> boxMax = {3., 3., 3.};
@@ -35,7 +35,7 @@ void MieForceCalculationTest::testMie(uint16_t n, uint16_t m, double particleSpa
 
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
                                                              {particleSpacing, particleSpacing, particleSpacing});
-  mdLib::MieFunctor<Molecule> functor(cutoff,n,m);
+  mdLib::MieFunctor<Molecule> functor(cutoff, n, m);
   functor.setParticleProperties(1, 1);
 
   autoPas.iteratePairwise(&functor);
@@ -55,7 +55,7 @@ TEST_F(MieForceCalculationTest, testMiewithU0AoS) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{-4, -4, 0}, {4, -4, 0}, {-4, 4, 0}, {4, 4, 0}}};
   double tolerance = 1e-13;
 
-  testMie(2,1, spacing, cutoff, autopas::DataLayoutOption::aos, expectedForces, tolerance);
+  testMie(2, 1, spacing, cutoff, autopas::DataLayoutOption::aos, expectedForces, tolerance);
 }
 
 TEST_F(MieForceCalculationTest, testMiewithU0SoA) {
@@ -65,7 +65,7 @@ TEST_F(MieForceCalculationTest, testMiewithU0SoA) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{-4, -4, 0}, {4, -4, 0}, {-4, 4, 0}, {4, 4, 0}}};
   double tolerance = 1e-13;
 
-  testMie(2,1, spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
+  testMie(2, 1, spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }
 
 TEST_F(MieForceCalculationTest, testMiewithF0AoS) {
@@ -75,7 +75,7 @@ TEST_F(MieForceCalculationTest, testMiewithF0AoS) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
   double tolerance = 1e-13;
 
-  testMie(2,1, spacing, cutoff, autopas::DataLayoutOption::aos, expectedForces, tolerance);
+  testMie(2, 1, spacing, cutoff, autopas::DataLayoutOption::aos, expectedForces, tolerance);
 }
 
 TEST_F(MieForceCalculationTest, testMiewithF0SoA) {
@@ -85,6 +85,5 @@ TEST_F(MieForceCalculationTest, testMiewithF0SoA) {
   std::array<std::array<double, 3>, 4> expectedForces = {{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}};
   double tolerance = 1e-13;
 
-  testMie(2,1, spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
+  testMie(2, 1, spacing, cutoff, autopas::DataLayoutOption::soa, expectedForces, tolerance);
 }
-

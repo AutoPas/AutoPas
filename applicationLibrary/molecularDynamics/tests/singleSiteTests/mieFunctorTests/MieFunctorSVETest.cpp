@@ -2,14 +2,11 @@
 
 #ifdef __ARM_FEATURE_SVE
 
-
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #include "molecularDynamicsLibrary/MieFunctorSVE.h"
-
-
 
 template <class SoAType>
 bool MieFunctorSVETest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -79,7 +76,7 @@ bool MieFunctorSVETest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
 }
 
 void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVETwoCells(bool newton3, bool doDeleteSomeParticles,
-                                                           bool useUnalignedViews) {
+                                                                bool useUnalignedViews) {
   FMCell cell1SVE;
   FMCell cell2SVE;
 
@@ -106,7 +103,7 @@ void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVETwoCells(bool newton3, bo
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::MieFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorSVE(_cutoff,12,6);
+  mdLib::MieFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorSVE(_cutoff, 12, 6);
   mieFunctorSVE.setParticleProperties(_epsilon, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorSVE(_cutoff);
   ljFunctorSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -129,7 +126,7 @@ void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVETwoCells(bool newton3, bo
 
   if (useUnalignedViews) {
     mieFunctorSVE.SoAFunctorPair(cell1MieSVE._particleSoABuffer.constructView(1, cell1MieSVE.numParticles()),
-                                  cell2MieSVE._particleSoABuffer.constructView(1, cell2MieSVE.numParticles()), newton3);
+                                 cell2MieSVE._particleSoABuffer.constructView(1, cell2MieSVE.numParticles()), newton3);
     ljFunctorSVE.SoAFunctorPair(cell1SVE._particleSoABuffer.constructView(1, cell1SVE.numParticles()),
                                 cell2SVE._particleSoABuffer.constructView(1, cell2SVE.numParticles()), newton3);
   } else {
@@ -158,7 +155,7 @@ void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVETwoCells(bool newton3, bo
 }
 
 void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVEOneCell(bool newton3, bool doDeleteSomeParticles,
-                                                          bool useUnalignedViews) {
+                                                               bool useUnalignedViews) {
   FMCell cellSVE;
 
   size_t numParticles = 7;
@@ -177,7 +174,7 @@ void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVEOneCell(bool newton3, boo
   FMCell cellMieSVE(cellSVE);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::MieFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorSVE(_cutoff,12,6);
+  mdLib::MieFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorSVE(_cutoff, 12, 6);
   mieFunctorSVE.setParticleProperties(_epsilon, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorSVE(_cutoff);
   ljFunctorSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -254,8 +251,9 @@ void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVEVerlet(bool newton3, bool
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  mdLib::MieFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> mieFunctorSVE(_cutoff,12,6);
-  mieFunctorSVE.setParticleProperties(_epsilon , _sigma * _sigma);
+  mdLib::MieFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> mieFunctorSVE(
+      _cutoff, 12, 6);
+  mieFunctorSVE.setParticleProperties(_epsilon, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorSVE(
       _cutoff);
   ljFunctorSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -275,7 +273,7 @@ void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVEVerlet(bool newton3, bool
     mieFunctorSVE.SoAFunctorVerlet(cellMieSVE._particleSoABuffer, i, neighborLists[i], newton3);
     ljFunctorSVE.SoAFunctorVerlet(cellSVE._particleSoABuffer, i, neighborLists[i], newton3);
   }
-//Note that the calculated forces wont be compared, but the old forces. The knew forces are in t
+  // Note that the calculated forces wont be compared, but the old forces. The knew forces are in t
   ASSERT_TRUE(SoAParticlesEqual(cellSVE._particleSoABuffer, cellMieSVE._particleSoABuffer))
       << "Cells not equal after applying functor.";
 
@@ -291,9 +289,6 @@ void MieFunctorSVETest::testMieFunctorSVEVSLJFunctorSVEVerlet(bool newton3, bool
   EXPECT_NEAR(ljFunctorSVE.getPotentialEnergy(), mieFunctorSVE.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorSVE.getVirial(), mieFunctorSVE.getVirial(), tolerance) << "global virial";
 }
-
-
-
 
 void MieFunctorSVETest::testMieFunctorSVEAoS(bool newton3, bool doDeleteSomeParticles) {
   FMCell cellSVE;
@@ -315,8 +310,8 @@ void MieFunctorSVETest::testMieFunctorSVEAoS(bool newton3, bool doDeleteSomePart
   FMCell cellMieSVE(cellSVE);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::MieFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorSVE(_cutoff,12,6);
-  mieFunctorSVE.setParticleProperties(_epsilon , _sigma * _sigma);
+  mdLib::MieFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> mieFunctorSVE(_cutoff, 12, 6);
+  mieFunctorSVE.setParticleProperties(_epsilon, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorSVE(_cutoff);
   ljFunctorSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 

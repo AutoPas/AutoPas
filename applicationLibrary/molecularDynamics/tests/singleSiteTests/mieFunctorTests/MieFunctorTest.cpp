@@ -2,9 +2,11 @@
 // Created by kay on 10.12.23.
 //
 #if defined(__AVX__)
-#include "autopas/AutoPasImpl.h"
 #include "MieFunctorTest.h"
+
 #include <gtest/gtest.h>
+
+#include "autopas/AutoPasImpl.h"
 
 #define PARTICLES_PER_DIM 8
 #define AOS_VS_SOA_ACCURACY 1e-8
@@ -16,7 +18,7 @@ void MieFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL)
 }
 
 void MieFunctorTest::generateMolecules(std::vector<mdLib::MoleculeLJ> *molecules,
-                                               std::array<double, 3> offset = {0, 0, 0}, bool allOwned = true) {
+                                       std::array<double, 3> offset = {0, 0, 0}, bool allOwned = true) {
   molecules->resize(PARTICLES_PER_DIM * PARTICLES_PER_DIM * PARTICLES_PER_DIM);
 
   for (unsigned int i = 0; i < PARTICLES_PER_DIM; ++i) {
@@ -47,7 +49,7 @@ void MieFunctorTest::generateMolecules(std::vector<mdLib::MoleculeLJ> *molecules
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
 void MieFunctorTest::testAoSForceCalculation(uint16_t n, uint16_t m, mdLib::MoleculeLJ molA, mdLib::MoleculeLJ molB,
-                                                     ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+                                             ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using autopas::utils::ArrayMath::add;
   using autopas::utils::ArrayMath::cross;
   using autopas::utils::ArrayMath::dot;
@@ -71,52 +73,50 @@ void MieFunctorTest::testAoSForceCalculation(uint16_t n, uint16_t m, mdLib::Mole
   if (dot(sub(molA.getR(), molB.getR()), sub(molA.getR(), molB.getR())) < cutoff * cutoff) {
     // calculate exact site positions
 
-        const auto displacement = sub(molA.getR(), molB.getR());
-        const auto distanceSquared = dot(displacement, displacement);
+    const auto displacement = sub(molA.getR(), molB.getR());
+    const auto distanceSquared = dot(displacement, displacement);
 
-        const auto sigmaSquared = PPL.getMixingDataMie(molTypeA, molTypeB).sigmaSquared;
-        const auto epsilon = PPL.getMixingDataMie(molTypeA, molTypeB).epsilon;
-        const double c1 = static_cast<double>(n) / static_cast<double>(n - m);
-        const double C = c1 * pow(static_cast<double>(n) / static_cast<double>(m), static_cast<double>(m) / (n - m));
-        PPL.setFunctorProperties(n,m,C);
-        const auto cepsilon = C * epsilon;
+    const auto sigmaSquared = PPL.getMixingDataMie(molTypeA, molTypeB).sigmaSquared;
+    const auto epsilon = PPL.getMixingDataMie(molTypeA, molTypeB).epsilon;
+    const double c1 = static_cast<double>(n) / static_cast<double>(n - m);
+    const double C = c1 * pow(static_cast<double>(n) / static_cast<double>(m), static_cast<double>(m) / (n - m));
+    PPL.setFunctorProperties(n, m, C);
+    const auto cepsilon = C * epsilon;
 
-        const auto invDistSquared = 1. / distanceSquared;
-        const auto div = sigmaSquared * invDistSquared;
-        const auto mie1 = sqrt(div);
+    const auto invDistSquared = 1. / distanceSquared;
+    const auto div = sigmaSquared * invDistSquared;
+    const auto mie1 = sqrt(div);
 
-        const auto mien = pow(mie1, n);
-        const auto miem = pow(mie1, m);
-        const auto nmien = n * mien;
-        const auto mmiem = m * miem;
-        const auto miensubmiem = nmien - mmiem;
-        const auto mie = cepsilon * miensubmiem;
+    const auto mien = pow(mie1, n);
+    const auto miem = pow(mie1, m);
+    const auto nmien = n * mien;
+    const auto mmiem = m * miem;
+    const auto miensubmiem = nmien - mmiem;
+    const auto mie = cepsilon * miensubmiem;
 
+    const auto force = autopas::utils::ArrayMath::mulScalar(displacement, mie);
 
-        const auto force = autopas::utils::ArrayMath::mulScalar(displacement, mie);
+    expectedForceA = add(expectedForceA, force);
+    if constexpr (newton3) {
+      expectedForceB = sub(expectedForceB, force);
+    }
 
-        expectedForceA = add(expectedForceA, force);
-        if constexpr (newton3) {
-          expectedForceB = sub(expectedForceB, force);
-        }
+    // TODO: globals!!
+    if constexpr (calculateGlobals) {
+      const auto shift6 = applyShift ? PPL.getMixingDataMie(molTypeA, molTypeB).shift6 : 0;
+      const auto shift = shift6 / 6.;
 
-        // TODO: globals!!
-        if constexpr (calculateGlobals) {
-          const auto shift6 = applyShift ? PPL.getMixingDataMie(molTypeA, molTypeB).shift6 : 0;
-          const auto shift = shift6 / 6.;
+      // only add half the potential energy if no newton3 is used (because we are missing half the interaction
+      // between the two molecules).
+      const auto potentialEnergy = (newton3 ? C * (mien - miem) + shift : 0.5 * (C * (mien - miem) + shift));
+      const auto virialDimensionwiseContributions =
+          newton3 ? autopas::utils::ArrayMath::mul(displacement, force)
+                  : autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force), 0.5);
 
-          // only add half the potential energy if no newton3 is used (because we are missing half the interaction
-          // between the two molecules).
-          const auto potentialEnergy = (newton3 ?  C * (mien-miem) + shift : 0.5 * (C * (mien-miem) + shift));
-          const auto virialDimensionwiseContributions =
-              newton3 ? autopas::utils::ArrayMath::mul(displacement, force)
-                      : autopas::utils::ArrayMath::mulScalar(autopas::utils::ArrayMath::mul(displacement, force), 0.5);
-
-          expectedPotentialEnergySum += potentialEnergy;
-          expectedVirialSum += virialDimensionwiseContributions[0] + virialDimensionwiseContributions[1] +
-                               virialDimensionwiseContributions[2];
-
-      }
+      expectedPotentialEnergySum += potentialEnergy;
+      expectedVirialSum += virialDimensionwiseContributions[0] + virialDimensionwiseContributions[1] +
+                           virialDimensionwiseContributions[2];
+    }
 
   } else {
     expectedForceA = {0, 0, 0};
@@ -126,9 +126,8 @@ void MieFunctorTest::testAoSForceCalculation(uint16_t n, uint16_t m, mdLib::Mole
   // calculate forces and torques using AoS functor
 
   // create functor
-  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
-                            calculateGlobals, true>
-  functor(cutoff,n,m, PPL);
+  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+      functor(cutoff, n, m, PPL);
 
   functor.initTraversal();
   functor.AoSFunctor(molA, molB, newton3);
@@ -162,47 +161,45 @@ void MieFunctorTest::testAoSForceCalculation(uint16_t n, uint16_t m, mdLib::Mole
 }
 
 void MieFunctorTest::testSuiteAoSForceCalculation(mdLib::MoleculeLJ molA, mdLib::MoleculeLJ molB,
-                                                  ParticlePropertiesLibrary<double, size_t> PPL,
-                                                  double cutoff) {
+                                                  ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   // N3L Disabled, No Calculating Globals
-  testAoSForceCalculation<false, false, false>(2,1,molA, molB, PPL, cutoff);
+  testAoSForceCalculation<false, false, false>(2, 1, molA, molB, PPL, cutoff);
 
   // N3L Disabled, No Calculating Globals, both exponents even
-  testAoSForceCalculation<false, false, false>(12,6,molA, molB, PPL, cutoff);
-  //TODO: fail
-  // N3L Disabled, No Calculating Globals, both exponents equal
-  //testAoSForceCalculation<false, false, false>(12,12,molA, molB, PPL, cutoff);
+  testAoSForceCalculation<false, false, false>(12, 6, molA, molB, PPL, cutoff);
+  // TODO: fail
+  //  N3L Disabled, No Calculating Globals, both exponents equal
+  // testAoSForceCalculation<false, false, false>(12,12,molA, molB, PPL, cutoff);
 
   // N3L Enabled, No Calculating Globals
-  testAoSForceCalculation<true, false, false>(2,1,molA, molB, PPL, cutoff);
+  testAoSForceCalculation<true, false, false>(2, 1, molA, molB, PPL, cutoff);
 
   // N3L Disabled, Calculating Globals, no shift applied
-  testAoSForceCalculation<false, true, false>(2,1,molA, molB, PPL, cutoff);
+  testAoSForceCalculation<false, true, false>(2, 1, molA, molB, PPL, cutoff);
 
   // N3L Disabled, Calculating Globals, shift applied
-  testAoSForceCalculation<false, true, true>(2,1,molA, molB, PPL, cutoff);
+  testAoSForceCalculation<false, true, true>(2, 1, molA, molB, PPL, cutoff);
 
   // N3L Enabled, Calculating Globals, no shift applied
-  testAoSForceCalculation<true, true, false>(2,1,molA, molB, PPL, cutoff);
+  testAoSForceCalculation<true, true, false>(2, 1, molA, molB, PPL, cutoff);
 
   // N3L Enabled, Calculating Globals, shift applied
-  testAoSForceCalculation<true, true, true>(2,1,molA, molB, PPL, cutoff);
+  testAoSForceCalculation<true, true, true>(2, 1, molA, molB, PPL, cutoff);
 }
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
 void MieFunctorTest::ljSanityCheck(mdLib::MoleculeLJ molA, mdLib::MoleculeLJ molB,
-                                                   ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+                                   ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MoleculeLJ;
 
   // create functors
-  mdLib::LJFunctor<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
-                            calculateGlobals, true>
+  mdLib::LJFunctor<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
       ljFunctor(cutoff, PPL);
 
   mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
-      mieFunctor(cutoff,12, 6, PPL);
+      mieFunctor(cutoff, 12, 6, PPL);
 
-  //copy Particles
+  // copy Particles
   MoleculeLJ molACopy{molA};
   MoleculeLJ molBCopy{molB};
 
@@ -233,16 +230,14 @@ void MieFunctorTest::ljSanityCheck(mdLib::MoleculeLJ molA, mdLib::MoleculeLJ mol
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
 void MieFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MoleculeLJ> molecules,
-                                                   ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+                                           ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MoleculeLJ;
 
-  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
-                            true>
+  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
       functorAoS(cutoff, 13, 4, PPL);
 
-  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
-                            true>
-      functorSoA(cutoff,13,4, PPL);
+  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+      functorSoA(cutoff, 13, 4, PPL);
 
   auto moleculesAoS = molecules;
   auto moleculesSoA = molecules;
@@ -311,16 +306,14 @@ void MieFunctorTest::testSoACellAgainstAoS(std::vector<mdLib::MoleculeLJ> molecu
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
 void MieFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::MoleculeLJ> moleculesA,
-                                                       std::vector<mdLib::MoleculeLJ> moleculesB,
-                                                       ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+                                               std::vector<mdLib::MoleculeLJ> moleculesB,
+                                               ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MoleculeLJ;
 
-  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
-                            true>
-      functorAoS(cutoff, 12,5,PPL);
-  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
-                            true>
-      functorSoA(cutoff, 12,5,PPL);
+  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+      functorAoS(cutoff, 12, 5, PPL);
+  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+      functorSoA(cutoff, 12, 5, PPL);
 
   auto moleculesAoSA = moleculesA;
   auto moleculesSoAA = moleculesA;
@@ -409,15 +402,13 @@ void MieFunctorTest::testSoACellPairAgainstAoS(std::vector<mdLib::MoleculeLJ> mo
 
 template <bool newton3, bool calculateGlobals, bool applyShift>
 void MieFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::MoleculeLJ> molecules,
-                                                     ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
+                                             ParticlePropertiesLibrary<double, size_t> PPL, double cutoff) {
   using mdLib::MoleculeLJ;
 
-  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
-                            true>
-      functorAoS(cutoff, 13,5,PPL);
-  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals,
-                            true>
-      functorSoA(cutoff, 13,5,PPL);
+  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+      functorAoS(cutoff, 13, 5, PPL);
+  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
+      functorSoA(cutoff, 13, 5, PPL);
 
   auto moleculesAoS = molecules;
   auto moleculesSoA = molecules;
@@ -505,7 +496,6 @@ void MieFunctorTest::testSoAVerletAgainstAoS(std::vector<mdLib::MoleculeLJ> mole
   }
 }
 
-
 /**
  * Tests for the correctness of the AoS functor by applying to molecules designed to test all its functionality.
  */
@@ -567,7 +557,7 @@ TEST_F(MieFunctorTest, AoSTest) {
 
   PPL.calculateMixingCoefficientsMie();
 
-  //TODO: different criteria for singleSite
+  // TODO: different criteria for singleSite
   testSuiteAoSForceCalculation(mol0, mol1, PPL, cutoff);
 
   // tests: 1 site <-> 2 site interaction, where sites are aligned such that all 3 sites are along the same line
@@ -624,8 +614,8 @@ TEST_F(MieFunctorTest, AoSDummyTest) {
 
   // Interact molecules together with newton3 on and off
   // create functor
-  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, true, true, autopas::FunctorN3Modes::Both, true, true> functor(
-      cutoff, 12, 6, PPL);
+  mdLib::MieFunctorAVX<mdLib::MoleculeLJ, true, true, autopas::FunctorN3Modes::Both, true, true> functor(cutoff, 12, 6,
+                                                                                                         PPL);
 
   // newton3 on
   functor.initTraversal();

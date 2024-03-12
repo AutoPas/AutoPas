@@ -17,8 +17,6 @@ class MieFunctorSVETest : public AutoPasTestBase, public ::testing::WithParamInt
    */
   constexpr static double _maxError = 1e-12;
 
-
-
   /**
    * Checks equality of SoALoader, SoAFunctorPair and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
@@ -35,7 +33,7 @@ class MieFunctorSVETest : public AutoPasTestBase, public ::testing::WithParamInt
   /**
    * Checks equality of SoALoader, SoAFunctorSingle and SoAExtractor.
    * Expects that particles are loaded and extracted in the same order.
-* In all comparisons first is MieSVE, second LJ-SVE
+   * In all comparisons first is MieSVE, second LJ-SVE
    *
    * Checks SoAFunctorSingle(soa, newton3)
    *

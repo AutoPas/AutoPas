@@ -53,8 +53,9 @@ class MieFunctor
    */
   void initDoubleAdditionChain(){
     uint16_t  a,b;
-    a = (_mexp > _nexp) ? _nexp : _mexp;
-    b = (_mexp > _nexp) ? _mexp : _nexp;
+
+    a = _mexp;
+    b = _nexp;
 
     int chain = 0;
     int pointer = 1;
@@ -1360,7 +1361,7 @@ class MieFunctor
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
-  static constexpr uint8_t mode = 1;
+  static constexpr uint8_t mode = 2;
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
 
