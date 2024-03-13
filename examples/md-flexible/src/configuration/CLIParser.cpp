@@ -76,6 +76,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
+      config.openMPChunkSize,
       config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
@@ -672,6 +673,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       case decltype(config.loadBalancingInterval)::getoptChar: {
         config.loadBalancingInterval.value = (unsigned int)stoul(strArg);
         break;
+      }
+      case decltype(config.openMPChunkSize)::getoptChar: {
+          try {
+            config.openMPChunkSize.value = (unsigned long) stoul(strArg);
+          } catch (const exception &) {
+              cerr << "Error parsing OpenMP chunk size: " << optarg << endl;
+              displayHelp = true;
+          }
+          break;
       }
 
       default: {

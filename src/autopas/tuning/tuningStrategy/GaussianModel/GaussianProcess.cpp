@@ -230,7 +230,7 @@ void autopas::GaussianProcess::setHyperparameters(
   }
 
   // precalculate matrices for all hyperparameters
-  // @TODO find sensible chunkSize
+  // @TODO find sensible _chunkSize
   AUTOPAS_OPENMP(parallel for schedule(dynamic, std::max(hyperSize / (autopas_get_num_threads() * 10), 1ul)))
   for (size_t t = 0; t < hyperSize; ++t) {
     _hypers[t].precalculate(_sigma, _inputs, _outputs);

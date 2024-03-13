@@ -429,6 +429,14 @@ class MDFlexConfig {
       "configuration. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
 
+  /**
+   * openMPChunkSize
+   */
+  MDFlexOption<unsigned long, __LINE__> openMPChunkSize{
+          1, "openmp-chunk-size", true,
+          "OpenMP default chunk size for manual testing."
+  };
+
   // Simulation Options:
   /**
    * cutoff

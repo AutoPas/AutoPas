@@ -161,7 +161,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseSingleColor(std::
   const long startZ = startOfThisColor[2], endZ = _end[2];
 
   // iterate over cartesian grid
-  AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3) nowait)
+  AUTOPAS_OPENMP(for schedule(dynamic, TraversalInterface::_openMPConfigurator.getChunkSize()) collapse(3) nowait)
   for (long z = startZ; z < endZ; z += 4) {
     for (long y = startY; y < endY; y++) {
       /* color starts every 6th column again, the +4 is needed to prevent ending too early, since it

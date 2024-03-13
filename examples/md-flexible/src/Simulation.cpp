@@ -136,6 +136,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
+  _autoPasContainer->setOpenMPDefaultChunkSize(_configuration.openMPChunkSize.value);
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
   const auto *fillerBeforeSuffix =
