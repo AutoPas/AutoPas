@@ -310,7 +310,7 @@ class ParticlePropertiesLibrary {
       _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 10.0});
     }
     if (_storeATData) {
-      _ATLookUpTable = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getNu(0), 50.0});
+      _ATLookUpTable = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getNu(0), 50.0});
     }
   }
 
@@ -318,7 +318,7 @@ class ParticlePropertiesLibrary {
     return _LJLookUpTable;
   }
 
-  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getATLUT() {
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getATLUT() {
     return _ATLookUpTable;
   }
 
@@ -362,7 +362,7 @@ class ParticlePropertiesLibrary {
 
   ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType> _LJLookUpTable;
   //LJLookUpTableType _LJLookUpTable;
-  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _ATLookUpTable;
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _ATLookUpTable;
 
 
 };
