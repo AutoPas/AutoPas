@@ -86,6 +86,9 @@ class PredictiveTuning final : public TuningStrategyInterface {
                                                          const autopas::EvidenceCollection &evidenceCollection);
 
  private:
+  long lastResult(size_t iteration, size_t tuningPhase, const Configuration &configuration,
+                  const std::vector<Evidence> &evidenceVec);
+
   /**
    * Predicts the traversal time by placing a line through the last two traversal points and calculating the prediction
    * for the current time.
@@ -116,7 +119,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
   constexpr static long _predictionOverflowValue{std::numeric_limits<long>::max() - 1};
 
   /**
-   * Placeholder value used when a prediction overflows.
+   * Placeholder value used when a prediction underflows.
    */
   constexpr static long _predictionUnderflowValue{1l};
 
@@ -124,6 +127,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
    * A Map that for each configuration stores the function for the prediction to reuse it if no new traversal time was
    * added in the last tuning  phase. The way that function is stored depends on the prediction method, hence it is a
    * vector:
+   * Last Result: last evidence?
    * Line Prediction: Gradient and last evidence
    * Linear Regression: Gradient and iteration
    * Newton: Vector of coefficients

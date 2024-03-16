@@ -33,6 +33,8 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
      * Places a polynomial function through a certain number of data points using Newtons method.
      */
     newton,
+
+    lastResult,
   };
 
   /**
@@ -61,6 +63,7 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
         {ExtrapolationMethodOption::linePrediction, "line-prediction"},
         {ExtrapolationMethodOption::linearRegression, "linear-regression"},
         {ExtrapolationMethodOption::newton, "newton"},
+        {ExtrapolationMethodOption::lastResult, "last-result"},
     };
   };
 
