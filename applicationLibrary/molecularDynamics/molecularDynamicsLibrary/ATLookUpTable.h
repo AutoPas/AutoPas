@@ -14,8 +14,11 @@
 
 namespace ForceLookUpTable {
 
-template <IntervalType intervalType, InterpolationType interpolationType, typename floatType = double, typename intType = unsigned long>
-class ATLookUpTable {
+template <PositionType positionType, IntervalType intervalType, InterpolationType interpolationType, typename floatType = double, typename intType = unsigned long>
+class ATLookUpTable{};
+
+template <IntervalType intervalType, InterpolationType interpolationType, typename floatType, typename intType>
+class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intType> {
 
   using Entry = std::pair<std::array<std::array<floatType, 3>, 3>, floatType>;
 
