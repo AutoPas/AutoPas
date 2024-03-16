@@ -210,6 +210,7 @@ class AxilrodTellerFunctor
 
     if constexpr (useLUT) {
       //AutoPasLog(DEBUG, "Used LUT with {} | {} | {}", displacementIJ, displacementJK, displacementKI);
+      //auto values = _PPLibrary->getATLUT().retrieveValue(i.getR() , j.getR(), k.getR(), distSquaredIJ, distSquaredJK, distSquaredKI);
       auto values = _PPLibrary->getATLUT().retrieveValue(displacementIJ, displacementJK, displacementKI);
       forceI = values.first.at(0);
       forceJ = values.first.at(1);
@@ -217,7 +218,7 @@ class AxilrodTellerFunctor
       potentialEnergy = values.second;
     }
     else {
-      //std::cout << "Didn't use LUT\n";
+      AutoPasLog(DEBUG, "Didn't use LUT");
       const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
       const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
       const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);

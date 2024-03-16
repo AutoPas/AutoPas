@@ -120,7 +120,7 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, false>; //Changed
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, true>; //Changed
 #endif
 
 #endif
@@ -177,10 +177,10 @@ using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::even
 #endif // AT_LUT_INTERPOLATION_FUNCTION
 
 #endif // AT_LUT_INTERVALL
-
+Oh,
 #else
 
-using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
+using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
 
 const bool USE_AT_LUT = false;
 
@@ -216,7 +216,7 @@ using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #endif
 
 #ifdef MD_FLEXIBLE_FUNCTOR_AT
-using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true, false>; // Changed
+using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true, true>; // Changed
 #endif
 
 #endif

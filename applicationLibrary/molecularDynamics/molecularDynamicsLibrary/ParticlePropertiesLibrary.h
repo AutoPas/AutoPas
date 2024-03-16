@@ -11,7 +11,7 @@
 #include <set>
 #include <vector>
 
-#include "src/TypeDefinitions.h" //ToDO: Is this right?
+//#include "src/TypeDefinitions.h" //TODO: Is this right? Apparently not because it works without it
 #include "LJLookUpTable.h"
 #include "ATLookUpTable.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -310,7 +310,7 @@ class ParticlePropertiesLibrary {
       _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 10.0});
     }
     if (_storeATData) {
-      _ATLookUpTable = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getNu(0), 8.0});
+      _ATLookUpTable = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::absolute, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getNu(0), 8.0});
     }
   }
 
@@ -318,7 +318,7 @@ class ParticlePropertiesLibrary {
     return _LJLookUpTable;
   }
 
-  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getATLUT() {
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::absolute, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getATLUT() {
     return _ATLookUpTable;
   }
 
@@ -362,7 +362,7 @@ class ParticlePropertiesLibrary {
 
   ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType> _LJLookUpTable;
   //LJLookUpTableType _LJLookUpTable;
-  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _ATLookUpTable;
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::absolute, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _ATLookUpTable;
 
 
 };
