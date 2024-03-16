@@ -8,8 +8,9 @@
 #include <cmath>
 #include <vector>
 
-#include "autopas/utils/logging/Logger.h"
 #include "LookUpTableTypes.h"
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/logging/Logger.h"
 
 namespace ForceLookUpTable {
 
@@ -72,11 +73,11 @@ class LJLookUpTable {
         lut.push_back(LJFunctor( (pointDistance/2) + (i * pointDistance)));
       }
       // Using std::cout because Logger isn't initiated yet, when constructors are called.
-      std::cout <<  "Table filled evenly spaced with distance " << pointDistance << "\n Content: ";
-      for (auto i=0; i<numberOfPoints; i++) {
-        std::cout << i << " : " << (pointDistance/2) + (i * pointDistance) << " : " << lut.at(i) << " | ";
-      }
-      std::cout << "\n";
+//      std::cout <<  "Table filled evenly spaced with distance " << pointDistance << "\n Content: ";
+//      for (auto i=0; i<numberOfPoints; i++) {
+//        std::cout << i << " : " << (pointDistance/2) + (i * pointDistance) << " : " << lut.at(i) << " | ";
+//      }
+//      std::cout << "\n";
   };
 
   // Interpolation functions
@@ -94,11 +95,9 @@ class LJLookUpTable {
         return LJFunctor(dr2);
       }
       auto ret = lut.at(std::floor(dr2 / pointDistance)); // How slow is std::floor?
-      auto accurate = LJFunctor(dr2);
-      AutoPasLog(DEBUG, "Return {} instead of {}", ret, accurate);
+      AutoPasLog(DEBUG, "Return {} instead of {}", ret, LJFunctor(dr2));
       static float totalError;
-      totalError += abs(accurate - ret);
-      AutoPasLog(DEBUG, "Error: {} | totalError {}", accurate - ret, totalError);
+      AutoPasLog(DEBUG, "Error: {} | totalError {}", LJFunctor(dr2) - ret, [dr2, ret, this]() { totalError += abs(LJFunctor(dr2) - ret); return totalError; }());
       return ret;
     }
   }
@@ -113,7 +112,6 @@ class LJLookUpTable {
       }
       if (dr2 <= (pointDistance / 2)) {
         AutoPasLog(DEBUG, "dr2 {} was less or equal than half pointDistance {}. Returning perfect value {}", dr2, pointDistance / 2, LJFunctor(dr2));
-        //AutoPasLog(DEBUG, "Error: {}", LJFunctor(dr2) - lut.at(0));
         return LJFunctor(dr2);
       }
       if (std::fmod(dr2, pointDistance) == 0) {
@@ -128,8 +126,7 @@ class LJLookUpTable {
       upperX = upperX * pointDistance + pointDistance / 2;
       auto ret = lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX); // Content: 0 : 0.5 : 5760 | 1 : 1.5 : -1.93141 | 2 : 2.5 : -0.535757 | 3 : 3.5 : -0.152473
       static float totalError;
-      totalError += abs(LJFunctor(dr2) - ret);
-      AutoPasLog(DEBUG, "lowerX: {} | upperX: {} | lowerY {} | upperY {}\n                            Input: {} | Return: {} | Correct: {} | Error {} | totalError {}", lowerX, upperX, lowerY, upperY, dr2, ret, LJFunctor(dr2), LJFunctor(dr2) - ret, totalError);
+      AutoPasLog(DEBUG, "lowerX: {} | upperX: {} | lowerY {} | upperY {}\n                            Input: {} | Return: {} | Correct: {} | Error {} | totalError {}", lowerX, upperX, lowerY, upperY, dr2, ret, LJFunctor(dr2), LJFunctor(dr2) - ret, [dr2, ret, this]() { totalError += abs(LJFunctor(dr2) - ret); return totalError; }());
       return ret;
     }
   }

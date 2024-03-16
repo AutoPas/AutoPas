@@ -11,6 +11,8 @@ namespace ForceLookUpTable {
 enum IntervalType { evenSpacing };
 
 enum InterpolationType { nextNeighbor, linear };
+
+enum PositionType { absolute, relative };
 }
 
 

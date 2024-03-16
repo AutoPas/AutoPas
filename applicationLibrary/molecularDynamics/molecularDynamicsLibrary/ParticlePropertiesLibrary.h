@@ -11,7 +11,7 @@
 #include <set>
 #include <vector>
 
-#include "src/TypeDefinitions.h" //ToDO: Is this right?
+//#include "src/TypeDefinitions.h" //TODO: Is this right? Apparently not because it works without it
 #include "LJLookUpTable.h"
 #include "ATLookUpTable.h"
 #include "autopas/utils/AlignedAllocator.h"

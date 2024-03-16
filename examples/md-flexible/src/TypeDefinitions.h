@@ -177,7 +177,7 @@ using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::even
 #endif // AT_LUT_INTERPOLATION_FUNCTION
 
 #endif // AT_LUT_INTERVALL
-
+Oh,
 #else
 
 using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
