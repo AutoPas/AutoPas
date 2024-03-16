@@ -180,7 +180,7 @@ using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::even
 Oh,
 #else
 
-using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
+using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
 
 const bool USE_AT_LUT = false;
 
