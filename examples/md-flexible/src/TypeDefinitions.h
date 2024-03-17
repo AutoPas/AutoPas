@@ -152,8 +152,14 @@ using LJLookUpTableType = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::even
 
 #else
 
+/**
+ * Attempt to define templated LJlut type to be used in all places instead of hardcoding. Currently unused
+ */
 using LJLookUpTableType = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
 
+/**
+ * Attempt to define a templated switch to determine if the LJlut shall be used
+ */
 const bool USE_LJ_LUT =  false;
 
 #endif // MD_USE_LJ_LUT
@@ -180,8 +186,14 @@ using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::even
 Oh,
 #else
 
+/**
+ * Attempt to define templated ATlut type to be used in all places instead of hardcoding. Currently unused
+ */
 using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
 
+/**
+ * Attempt to define a templated switch to determine if the ATlut shall be used
+ */
 const bool USE_AT_LUT = false;
 
 #endif // MD_USE_AT_LUT

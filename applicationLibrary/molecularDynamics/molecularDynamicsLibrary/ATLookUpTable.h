@@ -18,6 +18,13 @@ namespace ForceLookUpTable {
 template<PositionType positionType, IntervalType intervalType, InterpolationType interpolationType, typename floatType = double, typename intType = unsigned long>
 class ATLookUpTable {};
 
+/**
+ * The Look-Up Table that only stores the possible distances between the particles and rotates the direction of the forces on every request
+ * @tparam intervalType How the stored support points are laid out, currently only an even spacing is supported
+ * @tparam interpolationType How the values between the support points are computed, currently only a jump to the next lowest neighbor is supported
+ * @tparam floatType
+ * @tparam intType
+ */
 template <IntervalType intervalType, InterpolationType interpolationType, typename floatType, typename intType>
 class ATLookUpTable<relative, intervalType, interpolationType, floatType, intType> {
 
@@ -31,6 +38,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
   // list: cutoffSquared, nu, ... (numberOfPoints)
   // Extremely unreadable and user-error-prone
 
+  /**
+   * Constructor of the look-up table
+   * Takes an initializer list of floats because it has to be agnostic to the different parameters needed for each combination of intervalType and interpolationType
+   * @param args Initializer list that (for evenSpacing and nextNeighbor) takes the form of {cutoffSquared, nu, numberOfPoints}
+   */
   ATLookUpTable(std::initializer_list<floatType> args) {
 //    std::cout << "LUT created.\n";
     if (args.size() < 3) {  // Fail gracefully
@@ -50,7 +62,16 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       fillTableEvenSpacing();
     }
   }
-
+  /**
+   * Retrieves a value from the lut
+   * @param positionI Position of particle I
+   * @param positionJ Position of particle J
+   * @param positionK Position of particle K
+   * @param distSquaredIJ Squared distance between I and J
+   * @param distSquaredJK Squared distance between J and K
+   * @param distSquaredKI Squared distance between K and I
+   * @return An Entry containing the force vector for every particle, in the correct orientation
+   */
   Entry retrieveValue(const std::array<double, 3>& positionI, const std::array<double, 3>& positionJ, const std::array<double, 3>& positionK, floatType distSquaredIJ, floatType distSquaredJK, floatType distSquaredKI) {
     AutoPasLog(DEBUG, "Retrieved value from AT-LUT");
     if constexpr (interpolationType == nextNeighbor) {
@@ -412,6 +433,13 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
   }
 };
 
+/**
+ * The Look-Up table that stores the force values based on a number of possible arrangements of the particles to each other in 3D space
+ * @tparam intervalType How the stored support points are laid out, currently only an even spacing is supported
+ * @tparam interpolationType How the values between the support points are computed, currently only a jump to the next lowest neighbor is supported
+ * @tparam floatType
+ * @tparam intType
+ */
 template <IntervalType intervalType, InterpolationType interpolationType, typename floatType, typename intType>
 class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intType> {
 
@@ -425,6 +453,11 @@ class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intTyp
   // list: cutoffSquared, nu, ... (numberOfPoints)
   // Extremely unreadable and user-error-prone
 
+  /**
+   * Constructor of the look-up table
+   * Takes an initializer list of floats because it has to be agnostic to the different parameters needed for each combination of intervalType and interpolationType
+   * @param args Initializer list that (for evenSpacing and nextNeighbor) takes the form of {cutoffSquared, nu, numberOfPoints}
+   */
   ATLookUpTable(std::initializer_list<floatType> args) {
     std::cout << "LUT created.\n";
     if (args.size() < 3) {  // Fail gracefully
@@ -453,6 +486,13 @@ class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intTyp
     }
   }
 
+  /**
+   * Retrieves a value from the lut
+   * @param displacementIJ
+   * @param displacementJK
+   * @param displacementKI
+   * @return An Entry containing the retrieved corresponding forces, as well as the global potential component
+   */
   Entry retrieveValue(const std::array<double, 3>& displacementIJ, const std::array<double, 3>& displacementJK, const std::array<double, 3>& displacementKI) {
     AutoPasLog(DEBUG, "Retrieved value from AT-LUT");
     if constexpr (interpolationType == nextNeighbor) {

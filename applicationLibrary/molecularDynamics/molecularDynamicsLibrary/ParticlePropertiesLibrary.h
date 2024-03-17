@@ -301,6 +301,9 @@ class ParticlePropertiesLibrary {
                                  k];
   }
 
+  /**
+   * Initializes the two look-up tables with hardcoded arguments
+   */
   void initializeLookUpTables() {
     // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
     if (_epsilons.size()>1 || _sigmas.size()>1 || _nus.size()>1)
@@ -314,10 +317,16 @@ class ParticlePropertiesLibrary {
     }
   }
 
+  /**
+   *   * @return The Lennard-Jones look-up table
+   */
   ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>& getLJLUT() {
     return _LJLookUpTable;
   }
 
+  /**
+   * @return The Axilrod-Teller look-up table
+   */
   ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getATLUT() {
     return _ATLookUpTable;
   }

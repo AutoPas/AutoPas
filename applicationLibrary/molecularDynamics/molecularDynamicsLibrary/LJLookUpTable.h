@@ -14,6 +14,13 @@
 
 namespace ForceLookUpTable {
 
+/**
+ * Look-Up Table for the Lennard-Jones Functor
+ * @tparam intervalType How the stored support points are laid out, currently only an even spacing is supported
+ * @tparam interpolationType How the values between the support points are computed, currently a jump to the next lowest neighbor and linear interpolation is supported
+ * @tparam floatType
+ * @tparam intType
+ */
 template <IntervalType intervalType, InterpolationType interpolationType, typename floatType = double, typename intType = unsigned long>
 class LJLookUpTable {
  public:
@@ -24,6 +31,11 @@ class LJLookUpTable {
   // list: cutoffSquared, sigmaSquared, epsilon24, ... (numberOfPoints)
   // Extremely unreadable and user-error-prone
 
+  /**
+   * Constructor of the look-up table
+   * Takes an initializer list of floats because it has to be agnostic to the different parameters needed for each combination of intervalType and interpolationType
+   * @param args Initializer list that (for evenSpacing and nextNeighbor or linearInterpolation) takes the form of {cutoffSquared, sigmaSquared, epsilon24, numberOfPoints}
+   */
   LJLookUpTable(std::initializer_list<floatType> args) {
     //AutoPasLog(DEBUG, "LUT created.");
     if (args.size() < 3) {  // Fail gracefully
@@ -46,6 +58,11 @@ class LJLookUpTable {
     }
   }
 
+  /**
+   * Retrieves a value from the lut
+   * @param distanceSquared
+   * @return The stored/interpolated force
+   */
   floatType retrieveValue(floatType distanceSquared) {
     AutoPasLog(DEBUG, "Retrieved Value.");
     if constexpr (interpolationType == nextNeighbor) {
