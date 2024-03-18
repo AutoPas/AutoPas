@@ -136,6 +136,7 @@ TEST_P(PredictiveTuningTest, testUnderAndOverflow) {
   constexpr auto maxLong = std::numeric_limits<long>::max();
   std::map<autopas::Configuration, long> expected = {
       {_configurationLC_C01, 1}, {_configurationLC_C08, maxLong - 1}, {_configurationLC_Sliced, 101}};
+  // since lastResult is not actually an exprapolation, we expect the last values as prediction
   if (extrapolationOption == autopas::ExtrapolationMethodOption::lastResult) {
     expected = {{_configurationLC_C01, 10}, {_configurationLC_C08, maxLong - 100}, {_configurationLC_Sliced, 101}};
   }

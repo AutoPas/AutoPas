@@ -33,7 +33,9 @@ class ExtrapolationMethodOption : public Option<ExtrapolationMethodOption> {
      * Places a polynomial function through a certain number of data points using Newtons method.
      */
     newton,
-
+    /**
+     * Simply use the last traversal time as an estimate (not actually an extrapolation)
+     */
     lastResult,
   };
 
