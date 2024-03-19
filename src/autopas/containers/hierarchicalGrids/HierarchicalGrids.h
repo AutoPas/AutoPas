@@ -15,6 +15,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
+#include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/options/LoadEstimatorOption.h"
 
 namespace autopas {
@@ -333,6 +334,17 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * @param traversal The traversal to use for the iteration.
    */
   void iteratePairwise(TraversalInterface *traversal) override {
+    TraversalOption traversalOpt = traversal->getTraversalType();
+
+    bool n3 = traversal->getUseNewton3();
+
+    DataLayoutOption lay = traversal->getDataLayout();
+
+    TraversalSelectorInfo travInfo = getTraversalSelectorInfo();
+
+    auto *traversalType = dynamic_cast<LCC01Traversal<ParticleCell, demLib::DEMFunctor<Particle>> *>(traversal);
+    auto *functor = traversalType->getPairwiseFunctor();
+
     // Iterate over hierarchy levels
     iterateAllHGLevels(traversal);
 
