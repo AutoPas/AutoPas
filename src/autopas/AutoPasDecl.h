@@ -1089,6 +1089,5 @@ class AutoPas {
    */
   template <class F>
   void addParticlesAux(size_t numParticlesToAdd, size_t numHalosToAdd, size_t collectionSize, F loopBody);
-
 };  // class AutoPas
 }  // namespace autopas
