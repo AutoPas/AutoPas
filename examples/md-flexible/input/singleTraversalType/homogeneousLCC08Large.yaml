@@ -72,7 +72,7 @@ log-level                            :  info
 no-flops                             :  false
 no-end-config                        :  false
 no-progress-bar                      :  false
-vtk-filename                         :  homogeneousLCC08
+vtk-filename                         :  homogeneousLCC08Large
 vtk-output-folder                    :  vtkOutputFolder
 vtk-write-frequency                  :  1
 #checkpoint                          : AllOptionsSim_10.vtk
