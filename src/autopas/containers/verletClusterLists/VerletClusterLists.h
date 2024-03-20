@@ -285,6 +285,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // in this context cell == tower
     // catching the edge case that towers are not yet built -> Iterator jumps to additional vectors
     if (_towerBlock.empty()) {
@@ -294,7 +296,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
-        return {_towerBlock.getTowerIndex1DAtPosition(boxMin), _towerBlock.getTowerIndex1DAtPosition(boxMax)};
+        // if particles might have moved extend search box here
+        const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
+        const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+        return {_towerBlock.getTowerIndex1DAtPosition(boxMinWithSafetyMargin),
+                _towerBlock.getTowerIndex1DAtPosition(boxMaxWithSafetyMargin)};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region

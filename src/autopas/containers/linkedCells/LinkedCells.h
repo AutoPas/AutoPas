@@ -64,7 +64,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
-        _loadEstimator(loadEstimator) {}
+        _loadEstimator(loadEstimator),
+        _skinPerTimestep(skinPerTimestep),
+        _rebuildFrequency(rebuildFrequency) {}
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
@@ -244,12 +246,17 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
         // if particles might have moved extend search box for cells here
-        // TODO
-        return {_cellBlock.get1DIndexOfPosition(boxMin), _cellBlock.get1DIndexOfPosition(boxMax)};
+        const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
+        const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+
+        return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
+                _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -501,6 +508,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
           (iteratorBehavior & IteratorBehavior::halo and _cellBlock.cellCanContainHaloParticles(cellIndex));
       if constexpr (regionIter) {
         // short circuit if already false
+        // TODO: should we remove the if isRelevant here, since a cell with a different ownership-state could contain a
+        // moved particle with another ownership state?
         if (isRelevant) {
           // is the cell in the region?
           const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
@@ -547,6 +556,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
+
+  double _skinPerTimestep;
+
+  unsigned int _rebuildFrequency;
 };
 
 }  // namespace autopas

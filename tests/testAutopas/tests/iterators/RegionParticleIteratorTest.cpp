@@ -246,7 +246,7 @@ TEST_F(RegionParticleIteratorTest, testParticleMisplacement) {
   auto testRegion = [&](const std::array<double, 3> &min, const std::array<double, 3> &max,
                         const std::string &context) {
     size_t numParticlesFound = 0;
-    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOrHalo); iter.isValid();
+    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid();
          ++iter) {
       ++numParticlesFound;
       EXPECT_EQ(iter->getID(), 0) << "There should only be one particle with ID 0.\n" << context;
@@ -260,6 +260,6 @@ TEST_F(RegionParticleIteratorTest, testParticleMisplacement) {
   testRegion(searchBoxStart.min, searchBoxStart.max, "Before particle is moved.");
 
   // Move the particle outside the data structure element (for LC: cell) where it is currently stored
-  autoPas.begin(autopas::IteratorBehavior::ownedOrHalo)->setR(posEnd);
+  autoPas.begin(autopas::IteratorBehavior::owned)->setR(posEnd);
   testRegion(searchBoxEnd.min, searchBoxEnd.max, "After particle was moved.");
 }
