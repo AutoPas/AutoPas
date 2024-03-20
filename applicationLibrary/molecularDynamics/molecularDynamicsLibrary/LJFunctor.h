@@ -8,7 +8,6 @@
 #pragma once
 
 #include "MoleculeLJ_NoPPL.h"
-#include "ParticlePropertiesLibrary.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -27,7 +26,7 @@ namespace mdLib {
  * scheme.
  * @tparam applyShift Switch for the lj potential to be truncated shifted.
  * @tparam useMixing Switch for the functor to be used with multiple particle types.
- * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted. Todo change this.
+ * If set to false, _epsilon and _sigma need to be set.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
