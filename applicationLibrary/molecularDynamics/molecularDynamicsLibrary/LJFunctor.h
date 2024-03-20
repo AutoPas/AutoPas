@@ -124,10 +124,14 @@ class LJFunctor
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6;
       if constexpr (applyShift) {
-        const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquared;
-        const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
-        const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
-        potentialEnergy6 += shift6;
+        if constexpr (useMixing) {
+          const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquared;
+          const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+          const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
+          potentialEnergy6 += shift6;
+        } else {
+          potentialEnergy6 += _shift6;
+        }
       }
 
       const int threadnum = autopas::autopas_get_thread_num();

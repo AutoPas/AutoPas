@@ -52,11 +52,6 @@ class LJFunctorAVX
    */
   using SoAArraysType = typename molecule::SoAArraysType;
 
-  /**
-   * Precision of SoA entries.
-   */
-  using SoAFloatPrecision = typename molecule::ParticleSoAFloatPrecision;
-
  public:
   /**
    * Deleted default constructor
@@ -138,10 +133,14 @@ class LJFunctorAVX
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6;
       if constexpr (applyShift) {
-        const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquaredAoS;
-        const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
-        const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
-        potentialEnergy6 += shift6;
+        if constexpr (useMixing) {
+          const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquaredAoS;
+          const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+          const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
+          potentialEnergy6 += shift6;
+        } else {
+          potentialEnergy6 += _shift6AoS;
+        }
       }
 
       const int threadnum = autopas::autopas_get_thread_num();
@@ -587,7 +586,9 @@ class LJFunctorAVX
       const auto sigmaDivCutoffPow2 = applyShift and useMixing ? _mm256_div_pd(sigmaSquared, _cutoffSquared) : _zero;
       const auto sigmaDivCutoffPow4 = applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow2, sigmaDivCutoffPow2) : _zero;
       const auto sigmaDivCutoffPow6 = applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow4, sigmaDivCutoffPow2) : _zero;
-      const auto shift6 = applyShift and useMixing ? epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6) : _shift6;
+      const auto sigmaDivCutoffPow12 = applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow6, sigmaDivCutoffPow6) : _zero;
+      const auto sigmaDivCutoffPow6SubPow12 = applyShift and useMixing ? _mm256_sub_pd(sigmaDivCutoffPow6, sigmaDivCutoffPow12) : _zero;
+      const auto shift6 = applyShift and useMixing ? _mm256_mul_pd(epsilon24, sigmaDivCutoffPow6SubPow12) : _shift6;
 
       // Global Potential
       const __m256d potentialEnergy = applyShift ? wrapperFMA(epsilon24, lj12m6, shift6) : _mm256_mul_pd(epsilon24, lj12m6);
