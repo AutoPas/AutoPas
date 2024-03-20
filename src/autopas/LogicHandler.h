@@ -853,7 +853,7 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
   auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
                          _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists() and
                          not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
-  auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 &&
+  auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
                         _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
                             not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
 
@@ -1461,10 +1461,10 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
-    ++_stepsSinceLastListRebuild;
     ++_relevantFunctorCalls;
     // In case of pairwise plus triwise interactions, assume that each functor is called exactly once per timestep.
     if (_relevantFunctorCalls % _interactionTypes.size() == 0) {
+      ++_stepsSinceLastListRebuild;
       ++_iteration;
     }
     bool needToWait = checkTuningStates(interactionType);
