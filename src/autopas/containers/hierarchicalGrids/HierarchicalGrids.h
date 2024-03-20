@@ -17,6 +17,7 @@
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "autopas/options/LoadEstimatorOption.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 
 namespace autopas {
 
@@ -342,11 +343,17 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
     TraversalSelectorInfo travInfo = getTraversalSelectorInfo();
 
-    auto *traversalType = dynamic_cast<LCC01Traversal<ParticleCell, demLib::DEMFunctor<Particle>> *>(traversal);
-    auto *functor = traversalType->getPairwiseFunctor();
+    auto *traversalType = dynamic_cast<LCC04Traversal<ParticleCell, demLib::DEMFunctor<Particle>> *>(traversal);
+    // auto *functor = traversalType->getPairwiseFunctor();
+
+    demLib::DEMFunctor<Particle> functor(1.);
+
+    std::unique_ptr<TraversalInterface> newUniqueTraversal =
+        autopas::TraversalSelector<ParticleCell>::generateTraversal(traversalOpt, functor, travInfo, lay, n3);
+    TraversalInterface *newTraversal = newUniqueTraversal.get();
 
     // Iterate over hierarchy levels
-    iterateAllHGLevels(traversal);
+    iterateAllHGLevels(newTraversal);
 
     // Iterate over cross levels
     // @note No traversal needed, since forces between HG-levels are calculated directly
