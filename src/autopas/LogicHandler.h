@@ -781,8 +781,24 @@ class LogicHandler {
    */
   std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
+  /**
+   * iteration logger
+   */
   IterationLogger _iterationLogger;
+
+  /**
+   * updating position at rebuild for every particle
+   */
+  void updateRebuildPositions();
 };
+
+
+template <typename Particle>
+void LogicHandler<Particle>::updateRebuildPositions() {
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+    iter->setRAtRebuild();
+  }
+}
 
 template <typename Particle>
 void LogicHandler<Particle>::checkMinimalSize() const {
@@ -800,8 +816,20 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
+  auto halfSkinSquare = (getContainer().getVerletSkin() * getContainer().getVerletSkin()) / 4;
+  bool listInvalid = false;
+
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+    auto distance = iter->calculateDisplacementSinceRebuild();
+    double distanceSquare = utils::ArrayMath::dot(distance, distance);
+
+    if (distanceSquare >= halfSkinSquare) {
+      listInvalid = true;
+    }
+  }
+
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
-      not getContainer().neighborListsAreValid()) {
+      listInvalid) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -866,6 +894,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   functor.initTraversal();
   if (doListRebuild) {
     timerRebuild.start();
+    this->updateRebuildPositions();
     container.rebuildNeighborLists(&traversal);
     timerRebuild.stop();
   }

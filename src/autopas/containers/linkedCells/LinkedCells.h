@@ -106,8 +106,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     // nothing to do.
   }
 
-  bool neighborListsAreValid() override { return true; }
-
   /**
    * Generates the load estimation function depending on _loadEstimator.
    * @return load estimator function object.

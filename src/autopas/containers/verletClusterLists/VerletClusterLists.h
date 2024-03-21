@@ -774,8 +774,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  bool neighborListsAreValid() override { return true; }
-
   /**
    * Helper method to iterate over all clusters.
    * @tparam LoopBody The type of the lambda to execute for all clusters.

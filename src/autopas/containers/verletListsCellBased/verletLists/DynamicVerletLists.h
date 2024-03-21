@@ -40,28 +40,7 @@ class DynamicVerletLists : public VerletLists<Particle> {
       : VerletLists<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, buildVerletListType,
                               cellSizeFactor) {}
 
-  bool neighborListsAreValid() override {
-    auto halfSkinSquare = (this->getVerletSkin() * this->getVerletSkin()) / 4;
-    bool listInvalid = false;
-
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(|| : listInvalid) schedule(static, 50)
-#endif
-    for (auto iter = _particlePtr2rebuildPositionBuffer.begin(); iter < _particlePtr2rebuildPositionBuffer.end();
-         ++iter) {
-      auto distance = utils::ArrayMath::sub(iter->first->getR(), iter->second);
-      double distanceSquare = utils::ArrayMath::dot(distance, distance);
-
-      if (distanceSquare >= halfSkinSquare) {
-        listInvalid = true;
-      }
-    }
-
-    return !listInvalid;
-  }
-
   void rebuildNeighborLists(TraversalInterface *traversal) override {
-    generateRebuildPositionMap();
     VerletLists<Particle>::rebuildNeighborLists(traversal);
   }
 
@@ -69,18 +48,5 @@ class DynamicVerletLists : public VerletLists<Particle> {
    * @copydoc ParticleContainerInterface::getContainerType()
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::dynamicVerletLists; }
-
- private:
-  void generateRebuildPositionMap() {
-    _particlePtr2rebuildPositionBuffer.clear();
-    _particlePtr2rebuildPositionBuffer.reserve(this->getVerletListsAoS().size());
-
-    for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
-      std::pair<Particle *, std::array<double, 3>> particlePositionPair = std::make_pair(&(*iter), (*iter).getR());
-      _particlePtr2rebuildPositionBuffer.emplace_back(particlePositionPair);
-    }
-  }
-
-  std::vector<std::pair<Particle *, std::array<double, 3>>> _particlePtr2rebuildPositionBuffer;
 };
 }  // namespace autopas

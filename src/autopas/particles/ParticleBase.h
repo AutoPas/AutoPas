@@ -32,7 +32,7 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
+  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0), _rAtRebuild({0.0, 0.0, 0.0}) {}
 
   /**
    * Constructor of the Particle class.
@@ -41,7 +41,7 @@ class ParticleBase {
    * @param id Id of the particle.
    */
   ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _rAtRebuild(r) {}
 
   /**
    * Destructor of ParticleBase class
@@ -53,6 +53,11 @@ class ParticleBase {
    * Particle position as 3D coordinates.
    */
   std::array<floatType, 3> _r;
+
+  /**
+   * Particle position during last rebuild as 3D coordinates.
+   */
+  std::array<floatType, 3> _rAtRebuild;
 
   /**
    * Particle velocity as 3D vector.
@@ -151,6 +156,21 @@ class ParticleBase {
    * @param r new position
    */
   void setR(const std::array<double, 3> &r) { _r = r; }
+
+  /**
+   * update rebuild position of the particle
+   */
+  void setRAtRebuild() { _rAtRebuild = _r; }
+
+  /**
+   * calculate distance since last rebuild
+   * this is used to check if neighbour lists are still valid inside the logic handler
+   */
+  const std::array<double, 3> calculateDisplacementSinceRebuild() const { 
+    using namespace autopas::utils::ArrayMath::literals;
+    auto dist = _rAtRebuild - _r;
+    return dist;
+  }
 
   /**
    * Add a distance vector to the position of the particle and check if the distance between the old and new position

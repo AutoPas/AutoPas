@@ -27,7 +27,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
   bool throwException = false;
   // true if static container and skin > 0
-  bool fastParticlesWarn = (not autoPasContainer.checkIfDynamicallyRebuilding()) and (maxAllowedDistanceMoved > 0);
+  bool fastParticlesWarn = false; //(not autoPasContainer.checkIfDynamicallyRebuilding()) and (maxAllowedDistanceMoved > 0);
 
   AUTOPAS_OPENMP(parallel reduction(|| : throwException))
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {

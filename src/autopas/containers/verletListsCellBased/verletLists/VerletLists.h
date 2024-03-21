@@ -110,8 +110,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     }
   }
 
-  bool neighborListsAreValid() override { return true; }
-
  protected:
   /**
    * Update the verlet lists for AoS usage
