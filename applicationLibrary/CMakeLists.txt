@@ -59,7 +59,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
         set(TEST_EXE_NAME "mdLibSingleSiteTests")
-        set(TEST_EXE_UNIQUE_PATH "molecularDynamics/tests/multiSiteTests")
+        set(TEST_EXE_UNIQUE_PATH "molecularDynamics/tests/singleSiteTests")
     elseif (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
         set(TEST_EXE_NAME "mdLibMultiSiteTests")
         set(TEST_EXE_UNIQUE_PATH "molecularDynamics/tests/multiSiteTests")
