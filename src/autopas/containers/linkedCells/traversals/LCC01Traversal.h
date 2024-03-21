@@ -126,8 +126,6 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, (
     return (combineSoA) ? TraversalOption::lc_c01_combined_SoA : TraversalOption::lc_c01;
   }
 
-  [[nodiscard]] PairwiseFunctor *getPairwiseFunctor() const { return _pairwiseFunctor; }
-
   /**
    * @copydoc autopas::CellPairTraversal::setSortingThreshold()
    */
