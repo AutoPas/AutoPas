@@ -501,7 +501,9 @@ class LJFunctor
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(_epsilon24, _sigmaSquared, _cutoffSquared);
+      const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquared;
+      const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+      _shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
     } else {
       _shift6 = 0.;
     }
@@ -954,8 +956,6 @@ class LJFunctor
   const double _cutoffSquared;
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
-
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;

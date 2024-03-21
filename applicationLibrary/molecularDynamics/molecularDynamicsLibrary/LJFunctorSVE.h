@@ -899,7 +899,9 @@ class LJFunctorSVE
     _epsilon24 = epsilon24;
     _sigmaSquared = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6 = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquared);
+      const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquared;
+      const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+      _shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6););
     } else {
       _shift6 = 0.0;
     }
@@ -908,7 +910,9 @@ class LJFunctorSVE
     _epsilon24AoS = epsilon24;
     _sigmaSquaredAoS = sigmaSquared;
     if constexpr (applyShift) {
-      _shift6AoS = ParticlePropertiesLibrary<double, size_t>::calcShift6(epsilon24, sigmaSquared, _cutoffSquaredAoS);
+      const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquaredAoS;
+      const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
+      _shift6AoS = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
     } else {
       _shift6AoS = 0.;
     }
