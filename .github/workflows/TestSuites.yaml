@@ -154,7 +154,10 @@ jobs:
           if [[ "${{ matrix.md-flex-mode }}" = 'multisite' ]]
           then
             cd build/applicationLibrary
-            ctest --output-on-failure --tests-regex '[mM]ulti[sS]ite'
+            # Only run multi-site tests for non-mpi case
+            if [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
+              ctest --output-on-failure --tests-regex '[mM]ulti[sS]ite'
+            fi
             cd ../examples/md-flexible
             ctest --output-on-failure --build-config mdFlexTests 
           fi
