@@ -229,27 +229,28 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ mo
   mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
                             calculateGlobals, true>
       multiSiteFunctor(cutoff, PPL);
-  mdLib::LJFunctor<mdLib::MoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true>
-      singleSiteFunctor(cutoff, PPL);
+  mdLib::LJFunctor<applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> singleSiteFunctor(cutoff);
 
   // create single site versions of the molecules
-  mdLib::MoleculeLJ molASimple;
-  molASimple.setTypeId(PPL.getSiteTypes(molA.getTypeId())[0]);
+  mdLib::MoleculeLJ_NoPPL molASimple;
   molASimple.setR(molA.getR());
   molASimple.setV(molA.getV());
   molASimple.setF(molA.getF());
   molASimple.setOldF(molA.getOldF());
   molASimple.setID(molA.getID());
   molASimple.setOwnershipState(molA.getOwnershipState());
+  molASimple.setEpsilon(PPL.getEpsilon(molA.getTypeId()));
+  molASimple.setSigma(PPL.getSigma(molA.getTypeId()));
 
-  mdLib::MoleculeLJ molBSimple;
-  molBSimple.setTypeId(PPL.getSiteTypes(molB.getTypeId())[0]);
+  mdLib::MoleculeLJ_NoPPL molBSimple;
   molBSimple.setR(molB.getR());
   molBSimple.setV(molB.getV());
   molBSimple.setF(molB.getF());
   molBSimple.setOldF(molB.getOldF());
   molBSimple.setID(molB.getID());
   molBSimple.setOwnershipState(molB.getOwnershipState());
+  molBSimple.setEpsilon(PPL.getEpsilon(molB.getTypeId()));
+  molBSimple.setSigma(PPL.getSigma(molB.getTypeId()));
 
   // initialise traversals
   singleSiteFunctor.initTraversal();
