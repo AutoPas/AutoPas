@@ -156,6 +156,7 @@ jobs:
             cd build/applicationLibrary
             # Only run multi-site tests for non-mpi case
             if [[ "${{ matrix.config[1] }}" != 'mpicc' ]]
+            then
               ctest --output-on-failure --tests-regex '[mM]ulti[sS]ite'
             fi
             cd ../examples/md-flexible
