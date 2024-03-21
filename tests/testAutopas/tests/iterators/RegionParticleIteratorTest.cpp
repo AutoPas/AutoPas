@@ -246,8 +246,7 @@ TEST_F(RegionParticleIteratorTest, testParticleMisplacement) {
   auto testRegion = [&](const std::array<double, 3> &min, const std::array<double, 3> &max,
                         const std::string &context) {
     size_t numParticlesFound = 0;
-    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid();
-         ++iter) {
+    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
       ++numParticlesFound;
       EXPECT_EQ(iter->getID(), 0) << "There should only be one particle with ID 0.\n" << context;
     }

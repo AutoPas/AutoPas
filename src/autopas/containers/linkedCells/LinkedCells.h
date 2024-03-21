@@ -557,8 +557,14 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    */
   autopas::LoadEstimatorOption _loadEstimator;
 
+  /**
+   * Skin distance a particle is allowed to move in one time-step.
+   */
   double _skinPerTimestep;
 
+  /**
+   * Frequency of container rebuild.
+   */
   unsigned int _rebuildFrequency;
 };
 
