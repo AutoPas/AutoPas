@@ -65,6 +65,14 @@ if (AUTOPAS_BUILD_TESTS)
         set(TEST_EXE_UNIQUE_PATH "molecularDynamics/tests/multiSiteTests")
     endif()
 
+    # sanity check to prevent against globbing the whole file system
+    if(NOT DEFINED TEST_EXE_NAME OR TEST_EXE_NAME STREQUAL "" OR
+       NOT DEFINED TEST_EXE_UNIQUE_PATH OR TEST_EXE_UNIQUE_PATH STREQUAL "")
+        message(FATAL_ERROR "Both TEST_EXE_NAME and TEST_EXE_UNIQUE_PATH must be defined and not empty.\
+        This probably resulted from MD_FLEXIBLE_MODE being set wrong.\
+        MD_FLEXIBLE_MODE=${MD_FLEXIBLE_MODE}")
+    endif()
+
     file(
             GLOB_RECURSE
             TEST_SRC
