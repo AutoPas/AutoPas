@@ -13,7 +13,7 @@
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+    mdLib::LJFunctor</* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false, /*relevantForTuning*/ true> *);
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
@@ -36,7 +36,7 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
                                                              {particleSpacing, particleSpacing, particleSpacing});
 
-  mdLib::LJFunctor<Molecule> functor(cutoff);
+  mdLib::LJFunctor functor(cutoff);
   functor.setParticleProperties(24, 1);
 
   autoPas.iteratePairwise(&functor);

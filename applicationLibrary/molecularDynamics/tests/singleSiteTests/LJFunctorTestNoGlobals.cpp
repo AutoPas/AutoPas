@@ -13,21 +13,18 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
 
-  ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   std::unique_ptr<FuncType> functor;
 
-  particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1.0);
   if constexpr (mixing) {
-    functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
-    particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0);
+    functor = std::make_unique<FuncType>(this->cutoff);
   } else {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->epsilon * 24, 1);
   }
-  particlePropertiesLibrary.calculateMixingCoefficients();
-
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 1., 0.5);
+  // p2 includes sqrtEpsilon & sigma/2 that don't match those actually used when mixing is disabled
+  // but this doesn't matter as these parameters shouldn't be used.
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 1.4142135623730951, 1.);
 
   if (auto msg = this->shouldSkipIfNotImplemented([&]() { functor->AoSFunctor(p1, p2, newton3); }); msg != "") {
     GTEST_SKIP() << msg;
@@ -98,10 +95,7 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     std::unique_ptr<FuncType> functor;
 
     if constexpr (mixing) {
-      particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1.0);
-      particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0);
-      particlePropertiesLibrary.calculateMixingCoefficients();
-      functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
+      functor = std::make_unique<FuncType>(this->cutoff);
     } else {
       functor = std::make_unique<FuncType>(this->cutoff);
       functor->setParticleProperties(this->epsilon * 24, 1);
@@ -110,11 +104,14 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     FMCell cell1, cell2;
     {
       // particle 1 is always in cell1
-      Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+      Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 1., 0.5);
       cell1.addParticle(p1);
 
       // The cell of particle 2 depends on the InteractionType.
-      Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, (mixing) ? 1 : 0);
+
+      // p2 includes sqrtEpsilon & sigma/2 that don't match those actually used when mixing is disabled
+      // but this doesn't matter as these parameters shouldn't be used.
+      Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 1.4142135623730951, 1.);
       switch (interactionType) {
         case TestType::InteractionType::verlet:
           // same as for own

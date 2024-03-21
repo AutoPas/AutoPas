@@ -9,7 +9,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
-#include "molecularDynamicsLibrary/MoleculeLJ.h"
+#include "molecularDynamicsLibrary/MoleculeLJ_NoPPL.h"
 
 // a place for usings that are commonly used in tests
 
@@ -25,7 +25,7 @@ using FPCell = autopas::FullParticleCell<autopas::Particle>;
 /**
  * Short for the AutoPas single site Lennard-Jones molecule
  */
-using Molecule = mdLib::MoleculeLJ;
+using Molecule = mdLib::MoleculeLJ_NoPPL;
 /**
  * Short for the Full Particle Cell with the single center Lennard-Jones molecule
  */
