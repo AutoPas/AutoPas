@@ -63,7 +63,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
       : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
-        _loadEstimator(loadEstimator) {}
+        _loadEstimator(loadEstimator),
+        _skinPerTimestep(skinPerTimestep),
+        _rebuildFrequency(rebuildFrequency) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -231,10 +233,17 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
-        return {_cellBlock.get1DIndexOfPosition(boxMin), _cellBlock.get1DIndexOfPosition(boxMax)};
+        // if particles might have moved extend search box for cells here
+        const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
+        const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+
+        return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
+                _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -600,6 +609,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
+  /**
+   * Skin distance a particle is allowed to move in one time-step.
+   */
+  double _skinPerTimestep;
+  /**
+   * Frequency of container rebuild.
+   */
+  unsigned int _rebuildFrequency;
   /**
    * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
    */

@@ -14,9 +14,16 @@
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(EmptyFunctor<Molecule> *);
 
+using ::testing::Combine;
+using ::testing::UnorderedElementsAreArray;
+using ::testing::Values;
+using ::testing::ValuesIn;
+
+static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
+
 template <typename AutoPasT>
-auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
-                                             double cellSizeFactor) {
+auto RegionParticleIteratorTestBase::defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption,
+                                                 double cellSizeFactor) {
   using namespace autopas::utils::ArrayMath::literals;
 
   autoPas.setBoxMin({0., 0., 0.});
@@ -43,7 +50,7 @@ auto RegionParticleIteratorTest::defaultInit(AutoPasT &autoPas, const autopas::C
  * 3. Run the region iterator for its full range and track the IDs it encounters
  * 4. Compare the found IDs to the expectations from the initialization.
  */
-TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
+TEST_P(RegionParticleIteratorTestOne, testRegionAroundCorner) {
   using namespace autopas::utils::ArrayMath::literals;
 
   auto [containerOption, cellSizeFactor, useConstIterator, priorForceCalc, behavior] = GetParam();
@@ -103,23 +110,16 @@ TEST_P(RegionParticleIteratorTest, testRegionAroundCorner) {
       [&](const auto &autopas, auto &iter) { IteratorTestHelper::findParticles(autoPas, iter, expectedIDs); });
 }
 
-using ::testing::Combine;
-using ::testing::UnorderedElementsAreArray;
-using ::testing::Values;
-using ::testing::ValuesIn;
-
-static inline auto getTestableContainerOptions() { return autopas::ContainerOption::getAllOptions(); }
-
-INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTest,
+INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestOne,
                          Combine(ValuesIn(getTestableContainerOptions()), /*cell size factor*/ Values(0.5, 1., 1.5),
                                  /*use const*/ Values(true, false), /*prior force calc*/ Values(true, false),
                                  ValuesIn(autopas::IteratorBehavior::getMostOptions())),
-                         RegionParticleIteratorTest::PrintToStringParamName());
+                         RegionParticleIteratorTestOne::PrintToStringParamName());
 
 /**
  * Tests that AutoPas rejects regions where regionMin > regionMax.
  */
-TEST_F(RegionParticleIteratorTest, testInvalidBox) {
+TEST_F(RegionParticleIteratorTestOne, testInvalidBox) {
   // setup
   autopas::AutoPas<Molecule> autoPas{};
   const auto [haloBoxMin, haloBoxMax] = defaultInit(autoPas, autopas::ContainerOption::directSum, 1.);
@@ -146,7 +146,7 @@ TEST_F(RegionParticleIteratorTest, testInvalidBox) {
  * Fills a container with (halo) particles, invokes region iterators with force sequential, and expects all of them to
  * find everything in the search region.
  */
-TEST_F(RegionParticleIteratorTest, testForceSequential) {
+TEST_F(RegionParticleIteratorTestOne, testForceSequential) {
   // helpers
   using autopas::utils::ArrayMath::div;
   using autopas::utils::ArrayMath::mulScalar;
@@ -214,10 +214,13 @@ TEST_F(RegionParticleIteratorTest, testForceSequential) {
 }
 
 /**
- * Checks if a region iterator finds a particle that is stored in a
+ * Checks if a region iterator finds a particle that is stored in a cell
  */
-TEST_F(RegionParticleIteratorTest, testParticleMisplacement) {
+TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   using namespace autopas::utils::ArrayMath::literals;
+
+  auto [containerOption, behavior] = GetParam();
+
   // Helper struct to represent region iterator boxes.
   struct Box {
     std::array<double, 3> min;
@@ -227,7 +230,7 @@ TEST_F(RegionParticleIteratorTest, testParticleMisplacement) {
   autopas::AutoPas<Molecule> autoPas{};
   // Get a 10x10x10 box
   // TODO this test has to be generalized to every container
-  defaultInit(autoPas, autopas::ContainerOption::linkedCells, 1.);
+  defaultInit(autoPas, containerOption, 1.);
   const auto shortDistance = autoPas.getVerletSkinPerTimestep() * 0.1;
 
   // start inside near the edge, end outside
@@ -262,3 +265,8 @@ TEST_F(RegionParticleIteratorTest, testParticleMisplacement) {
   autoPas.begin(autopas::IteratorBehavior::owned)->setR(posEnd);
   testRegion(searchBoxEnd.min, searchBoxEnd.max, "After particle was moved.");
 }
+
+INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestTwo,
+                         Combine(ValuesIn(getTestableContainerOptions()),
+                                 ValuesIn(autopas::IteratorBehavior::getMostOptions())),
+                         RegionParticleIteratorTestTwo::PrintToStringParamName());

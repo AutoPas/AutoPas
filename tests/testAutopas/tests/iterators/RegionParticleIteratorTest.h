@@ -12,10 +12,25 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
 
-using testingTuple = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/,
-                                bool /*priorForceCalc*/, autopas::IteratorBehavior>;
+using testingTupleOne = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/,
+                                   bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 
-class RegionParticleIteratorTest : public AutoPasTestBase, public ::testing::WithParamInterface<testingTuple> {
+using testingTupleTwo = std::tuple<autopas::ContainerOption, autopas::IteratorBehavior>;
+
+class RegionParticleIteratorTestBase : public AutoPasTestBase {
+ protected:
+  /**
+   * Initialize the given AutoPas object with the default values for this test class.
+   * @tparam AutoPasT
+   * @param autoPas
+   * @return tuple {haloBoxMin, haloBoxMax}
+   */
+  template <class AutoPasT>
+  auto defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption, double cellSizeFactor);
+};
+
+class RegionParticleIteratorTestOne : public RegionParticleIteratorTestBase,
+                                      public ::testing::WithParamInterface<testingTupleOne> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
@@ -33,13 +48,21 @@ class RegionParticleIteratorTest : public AutoPasTestBase, public ::testing::Wit
       return str;
     }
   };
+};
 
-  /**
-   * Initialize the given AutoPas object with the default values for this test class.
-   * @tparam AutoPasT
-   * @param autoPas
-   * @return tuple {haloBoxMin, haloBoxMax}
-   */
-  template <class AutoPasT>
-  auto defaultInit(AutoPasT &autoPas, const autopas::ContainerOption &containerOption, double cellSizeFactor);
+class RegionParticleIteratorTestTwo : public RegionParticleIteratorTestBase,
+                                      public ::testing::WithParamInterface<testingTupleTwo> {
+ public:
+  struct PrintToStringParamName {
+    template <class ParamType>
+    std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
+      auto [containerOption, behavior] = static_cast<ParamType>(info.param);
+      std::string str;
+      str += containerOption.to_string() + "_";
+      str += "_" + behavior.to_string();
+      std::replace(str.begin(), str.end(), '-', '_');
+      std::replace(str.begin(), str.end(), '.', '_');
+      return str;
+    }
+  };
 };
