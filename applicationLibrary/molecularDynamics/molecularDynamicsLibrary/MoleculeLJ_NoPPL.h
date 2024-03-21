@@ -55,6 +55,7 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
     oldForceZ,
     squareRootEpsilon,
     sigmaDiv2,
+    mass,
     ownershipState
   };
 
@@ -69,7 +70,8 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
       typename autopas::utils::SoAType<MoleculeLJ_NoPPL *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       double /*squareRootEpsilon*/, double /*sigmaDiv2*/, autopas::OwnershipState /*ownershipState*/>::Type;
+                                       double /*squareRootEpsilon*/, double /*sigmaDiv2*/, double /*mass*/,
+                                       autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -119,6 +121,8 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
       return getSquareRootEpsilon();
     } else if constexpr (attribute == AttributeNames::sigmaDiv2) {
       return getSigmaDiv2();
+    } else if constexpr (attribute == AttributeNames::mass) {
+      return getMass();
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
@@ -165,6 +169,8 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
       _squareRootEpsilon = value;
     } else if constexpr (attribute == AttributeNames::sigmaDiv2) {
       _sigmaDiv2 = value;
+    } else if constexpr (attribute == AttributeNames::mass) {
+      _mass = value;
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     } else {
@@ -192,7 +198,7 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    * in performance critical regions which require the square root of epsilon.
    * @return epsilon
    */
-  [[nodiscard]] const double getEpsilon() const;
+  [[nodiscard]] double getEpsilon() const;
 
   /**
    * Set epsilon.
@@ -208,7 +214,7 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    * in performance critical regions which require sigma/2.
    * @return sigma
    */
-  [[nodiscard]] const double getSigma() const;
+  [[nodiscard]] double getSigma() const;
 
   /**
    * Set sigma.
@@ -240,9 +246,21 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
 
   /**
    * Set sigma/2
-   * @param _sigmaDiv2
+   * @param sigmaDiv2
    */
-  void setSigmaDiv2(const double &_sigmaDiv2);
+  void setSigmaDiv2(const double &sigmaDiv2);
+
+  /**
+   * Get mass
+   * @return mass
+   */
+  [[nodiscard]] const double &getMass() const;
+
+  /**
+   * Set mass
+   * @param mass
+   */
+  void setMass(const double &mass);
 
 
   /**
@@ -262,12 +280,17 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
   /**
    * sqrt(epsilon). Used directly in force calculation to avoid square roots in kernel.
    */
-  double _squareRootEpsilon{0.};
+  double _squareRootEpsilon{1.};
 
   /**
    * sigma/2. Used directly in force calculation to avoid divisions in kernel.
    */
-  double _sigmaDiv2{0.};
+  double _sigmaDiv2{0.5};
+
+  /**
+   * mass of molecule
+   */
+  double _mass{1.};
 };
 
 }  // namespace mdLib

@@ -20,11 +20,14 @@ void MoleculeLJ_NoPPL::setSquareRootEpsilon(const double &squareRootEpsilon) { _
 const double &MoleculeLJ_NoPPL::getSigmaDiv2() const { return _sigmaDiv2; }
 void MoleculeLJ_NoPPL::setSigmaDiv2(const double &sigmaDiv2) { _sigmaDiv2 = sigmaDiv2; }
 
-const double MoleculeLJ_NoPPL::getEpsilon() const { return _squareRootEpsilon * _squareRootEpsilon; }
+double MoleculeLJ_NoPPL::getEpsilon() const { return _squareRootEpsilon * _squareRootEpsilon; }
 void MoleculeLJ_NoPPL::setEpsilon(const double &epsilon) { _squareRootEpsilon = sqrt(epsilon); }
 
-const double MoleculeLJ_NoPPL::getSigma() const { return _sigmaDiv2 * 2; }
+double MoleculeLJ_NoPPL::getSigma() const { return _sigmaDiv2 * 2; }
 void MoleculeLJ_NoPPL::setSigma(const double &sigma) { _sigmaDiv2 = sigma / 2; }
+
+const double &MoleculeLJ_NoPPL::getMass() const { return _mass; }
+void MoleculeLJ_NoPPL::setMass(const double &mass) { _mass = mass; }
 
 std::string MoleculeLJ_NoPPL::toString() const {
   using autopas::utils::ArrayUtils::operator<<;
@@ -38,6 +41,7 @@ std::string MoleculeLJ_NoPPL::toString() const {
      << "\nOld Force          : " << _oldF
      << "\nSqrt(Epsilon)      : " << _squareRootEpsilon
      << "\nSigma/2            : " << _sigmaDiv2
+     << "\nMass               : " << _mass
      << "\nOwnershipState     : " << _ownershipState;
   // clang-format on
   return text.str();
