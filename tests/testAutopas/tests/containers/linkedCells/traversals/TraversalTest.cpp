@@ -46,13 +46,11 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   autopas::TraversalSelectorInfo tsi(cellsPerDim, cutoff, {1., 1., 1.}, clusterSize);
   std::unique_ptr<autopas::TraversalInterface> traversal;
   if (useN3 and traversalOption != autopas::TraversalOption::lc_c01) {
-    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
-                                                                               autopas::DataLayoutOption::aos, true>(
-        traversalOption, functor, tsi);
+    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor>(
+        traversalOption, functor, tsi, autopas::DataLayoutOption::aos, true);
   } else {
-    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor,
-                                                                               autopas::DataLayoutOption::aos, false>(
-        traversalOption, functor, tsi);
+    traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<TraversalTest::CountFunctor>(
+        traversalOption, functor, tsi, autopas::DataLayoutOption::aos, false);
   }
 
   unsigned long cellId = 0;

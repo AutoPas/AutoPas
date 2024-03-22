@@ -19,9 +19,8 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
   autopas::TraversalSelectorInfo traversalSelectorInfo({domainSize, domainSize, domainSize}, 1., {1., 1., 1.}, 32);
 
   for (const auto &traversalOption : autopas::TraversalOption::getAllOptions()) {
-    auto traversal =
-        autopas::TraversalSelector<FPCell>::template generateTraversal<MFunctor, autopas::DataLayoutOption::aos, false>(
-            traversalOption, functor, traversalSelectorInfo);
+    auto traversal = autopas::TraversalSelector<FPCell>::template generateTraversal<MFunctor>(
+        traversalOption, functor, traversalSelectorInfo, autopas::DataLayoutOption::aos, false);
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())
