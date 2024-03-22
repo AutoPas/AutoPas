@@ -18,10 +18,10 @@ template class autopas::AutoPas<NonConstructibleParticle>;
 
 template bool autopas::AutoPas<Molecule>::computeInteractions(mdLib::LJFunctor<Molecule> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, /*useLUT*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ true> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, /*useLUT*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(
