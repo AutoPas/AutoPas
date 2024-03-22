@@ -46,8 +46,8 @@ class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
                           DataLayoutOption dataLayout, bool useNewton3)
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
-      : CellTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
-        OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
+      : CellTraversal<ParticleCell>({2, 1, 1}),
+        OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {}

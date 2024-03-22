@@ -39,7 +39,8 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
    */
   explicit ColorBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                                const double interactionLength, const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : CellTraversal<ParticleCell>(dims, dataLayout, useNewton3),
+      : CellTraversal<ParticleCell>(dims),
+        TraversalInterface<interactionType>(dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _dataLayoutConverter(functor, dataLayout) {

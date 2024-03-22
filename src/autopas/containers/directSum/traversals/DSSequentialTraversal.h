@@ -37,7 +37,8 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
    */
   explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff, DataLayoutOption dataLayout,
                                  bool useNewton3)
-      : CellTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
+      : CellTraversal<ParticleCell>({2, 1, 1}),
+        TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {}

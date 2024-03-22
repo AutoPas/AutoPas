@@ -22,10 +22,9 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam TriwiseFunctor The functor that defines the interaction of three particles.
- * @tparam dataLayout
- * @tparam useNewton3
+
  */
-template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class TriwiseFunctor>
 class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
                                 public DSTraversalInterface<ParticleCell>,
                                 public TraversalInterface<InteractionTypeOption::threeBody> {
@@ -34,19 +33,20 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
    * Constructor for the DirectSum traversal.
    * @param triwiseFunctor The functor that defines the interaction of three particles.
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit DSSequentialTraversal3B(TriwiseFunctor *triwiseFunctor, double cutoff)
+  explicit DSSequentialTraversal3B(TriwiseFunctor *triwiseFunctor, double cutoff, DataLayoutOption dataLayout,
+                                   bool useNewton3)
       : CellTraversal<ParticleCell>({2, 1, 1}),
-        _cellFunctor(triwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
-        _dataLayoutConverter(triwiseFunctor) {}
+        TraversalInterface<InteractionTypeOption::threeBody>(dataLayout, useNewton3),
+        _cellFunctor(triwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
+                     useNewton3),
+        _dataLayoutConverter(triwiseFunctor, dataLayout) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ds_sequential_3b; }
 
   [[nodiscard]] bool isApplicable() const override { return true; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; };
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; };
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
@@ -77,18 +77,17 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor3B<typename ParticleCell::ParticleType, ParticleCell, TriwiseFunctor, dataLayout, useNewton3,
-                          true>
+  internal::CellFunctor3B<ParticleCell, TriwiseFunctor, true>
       _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal
    */
-  utils::DataLayoutConverter<TriwiseFunctor, dataLayout> _dataLayoutConverter;
+  utils::DataLayoutConverter<TriwiseFunctor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void DSSequentialTraversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>::traverseParticleTriplets() {
+template <class ParticleCell, class TriwiseFunctor>
+void DSSequentialTraversal3B<ParticleCell, TriwiseFunctor>::traverseParticleTriplets() {
   auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);

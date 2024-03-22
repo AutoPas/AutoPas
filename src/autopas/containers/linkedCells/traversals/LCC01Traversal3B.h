@@ -26,12 +26,10 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam Functor The functor type that defines the interaction of three particles.
- * @tparam DataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor>
 class LCC01Traversal3B
-    : public C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, dataLayout, useNewton3, 3>,
+    : public C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, 3>,
       public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -41,14 +39,17 @@ class LCC01Traversal3B
    * @param functor The functor that defines the interaction of three particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length in CellBlock3D
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
   explicit LCC01Traversal3B(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
-                            const std::array<double, 3> &cellLength)
-      : C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, dataLayout, useNewton3, 3>(
-            dims, functor, interactionLength, cellLength),
-        _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
+                            const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
+      : C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, 3>(
+            dims, functor, interactionLength, cellLength, dataLayout, useNewton3),
+        _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
+                     useNewton3),
         _functor(functor) {
     computeOffsets();
   }
@@ -60,10 +61,6 @@ class LCC01Traversal3B
 
   void traverseParticleTriplets() override;
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
-
   /**
    * C01 traversals are only usable if useNewton3 is disabled.
    *
@@ -72,7 +69,7 @@ class LCC01Traversal3B
    *
    * @return
    */
-  [[nodiscard]] bool isApplicable() const override { return not useNewton3; }
+  [[nodiscard]] bool isApplicable() const override { return not this->_useNewton3; }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c01_3b; }
 
@@ -112,14 +109,14 @@ class LCC01Traversal3B
   /**
    * CellFunctor to be used for the traversal defining the interaction between three cells.
    */
-  internal::CellFunctor3B<typename ParticleCell::ParticleType, ParticleCell, Functor, dataLayout, false, false>
+  internal::CellFunctor3B<ParticleCell, Functor, false>
       _cellFunctor;
 
   Functor *_functor;
 };
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::computeOffsets() {
+template <class ParticleCell, class Functor>
+inline void LCC01Traversal3B<ParticleCell, Functor>::computeOffsets() {
   using namespace utils::ArrayMath::literals;
 
   // Helper function to get minimal distance between two cells
@@ -177,8 +174,8 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::com
   }
 }
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::processBaseCell(
+template <class ParticleCell, class Functor>
+inline void LCC01Traversal3B<ParticleCell, Functor>::processBaseCell(
     std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
@@ -203,8 +200,8 @@ inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::pro
   }
 }
 
-template <class ParticleCell, class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC01Traversal3B<ParticleCell, Functor, dataLayout, useNewton3>::traverseParticleTriplets() {
+template <class ParticleCell, class Functor>
+inline void LCC01Traversal3B<ParticleCell, Functor>::traverseParticleTriplets() {
   auto &cells = *(this->_cells);
   if (not this->isApplicable()) {
     utils::ExceptionHandler::exception("The C01 traversal cannot work with enabled newton3!");
