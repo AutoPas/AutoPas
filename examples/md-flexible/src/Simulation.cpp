@@ -470,7 +470,7 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->template iteratePairwise(&functor); });
+      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->iteratePairwise(&functor); });
   return wasTuningIteration;
 }
 
