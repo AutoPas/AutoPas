@@ -28,10 +28,10 @@ A guide how to build AutoPas can be found [here](https://github.com/AutoPas/Auto
 
 ## Acknowledgements
 This work was financially supported by:
-* the Federal Ministry of Education and Research, Germany, project “Task-based load balancing and auto-tuning in particle simulations” (TaLPas) 8 , grant numbers 01IH16008A and 01IH16008B.
-* TODO: 3xa
-* TODO: MaST
-* TODO: WindHPC
+* the Federal Ministry of Education and Research, Germany, project "Task-based load balancing and auto-tuning in particle simulations" (TaLPas) 8 , grant numbers 01IH16008A and 01IH16008B.
+* the Federal Ministry of Education and Research, Germany, project "Verbundprojekt: Simulationssoftware für Exascale-Supercomputer zur Berechnung von Dreikörperwechselwirkungen" (3xa), grant number 16ME0652K.
+* the Federal Ministry of Defense, Germany, through Helmut-Schmidt-Universität, project "Makro/Mikro-Simulation des Phasenzerfalls im Transkritischen Bereich" (MaST).
+* the Federal Ministry of Education and Research, Germany, project "Verbundprojekt: In Windkraftanlagen integrierte Second-Life-Rechencluster" (WindHPC), grant number 16ME0611.
 
 ## Papers to cite
 * F. A. Gratl, S. Seckler, H.-J. Bungartz and P. Neumann: [N Ways to Simulate Short-Range Particle Systems: Automated Algorithm Selection with the Node-Level Library AutoPas](https://www.sciencedirect.com/science/article/abs/pii/S001046552100374X), In Computer Physics Communications, Volume 273, 2022. ([BibTeX](https://mediatum.ub.tum.de/export/1638766/bibtex), [MediaTUM](https://mediatum.ub.tum.de/1638766))
