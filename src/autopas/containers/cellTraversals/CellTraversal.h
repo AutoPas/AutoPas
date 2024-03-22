@@ -26,7 +26,8 @@ class CellTraversal {
    * Constructor of CellTraversal.
    * @param dims the dimensions of the cellblock.
    */
-  explicit CellTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims), _cells(nullptr) {}
+  explicit CellTraversal(const std::array<unsigned long, 3> &dims)
+      : _cellsPerDimension(dims), _cells(nullptr) {}
 
   /**
    * Destructor of CellTraversal.

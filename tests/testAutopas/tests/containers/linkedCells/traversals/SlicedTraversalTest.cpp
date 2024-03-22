@@ -27,9 +27,8 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
 
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>>,
-                             autopas::DataLayoutOption::aos, true>
-      slicedTraversal(edgeLength, &f, 1., {1., 1., 1.});
+  autopas::LCSlicedTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>>> slicedTraversal(
+      edgeLength, &f, 1., {1., 1., 1.}, autopas::DataLayoutOption::aos, true);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
   slicedTraversal.setCellsToTraverse(cells);
@@ -98,8 +97,8 @@ TEST_F(SlicedTraversalTest, testTraversalCubeShrink) {
 TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal(
-      {1, 1, 1}, nullptr, 1., {1., 1., 1.});
+  autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor> slicedTraversal({1, 1, 1}, nullptr, 1., {1., 1., 1.},
+                                                               autopas::DataLayoutOption::aos, true);
 
   EXPECT_FALSE(slicedTraversal.isApplicable());
 }
@@ -107,8 +106,8 @@ TEST_F(SlicedTraversalTest, testIsApplicableTooSmall) {
 TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal(
-      {5, 5, 5}, nullptr, 1., {1., 1., 1.});
+  autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor> slicedTraversal({5, 5, 5}, nullptr, 1., {1., 1., 1.},
+                                                               autopas::DataLayoutOption::aos, true);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
 }
@@ -116,8 +115,8 @@ TEST_F(SlicedTraversalTest, testIsApplicableShrinkable) {
 TEST_F(SlicedTraversalTest, testIsApplicableOk) {
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal(
-      {11, 11, 11}, nullptr, 1., {1., 1., 1.});
+  autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor> slicedTraversal({11, 11, 11}, nullptr, 1., {1., 1., 1.},
+                                                               autopas::DataLayoutOption::aos, true);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
 }
@@ -125,8 +124,8 @@ TEST_F(SlicedTraversalTest, testIsApplicableOk) {
 TEST_F(SlicedTraversalTest, testIsApplicableOkOnlyOneDim) {
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor, autopas::DataLayoutOption::aos, true> slicedTraversal(
-      {1, 1, 11}, nullptr, 1., {1., 1., 1.});
+  autopas::LCSlicedTraversal<FPCell, MPairwiseFunctor> slicedTraversal({1, 1, 11}, nullptr, 1., {1., 1., 1.},
+                                                               autopas::DataLayoutOption::aos, true);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
 }

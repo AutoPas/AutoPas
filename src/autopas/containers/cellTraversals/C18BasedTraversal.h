@@ -18,12 +18,9 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam Functor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
-          DataLayoutOption::Value dataLayout, bool useNewton3>
-class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3> {
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
+class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType> {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -32,11 +29,13 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
    * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
-                             const std::array<double, 3> &cellLength)
-      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(
-            dims, functor, interactionLength, cellLength) {}
+                             const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
+      : ColorBasedTraversal<ParticleCell, Functor, interactionType>(
+            dims, functor, interactionLength, cellLength, dataLayout, useNewton3) {}
 
  protected:
   /**
@@ -55,10 +54,9 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
   inline void c18Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
-          DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
 template <bool allCells, typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>::c18Traversal(
+inline void C18BasedTraversal<ParticleCell, Functor, interactionType>::c18Traversal(
     LoopBody &&loopBody) {
   const std::array<unsigned long, 3> stride = {2ul * this->_overlap[0] + 1ul, 2ul * this->_overlap[1] + 1ul,
                                                this->_overlap[2] + 1ul};

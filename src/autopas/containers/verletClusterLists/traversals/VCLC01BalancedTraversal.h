@@ -18,10 +18,8 @@ namespace autopas {
  * It uses a static scheduling that gives each thread about the same amount of cluster pairs to handle.
  * @tparam ParticleCell
  * @tparam PairwiseFunctor The type of the functor.
- * @tparam dataLayout The data layout to use.
- * @tparam useNewton3 If newton 3 should be used. Only false is supported.
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class Particle, class PairwiseFunctor>
 class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption::pairwise>,
                                 public VCLTraversalInterface<Particle> {
  public:
@@ -29,29 +27,30 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
    * Constructor of the VCLC01BalancedTraversal.
    * @param pairwiseFunctor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
+   * @param dataLayout The data layout to use.
+   * @param useNewton3 If newton 3 should be used. Only false is supported.
    */
-  explicit VCLC01BalancedTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
-      : _functor(pairwiseFunctor), _clusterFunctor(pairwiseFunctor, clusterSize) {}
+  explicit VCLC01BalancedTraversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
+                                   bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3),
+        _functor(pairwiseFunctor),
+        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c01_balanced; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
-
   [[nodiscard]] bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos or dataLayout == DataLayoutOption::soa) and not useNewton3;
+    return (_dataLayout == DataLayoutOption::aos or _dataLayout == DataLayoutOption::soa) and not _useNewton3;
   }
 
   void initTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
+    if (_dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     clusterList.loadParticlesIntoSoAs(_functor);
   }
 
   void endTraversal() override {
-    if (dataLayout != DataLayoutOption::soa) return;
+    if (_dataLayout != DataLayoutOption::soa) return;
 
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     clusterList.extractParticlesFromSoAs(_functor);
@@ -93,6 +92,6 @@ class VCLC01BalancedTraversal : public TraversalInterface<InteractionTypeOption:
 
  private:
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
+  internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
 };
 }  // namespace autopas

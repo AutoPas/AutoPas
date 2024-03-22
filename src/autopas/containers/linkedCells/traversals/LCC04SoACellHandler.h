@@ -25,10 +25,8 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor>
 class LCC04SoACellHandler {
  public:
   /**
@@ -38,16 +36,21 @@ class LCC04SoACellHandler {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
-                               const double interactionLength, const std::array<double, 3> &cellLength,
+                               double interactionLength, const std::array<double, 3> &cellLength,
+                               DataLayoutOption dataLayout, bool useNewton3,
                                const std::array<unsigned long, 3> &overlap = {1ul, 1ul, 1ul})
       : _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlap(overlap),
         _cellsPerDimension(cellsPerDimension),
         _cacheOffset(DEFAULT_CACHE_LINE_SIZE / sizeof(unsigned int)),
-        _pairwiseFunctor(pairwiseFunctor) {
+        _pairwiseFunctor(pairwiseFunctor),
+        _dataLayout(dataLayout),
+        _useNewton3(useNewton3) {
     computeOffsets(cellsPerDimension);
   }
 
@@ -133,6 +136,16 @@ class LCC04SoACellHandler {
   PairwiseFunctor *_pairwiseFunctor;
 
   /**
+   * The datalayout used by this traversal.
+   */
+  DataLayoutOption _dataLayout;
+
+  /**
+   * If this traversal makes use of newton3.
+   */
+  bool _useNewton3;
+
+  /**
    * Writes buffer content back to cell.
    * @param cells
    * @param baseIndex Index of base cell.
@@ -167,9 +180,10 @@ class LCC04SoACellHandler {
   void setupIntervals(std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
+                                                                                unsigned long x, unsigned long y,
+                                                                                unsigned long z) {
   const unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, _cellsPerDimension);
 
   // get all information for current thread
@@ -211,13 +225,13 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
         auto stripeView = cell1->_particleSoABuffer.constructView(0, numParticlesBaseCell);
         if (slice == currentSlice) {
           // Process stripe with itself
-          _pairwiseFunctor->SoAFunctorSingle(stripeView, useNewton3);
+          _pairwiseFunctor->SoAFunctorSingle(stripeView, _useNewton3);
 
           auto restView =
               cell1->_particleSoABuffer.constructView(numParticlesBaseCell, cell1->_particleSoABuffer.size());
-          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, useNewton3);
-          if (not useNewton3) {
-            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, useNewton3);
+          _pairwiseFunctor->SoAFunctorPair(stripeView, restView, _useNewton3);
+          if (not _useNewton3) {
+            _pairwiseFunctor->SoAFunctorPair(restView, stripeView, _useNewton3);
           }
           cell1ViewEnd = cell1->_particleSoABuffer.size();
           continue;
@@ -249,9 +263,9 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
 
       auto cell1View = cell1->_particleSoABuffer.constructView(cell1ViewStart, cell1ViewEnd);
       auto currentCSView = currentCS._particleSoABuffer.constructView(currentCSViewStart, currentCSViewEnd);
-      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, useNewton3);
-      if (not useNewton3) {
-        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, useNewton3);
+      _pairwiseFunctor->SoAFunctorPair(cell1View, currentCSView, _useNewton3);
+      if (not _useNewton3) {
+        _pairwiseFunctor->SoAFunctorPair(currentCSView, cell1View, _useNewton3);
       }
     }
   }
@@ -268,8 +282,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::writeCellIntoBuffer(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeCellIntoBuffer(
     const std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
     std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned int bufferSlice,
     const unsigned int cellSlice) {
@@ -288,8 +302,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::writeBufferIntoCell(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeBufferIntoCell(
     std::vector<ParticleCell> &cells, const unsigned long baseIndex, std::vector<ParticleCell> &combinationSlice,
     std::vector<std::vector<unsigned long>> &combinationSlicesOffsets, const unsigned long bufferSlice,
     const unsigned long cellSlice) {
@@ -319,8 +333,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::computeOffsets(
     const std::array<unsigned long, 3> &cellsPerDimension) {
   using namespace autopas::utils::ArrayMath::literals;
   using std::make_pair;
@@ -407,8 +421,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   setupIntervals(cellPairOffsets);
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::setupIntervals(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
     std::vector<std::vector<std::pair<unsigned long, unsigned long>>> &cellPairOffsets) {
   // Create intervals
   const unsigned long numStripes = cellPairOffsets.size();
@@ -444,8 +458,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNe
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::resizeBuffers() {
+template <class ParticleCell, class PairwiseFunctor>
+void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::resizeBuffers() {
   const auto numThreads = static_cast<size_t>(autopas_get_max_threads());
   if (_combinationSlices.size() != numThreads) {
     _combinationSlices.resize(numThreads);
