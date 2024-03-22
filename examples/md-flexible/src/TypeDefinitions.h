@@ -16,11 +16,11 @@
 
 #else
 
-#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMParticle.h"
+#include "discreteElementMethodLibrary/DEMParticle.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
+#include "discreteElementMethodLibrary/DEMFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #endif
 

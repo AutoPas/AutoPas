@@ -7,13 +7,13 @@
 
 #include <algorithm>
 
-#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
 #include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "discreteElementMethodLibrary/DEMFunctor.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -184,10 +184,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       _autoPasContainer->addParticle(particle);
     }
   }
-  // @todo: the object generators should only generate particles relevant for the current rank's domain
-  //_autoPasContainer->addParticlesIf(_configuration.getParticles(),
-  //                                  [&](const auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR());
-  //                                  });
 
   _configuration.flushParticles();
   std::cout << "Total number of particles at the initialization: "
@@ -639,18 +635,18 @@ void Simulation::logMeasurements() {
 
     if (_configuration.dontMeasureFlops.value) {
       std::cout << "Statistics for Force Calculation at end of simulation: NOT AVAILABLE!" << std::endl;
-      /*       LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value,
-         *_configuration.getParticlePropertiesLibrary()); autopas::FlopCounterFunctor<ParticleType,
-         LJFunctorTypeAbstract> flopCounterFunctor( ljFunctor, _autoPasContainer->getCutoff());
-            _autoPasContainer->iteratePairwise(&flopCounterFunctor);
+      LJFunctorTypeAbstract demFunctor(_configuration.cutoff.value);
+      autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
+          demFunctor, _autoPasContainer->getCutoff());
+      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
 
-            const auto flops = flopCounterFunctor.getFlops();
+      const auto flops = flopCounterFunctor.getFlops();
 
-            std::cout << "Statistics for Force Calculation at end of simulation:" << std::endl;
-            std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-            std::cout << "  GFLOPs/sec                         : "
-                      << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-            std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl; */
+      std::cout << "Statistics for Force Calculation at end of simulation:" << std::endl;
+      std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+      std::cout << "  GFLOPs/sec                         : "
+                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
+      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
   }
 }

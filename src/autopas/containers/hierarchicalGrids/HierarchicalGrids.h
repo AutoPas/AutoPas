@@ -10,12 +10,12 @@
 #include <deque>
 #include <vector>
 
-#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/options/LoadEstimatorOption.h"
+#include "discreteElementMethodLibrary/DEMFunctor.h"
 
 namespace autopas {
 
@@ -285,10 +285,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
   void iterateAllCrossLevels() {
     AUTOPAS_OPENMP(parallel)
-    for (auto &levelPairs : _crossLevelInteractions) {
-      size_t largerLevel, smallerLevel;
-      std::tie(largerLevel, smallerLevel) = levelPairs;
-
+    for (const auto &[largerLevel, smallerLevel] : _crossLevelInteractions) {
       iterateOverCrossLevels(largerLevel, smallerLevel);
     }
   }
@@ -300,27 +297,25 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     //  @note Maybe parallelize iteration over second level?
     // AUTOPAS_OPENMP(parallel firstprivate(demFunctor)) // <- cannot parallelize here, since this leads to erroneous
     // forces
-    for (auto iterFirstLVLParticles = _hierarchyLevels[firstLevel].begin(); iterFirstLVLParticles.isValid();
-         ++iterFirstLVLParticles) {
+    for (auto &firstLevelParticle : _hierarchyLevels[firstLevel]) {
       // Get position and radius of larger particle
-      const std::array<double, 3> posLarger = iterFirstLVLParticles->getR();
-      const double radLarger = iterFirstLVLParticles->getRad();
+      const std::array<double, 3> posLarger = firstLevelParticle.getR();
+      const double radLarger = firstLevelParticle.getRad();
 
       // Box size of particle interations
       const double crossLevelCellSize = (radLarger + _hierarchicalGridBorders[secondLevel]);
 
       // Get lower and higher corner of box around the larger particle containing possible interaction partners
       // in the smaller level
-      const std::array<double, 3> lowerBoxCorner = autopas::utils::ArrayMath::subScalar(posLarger, crossLevelCellSize);
-      const std::array<double, 3> higherBoxCorner = autopas::utils::ArrayMath::addScalar(posLarger, crossLevelCellSize);
+      using namespace autopas::utils::ArrayMath::literals;
+      const std::array<double, 3> lowerBoxCorner = posLarger - crossLevelCellSize;
+      const std::array<double, 3> higherBoxCorner = posLarger + crossLevelCellSize;
 
       AUTOPAS_OPENMP(parallel firstprivate(demFunctor))
-      for (auto iterSecondLVLParticles = _hierarchyLevels[secondLevel].getRegionIterator(
-               lowerBoxCorner, higherBoxCorner, autopas::IteratorBehavior::ownedOrHalo);
-           iterSecondLVLParticles.isValid(); ++iterSecondLVLParticles) {
+      for (auto &secondLevelParticle : _hierarchyLevels[secondLevel]) {
         // Calculate forces
         // @note Maybe use different functor?
-        demFunctor.AoSFunctor(*iterFirstLVLParticles, *iterSecondLVLParticles, true);
+        demFunctor.AoSFunctor(firstLevelParticle, secondLevelParticle, true);
       }
     }
   }
@@ -383,7 +378,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
     for (auto &hgLevel : _hierarchyLevels) {
       // Iterate over the HG-levels, update each level and collect the returned particles
-      std::vector<ParticleType> collectParticlesOfLevel = hgLevel.updateContainer(keepNeighborListsValid);
+      const std::vector<ParticleType> collectParticlesOfLevel = hgLevel.updateContainer(keepNeighborListsValid);
 
       // Merge with global vector
       collectParticles.insert(collectParticles.end(), collectParticlesOfLevel.begin(), collectParticlesOfLevel.end());
@@ -502,7 +497,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   bool deleteParticle(Particle &particle) override {
     // get level of particle and delete it from there
-    size_t level = getHierarchyLevelOfParticle(particle);
+    const auto level = getHierarchyLevelOfParticle(particle);
     return _hierarchyLevels[level].deleteParticle(particle);
   }
 
@@ -513,7 +508,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * encoded cell and level index
    */
   bool deleteParticle(size_t encodedCellAndLevelIndex, size_t particleIndex) override {
-    auto [level, cellIndex] = decodeCellAndLevel(encodedCellAndLevelIndex);
+    const auto [level, cellIndex] = decodeCellAndLevel(encodedCellAndLevelIndex);
 
     return _hierarchyLevels[0].deleteParticle(cellIndex, particleIndex);
   }
@@ -526,12 +521,12 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    */
   unsigned int getHierarchyLevelOfParticle(const ParticleType &p) {
     // If only one HG level is available all particles are sorted into this level.
-    if (_hierarchyLevels.size() == 0) {
+    if (_hierarchyLevels.empty()) {
       return 0;
     }
 
     // Get the radius of the particle in question
-    auto particleRad = p.getRad();
+    const auto particleRad = p.getRad();
 
     unsigned int level;
 
@@ -588,8 +583,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * @return std::tuple<size_t, size_t> level, cellID
    */
   std::tuple<size_t, size_t> decodeCellAndLevel(size_t encodedCellPlusLevel) const {
-    size_t level = encodedCellPlusLevel / _levelOffset;
-    size_t cellID = encodedCellPlusLevel - level * _levelOffset;
+    const auto level = encodedCellPlusLevel / _levelOffset;
+    const auto cellID = encodedCellPlusLevel - level * _levelOffset;
 
     return {level, cellID};
   }
@@ -599,17 +594,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    *
    * @return size_t number of cross-level interactions
    */
-  size_t getNumberOfCrossLevelInteractions() const {
-    size_t numberOfCrossLevels = 0;
-
-    for (unsigned int largerLevel = 0; largerLevel < _hierarchyLevels.size(); largerLevel++) {
-      for (unsigned int smallerLevel = largerLevel + 1; smallerLevel < _hierarchyLevels.size(); smallerLevel++) {
-        numberOfCrossLevels++;
-      }
-    }
-
-    return numberOfCrossLevels;
-  }
+  size_t getNumberOfCrossLevelInteractions() const { return _crossLevelInteractions.size(); }
 
   /**
    * Set the cross-level interaction pairs, i.e. the which larger level is checked with which smaller level
@@ -655,7 +640,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * @see HierarchicalGrids::getParticleImpl.
    *
    */
-  const size_t _levelOffset = 1e15;
+  static constexpr size_t _levelOffset = 1e15;
 };
 
 }  // namespace autopas

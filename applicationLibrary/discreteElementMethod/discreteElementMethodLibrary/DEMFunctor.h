@@ -152,16 +152,6 @@ class DEMFunctor : public autopas::Functor<Particle, DEMFunctor<Particle, useNew
     // Calculate the force
     auto vecForce = autopas::utils::ArrayMath::sub(vecNormalForce, vecNormalDamping);
 
-    /*
-          std::cout << "Particle collision between i = " << i.getID() << " and j = " << j.getID() << std::endl;
-          std::cout << "Radii = " << radI << ", " << radJ << std::endl;
-          std::cout << "Distance = " << dr[0] << ", " << dr[1] << ", " << dr[2] << std::endl;
-          std::cout << "Penetration = " << penDepth << std::endl;
-          std::cout << "Masses = " << massI << ", " << massJ << std::endl;
-          std::cout << "Poisson = " << poissonI << ", " << poissonJ << std::endl;
-          std::cout << "Young = " << youngI << ", " << youngJ << std::endl;
-    */
-
     i.addF(vecForce);
 
     if (newton3) {
