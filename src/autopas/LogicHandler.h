@@ -148,9 +148,6 @@ class LogicHandler {
   [[nodiscard]] std::vector<Particle> updateContainer() {
     bool doDataStructureUpdate = not neighborListsAreValid();
 
-    if (doDataStructureUpdate) {
-      _neighborListsAreValid.store(false, std::memory_order_relaxed);
-    }
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
@@ -544,6 +541,17 @@ class LogicHandler {
   std::tuple<const std::vector<FullParticleCell<Particle>> &, const std::vector<FullParticleCell<Particle>> &>
   getParticleBuffers() const;
 
+  /**
+   * Getter for the mean rebuild frequency.
+   * Helpful for determining the frequency for the dynamic containers
+   * @return value of the mean frequency as double
+   */
+  [[nodiscard]] double getMeanRebuildFrequency() const {
+    return _rebuildDistances.empty() ? 0
+                                     : (std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0) * 1.0) /
+                                           _rebuildDistances.size();
+  }
+
  private:
   /**
    * Initialize or update the spacial locks used during the remainder traversal.
@@ -694,8 +702,8 @@ class LogicHandler {
   /**
    * Checks if in the next iteration the neighbor lists have to be rebuilt.
    *
-   * This can be the case either because we hit the rebuild frequency or because the auto tuner tests
-   * a new configuration.
+   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
+   * auto tuner tests a new configuration.
    *
    * @return True iff the neighbor lists will not be rebuild.
    */
@@ -710,6 +718,8 @@ class LogicHandler {
    * Number of particles in a VCL cluster.
    */
   unsigned int _verletClusterSize;
+
+  std::vector<int> _rebuildDistances;
 
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
@@ -771,8 +781,24 @@ class LogicHandler {
    */
   std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
+  /**
+   * iteration logger
+   */
   IterationLogger _iterationLogger;
+
+  /**
+   * updating position at rebuild for every particle
+   */
+  void updateRebuildPositions();
 };
+
+
+template <typename Particle>
+void LogicHandler<Particle>::updateRebuildPositions() {
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+    iter->setRAtRebuild();
+  }
+}
 
 template <typename Particle>
 void LogicHandler<Particle>::checkMinimalSize() const {
@@ -790,7 +816,20 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists()) {
+  auto halfSkinSquare = (getContainer().getVerletSkin() * getContainer().getVerletSkin()) / 4;
+  bool listInvalid = false;
+
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+    auto distance = iter->calculateDisplacementSinceRebuild();
+    double distanceSquare = utils::ArrayMath::dot(distance, distance);
+
+    if (distanceSquare >= halfSkinSquare) {
+      listInvalid = true;
+    }
+  }
+
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
+      listInvalid) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -855,6 +894,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   functor.initTraversal();
   if (doListRebuild) {
     timerRebuild.start();
+    this->updateRebuildPositions();
     container.rebuildNeighborLists(&traversal);
     timerRebuild.stop();
   }

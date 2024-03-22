@@ -394,6 +394,7 @@ class MDFlexConfig {
   MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
                                                   "Decide if particles that move farther than skin/2/rebuildFrequency "
                                                   "will throw an exception during the position update or not."};
+
   /**
    * boxMin
    */

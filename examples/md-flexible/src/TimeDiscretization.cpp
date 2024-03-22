@@ -26,6 +26,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
   const auto maxAllowedDistanceMovedSquared = maxAllowedDistanceMoved * maxAllowedDistanceMoved;
 
   bool throwException = false;
+  // true if static container and skin > 0
+  bool fastParticlesWarn = false; //(not autoPasContainer.checkIfDynamicallyRebuilding()) and (maxAllowedDistanceMoved > 0);
 
   AUTOPAS_OPENMP(parallel reduction(|| : throwException))
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
@@ -37,9 +39,8 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
-    // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
-    if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
-        maxAllowedDistanceMovedSquared > 0) {
+    // sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
+    if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and fastParticlesWarn) {
       const auto distanceMoved = std::sqrt(dot(displacement, displacement));
       // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
       // the whole rebuild frequency is farther than the skin we lose interactions.
