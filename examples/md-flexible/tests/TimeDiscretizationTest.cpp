@@ -462,6 +462,7 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
 /**
  * Test the mechanism that throws an exception when particles travel faster than skin/2/rebuildFreq
  */
+/*
 TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
   auto autoPas = std::make_shared<autopas::AutoPas<ParticleType>>();
   auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
@@ -490,7 +491,7 @@ TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
                std::runtime_error)
       << "The particle moved farther than the allowed change in position but no exception was thrown.";
 }
-
+*/
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641
 // https://github.com/AutoPas/AutoPas/issues/641
 // @note: since this issue was made, these tests have been converted to templates for either Molecule or

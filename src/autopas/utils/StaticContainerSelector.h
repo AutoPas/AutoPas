@@ -14,9 +14,7 @@
 #include "autopas/containers/octree/Octree.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletLists/DynamicVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/DynamicVerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 
 namespace autopas {
@@ -43,22 +41,14 @@ decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Parti
       return function(dynamic_cast<autopas::LinkedCellsReferences<Particle> &>(container));
     case ContainerOption::verletLists:
       return function(dynamic_cast<autopas::VerletLists<Particle> &>(container));
-    case ContainerOption::dynamicVerletLists:
-      return function(dynamic_cast<autopas::DynamicVerletLists<Particle> &>(container));
     case ContainerOption::verletListsCells:
       return function(
           dynamic_cast<autopas::VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> &>(container));
-    case ContainerOption::dynamicVerletListsCells:
-      return function(
-          dynamic_cast<autopas::DynamicVerletListsCells<Particle, VLCAllCellsNeighborList<Particle>> &>(container));
     case ContainerOption::verletClusterLists:
       return function(dynamic_cast<autopas::VerletClusterLists<Particle> &>(container));
     case ContainerOption::pairwiseVerletLists:
       return function(
           dynamic_cast<autopas::VerletListsCells<Particle, VLCCellPairNeighborList<Particle>> &>(container));
-    case ContainerOption::dynamicPairwiseVerletLists:
-      return function(
-          dynamic_cast<autopas::DynamicVerletListsCells<Particle, VLCCellPairNeighborList<Particle>> &>(container));
     case ContainerOption::varVerletListsAsBuild:
       return function(
           dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> &>(container));

@@ -69,7 +69,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
    */
-  [[nodiscard]] virtual ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
+  [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
   void iteratePairwise(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
@@ -110,7 +110,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     }
   }
 
- protected:
+ private:
   /**
    * Update the verlet lists for AoS usage
    * @param useNewton3
