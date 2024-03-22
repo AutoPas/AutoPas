@@ -223,6 +223,8 @@ void Simulation::run() {
         const auto &boxMax = _autoPasContainer->getBoxMax();
         _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
           if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+            // mark p as dummy in the emigrants vector, so it will be kicked out via remove_if later.
+            // It's still added to autopas here and its ownership state set by addParticle().
             p.setOwnershipState(autopas::OwnershipState::dummy);
             return true;
           }
