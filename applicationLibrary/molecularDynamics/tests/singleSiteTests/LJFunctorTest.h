@@ -46,7 +46,7 @@ class LJFunctorTest : public AutoPasTestBase {
 
 // typedefs to hide clutter
 template <bool shift, bool mixing, bool globals>
-using LJFunMol = mdLib::LJFunctor<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
+using LJFunMol = mdLib::LJFunctor<Molecule, shift, mixing, false, autopas::FunctorN3Modes::Both, globals>;
 template <bool shift, bool mixing, bool globals>
 using LJFunAVXMol = mdLib::LJFunctorAVX<Molecule, shift, mixing, autopas::FunctorN3Modes::Both, globals>;
 
