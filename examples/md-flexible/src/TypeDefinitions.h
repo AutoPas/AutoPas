@@ -16,12 +16,12 @@
 
 #else
 
+#include "discreteElementMethodLibrary/DEMParticle.h"
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
-#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMParticle.h"
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
+#include "discreteElementMethodLibrary/DEMFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
@@ -49,7 +49,7 @@ using FloatPrecision = double;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
-//using ParticleType = mdLib::MoleculeLJ;
+// using ParticleType = mdLib::MoleculeLJ;
 using ParticleType = demLib::DEMParticle;
 #endif
 
@@ -62,7 +62,7 @@ using ParticleType = demLib::DEMParticle;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #else
-//using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
+// using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 using LJFunctorTypeAutovec = demLib::DEMFunctor<ParticleType>;
 #endif
 
@@ -133,7 +133,7 @@ using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true
 
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-//using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
+// using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
 using LJFunctorTypeAbstract = demLib::DEMFunctor<ParticleType>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
 using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;

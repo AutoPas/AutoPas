@@ -67,8 +67,9 @@ class LogicHandler {
     // initialize the container and make sure it is valid
     const auto configuration = _autoTuner.getCurrentConfig();
     const ContainerSelectorInfo containerSelectorInfo{
-        configuration.cellSizeFactor, logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
-        _verletClusterSize, configuration.loadEstimator, _numberOfHGLevels};
+        configuration.cellSizeFactor,  logicHandlerInfo.verletSkinPerTimestep,
+        _neighborListRebuildFrequency, _verletClusterSize,
+        configuration.loadEstimator,   _numberOfHGLevels};
     _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
     checkMinimalSize();
 
@@ -1236,8 +1237,7 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
       conf.container,
       ContainerSelectorInfo(conf.cellSizeFactor,
                             _containerSelector.getCurrentContainer().getVerletSkin() / _neighborListRebuildFrequency,
-                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator, 
-                            _numberOfHGLevels));
+                            _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator, _numberOfHGLevels));
   const auto &container = _containerSelector.getCurrentContainer();
   const auto traversalInfo = container.getTraversalSelectorInfo();
 

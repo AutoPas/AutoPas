@@ -567,8 +567,8 @@ class MDFlexConfig {
   /**
    * particle radii for DEM
    */
-  MDFlexOption<std::array<double, 2>, __LINE__> particleRadii{{1., 1.}, "particleRadii", true, 
-      "Minimum (first) and maximum (second) radius of the particles (DEM only)."};
+  MDFlexOption<std::array<double, 2>, __LINE__> particleRadii{
+      {1., 1.}, "particleRadii", true, "Minimum (first) and maximum (second) radius of the particles (DEM only)."};
   /**
    * poissonMap
    */

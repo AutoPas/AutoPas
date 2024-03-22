@@ -474,43 +474,35 @@ void RegularGridDecomposition::reflectDEMParticlesAtBoundaries(AutoPasType &auto
 
         // Calculates force acting on site from another site
         const auto DEMKernel = [](const std::array<double, 3> sitePosition,
-                                 const std::array<double, 3> mirrorSitePosition, 
-                                 const double radius,
-                                 const std::array<double, 3> velParticle,
-                                 const std::array<double, 3> velMirror,
-                                 const double mass,
-                                 const double poisson,
-                                 const double young) {
-
-        
+                                  const std::array<double, 3> mirrorSitePosition, const double radius,
+                                  const std::array<double, 3> velParticle, const std::array<double, 3> velMirror,
+                                  const double mass, const double poisson, const double young) {
           const double dampingRatio = 0.1;
-
 
           const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
           const auto penetrationDepth = 2.0 * radius - autopas::utils::ArrayMath::L2Norm(displacement);
-          
+
           const auto relVelocity = autopas::utils::ArrayMath::sub(velParticle, velMirror);
 
           const double radEq = radius / 2.0;
           const double massEq = mass / 2.0;
-          const double youngEq = young / ( 2.0 * ( 1.0 - poisson * poisson ) );
+          const double youngEq = young / (2.0 * (1.0 - poisson * poisson));
 
-          const double factorNormalForce = 4./3. * youngEq * sqrt( radEq * penetrationDepth );
-          const double factorNormalDamping = dampingRatio * 2.0 * sqrt( massEq * factorNormalForce );
+          const double factorNormalForce = 4. / 3. * youngEq * sqrt(radEq * penetrationDepth);
+          const double factorNormalDamping = dampingRatio * 2.0 * sqrt(massEq * factorNormalForce);
 
           const double magnitudeNormalForce = factorNormalForce * penetrationDepth;
 
           const auto vectorNormalForce = autopas::utils::ArrayMath::mulScalar(
-                        autopas::utils::ArrayMath::normalize(displacement), magnitudeNormalForce );
-          const auto vectorNormalDamping = autopas::utils::ArrayMath::mulScalar( relVelocity, factorNormalDamping );
-          
-          return autopas::utils::ArrayMath::sub( vectorNormalForce, vectorNormalDamping );
+              autopas::utils::ArrayMath::normalize(displacement), magnitudeNormalForce);
+          const auto vectorNormalDamping = autopas::utils::ArrayMath::mulScalar(relVelocity, factorNormalDamping);
+
+          return autopas::utils::ArrayMath::sub(vectorNormalForce, vectorNormalDamping);
         };
 
         const bool reflectParticleFlag = distanceToBoundary < p->getRad();
 
         if (reflectParticleFlag) {
-
           const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
             const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
             auto returnedPosition = position;
@@ -520,15 +512,13 @@ void RegularGridDecomposition::reflectDEMParticlesAtBoundaries(AutoPasType &auto
           const double particleRadius = p->getRad();
           const auto particleVelocity = p->getV();
           auto mirrorVelocity = particleVelocity;
-          mirrorVelocity[dimensionIndex] *= - 1;
+          mirrorVelocity[dimensionIndex] *= -1;
           const double particleMass = p->getMass();
           const double particlePoisson = p->getPoisson();
           const double particleYoung = p->getYoung();
-          const auto force = DEMKernel(position, mirrorPosition, 
-                                       particleRadius, particleVelocity, mirrorVelocity, 
+          const auto force = DEMKernel(position, mirrorPosition, particleRadius, particleVelocity, mirrorVelocity,
                                        particleMass, particlePoisson, particleYoung);
           p->addF(force);
-
         }
       }
     };

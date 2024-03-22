@@ -990,17 +990,19 @@ class AutoPas {
    * @return sorting-threshold
    */
   size_t getSortingThreshold() const { return _sortingThreshold; }
-    /**
+
+  /**
    * Get number of H-Grid levels.
    * @return Number of H-Grid levels
    */
   [[nodiscard]] unsigned int getNumberOfHGLevels() const { return _logicHandlerInfo.numberOfHGLevels; }
+
   /**
    * Set number of H-Grid levels.
    * @param numberOfHGLevels
    */
   void setNumberOfHGLevels(unsigned int numberOfHGLevels) { _logicHandlerInfo.numberOfHGLevels = numberOfHGLevels; }
-  
+
  private:
   autopas::ParticleContainerInterface<Particle> &getContainer();
 
