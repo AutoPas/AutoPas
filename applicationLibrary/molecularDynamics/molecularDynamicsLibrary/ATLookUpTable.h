@@ -289,8 +289,8 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
   }
 
   std::array<floatType, 3> norm3(floatType x1, floatType x2, floatType x3) {
-    floatType div = std::sqrt(x1 * x1 + x2 * x2 + x3 * x3);
-    return {x1 / div, x2 / div, x3 / div};
+    floatType div = std::sqrt(x1 * x1 + x2 * x2 + x3 * x3); // sqrt(x1*x1 + x2*x2 + x3*x3 + 3*eps*x1*x1 + 3*eps*x2*x2 + 2*eps*x3*x3) * (1+eps)
+    return {x1 / div, x2 / div, x3 / div}; // { (x1 / sqrt(x1*x1 + x2*x2 + x3*x3 + 3*eps*x1*x1 + 3*eps*x2*x2 + 2*eps*x3*x3) * (1+eps)) * (1+eps) , (x2 / sqrt(x1*x1 + x2*x2 + x3*x3 + 3*eps*x1*x1 + 3*eps*x2*x2 + 2*eps*x3*x3) * (1+eps)) * (1+eps), (x3 / sqrt(x1*x1 + x2*x2 + x3*x3 + 3*eps*x1*x1 + 3*eps*x2*x2 + 2*eps*x3*x3) * (1+eps)) * (1+eps) }
   }
 
   std::array<floatType, 4> quaternionMultiply(std::array<floatType, 4> v1, std::array<floatType, 4> v2) {
@@ -309,19 +309,19 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
     std::array<floatType, 4> rot1Quaternion;
     std::array<floatType, 4> rot1InverseQuaternion;
-    std::array<floatType, 4>rot2Quaternion;
+    std::array<floatType, 4> rot2Quaternion;
     std::array<floatType, 4> rot2InverseQuaternion;
 
-    b1 -= a1;
-    b2 -= a2;
-    b3 -= a3;
-    c1 -= a1;
-    c2 -= a2;
-    c2 -= a3;
+    b1 -= a1; // (b1-a1)*(1 + eps)
+    b2 -= a2; // (b2-a2)*(1 + eps)
+    b3 -= a3; // (b3-a3)*(1 + eps)
+    c1 -= a1; // (c1-a1)*(1 + eps)
+    c2 -= a2; // (c2-a2)*(1 + eps)
+    c2 -= a3; // (c3-a3)*(1 + eps)
 
     AutoPasLog(DEBUG, "B: {} {} {}    C: {} {} {}", b1, b2, b3, c1, c2, c3);
 
-    auto targetB = norm3(b1, b2, b3);
+    auto targetB = norm3(b1, b2, b3); // [    ]
     auto targetC = norm3(c1, c2, c3);
     std::array<floatType, 3> sourceB = {1, 0, 0};
     AutoPasLog(DEBUG, "targetB normalized: {}", targetB);
