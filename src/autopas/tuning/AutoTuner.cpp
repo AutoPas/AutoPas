@@ -415,4 +415,6 @@ const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMet
 bool AutoTuner::inTuningPhase() const {
   return (_iterationsSinceTuning >= _tuningInterval) and not searchSpaceIsTrivial();
 }
+
+const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 }  // namespace autopas
