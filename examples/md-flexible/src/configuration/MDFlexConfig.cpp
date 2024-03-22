@@ -87,8 +87,10 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
  * @param filename The name of the pvtu file.
  * @param rank The rank which created the respective vtu file.
  * @param particles Container for the particles recorded in the respective vts file.
+ * @param maxSigma largest sigma in simulation. This needs to be handled here as a user may input a recorded state with sigma
+ * values that are larger than what is included in the site map.
  */
-void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles) {
+void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles, double &maxSigma) {
   const size_t endOfPath = filename.find_last_of('/');
   const auto filePath = filename.substr(0ul, endOfPath);
   const auto fileBasename = filename.substr(endOfPath + 1);
@@ -147,11 +149,27 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   findWord(inputStream, "torques");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto torques = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
-#endif
 
   findWord(inputStream, "typeIds");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
+#else
+  findWord(inputStream, "sqrtEpsilons");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto sqrtEpsilon = readPayload<double, 1>(inputStream, numParticles);
+
+  findWord(inputStream, "sigmaDiv2s");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto sigmaDiv2 = readPayload<double, 1>(inputStream, numParticles);
+
+  // Update maximum sigma if needed.
+  const auto maxSigmaFromRecord = *std::max_element(sigmaDiv2.begin(), sigmaDiv2.end());
+  maxSigma = std::max(maxSigma, maxSigmaFromRecord);
+
+  findWord(inputStream, "masses");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto mass = readPayload<double, 1>(inputStream, numParticles);
+#endif
 
   findWord(inputStream, "ids");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -169,9 +187,12 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
     particle.setV(velocities[i]);
     particle.setF(forces[i]);
     particle.setID(ids[i]);
+#if MD_FLEXIBLE_MODE == SINGLESITE
+    particle.setSquareRootEpsilon(sqrtEpsilon[i]);
+    particle.setSigmaDiv2(sigmaDiv2[i]);
+    particle.setMass(mass[i]);
+#elif MD_FLEXIBLE_MODE == MULTISITE
     particle.setTypeId(typeIds[i]);
-
-#if MD_FLEXIBLE_MODE == MULTISITE
     particle.setQuaternion(quaternions[i]);
     particle.setAngularVel(angularVelocities[i]);
     particle.setTorque(torques[i]);
@@ -455,6 +476,7 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
       throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
     }
   } else {
+    _maxSigma = std::max(_maxSigma, sigma);
     epsilonMap.value.emplace(siteId, epsilon);
     sigmaMap.value.emplace(siteId, sigma);
     massMap.value.emplace(siteId, mass);
@@ -520,19 +542,39 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 }
 
 void MDFlexConfig::initializeObjects() {
-  for (const auto &object : cubeGridObjects) {
+  for (auto &object : cubeGridObjects) {
+    const auto typeID = object.getTypeId();
+    object.setEpsilon(epsilonMap.value.at(typeID));
+    object.setSigma(sigmaMap.value.at(typeID));
+    object.setMass(massMap.value.at(typeID));
     object.generate(_particles);
   }
-  for (const auto &object : cubeGaussObjects) {
+  for (auto object : cubeGaussObjects) {
+    const auto typeID = object.getTypeId();
+    object.setEpsilon(epsilonMap.value.at(typeID));
+    object.setSigma(sigmaMap.value.at(typeID));
+    object.setMass(massMap.value.at(typeID));
     object.generate(_particles);
   }
-  for (const auto &object : cubeUniformObjects) {
+  for (auto &object : cubeUniformObjects) {
+    const auto typeID = object.getTypeId();
+    object.setEpsilon(epsilonMap.value.at(typeID));
+    object.setSigma(sigmaMap.value.at(typeID));
+    object.setMass(massMap.value.at(typeID));
     object.generate(_particles);
   }
-  for (const auto &object : sphereObjects) {
+  for (auto &object : sphereObjects) {
+    const auto typeID = object.getTypeId();
+    object.setEpsilon(epsilonMap.value.at(typeID));
+    object.setSigma(sigmaMap.value.at(typeID));
+    object.setMass(massMap.value.at(typeID));
     object.generate(_particles);
   }
-  for (const auto &object : cubeClosestPackedObjects) {
+  for (auto &object : cubeClosestPackedObjects) {
+    const auto typeID = object.getTypeId();
+    object.setEpsilon(epsilonMap.value.at(typeID));
+    object.setSigma(sigmaMap.value.at(typeID));
+    object.setMass(massMap.value.at(typeID));
     object.generate(_particles);
   }
 }
@@ -548,10 +590,10 @@ void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t 
 
   size_t checkpointCommunicatorSize{getNumPiecesInCheckpoint(filename)};
   if (communicatorSize == checkpointCommunicatorSize) {
-    loadParticlesFromRankRecord(filename, rank, _particles);
+    loadParticlesFromRankRecord(filename, rank, _particles, _maxSigma);
   } else {
     for (size_t i = 0; i < checkpointCommunicatorSize; ++i) {
-      loadParticlesFromRankRecord(filename, i, _particles);
+      loadParticlesFromRankRecord(filename, i, _particles, _maxSigma);
     }
   }
 }

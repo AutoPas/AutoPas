@@ -48,11 +48,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // only for particles within sixthRootOfTwo * sigma / 2.0 of the boundary. For minimal redundant iterating over
   // particles, we iterate once over particles within the largest possible range where a particle might experience a
   // repulsion, i.e. sixthRootOfTwo * maxSigma / 2.0.
-  double maxSigma{0};
-  for (const auto &[_, sigma] : configuration.sigmaMap.value) {
-    maxSigma = std::max(maxSigma, sigma);
-  }
-  _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
+  _maxReflectiveSkin = sixthRootOfTwo * configuration._maxSigma / 2.;
 
   // initialize _communicator and _domainIndex
   initializeMPICommunicator();
@@ -357,7 +353,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 #if MD_FLEXIBLE_MODE == MULTISITE
                                      particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
 #else
-                                     particlePropertiesLib.getSigma(p->getTypeId());
+                                     p->getSigma();
 #endif
 
         if (reflectMoleculeFlag) {
@@ -405,15 +401,14 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             }
           }
 #else
-          const auto siteType = p->getTypeId();
           const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
             const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
             auto returnedPosition = position;
             returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
             return returnedPosition;
           }();
-          const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
-          const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
+          const auto sigmaSquared = p->getSigma() * p->getSigma();
+          const auto epsilon24 = 24 * p->getEpsilon();
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
           p->addF(force);
 #endif
