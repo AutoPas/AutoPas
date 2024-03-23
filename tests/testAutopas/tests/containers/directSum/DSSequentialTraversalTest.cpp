@@ -40,7 +40,7 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
 
   if (useSoA) {
     autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
-                                                               autopas::DataLayoutOption::soa, true);
+                                                                       autopas::DataLayoutOption::soa, true);
     // domain SoA with itself
     EXPECT_CALL(functor, SoAFunctorSingle(_, true)).Times(1);
     // domain SoA with halo
@@ -50,7 +50,7 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
     traversal.traverseParticlePairs();
   } else {
     autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
-                                                               autopas::DataLayoutOption::aos, true);
+                                                                       autopas::DataLayoutOption::aos, true);
     // interactions in main cell + interactions with halo.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;
     EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((int)expectedFunctorCalls);

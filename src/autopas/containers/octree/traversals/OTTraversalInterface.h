@@ -31,7 +31,9 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    *
    * @param interactionLength The interaction length
    */
-  OTTraversalInterface(double interactionLength, DataLayoutOption dataLayout, bool useNewton3) : TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3), _interactionLength(interactionLength) {}
+  OTTraversalInterface(double interactionLength, DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3),
+        _interactionLength(interactionLength) {}
 
   /**
    * Notify the traversal about the cells that it is able to traverse.

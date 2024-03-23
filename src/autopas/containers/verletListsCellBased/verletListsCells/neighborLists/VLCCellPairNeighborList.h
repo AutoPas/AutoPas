@@ -229,8 +229,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     // Build the AoS list using the AoS or SoA functor depending on buildType
     auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
         buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
-    auto pairBuildTraversal =
-        dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
+    auto pairBuildTraversal = dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
     linkedCells.iteratePairwise(pairBuildTraversal);
   }
 

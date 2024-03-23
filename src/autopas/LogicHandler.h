@@ -855,7 +855,7 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
                          not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
   auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
                         _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
-                            not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
+                        not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
@@ -1391,21 +1391,21 @@ template <class Functor, InteractionTypeOption::Value interactionType>
 bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
   if (not _interactionTypes.count(interactionType)) {
     autopas::utils::ExceptionHandler::exception(
-        "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: {}.", interactionType);
+        "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
+        "{}.",
+        interactionType);
   }
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
-  const auto [configuration, traversalPtr, stillTuning] =
-      selectConfiguration<interactionType>(*functor);
+  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration<interactionType>(*functor);
   tuningTimer.stop();
   auto &autoTuner = _autoTunerRefs[interactionType];
   autoTuner->logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  const IterationMeasurements measurements =
-      computeInteractions(*functor, *traversalPtr);
+  const IterationMeasurements measurements = computeInteractions(*functor, *traversalPtr);
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {
@@ -1422,8 +1422,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
   if constexpr (interactionType == InteractionTypeOption::Value::pairwise) {
     AutoPasLog(DEBUG, "Container::iteratePairwise   took {} ns", measurements.timeIteratePairwise);
-  }
-  else if constexpr (interactionType == InteractionTypeOption::Value::threeBody) {
+  } else if constexpr (interactionType == InteractionTypeOption::Value::threeBody) {
     AutoPasLog(DEBUG, "Container::iterateTriwise    took {} ns", measurements.timeIteratePairwise);
   }
   AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);

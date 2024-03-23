@@ -41,10 +41,10 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                    const double interactionLength, const std::array<double, 3> &cellLength, DataLayoutOption dataLayout,
-                    bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+                    const double interactionLength, const std::array<double, 3> &cellLength,
+                    DataLayoutOption dataLayout, bool useNewton3)
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),

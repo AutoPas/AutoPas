@@ -37,8 +37,8 @@ class C04BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
    */
   explicit C04BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor, InteractionTypeOption::pairwise,
-                            collapseDepth>(dims, functor, interactionLength, cellLength, dataLayout, useNewton3) {}
+      : ColorBasedTraversal<ParticleCell, Functor, InteractionTypeOption::pairwise, collapseDepth>(
+            dims, functor, interactionLength, cellLength, dataLayout, useNewton3) {}
 
  protected:
   /**
@@ -49,8 +49,7 @@ class C04BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
   inline void c04Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
-          int collapseDepth>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, int collapseDepth>
 template <typename LoopBody>
 inline void C04BasedTraversal<ParticleCell, Functor, interactionType, collapseDepth>::c04Traversal(
     LoopBody &&loopBody) {

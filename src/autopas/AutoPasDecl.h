@@ -571,7 +571,7 @@ class AutoPas {
   /**
    * Increments any iteration-based counters within AutoPas.
    */
-//  void incrementIterationCounters();
+  //  void incrementIterationCounters();
 
   /**
    * Set coordinates of the lower corner of the domain.

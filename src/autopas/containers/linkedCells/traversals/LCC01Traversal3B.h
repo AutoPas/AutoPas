@@ -28,9 +28,8 @@ namespace autopas {
  * @tparam Functor The functor type that defines the interaction of three particles.
  */
 template <class ParticleCell, class Functor>
-class LCC01Traversal3B
-    : public C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, 3>,
-      public LCTraversalInterface<ParticleCell> {
+class LCC01Traversal3B : public C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, 3>,
+                         public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -48,8 +47,8 @@ class LCC01Traversal3B
                             const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
       : C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, 3>(
             dims, functor, interactionLength, cellLength, dataLayout, useNewton3),
-        _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
-                     useNewton3),
+        _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
+                     dataLayout, useNewton3),
         _functor(functor) {
     computeOffsets();
   }
@@ -109,8 +108,7 @@ class LCC01Traversal3B
   /**
    * CellFunctor to be used for the traversal defining the interaction between three cells.
    */
-  internal::CellFunctor3B<ParticleCell, Functor, false>
-      _cellFunctor;
+  internal::CellFunctor3B<ParticleCell, Functor, false> _cellFunctor;
 
   Functor *_functor;
 };
@@ -175,8 +173,8 @@ inline void LCC01Traversal3B<ParticleCell, Functor>::computeOffsets() {
 }
 
 template <class ParticleCell, class Functor>
-inline void LCC01Traversal3B<ParticleCell, Functor>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
+inline void LCC01Traversal3B<ParticleCell, Functor>::processBaseCell(std::vector<ParticleCell> &cells, unsigned long x,
+                                                                     unsigned long y, unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
 

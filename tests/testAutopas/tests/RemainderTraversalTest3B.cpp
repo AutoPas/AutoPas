@@ -65,9 +65,11 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01_3b,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
         autopas::InteractionTypeOption::threeBody}});
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initTriwise(&autoTuner);
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::threeBody,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -91,7 +93,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   functor.setParticleProperties(nu);
 
   // do the actual test
-  logicHandler.iterateTriwisePipeline(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor), autopas::InteractionTypeOption::threeBody>(&functor);
 
   // Expected displacements of particles. Signs can differ
   using namespace autopas::utils::ArrayMath::literals;
@@ -452,9 +454,11 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01_3b,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
         autopas::InteractionTypeOption::threeBody}});
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initTriwise(&autoTuner);
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::threeBody,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {
@@ -473,7 +477,7 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   mdLib::AxilrodTellerFunctor<Molecule> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(1.);
   // do the actual test
-  logicHandler.iterateTriwisePipeline(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor), autopas::InteractionTypeOption::threeBody>(&functor);
 
   for (const auto &p : logicHandler.getContainer()) {
     if (p.isOwned()) {

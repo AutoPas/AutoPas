@@ -21,10 +21,8 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction of particles.
  * @tparam dataLayout indicates usage of SoA
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
-          int collapseDepth = 3>
-class C01BasedTraversal
-    : public ColorBasedTraversal<ParticleCell, Functor, interactionType, collapseDepth> {
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, int collapseDepth = 3>
+class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType, collapseDepth> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -55,8 +53,8 @@ class C01BasedTraversal
 
 template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, int collapseDepth>
 template <typename LoopBody>
-inline void C01BasedTraversal<ParticleCell, Functor, interactionType,
-                              collapseDepth>::c01Traversal(LoopBody &&loopBody) {
+inline void C01BasedTraversal<ParticleCell, Functor, interactionType, collapseDepth>::c01Traversal(
+    LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto offset = this->_overlap;

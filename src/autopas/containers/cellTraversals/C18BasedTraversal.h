@@ -34,8 +34,8 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor, interactionType>(
-            dims, functor, interactionLength, cellLength, dataLayout, useNewton3) {}
+      : ColorBasedTraversal<ParticleCell, Functor, interactionType>(dims, functor, interactionLength, cellLength,
+                                                                    dataLayout, useNewton3) {}
 
  protected:
   /**
@@ -56,8 +56,7 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
 
 template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
 template <bool allCells, typename LoopBody>
-inline void C18BasedTraversal<ParticleCell, Functor, interactionType>::c18Traversal(
-    LoopBody &&loopBody) {
+inline void C18BasedTraversal<ParticleCell, Functor, interactionType>::c18Traversal(LoopBody &&loopBody) {
   const std::array<unsigned long, 3> stride = {2ul * this->_overlap[0] + 1ul, 2ul * this->_overlap[1] + 1ul,
                                                this->_overlap[2] + 1ul};
   auto end(this->_cellsPerDimension);

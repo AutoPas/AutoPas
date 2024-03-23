@@ -82,9 +82,11 @@ class CellFunctor {
   /**
    * Applies the functor to all particle pairs exploiting newtons third law of motion.
    * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
-   * The value of _useNewton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or not:
+   * The value of _useNewton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or
+   * not:
    * - if _useNewton3 is true: the aos functor will be applied once for each pair (only i,j), passing newton3=true.
-   * - if _useNewton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), passing newton3=false.
+   * - if _useNewton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), passing
+   * newton3=false.
    * @param cell
    */
   void processCellAoS(ParticleCell &cell);

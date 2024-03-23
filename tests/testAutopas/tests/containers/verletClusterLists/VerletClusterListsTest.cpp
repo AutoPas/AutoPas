@@ -45,8 +45,8 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
 
   MockPairwiseFunctor<Particle> emptyFunctor;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, _)).Times(AtLeast(1));
-  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor, clusterSize,
-                                                                          autopas::DataLayoutOption::aos, false);
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
+      &emptyFunctor, clusterSize, autopas::DataLayoutOption::aos, false);
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
 }
@@ -65,9 +65,9 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   autopasTools::generators::RandomGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
-  MPairwiseFunctor<Particle> emptyFunctor;
-  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor, clusterSize,
-                                                                          autopas::DataLayoutOption::aos, false);
+  MPairwiseFunctor emptyFunctor;
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
+      &emptyFunctor, clusterSize, autopas::DataLayoutOption::aos, false);
   verletLists.rebuildNeighborLists(&verletTraversal);
   EXPECT_EQ(verletLists.getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo), numParticles);
   verletLists.rebuildNeighborLists(&verletTraversal);
@@ -89,8 +89,8 @@ TEST_F(VerletClusterListsTest, testIterator) {
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockPairwiseFunctor<Particle> emptyFunctor;
-  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor, clusterSize,
-                                                                          autopas::DataLayoutOption::aos, false);
+  autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
+      &emptyFunctor, clusterSize, autopas::DataLayoutOption::aos, false);
   verletLists.rebuildNeighborLists(&verletTraversal);
 
   int numParticlesInIterator = 0;
@@ -242,13 +242,13 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
 
     MockPairwiseFunctor<Particle> functor;
     if (newton3) {
-      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor> traversalNoN3(&functor, clusterSize, autopas::DataLayoutOption::aos,
-                                                               false);
+      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor> traversalNoN3(&functor, clusterSize,
+                                                                       autopas::DataLayoutOption::aos, false);
       verletLists.rebuildNeighborLists(&traversalNoN3);
       neighborsNoN3 = getClusterNeighbors(verletLists);
     } else {
-      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor> traversalN3(&functor, clusterSize, autopas::DataLayoutOption::aos,
-                                                             true);
+      autopas::VCLC06Traversal<FPCell, MPairwiseFunctor> traversalN3(&functor, clusterSize,
+                                                                     autopas::DataLayoutOption::aos, true);
       verletLists.rebuildNeighborLists(&traversalN3);
       neighborsN3 = getClusterNeighbors(verletLists);
     }

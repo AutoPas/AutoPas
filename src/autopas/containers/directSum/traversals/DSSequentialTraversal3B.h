@@ -77,8 +77,7 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor3B<ParticleCell, TriwiseFunctor, true>
-      _cellFunctor;
+  internal::CellFunctor3B<ParticleCell, TriwiseFunctor, true> _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal

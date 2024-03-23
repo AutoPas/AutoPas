@@ -38,8 +38,8 @@ class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, Funct
   explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                                     const double interactionLength, const std::array<double, 3> &cellLength,
                                     DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
-      : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength,
-                                                            dataLayout, useNewton3, spaciallyForward) {}
+      : SlicedBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                    useNewton3, spaciallyForward) {}
 
  protected:
   /**

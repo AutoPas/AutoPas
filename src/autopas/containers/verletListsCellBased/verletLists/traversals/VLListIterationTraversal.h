@@ -21,7 +21,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationTraversal : public TraversalInterface<InteractionTypeOption::pairwise>, public VLTraversalInterface<ParticleCell> {
+class VLListIterationTraversal : public TraversalInterface<InteractionTypeOption::pairwise>,
+                                 public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:

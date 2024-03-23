@@ -27,8 +27,7 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction between particles.
  */
 template <class ParticleCell, class Functor>
-class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCell, Functor>,
-                                     public BalancedTraversal {
+class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCell, Functor>, public BalancedTraversal {
  public:
   /**
    * Constructor of the balanced sliced traversal.
@@ -37,8 +36,8 @@ class SlicedBalancedBasedTraversal : public SlicedLockBasedTraversal<ParticleCel
   explicit SlicedBalancedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                                         const double interactionLength, const std::array<double, 3> &cellLength,
                                         DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
-      : SlicedLockBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength,
-                                                                dataLayout, useNewton3, spaciallyForward) {
+      : SlicedLockBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                        useNewton3, spaciallyForward) {
     // As we create exactly one slice per thread, dynamic scheduling makes little sense.
     this->_dynamic = false;
   }

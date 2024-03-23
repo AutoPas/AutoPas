@@ -28,7 +28,7 @@ namespace autopas {
  */
 template <class ParticleCell, class Functor>
 class SlicedBasedTraversal : public CellTraversal<ParticleCell>,
-    public TraversalInterface<InteractionTypeOption::pairwise> {
+                             public TraversalInterface<InteractionTypeOption::pairwise> {
  public:
   /**
    * Constructor of the sliced traversal.

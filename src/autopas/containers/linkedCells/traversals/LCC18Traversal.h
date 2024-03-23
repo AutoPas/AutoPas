@@ -46,8 +46,8 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, I
   explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3) {
     computeOffsets();

@@ -65,9 +65,11 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
         autopas::InteractionTypeOption::pairwise}});
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::pairwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -92,7 +94,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   constexpr double epsilon = 1.;
   functor.setParticleProperties(24 * epsilon, sigma * sigma);
   // do the actual test
-  logicHandler.iteratePairwisePipeline(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor), autopas::InteractionTypeOption::pairwise>(&functor);
   constexpr double expectedDist = 1.;
   const double expectedAbsForce =
       std::abs((24 * epsilon) / (expectedDist * expectedDist) *
@@ -346,9 +348,11 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
         autopas::InteractionTypeOption::pairwise}});
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::pairwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {
@@ -367,7 +371,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   mdLib::LJFunctor<Molecule> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(24, 1);
   // do the actual test
-  logicHandler.iteratePairwisePipeline(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor), autopas::InteractionTypeOption::pairwise>(&functor);
 
   for (const auto &p : logicHandler.getContainer()) {
     EXPECT_THAT(p.getF(), testing::Not(::testing::ElementsAreArray({0., 0., 0.})))
