@@ -368,14 +368,4 @@ bool AutoPas<Particle>::searchSpaceIsTrivial() {
   return isTrivial;
 }
 
-// template <class Particle>
-// void AutoPas<Particle>::incrementIterationCounters() {
-//   _logicHandler->bumpIterationCounters();
-//   for (auto &[interaction, tuner] : _autoTuners) {
-//     // Check if we need to synchronize multiple tuners
-//     bool needToWait = _logicHandler->checkTuningStates(interaction);
-//     tuner->bumpIterationCounters(needToWait);
-//   }
-// }
-
 }  // namespace autopas

@@ -18,7 +18,6 @@ namespace autopas {
  */
 class TunerSynchronizer {
  public:
-
   /**
    * Default constructor
    */

@@ -522,14 +522,6 @@ class LogicHandler {
   }
 
   /**
-   * Update the internal iteration counters.
-   */
-  void bumpIterationCounters() {
-    _stepsSinceLastListRebuild++;
-    _iteration++;
-  }
-
-  /**
    * Checks if the given configuration can be used with the given functor and the current state of the simulation.
    *
    * @note For the checks we need to switch to the container in the config, hece this function can't be const.
@@ -859,11 +851,11 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
   const auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
-                         _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists() and
-                         not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
+                               _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists() and
+                               not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
   const auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
-                        _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
-                        not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
+                              _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
+                              not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
