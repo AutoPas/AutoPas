@@ -324,7 +324,7 @@ class ParticlePropertiesLibrary {
    *   * @return The Lennard-Jones look-up table
    */
   ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>
-    &getLJLUT() {
+      &getLJLUT() {
     return _LJLookUpTable;
   }
 
@@ -333,7 +333,7 @@ class ParticlePropertiesLibrary {
    */
   ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                   ForceLookUpTable::nextNeighbor, floatType, intType>
-    &getATLUT() {
+      &getATLUT() {
     return _ATLookUpTable;
   }
 
