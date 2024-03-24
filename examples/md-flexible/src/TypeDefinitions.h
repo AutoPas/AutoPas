@@ -78,7 +78,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, false>; 
 using LJFunctorTypeAutovecGlobals =
     mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #else
-using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, false, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #endif
@@ -225,7 +225,7 @@ using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
 using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, false, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
 using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE

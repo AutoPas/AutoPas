@@ -182,7 +182,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   constexpr double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
   constexpr double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
 
-  mdLib::LJFunctor<Molecule, shifting, mixing, false, autopas::FunctorN3Modes::Both, true> functor(cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, /*useLUT*/ false, autopas::FunctorN3Modes::Both, true> functor(cutoff);
   functor.setParticleProperties(epsilon * 24, sigma);
   double xOffset;
   double whereFactor = 0.;

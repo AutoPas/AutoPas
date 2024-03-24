@@ -323,8 +323,8 @@ class ParticlePropertiesLibrary {
   /**
    *   * @return The Lennard-Jones look-up table
    */
-  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType> &
-  getLJLUT() {
+  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>
+  &getLJLUT() {
     return _LJLookUpTable;
   }
 
@@ -332,8 +332,8 @@ class ParticlePropertiesLibrary {
    * @return The Axilrod-Teller look-up table
    */
   ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
-                                  ForceLookUpTable::nextNeighbor, floatType, intType> &
-  getATLUT() {
+                                  ForceLookUpTable::nextNeighbor, floatType, intType>
+  &getATLUT() {
     return _ATLookUpTable;
   }
 

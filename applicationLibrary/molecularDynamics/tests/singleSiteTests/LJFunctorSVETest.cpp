@@ -109,7 +109,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVETwoCells(bool newton3, bool do
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoSVE(_cutoff);
+  constexpr bool useLUT = false;
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, true> ljFunctorNoSVE(_cutoff);
   ljFunctorNoSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorSVE(_cutoff);
   ljFunctorSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -180,7 +181,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
   FMCell cellNoSVE(cellSVE);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoSVE(_cutoff);
+  constexpr bool useLUT = false;
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, true> ljFunctorNoSVE(_cutoff);
   ljFunctorNoSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorSVE(_cutoff);
   ljFunctorSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -257,7 +259,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoSVE(_cutoff);
+  constexpr bool useLUT = false;
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoSVE(_cutoff);
   ljFunctorNoSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorSVE(
       _cutoff);
@@ -315,7 +318,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEAoS(bool newton3, bool doDelet
   FMCell cellNoSVE(cellSVE);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoSVE(_cutoff);
+  constexpr bool useLUT = false;
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, true> ljFunctorNoSVE(_cutoff);
   ljFunctorNoSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorSVE(_cutoff);
   ljFunctorSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);

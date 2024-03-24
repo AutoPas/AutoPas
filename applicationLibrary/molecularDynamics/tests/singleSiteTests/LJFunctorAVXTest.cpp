@@ -109,7 +109,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
+  constexpr bool useLUT = false;
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -180,7 +181,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   FMCell cellNoAVX(cellAVX);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
+  constexpr bool useLUT = false;
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
@@ -257,7 +259,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff);
+  constexpr bool useLUT = false;
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(
       _cutoff);
@@ -315,7 +318,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
   FMCell cellNoAVX(cellAVX);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
+  constexpr bool useLUT = false;
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
