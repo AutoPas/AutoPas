@@ -186,8 +186,6 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas, Functor *functor) {
   // 4. computeInteractions
   autoPas.computeInteractions(functor);
 
-  // 5. updateCounters
-  autoPas.incrementIterationCounters();
   std::cout << "--------------------------------" << std::endl;
 }
 
@@ -228,10 +226,6 @@ void doSimulationLoop(autopas::AutoPas<Molecule> &autoPas1, autopas::AutoPas<Mol
   // 4. computeInteractions
   autoPas1.computeInteractions(functor1);
   autoPas2.computeInteractions(functor2);
-
-  // 5. update Counters
-  autoPas1.incrementIterationCounters();
-  autoPas2.incrementIterationCounters();
 }
 
 template <typename Functor>

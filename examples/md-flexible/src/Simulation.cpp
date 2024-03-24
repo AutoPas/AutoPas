@@ -126,14 +126,20 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   // Pairwise specific options
-  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
-  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
-  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
+  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
+                                           autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value,
+                                              autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
+                                          autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // 3-body specific options
-  _autoPasContainer->setAllowedDataLayouts3B(_configuration.dataLayoutOptions3B.value);
-  _autoPasContainer->setAllowedNewton3Options3B(_configuration.newton3Options3B.value);
-  _autoPasContainer->setAllowedTraversals3B(_configuration.traversalOptions3B.value);
+  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
+                                           autopas::InteractionTypeOption::threeBody);
+  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options3B.value,
+                                              autopas::InteractionTypeOption::threeBody);
+  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions3B.value,
+                                          autopas::InteractionTypeOption::threeBody);
   // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
@@ -286,7 +292,7 @@ void Simulation::run() {
     _timers.computationalLoad.stop();
 
     ++_iteration;
-    _autoPasContainer->incrementIterationCounters();
+    //    _autoPasContainer->incrementIterationCounters();
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "

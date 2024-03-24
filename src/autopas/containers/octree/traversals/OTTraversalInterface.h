@@ -31,7 +31,9 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    *
    * @param interactionLength The interaction length
    */
-  OTTraversalInterface(double interactionLength) : _interactionLength(interactionLength) {}
+  OTTraversalInterface(double interactionLength, DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3),
+        _interactionLength(interactionLength) {}
 
   /**
    * Notify the traversal about the cells that it is able to traverse.
@@ -47,8 +49,8 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    * @param wrapper The octree to load the leaves from
    * @param leaves The list to store the leaves in
    */
-  template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
-  void loadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
+  template <typename PairwiseFunctor>
+  void loadBuffers(utils::DataLayoutConverter<PairwiseFunctor> &dataLayoutConverter,
                    OctreeNodeWrapper<ParticleType> *wrapper, std::vector<OctreeLeafNode<ParticleType> *> &leaves) {
     wrapper->appendAllLeaves(leaves);
 
@@ -63,8 +65,8 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    * @param dataLayoutConverter The converter to convert the buffers
    * @param leaves The list to unload the leaves from
    */
-  template <typename PairwiseFunctor, DataLayoutOption::Value dataLayout>
-  void unloadBuffers(utils::DataLayoutConverter<PairwiseFunctor, dataLayout> &dataLayoutConverter,
+  template <typename PairwiseFunctor>
+  void unloadBuffers(utils::DataLayoutConverter<PairwiseFunctor> &dataLayoutConverter,
                      std::vector<OctreeLeafNode<ParticleType> *> &leaves) {
     for (OctreeLeafNode<ParticleType> *leaf : leaves) {
       dataLayoutConverter.storeDataLayout(*leaf);

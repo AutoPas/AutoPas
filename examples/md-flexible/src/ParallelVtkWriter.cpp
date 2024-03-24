@@ -43,7 +43,7 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
                                        const RegularGridDecomposition &decomposition) {
   recordParticleStates(currentIteration, autoPasContainer);
   // TODO: add 3-body configuration
-  auto currentConfig = *autoPasContainer.getCurrentConfig().begin();
+  auto currentConfig = autoPasContainer.getCurrentConfig()[autopas::InteractionTypeOption::pairwise];
   recordDomainSubdivision(currentIteration, currentConfig, decomposition);
 }
 

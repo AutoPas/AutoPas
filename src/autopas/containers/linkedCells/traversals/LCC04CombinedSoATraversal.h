@@ -21,13 +21,11 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor,
-                                                           InteractionTypeOption::pairwise, dataLayout, useNewton3, 2>,
-                                  public LCTraversalInterface<ParticleCell> {
+template <class ParticleCell, class PairwiseFunctor>
+class LCC04CombinedSoATraversal
+    : public C04BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, 2>,
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -36,20 +34,20 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                     const double interactionLength, const std::array<double, 3> &cellLength)
-      : C04BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3, 2>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap) {}
+                                     const double interactionLength, const std::array<double, 3> &cellLength,
+                                     DataLayoutOption dataLayout, bool useNewton3)
+      : C04BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, 2>(
+            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, dataLayout, useNewton3,
+                     this->_overlap) {}
 
   void traverseParticlePairs() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_combined_SoA; }
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   /**
    * lc_c04_combined_SoA traversals are only usable with dataLayout SoA.
@@ -59,7 +57,7 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
    * @return
    */
   [[nodiscard]] bool isApplicable() const override {
-    return dataLayout == DataLayoutOption::soa and
+    return this->_dataLayout == DataLayoutOption::soa and
            (this->_overlap[0] == 1 and this->_overlap[1] == 1 and this->_overlap[2] == 1);
   }
 
@@ -70,11 +68,11 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
   void setSortingThreshold(size_t sortingThreshold) override {}
 
  private:
-  LCC04SoACellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
+  LCC04SoACellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
   _cellHandler.resizeBuffers();
   auto &cells = *(this->_cells);
   this->c04Traversal(

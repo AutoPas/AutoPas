@@ -176,28 +176,15 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
 
-    // Build the AoS list using the AoS or SoA functor depending on buildType
-    if (buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild) {
-      autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-        auto buildTraversal =
-            traversalSelector
-                .template generateTraversal<std::remove_reference_t<decltype(f)>, DataLayoutOption::aos, n3>(
-                    buildTraversalOption, f, traversalSelectorInfo);
-        auto pairBuildTraversal =
-            dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
-        linkedCells.iteratePairwise(pairBuildTraversal);
-      });
-    }
+    const auto dataLayout = buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild
+                                ? DataLayoutOption::aos
+                                : DataLayoutOption::soa;
 
-    else if (buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild) {
-      autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-        auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::soa, n3>(
-            buildTraversalOption, f, traversalSelectorInfo);
-        auto pairBuildTraversal =
-            dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
-        linkedCells.iteratePairwise(pairBuildTraversal);
-      });
-    }
+    // Build the AoS list using the AoS or SoA functor depending on buildType
+    auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
+        buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
+    auto pairBuildTraversal = dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
+    linkedCells.iteratePairwise(pairBuildTraversal);
   }
 
   /**

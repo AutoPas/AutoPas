@@ -69,15 +69,15 @@ docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-intel \
 ```
 The tests executed through Jenkins are using these docker images.
 
-## Jenkins/CI
+## CI
 A continuous integration setup (CI) is automatically run for each open pull request and for the master.
-The executed tests are defined within the Jenkinsfile in the root AutoPas directory.
+The executed tests are defined within the [GitHub workflow file](/.github/workflows/TestSuites.yaml).
 These tests include:
 * Formatting and documentation checks 
-* Builing of all targets and execution of the provided ctest tests.
+* Building of all targets and execution of the provided ctest tests.
 * Sanitizer runs (Address+Leak sanitizer, Thread Sanitizer)
 
-If you encounter problems within these tests check whether you can reproduce them locally. Have a look at the [Jenkinsfile](https://github.com/AutoPas/AutoPas/blob/master/Jenkinsfile) for how the tools are used with AutoPas. If you do not have the respective compiler installed you can use the [AutoPas docker images](https://hub.docker.com/u/autopas).
+If you encounter problems within these tests check whether you can reproduce them locally. Have a look at the workflow file for how the tools are used with AutoPas. If you do not have the respective compiler installed you can use the [AutoPas docker images](https://hub.docker.com/u/autopas).
 To circumvent "unknown module" problems with the thread sanitizer, a library to override `dlclose()` can be found in the `libs` directory. Said library can be used to get better stack traces that are caused by dynamically loaded libraries (using `dlopen()`).
 More details can be found [here](../libs/fake-dlclose/README.md).
 
