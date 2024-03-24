@@ -11,12 +11,11 @@
 #include <set>
 #include <vector>
 
-//#include "src/TypeDefinitions.h" //TODO: Is this right? Apparently not because it works without it
-#include "LJLookUpTable.h"
+// #include "src/TypeDefinitions.h" //TODO: Is this right? Apparently not because it works without it
 #include "ATLookUpTable.h"
+#include "LJLookUpTable.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
-
 
 /**
  * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location
@@ -306,32 +305,37 @@ class ParticlePropertiesLibrary {
    */
   void initializeLookUpTables() {
     // Check if _epsilon and _sigmas have size > 1 -> Multiple particle types
-    if (_epsilons.size()>1 || _sigmas.size()>1 || _nus.size()>1)
+    if (_epsilons.size() > 1 || _sigmas.size() > 1 || _nus.size() > 1)
       throw autopas::utils::ExceptionHandler::AutoPasException(
           "Cannot use multiple particle types with Look-up Table.");
     if (_storeLJData) {
-      _LJLookUpTable = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>({_cutoff*_cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 10.0});
+      _LJLookUpTable =
+          ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>(
+              {_cutoff * _cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 10.0});
     }
     if (_storeATData) {
-      _ATLookUpTable = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>({_cutoff*_cutoff, getNu(0), 8.0});
+      _ATLookUpTable = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
+                                                       ForceLookUpTable::nextNeighbor, floatType, intType>(
+          {_cutoff * _cutoff, getNu(0), 8.0});
     }
   }
 
   /**
    *   * @return The Lennard-Jones look-up table
    */
-  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>& getLJLUT() {
+  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType> &
+  getLJLUT() {
     return _LJLookUpTable;
   }
 
   /**
    * @return The Axilrod-Teller look-up table
    */
-  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType>& getATLUT() {
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
+                                  ForceLookUpTable::nextNeighbor, floatType, intType> &
+  getATLUT() {
     return _ATLookUpTable;
   }
-
-
 
  private:
   intType _numRegisteredSiteTypes{0};
@@ -369,11 +373,12 @@ class ParticlePropertiesLibrary {
   std::vector<PackedLJMixingData, autopas::AlignedAllocator<PackedLJMixingData>> _computedLJMixingData;
   std::vector<PackedATMixingData, autopas::AlignedAllocator<PackedATMixingData>> _computedATMixingData;
 
-  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType> _LJLookUpTable;
-  //LJLookUpTableType _LJLookUpTable;
-  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor, floatType, intType> _ATLookUpTable;
-
-
+  ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>
+      _LJLookUpTable;
+  // LJLookUpTableType _LJLookUpTable;
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
+                                  ForceLookUpTable::nextNeighbor, floatType, intType>
+      _ATLookUpTable;
 };
 
 template <typename floatType, typename intType>

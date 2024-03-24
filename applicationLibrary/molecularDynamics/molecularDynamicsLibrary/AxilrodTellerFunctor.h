@@ -92,8 +92,8 @@ namespace mdLib {
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  */
-template <class Particle, bool useMixing = false, bool useLUT = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGlobals = false>
+template <class Particle, bool useMixing = false, bool useLUT = false,
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false>
 class AxilrodTellerFunctor
     : public autopas::TriwiseFunctor<Particle,
                                      AxilrodTellerFunctor<Particle, useMixing, useLUT, useNewton3, calculateGlobals>> {
@@ -120,7 +120,8 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle, AxilrodTellerFunctor<Particle, useMixing, useLUT, useNewton3, calculateGlobals>>(
+      : autopas::TriwiseFunctor<Particle,
+                                AxilrodTellerFunctor<Particle, useMixing, useLUT, useNewton3, calculateGlobals>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -185,7 +186,8 @@ class AxilrodTellerFunctor
       nu = _PPLibrary->getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
     }
 
-    const auto displacementIJ = j.getR() - i.getR(); // {j1 - i1, j2 - i2, j3 - i3} (5 ,1) (1 ,5) (2, 2) = (-5, -1) (-1, -5) (-2, -2)
+    const auto displacementIJ =
+        j.getR() - i.getR();  // {j1 - i1, j2 - i2, j3 - i3} (5 ,1) (1 ,5) (2, 2) = (-5, -1) (-1, -5) (-2, -2)
     const auto displacementJK = k.getR() - j.getR();
     const auto displacementKI = i.getR() - k.getR();
 
@@ -207,17 +209,16 @@ class AxilrodTellerFunctor
     double allDotProducts;
     double potentialEnergy = 0.;
 
-
     if constexpr (useLUT) {
-      //AutoPasLog(DEBUG, "Used LUT with {} | {} | {}", displacementIJ, displacementJK, displacementKI);
-      auto values = _PPLibrary->getATLUT().retrieveValue(i.getR() , j.getR(), k.getR(), distSquaredIJ, distSquaredJK, distSquaredKI);
-      //auto values = _PPLibrary->getATLUT().retrieveValue(displacementIJ, displacementJK, displacementKI);
+      // AutoPasLog(DEBUG, "Used LUT with {} | {} | {}", displacementIJ, displacementJK, displacementKI);
+      auto values = _PPLibrary->getATLUT().retrieveValue(i.getR(), j.getR(), k.getR(), distSquaredIJ, distSquaredJK,
+                                                         distSquaredKI);
+      // auto values = _PPLibrary->getATLUT().retrieveValue(displacementIJ, displacementJK, displacementKI);
       forceI = values.first.at(0);
       forceJ = values.first.at(1);
       forceK = values.first.at(2);
       potentialEnergy = values.second;
-    }
-    else {
+    } else {
       AutoPasLog(DEBUG, "Didn't use LUT");
       const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
       const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);

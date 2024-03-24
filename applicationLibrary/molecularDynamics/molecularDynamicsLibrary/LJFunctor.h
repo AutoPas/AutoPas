@@ -36,8 +36,8 @@ template <class Particle, bool applyShift = false, bool useMixing = false, bool 
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctor
-    : public autopas::PairwiseFunctor<
-          Particle, LJFunctor<Particle, applyShift, useMixing, useLUT, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, applyShift, useMixing, useLUT, useNewton3,
+                                                          calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -61,9 +61,8 @@ class LJFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<
-            Particle, LJFunctor<Particle, applyShift, useMixing, useLUT, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff),
+      : autopas::PairwiseFunctor<Particle, LJFunctor<Particle, applyShift, useMixing, useLUT, useNewton3,
+                                                     calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -134,7 +133,7 @@ class LJFunctor
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-    //AutoPasLog(DEBUG, "Calculate with dr2: {}", dr2);
+    // AutoPasLog(DEBUG, "Calculate with dr2: {}", dr2);
 
     if (dr2 > _cutoffSquared) {
       return;
@@ -145,7 +144,7 @@ class LJFunctor
     // Check if mixing and throw error for now
 
     double fac;
-    double lj12m6; // Otherwise we get an error in calculateGlobals
+    double lj12m6;  // Otherwise we get an error in calculateGlobals
 
     if constexpr (useLUT) {
       // How to check for mixing if useMixing is always enabled?
@@ -156,8 +155,7 @@ class LJFunctor
         AutoPasLog(CRITICAL, "Don't use calculateGlobals with LUT.");
         return;
       }
-    }
-    else {
+    } else {
       double invdr2 = 1. / dr2;
       double lj6 = sigmaSquared * invdr2;
       lj6 = lj6 * lj6 * lj6;
@@ -804,7 +802,8 @@ class LJFunctor
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ) \
+    safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
