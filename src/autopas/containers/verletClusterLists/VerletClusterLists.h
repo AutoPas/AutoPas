@@ -17,7 +17,7 @@
 #include "autopas/containers/NeighborListsBuffer.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/containers/ParticleDeletedObserver.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/verletClusterLists/Cluster.h"
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
 #include "autopas/containers/verletClusterLists/VerletClusterListsRebuilder.h"
@@ -141,7 +141,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void iteratePairwise(TraversalInterface *traversal) override {
+  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
           "VerletClusterLists::iteratePairwise(): Trying to do a pairwise iteration, even though verlet lists are not "
@@ -752,7 +752,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
     // when rebuildTowersAndClusters() was not called explicitly.
     if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
@@ -772,6 +772,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
           traversal->getTraversalType());
     }
+  }
+
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    autopas::utils::ExceptionHandler::exception(
+        "VerletClusterLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for "
+        "VerletClusterLists has not been implemented yet.");
   }
 
   /**

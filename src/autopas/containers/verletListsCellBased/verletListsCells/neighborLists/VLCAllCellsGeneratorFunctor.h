@@ -3,8 +3,10 @@
  * @author tirgendetwas
  * @date 05.12.2020
  */
+
+#include "autopas/baseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 
 #pragma once
 
@@ -14,7 +16,7 @@ namespace autopas {
  * This functor can generate verlet lists using the typical pairwise traversal.
  */
 template <class Particle>
-class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>> {
+class VLCAllCellsGeneratorFunctor : public PairwiseFunctor<Particle, VLCAllCellsGeneratorFunctor<Particle>> {
   using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -28,7 +30,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
   VLCAllCellsGeneratorFunctor(NeighborListsType &neighborLists,
                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                               double cutoffskin)
-      : Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>>(0.),
+      : PairwiseFunctor<Particle, VLCAllCellsGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
@@ -48,7 +50,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
   }
 
   /**
-   * @copydoc Functor::AoSFunctor()
+   * @copydoc PairwiseFunctor::AoSFunctor()
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -71,7 +73,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle()
+   * @copydoc PairwiseFunctor::SoAFunctorSingle()
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;

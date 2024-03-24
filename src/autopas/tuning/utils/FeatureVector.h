@@ -23,6 +23,7 @@ class FeatureVector : public Configuration {
   /**
    * Number of tune-able dimensions.
    * container-traversal-estimator + dataLayout + newton3 + cellSizeFactor
+   * Interaction type is not a tunable dimension.
    */
   static constexpr size_t featureSpaceDims = 4;
 
@@ -44,10 +45,12 @@ class FeatureVector : public Configuration {
    * @param dataLayout
    * @param newton3
    * @param cellSizeFactor
+   * @param interactionType
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
-                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3) {}
+                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
+                InteractionTypeOption interactionType)
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, interactionType) {}
 
   /**
    * Construct from Configuration.

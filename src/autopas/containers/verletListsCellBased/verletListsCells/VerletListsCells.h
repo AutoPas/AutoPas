@@ -9,7 +9,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/verletListsCellBased/VerletListsLinkedBase.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
@@ -97,7 +97,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     }
   }
 
-  void iteratePairwise(TraversalInterface *traversal) override {
+  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     _neighborList.setUpTraversal(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
@@ -116,7 +116,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    */
   size_t getNumberOfPartners(const Particle *particle) const { return _neighborList.getNumberOfPartners(particle); }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
@@ -129,6 +129,12 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
+  }
+
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    autopas::utils::ExceptionHandler::exception(
+        "VerletListsCells::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletListsCells "
+        "has not been implemented yet.");
   }
 
   /**

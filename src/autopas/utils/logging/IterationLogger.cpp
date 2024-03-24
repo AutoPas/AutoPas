@@ -24,6 +24,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
   headerLogger->info(
       "Date,"
       "Iteration,"
+      "Functor,"
       "inTuningPhase,"
       "{},"
       "iteratePairwise[ns],"
@@ -52,12 +53,13 @@ autopas::IterationLogger::~IterationLogger() {
 }
 
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
-                                            bool inTuningPhase, long timeIteratePairwise, long timeRemainderTraversal,
-                                            long timeRebuildNeighborLists, long timeIteratePairwiseTotal,
-                                            long timeTuning, double energyPsys, double energyPkg, double energyRam) {
+                                            std::string functorName, bool inTuningPhase, long timeIteratePairwise,
+                                            long timeRemainderTraversal, long timeRebuildNeighborLists,
+                                            long timeIteratePairwiseTotal, long timeTuning, double energyPsys,
+                                            double energyPkg, double energyRam) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::get(_loggerName)
-      ->info("{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
+      ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
              configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuildNeighborLists,
              timeIteratePairwiseTotal, timeTuning, energyPsys, energyPkg, energyRam);
 #endif

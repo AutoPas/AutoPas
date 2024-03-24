@@ -17,7 +17,7 @@ using ::testing::Values;
  * This scenario is an interaction between two particles and the result should be 1.
  */
 TEST_P(PairwiseVerletListsTest, testTwoParticles) {
-  MockFunctor<Particle> emptyFunctor;
+  MockPairwiseFunctor<Particle> emptyFunctor;
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
@@ -39,7 +39,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
       verletLists.getCellsPerDimension(), &emptyFunctor, verletLists.getInteractionLength(),
       verletLists.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
       autopas::ContainerOption::pairwiseVerletLists);
@@ -71,7 +71,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
  * The result should be 2.
  */
 TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
-  MockFunctor<Particle> emptyFunctorOther;
+  MockPairwiseFunctor<Particle> emptyFunctorOther;
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
@@ -98,7 +98,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
       verletLists.getCellsPerDimension(), &emptyFunctorOther, verletLists.getInteractionLength(),
       verletLists.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
       autopas::ContainerOption::pairwiseVerletLists);
@@ -131,7 +131,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
  * This scenario includes three particles interacting with each other and the result should be 3.
  */
 TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
-  MockFunctor<Particle> mock;
+  MockPairwiseFunctor<Particle> mock;
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
@@ -157,7 +157,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
   Particle p3(r3, {0., 0., 0.}, 1);
   verletLists.addParticle(p3);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
       verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(), verletLists.getCellLength(),
       autopas::DataLayoutOption::aos, useNewton3, autopas::ContainerOption::pairwiseVerletLists);
 
@@ -189,7 +189,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
  * This scenario includes a single particle and the result should be 0.
  */
 TEST_P(PairwiseVerletListsTest, testOneParticle) {
-  MockFunctor<Particle> mock;
+  MockPairwiseFunctor<Particle> mock;
   // EXPECT_CALL(mock, AoSFunctor(_, _, true)); ?????
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
@@ -208,7 +208,7 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
   Particle p(r, {0., 0., 0.}, 0);
   verletLists.addParticle(p);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
+  autopas::VLCC18Traversal<FPCell, MPairwiseFunctor, autopas::VLCCellPairNeighborList<Particle>> traversal(
       verletLists.getCellsPerDimension(), &mock, verletLists.getInteractionLength(), verletLists.getCellLength(),
       autopas::DataLayoutOption::aos, useNewton3, autopas::ContainerOption::pairwiseVerletLists);
 

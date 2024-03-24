@@ -16,7 +16,7 @@ namespace autopas {
  * Forward declaration necessary to avoid circle of includes:
  * TraversalSelector includes all VLC traversals include VLCTraversalInterface includes VLCCellPairNeighborList
  */
-template <class ParticleCell>
+template <class ParticleCell, InteractionTypeOption::Value interactionType>
 class TraversalSelector;
 
 template <class Particle>
@@ -193,7 +193,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  void setUpTraversal(TraversalInterface *traversal) override {
+  void setUpTraversal(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     auto vTraversal = dynamic_cast<VLCCellPairTraversalInterface<Particle> *>(traversal);
 
     if (vTraversal) {
@@ -217,7 +217,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     VLCCellPairGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<FullParticleCell<Particle>> traversalSelector;
+    TraversalSelector<FullParticleCell<Particle>, InteractionTypeOption::pairwise> traversalSelector;
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
@@ -229,7 +229,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     // Build the AoS list using the AoS or SoA functor depending on buildType
     auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
         buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
-    linkedCells.iteratePairwise(buildTraversal.get());
+    auto pairBuildTraversal = dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
+    linkedCells.iteratePairwise(pairBuildTraversal);
   }
 
   /**

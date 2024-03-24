@@ -46,15 +46,15 @@ class LogicHandler {
  public:
   /**
    * Constructor of the LogicHandler.
-   * @param autoTuner
    * @param logicHandlerInfo
    * @param rebuildFrequency
    * @param outputSuffix
    */
-  LogicHandler(autopas::AutoTuner &autoTuner, const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency,
-               const std::string &outputSuffix)
-      : _neighborListRebuildFrequency{rebuildFrequency},
-        _autoTuner(autoTuner),
+  LogicHandler(std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<AutoTuner>> &autotuners,
+               const LogicHandlerInfo &logicHandlerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
+      : _autoTunerRefs(autotuners),
+        _logicHandlerInfo(logicHandlerInfo),
+        _neighborListRebuildFrequency{rebuildFrequency},
         _particleBuffer(autopas_get_max_threads()),
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
@@ -63,13 +63,20 @@ class LogicHandler {
         _iterationLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
-    // initialize the container and make sure it is valid
-    const auto configuration = _autoTuner.getCurrentConfig();
-    const ContainerSelectorInfo containerSelectorInfo{
-        configuration.cellSizeFactor, logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
-        _verletClusterSize, configuration.loadEstimator};
-    _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
-    checkMinimalSize();
+
+    // Initialize AutoPas with tuners for given interaction types
+    for (auto &[interactionType, tuner] : autotuners) {
+      _interactionTypes.insert(interactionType);
+      _synchronizer.addInteractionType(interactionType);
+
+      const auto configuration = tuner->getCurrentConfig();
+      // initialize the container and make sure it is valid
+      const ContainerSelectorInfo containerSelectorInfo{
+          configuration.cellSizeFactor, _logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
+          _verletClusterSize, configuration.loadEstimator};
+      _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
+      checkMinimalSize();
+    }
 
     // initialize locks needed for remainder traversal
     const auto boxLength = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin;
@@ -377,7 +384,7 @@ class LogicHandler {
   }
 
   /**
-   * This function covers the full pipeline of all mechanics happening during the pairwise iteration.
+   * This function covers the full pipeline of all mechanics happening during the computation of particle interactions.
    * This includes:
    * - selecting a configuration
    *   - gather live info, homogeneity, and max density
@@ -385,18 +392,19 @@ class LogicHandler {
    *   - check applicability
    *   - instantiation of traversal and container
    * - triggering iteration and tuning result logger
-   * - pairwise iteration
+   * - computing the interactions
    *   - init and end traversal
    *   - remainder traversal
    *   - measurements
    * - pass measurements to tuner
    *
    * @tparam Functor
+   * @tparam interactionType
    * @param functor
    * @return True if this was a tuning iteration.
    */
-  template <class Functor>
-  bool iteratePairwisePipeline(Functor *functor);
+  template <class Functor, InteractionTypeOption::Value interactionType>
+  bool computeInteractionsPipeline(Functor *functor);
 
   /**
    * Create the additional vectors vector for a given iterator behavior.
@@ -505,21 +513,30 @@ class LogicHandler {
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
   /**
+   * Check if other autotuners for any other interaction types are still in a tuning phase.
+   * @param interactionType
+   * @return bool whether other tuners are still tuning.
+   */
+  bool checkTuningStates(InteractionTypeOption::Value interactionType) {
+    return _synchronizer.checkTuningState(interactionType);
+  }
+
+  /**
    * Checks if the given configuration can be used with the given functor and the current state of the simulation.
    *
    * @note For the checks we need to switch to the container in the config, hece this function can't be const.
    * Also we need to build the traversal, hence, it is returned.
    *
-   * @tparam PairwiseFunctor
+   * @tparam Functor
    * @param conf
-   * @param pairwiseFunctor
+   * @param functor
    * @return tuple<optional<Traversal>, rejectIndefinitely> The optional is empty if the configuration is not applicable
    * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because
    * it will never be applicable.
    */
-  template <class PairwiseFunctor>
-  [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
-      const Configuration &conf, PairwiseFunctor &pairwiseFunctor);
+  template <InteractionTypeOption::Value interactionType, class Functor>
+  [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface<interactionType>>>, bool>
+  isConfigurationApplicable(const Configuration &conf, Functor &functor);
 
   /**
    * Directly exchange the internal particle and halo buffers with the given vectors and update particle counters.
@@ -580,8 +597,9 @@ class LogicHandler {
    * @param functor
    * @return
    */
-  template <class Functor>
-  std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(Functor &functor);
+  template <InteractionTypeOption::Value interactionType, class Functor>
+  std::tuple<Configuration, std::unique_ptr<TraversalInterface<interactionType>>, bool> selectConfiguration(
+      Functor &functor);
 
   /**
    * Helper struct collecting all sorts of measurements taken during the pairwise iteration.
@@ -601,21 +619,22 @@ class LogicHandler {
   };
 
   /**
-   * Triggers the core steps of the pairwise iteration:
+   * Triggers the core steps of computing the particle interactions:
    *    - functor init- / end traversal
    *    - rebuilding of neighbor lists
-   *    - container.iteratePairwise()
+   *    - container.computeInteractions()
    *    - remainder traversal
    *    - time and energy measurements.
    *
-   * @tparam PairwiseFunctor
+   * @tparam Functor
+   * @tparam interactionType
    * @param functor
    * @param traversal
    * @return Struct containing time and energy measurements. If no energy measurements were possible the respective
    * fields are filled with NaN.
    */
-  template <class PairwiseFunctor>
-  IterationMeasurements iteratePairwise(PairwiseFunctor &functor, TraversalInterface &traversal);
+  template <class Functor, InteractionTypeOption::Value interactionType>
+  IterationMeasurements computeInteractions(Functor &functor, TraversalInterface<interactionType> &traversal);
 
   /**
    * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
@@ -685,6 +704,32 @@ class LogicHandler {
                                        std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
+   * Performs the interactions ParticleContainer::iterateTriwise() did not cover.
+   *
+   * These interactions are:
+   *  - particleBuffer    <-> container
+   *  - haloParticleBuffer -> container
+   *  - particleBuffer    <-> particleBuffer
+   *  - haloParticleBuffer -> particleBuffer
+   *
+   * @note Buffers need to have at least one (empty) cell. They must not be empty.
+   * @note TODO: Update this function with SoA-usage
+   *
+   * @tparam newton3
+   * @tparam ContainerType Type of the particle container.
+   * @tparam TriwiseFunctor
+   * @param f
+   * @param container Reference to the container. Preferably pass the container with the actual static type.
+   * @param particleBuffers vector of particle buffers. These particles' force vectors will be updated.
+   * @param haloParticleBuffers vector of halo particle buffers. These particles' force vectors will not necessarily be
+   * updated.
+   */
+  template <bool newton3, class ContainerType, class TriwiseFunctor>
+  void doRemainderTraversal3B(TriwiseFunctor *f, ContainerType &container,
+                              std::vector<FullParticleCell<Particle>> &particleBuffers,
+                              std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+
+  /**
    * Check that the simulation box is at least of interaction length in each direction.
    *
    * Throws an exception if minimal size requirements are violated.
@@ -701,6 +746,7 @@ class LogicHandler {
    */
   bool neighborListsAreValid();
 
+  const LogicHandlerInfo &_logicHandlerInfo;
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
    */
@@ -717,9 +763,19 @@ class LogicHandler {
   size_t _sortingThreshold;
 
   /**
-   * Reference to the AutoTuner that owns the container, ...
+   * Reference to the map of AutoTuners held by AutoPas.
    */
-  autopas::AutoTuner &_autoTuner;
+  std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> &_autoTunerRefs;
+
+  /**
+   * Set of interaction types AutoPas is initialized to, determined by the given AutoTuners.
+   */
+  std::set<InteractionTypeOption> _interactionTypes{};
+
+  /**
+   * Synchronizes tuning phases in case of multiple autotuners.
+   */
+  autopas::TunerSynchronizer _synchronizer{};
 
   /**
    * Specifies if the neighbor list is valid.
@@ -731,6 +787,10 @@ class LogicHandler {
    */
   unsigned int _stepsSinceLastListRebuild{std::numeric_limits<unsigned int>::max()};
 
+  /**
+   * Total number of relevant functor calls of any interaction type.
+   */
+  unsigned int _relevantFunctorCalls{0};
   /**
    * The current iteration number.
    */
@@ -790,9 +850,17 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists()) {
+  const auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
+                               _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists() and
+                               not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
+  const auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
+                              _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
+                              not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
+
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
+
   return _neighborListsAreValid.load(std::memory_order_relaxed);
 }
 
@@ -837,19 +905,20 @@ LogicHandler<Particle>::getParticleBuffers() const {
 }
 
 template <typename Particle>
-template <class PairwiseFunctor>
-typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
-    PairwiseFunctor &functor, TraversalInterface &traversal) {
+template <class Functor, InteractionTypeOption::Value interactionType>
+typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::computeInteractions(
+    Functor &functor, TraversalInterface<interactionType> &traversal) {
+  auto &autoTuner = _autoTunerRefs[interactionType];
   const bool doListRebuild = not neighborListsAreValid();
-  const auto &configuration = _autoTuner.getCurrentConfig();
+  const auto &configuration = autoTuner->getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
-  autopas::utils::Timer timerIteratePairwise;
+  autopas::utils::Timer timerComputeInteractions;
   autopas::utils::Timer timerRemainderTraversal;
 
-  const bool energyMeasurementsPossible = _autoTuner.resetEnergy();
+  const bool energyMeasurementsPossible = autoTuner->resetEnergy();
   timerTotal.start();
 
   functor.initTraversal();
@@ -858,28 +927,43 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
     container.rebuildNeighborLists(&traversal);
     timerRebuild.stop();
   }
-  timerIteratePairwise.start();
-  container.iteratePairwise(&traversal);
-  timerIteratePairwise.stop();
+
+  timerComputeInteractions.start();
+  if constexpr (interactionType == InteractionTypeOption::pairwise) {
+    container.iteratePairwise(&traversal);
+  } else if constexpr (interactionType == InteractionTypeOption::threeBody) {
+    container.iterateTriwise(&traversal);
+  }
+  timerComputeInteractions.stop();
 
   timerRemainderTraversal.start();
-  withStaticContainerType(container, [&](auto &actualContainerType) {
-    if (configuration.newton3) {
-      doRemainderTraversal<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-    } else {
-      doRemainderTraversal<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
-    }
-  });
+  if constexpr (interactionType == InteractionTypeOption::pairwise) {
+    withStaticContainerType(container, [&](auto &actualContainerType) {
+      if (configuration.newton3) {
+        doRemainderTraversal<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      } else {
+        doRemainderTraversal<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      }
+    });
+  } else if constexpr (interactionType == InteractionTypeOption::threeBody) {
+    withStaticContainerType(container, [&](auto &actualContainerType) {
+      if (configuration.newton3) {
+        doRemainderTraversal3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      } else {
+        doRemainderTraversal3B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+      }
+    });
+  }
   timerRemainderTraversal.stop();
-  functor.endTraversal(configuration.newton3);
 
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = _autoTuner.sampleEnergy();
+  functor.endTraversal(configuration.newton3);
+  const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner->sampleEnergy();
 
   timerTotal.stop();
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
-  return {timerIteratePairwise.getTotalTime(),
+  return {timerComputeInteractions.getTotalTime(),
           timerRemainderTraversal.getTotalTime(),
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
@@ -1066,33 +1150,193 @@ void LogicHandler<Particle>::remainderHelperBufferHaloBuffer(
   }
 }
 
+template <class Particle>
+template <bool newton3, class ContainerType, class TriwiseFunctor>
+void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, ContainerType &container,
+                                                    std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                                    std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+  using autopas::utils::ArrayUtils::static_cast_copy_array;
+  using namespace autopas::utils::ArrayMath::literals;
+
+  // Vector to collect pointers to all buffer particles
+  std::vector<Particle *> bufferParticles;
+
+  auto cellToVec = [](auto &cell) -> std::vector<Particle> & { return cell._particles; };
+
+  const size_t numOwnedBufferParticles =
+      std::transform_reduce(particleBuffers.begin(), particleBuffers.end(), 0, std::plus<>(),
+                            [&](auto &vec) { return cellToVec(vec).size(); });
+  const size_t numHaloBufferParticles =
+      std::transform_reduce(haloParticleBuffers.begin(), haloParticleBuffers.end(), 0, std::plus<>(),
+                            [&](auto &vec) { return cellToVec(vec).size(); });
+  const size_t numTotal = numOwnedBufferParticles + numHaloBufferParticles;
+
+  // Place pointers to all owned and halo particles from the buffers in one vector
+  bufferParticles.reserve(numTotal);
+  for (auto &buffer : particleBuffers) {
+    for (auto &particle : buffer._particles) {
+      bufferParticles.push_back(&particle);
+    }
+  }
+  for (auto &buffer : haloParticleBuffers) {
+    for (auto &particle : buffer._particles) {
+      bufferParticles.push_back(&particle);
+    }
+  }
+
+  // The following part performs the main remainder traversal.
+
+  // only activate time measurements if it will actually be logged
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  autopas::utils::Timer timerBufferBufferBuffer;
+  autopas::utils::Timer timerBufferBufferContainer;
+  autopas::utils::Timer timerBufferContainerContainer;
+
+  timerBufferBufferBuffer.start();
+#endif
+  // Step 1: 3-body interactions of all particles in the buffers (owned and halo)
+  AUTOPAS_OPENMP(parallel for)
+  for (auto i = 0; i < numOwnedBufferParticles; ++i) {
+    Particle &p1 = *bufferParticles[i];
+
+    for (auto j = 0; j < numTotal; ++j) {
+      if (i == j) continue;
+      Particle &p2 = *bufferParticles[j];
+
+      for (auto k = j + 1; k < numTotal; ++k) {
+        if (k == i) continue;
+        Particle &p3 = *bufferParticles[k];
+
+        // no newton3 for now due to race conditions
+        f->AoSFunctor(p1, p2, p3, false);
+      }
+    }
+  }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferBufferBuffer.stop();
+  timerBufferBufferContainer.start();
+#endif
+
+  // Step 2: 3-body interactions of 2 buffer particles with 1 container particle
+  const auto haloBoxMin = container.getBoxMin() - container.getInteractionLength();
+  const auto interactionLengthInv = 1. / container.getInteractionLength();
+
+  const double cutoff = container.getCutoff();
+  AUTOPAS_OPENMP(parallel for)
+  for (auto i = 0; i < numTotal; ++i) {
+    Particle &p1 = *bufferParticles[i];
+    const auto pos = p1.getR();
+    const auto min = pos - cutoff;
+    const auto max = pos + cutoff;
+
+    for (auto j = 0; j < numTotal; ++j) {
+      if (j == i) continue;
+      Particle &p2 = *bufferParticles[j];
+
+      container.forEachInRegion(
+          [&](auto &p3) {
+            const auto lockCoords = static_cast_copy_array<size_t>((p3.getR() - haloBoxMin) * interactionLengthInv);
+            // no newton3 here due to race conditions
+            if (i < numOwnedBufferParticles) f->AoSFunctor(p1, p2, p3, false);
+            // no need to calculate force enacted on a halo
+            if (not p3.isHalo() and i < j) {
+              const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+              f->AoSFunctor(p3, p1, p2, false);
+            }
+          },
+          min, max, IteratorBehavior::ownedOrHalo);
+    }
+  }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferBufferContainer.stop();
+  timerBufferContainerContainer.start();
+#endif
+
+  // Step 3: 3-body interactions of 1 buffer particle and 2 container particles
+  // todo: parallelize without race conditions
+  // AUTOPAS_OPENMP(parallel for shared(bufferParticles))
+  for (auto i = 0; i < numTotal; ++i) {
+    Particle &p1 = *bufferParticles[i];
+    const auto pos = p1.getR();
+    const auto boxmin = pos - cutoff;
+    const auto boxmax = pos + cutoff;
+
+    auto p2Iter = container.getRegionIterator(
+        boxmin, boxmax, IteratorBehavior::ownedOrHalo | IteratorBehavior::forceSequential, nullptr);
+    for (; p2Iter.isValid(); ++p2Iter) {
+      Particle &p2 = *p2Iter;
+
+      auto p3Iter = p2Iter;
+      ++p3Iter;
+      for (; p3Iter.isValid(); ++p3Iter) {
+        Particle &p3 = *p3Iter;
+
+        if constexpr (newton3) {
+          f->AoSFunctor(p1, p2, p3, true);
+        } else {
+          if (i < numOwnedBufferParticles) {
+            f->AoSFunctor(p1, p2, p3, false);
+          }
+          // no need to calculate force enacted on a halo
+          if (p2.isOwned()) {
+            f->AoSFunctor(p2, p1, p3, false);
+          }
+          if (p3.isOwned()) {
+            f->AoSFunctor(p3, p1, p2, false);
+          }
+        }
+      }
+    }
+  }
+
+#if SPDLOG_ACTIVE_LEVEL <= SPDLOG_LEVEL_TRACE
+  timerBufferContainerContainer.stop();
+#endif
+
+  AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Buffer       : {}", timerBufferBufferBuffer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Buffer <-> Buffer <-> Container    : {}", timerBufferBufferContainer.getTotalTime());
+  AutoPasLog(TRACE, "Timer Buffer <-> Container <-> Container : {}", timerBufferContainerContainer.getTotalTime());
+}
+
 template <typename Particle>
-template <class Functor>
-std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle>::selectConfiguration(
-    Functor &functor) {
+template <InteractionTypeOption::Value interactionType, class Functor>
+std::tuple<Configuration, std::unique_ptr<TraversalInterface<interactionType>>, bool>
+LogicHandler<Particle>::selectConfiguration(Functor &functor) {
   bool stillTuning = false;
   Configuration configuration{};
-  std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
+  std::optional<std::unique_ptr<TraversalInterface<interactionType>>> traversalPtrOpt{};
+  auto &autoTuner = _autoTunerRefs[interactionType];
+
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
-    configuration = _autoTuner.getCurrentConfig();
+    configuration = autoTuner->getCurrentConfig();
+    // This is needed to synchronize container types between multiple interaction types.
+    if (_containerSelector.getCurrentContainer().getContainerType() != configuration.container) {
+      _containerSelector.selectContainer(
+          configuration.container,
+          ContainerSelectorInfo(
+              configuration.cellSizeFactor,
+              _containerSelector.getCurrentContainer().getVerletSkin() / _neighborListRebuildFrequency,
+              _neighborListRebuildFrequency, _verletClusterSize, configuration.loadEstimator));
+    }
     const auto &container = _containerSelector.getCurrentContainer();
     traversalPtrOpt = autopas::utils::withStaticCellType<Particle>(
         container.getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
           // Can't make this unique_ptr const otherwise we can't move it later.
           auto traversalPtr =
-              TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
-                  configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
-                  configuration.newton3);
+              TraversalSelector<std::decay_t<decltype(particleCellDummy)>, interactionType>::template generateTraversal<
+                  Functor>(configuration.traversal, functor, container.getTraversalSelectorInfo(),
+                           configuration.dataLayout, configuration.newton3);
 
           // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
-          if (auto *cellPairTraversalPtr =
-                  dynamic_cast<autopas::CellPairTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
+          if (auto *cellTraversalPtr =
+                  dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
                       traversalPtr.get())) {
-            cellPairTraversalPtr->setSortingThreshold(_sortingThreshold);
+            cellTraversalPtr->setSortingThreshold(_sortingThreshold);
           }
-
           if (traversalPtr->isApplicable()) {
             return std::optional{std::move(traversalPtr)};
           } else {
@@ -1100,55 +1344,68 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    if (_autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
+    if (autoTuner->needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
       const auto [homogeneity, maxDensity] =
           autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
       timerCalculateHomogeneity.stop();
-      _autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
+      autoTuner->addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
 
-    const auto needsLiveInfo = _autoTuner.prepareIteration();
+    const auto needsLiveInfo = autoTuner->prepareIteration();
 
     if (needsLiveInfo) {
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-      _autoTuner.receiveLiveInfo(info);
+      autoTuner->receiveLiveInfo(info);
     }
 
-    std::tie(configuration, stillTuning) = _autoTuner.getNextConfig();
+    std::tie(configuration, stillTuning) = autoTuner->getNextConfig();
 
     // loop as long as we don't get a valid configuration
     bool rejectIndefinitely = false;
     while (true) {
       // applicability check also sets the container
-      std::tie(traversalPtrOpt, rejectIndefinitely) = isConfigurationApplicable(configuration, functor);
+      std::tie(traversalPtrOpt, rejectIndefinitely) =
+          isConfigurationApplicable<interactionType>(configuration, functor);
       if (traversalPtrOpt.has_value()) {
         break;
       }
       // if no config is left after rejecting this one an exception is thrown here.
-      std::tie(configuration, stillTuning) = _autoTuner.rejectConfig(configuration, rejectIndefinitely);
+      std::tie(configuration, stillTuning) = autoTuner->rejectConfig(configuration, rejectIndefinitely);
     }
+  }
+
+  // log tuning status for current tuner
+  if (functor.isRelevantForTuning()) {
+    _synchronizer.updateTuningState(interactionType, stillTuning);
   }
 
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }
 
 template <typename Particle>
-template <class Functor>
-bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
+template <class Functor, InteractionTypeOption::Value interactionType>
+bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
+  if (not _interactionTypes.count(interactionType)) {
+    autopas::utils::ExceptionHandler::exception(
+        "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
+        "{}.",
+        interactionType);
+  }
   /// Selection of configuration (tuning if necessary)
   utils::Timer tuningTimer;
   tuningTimer.start();
-  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor);
+  const auto [configuration, traversalPtr, stillTuning] = selectConfiguration<interactionType>(*functor);
   tuningTimer.stop();
-  _autoTuner.logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
+  auto &autoTuner = _autoTunerRefs[interactionType];
+  autoTuner->logIteration(configuration, stillTuning, tuningTimer.getTotalTime());
 
-  /// Pairwise iteration
+  /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
-  const IterationMeasurements measurements = iteratePairwise(*functor, *traversalPtr);
+  const IterationMeasurements measurements = computeInteractions(*functor, *traversalPtr);
 
   /// Debug Output
   auto bufferSizeListing = [](const auto &buffers) -> std::string {
@@ -1163,29 +1420,33 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   };
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
-  AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeIteratePairwise);
-  AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", measurements.timeRemainderTraversal);
-  AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", measurements.timeRebuild);
-  AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeTotal);
+  if constexpr (interactionType == InteractionTypeOption::Value::pairwise) {
+    AutoPasLog(DEBUG, "Container::iteratePairwise   took {} ns", measurements.timeIteratePairwise);
+  } else if constexpr (interactionType == InteractionTypeOption::Value::threeBody) {
+    AutoPasLog(DEBUG, "Container::iterateTriwise    took {} ns", measurements.timeIteratePairwise);
+  }
+  AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
+  AutoPasLog(DEBUG, "RebuildNeighborLists         took {} ns", measurements.timeRebuild);
+  AutoPasLog(DEBUG, "AutoPas::computeInteractions took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
                measurements.energyPkg, measurements.energyRam);
   }
-  _iterationLogger.logIteration(configuration, _iteration, stillTuning, measurements.timeIteratePairwise,
-                                measurements.timeRemainderTraversal, measurements.timeRebuild, measurements.timeTotal,
-                                tuningTimer.getTotalTime(), measurements.energyPsys, measurements.energyPkg,
-                                measurements.energyRam);
+  _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning,
+                                measurements.timeIteratePairwise, measurements.timeRemainderTraversal,
+                                measurements.timeRebuild, measurements.timeTotal, tuningTimer.getTotalTime(),
+                                measurements.energyPsys, measurements.energyPkg, measurements.energyRam);
 
   /// Pass on measurements
   // if this was a major iteration add measurements and bump counters
   if (functor->isRelevantForTuning()) {
     if (stillTuning) {
-      switch (_autoTuner.getTuningMetric()) {
+      switch (autoTuner->getTuningMetric()) {
         case TuningMetricOption::time:
-          _autoTuner.addMeasurement(measurements.timeTotal, not neighborListsAreValid());
+          autoTuner->addMeasurement(measurements.timeTotal, not neighborListsAreValid());
           break;
         case TuningMetricOption::energy:
-          _autoTuner.addMeasurement(measurements.energyTotal, not neighborListsAreValid());
+          autoTuner->addMeasurement(measurements.energyTotal, not neighborListsAreValid());
           break;
       }
     } else {
@@ -1199,20 +1460,25 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
-    ++_stepsSinceLastListRebuild;
-
-    _autoTuner.bumpIterationCounters();
-    ++_iteration;
+    ++_relevantFunctorCalls;
+    // In case of pairwise plus triwise interactions, assume that each functor is called exactly once per timestep.
+    if (_relevantFunctorCalls % _interactionTypes.size() == 0) {
+      ++_stepsSinceLastListRebuild;
+      ++_iteration;
+    }
+    bool needToWait = checkTuningStates(interactionType);
+    autoTuner->bumpIterationCounters(needToWait);
   }
   return stillTuning;
 }
 
 template <typename Particle>
-template <class PairwiseFunctor>
-std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
-    const Configuration &conf, PairwiseFunctor &pairwiseFunctor) {
+template <InteractionTypeOption::Value interactionType, class Functor>
+std::tuple<std::optional<std::unique_ptr<TraversalInterface<interactionType>>>, bool>
+LogicHandler<Particle>::isConfigurationApplicable(const Configuration &conf, Functor &functor) {
   // Check if the container supports the traversal
-  const auto allContainerTraversals = compatibleTraversals::allCompatibleTraversals(conf.container);
+  const auto allContainerTraversals =
+      compatibleTraversals::allCompatibleTraversals(conf.container, conf.interactionType);
   if (allContainerTraversals.find(conf.traversal) == allContainerTraversals.end()) {
     AutoPasLog(DEBUG, "Configuration rejected: Container {} does not support the traversal {}.", conf.container,
                conf.traversal);
@@ -1220,8 +1486,8 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
   }
 
   // Check if the required Newton 3 mode is supported by the functor
-  if ((conf.newton3 == Newton3Option::enabled and not pairwiseFunctor.allowsNewton3()) or
-      (conf.newton3 == Newton3Option::disabled and not pairwiseFunctor.allowsNonNewton3())) {
+  if ((conf.newton3 == Newton3Option::enabled and not functor.allowsNewton3()) or
+      (conf.newton3 == Newton3Option::disabled and not functor.allowsNonNewton3())) {
     AutoPasLog(DEBUG, "Configuration rejected: The functor doesn't support Newton 3 {}!", conf.newton3);
     return {std::nullopt, true};
   }
@@ -1237,19 +1503,19 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
 
   auto traversalPtrOpt = autopas::utils::withStaticCellType<Particle>(
       container.getParticleCellTypeEnum(),
-      [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface>> {
+      [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface<interactionType>>> {
         // Can't make this unique_ptr const otherwise we can't move it later.
         auto traversalPtr =
-            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<PairwiseFunctor>(
-                conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3);
+            TraversalSelector<std::decay_t<decltype(particleCellDummy)>,
+                              interactionType>::template generateTraversal<Functor>(conf.traversal, functor,
+                                                                                    traversalInfo, conf.dataLayout,
+                                                                                    conf.newton3);
 
         // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
-        if (auto *cellPairTraversalPtr =
-                dynamic_cast<autopas::CellPairTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
-                    traversalPtr.get())) {
-          cellPairTraversalPtr->setSortingThreshold(_sortingThreshold);
+        if (auto *cellTraversalPtr =
+                dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(traversalPtr.get())) {
+          cellTraversalPtr->setSortingThreshold(_sortingThreshold);
         }
-
         if (traversalPtr->isApplicable()) {
           return std::optional{std::move(traversalPtr)};
         } else {

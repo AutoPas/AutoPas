@@ -9,7 +9,8 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
+#include "autopas/baseFunctors/FlopCounterFunctor.h"
+#include "autopas/baseFunctors/FlopCounterFunctor3B.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -19,19 +20,28 @@
 //! @cond Doxygen_Suppress
 extern template class autopas::AutoPas<ParticleType>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovec *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovec *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovecGlobals *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovecGlobals *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAVX *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAVX *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeSVE *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
 #endif
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
+#endif
+
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
     autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
+    autopas::FlopCounterFunctor3B<ParticleType, ATFunctorTypeAbstract> *);
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -109,10 +119,28 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
-  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
-  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
-  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
+  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
+  if (_configuration.getInteractionTypes().size() == 0) {
+    throw std::runtime_error(
+        "MD-flexible is not configured for any interaction type. Please specify which functor should be used.");
+  }
+
+  // Pairwise specific options
+  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
+                                           autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value,
+                                              autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
+                                          autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
+  // 3-body specific options
+  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
+                                           autopas::InteractionTypeOption::threeBody);
+  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options3B.value,
+                                              autopas::InteractionTypeOption::threeBody);
+  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions3B.value,
+                                          autopas::InteractionTypeOption::threeBody);
+  // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);
@@ -136,6 +164,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
+
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
   const auto *fillerBeforeSuffix =
@@ -263,6 +292,7 @@ void Simulation::run() {
     _timers.computationalLoad.stop();
 
     ++_iteration;
+    //    _autoPasContainer->incrementIterationCounters();
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
@@ -296,16 +326,29 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
         return static_cast<size_t>(_configuration.tuningMaxEvidence.value);
       } else {
         // @TODO: this can be improved by considering the tuning strategy
-        //  or averaging number of iterations per tuning phase and dynamically adapt prediction
+        // or averaging number of iterations per tuning phase and dynamically adapt prediction
 
         // This estimate is only valid for full search and no restrictions on the cartesian product.
         // add static to only evaluate this once
-        static const auto ret = autopas::SearchSpaceGenerators::cartesianProduct(
-                                    _configuration.containerOptions.value, _configuration.traversalOptions.value,
-                                    _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get())
-                                    .size();
-        return ret;
+        size_t space2 = 0;
+        size_t space3 = 0;
+        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise) > 0) {
+          space2 = autopas::SearchSpaceGenerators::cartesianProduct(
+                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
+                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
+                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
+                       autopas::InteractionTypeOption::pairwise)
+                       .size();
+        }
+        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody) > 0) {
+          space3 = autopas::SearchSpaceGenerators::cartesianProduct(
+                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
+                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
+                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
+                       autopas::InteractionTypeOption::threeBody)
+                       .size();
+        }
+        return std::max(space2, space3);
       }
     }();
     // non-tuning iterations + tuning iterations + one iteration after last phase
@@ -402,10 +445,21 @@ void Simulation::updateQuaternions() {
 void Simulation::updateForces() {
   _timers.forceUpdateTotal.start();
 
-  _timers.forceUpdatePairwise.start();
-  const bool isTuningIteration = calculatePairwiseForces();
+  bool isTuningIteration = false;
+  long timeIteration = 0;
 
-  const auto timeIteration = _timers.forceUpdatePairwise.stop();
+  // Calculate pairwise forces
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+    _timers.forceUpdatePairwise.start();
+    isTuningIteration = (isTuningIteration | calculatePairwiseForces());
+    timeIteration += _timers.forceUpdatePairwise.stop();
+  }
+
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
+    _timers.forceUpdateTriwise.start();
+    isTuningIteration = (isTuningIteration | calculateTriwiseForces());
+    timeIteration += _timers.forceUpdateTriwise.stop();
+  }
 
   // count time spent for tuning
   if (isTuningIteration) {
@@ -467,8 +521,14 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->template iteratePairwise(&functor); });
+  const auto wasTuningIteration = applyWithChosenFunctor<bool>(
+      [&](auto functor) { return _autoPasContainer->template computeInteractions(&functor); });
+  return wasTuningIteration;
+}
+
+bool Simulation::calculateTriwiseForces() {
+  const auto wasTuningIteration = applyWithChosenFunctor3B<bool>(
+      [&](auto functor) { return _autoPasContainer->template computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
@@ -515,6 +575,7 @@ void Simulation::logMeasurements() {
   const long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
   const long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   const long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
+  const long forceUpdateTriwise = accumulateTime(_timers.forceUpdateTriwise.getTotalTime());
   const long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
   const long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
   const long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
@@ -585,18 +646,39 @@ void Simulation::logMeasurements() {
     std::cout << "MFUPs/sec                          : " << mfups << std::endl;
 
     if (_configuration.dontMeasureFlops.value) {
-      LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-      autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
-          ljFunctor, _autoPasContainer->getCutoff());
-      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
+      if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+        LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+        autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
+            ljFunctor, _autoPasContainer->getCutoff());
+        _autoPasContainer->computeInteractions(&flopCounterFunctor);
 
-      const auto flops = flopCounterFunctor.getFlops();
+        const auto flops = flopCounterFunctor.getFlops();
 
-      std::cout << "Statistics for Force Calculation at end of simulation:" << std::endl;
-      std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-      std::cout << "  GFLOPs/sec                         : "
-                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+        std::cout << "Statistics for the Pairwise Force Calculation at end of simulation:" << std::endl;
+        std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+        std::cout << "  GFLOPs/sec                         : "
+                  << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdatePairwise) * 1e-9)
+                  << std::endl;
+        std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+      }
+
+#ifdef MD_FLEXIBLE_FUNCTOR_AT
+      if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
+        ATFunctorTypeAbstract atFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+        autopas::FlopCounterFunctor3B<ParticleType, ATFunctorTypeAbstract> flopCounterFunctor(
+            atFunctor, _autoPasContainer->getCutoff());
+        _autoPasContainer->computeInteractions(&flopCounterFunctor);
+
+        const auto flops = flopCounterFunctor.getFlops();
+
+        std::cout << "Statistics for the 3-Body Force Calculation at end of simulation:" << std::endl;
+        std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
+        std::cout << "  GFLOPs/sec                         : "
+                  << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdateTriwise) * 1e-9)
+                  << std::endl;
+        std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
+      }
+#endif
     }
   }
 }
@@ -676,7 +758,30 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    default: {
+      throw std::runtime_error("Unknown pairwise functor choice" +
+                               std::to_string(static_cast<int>(_configuration.functorOption.value)));
+    }
   }
-  throw std::runtime_error("Unknown functor choice" +
-                           std::to_string(static_cast<int>(_configuration.functorOption.value)));
+}
+
+template <class T, class F>
+T Simulation::applyWithChosenFunctor3B(F f) {
+  const double cutoff = _configuration.cutoff.value;
+  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+  switch (_configuration.functorOption3B.value) {
+    case MDFlexConfig::FunctorOption3B::at: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+      return f(ATFunctor{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
+#endif
+    }
+    default: {
+      throw std::runtime_error("Unknown 3-body functor choice" +
+                               std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
+    }
+  }
 }

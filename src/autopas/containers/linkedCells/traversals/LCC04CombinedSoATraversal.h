@@ -8,7 +8,7 @@
 
 #include "LCC04SoACellHandler.h"
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C04BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C04BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -23,8 +23,9 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, PairwiseFunctor, 2>,
-                                  public LCTraversalInterface<ParticleCell> {
+class LCC04CombinedSoATraversal
+    : public C04BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, 2>,
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -37,10 +38,10 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCC04CombinedSoATraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                     double interactionLength, const std::array<double, 3> &cellLength,
+                                     const double interactionLength, const std::array<double, 3> &cellLength,
                                      DataLayoutOption dataLayout, bool useNewton3)
-      : C04BasedTraversal<ParticleCell, PairwiseFunctor, 2>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                            dataLayout, useNewton3),
+      : C04BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, 2>(
+            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, dataLayout, useNewton3,
                      this->_overlap) {}
 
@@ -61,7 +62,7 @@ class LCC04CombinedSoATraversal : public C04BasedTraversal<ParticleCell, Pairwis
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setSortingThreshold(size_t sortingThreshold) override {}

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CBasedTraversal.h"
+#include "autopas/containers/cellTraversals/ColorBasedTraversal.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
@@ -24,7 +24,7 @@ namespace autopas {
  * @tparam PairwiseFunctor
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor>,
+class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
                         public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
@@ -59,7 +59,8 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor>,
    */
   explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
                            bool useNewton3)
-      : CBasedTraversal<ParticleCell, PairwiseFunctor>({0, 0, 0}, pairwiseFunctor, 0, {}, dataLayout, useNewton3),
+      : ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+            {0, 0, 0}, pairwiseFunctor, 0, {}, dataLayout, useNewton3),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
@@ -95,14 +96,14 @@ class VCLC06Traversal : public CBasedTraversal<ParticleCell, PairwiseFunctor>,
       processColorCell(x, y, z, towersPerColoringCell);
     };
 
-    // localStride is necessary because stride is constexpr and cTraversal() wants a const &
+    // localStride is necessary because stride is constexpr and colorTraversal() wants a const &
     auto localStride = _stride;
-    this->cTraversal(std::forward<decltype(loopBody)>(loopBody), {coloringCellsPerDim[0], coloringCellsPerDim[1], 1},
-                     localStride);
+    this->colorTraversal(std::forward<decltype(loopBody)>(loopBody),
+                         {coloringCellsPerDim[0], coloringCellsPerDim[1], 1}, localStride);
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setSortingThreshold(size_t sortingThreshold) override {}

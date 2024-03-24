@@ -17,6 +17,7 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
+#include "autopas/tuning/utils/TunerSynchronizer.h"
 #include "autopas/utils/RaplMeter.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
@@ -102,8 +103,9 @@ class AutoTuner {
 
   /**
    * Increase internal iteration counters by one. Should be called at the end of an iteration.
+   * @param needToWait If tuner should wait for other tuners.
    */
-  void bumpIterationCounters();
+  void bumpIterationCounters(bool needToWait = false);
 
   /**
    * Returns whether rebuildNeighborLists() will be triggered in the next call to iteratePairwise().

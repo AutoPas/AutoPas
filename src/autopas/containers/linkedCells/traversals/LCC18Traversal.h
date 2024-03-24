@@ -7,9 +7,9 @@
 #pragma once
 
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/containers/cellTraversals/C18BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -28,7 +28,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
+class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
                        public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -44,10 +44,10 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
    * in that case the interactionLength is needed!
    */
   explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          double interactionLength, const std::array<double, 3> &cellLength,
+                          const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3) {
     computeOffsets();
@@ -74,7 +74,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
   [[nodiscard]] bool isApplicable() const override { return true; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 

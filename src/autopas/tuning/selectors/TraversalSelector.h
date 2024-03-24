@@ -11,9 +11,13 @@
 #include <unordered_map>
 #include <vector>
 
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
+#include "autopas/containers/directSum/traversals/DSSequentialTraversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC01Traversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04Traversal.h"
@@ -44,11 +48,11 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopas/utils/TrivialHash.h"
+#include "autopas/utils/checkFunctorType.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas {
@@ -57,32 +61,45 @@ namespace autopas {
  * Selector for a container traversal.
  * @tparam ParticleCell
  */
-template <class ParticleCell>
+template <class ParticleCell, InteractionTypeOption::Value interactionType>
 class TraversalSelector {
  public:
   /**
    * Generates a given Traversal for the given properties.
    * Requires less templates but calls the templated version after a decision tree.
-   * @tparam PairwiseFunctor
+   * @tparam Functor
    * @param traversalType
-   * @param pairwiseFunctor
+   * @param functor
    * @param traversalInfo
    * @param dataLayout
    * @param useNewton3
    * @return Smartpointer to the traversal.
    */
+  template <class Functor>
+  static std::unique_ptr<TraversalInterface<interactionType>> generateTraversal(
+      TraversalOption traversalType, Functor &functor, const TraversalSelectorInfo &traversalInfo,
+      DataLayoutOption dataLayout, bool useNewton3);
+
+ private:
   template <class PairwiseFunctor>
-  static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType,
-                                                               PairwiseFunctor &pairwiseFunctor,
-                                                               const TraversalSelectorInfo &traversalInfo,
-                                                               DataLayoutOption dataLayout, bool useNewton3);
+  static std::unique_ptr<TraversalInterface<InteractionTypeOption::pairwise>> generatePairwiseTraversal(
+      TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info,
+      DataLayoutOption dataLayout, bool useNewton3);
+
+  template <class TriwiseFunctor>
+  static std::unique_ptr<TraversalInterface<InteractionTypeOption::threeBody>> generateTriwiseTraversal(
+      TraversalOption traversalType, TriwiseFunctor &triwiseFunctor, const TraversalSelectorInfo &info,
+      DataLayoutOption dataLayout, bool useNewton3);
 };
 
-template <class ParticleCell>
+template <class ParticleCell, InteractionTypeOption::Value interactionType>
 template <class PairwiseFunctor>
-std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
-    TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &traversalInfo,
-    DataLayoutOption dataLayout, bool useNewton3) {
+std::unique_ptr<TraversalInterface<InteractionTypeOption::pairwise>>
+TraversalSelector<ParticleCell, interactionType>::generatePairwiseTraversal(TraversalOption traversalType,
+                                                                            PairwiseFunctor &pairwiseFunctor,
+                                                                            const TraversalSelectorInfo &traversalInfo,
+                                                                            DataLayoutOption dataLayout,
+                                                                            bool useNewton3) {
   switch (traversalType) {
     // Direct sum
     case TraversalOption::ds_sequential: {
@@ -260,8 +277,56 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTra
       return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor>>(
           &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
     }
+    default: {
+      autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
+                                                  traversalType.to_string());
+      return {nullptr};
+    }
   }
-  autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
+}
+
+template <class ParticleCell, InteractionTypeOption::Value interactionType>
+template <class TriwiseFunctor>
+std::unique_ptr<TraversalInterface<InteractionTypeOption::threeBody>>
+TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(TraversalOption traversalType,
+                                                                           TriwiseFunctor &triwiseFunctor,
+                                                                           const TraversalSelectorInfo &traversalInfo,
+                                                                           DataLayoutOption dataLayout,
+                                                                           bool useNewton3) {
+  switch (traversalType) {
+    // Direct sum
+    case TraversalOption::ds_sequential_3b: {
+      return std::make_unique<DSSequentialTraversal3B<ParticleCell, TriwiseFunctor>>(
+          &triwiseFunctor,
+          traversalInfo
+              .interactionLength /*this is the cutoff, as generated by DirectSum::getTraversalSelectorInfo()!*/,
+          dataLayout, useNewton3);
+    }
+      // Linked Cells
+    case TraversalOption::lc_c01_3b: {
+      return std::make_unique<LCC01Traversal3B<ParticleCell, TriwiseFunctor>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
+    }
+    default: {
+      autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known 3-body traversal type!",
+                                                  traversalType.to_string());
+      return {nullptr};
+    }
+  }
+}
+
+template <class ParticleCell, InteractionTypeOption::Value interactionType>
+template <class Functor>
+std::unique_ptr<TraversalInterface<interactionType>>
+TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOption traversalType, Functor &functor,
+                                                                    const TraversalSelectorInfo &traversalInfo,
+                                                                    DataLayoutOption dataLayout, bool useNewton3) {
+  if constexpr (utils::isPairwiseFunctor<Functor>()) {
+    return generatePairwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
+  } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
+    return generateTriwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
+  }
   return {nullptr};
 }
 }  // namespace autopas

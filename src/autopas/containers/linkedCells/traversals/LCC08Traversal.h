@@ -8,7 +8,7 @@
 
 #include "LCC08CellHandler.h"
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -25,7 +25,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
+class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
                        public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -41,8 +41,8 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
-                                                         dataLayout, useNewton3),
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
@@ -57,7 +57,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   [[nodiscard]] bool isApplicable() const override { return true; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 

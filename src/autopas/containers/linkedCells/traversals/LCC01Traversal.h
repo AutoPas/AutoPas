@@ -7,9 +7,9 @@
 #pragma once
 
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C01BasedTraversal.h"
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -75,8 +75,9 @@ the initialized buffer must show the same behavior as a buffer which was updated
  * @tparam combineSoA
  */
 template <class ParticleCell, class PairwiseFunctor, bool combineSoA = false>
-class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, (combineSoA ? 2 : 3)>,
-                       public LCTraversalInterface<ParticleCell> {
+class LCC01Traversal
+    : public C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, (combineSoA ? 2 : 3)>,
+      public LCTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -91,10 +92,10 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, (
    * in that case the interactionLength is needed!
    */
   explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          double interactionLength, const std::array<double, 3> &cellLength,
+                          const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, (combineSoA ? 2 : 3)>(dims, pairwiseFunctor, interactionLength,
-                                                                               cellLength, dataLayout, useNewton3),
+      : C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, (combineSoA ? 2 : 3)>(
+            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
         _pairwiseFunctor(pairwiseFunctor),
@@ -127,7 +128,7 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, (
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 

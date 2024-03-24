@@ -121,18 +121,21 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   EXPECT_EQ(container.size(), numMolecules + numHaloMolecules) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        auto traversalUniquePtr = autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
-            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+        auto traversalUniquePtr = autopas::
+            TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::pairwise>::generateTraversal(
+                traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
 
-        // set useSorting of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+        // set useSorting of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
         if (auto *cellPairTraversalPtr =
-                dynamic_cast<autopas::CellPairTraversal<decltype(particleCellDummy)> *>(traversalUniquePtr.get())) {
+                dynamic_cast<autopas::CellTraversal<decltype(particleCellDummy)> *>(traversalUniquePtr.get())) {
           cellPairTraversalPtr->setSortingThreshold(useSorting ? 8 : std::numeric_limits<size_t>::max());
         }
 
         return traversalUniquePtr;
       });
 
+  auto pairwiseTraversal =
+      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise> *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }
@@ -141,7 +144,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 19);
   }
 
-  container.rebuildNeighborLists(traversal.get());
+  container.rebuildNeighborLists(pairwiseTraversal);
 
   if (doSlightShift) {
     executeShift(container, skinPerTimestep * rebuildFrequency / 2, numMolecules + numHaloMolecules);
@@ -152,7 +155,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
-  container.iteratePairwise(traversal.get());
+  container.iteratePairwise(pairwiseTraversal);
   functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numMolecules);
@@ -277,7 +280,8 @@ static auto toString = [](const auto &info) {
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> params{};
   for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(containerOption)) {
+    for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(
+             containerOption, autopas::InteractionTypeOption::pairwise)) {
       for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
         for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
           for (auto numParticles : {100ul, 2000ul}) {

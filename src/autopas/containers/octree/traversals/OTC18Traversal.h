@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeInnerNode.h"
 #include "autopas/containers/octree/OctreeLeafNode.h"
 #include "autopas/containers/octree/OctreeNodeInterface.h"
 #include "autopas/containers/octree/traversals/OTTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {
@@ -26,7 +26,7 @@ namespace autopas {
  * @tparam PairwiseFunctor
  */
 template <class Particle, class PairwiseFunctor>
-class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
+class OTC18Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
                        public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
   /**
@@ -46,8 +46,8 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                           DataLayoutOption dataLayout, bool useNewton3)
       // {2, 1, 1} says that there are only two cells in the container (owned and halo), no other cell. Both are along
       // the (imaginary) x-axis. This results in the cuboid specified by {2, 1, 1}.
-      : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
-        OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
+      : CellTraversal<ParticleCell>({2, 1, 1}),
+        OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
@@ -121,7 +121,7 @@ class OTC18Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 

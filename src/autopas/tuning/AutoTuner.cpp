@@ -129,6 +129,7 @@ bool AutoTuner::tuneConfiguration() {
 
   // CASE: End of a tuning phase. This is not exclusive to the other cases!
   if (_configQueue.empty()) {
+    // TODO: check synchronization here?
     // if the queue is empty we are done tuning.
     _iterationsSinceTuning = 0;
     const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase);
@@ -255,9 +256,13 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   }
 }
 
-void AutoTuner::bumpIterationCounters() {
+void AutoTuner::bumpIterationCounters(bool needToWait) {
   ++_iteration;
-  ++_iterationsSinceTuning;
+  if (needToWait) {
+    _iterationsSinceTuning += _tuningInterval + 1;
+  } else {
+    ++_iterationsSinceTuning;
+  }
   // this will NOT catch the first tuning phase because _iterationsSinceTuning is initialized to _tuningInterval.
   // Hence, _tuningPhase is initialized as 1.
   if (_iterationsSinceTuning == _tuningInterval) {

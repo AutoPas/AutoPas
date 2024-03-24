@@ -13,7 +13,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"
-#include "autopas/containers/cellPairTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/BalancedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -102,7 +102,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void rebuildNeighborLists(TraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+    // nothing to do.
+  }
+
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
     // nothing to do.
   }
 
@@ -128,10 +132,10 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
-  void iteratePairwise(TraversalInterface *traversal) override {
+  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellPairTraversal<ParticleCell> *>(traversal);
+    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
@@ -145,6 +149,26 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     traversal->initTraversal();
     traversal->traverseParticlePairs();
+    traversal->endTraversal();
+  }
+
+  void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+    // Check if traversal is allowed for this container and give it the data it needs.
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
+    }
+    if (traversalInterface && cellTraversal) {
+      cellTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "Trying to use a traversal of wrong type in LinkedCells::iterateTriwise. TraversalID: {}",
+          traversal->getTraversalType());
+    }
+
+    traversal->initTraversal();
+    traversal->traverseParticleTriplets();
     traversal->endTraversal();
   }
 

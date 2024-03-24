@@ -156,10 +156,16 @@ class ParticleContainerInterface {
   virtual bool updateHaloParticle(const Particle &haloParticle) = 0;
 
   /**
-   * Rebuilds the neighbor lists.
-   * @param traversal The used traversal.
+   * Rebuilds the neighbor lists for pairwise traversals.
+   * @param traversal The used pairwise traversal.
    */
-  virtual void rebuildNeighborLists(TraversalInterface *traversal) = 0;
+  virtual void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) = 0;
+
+  /**
+   * Rebuilds the neighbor lists for 3-body traversals.
+   * @param traversal The used triwise traversal.
+   */
+  virtual void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) = 0;
 
   /**
    * Deletes all halo particles.
@@ -251,7 +257,16 @@ class ParticleContainerInterface {
    * Iterates over all particle pairs in the container.
    * @param traversal The traversal to use for the iteration.
    */
-  virtual void iteratePairwise(TraversalInterface *traversal) = 0;
+  virtual void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) = 0;
+
+  /**
+   * Iterates over all particle triplets in the container.
+   * @note iterateTriwise does not have to be implemented by the container if it is not used.
+   * @param traversal The traversal to use for the iteration.
+   */
+  virtual void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) {
+    utils::ExceptionHandler::exception("iterateTriwise called but has not been implemented!");
+  }
 
   /**
    * Get the upper corner of the container without halo.
@@ -309,10 +324,11 @@ class ParticleContainerInterface {
    *
    * Traversals might still be not applicable for other reasons so call traversal.isApplicable to be safe!
    *
+   * @param interactionType interaction type for which to get all traversals
    * @return Vector of traversal options.
    */
-  [[nodiscard]] std::set<TraversalOption> getAllTraversals() const {
-    return compatibleTraversals::allCompatibleTraversals(this->getContainerType());
+  [[nodiscard]] std::set<TraversalOption> getAllTraversals(const InteractionTypeOption interactionType) const {
+    return compatibleTraversals::allCompatibleTraversals(this->getContainerType(), interactionType);
   }
 
   /**

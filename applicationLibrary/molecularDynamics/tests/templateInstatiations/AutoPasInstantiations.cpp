@@ -11,7 +11,7 @@
 
 //! @cond Doxygen_Suppress
 template class autopas::AutoPas<Molecule>;
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
+template bool autopas::AutoPas<Molecule>::computeInteractions(
     mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false, /*relevantForTuning*/ true> *);
 //! @endcond

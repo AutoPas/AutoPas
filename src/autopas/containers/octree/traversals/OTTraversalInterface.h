@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/octree/OctreeNodeWrapper.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {
@@ -19,7 +19,7 @@ namespace autopas {
  * This interface exists to provide a row interface for octree to add its cells.
  */
 template <typename ParticleCell>
-class OTTraversalInterface {
+class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pairwise> {
   /**
    * The particle type used in this traversal.
    */
@@ -31,7 +31,9 @@ class OTTraversalInterface {
    *
    * @param interactionLength The interaction length
    */
-  OTTraversalInterface(double interactionLength) : _interactionLength(interactionLength) {}
+  OTTraversalInterface(double interactionLength, DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3),
+        _interactionLength(interactionLength) {}
 
   /**
    * Notify the traversal about the cells that it is able to traverse.

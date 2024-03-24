@@ -9,9 +9,10 @@
 #include <vector>
 
 #include "DSTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/DataLayoutConverter.h"
 
 namespace autopas {
@@ -23,7 +24,9 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DSTraversalInterface<ParticleCell> {
+class DSSequentialTraversal : public CellTraversal<ParticleCell>,
+                              public DSTraversalInterface<ParticleCell>,
+                              public TraversalInterface<InteractionTypeOption::pairwise> {
  public:
   /**
    * Constructor for the DirectSum traversal.
@@ -34,7 +37,8 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
    */
   explicit DSSequentialTraversal(PairwiseFunctor *pairwiseFunctor, double cutoff, DataLayoutOption dataLayout,
                                  bool useNewton3)
-      : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
+      : CellTraversal<ParticleCell>({2, 1, 1}),
+        TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
@@ -64,7 +68,7 @@ class DSSequentialTraversal : public CellPairTraversal<ParticleCell>, public DST
   void traverseParticlePairs() override;
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
