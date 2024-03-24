@@ -260,7 +260,8 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
   constexpr bool useLUT = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoSVE(_cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoSVE(
+      _cutoff);
   ljFunctorNoSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorSVE<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorSVE(
       _cutoff);

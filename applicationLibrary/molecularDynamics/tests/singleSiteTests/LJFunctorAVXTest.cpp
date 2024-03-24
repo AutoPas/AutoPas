@@ -260,7 +260,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
   constexpr bool useLUT = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, useLUT, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(
+      _cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(
       _cutoff);

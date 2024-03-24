@@ -78,7 +78,8 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, false>; 
 using LJFunctorTypeAutovecGlobals =
     mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #else
-using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, false, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAutovecGlobals =
+    mdLib::LJFunctor<ParticleType, true, true, false, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #endif

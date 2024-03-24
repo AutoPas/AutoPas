@@ -236,7 +236,8 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   mdLib::MoleculeLJ molB({cutoff, 0., 0.}, {0., 0., 0.}, 1, 0);
 
   // Create LJ Functor class and use it to calculate the potential energy between the two
-  mdLib::LJFunctor<mdLib::MoleculeLJ, /* shifting */ false, /*mixing*/ true, /*useLUT*/ false, autopas::FunctorN3Modes::Both,
+  mdLib::LJFunctor<mdLib::MoleculeLJ, /* shifting */ false, /*mixing*/ true, /*useLUT*/ false,
+                   autopas::FunctorN3Modes::Both,
                    /*globals*/ true>
       ljFunctor(cutoff, *PPL);
 
