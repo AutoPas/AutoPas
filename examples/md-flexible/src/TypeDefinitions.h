@@ -121,7 +121,7 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, true>;  // Changed
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, /*useLUT*/ true>;  // Changed
 #endif
 
 #endif
@@ -234,7 +234,7 @@ using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #endif
 
 #ifdef MD_FLEXIBLE_FUNCTOR_AT
-using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true, true>;  // Changed
+using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true, /*useLUT*/ true>;  // Changed
 #endif
 
 #endif

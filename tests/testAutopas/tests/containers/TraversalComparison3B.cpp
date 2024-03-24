@@ -105,7 +105,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison3B::Globals> T
                            autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
-  mdLib::AxilrodTellerFunctor<Molecule, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+  mdLib::AxilrodTellerFunctor<Molecule, false /*useMixing*/, false /*useLUT*/, autopas::FunctorN3Modes::Both,
                               globals /*calculateGlobals*/>
       functor{_cutoff};
   functor.setParticleProperties(_nu);
