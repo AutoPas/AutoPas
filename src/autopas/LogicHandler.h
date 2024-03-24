@@ -775,8 +775,14 @@ class LogicHandler {
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> &_autoTunerRefs;
 
+  /**
+   * Set of interaction types AutoPas is initialized to, determined by the given AutoTuners.
+   */
   std::set<InteractionTypeOption> _interactionTypes{};
 
+  /**
+   * Synchronizes tuning phases in case of multiple autotuners.
+   */
   autopas::TunerSynchronizer _synchronizer{};
 
   /**
@@ -789,6 +795,9 @@ class LogicHandler {
    */
   unsigned int _stepsSinceLastListRebuild{std::numeric_limits<unsigned int>::max()};
 
+  /**
+   * Total number of relevant functor calls of any interaction type.
+   */
   unsigned int _relevantFunctorCalls{0};
   /**
    * The current iteration number.
@@ -849,11 +858,10 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
-  // TODO: might need to be separated for 3-body - maybe move logic to AutoTuner
-  auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
+  const auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
                          _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists() and
                          not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
-  auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
+  const auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
                         _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
                         not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
 
@@ -1380,7 +1388,7 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor) {
 
   // log tuning status for current tuner
   if (functor.isRelevantForTuning()) {
-    _synchronizer.recordTuningState(interactionType, stillTuning);
+    _synchronizer.updateTuningState(interactionType, stillTuning);
   }
 
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};

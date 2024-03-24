@@ -7,6 +7,7 @@
 #pragma once
 
 #include <set>
+#include <unordered_map>
 
 #include "autopas/options/InteractionTypeOption.h"
 
@@ -17,13 +18,17 @@ namespace autopas {
  */
 class TunerSynchronizer {
  public:
-  TunerSynchronizer() = default;
+
+  /**
+   * Default constructor
+   */
+  TunerSynchronizer(){};
 
   /**
    * Constructor
    * @param usedInteractionTypes Synchronize autotuners for all used interaction types
    */
-  explicit TunerSynchronizer(std::set<InteractionTypeOption::Value> &usedInteractionTypes);
+  TunerSynchronizer(const std::set<InteractionTypeOption::Value> &usedInteractionTypes);
 
   /**
    * Add a new interaction type to keep track of.
@@ -39,14 +44,14 @@ class TunerSynchronizer {
    * @param interactionType
    * @param stillTuning
    */
-  void recordTuningState(InteractionTypeOption::Value interactionType, bool stillTuning);
+  void updateTuningState(InteractionTypeOption::Value interactionType, bool stillTuning);
 
   /**
    *
    * @param interactionType
    * @return bool, whether other tuners are still tuning
    */
-  bool checkTuningState(InteractionTypeOption::Value interactionType);
+  bool checkTuningState(InteractionTypeOption::Value interactionType) const;
 
  private:
   /**
