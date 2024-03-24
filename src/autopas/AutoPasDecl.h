@@ -851,8 +851,8 @@ class AutoPas {
 
   /**
    * Get the list of allowed traversals.
-   * @param interactionType Get allowed traversals for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Get allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    * @return
    */
   [[nodiscard]] const std::set<TraversalOption> &getAllowedTraversals(
@@ -864,8 +864,8 @@ class AutoPas {
    * Set the list of allowed traversals.
    * For possible traversals choices see options::TraversalOption::Value.
    * @param allowedTraversals
-   * @param interactionType Set allowed traversals for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Set allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals,
                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
@@ -875,8 +875,8 @@ class AutoPas {
   /**
    * Get the list of allowed data layouts.
    * @return
-   * @param interactionType Get allowed data layouts for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Get allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   [[nodiscard]] const std::set<DataLayoutOption> &getAllowedDataLayouts(
       const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) const {
@@ -887,8 +887,8 @@ class AutoPas {
    * Set the list of allowed data layouts.
    * For possible data layouts choices see options::DataLayoutOption::Value.
    * @param allowedDataLayouts
-   * @param interactionType Set allowed data layouts for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Set allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
                              const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
@@ -897,8 +897,8 @@ class AutoPas {
 
   /**
    * Get the list of allowed newton 3 options.
-   * @param interactionType Get allowed newton 3 options for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Get allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    * @return
    */
   [[nodiscard]] const std::set<Newton3Option> &getAllowedNewton3Options(
@@ -910,8 +910,8 @@ class AutoPas {
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
-   * @param interactionType Set allowed newton 3 options for this interaction type.
-   * @def interactionType Default interaction type is pairwise.
+   * @param interactionType Set allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options,
                                 const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {

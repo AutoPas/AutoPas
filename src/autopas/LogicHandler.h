@@ -46,6 +46,7 @@ class LogicHandler {
  public:
   /**
    * Constructor of the LogicHandler.
+   * @param autotuners Unordered map with interaction types and respective autotuner instances.
    * @param logicHandlerInfo
    * @param rebuildFrequency
    * @param outputSuffix

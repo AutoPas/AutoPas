@@ -30,6 +30,8 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    * Create a new traversal interface, which provides functionality that is required by all octree traversals.
    *
    * @param interactionLength The interaction length
+   * @param dataLayout
+   * @param useNewton3
    */
   OTTraversalInterface(double interactionLength, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3),
