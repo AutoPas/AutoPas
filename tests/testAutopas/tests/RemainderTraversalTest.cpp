@@ -87,7 +87,8 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
-  mdLib::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, /*useLUT*/ false,  autopas::FunctorN3Modes::Both, /*globals*/ true>
+  mdLib::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, /*useLUT*/ false, autopas::FunctorN3Modes::Both,
+                   /*globals*/ true>
       functor(logicHandlerInfo.cutoff);
   // Choose sigma != distance so we get Upot != 0
   constexpr double sigma = 2.;
