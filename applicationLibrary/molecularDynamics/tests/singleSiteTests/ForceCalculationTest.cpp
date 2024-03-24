@@ -13,7 +13,7 @@
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, /*useLUT*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false, /*relevantForTuning*/ true> *);
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,

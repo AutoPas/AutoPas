@@ -486,7 +486,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   auto &container = selector.getCurrentContainer();
 
   // Create a functor that is able to calculate forces
-  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, false /*useLUT*/, autopas::FunctorN3Modes::Both,
                    false /*calculateGlobals*/>
       ljFunctor{cutoff};
   ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
