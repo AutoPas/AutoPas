@@ -199,9 +199,13 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     std::cout << "_haloBoxMax: [" << _haloBoxMax[0] << ", " << _haloBoxMax[1] << ", " << _haloBoxMax[2] << "]"
               << std::endl;
     std::cout << "_towerSideLength: [" << _towerSideLength[0] << ", " << _towerSideLength[1] << "]" << std::endl;
+
+    // towerBoxMin[0/1] does NOT start at _haloBoxMin[0/1] because the halo towers might extend beyond the halo box.
     const std::array<double, 3> towerBoxMin{
-        _haloBoxMin[0] + _towerSideLength[0] * static_cast<double>(index2D[0]),
-        _haloBoxMin[1] + _towerSideLength[1] * static_cast<double>(index2D[1]),
+        _boxMin[0] - _towerSideLength[0] * _numTowersPerInteractionLength +
+            _towerSideLength[0] * static_cast<double>(index2D[0]),
+        _boxMin[1] - _towerSideLength[1] * _numTowersPerInteractionLength +
+            _towerSideLength[1] * static_cast<double>(index2D[1]),
         _haloBoxMin[2],
     };
     const std::array<double, 3> towerBoxMax{
