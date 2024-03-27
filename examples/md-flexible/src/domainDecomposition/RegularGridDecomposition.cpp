@@ -292,7 +292,7 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
        << autopas::utils::ArrayUtils::to_string(emigrants, "\n", {"", ""}) << "\n\n"
        << "Local box min: " << _localBoxMin << "\n"
        << "Local box max: " << _localBoxMax;
-    //throw std::runtime_error(ss.str());
+    throw std::runtime_error(ss.str());
   }
 }
 
