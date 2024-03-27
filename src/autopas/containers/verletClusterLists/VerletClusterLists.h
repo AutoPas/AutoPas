@@ -293,14 +293,42 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
 
+    std::cout << "cellIndex at beginning " << cellIndex << std::endl;
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
         // if particles might have moved extend search box here
-        const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
-        const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+        const auto boxMinWithSafetyMargin =
+            boxMin - (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+        const auto boxMaxWithSafetyMargin =
+            boxMax + (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+
+        std::cout << "VerletCLusterLists::getParticleImpl "
+                  << (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild())) << std::endl;
+
+        std::cout << "VerletCLusterLists::boxMin " << _towerBlock.getTowerIndex1DAtPosition(boxMin) << std::endl;
+        std::cout << "VerletCLusterLists::boxMax " << _towerBlock.getTowerIndex1DAtPosition(boxMax) << std::endl;
+
+        std::cout << "VerletCLusterLists::boxMinWithSafetyMargin "
+                  << _towerBlock.getTowerIndex1DAtPosition(boxMinWithSafetyMargin) << std::endl;
+        std::cout << "VerletCLusterLists::boxMaxWithSafetyMargin "
+                  << _towerBlock.getTowerIndex1DAtPosition(boxMaxWithSafetyMargin) << std::endl;
+
+        std::cout << "VerletCLusterLists: _towerBlock.getTowers().size(): " << _towerBlock.getTowers().size()
+                  << std::endl;
+
+        size_t i{0};
+        for (auto t : _towerBlock.getTowers()) {
+          for (const auto p : t.particleVector()) {
+            std::cout << "tower " << i << " has particle " << p << std::endl;
+          }
+          ++i;
+        }
+
         return {_towerBlock.getTowerIndex1DAtPosition(boxMinWithSafetyMargin),
                 _towerBlock.getTowerIndex1DAtPosition(boxMaxWithSafetyMargin)};
+
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -321,6 +349,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (cellIndex >= _towerBlock.size()) {
       return {nullptr, 0, 0};
     }
+
     // check the data behind the indices
     if (particleIndex >= _towerBlock[cellIndex].getNumActualParticles() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
@@ -330,10 +359,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
     }
 
+    std::cout << "VerletCLusterLists: cellIndex: " << cellIndex << std::endl;
+
     // shortcut if the given index doesn't exist
     if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
     }
+
+    std::cout << "VerletCLusterLists: we are here" << std::endl;
+
     const Particle *retPtr = &_towerBlock[cellIndex][particleIndex];
 
     return {retPtr, cellIndex, particleIndex};
@@ -556,7 +590,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
-      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
+      std::cout << "VerletClusterLists::getRegionIterator _isValid != ValidityState::invalid" << std::endl;
+      // we call particlesToAddEmpty() as a sanity check to ensure there are actually no particles in _particlesToAdd if
       // the status is not invalid
       if (not particlesToAddEmpty(autopas_get_thread_num())) {
         autopas::utils::ExceptionHandler::exception(
@@ -566,6 +601,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       // from LogicHandler.
       return ContainerIterator<Particle, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
     } else {
+      std::cout << "VerletClusterLists::getRegionIterator _isValid == ValidityState::invalid" << std::endl;
       // if the particles are not sorted into the towers, we have to also iterate over _particlesToAdd.
       // store all pointers in a temporary which is passed to the ParticleIterator constructor.
       typename ContainerIterator<Particle, true, true>::ParticleVecType additionalVectorsToPass;
@@ -1183,6 +1219,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       if constexpr (regionIter) {
         // is the cell in the region?
         const auto [towerLowCorner, towerHighCorner] = _towerBlock.getTowerBoundingBox(cellIndex);
+        std::cout << "tower bounding box of " << cellIndex << ": [" << towerLowCorner[0] << ", " << towerLowCorner[1]
+                  << ", " << towerLowCorner[2] << "], [" << towerHighCorner[0] << ", " << towerHighCorner[1] << ", "
+                  << towerHighCorner[2] << "]" << std::endl;
+        std::cout << "boxMin : [" << boxMin[0] << ", " << boxMin[1] << ", " << boxMin[2] << "]" << std::endl;
+        std::cout << "boxMax : [" << boxMax[0] << ", " << boxMax[1] << ", " << boxMax[2] << "]" << std::endl;
         // particles can move over cell borders. Calculate the volume this cell's particles can be.
         const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
         const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
@@ -1198,6 +1239,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
       while (not towerIsRelevant() or particleIndex >= _towerBlock[cellIndex].getNumActualParticles()) {
+        std::cout << "advanceIteratorIndices: towerIsRelevant " << towerIsRelevant() << std::endl;
+        std::cout << "advanceIteratorIndices: _towerBlock[cellIndex].getNumActualParticles() "
+                  << _towerBlock[cellIndex].getNumActualParticles() << std::endl;
+        std::cout << "advanceIteratorIndices: particleIndex " << particleIndex << std::endl;
+        std::cout << "advanceIteratorIndices: cellIndex " << cellIndex << std::endl;
         cellIndex += stride;
         particleIndex = 0;
 

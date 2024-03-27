@@ -1,8 +1,16 @@
 file(
     GLOB_RECURSE
     MY_SRC
-    "*.cpp"
-    "*.h"
+    #"*.cpp"
+    #"*.h"
+    "testingHelpers/*.cpp"
+    "testingHelpers/*.h"
+    "*allTests.cpp"
+    "*AutoPasTestBase.h"
+    "*RegionParticleIteratorTest.h"
+    "*RegionParticleIteratorTest.cpp"
+    "*LinkedCellsTest.h"
+    "*LinkedCellsTest.cpp"
 )
 
 add_executable(runTests ${MY_SRC})

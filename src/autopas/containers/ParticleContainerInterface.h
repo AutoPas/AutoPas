@@ -283,6 +283,12 @@ class ParticleContainerInterface {
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
 
+  [[nodiscard]] virtual size_t getStepsSinceLastRebuild() const { return _stepsSinceLastRebuild; }
+
+  virtual void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) {
+    _stepsSinceLastRebuild = stepsSinceLastRebuild;
+  }
+
   /**
    * Return the interaction length (cutoff+skin) of the container.
    * @return interaction length
@@ -403,6 +409,9 @@ class ParticleContainerInterface {
    * @return True if the given indices still point to a new particle.
    */
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
+
+ protected:
+  size_t _stepsSinceLastRebuild{0};
 };
 
 }  // namespace autopas

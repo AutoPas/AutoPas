@@ -193,6 +193,12 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     if (_towersPerDim[0] == 0) {
       return {_boxMin, _boxMax};
     }
+    std::cout << "index2D: [" << index2D[0] << ", " << index2D[1] << "]" << std::endl;
+    std::cout << "_haloBoxMin: [" << _haloBoxMin[0] << ", " << _haloBoxMin[1] << ", " << _haloBoxMin[2] << "]"
+              << std::endl;
+    std::cout << "_haloBoxMax: [" << _haloBoxMax[0] << ", " << _haloBoxMax[1] << ", " << _haloBoxMax[2] << "]"
+              << std::endl;
+    std::cout << "_towerSideLength: [" << _towerSideLength[0] << ", " << _towerSideLength[1] << "]" << std::endl;
     const std::array<double, 3> towerBoxMin{
         _haloBoxMin[0] + _towerSideLength[0] * static_cast<double>(index2D[0]),
         _haloBoxMin[1] + _towerSideLength[1] * static_cast<double>(index2D[1]),
@@ -221,6 +227,10 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
     std::array<size_t, 2> towerIndex2D{};
 
     for (int dim = 0; dim < 2; dim++) {
+      std::cout << "_towerSideLengthReciprocal[" << dim << "]: " << _towerSideLengthReciprocal[dim] << std::endl;
+      std::cout << "_boxMin[" << dim << "]: " << _boxMin[dim] << std::endl;
+      std::cout << "_boxMax[" << dim << "]: " << _boxMax[dim] << std::endl;
+      std::cout << "_numTowersPerInteractionLength: " << _numTowersPerInteractionLength << std::endl;
       const auto towerDimIndex =
           static_cast<long int>(std::floor((pos[dim] - _boxMin[dim]) * _towerSideLengthReciprocal[dim])) +
           _numTowersPerInteractionLength;
@@ -235,6 +245,8 @@ class ClusterTowerBlock2D : public CellBorderAndFlagManager {
         towerIndex2D[dim] = 0;
       }
     }
+
+    std::cout << "getTowerIndex2DAtPosition: " << towerIndex2D[0] << ", " << towerIndex2D[1] << std::endl;
 
     return towerIndex2D;
   }
