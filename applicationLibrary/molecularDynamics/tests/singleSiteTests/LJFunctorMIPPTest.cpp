@@ -3,15 +3,15 @@
 #include "LJFunctorMIPPTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJFunctorMIPP.h"
+#include "molecularDynamics/molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 template <class SoAType>
 bool LJFunctorMIPPTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
-  EXPECT_GT(soa1.getNumberOfParticles(), 0);
-  EXPECT_EQ(soa1.getNumberOfParticles(), soa2.getNumberOfParticles());
+  EXPECT_GT(soa1.size(), 0);
+  EXPECT_EQ(soa1.size(), soa2.size());
 
   unsigned long *const __restrict idptr1 = soa1.template begin<Particle::AttributeNames::id>();
   unsigned long *const __restrict idptr2 = soa2.template begin<Particle::AttributeNames::id>();
@@ -30,7 +30,7 @@ bool LJFunctorMIPPTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::
   double *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
   double *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-  for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
+  for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
     double tolerance = 1e-8;
@@ -64,11 +64,11 @@ bool LJFunctorMIPPTest::particleEqual(Particle &p1, Particle &p2) {
 }
 
 bool LJFunctorMIPPTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
-  EXPECT_GT(cell1.numParticles(), 0);
-  EXPECT_EQ(cell1.numParticles(), cell2.numParticles());
+  EXPECT_GT(cell1._particles.size(), 0);
+  EXPECT_EQ(cell1._particles.size(), cell2._particles.size());
 
   bool ret = true;
-  for (size_t i = 0; i < cell1.numParticles(); ++i) {
+  for (size_t i = 0; i < cell1._particles.size(); ++i) {
     ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
   }
 
@@ -103,9 +103,9 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
   ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
+  mdLib::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
   ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ljFunctorMIPP.initTraversal();
@@ -114,10 +114,10 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
   ASSERT_TRUE(AoSParticlesEqual(cell1MIPP, cell1NoMIPP)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2MIPP, cell2NoMIPP)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoMIPP.SoALoader(cell1NoMIPP, cell1NoMIPP._particleSoABuffer, 0);
-  ljFunctorNoMIPP.SoALoader(cell2NoMIPP, cell2NoMIPP._particleSoABuffer, 0);
-  ljFunctorMIPP.SoALoader(cell1MIPP, cell1MIPP._particleSoABuffer, 0);
-  ljFunctorMIPP.SoALoader(cell2MIPP, cell2MIPP._particleSoABuffer, 0);
+  ljFunctorNoMIPP.SoALoader(cell1NoMIPP, cell1NoMIPP._particleSoABuffer, 0, false);
+  ljFunctorNoMIPP.SoALoader(cell2NoMIPP, cell2NoMIPP._particleSoABuffer, 0, false);
+  ljFunctorMIPP.SoALoader(cell1MIPP, cell1MIPP._particleSoABuffer, 0, false);
+  ljFunctorMIPP.SoALoader(cell2MIPP, cell2MIPP._particleSoABuffer, 0, false);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1MIPP._particleSoABuffer, cell1NoMIPP._particleSoABuffer))
       << "Cells 1 not equal after loading.";
@@ -125,10 +125,10 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
       << "Cells 2 not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorNoMIPP.SoAFunctorPair(cell1NoMIPP._particleSoABuffer.constructView(1, cell1NoMIPP.numParticles()),
-                                  cell2NoMIPP._particleSoABuffer.constructView(1, cell2NoMIPP.numParticles()), newton3);
-    ljFunctorMIPP.SoAFunctorPair(cell1MIPP._particleSoABuffer.constructView(1, cell1MIPP.numParticles()),
-                                cell2MIPP._particleSoABuffer.constructView(1, cell2MIPP.numParticles()), newton3);
+    ljFunctorNoMIPP.SoAFunctorPair(cell1NoMIPP._particleSoABuffer.constructView(1, cell1NoMIPP.size()),
+                                  cell2NoMIPP._particleSoABuffer.constructView(1, cell2NoMIPP.size()), newton3);
+    ljFunctorMIPP.SoAFunctorPair(cell1MIPP._particleSoABuffer.constructView(1, cell1MIPP.size()),
+                                cell2MIPP._particleSoABuffer.constructView(1, cell2MIPP.size()), newton3);
   } else {
     ljFunctorNoMIPP.SoAFunctorPair(cell1NoMIPP._particleSoABuffer, cell2NoMIPP._particleSoABuffer, newton3);
     ljFunctorMIPP.SoAFunctorPair(cell1MIPP._particleSoABuffer, cell2MIPP._particleSoABuffer, newton3);
@@ -150,7 +150,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
   ljFunctorNoMIPP.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorMIPP.getUpot(), ljFunctorNoMIPP.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorMIPP.getUpot(), ljFunctorNoMIPP.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorMIPP.getVirial(), ljFunctorNoMIPP.getVirial(), tolerance) << "global virial";
 }
 
@@ -174,9 +174,9 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool d
   FMCell cellNoMIPP(cellMIPP);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
   ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
+  mdLib::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
   ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellMIPP, cellNoMIPP)) << "Cells not equal after copy initialization.";
@@ -184,15 +184,15 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool d
   ljFunctorMIPP.initTraversal();
   ljFunctorNoMIPP.initTraversal();
 
-  ljFunctorNoMIPP.SoALoader(cellNoMIPP, cellNoMIPP._particleSoABuffer, 0);
-  ljFunctorMIPP.SoALoader(cellMIPP, cellMIPP._particleSoABuffer, 0);
+  ljFunctorNoMIPP.SoALoader(cellNoMIPP, cellNoMIPP._particleSoABuffer, 0, false);
+  ljFunctorMIPP.SoALoader(cellMIPP, cellMIPP._particleSoABuffer, 0, false);
 
   ASSERT_TRUE(SoAParticlesEqual(cellMIPP._particleSoABuffer, cellNoMIPP._particleSoABuffer))
       << "Cells not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorNoMIPP.SoAFunctorSingle(cellNoMIPP._particleSoABuffer.constructView(1, cellNoMIPP.numParticles()), newton3);
-    ljFunctorMIPP.SoAFunctorSingle(cellMIPP._particleSoABuffer.constructView(1, cellMIPP.numParticles()), newton3);
+    ljFunctorNoMIPP.SoAFunctorSingle(cellNoMIPP._particleSoABuffer.constructView(1, cellNoMIPP.size()), newton3);
+    ljFunctorMIPP.SoAFunctorSingle(cellMIPP._particleSoABuffer.constructView(1, cellMIPP.size()), newton3);
   } else {
     ljFunctorNoMIPP.SoAFunctorSingle(cellNoMIPP._particleSoABuffer, newton3);
     ljFunctorMIPP.SoAFunctorSingle(cellMIPP._particleSoABuffer, newton3);
@@ -209,7 +209,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool d
   ljFunctorNoMIPP.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorMIPP.getUpot(), ljFunctorNoMIPP.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorMIPP.getUpot(), ljFunctorNoMIPP.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorMIPP.getVirial(), ljFunctorNoMIPP.getVirial(), tolerance) << "global virial";
 }
 
@@ -251,10 +251,10 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoMIPP(
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoMIPP(
       _cutoff);
   ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorMIPP(
+  mdLib::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorMIPP(
       _cutoff);
   ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
@@ -263,8 +263,8 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
   ljFunctorMIPP.initTraversal();
   ljFunctorNoMIPP.initTraversal();
 
-  ljFunctorNoMIPP.SoALoader(cellNoMIPP, cellNoMIPP._particleSoABuffer, 0);
-  ljFunctorMIPP.SoALoader(cellMIPP, cellMIPP._particleSoABuffer, 0);
+  ljFunctorNoMIPP.SoALoader(cellNoMIPP, cellNoMIPP._particleSoABuffer, 0, false);
+  ljFunctorMIPP.SoALoader(cellMIPP, cellMIPP._particleSoABuffer, 0, false);
 
   ASSERT_TRUE(SoAParticlesEqual(cellMIPP._particleSoABuffer, cellNoMIPP._particleSoABuffer))
       << "Cells not equal after loading.";
@@ -286,7 +286,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
   ljFunctorNoMIPP.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorMIPP.getUpot(), ljFunctorNoMIPP.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorMIPP.getUpot(), ljFunctorNoMIPP.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorMIPP.getVirial(), ljFunctorNoMIPP.getVirial(), tolerance) << "global virial";
 }
 
@@ -310,9 +310,9 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDel
   FMCell cellNoMIPP(cellMIPP);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoMIPP(_cutoff);
   ljFunctorNoMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
+  mdLib::LJFunctorMIPP<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorMIPP(_cutoff);
   ljFunctorMIPP.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellMIPP, cellNoMIPP)) << "Cells not equal after copy initialization.";
@@ -336,7 +336,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDel
   ljFunctorNoMIPP.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorMIPP.getUpot(), ljFunctorNoMIPP.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorMIPP.getUpot(), ljFunctorNoMIPP.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorMIPP.getVirial(), ljFunctorNoMIPP.getVirial(), tolerance) << "global virial";
 }
 

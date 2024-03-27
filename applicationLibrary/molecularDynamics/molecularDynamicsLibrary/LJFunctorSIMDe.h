@@ -17,7 +17,7 @@
 //for fused-multiply add needs separate import
 #include <x86/fma.h>
 
-namespace autopas {
+namespace mdLib {
 
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
@@ -34,10 +34,10 @@ namespace autopas {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
     template <class Particle, bool applyShift = false, bool useMixing = false,
-            FunctorN3Modes useNewton3 = FunctorN3Modes::Both, bool calculateGlobals = false,
+            autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
             bool relevantForTuning = true>
     class LJFunctorSIMDe
-            : public Functor<Particle,
+            : public autopas::Functor<Particle,
                     LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
         using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -54,7 +54,7 @@ namespace autopas {
          * @note param dummy unused, only there to make the signature different from the public constructor.
          */
         explicit LJFunctorSIMDe(double cutoff, void * /*dummy*/)
-                : Functor<Particle,
+                : autopas::Functor<Particle,
                 LJFunctorSIMDe<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
                   _cutoffsquare{simde_mm256_set1_pd(cutoff * cutoff)},
                   _cutoffsquareAoS(cutoff * cutoff),
@@ -63,7 +63,7 @@ namespace autopas {
                   _aosThreadData(),
                   _postProcessed{false} {
             if (calculateGlobals) {
-                _aosThreadData.resize(autopas_get_max_threads());
+                _aosThreadData.resize(autopas::autopas_get_max_threads());
             }
         }
     public:
@@ -97,10 +97,10 @@ namespace autopas {
 
         bool isRelevantForTuning() final { return relevantForTuning; }
 
-        bool allowsNewton3() final { return useNewton3 == FunctorN3Modes::Newton3Only or useNewton3 == FunctorN3Modes::Both; }
+        bool allowsNewton3() final { return useNewton3 == autopas::FunctorN3Modes::Newton3Only or useNewton3 == autopas::FunctorN3Modes::Both; }
 
         bool allowsNonNewton3() final {
-            return useNewton3 == FunctorN3Modes::Newton3Off or useNewton3 == FunctorN3Modes::Both;
+            return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
         }
 
         inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
@@ -112,14 +112,14 @@ namespace autopas {
             auto epsilon24 = _epsilon24AoS;
             auto shift6 = _shift6AoS;
             if constexpr (useMixing) {
-                sigmasquare = _PPLibrary->mixingSigmaSquare(i.getTypeId(), j.getTypeId());
-                epsilon24 = _PPLibrary->mixing24Epsilon(i.getTypeId(), j.getTypeId());
+                sigmasquare = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
+                epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
                 if constexpr (applyShift) {
-                    shift6 = _PPLibrary->mixingShift6(i.getTypeId(), j.getTypeId());
+                    shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
                 }
             }
             auto dr = i.getR() - j.getR();
-            double dr2 = utils::ArrayMath::dot(dr, dr);
+            double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
             if (dr2 > _cutoffsquareAoS) {
                 return;
@@ -141,7 +141,7 @@ namespace autopas {
                 auto virial = dr * f;
                 double upot = epsilon24 * lj12m6 + shift6;
 
-                const int threadnum = autopas_get_thread_num();
+                const int threadnum = autopas::autopas_get_thread_num();
                 // for non-newton3 the division is in the post-processing step.
                 if (newton3) {
                     upot *= 0.5;
@@ -164,7 +164,7 @@ namespace autopas {
          * This functor will always do a newton3 like traversal of the soa.
          * However, it still needs to know about newton3 to correctly add up the global values.
          */
-        inline void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) final {
+        inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
             if (newton3) {
                 SoAFunctorSingleImpl<true>(soa);
             } else {
@@ -177,7 +177,7 @@ namespace autopas {
          * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
          */
         // clang-format on
-        inline void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, const bool newton3) final {
+        inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
             if (newton3) {
                 SoAFunctorPairImpl<true>(soa1, soa2);
             } else {
@@ -192,8 +192,8 @@ namespace autopas {
          * @param soa
          */
         template <bool newton3>
-        inline void SoAFunctorSingleImpl(SoAView<SoAArraysType> soa) {
-            if (soa.getNumberOfParticles() == 0) return;
+        inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
+            if (soa.size() == 0) return;
 
             const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
             const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -214,13 +214,13 @@ namespace autopas {
 
             // reverse outer loop s.th. inner loop always beginns at aligned array start
             // typecast to detect underflow
-            for (size_t i = soa.getNumberOfParticles() - 1; (long)i >= 0; --i) {
-                if (ownedStatePtr[i] == OwnershipState::dummy) {
+            for (size_t i = soa.size() - 1; (long)i >= 0; --i) {
+                if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
                     // If the i-th particle is a dummy, skip this loop iteration.
                     continue;
                 }
 
-                static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
+                static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                               "OwnershipStates underlying type should be int64_t!");
                 // ownedStatePtr contains int64_t, so we broadcast these to make an simde__m256i.
                 // simde_mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
@@ -275,7 +275,7 @@ namespace autopas {
             }
 
             if constexpr (calculateGlobals) {
-                const int threadnum = autopas_get_thread_num();
+                const int threadnum = autopas::autopas_get_thread_num();
 
                 // horizontally reduce virialSumX and virialSumY
                 const simde__m256d hSumVirialxy = simde_mm256_hadd_pd(virialSumX, virialSumY);
@@ -307,8 +307,8 @@ namespace autopas {
         }
 
         template <bool newton3>
-        inline void SoAFunctorPairImpl(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2) {
-            if (soa1.getNumberOfParticles() == 0 || soa2.getNumberOfParticles() == 0) return;
+        inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
+            if (soa1.size() == 0 || soa2.size() == 0) return;
 
             const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
             const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
@@ -335,8 +335,8 @@ namespace autopas {
             simde__m256d virialSumZ = simde_mm256_setzero_pd();
             simde__m256d upotSum = simde_mm256_setzero_pd();
 
-            for (unsigned int i = 0; i < soa1.getNumberOfParticles(); ++i) {
-                if (ownedStatePtr1[i] == OwnershipState::dummy) {
+            for (unsigned int i = 0; i < soa1.size(); ++i) {
+                if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
                     // If the i-th particle is a dummy, skip this loop iteration.
                     continue;
                 }
@@ -345,7 +345,7 @@ namespace autopas {
                 simde__m256d fyacc = simde_mm256_setzero_pd();
                 simde__m256d fzacc = simde_mm256_setzero_pd();
 
-                static_assert(std::is_same_v<std::underlying_type_t<OwnershipState>, int64_t>,
+                static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                               "OwnershipStates underlying type should be int64_t!");
                 // ownedStatePtr1 contains int64_t, so we broadcast these to make an simde__m256i.
                 // simde_mm256_set1_epi64x broadcasts a 64-bit integer, we use this instruction to have 4 values!
@@ -357,12 +357,12 @@ namespace autopas {
 
                 // floor soa2 numParticles to multiple of vecLength
                 unsigned int j = 0;
-                for (; j < (soa2.getNumberOfParticles() & ~(vecLength - 1)); j += 4) {
+                for (; j < (soa2.size() & ~(vecLength - 1)); j += 4) {
                     SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
                                               y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
                                               &virialSumX, &virialSumY, &virialSumZ, &upotSum, 0);
                 }
-                const int rest = (int)(soa2.getNumberOfParticles() & (vecLength - 1));
+                const int rest = (int)(soa2.size() & (vecLength - 1));
                 if (rest > 0)
                     SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
                                              y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, typeID1ptr, typeID2ptr, fxacc, fyacc, fzacc,
@@ -391,7 +391,7 @@ namespace autopas {
             }
 
             if constexpr (calculateGlobals) {
-                const int threadnum = autopas_get_thread_num();
+                const int threadnum = autopas::autopas_get_thread_num();
 
                 // horizontally reduce virialSumX and virialSumY
                 const simde__m256d hSumVirialxy = simde_mm256_hadd_pd(virialSumX, virialSumY);
@@ -467,21 +467,21 @@ namespace autopas {
             if (useMixing) {
                 // the first argument for set lands in the last bits of the register
                 epsilon24s = simde_mm256_set_pd(
-                        not remainderIsMasked or rest > 3 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-                        not remainderIsMasked or rest > 2 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                        not remainderIsMasked or rest > 1 ? _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                        _PPLibrary->mixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
+                        not remainderIsMasked or rest > 3 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                        not remainderIsMasked or rest > 2 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                        not remainderIsMasked or rest > 1 ? _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                        _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + 0)));
                 sigmaSquares = simde_mm256_set_pd(
-                        not remainderIsMasked or rest > 3 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-                        not remainderIsMasked or rest > 2 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                        not remainderIsMasked or rest > 1 ? _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                        _PPLibrary->mixingSigmaSquare(*typeID1ptr, *(typeID2ptr + 0)));
+                        not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                        not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                        not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                        _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + 0)));
                 if constexpr (applyShift) {
                     shift6s = simde_mm256_set_pd(
-                            (not remainderIsMasked or rest > 3) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
-                            (not remainderIsMasked or rest > 2) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
-                            (not remainderIsMasked or rest > 1) ? _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
-                            _PPLibrary->mixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
+                            (not remainderIsMasked or rest > 3) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 3)) : 0,
+                            (not remainderIsMasked or rest > 2) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 2)) : 0,
+                            (not remainderIsMasked or rest > 1) ? _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 1)) : 0,
+                            _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + 0)));
                 }
             }
 
@@ -598,10 +598,10 @@ namespace autopas {
          * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
          */
         // clang-format on
-        inline void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+        inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                      const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
                                      bool newton3) final {
-            if (soa.getNumberOfParticles() == 0 or neighborList.empty()) return;
+            if (soa.size() == 0 or neighborList.empty()) return;
             if (newton3) {
                 SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
             } else {
@@ -611,10 +611,10 @@ namespace autopas {
 
     private:
         template <bool newton3>
-        inline void SoAFunctorVerletImpl(SoAView<SoAArraysType> soa, const size_t indexFirst,
+        inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                          const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
             const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-            if (ownedStatePtr[indexFirst] == OwnershipState::dummy) {
+            if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
                 return;
             }
 
@@ -766,7 +766,7 @@ namespace autopas {
             fzptr[indexFirst] += sumfz;
 
             if constexpr (calculateGlobals) {
-                const int threadnum = autopas_get_thread_num();
+                const int threadnum = autopas::autopas_get_thread_num();
 
                 // horizontally reduce virialSumX and virialSumY
                 const simde__m256d hSumVirialxy = simde_mm256_hadd_pd(virialSumX, virialSumY);
@@ -865,7 +865,7 @@ namespace autopas {
             using namespace autopas::utils::ArrayMath::literals;
 
             if (_postProcessed) {
-                throw utils::ExceptionHandler::AutoPasException(
+                throw autopas::utils::ExceptionHandler::AutoPasException(
                         "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
             }
 
@@ -892,12 +892,12 @@ namespace autopas {
          */
         double getUpot() {
             if (not calculateGlobals) {
-                throw utils::ExceptionHandler::AutoPasException(
+                throw autopas::utils::ExceptionHandler::AutoPasException(
                         "Trying to get upot even though calculateGlobals is false. If you want this functor to calculate global "
                         "values, please specify calculateGlobals to be true.");
             }
             if (not _postProcessed) {
-                throw utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
+                throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get upot, because endTraversal was not called.");
             }
             return _upotSum;
         }
@@ -908,12 +908,12 @@ namespace autopas {
          */
         double getVirial() {
             if (not calculateGlobals) {
-                throw utils::ExceptionHandler::AutoPasException(
+                throw autopas::utils::ExceptionHandler::AutoPasException(
                         "Trying to get virial even though calculateGlobals is false. If you want this functor to calculate global "
                         "values, please specify calculateGlobals to be true.");
             }
             if (not _postProcessed) {
-                throw utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
+                throw autopas::utils::ExceptionHandler::AutoPasException("Cannot get virial, because endTraversal was not called.");
             }
             return _virialSum[0] + _virialSum[1] + _virialSum[2];
         }
@@ -990,7 +990,7 @@ namespace autopas {
                 simde_mm256_set_epi64x(0, -1, -1, -1),
         };
         const simde__m256i _ownedStateDummyMM256i{0x0};
-        const simde__m256i _ownedStateOwnedMM256i{simde_mm256_set1_epi64x(static_cast<int64_t>(OwnershipState::owned))};
+        const simde__m256i _ownedStateOwnedMM256i{simde_mm256_set1_epi64x(static_cast<int64_t>(autopas::OwnershipState::owned))};
         const simde__m256d _cutoffsquare{};
         simde__m256d _shift6 = simde_mm256_setzero_pd();
         simde__m256d _epsilon24{};

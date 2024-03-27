@@ -3,16 +3,16 @@
 #include "LJFunctorXSIMDTest.h"
 
 #include "autopas/cells/FullParticleCell.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
-#include "autopas/molecularDynamics/LJFunctorAVX.h"
-#include "autopas/molecularDynamics/LJFunctorXSIMD.h"
+#include "molecularDynamics/molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamics/molecularDynamicsLibrary/LJFunctorAVX.h"
+#include "molecularDynamics/molecularDynamicsLibrary/LJFunctorXSIMD.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 template <class SoAType>
 bool LJFunctorXSIMDTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
-  EXPECT_GT(soa1.getNumberOfParticles(), 0);
-  EXPECT_EQ(soa1.getNumberOfParticles(), soa2.getNumberOfParticles());
+  EXPECT_GT(soa1.size(), 0);
+  EXPECT_EQ(soa1.size(), soa2.size());
 
   unsigned long *const __restrict idptr1 = soa1.template begin<Particle::AttributeNames::id>();
   unsigned long *const __restrict idptr2 = soa2.template begin<Particle::AttributeNames::id>();
@@ -31,7 +31,7 @@ bool LJFunctorXSIMDTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas:
   double *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
   double *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
 
-  for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
+  for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
     double tolerance = 1e-8;
@@ -65,11 +65,11 @@ bool LJFunctorXSIMDTest::particleEqual(Particle &p1, Particle &p2) {
 }
 
 bool LJFunctorXSIMDTest::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
-  EXPECT_GT(cell1.numParticles(), 0);
-  EXPECT_EQ(cell1.numParticles(), cell2.numParticles());
+  EXPECT_GT(cell1._particles.size(), 0);
+  EXPECT_EQ(cell1._particles.size(), cell2._particles.size());
 
   bool ret = true;
-  for (size_t i = 0; i < cell1.numParticles(); ++i) {
+  for (size_t i = 0; i < cell1._particles.size(); ++i) {
     ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
   }
 
@@ -104,9 +104,9 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoXSIMD(_cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoXSIMD(_cutoff);
   ljFunctorNoXSIMD.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorXSIMD<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorXSIMD(_cutoff);
+  mdLib::LJFunctorXSIMD<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorXSIMD(_cutoff);
   ljFunctorXSIMD.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ljFunctorXSIMD.initTraversal();
@@ -115,10 +115,10 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
   ASSERT_TRUE(AoSParticlesEqual(cell1XSIMD, cell1NoXSIMD)) << "Cells 1 not equal after copy initialization.";
   ASSERT_TRUE(AoSParticlesEqual(cell2XSIMD, cell2NoXSIMD)) << "Cells 2 not equal after copy initialization.";
 
-  ljFunctorNoXSIMD.SoALoader(cell1NoXSIMD, cell1NoXSIMD._particleSoABuffer, 0);
-  ljFunctorNoXSIMD.SoALoader(cell2NoXSIMD, cell2NoXSIMD._particleSoABuffer, 0);
-  ljFunctorXSIMD.SoALoader(cell1XSIMD, cell1XSIMD._particleSoABuffer, 0);
-  ljFunctorXSIMD.SoALoader(cell2XSIMD, cell2XSIMD._particleSoABuffer, 0);
+  ljFunctorNoXSIMD.SoALoader(cell1NoXSIMD, cell1NoXSIMD._particleSoABuffer, 0, false);
+  ljFunctorNoXSIMD.SoALoader(cell2NoXSIMD, cell2NoXSIMD._particleSoABuffer, 0, false);
+  ljFunctorXSIMD.SoALoader(cell1XSIMD, cell1XSIMD._particleSoABuffer, 0, false);
+  ljFunctorXSIMD.SoALoader(cell2XSIMD, cell2XSIMD._particleSoABuffer, 0, false);
 
   ASSERT_TRUE(SoAParticlesEqual(cell1XSIMD._particleSoABuffer, cell1NoXSIMD._particleSoABuffer))
       << "Cells 1 not equal after loading.";
@@ -126,10 +126,10 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
       << "Cells 2 not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorNoXSIMD.SoAFunctorPair(cell1NoXSIMD._particleSoABuffer.constructView(1, cell1NoXSIMD.numParticles()),
-                                  cell2NoXSIMD._particleSoABuffer.constructView(1, cell2NoXSIMD.numParticles()), newton3);
-    ljFunctorXSIMD.SoAFunctorPair(cell1XSIMD._particleSoABuffer.constructView(1, cell1XSIMD.numParticles()),
-                                cell2XSIMD._particleSoABuffer.constructView(1, cell2XSIMD.numParticles()), newton3);
+    ljFunctorNoXSIMD.SoAFunctorPair(cell1NoXSIMD._particleSoABuffer.constructView(1, cell1NoXSIMD.size()),
+                                  cell2NoXSIMD._particleSoABuffer.constructView(1, cell2NoXSIMD.size()), newton3);
+    ljFunctorXSIMD.SoAFunctorPair(cell1XSIMD._particleSoABuffer.constructView(1, cell1XSIMD.size()),
+                                cell2XSIMD._particleSoABuffer.constructView(1, cell2XSIMD.size()), newton3);
   } else {
     ljFunctorNoXSIMD.SoAFunctorPair(cell1NoXSIMD._particleSoABuffer, cell2NoXSIMD._particleSoABuffer, newton3);
     ljFunctorXSIMD.SoAFunctorPair(cell1XSIMD._particleSoABuffer, cell2XSIMD._particleSoABuffer, newton3);
@@ -175,9 +175,9 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool
   FMCell cellNoXSIMD(cellXSIMD);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoXSIMD(_cutoff);
+  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoXSIMD(_cutoff);
   ljFunctorNoXSIMD.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorXSIMD<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorXSIMD(_cutoff);
+  mdLib::LJFunctorXSIMD<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorXSIMD(_cutoff);
   ljFunctorXSIMD.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellXSIMD, cellNoXSIMD)) << "Cells not equal after copy initialization.";
@@ -185,15 +185,15 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool
   ljFunctorXSIMD.initTraversal();
   ljFunctorNoXSIMD.initTraversal();
 
-  ljFunctorNoXSIMD.SoALoader(cellNoXSIMD, cellNoXSIMD._particleSoABuffer, 0);
-  ljFunctorXSIMD.SoALoader(cellXSIMD, cellXSIMD._particleSoABuffer, 0);
+  ljFunctorNoXSIMD.SoALoader(cellNoXSIMD, cellNoXSIMD._particleSoABuffer, 0, false);
+  ljFunctorXSIMD.SoALoader(cellXSIMD, cellXSIMD._particleSoABuffer, 0, false);
 
   ASSERT_TRUE(SoAParticlesEqual(cellXSIMD._particleSoABuffer, cellNoXSIMD._particleSoABuffer))
       << "Cells not equal after loading.";
 
   if (useUnalignedViews) {
-    ljFunctorNoXSIMD.SoAFunctorSingle(cellNoXSIMD._particleSoABuffer.constructView(1, cellNoXSIMD.numParticles()), newton3);
-    ljFunctorXSIMD.SoAFunctorSingle(cellXSIMD._particleSoABuffer.constructView(1, cellXSIMD.numParticles()), newton3);
+    ljFunctorNoXSIMD.SoAFunctorSingle(cellNoXSIMD._particleSoABuffer.constructView(1, cellNoXSIMD.size()), newton3);
+    ljFunctorXSIMD.SoAFunctorSingle(cellXSIMD._particleSoABuffer.constructView(1, cellXSIMD.size()), newton3);
   } else {
     ljFunctorNoXSIMD.SoAFunctorSingle(cellNoXSIMD._particleSoABuffer, newton3);
     ljFunctorXSIMD.SoAFunctorSingle(cellXSIMD._particleSoABuffer, newton3);
@@ -210,7 +210,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool
   ljFunctorNoXSIMD.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorXSIMD.getUpot(), ljFunctorNoXSIMD.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorXSIMD.getUpot(), ljFunctorNoXSIMD.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorXSIMD.getVirial(), ljFunctorNoXSIMD.getVirial(), tolerance) << "global virial";
 }
 
@@ -252,10 +252,10 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDVerlet(bool newton3, bool 
   constexpr bool shifting = true;
   constexpr bool mixing = false;
   constexpr bool calculateGlobals = true;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoXSIMD(
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoXSIMD(
       _cutoff);
   ljFunctorNoXSIMD.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorXSIMD<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorXSIMD(
+  mdLib::LJFunctorXSIMD<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorXSIMD(
       _cutoff);
   ljFunctorXSIMD.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
@@ -264,8 +264,8 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDVerlet(bool newton3, bool 
   ljFunctorXSIMD.initTraversal();
   ljFunctorNoXSIMD.initTraversal();
 
-  ljFunctorNoXSIMD.SoALoader(cellNoXSIMD, cellNoXSIMD._particleSoABuffer, 0);
-  ljFunctorXSIMD.SoALoader(cellXSIMD, cellXSIMD._particleSoABuffer, 0);
+  ljFunctorNoXSIMD.SoALoader(cellNoXSIMD, cellNoXSIMD._particleSoABuffer, 0, false);
+  ljFunctorXSIMD.SoALoader(cellXSIMD, cellXSIMD._particleSoABuffer, 0, false);
 
   ASSERT_TRUE(SoAParticlesEqual(cellXSIMD._particleSoABuffer, cellNoXSIMD._particleSoABuffer))
       << "Cells not equal after loading.";
@@ -311,9 +311,9 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doD
   FMCell cellNoXSIMD(cellXSIMD);
   constexpr bool shifting = true;
   constexpr bool mixing = false;
-  autopas::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoXSIMD(_cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoXSIMD(_cutoff);
   ljFunctorNoXSIMD.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  autopas::LJFunctorXSIMD<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorXSIMD(_cutoff);
+  mdLib::LJFunctorXSIMD<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorXSIMD(_cutoff);
   ljFunctorXSIMD.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellXSIMD, cellNoXSIMD)) << "Cells not equal after copy initialization.";
@@ -337,7 +337,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doD
   ljFunctorNoXSIMD.endTraversal(newton3);
 
   double tolerance = 1e-8;
-  EXPECT_NEAR(ljFunctorXSIMD.getUpot(), ljFunctorNoXSIMD.getUpot(), tolerance) << "global uPot";
+  EXPECT_NEAR(ljFunctorXSIMD.getUpot(), ljFunctorNoXSIMD.getPotentialEnergy(), tolerance) << "global uPot";
   EXPECT_NEAR(ljFunctorXSIMD.getVirial(), ljFunctorNoXSIMD.getVirial(), tolerance) << "global virial";
 }
 
