@@ -23,6 +23,7 @@ option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Fun
 option(MD_FLEXIBLE_FUNCTOR_XSIMD "If instruction set is available, compile XSIMD Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_MIPP "If instruction set is available, compile MIPP Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_SIMDE "If instruction set is available, compile SIMDe Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_GUNCTOR_HIGHWAY "If instruction set is available, compile Highway Function without calculation of global values." ON)
 
 target_compile_definitions(
         md-flexible
@@ -34,7 +35,8 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_XSIMD}>:MD_FLEXIBLE_FUNCTOR_XSIMD>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIPP}>:MD_FLEXIBLE_FUNCTOR_MIPP>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SIMDE}>:MD_FLEXIBLE_FUNCTOR_SIMDE>
-)
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HIGHWAY}>:MD_FLEXIBLE_FUNCTOR_HIGWHAY>
+        )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
 string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
