@@ -7,7 +7,9 @@ INPUT                  = @PROJECT_SOURCE_DIR@/@DOXY_MAIN_PAGE@ \
                          @PROJECT_SOURCE_DIR@/src/ \
                          @PROJECT_SOURCE_DIR@/tests/testAutopas/testingHelpers/ \
                          @PROJECT_SOURCE_DIR@/docs \
-                         @PROJECT_SOURCE_DIR@/tools
+                         @PROJECT_SOURCE_DIR@/tools \
+                         @PROJECT_SOURCE_DIR@/applicationLibrary/molecularDynamics/molecularDynamicsLibrary \
+                         @PROJECT_SOURCE_DIR@/applicationLibrary/sph/SPHLibrary
 FILE_PATTERNS          = *.h \
                          *.cuh \
                          *.cpp \
@@ -52,3 +54,5 @@ IMAGE_PATH             = @PROJECT_SOURCE_DIR@/docs/graphics
 TEMPLATE_RELATIONS     = YES
 HAVE_DOT               = YES
 GENERATE_XML           = YES
+
+EXCLUDE                = @PROJECT_SOURCE_DIR@/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/

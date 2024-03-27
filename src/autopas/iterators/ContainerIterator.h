@@ -56,24 +56,25 @@ namespace containerIteratorUtils {
 template <bool regionIter, class Particle, class Arr>
 [[nodiscard]] bool particleFulfillsIteratorRequirements(const Particle &p, IteratorBehavior behavior,
                                                         const Arr &regionMin, const Arr &regionMax) {
-  bool particleOk = false;
+  // If this is a region iterator check box condition first, otherwise race conditions can occur
+  // if multiple region iterator overlap and ownership state is touched.
+  // (e.g. during collection of leaving particles)
+  if constexpr (regionIter) {
+    if (not utils::inBox(p.getR(), regionMin, regionMax)) {
+      return false;
+    }
+  }
+
   // Check ownership
   // Dummy is not in sync with iterator behavior because it needs to be 0.
   // `a & b == b` idiom is to check a == b disregarding any bits beyond b. This is needed due to e.g. forceSequential.
   if (((behavior & IteratorBehavior::ownedOrHaloOrDummy) == IteratorBehavior::ownedOrHaloOrDummy) or
       (behavior & IteratorBehavior::dummy and p.isDummy())) {
-    particleOk = true;
+    return true;
   } else {
     // relies on both enums having the same encoding. This should be guaranteed statically in IteratorBehaviorTest!
-    particleOk = static_cast<unsigned int>(p.getOwnershipState()) & static_cast<unsigned int>(behavior);
+    return static_cast<unsigned int>(p.getOwnershipState()) & static_cast<unsigned int>(behavior);
   }
-  if constexpr (regionIter) {
-    // If this is a region iterator check if the particle is in the box.
-    if (particleOk and not utils::inBox(p.getR(), regionMin, regionMax)) {
-      particleOk = false;
-    }
-  }
-  return particleOk;
 }
 }  // namespace containerIteratorUtils
 
@@ -240,8 +241,8 @@ class ContainerIterator {
                     ParticleVecType *additionalVectorsToIterate, const std::array<double, 3> &regionMin,
                     const std::array<double, 3> &regionMax)
       : _container(&container),
-        _behavior(behavior),
         _currentVectorIndex(0),
+        _behavior(behavior),
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
     if (additionalVectorsToIterate) {
       // store pointers to all additional vectors
@@ -326,11 +327,7 @@ class ContainerIterator {
       // if getParticle told us that the container doesn't have a particle in the first vector for our thread...
       if (_currentParticle == nullptr and not _additionalVectors.empty()) {
         // determine which additional vector this thread should start to iterate
-        // we invert the assignment of threads to additional vectors because if there are more threads than cells
-        // these surplus threads can then directly start with the additional vectors
-        _currentVectorIndex = (_behavior & IteratorBehavior::forceSequential)
-                                  ? 0
-                                  : autopas_get_num_threads() - 1 - autopas_get_thread_num();
+        _currentVectorIndex = (_behavior & IteratorBehavior::forceSequential) ? 0 : autopas_get_thread_num();
         _currentParticleIndex = 0;
         _iteratingAdditionalVectors = true;
       } else {
@@ -400,6 +397,30 @@ class ContainerIterator {
   ContainerType *_container;
 
   /**
+   * Index within the current vector.
+   * If the Iterator is currently invalid, the state of this index is undefined.
+   */
+  size_t _currentParticleIndex{0};
+
+  /**
+   * Index of the Vector where the current particle is found.
+   * "Vector" typically refers to either a cell in the particle container or one of the additional vectors.
+   * If the Iterator is currently invalid, the state of this index is undefined.
+   */
+  size_t _currentVectorIndex{};
+
+  /**
+   * The particle the iterator currently points to.
+   * This is always either a valid particle satisfying all iterator requirements or nullptr.
+   */
+  ParticleType *_currentParticle = nullptr;
+
+  /**
+   * Vector of pointers to additional Particle Vectors this ParticleIterator will iterate over.
+   */
+  ParticleVecType _additionalVectors;
+
+  /**
    * Indicator which type of particles this iterator covers.
    */
   IteratorBehavior _behavior;
@@ -411,33 +432,9 @@ class ContainerIterator {
   bool _iteratingAdditionalVectors{false};
 
   /**
-   * Vector of pointers to additional Particle Vectors this ParticleIterator will iterate over.
-   */
-  ParticleVecType _additionalVectors;
-
-  /**
-   * The particle the iterator currently points to.
-   * This is always either a valid particle satisfying all iterator requirements or nullptr.
-   */
-  ParticleType *_currentParticle = nullptr;
-
-  /**
-   * Index of the Vector where the current particle is found.
-   * "Vector" typically refers to either a cell in the particle container or one of the additional vectors.
-   * If the Iterator is currently invalid, the state of this index is undefined.
-   */
-  size_t _currentVectorIndex{};
-
-  /**
    * Offset with which to iterate over vectors. Determined through number of threads used for iterating.
    */
   size_t _vectorIndexOffset{};
-
-  /**
-   * Index within the current vector.
-   * If the Iterator is currently invalid, the state of this index is undefined.
-   */
-  size_t _currentParticleIndex{0};
 
   /**
    * Dummy type for a data type of size zero.

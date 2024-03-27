@@ -10,10 +10,10 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/particles/Particle.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using ::testing::_;
@@ -37,10 +37,9 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
   Particle p2(r2, {0., 0., 0.}, 1);
   verletLists.addParticle(p2);
 
-  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::DataLayoutOption::aos, true,
-                           autopas::VLCAllCellsNeighborList<Particle>, autopas::ContainerOption::verletListsCells>
-      traversal(verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(),
-                verletLists.getCellLength());
+  autopas::VLCC18Traversal<FPCell, MFunctor, autopas::VLCAllCellsNeighborList<Particle>> traversal(
+      verletLists.getCellsPerDimension(), &functor, verletLists.getInteractionLength(), verletLists.getCellLength(),
+      autopas::DataLayoutOption::aos, true, autopas::ContainerOption::verletListsCells);
 
   verletLists.rebuildNeighborLists(&traversal);
   verletLists.iteratePairwise(&traversal);
@@ -85,17 +84,16 @@ void soaTest(const double cellSizeFactor,
                                                                verletLists1.getBoxMax(), 100);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
                                                                verletLists2.getBoxMax(), 100);
-  autopas::LJFunctor<Molecule> ljFunctor(cutoff);
+  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
 
-  autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::aos, true,
-                           autopas::VLCCellPairNeighborList<Molecule>, autopas::ContainerOption::verletListsCells>
+  autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>>
       verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
-                       verletLists1.getCellLength());
-  autopas::VLCC18Traversal<FMCell, autopas::LJFunctor<Molecule>, autopas::DataLayoutOption::soa, true,
-                           autopas::VLCCellPairNeighborList<Molecule>, autopas::ContainerOption::verletListsCells>
-      soaTraversal(verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
-                   verletLists2.getCellLength());
+                       verletLists1.getCellLength(), autopas::DataLayoutOption::aos, true,
+                       autopas::ContainerOption::verletListsCells);
+  autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>> soaTraversal(
+      verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
+      verletLists2.getCellLength(), autopas::DataLayoutOption::soa, true, autopas::ContainerOption::verletListsCells);
 
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);

@@ -26,7 +26,8 @@ namespace autopas {
  *
  * If a different Particle class should be used with AutoPas this class must be used as a base to build your own
  * Particle class.
- * @tparam Floating point type to be used for the SoAs.
+ * @tparam floatType Floating point type to be used for the SoAs.
+ * @tparam idType Integer type to be used for IDs.
  */
 template <typename floatType, typename idType>
 class ParticleBase {
@@ -152,12 +153,51 @@ class ParticleBase {
   void setR(const std::array<double, 3> &r) { _r = r; }
 
   /**
+   * Add a distance vector to the position of the particle and check if the distance between the old and new position
+   * is less than a given max distance.
+   * This max distance usually should be the skin per timestep divided by two.
+   *
+   * @param r vector to be added
+   * @param maxDistSquared The maximum expected movement distance squared.
+   * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
+   */
+  bool setRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto distanceVec = r - _r;
+    const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
+    setR(r);
+    const bool distanceIsFine = distanceSquared < maxDistSquared;
+    if (not distanceIsFine) {
+      AutoPasLog(WARN, "Particle {}: Distance between old and new position is larger than expected: {} > {}", _id,
+                 distanceSquared, maxDistSquared);
+    }
+    return distanceIsFine;
+  }
+
+  /**
    * Add a distance vector to the position of the particle
    * @param r vector to be added
    */
   void addR(const std::array<double, 3> &r) {
     using namespace autopas::utils::ArrayMath::literals;
     _r += r;
+  }
+
+  /**
+   * Add a distance vector to the position of the particle and check if the distance between the old and new position
+   * is less than a given max distance.
+   * This max distance usually should be the skin per timestep divided by two.
+   *
+   * @note uses setRDistanceCheck()
+   *
+   * @param r vector to be added
+   * @param maxDistSquared The maximum expected movement distance squared.
+   * @return true if dot(r - _r) < skinPerTimestepHalvedSquared
+   */
+  bool addRDistanceCheck(const std::array<double, 3> &r, double maxDistSquared) {
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto newR = _r + r;
+    return setRDistanceCheck(newR, maxDistSquared);
   }
 
   /**

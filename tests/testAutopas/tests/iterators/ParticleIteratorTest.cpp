@@ -5,13 +5,14 @@
 // * @date 08.03.21
 // */
 //
-//#include "ParticleIteratorTest.h"
+// #include "ParticleIteratorTest.h"
 //
-//#include "IteratorTestHelper.h"
-//#include "autopas/containers/linkedCells/LinkedCells.h"
-//#include "autopas/iterators/ContainerIterator.h"
-//#include "autopas/options/IteratorBehavior.h"
-//#include "testingHelpers/commonTypedefs.h"
+// #include "IteratorTestHelper.h"
+// #include "autopas/containers/linkedCells/LinkedCells.h"
+// #include "autopas/iterators/ContainerIterator.h"
+// #include "autopas/options/IteratorBehavior.h"
+// #include "autopas/utils/WrapOpenMP.h"
+// #include "testingHelpers/commonTypedefs.h"
 //
 // using namespace autopas;
 // using namespace autopas::internal;
@@ -30,9 +31,7 @@
 //  }
 //
 //  std::vector<size_t> foundParticles;
-//#ifdef AUTOPAS_OPENMP
-//#pragma omp parallel num_threads(numThreads) reduction(vecMerge : foundParticles)
-//#endif
+//  AUTOPAS_OPENMP(parallel num_threads(numThreads) reduction(vecMerge : foundParticles))
 //  {
 //    for (auto iter =
 //             ContainerIterator<Molecule, true>(&cells, 0, nullptr, IteratorBehavior::ownedOrHalo,
@@ -68,9 +67,7 @@
 //  auto data = IteratorTestHelper::generateCellsWithPattern(10, cellsToFill, numParticlesToAddPerCell);
 //
 //  int numFoundParticles = 0;
-//#ifdef AUTOPAS_OPENMP
-//#pragma omp parallel reduction(+ : numFoundParticles)
-//#endif
+//  AUTOPAS_OPENMP(parallel reduction(+ : numFoundParticles))
 //  {
 //    ContainerIterator<Molecule, FMCell, true> iter(&data);
 //    for (; iter.isValid(); ++iter, ++numFoundParticles) {
@@ -80,9 +77,7 @@
 //  ASSERT_EQ(numFoundParticles, cellsToFill.size() * numParticlesToAddPerCell);
 //
 //  numFoundParticles = 0;
-//#ifdef AUTOPAS_OPENMP
-//#pragma omp parallel reduction(+ : numFoundParticles)
-//#endif
+//  AUTOPAS_OPENMP(parallel reduction(+ : numFoundParticles))
 //  {
 //    ContainerIterator<Molecule, FMCell, true> iter(&data);
 //    for (; iter.isValid(); ++iter) {
@@ -92,12 +87,12 @@
 //  ASSERT_EQ(numFoundParticles, 0);
 //}
 //
-//#ifdef AUTOPAS_OPENMP
+// #ifdef AUTOPAS_USE_OPENMP
 // const std::vector<size_t> threadNumsToTest{1, 2, 4};
-//#else
+// #else
 //// no need to test more thread counts when openmp is not enabled
 // const std::vector<size_t> threadNumsToTest{1};
-//#endif
+// #endif
 //
 // INSTANTIATE_TEST_SUITE_P(Generated, ParticleIteratorTest,
 //                         ::testing::Combine(::testing::ValuesIn(threadNumsToTest), ::testing::Values(0, 1, 2, 4)),
@@ -161,7 +156,7 @@
 //    ++particleId;
 //  }
 //
-//#pragma omp parallel
+// #pragma omp parallel
 //  {
 //    std::vector<size_t> foundParticles;
 //    constexpr bool modifyable = true;

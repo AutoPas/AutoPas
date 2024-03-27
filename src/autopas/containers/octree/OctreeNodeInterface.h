@@ -94,9 +94,14 @@ class OctreeNodeInterface {
   virtual void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) = 0;
 
   /**
+   * @copydoc CellBasedParticleContainer::size()
+   */
+  virtual size_t size() const = 0;
+
+  /**
    * @copydoc CellBasedParticleContainer::getNumberOfParticles()
    */
-  virtual unsigned int getNumberOfParticles() const = 0;
+  virtual size_t getNumberOfParticles(IteratorBehavior behavior = IteratorBehavior::owned) const = 0;
 
   /**
    * Get a child node of this node (if there are children) given a specific octant using the spacial structure of the
@@ -351,18 +356,6 @@ class OctreeNodeInterface {
 
     return result;
   }
-
-  /**
-   * Set the minimum coordinate of the enclosing box.
-   * @param boxMin A point in 3D space
-   */
-  void setBoxMin(const std::array<double, 3> &boxMin) { _boxMin = boxMin; }
-
-  /**
-   * Set the maximum coordinate of the enclosing box.
-   * @param boxMax A point in 3D space
-   */
-  void setBoxMax(const std::array<double, 3> &boxMax) { _boxMax = boxMax; }
 
   /**
    * Get the minimum coordinate of the enclosing box.

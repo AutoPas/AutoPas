@@ -27,28 +27,19 @@ namespace autopas {
  *
  * @tparam ParticleCell The type of cells.
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
- * @tparam spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
- * c08)
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
-class SlicedLockBasedTraversal
-    : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward> {
+template <class ParticleCell, class PairwiseFunctor>
+class SlicedLockBasedTraversal : public SlicedBasedTraversal<ParticleCell, PairwiseFunctor> {
  public:
   /**
    * Constructor of the sliced traversal.
-   * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
-   * y and z direction.
-   * @param pairwiseFunctor The functor that defines the interaction of two particles.
-   * @param interactionLength Interaction length (cutoff + skin).
-   * @param cellLength cell length.
+   * @copydetails SlicedBasedTraversal::SlicedBasedTraversal()
    */
   explicit SlicedLockBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                    const double interactionLength, const std::array<double, 3> &cellLength)
-      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>(
-            dims, pairwiseFunctor, interactionLength, cellLength) {}
+                                    double interactionLength, const std::array<double, 3> &cellLength,
+                                    DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
+      : SlicedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                            dataLayout, useNewton3, spaciallyForward) {}
 
  protected:
   /**
@@ -66,11 +57,9 @@ class SlicedLockBasedTraversal
   inline void slicedTraversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          bool spaciallyForward>
+template <class ParticleCell, class PairwiseFunctor>
 template <typename LoopBody>
-void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, spaciallyForward>::slicedTraversal(
-    LoopBody &&loopBody) {
+void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>::slicedTraversal(LoopBody &&loopBody) {
   using std::array;
 
   auto numSlices = this->_sliceThickness.size();
@@ -79,7 +68,7 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
 
   // 0) check if applicable
   const auto overLapps23 = [&]() -> std::array<size_t, 2> {
-    if constexpr (spaciallyForward) {
+    if (this->_spaciallyForward) {
       return {this->_overlap[this->_dimsPerLength[1]], this->_overlap[this->_dimsPerLength[2]]};
     } else {
       return {0ul, 0ul};
@@ -92,16 +81,14 @@ void SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewt
   timers.resize(numSlices);
   threadTimes.resize(numSlices);
 
-#ifdef AUTOPAS_OPENMP
-  // although every thread gets exactly one iteration (=slice) this is faster than a normal parallel region
-  auto numThreads = static_cast<size_t>(autopas_get_max_threads());
+#ifdef AUTOPAS_USE_OPENMP
   if (this->_dynamic) {
     omp_set_schedule(omp_sched_dynamic, 1);
   } else {
     omp_set_schedule(omp_sched_static, 1);
   }
-#pragma omp parallel for schedule(runtime) num_threads(numThreads)
 #endif
+  AUTOPAS_OPENMP(parallel for schedule(runtime))
   for (size_t slice = 0; slice < numSlices; ++slice) {
     timers[slice].start();
     array<unsigned long, 3> myStartArray{0, 0, 0};

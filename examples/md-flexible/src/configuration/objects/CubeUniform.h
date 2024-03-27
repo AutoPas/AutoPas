@@ -19,17 +19,13 @@ class CubeUniform : public Object {
    * Constructor.
    * @param velocity
    * @param typeId
-   * @param epsilon
-   * @param sigma
-   * @param mass
    * @param numParticles
    * @param boxLength
    * @param bottomLeftCorner
    */
-  CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, double epsilon, double sigma, double mass,
-              size_t numParticles, const std::array<double, 3> &boxLength,
-              const std::array<double, 3> &bottomLeftCorner)
-      : Object(velocity, typeId, epsilon, sigma, mass),
+  CubeUniform(const std::array<double, 3> &velocity, unsigned long typeId, size_t numParticles,
+              const std::array<double, 3> &boxLength, const std::array<double, 3> &bottomLeftCorner)
+      : Object(velocity, typeId),
         _numParticles(numParticles),
         _boxLength(boxLength),
         _bottomLeftCorner(bottomLeftCorner) {}

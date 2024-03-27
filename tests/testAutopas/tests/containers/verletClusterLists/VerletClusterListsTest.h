@@ -38,10 +38,7 @@ class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, C
         not autopas::utils::inBox(i.getR(), _min, _max) or not autopas::utils::inBox(j.getR(), _min, _max))
       return;
 
-#if defined(AUTOPAS_OPENMP)
-#pragma omp critical
-#endif
-    {
+    AUTOPAS_OPENMP(critical) {
       _pairs.emplace_back(&i, &j);
       if (newton3) _pairs.emplace_back(&j, &i);
     };
@@ -55,7 +52,7 @@ class CollectParticlePairsFunctor : public autopas::Functor<autopas::Particle, C
   auto getParticlePairs() { return _pairs; }
 };
 
-#if defined(AUTOPAS_OPENMP)
+#if defined(AUTOPAS_USE_OPENMP)
 class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::Particle, CollectParticlesPerThreadFunctor> {
  public:
   int _currentColor{};
@@ -89,12 +86,12 @@ class CollectParticlesPerThreadFunctor : public autopas::Functor<autopas::Partic
 };
 
 class ColoringTraversalWithColorChangeNotify
-    : public autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos, true> {
+    : public autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor> {
  public:
   ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor *functor, size_t clusterSize,
                                          std::function<void(int)> whenColorChanges)
-      : autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos, true>(
-            functor, clusterSize) {
+      : autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor>(functor, clusterSize,
+                                                                           autopas::DataLayoutOption::aos, true) {
     _whenColorChanges = std::move(whenColorChanges);
   }
 

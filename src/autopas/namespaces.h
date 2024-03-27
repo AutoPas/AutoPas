@@ -91,4 +91,14 @@ namespace options {}
  */
 namespace octree {}
 
+/**
+ * Contains some helpers to write and read the tuning log entries.
+ */
+namespace tuningLogEntry {}
+
+/**
+ * Generators for search spaces.
+ */
+namespace SearchSpaceGenerators {}
+
 }  // namespace autopas

@@ -12,7 +12,6 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -44,22 +43,23 @@ class Newton3OnOffTest
                          autopas::DataLayoutOption dataLayout);
 
   template <class Container, class Traversal>
-  void iterate(Container container, Traversal traversal);
+  void iterate(Container &container, Traversal traversal);
 
   MockFunctor<Particle> mockFunctor;
 
   /**
    * Determines how often the functor is called for single cells and pairs of cells und run additional checks.
-   * @tparam useNewton3 Enables or disables newton3.
    * @tparam Container Type of container.
    * @tparam Traversal Type of traversal.
    * @param dataLayout Data layout.
+   * @param useNewton3
    * @param container Container.
    * @param traversalOption Traversal option.
    * @return [#calls single cell, #calls pair of cells]
    */
-  template <bool useNewton3, class Container, class Traversal>
-  std::pair<size_t, size_t> eval(autopas::DataLayoutOption dataLayout, Container &container, Traversal traversalOption);
+  template <class Container, class Traversal>
+  std::pair<size_t, size_t> eval(autopas::DataLayoutOption dataLayout, bool useNewton3, Container &container,
+                                 Traversal traversalOption);
 
   struct PrintToStringParamName {
     template <class ParamType>

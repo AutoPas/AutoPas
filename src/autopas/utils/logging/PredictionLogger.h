@@ -8,7 +8,7 @@
 
 #include <spdlog/async.h>
 
-#include "autopas/selectors/Configuration.h"
+#include "autopas/tuning/Configuration.h"
 
 namespace autopas {
 
@@ -35,13 +35,11 @@ class PredictionLogger {
 
   /**
    * Print all predictions of the given set of configurations to the logger.
-   * @param configurations
-   * @param configurationPredictions
+   * @param predictions
    * @param predictionErrorValue
    * @param tuningPhaseCounter
    */
-  void logAllPredictions(const std::set<Configuration> &configurations,
-                         const std::unordered_map<Configuration, long, ConfigHash> &configurationPredictions,
+  void logAllPredictions(const std::unordered_map<Configuration, long, ConfigHash> &predictions,
                          long predictionErrorValue, size_t tuningPhaseCounter);
 
  private:

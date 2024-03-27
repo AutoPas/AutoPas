@@ -68,7 +68,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::linkedCells; }
 
-  [[nodiscard]] CellType getParticleCellTypeEnum() override { return CellType::FullParticleCell; }
+  [[nodiscard]] CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _cellBlock.reserve(numParticles + numParticlesHaloEstimate);
@@ -156,18 +156,13 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif  // AUTOPAS_OPENMP
-    {
+    AUTOPAS_OPENMP(parallel) {
       // private for each thread!
       std::vector<ParticleType> myInvalidParticles{}, myInvalidNotOwnedParticles{};
       // TODO: needs smarter heuristic than this.
       myInvalidParticles.reserve(128);
       myInvalidNotOwnedParticles.reserve(128);
-#ifdef AUTOPAS_OPENMP
-#pragma omp for
-#endif  // AUTOPAS_OPENMP
+      AUTOPAS_OPENMP(for)
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.
         this->getCells()[cellId].deleteDummyParticles();
@@ -202,10 +197,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
           myInvalidNotOwnedParticles.push_back(p);
         }
       }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      {
+      AUTOPAS_OPENMP(critical) {
         // merge private vectors to global one.
         invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
                                 myInvalidNotOwnedParticles.end());
@@ -277,7 +269,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       return {nullptr, 0, 0};
     }
     // check the data behind the indices
-    if (particleIndex >= this->_cells[cellIndex].numParticles() or
+    if (particleIndex >= this->_cells[cellIndex].size() or
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
@@ -372,13 +364,14 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+          nullptr) const override {
     return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
@@ -524,7 +517,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
       // If this breaches the end of a cell, find the next non-empty cell and reset particleIndex.
 
       // If cell has wrong type, or there are no more particles in this cell jump to the next
-      while (not cellIsRelevant() or particleIndex >= this->_cells[cellIndex].numParticles()) {
+      while (not cellIsRelevant() or particleIndex >= this->_cells[cellIndex].size()) {
         // TODO: can this jump be done more efficient if behavior is only halo or owned?
         // TODO: can this jump be done more efficient for region iters if the cell is outside the region?
         cellIndex += stride;

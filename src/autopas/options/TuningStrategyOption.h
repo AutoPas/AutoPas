@@ -22,11 +22,17 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
    */
   enum Value {
     /**
+     * Logger for Tuning Strategy activity.
+     */
+    tuningStrategyLogger,
+
+    /**
      *  Random test configurations and select the best.
      **/
     randomSearch,
     /**
      * Tests all allowed configurations and select the best.
+     * Technically this is no tuning strategy anymore, but the option still exists for compatibility reasons.
      */
     fullSearch,
     /**
@@ -49,6 +55,24 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      * range, and selects the best.
      */
     predictiveTuning,
+    /**
+     * Applies predefined rules to dynamically exclude configurations from tuning that are expected to perform worse
+     * than others in the next tuning phase.
+     */
+    ruleBasedTuning,
+    /**
+     * Dynamic blacklist that throws out configurations that perform poorly.
+     */
+    slowConfigFilter,
+    /**
+     * Spread the current configuration queue over all similar mpi ranks,
+     * thus parallelizing the search for the optimum.
+     */
+    mpiDivideAndConquer,
+    /**
+     * Sort the queue by Name (=Configuration::operator<()) to minimize container conversion overhead.
+     */
+    sortByName,
   };
 
   /**
@@ -72,7 +96,16 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<TuningStrategyOption> getDiscouragedOptions() { return {}; }
+  static std::set<TuningStrategyOption> getDiscouragedOptions() {
+    return {
+        // Not an actual tuning strategy, just a logger.
+        TuningStrategyOption::tuningStrategyLogger,
+        // Only used to test against randomness, not a truly viable strategy.
+        TuningStrategyOption::randomSearch,
+        // Not a valid option anymore. Only exists to tell users not to use it.
+        TuningStrategyOption::fullSearch,
+    };
+  }
 
   /**
    * Provides a way to iterate over the possible choices of TuningStrategy.
@@ -86,6 +119,11 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::randomSearch, "random-Search"},
         {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
+        {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
+        {TuningStrategyOption::slowConfigFilter, "slow-config-filter"},
+        {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
+        {TuningStrategyOption::sortByName, "sort-by-name"},
+        {TuningStrategyOption::mpiDivideAndConquer, "mpi-divide-and-conquer"},
     };
   }
 

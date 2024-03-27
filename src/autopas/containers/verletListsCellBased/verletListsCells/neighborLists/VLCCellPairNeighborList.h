@@ -127,7 +127,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     // initialize empty lists for every particle-cell pair
     for (size_t firstCellIndex = 0; firstCellIndex < cellsSize; ++firstCellIndex) {
       _aosNeighborList[firstCellIndex].resize(neighborCells);
-      size_t numParticlesFirstCell = cells[firstCellIndex].numParticles();
+      size_t numParticlesFirstCell = cells[firstCellIndex].size();
       for (auto &cellPair : _aosNeighborList[firstCellIndex]) {
         // reserve vector of neighbor lists for every particle in cell1
         cellPair.reserve(numParticlesFirstCell);
@@ -152,7 +152,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
     // particle pointer to global index of particle
     std::unordered_map<Particle *, size_t> particleToIndex;
-    particleToIndex.reserve(linkedCells.getNumberOfParticles());
+    particleToIndex.reserve(linkedCells.size());
     size_t i = 0;
     for (auto iter = linkedCells.begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter, ++i) {
       particleToIndex[&(*iter)] = i;
@@ -222,24 +222,14 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
 
-    // Build the AoS list using the AoS or SoA functor depending on buildType
-    if (buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild) {
-      autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-        auto buildTraversal =
-            traversalSelector
-                .template generateTraversal<std::remove_reference_t<decltype(f)>, DataLayoutOption::aos, n3>(
-                    buildTraversalOption, f, traversalSelectorInfo);
-        linkedCells.iteratePairwise(buildTraversal.get());
-      });
-    }
+    const auto dataLayout = buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild
+                                ? DataLayoutOption::aos
+                                : DataLayoutOption::soa;
 
-    else if (buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild) {
-      autopas::utils::withStaticBool(useNewton3, [&](auto n3) {
-        auto buildTraversal = traversalSelector.template generateTraversal<decltype(f), DataLayoutOption::soa, n3>(
-            buildTraversalOption, f, traversalSelectorInfo);
-        linkedCells.iteratePairwise(buildTraversal.get());
-      });
-    }
+    // Build the AoS list using the AoS or SoA functor depending on buildType
+    auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
+        buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
+    linkedCells.iteratePairwise(buildTraversal.get());
   }
 
   /**

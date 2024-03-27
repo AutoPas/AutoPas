@@ -26,8 +26,11 @@ class CellPairTraversal : public TraversalInterface {
   /**
    * Constructor of CellPairTraversal.
    * @param dims the dimensions of the cellblock.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims) : _cellsPerDimension(dims), _cells(nullptr) {}
+  explicit CellPairTraversal(const std::array<unsigned long, 3> &dims, DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _cellsPerDimension(dims), _cells(nullptr) {}
 
   /**
    * Destructor of CellPairTraversal.
@@ -39,6 +42,14 @@ class CellPairTraversal : public TraversalInterface {
    * @param cells The cells to iterate over.
    */
   virtual void setCellsToTraverse(std::vector<ParticleCell> &cells) { _cells = &cells; }
+
+  /**
+   * Set the sorting-threshold for traversals that use the CellFunctor
+   * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
+   * sorted view of the particles to avoid unnecessary distance checks.
+   * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
+   */
+  virtual void setSortingThreshold(size_t sortingThreshold) = 0;
 
  protected:
   /**

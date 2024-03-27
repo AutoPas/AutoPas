@@ -22,27 +22,33 @@ namespace autopas {
  * The projected position of a particle as well as a pointer to the underlying particle are stored in a vector, which is
  * sorted by the projected positions.
  * @note Insertion, deletion and change of position of particles invalidates the view.
- * @tparam Particle
+ * @tparam ParticleCellType
  */
-template <class Particle, class ParticleCellType>
-class SortedCellView : public ParticleCell<Particle> {
+template <class ParticleCellType>
+class SortedCellView : public ParticleCell<typename ParticleCellType::ParticleType> {
  public:
+  /**
+   * The particle type for this view is the particle type from the cell.
+   */
+  using ParticleType = typename ParticleCellType::ParticleType;
   /**
    * Type that holds or refers to the actual particles.
    */
-  using StorageType = std::vector<Particle *>;
+  using StorageType = std::vector<ParticleType *>;
   /**
    * Constructs a FullSortedParticleCell.
    * @param cell Cell whose particles are sorted.
    * @param r Normalized vector along particles are sorted.
    */
   SortedCellView(ParticleCellType &cell, const std::array<double, 3> &r) : _cell(&cell) {
-    _particles.reserve(cell.numParticles());
+    _particles.reserve(cell.size());
     for (auto &p : cell) {
       _particles.push_back(std::make_pair(utils::ArrayMath::dot(p.getR(), r), &p));
     }
     std::sort(_particles.begin(), _particles.end(),
               [](const auto &a, const auto &b) -> bool { return a.first < b.first; });
+
+    this->setPossibleParticleOwnerships(cell.getPossibleParticleOwnerships());
   }
 
   CellType getParticleCellTypeAsEnum() override { return CellType::SortedCellView; }
@@ -50,7 +56,7 @@ class SortedCellView : public ParticleCell<Particle> {
   /**
    * @copydoc ParticleCell::addParticle()
    */
-  void addParticle(const Particle &p) override {}
+  void addParticle(const ParticleType &p) override {}
 
   /**
    * @copydoc autopas::FullParticleCell::begin()
@@ -84,9 +90,21 @@ class SortedCellView : public ParticleCell<Particle> {
     return CellIterator<typename ParticleCellType::StorageType, false>(_cell->end());
   }
 
-  unsigned long numParticles() const override { return _particles.size(); }
+  /**
+   * Get the number of all particles stored in this cell (owned, halo and dummy).
+   * @return number of particles stored in this cell (owned, halo and dummy).
+   */
+  size_t size() const override { return _particles.size(); }
 
-  bool isEmpty() const override { return numParticles() == 0; }
+  /**
+   * @copydoc autopas::ParticleCell::getNumberOfParticles()
+   */
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    return std::count_if(_particles.begin(), _particles.end(),
+                         [&behavior](auto pair) { return behavior.contains(*(std::get<1>(pair))); });
+  }
+
+  bool isEmpty() const override { return size() == 0; }
 
   void clear() override { _particles.clear(); }
 
@@ -97,13 +115,13 @@ class SortedCellView : public ParticleCell<Particle> {
   }
 
   void deleteByIndex(size_t index) override {
-    if (index >= numParticles()) {
+    if (index >= size()) {
       AutoPasLog(ERROR, "Index out of range");
       utils::ExceptionHandler::exception("Error: Index out of range");
     }
 
-    if (index < numParticles() - 1) {
-      std::swap(_particles[index], _particles[numParticles() - 1]);
+    if (index < size() - 1) {
+      std::swap(_particles[index], _particles[size() - 1]);
     }
     _particles.pop_back();
   }
@@ -117,19 +135,19 @@ class SortedCellView : public ParticleCell<Particle> {
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  Particle &at(size_t index) { return _particles.at(index); }
+  ParticleType &at(size_t index) { return _particles.at(index); }
 
   /**
    * Returns the const particle at position index. Needed by SingleCellIterator.
    * @param index the position of the particle to return.
    * @return the particle at position index.
    */
-  const Particle &at(size_t index) const { return _particles.at(index); }
+  const ParticleType &at(size_t index) const { return _particles.at(index); }
 
   /**
    * Sorted vector of projected positions and particle pointers.
    */
-  std::vector<std::pair<double, Particle *>> _particles;
+  std::vector<std::pair<double, ParticleType *>> _particles;
 
   /**
    * Underlying cell.

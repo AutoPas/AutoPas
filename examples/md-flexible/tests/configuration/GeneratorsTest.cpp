@@ -6,24 +6,23 @@
 
 #include "GeneratorsTest.h"
 
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "autopasTools/generators/RandomGenerator.h"
 #include "src/configuration/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
 TEST_F(GeneratorsTest, GridFillwithBoxMin) {
-  auto autoPas = autopas::AutoPas<Molecule>(std::cout);
+  auto autoPas = autopas::AutoPas<ParticleType>(std::cout);
   const std::array<double, 3> boxmin = {5., 5., 5.};
   const std::array<double, 3> boxmax = {10., 10., 10.};
   autoPas.setBoxMax(boxmax);
   autoPas.setBoxMin(boxmin);
-  Molecule dummy;
+  ParticleType dummy;
 
   autoPas.init();
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {5, 5, 5}, dummy, {1, 1, 1}, boxmin);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     EXPECT_TRUE(autopas::utils::inBox(iter->getR(), boxmin, boxmax));
   }
@@ -91,7 +90,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
   for (auto &particle : configuration.getParticles()) {
-    int particleId = particle.getID();
+    const auto particleId = particle.getID();
     ASSERT_EQ(ids.count(particleId), 0) << "Two particles have the same ID " << particleId;
     ids.insert(particleId);
   }

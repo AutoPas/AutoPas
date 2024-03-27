@@ -86,12 +86,17 @@ TEST(OptionTest, parseSelectorOptionsTest) {
 
 TEST(OptionTest, parseTuningStrategyOptionsTest) {
   std::map<autopas::TuningStrategyOption, std::string> mapEnumString = {
+      {autopas::TuningStrategyOption::activeHarmony, "harmony"},
       {autopas::TuningStrategyOption::bayesianSearch, "bayesian"},
       {autopas::TuningStrategyOption::bayesianClusterSearch, "bayesian-cluster"},
       {autopas::TuningStrategyOption::fullSearch, "full"},
-      {autopas::TuningStrategyOption::randomSearch, "random"},
-      {autopas::TuningStrategyOption::activeHarmony, "harmony"},
+      {autopas::TuningStrategyOption::mpiDivideAndConquer, "divide&conquer"},
       {autopas::TuningStrategyOption::predictiveTuning, "predictive"},
+      {autopas::TuningStrategyOption::randomSearch, "random"},
+      {autopas::TuningStrategyOption::ruleBasedTuning, "rule-based"},
+      {autopas::TuningStrategyOption::slowConfigFilter, "slow-filter"},
+      {autopas::TuningStrategyOption::sortByName, "sortbyname"},
+      {autopas::TuningStrategyOption::tuningStrategyLogger, "tuningstratLogger"},
   };
 
   EXPECT_EQ(mapEnumString.size(), autopas::TuningStrategyOption::getOptionNames().size());

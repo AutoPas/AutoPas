@@ -8,8 +8,8 @@
 
 #include <string>
 
-#include "autopas/selectors/ContainerSelector.h"
-#include "autopas/selectors/TraversalSelector.h"
+#include "autopas/tuning/selectors/ContainerSelector.h"
+#include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StringUtils.h"
 #include "autopasTools/generators/RandomGenerator.h"
@@ -34,13 +34,13 @@ std::array<double, 3> randomShift(double magnitude, std::mt19937 &generator) {
 /**
  * Adds shifts with the given magnitude to all particles.
  * The shifts are generated in order of the particle id and with a fixed seed to ensure a reproducible behavior.
- * @tparam ContainerPtrType
- * @param containerPtr
+ * @tparam ContainerType
+& * @param containerPtr
  * @param magnitude
  * @param totalNumParticles
  */
-template <class ContainerPtrType>
-void TraversalComparison::executeShift(ContainerPtrType containerPtr, double magnitude, size_t totalNumParticles) {
+template <class ContainerType>
+void TraversalComparison::executeShift(ContainerType &container, double magnitude, size_t totalNumParticles) {
   std::vector<std::array<double, 3>> shiftVectorByID(totalNumParticles);
   constexpr unsigned seed = 42;
   std::mt19937 generator(seed);
@@ -48,8 +48,7 @@ void TraversalComparison::executeShift(ContainerPtrType containerPtr, double mag
     elem = randomShift(magnitude, generator);
   }
   size_t numIteratedParticles = 0;
-  for (auto iter = containerPtr->begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter != containerPtr->end();
-       ++iter) {
+  for (auto iter = container.begin(autopas::IteratorBehavior::ownedOrHaloOrDummy); iter != container.end(); ++iter) {
     if (not iter->isDummy()) {
       iter->addR(shiftVectorByID[iter->getID()]);
     }
@@ -72,7 +71,7 @@ void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles,
     // Set to true if we are within deletionPercentage
     return uniform0_100(generator) < deletionPercentage;
   });
-  for (auto &mol : *container) {
+  for (auto &mol : container) {
     if (doDelete[mol.getID()]) {
       autopas::internal::markParticleAsDeleted(mol);
     }
@@ -91,6 +90,7 @@ void markSomeParticlesAsDeleted(ContainerT &container, size_t numTotalParticles,
  * @param cellSizeFactor The cell size factor.
  * @param doSlightShift Specifies whether to add random shifts of size skin/2 to all particles after the neighbor list
  * generation.
+ * @param useSorting For traversals that use the CellFunctor: if the CellFunctor should apply sorting of particles
  * @return Tuple of forces for all particles, ordered by particle id, and global values.
  */
 template <bool globals>
@@ -98,7 +98,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
     size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
-    DeletionPosition particleDeletionPosition) {
+    DeletionPosition particleDeletionPosition, bool useSorting) {
   // Construct container
   autopas::ContainerSelector<Molecule> selector{_boxMin, boxMax, _cutoff};
   constexpr double skinPerTimestep = _cutoff * 0.1;
@@ -106,25 +106,31 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   selector.selectContainer(containerOption,
                            autopas::ContainerSelectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
                                                           autopas::LoadEstimatorOption::none});
-  auto container = selector.getCurrentContainer();
-  autopas::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                     globals /*calculateGlobals*/>
+  auto &container = selector.getCurrentContainer();
+  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
+                   globals /*calculateGlobals*/>
       functor{_cutoff};
   functor.setParticleProperties(_eps * 24, _sig * _sig);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(*container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0),
-                                                               container->getBoxMin(), container->getBoxMax(),
-                                                               numMolecules);
-  EXPECT_EQ(container->getNumberOfParticles(), numMolecules) << "Wrong number of molecules inserted!";
+  autopasTools::generators::RandomGenerator::fillWithParticles(
+      container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numMolecules);
+  EXPECT_EQ(container.size(), numMolecules) << "Wrong number of molecules inserted!";
   autopasTools::generators::RandomGenerator::fillWithHaloParticles(
-      *container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container->getCutoff(),
+      container, Molecule({0., 0., 0.}, {0., 0., 0.}, numMolecules /*initial ID*/), container.getCutoff(),
       numHaloMolecules);
-  EXPECT_EQ(container->getNumberOfParticles(), numMolecules + numHaloMolecules)
-      << "Wrong number of halo molecules inserted!";
+  EXPECT_EQ(container.size(), numMolecules + numHaloMolecules) << "Wrong number of halo molecules inserted!";
   auto traversal =
-      autopas::utils::withStaticCellType<Molecule>(container->getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
-            traversalOption, functor, container->getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+      autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
+        auto traversalUniquePtr = autopas::TraversalSelector<decltype(particleCellDummy)>::generateTraversal(
+            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+
+        // set useSorting of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+        if (auto *cellPairTraversalPtr =
+                dynamic_cast<autopas::CellPairTraversal<decltype(particleCellDummy)> *>(traversalUniquePtr.get())) {
+          cellPairTraversalPtr->setSortingThreshold(useSorting ? 8 : std::numeric_limits<size_t>::max());
+        }
+
+        return traversalUniquePtr;
       });
 
   if (not traversal->isApplicable()) {
@@ -135,7 +141,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 19);
   }
 
-  container->rebuildNeighborLists(traversal.get());
+  container.rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
     executeShift(container, skinPerTimestep * rebuildFrequency / 2, numMolecules + numHaloMolecules);
@@ -146,17 +152,17 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
-  container->iteratePairwise(traversal.get());
+  container.iteratePairwise(traversal.get());
   functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numMolecules);
-  for (auto it = container->begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
+  for (auto it = container.begin(autopas::IteratorBehavior::owned); it.isValid(); ++it) {
     EXPECT_TRUE(it->isOwned());
     forces.at(it->getID()) = it->getF();
   }
 
   if (globals) {
-    return {forces, {functor.getUpot(), functor.getVirial()}};
+    return {forces, {functor.getPotentialEnergy(), functor.getVirial()}};
   } else {
     return {forces, {0., 0.}};
   }
@@ -164,24 +170,25 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
 
 /**
  * Generates the reference for a simulation configuration that is specified by the given key.
- * For the reference a linked cells algorithm is used.
+ * For the reference a linked cells algorithm and c08 traversal without sorting particles is used.
  * @param key The key that specifies the simulation.
  */
 void TraversalComparison::generateReference(mykey_t key) {
   auto [numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition, globals] = key;
-  // Calculate reference forces
+  // Calculate reference forces. For the reference forces we switch off sorting. For the forces that are calculated in
+  // tests and compared against the reference, sorting is enabled.
   if (globals) {
     auto [calculatedForces, calculatedGlobals] =
         calculateForces<true>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
                               autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
-                              numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
+                              numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition, false);
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
   } else {
     auto [calculatedForces, calculatedGlobals] =
         calculateForces<false>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c08,
                                autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, numParticles,
-                               numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition);
+                               numHaloParticles, boxMax, 1., doSlightShift, particleDeletionPosition, false);
     _forcesReference[key] = calculatedForces;
     _globalValuesReference[key] = calculatedGlobals;
   }

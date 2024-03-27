@@ -21,6 +21,8 @@ target_link_libraries(
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
+        $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
+        antlr4cpp
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         Eigen3
@@ -32,17 +34,16 @@ target_link_libraries(
         harmony
 )
 
-
-# Ompstuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
+# OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
 # target. this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
 target_compile_definitions(
     autopas
     PUBLIC
-    $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_OPENMP>
-    $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
-    $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
-    $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
-    _USE_MATH_DEFINES
+        $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_USE_OPENMP>
+        $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
+        $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
+        $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
+        _USE_MATH_DEFINES
 )
 
 

@@ -79,7 +79,18 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     }
 
     if ((this->_particles.size() < this->_treeSplitThreshold) or anyNewDimSmallerThanMinSize) {
+      // sanity check that ensures that only particles of the cells OwnershipState can be added. Note: if a cell is a
+      // dummy-cell, only dummies can be added, otherwise dummies can always be added
+      if ((not toInt64(p.getOwnershipState() & this->_ownershipState)) and
+          p.getOwnershipState() != OwnershipState::dummy) {
+        autopas::utils::ExceptionHandler::exception(
+            "OctreeLeafNode::insert() can not add a particle with OwnershipState {} to a cell with "
+            "OwnershipState {}",
+            p.getOwnershipState(), this->_ownershipState);
+      }
+
       this->_particles.push_back(p);
+
       return nullptr;
     } else {
       std::unique_ptr<OctreeNodeInterface<Particle>> newInner = std::make_unique<OctreeInnerNode<Particle>>(
@@ -100,6 +111,7 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
     const bool isRearParticle = &particle == &this->_particles.back();
     // WARNING no runtime check that this particle is actually within the node!
     particle = this->_particles.back();
+
     this->_particles.pop_back();
     return not isRearParticle;
   }
@@ -130,9 +142,17 @@ class OctreeLeafNode : public OctreeNodeInterface<Particle>, public FullParticle
   void clearChildren(std::unique_ptr<OctreeNodeInterface<Particle>> &ref) override { this->_particles.clear(); }
 
   /**
+   * @copydoc OctreeNodeInterface::size()
+   */
+  size_t size() const override { return this->_particles.size(); }
+
+  /**
    * @copydoc OctreeNodeInterface::getNumberOfParticles()
    */
-  unsigned int getNumberOfParticles() const override { return this->_particles.size(); }
+  [[nodiscard]] size_t getNumberOfParticles(IteratorBehavior behavior) const override {
+    return std::count_if(this->_particles.begin(), this->_particles.end(),
+                         [&behavior](auto p) { return behavior.contains(p); });
+  }
 
   /**
    * @copydoc OctreeNodeInterface::hasChildren()

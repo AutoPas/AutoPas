@@ -17,12 +17,15 @@ namespace autopas {
  * operations.
  * @todo this class currently is limited to the following case:
  *  - constant cutoff radius
- *  - constant amount of floating point operations for one kernel call (distance < cutoff)
+ *  - cases where cutoff is determined with a single distance calculation between two positions ( the notable case where
+ *    this doesn't hold is in a CoM-to-site style SoA Functor for multi-site molecules )
+ * @todo: we may want the possibility of doing this faster in cases where the number of flops per kernel call is
+ * constant
  * @tparam Particle
- * @tparam ParticleCell
+ * @tparam ForceFunctorType
  */
-template <class Particle>
-class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>> {
+template <class Particle, class ForceFunctorType>
+class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle, ForceFunctorType>> {
  public:
   bool isRelevantForTuning() override { return false; }
 
@@ -32,53 +35,59 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
   /**
    * constructor of FlopCounterFunctor
+   * @param forceFunctor force functor whose flops are counted
    * @param cutoffRadius the cutoff radius
    */
-  explicit FlopCounterFunctor<Particle>(double cutoffRadius)
-      : autopas::Functor<Particle, FlopCounterFunctor<Particle>>(cutoffRadius),
+  explicit FlopCounterFunctor<Particle, ForceFunctorType>(ForceFunctorType forceFunctor, double cutoffRadius)
+      : autopas::Functor<Particle, FlopCounterFunctor<Particle, ForceFunctorType>>(cutoffRadius),
+        _forceFunctor(forceFunctor),
         _cutoffSquare(cutoffRadius * cutoffRadius),
         _distanceCalculations(0ul),
-        _kernelCalls(0ul) {}
+        _kernelCalls(0ul),
+        _kernelFlops(0ul) {}
 
-  void AoSFunctor(Particle &i, Particle &j, bool /*newton3*/) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
-
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto dr = i.getR() - j.getR();
-    double dr2 = utils::ArrayMath::dot(dr, dr);
+    const auto displacement = i.getR() - j.getR();
+    const auto distanceSquared = utils::ArrayMath::dot(displacement, displacement);
     _distanceCalculations.fetch_add(1, std::memory_order_relaxed);
 
-    if (dr2 <= _cutoffSquare) {
+    if (distanceSquared <= _cutoffSquare) {
       _kernelCalls.fetch_add(1, std::memory_order_relaxed);
+      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), newton3),
+                             std::memory_order_relaxed);
     }
   }
 
   /**
-   * See Functor::SoAFunctorSingle()
-   * @param soa
+   * @copydoc Functor::SoAFunctorSingle()
+   * This SoA Functor does not use any vectorization.
    */
-  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool /*newton3*/) override {
-    if (soa.getNumberOfParticles() == 0) return;
+  void SoAFunctorSingle(SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {
+    if (soa.size() == 0) return;
 
-    double *const __restrict x1ptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict y1ptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict z1ptr = soa.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    for (size_t i = 0; i < soa.getNumberOfParticles(); ++i) {
-      size_t distanceCalculationsAcc = 0;
-      size_t kernelCallsAcc = 0;
+    unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
 
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (size_t j = i + 1; j < soa.getNumberOfParticles(); ++j) {
-        ++distanceCalculationsAcc;
+    // Use accumulators per SoA Functor Single call i.e. per thread to avoid potentially waiting at atomic fetch_add
+    // for every particle pair
+    size_t distanceCalulationsAcc = 0;
+    size_t kernelCallsAcc = 0;
+    size_t kernelFlopsAcc = 0;
 
-        const double drx = x1ptr[i] - x1ptr[j];
-        const double dry = y1ptr[i] - y1ptr[j];
-        const double drz = z1ptr[i] - z1ptr[j];
+    for (size_t i = 0; i < soa.size(); ++i) {
+      for (size_t j = i + 1; j < soa.size(); ++j) {
+        ++distanceCalulationsAcc;
+
+        const double drx = xPtr[i] - xPtr[j];
+        const double dry = yPtr[i] - yPtr[j];
+        const double drz = zPtr[i] - zPtr[j];
 
         const double drx2 = drx * drx;
         const double dry2 = dry * dry;
@@ -88,20 +97,21 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
         if (dr2 <= _cutoffSquare) {
           ++kernelCallsAcc;
+          kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(typePtr[i], typePtr[j],
+                                                                   true);  // SoAFunctorSingle always uses newton3.
         }
       }
-      _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
-      _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
     }
+    _distanceCalculations.fetch_add(distanceCalulationsAcc);
+    _kernelCalls.fetch_add(kernelCallsAcc);
+    _kernelFlops.fetch_add(kernelFlopsAcc);
   }
 
   /**
-   * See Functor::SoAFunctorPair()
-   * @param soa1
-   * @param soa2
+   * @copydoc Functor::SoAFunctorPair()
    */
   void SoAFunctorPair(SoAView<typename Particle::SoAArraysType> soa1, SoAView<typename Particle::SoAArraysType> soa2,
-                      bool /*newton3*/) override {
+                      bool newton3) override {
     double *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     double *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     double *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -109,15 +119,18 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
     double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    for (size_t i = 0; i < soa1.getNumberOfParticles(); ++i) {
-      size_t distanceCalculationsAcc = 0;
-      size_t kernelCallsAcc = 0;
+    unsigned long *const __restrict type1Ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict type2Ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc)
-      for (size_t j = 0; j < soa2.getNumberOfParticles(); ++j) {
-        ++distanceCalculationsAcc;
+    // Use accumulators per SoA Functor Pair call i.e. per thread to avoid potentially waiting at atomic fetch_add
+    // for every particle pair
+    size_t distanceCalulationsAcc = 0;
+    size_t kernelCallsAcc = 0;
+    size_t kernelFlopsAcc = 0;
+
+    for (size_t i = 0; i < soa1.size(); ++i) {
+      for (size_t j = 0; j < soa2.size(); ++j) {
+        ++distanceCalulationsAcc;
 
         const double drx = x1ptr[i] - x2ptr[j];
         const double dry = y1ptr[i] - y2ptr[j];
@@ -131,105 +144,49 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
         if (dr2 <= _cutoffSquare) {
           ++kernelCallsAcc;
+          kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(type1Ptr[i], type2Ptr[j], newton3);
         }
       }
-      _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
-      _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
     }
+    _distanceCalculations.fetch_add(distanceCalulationsAcc);
+    _kernelCalls.fetch_add(kernelCallsAcc);
+    _kernelFlops.fetch_add(kernelFlopsAcc);
   }
 
+  // clang-format off
   /**
-   * See Functor::SoAFunctorVerlet()
-   * @param soa
-   * @param indexFirst
-   * @param neighborList
+   * @copydoc Functor::SoAFunctorVerlet()
+   * @note If you want to parallelize this by openmp, please ensure that there
+   * are no dependencies, i.e. introduce colors!
    */
+  // clang-format on
   void SoAFunctorVerlet(SoAView<typename Particle::SoAArraysType> soa, const size_t indexFirst,
-                        const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                        bool /*newton3*/) override {
-    auto numParts = soa.getNumberOfParticles();
+                        const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) override {
+    const auto numParticles = soa.size();
 
-    if (numParts == 0) return;
+    if (numParticles == 0) return;
 
     double *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    const size_t listSizeI = neighborList.size();
+    unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    const size_t neighborListSize = neighborList.size();
     const size_t *const __restrict currentList = neighborList.data();
 
-    // this is a magic number, that should correspond to at least
-    // vectorization width*N have testet multiple sizes:
-    // 4: small speedup compared to AoS
-    // 8: small speedup compared to AoS
-    // 12: small but best speedup compared to Aos
-    // 16: smaller speedup
-    // in theory this is a variable, we could auto-tune over...
-#ifdef __AVX512F__
-    // use a multiple of 8 for avx
-    const size_t vecsize = 16;
-#else
-    // for everything else 12 is faster
-    const size_t vecsize = 12;
-#endif
-    size_t joff = 0;
-
-    // if the size of the verlet list is larger than the given size vecsize,
-    // we will use a vectorized version.
-    if (listSizeI >= vecsize) {
-      alignas(64) std::array<double, vecsize> xtmp{}, ytmp{}, ztmp{}, xArr{}, yArr{}, zArr{};
-      // broadcast of the position of particle i
-      for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-        xtmp[tmpj] = xptr[indexFirst];
-        ytmp[tmpj] = yptr[indexFirst];
-        ztmp[tmpj] = zptr[indexFirst];
-      }
-      // loop over the verlet list from 0 to x*vecsize
-      for (; joff < listSizeI - vecsize + 1; joff += vecsize) {
-        size_t distanceCalculationsAcc = 0;
-        size_t kernelCallsAcc = 0;
-        // in each iteration we calculate the interactions of particle i with
-        // vecsize particles in the neighborlist of particle i starting at
-        // particle joff
-
-        // gather position of particle j
-#pragma omp simd safelen(vecsize)
-        for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
-          xArr[tmpj] = xptr[currentList[joff + tmpj]];
-          yArr[tmpj] = yptr[currentList[joff + tmpj]];
-          zArr[tmpj] = zptr[currentList[joff + tmpj]];
-        }
-
-        // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : kernelCallsAcc, distanceCalculationsAcc) safelen(vecsize)
-        for (size_t j = 0; j < vecsize; j++) {
-          ++distanceCalculationsAcc;
-          const double drx = xtmp[j] - xArr[j];
-          const double dry = ytmp[j] - yArr[j];
-          const double drz = ztmp[j] - zArr[j];
-
-          const double drx2 = drx * drx;
-          const double dry2 = dry * dry;
-          const double drz2 = drz * drz;
-
-          const double dr2 = drx2 + dry2 + drz2;
-
-          const unsigned long mask = (dr2 <= _cutoffSquare) ? 1 : 0;
-
-          kernelCallsAcc += mask;
-        }
-        _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
-        _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
-      }
-    }
-    size_t distanceCalculationsAcc = 0;
+    // Use accumulators per SoA Functor Verlet call i.e. per thread to avoid potentially waiting at atomic fetch_add
+    // for every particle pair
+    size_t distanceCalulationsAcc = 0;
     size_t kernelCallsAcc = 0;
-    // this loop goes over the remainder and uses no optimizations
-    for (size_t jNeighIndex = joff; jNeighIndex < listSizeI; ++jNeighIndex) {
+    size_t kernelFlopsAcc = 0;
+
+    for (size_t jNeighIndex = 0; jNeighIndex < neighborListSize; ++jNeighIndex) {
       size_t j = neighborList[jNeighIndex];
       if (indexFirst == j) continue;
 
-      ++distanceCalculationsAcc;
+      ++distanceCalulationsAcc;
+
       const double drx = xptr[indexFirst] - xptr[j];
       const double dry = yptr[indexFirst] - yptr[j];
       const double drz = zptr[indexFirst] - zptr[j];
@@ -242,10 +199,12 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
       if (dr2 <= _cutoffSquare) {
         ++kernelCallsAcc;
+        kernelFlopsAcc += _forceFunctor.getNumFlopsPerKernelCall(typePtr[indexFirst], typePtr[j], newton3);
       }
     }
-    _distanceCalculations.fetch_add(distanceCalculationsAcc, std::memory_order_relaxed);
-    _kernelCalls.fetch_add(kernelCallsAcc, std::memory_order_relaxed);
+    _distanceCalculations.fetch_add(distanceCalulationsAcc);
+    _kernelCalls.fetch_add(kernelCallsAcc);
+    _kernelFlops.fetch_add(kernelFlopsAcc);
   }
 
   /**
@@ -279,13 +238,11 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
   /**
    * get the total number of flops
-   * @param numFlopsPerKernelCall
    * @return
    */
-  [[nodiscard]] size_t getFlops(size_t numFlopsPerKernelCall) const {
+  [[nodiscard]] size_t getFlops() const {
     const auto distFlops = numFlopsPerDistanceCalculation * _distanceCalculations;
-    const auto kernFlops = numFlopsPerKernelCall * _kernelCalls;
-    return distFlops + kernFlops;
+    return distFlops + _kernelFlops;
   }
 
   /**
@@ -302,6 +259,12 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
   [[nodiscard]] size_t getKernelCalls() const { return _kernelCalls; }
 
   /**
+   * Get the number of kernel flops, i.e. the flops done after the distance calculation and cutoff comparison.
+   * @return
+   */
+  [[nodiscard]] size_t getKernelFlops() const { return _kernelFlops; }
+
+  /**
    * number of flops for one distance calculation.
    * 3 sub + 3 square + 2 add
    */
@@ -309,7 +272,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle>
 
  private:
   double _cutoffSquare;
-  std::atomic<size_t> _distanceCalculations, _kernelCalls;
+  std::atomic<size_t> _distanceCalculations, _kernelCalls, _kernelFlops;
+  ForceFunctorType _forceFunctor;
 };
 
 }  // namespace autopas

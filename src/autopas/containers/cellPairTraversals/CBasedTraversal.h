@@ -10,6 +10,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -18,12 +19,9 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth = 3>
+template <class ParticleCell, class PairwiseFunctor, int collapseDepth = 3>
 class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
   /**
@@ -33,13 +31,16 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const double interactionLength, const std::array<double, 3> &cellLength)
-      : CellPairTraversal<ParticleCell>(dims),
+                           double interactionLength, const std::array<double, 3> &cellLength,
+                           DataLayoutOption dataLayout, bool useNewton3)
+      : CellPairTraversal<ParticleCell>(dims, dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
-        _dataLayoutConverter(pairwiseFunctor) {
+        _dataLayoutConverter(pairwiseFunctor, dataLayout) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     }
@@ -57,10 +58,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   void initTraversal() override {
     if (this->_cells) {
       auto &cells = *(this->_cells);
-#ifdef AUTOPAS_OPENMP
       /// @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
+      AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.loadDataLayout(cells[i]);
       }
@@ -73,10 +72,8 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   void endTraversal() override {
     if (this->_cells) {
       auto &cells = *(this->_cells);
-#ifdef AUTOPAS_OPENMP
       /// @todo find a condition on when to use omp or when it is just overhead
-#pragma omp parallel for
-#endif
+      AUTOPAS_OPENMP(parallel for)
       for (size_t i = 0; i < cells.size(); ++i) {
         _dataLayoutConverter.storeDataLayout(cells[i]);
       }
@@ -124,26 +121,19 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Data Layout Converter to be used with this traversal
    */
-  utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+  utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, int collapseDepth>
 template <typename LoopBody>
-inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::cTraversal(
+inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
+  AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp single
-#endif
-      {
+      AUTOPAS_OPENMP(single) {
         // barrier at omp for of previous loop iteration, so fine to change it for everyone!
         notifyColorChange(col);
         // implicit barrier at end of function.
@@ -156,9 +146,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
       if (collapseDepth == 2) {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(2)
-#endif
+        AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(2))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {
@@ -168,9 +156,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton
           }
         }
       } else {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3)
-#endif
+        AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {

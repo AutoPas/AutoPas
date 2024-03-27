@@ -1,12 +1,15 @@
 # additional target to perform clang-format run, requires clang-format
 
 # get all project files
+# If you add something here, make sure to also add it to the clang-format
+# step in .github/workflows/TestSuites.yaml
 set(
     INCLUDE_DIRS
     "${PROJECT_SOURCE_DIR}/src/"
     "${PROJECT_SOURCE_DIR}/examples/"
     "${PROJECT_SOURCE_DIR}/tests/"
     "${PROJECT_SOURCE_DIR}/tools/"
+    "${PROJECT_SOURCE_DIR}/applicationLibrary/"
 )
 # reset CF_ALL_SOURCE_FILES
 foreach (TMP_PATH ${INCLUDE_DIRS})
@@ -22,7 +25,7 @@ foreach (TMP_PATH ${INCLUDE_DIRS})
     list(APPEND CF_ALL_SOURCE_FILES ${CF_ALL_SOURCE_FILES_TMP})
 endforeach (TMP_PATH)
 
-set(DESIRED_CLANG_FORMAT clang-format-9)
+set(DESIRED_CLANG_FORMAT clang-format-14)
 find_program(CLANG_FORMAT NAMES ${DESIRED_CLANG_FORMAT})
 
 if (CLANG_FORMAT)

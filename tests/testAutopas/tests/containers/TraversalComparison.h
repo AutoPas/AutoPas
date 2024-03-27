@@ -11,11 +11,11 @@
 #include <cstdlib>
 
 #include "AutoPasTestBase.h"
-#include "autopas/molecularDynamics/LJFunctor.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/RandomGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 enum DeletionPosition {
@@ -57,15 +57,15 @@ class TraversalComparison : public AutoPasTestBase, public ::testing::WithParamI
   static auto getTestParams();
 
  protected:
-  template <class ContainerPtrType>
-  static void executeShift(ContainerPtrType containerPtr, double magnitude, size_t totalNumParticles);
+  template <class ContainerType>
+  static void executeShift(ContainerType &containerPtr, double magnitude, size_t totalNumParticles);
 
   template <bool globals>
   static std::tuple<std::vector<std::array<double, 3>>, Globals> calculateForces(
       autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
       autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option, size_t numMolecules,
       size_t numHaloMolecules, std::array<double, 3> boxMax, double cellSizeFactor, bool doSlightShift,
-      DeletionPosition particleDeletionPosition);
+      DeletionPosition particleDeletionPosition, bool useSorting = true);
 
   static constexpr std::array<double, 3> _boxMin{0, 0, 0};
   static constexpr double _cutoff{1.};

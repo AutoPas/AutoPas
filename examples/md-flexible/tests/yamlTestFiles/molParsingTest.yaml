@@ -1,0 +1,20 @@
+# Yaml input for MDFlexConfigTests.molParsingCorrect
+# Used to test correct parsing of site information, in the case that the site information is correctly given.
+Sites:
+  1:
+    epsilon: 1.
+    sigma:   1.
+    mass:    1.
+  2:
+    epsilon: 1.2
+    sigma:   0.8
+    mass:    0.5
+Molecules:
+  0:
+    site-types:                    [0]
+    relative-site-positions:       [[0., 0., 0.]]
+    moment-of-inertia:             [1., 1., 1.]
+  1:
+    site-types:                    [0, 0, 1 ]
+    relative-site-positions:       [[ 0., -0.5, 0.], [1., 0.1, 0.01], [-0.2, -0.3, 0.4]]
+    moment-of-inertia:             [ 1., 0.5, 0.25 ]
