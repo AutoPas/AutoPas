@@ -292,13 +292,15 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (_towerBlock.empty()) {
       return {nullptr, 0, 0};
     }
-
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
         // if particles might have moved extend search box here
-        const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
-        const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+        const auto boxMinWithSafetyMargin =
+            boxMin - (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+        const auto boxMaxWithSafetyMargin =
+            boxMax + (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+
         return {_towerBlock.getTowerIndex1DAtPosition(boxMinWithSafetyMargin),
                 _towerBlock.getTowerIndex1DAtPosition(boxMaxWithSafetyMargin)};
       } else {
@@ -329,7 +331,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       std::tie(cellIndex, particleIndex) =
           advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
     }
-
     // shortcut if the given index doesn't exist
     if (cellIndex > endCellIndex) {
       return {nullptr, 0, 0};
@@ -556,8 +557,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     // Note: particlesToAddEmpty() can only be called if the container status is not invalid. If the status is set to
     // invalid, we do writing operations on _particlesToAdd and can not read from from it without race conditions.
     if (_isValid != ValidityState::invalid) {
-      // we call particlesToAddEmpty() as a sanity check to ensire there are actually no particles in _particlesToAdd if
-      // the status is not invalid
+      // we call particlesToAddEmpty() as a sanity check to ensure there are actually no particles in _particlesToAdd
+      // if the status is not invalid
       if (not particlesToAddEmpty(autopas_get_thread_num())) {
         autopas::utils::ExceptionHandler::exception(
             "VerletClusterLists::reduce() const: Error: particle container is valid, but _particlesToAdd isn't empty!");

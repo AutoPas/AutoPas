@@ -249,7 +249,8 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   auto testRegion = [&](const std::array<double, 3> &min, const std::array<double, 3> &max,
                         const std::string &context) {
     size_t numParticlesFound = 0;
-    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOrHalo); iter.isValid();
+         ++iter) {
       ++numParticlesFound;
       EXPECT_EQ(iter->getID(), 0) << "There should only be one particle with ID 0.\n" << context;
     }
@@ -259,10 +260,20 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   // Actual test section
   // Place a particle and make sure the region iterator finds it.
   autoPas.addParticle({posStart, {0., 0., 0.}, 0});
+
+  // this increments the stepsSinceLastRebuild counter in the LogicHandler and container, which is needed in
+  // getParticleImpl of the containers to calculate the correct boxMin and boxMax values
+  EmptyFunctor<Molecule> eFunctor;
+  autoPas.iteratePairwise(&eFunctor);
+
   testRegion(searchBoxStart.min, searchBoxStart.max, "Before particle is moved.");
 
   // Move the particle outside the data structure element (for LC: cell) where it is currently stored
-  autoPas.begin(autopas::IteratorBehavior::owned)->setR(posEnd);
+  autoPas.begin(autopas::IteratorBehavior::ownedOrHalo)->setR(posEnd);
+
+  const auto p = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo)->getR();
+  //std::cout << "Test: " << p[0] << ", " << p[1] << ", " << p[2] << std::endl;
+
   testRegion(searchBoxEnd.min, searchBoxEnd.max, "After particle was moved.");
 }
 
