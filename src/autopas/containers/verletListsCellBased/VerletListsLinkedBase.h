@@ -54,6 +54,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
 
   /**
    * Set the number of time-steps since last neighbor list rebuild
+   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
    */
   void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
     this->_stepsSinceLastRebuild = stepsSinceLastRebuild;

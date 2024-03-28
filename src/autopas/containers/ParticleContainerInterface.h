@@ -293,6 +293,7 @@ class ParticleContainerInterface {
 
   /**
    * Set the number of time-steps since last neighbor list rebuild
+   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
    */
   virtual void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) {
     _stepsSinceLastRebuild = stepsSinceLastRebuild;
