@@ -21,10 +21,16 @@ PredictiveTuning::PredictiveTuning(double relativeOptimum, unsigned int maxTunin
     : _relativeOptimumRange(relativeOptimum),
       _maxTuningPhasesWithoutTest(maxTuningIterationsWithoutTest),
       _extrapolationMethod(extrapolationMethodOption),
-      _minNumberOfEvidence(
-          extrapolationMethodOption == ExtrapolationMethodOption::linePrediction
-              ? 2
-              : (extrapolationMethodOption == ExtrapolationMethodOption::lastResult ? 1 : testsUntilFirstPrediction)),
+      _minNumberOfEvidence([&]() {
+        // The minimal number of evidence needed depends on the extrapolation method
+        if (extrapolationMethodOption == ExtrapolationMethodOption::linePrediction) {
+          return 2u;
+        } else if (extrapolationMethodOption == ExtrapolationMethodOption::lastResult) {
+          return 1u;
+        } else {
+          return testsUntilFirstPrediction;
+        }
+      }()),
       _predictionLogger(outputSuffix) {
   if (_relativeOptimumRange < 1.) {
     utils::ExceptionHandler::exception(
