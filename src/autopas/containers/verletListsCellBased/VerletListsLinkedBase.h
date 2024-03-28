@@ -52,6 +52,11 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    */
   CellType getParticleCellTypeEnum() const override { return _linkedCells.getParticleCellTypeEnum(); };
 
+  void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
+    this->_stepsSinceLastRebuild = stepsSinceLastRebuild;
+    _linkedCells.setStepsSinceLastRebuild(stepsSinceLastRebuild);
+  }
+
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
   }
@@ -139,7 +144,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
-    return _linkedCells.getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+    return _linkedCells.template getParticleImpl<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin,
+                                                             boxMax);
   }
 
   bool deleteParticle(Particle &particle) override {

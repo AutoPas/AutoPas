@@ -252,8 +252,13 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
         // if particles might have moved extend search box for cells here
-        const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
-        const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+        // const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
+        // const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+
+        const auto boxMinWithSafetyMargin =
+            boxMin - (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+        const auto boxMaxWithSafetyMargin =
+            boxMax + (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
 
         return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
                 _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};

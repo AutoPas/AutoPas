@@ -272,7 +272,7 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   autoPas.begin(autopas::IteratorBehavior::ownedOrHalo)->setR(posEnd);
 
   const auto p = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo)->getR();
-  //std::cout << "Test: " << p[0] << ", " << p[1] << ", " << p[2] << std::endl;
+  // std::cout << "Test: " << p[0] << ", " << p[1] << ", " << p[2] << std::endl;
 
   testRegion(searchBoxEnd.min, searchBoxEnd.max, "After particle was moved.");
 }
