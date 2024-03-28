@@ -73,7 +73,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
          const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency) {
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
+        _skinPerTimestep(skinPerTimestep),
+        _rebuildFrequency(rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
@@ -231,6 +233,12 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                    IteratorBehavior iteratorBehavior,
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    // do we need that here actually?
+    const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
+    const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+
     // FIXME think about parallelism.
     // This `if` currently disables it but should be replaced with logic that determines the start index.
     if (autopas_get_thread_num() > 0 and not(iteratorBehavior & IteratorBehavior::forceSequential)) {
@@ -583,6 +591,10 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   OctreeLogger<Particle> logger;
 
   double skin;
+
+  double _skinPerTimestep;
+
+  unsigned int _rebuildFrequency;
 };
 
 }  // namespace autopas
