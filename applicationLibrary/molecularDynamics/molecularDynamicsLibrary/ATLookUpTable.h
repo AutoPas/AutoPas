@@ -12,6 +12,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/logging/Logger.h"
+#include "autopas/utils/Timer.h"
 
 namespace ForceLookUpTable {
 
@@ -33,9 +34,24 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
   using Entry = std::pair<std::array<std::array<floatType, 3>, 3>, floatType>;
 
  public:
-  ATLookUpTable() {
+  ATLookUpTable(autopas::utils::Timer& timer) : LUTtimer{timer} {
     // AutoPasLog(DEBUG, "Default constructor called.");
   }
+
+  ATLookUpTable<relative, intervalType, interpolationType, floatType, intType>& operator=(ATLookUpTable<relative, intervalType, interpolationType, floatType, intType>&& other) noexcept {
+    if (this == &other)
+      return *this;
+
+    LUTtimer = std::move(other.LUTtimer);
+    lut = other.lut;
+    numberOfPoints = other.numberOfPoints;
+    pointDistance = other.pointDistance;
+    cutoffSquared = other.cutoffSquared;
+    nu = other.nu;
+    return *this;
+  }
+
+  autopas::utils::Timer& LUTtimer;
 
   // list: cutoffSquared, nu, ... (numberOfPoints)
   // Extremely unreadable and user-error-prone
@@ -47,7 +63,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
    * @param args Initializer list that (for evenSpacing and nextNeighbor) takes the form of {cutoffSquared, nu,
    * numberOfPoints}
    */
-  ATLookUpTable(std::initializer_list<floatType> args) {
+  ATLookUpTable(std::initializer_list<floatType> args, autopas::utils::Timer& timer) : LUTtimer{timer} {
     //    std::cout << "LUT created.\n";
     if (args.size() < 3) {  // Fail gracefully
       throw autopas::utils::ExceptionHandler::AutoPasException("Not enough arguments for ATLookUpTable creation");
@@ -339,6 +355,8 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
                floatType c2, floatType c3, size_t index) {
     using namespace autopas::utils::ArrayMath;
 
+    //LUTtimer.start();
+
     std::array<floatType, 4> rot1Quaternion;
     std::array<floatType, 4> rot1InverseQuaternion;
     std::array<floatType, 4> rot2Quaternion;
@@ -353,8 +371,8 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
     AutoPasLog(DEBUG, "B: {} {} {}    C: {} {} {}", b1, b2, b3, c1, c2, c3);
 
-    auto targetB = norm3(b1, b2, b3);  // [    ]
-    auto targetC = norm3(c1, c2, c3);
+    auto targetB = norm3(b1, b2, b3);  // ((eps + 1)^3 (b1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - b1)^2 + (a1 - b1)^2 + 3 eps (a2 - b2)^2 + (a2 - b2)^2 + 2 eps (a3 - b3)^2 + (a3 - b3)^2))
+    auto targetC = norm3(c1, c2, c3);  // ((eps + 1)^3 (c1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - c1)^2 + (a1 - c1)^2 + 3 eps (a2 - c2)^2 + (a2 - c2)^2 + 2 eps (a3 - c3)^2 + (a3 - c3)^2))
     std::array<floatType, 3> sourceB = {1, 0, 0};
     AutoPasLog(DEBUG, "targetB normalized: {}", targetB);
     AutoPasLog(DEBUG, "targetC normalized: {}", targetC);
@@ -479,6 +497,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       ret.first[i][2] = tempQuat[3];
     }
     ret.second = forces.second;
+    //LUTtimer.stop();
     return ret;
   }
 };

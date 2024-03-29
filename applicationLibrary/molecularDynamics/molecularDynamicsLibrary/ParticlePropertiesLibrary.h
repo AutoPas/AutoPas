@@ -16,6 +16,7 @@
 #include "LJLookUpTable.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Timer.h"
 
 /**
  * This class stores the (physical) properties of molecule types, and, in the case of multi-site molecules, the location
@@ -33,7 +34,7 @@ class ParticlePropertiesLibrary {
    * Constructor
    * @param cutoff Cutoff for the Potential
    */
-  explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff{cutoff} {}
+  explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff{cutoff}, _ATLookUpTable{LUTtimer} {}
 
   /**
    * Copy Constructor.
@@ -314,9 +315,9 @@ class ParticlePropertiesLibrary {
               {_cutoff * _cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 10.0});
     }
     if (_storeATData) {
-      _ATLookUpTable = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
+      _ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                                        ForceLookUpTable::nextNeighbor, floatType, intType>(
-          {_cutoff * _cutoff, getNu(0), 8.0});
+          {_cutoff * _cutoff, getNu(0), 8.0}, LUTtimer));
     }
   }
 
@@ -336,6 +337,8 @@ class ParticlePropertiesLibrary {
       &getATLUT() {
     return _ATLookUpTable;
   }
+
+  autopas::utils::Timer LUTtimer;
 
  private:
   intType _numRegisteredSiteTypes{0};

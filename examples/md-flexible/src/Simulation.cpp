@@ -292,7 +292,7 @@ void Simulation::run() {
     _timers.computationalLoad.stop();
 
     ++_iteration;
-    //    _autoPasContainer->incrementIterationCounters();
+    //a_autoPasContainer->incrementIterationCounters();
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
@@ -590,9 +590,11 @@ void Simulation::logMeasurements() {
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
+  const long LUTtime = _configuration.getParticlePropertiesLibrary()->LUTtimer.getTotalTime();
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const auto maximumNumberOfDigits = static_cast<int>(std::to_string(total).length());
+    std::cout << "LUT Timer: " << LUTtime << std::endl;
     std::cout << "Measurements:" << std::endl;
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
