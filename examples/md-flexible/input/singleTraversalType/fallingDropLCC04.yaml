@@ -56,9 +56,10 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDropLCC04
-vtk-write-frequency              :  1000
-vtk-output-folder                :  vtkOutputFolder
+#vtk-filename                     :  fallingDropLCC04
+#vtk-write-frequency              :  1000
+#vtk-output-folder                :  vtkOutputFolder
 no-flops                         :  false
 no-end-config                    :  true
+no-progress-bar                  :  true
 log-level                        :  info

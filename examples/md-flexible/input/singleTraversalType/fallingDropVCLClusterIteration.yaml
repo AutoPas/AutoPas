@@ -56,9 +56,10 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-vtk-filename                     :  fallingDropVCLClusterIteration
-vtk-write-frequency              :  1000
-vtk-output-folder                :  vtkOutputFolder
+#vtk-filename                     :  fallingDropVCLClusterIteration
+#vtk-write-frequency              :  1000
+#vtk-output-folder                :  vtkOutputFolder
 no-flops                         :  false
 no-end-config                    :  true
+no-progress-bar                  :  true
 log-level                        :  info
