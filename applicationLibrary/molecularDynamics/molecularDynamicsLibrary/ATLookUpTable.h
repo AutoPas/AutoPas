@@ -34,24 +34,25 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
   using Entry = std::pair<std::array<std::array<floatType, 3>, 3>, floatType>;
 
  public:
-  ATLookUpTable(autopas::utils::Timer& timer) : LUTtimer{timer} {
+  ATLookUpTable() {
     // AutoPasLog(DEBUG, "Default constructor called.");
   }
 
-  ATLookUpTable<relative, intervalType, interpolationType, floatType, intType>& operator=(ATLookUpTable<relative, intervalType, interpolationType, floatType, intType>&& other) noexcept {
-    if (this == &other)
-      return *this;
+//  ATLookUpTable<relative, intervalType, interpolationType, floatType, intType>& operator=(ATLookUpTable<relative, intervalType, interpolationType, floatType, intType>&& other) noexcept {
+//    if (this == &other)
+//      return *this;
+//
+//    LUTtimer = std::move(other.LUTtimer);
+//    lut = other.lut;
+//    numberOfPoints = other.numberOfPoints;
+//    pointDistance = other.pointDistance;
+//    cutoffSquared = other.cutoffSquared;
+//    nu = other.nu;
+//    return *this;
+//  }
 
-    LUTtimer = std::move(other.LUTtimer);
-    lut = other.lut;
-    numberOfPoints = other.numberOfPoints;
-    pointDistance = other.pointDistance;
-    cutoffSquared = other.cutoffSquared;
-    nu = other.nu;
-    return *this;
-  }
-
-  autopas::utils::Timer& LUTtimer;
+  std::vector<autopas::utils::Timer>* LUTtimers;
+  autopas::utils::Timer* LUTtimerD;
 
   // list: cutoffSquared, nu, ... (numberOfPoints)
   // Extremely unreadable and user-error-prone
@@ -63,7 +64,9 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
    * @param args Initializer list that (for evenSpacing and nextNeighbor) takes the form of {cutoffSquared, nu,
    * numberOfPoints}
    */
-  ATLookUpTable(std::initializer_list<floatType> args, autopas::utils::Timer& timer) : LUTtimer{timer} {
+  ATLookUpTable(std::initializer_list<floatType> args, std::vector<autopas::utils::Timer>* timer) {
+    LUTtimers = timer;
+    LUTtimerD = &((*timer)[3]);
     //    std::cout << "LUT created.\n";
     if (args.size() < 3) {  // Fail gracefully
       throw autopas::utils::ExceptionHandler::AutoPasException("Not enough arguments for ATLookUpTable creation");
@@ -169,6 +172,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
   Entry getNextNeighbor(floatType i1, floatType i2, floatType i3, floatType j1, floatType j2, floatType j3,
                         floatType k1, floatType k2, floatType k3, floatType distSquaredIJ, floatType distSquaredJK,
                         floatType distSquaredKI) {
+    //(*LUTtimers)[0].start(); // Timer 2; Timer
     AutoPasLog(DEBUG, "Input was {} {} {} | {} {} {} | {} {} {} | dist: IJ {} JK {} KI {}", i1, i2, i3, j1, j2, j3, k1,
                k2, k3, distSquaredIJ, distSquaredJK, distSquaredKI);
 
@@ -260,7 +264,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       AutoPasLog(DEBUG, "Perfect value: {}", ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3));
       AutoPasLog(DEBUG, "Return  value: {}", final);
       AutoPasLog(DEBUG, "Relative Error: {}", relError(final, ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3)));
-
+      //(*LUTtimers)[0].stop(); // Timer 2 stop
       return final;
     }
   }
@@ -347,7 +351,6 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     ret[1] = v1[0] * v2[1] + v1[1] * v2[0] - v1[2] * v2[3] + v1[3] * v2[2];
     ret[2] = v1[0] * v2[2] + v1[1] * v2[3] + v1[2] * v2[0] - v1[3] * v2[1];
     ret[3] = v1[0] * v2[3] - v1[1] * v2[2] + v1[2] * v2[1] + v1[3] * v2[0];
-
     return ret;
   }
 
@@ -355,7 +358,50 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
                floatType c2, floatType c3, size_t index) {
     using namespace autopas::utils::ArrayMath;
 
-    //LUTtimer.start();
+    (*LUTtimers)[0].start(); // Timer 3 start; Timer 1 start; Timer timer start
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[1].start();
+    (*LUTtimers)[1].stop();
+    (*LUTtimers)[0].stop(); // Timer timer stop
+    (*LUTtimers)[2].start(); // Direct timer
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    LUTtimerD->start();
+    LUTtimerD->stop();
+    (*LUTtimers)[2].stop();
 
     std::array<floatType, 4> rot1Quaternion;
     std::array<floatType, 4> rot1InverseQuaternion;
@@ -418,9 +464,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     //        rot1InverseQuaternion[1]*targetC[1] + rot1InverseQuaternion[2]*targetC[0]
     //    };
     std::array<floatType, 4> targetCQuat = {0, targetC[0], targetC[1], targetC[2]};
+    //(*LUTtimers)[0].start(); // Timer 4 start
     tempQuat = quaternionMultiply(rot1InverseQuaternion, targetCQuat);
     // tempQuat * quat
     tempQuat = quaternionMultiply(tempQuat, rot1Quaternion);
+    //(*LUTtimers)[0].stop(); // Timer 4 stop
     targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
     AutoPasLog(DEBUG, "TargetC after first rotation is {}", targetC);
 
@@ -466,9 +514,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       //                  rot2InverseQuaternion[2] * tempQuat[1]
       //      };
       //      AutoPasLog(DEBUG, "After first half rotation {}: {}", i, tempQuat);
+      //(*LUTtimers)[0].start(); // Timer 4 start
       tempQuat = quaternionMultiply(rot1InverseQuaternion, tempQuat);
       // tempQuat * Quat2
       tempQuat = quaternionMultiply(tempQuat, rot2Quaternion);
+      //(*LUTtimers)[0].stop(); // Timer 4 stop
 
       // tempQuat now
       AutoPasLog(DEBUG, "After first rotation {}: {}", i, tempQuat);
@@ -484,10 +534,12 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       //                  rot1Quaternion[3] * tempQuat[1], rot1Quaternion[0] * tempQuat[3] - rot1Quaternion[1] *
       //                  tempQuat[2] + rot1Quaternion[2] * tempQuat[1]
       //      };
+      //(*LUTtimers)[0].start(); // Timer 4 start
       tempQuat = quaternionMultiply(rot1Quaternion, tempQuat);
       AutoPasLog(DEBUG, "After second half rotation {}: {}", i, tempQuat);
       // force * invQuat1
       tempQuat = quaternionMultiply(tempQuat, rot1InverseQuaternion);
+      //(*LUTtimers)[0].stop(); // Timer 4 stop
 
       AutoPasLog(DEBUG, "After second rotation {}: {}", i, tempQuat);
 
@@ -497,7 +549,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       ret.first[i][2] = tempQuat[3];
     }
     ret.second = forces.second;
-    //LUTtimer.stop();
+    //(*LUTtimers)[0].stop(); // Timer 3 stop; Timer 1 stop
     return ret;
   }
 };

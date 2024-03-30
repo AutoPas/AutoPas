@@ -590,11 +590,12 @@ void Simulation::logMeasurements() {
   const long reflectParticlesAtBoundaries = accumulateTime(_timers.reflectParticlesAtBoundaries.getTotalTime());
   const long migratingParticleExchange = accumulateTime(_timers.migratingParticleExchange.getTotalTime());
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
-  const long LUTtime = _configuration.getParticlePropertiesLibrary()->LUTtimer.getTotalTime();
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const auto maximumNumberOfDigits = static_cast<int>(std::to_string(total).length());
-    std::cout << "LUT Timer: " << LUTtime << std::endl;
+    for (auto t = 0; t < _configuration.getParticlePropertiesLibrary()->LUTtimers.size(); t++) {
+      std::cout << "LUT Timer " << t << ": " << _configuration.getParticlePropertiesLibrary()->LUTtimers[t].getTotalTime() << std::endl;
+    }
     std::cout << "Measurements:" << std::endl;
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);

@@ -34,7 +34,7 @@ class ParticlePropertiesLibrary {
    * Constructor
    * @param cutoff Cutoff for the Potential
    */
-  explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff{cutoff}, _ATLookUpTable{LUTtimer} {}
+  explicit ParticlePropertiesLibrary(const double cutoff) : _cutoff{cutoff} {}
 
   /**
    * Copy Constructor.
@@ -317,7 +317,7 @@ class ParticlePropertiesLibrary {
     if (_storeATData) {
       _ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                                        ForceLookUpTable::nextNeighbor, floatType, intType>(
-          {_cutoff * _cutoff, getNu(0), 8.0}, LUTtimer));
+          {_cutoff * _cutoff, getNu(0), 8.0}, &LUTtimers));
     }
   }
 
@@ -338,7 +338,7 @@ class ParticlePropertiesLibrary {
     return _ATLookUpTable;
   }
 
-  autopas::utils::Timer LUTtimer;
+  std::vector<autopas::utils::Timer> LUTtimers = {autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer()};
 
  private:
   intType _numRegisteredSiteTypes{0};
