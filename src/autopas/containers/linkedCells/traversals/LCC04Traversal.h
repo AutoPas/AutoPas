@@ -220,7 +220,7 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseSingleColor(std::vec
 
   // first cartesian grid
   // grids are interlinked: one grid fills the gaps in the other grid
-  AUTOPAS_OPENMP(for schedule(dynamic, TraversalInterface::_openMPConfigurator.getChunkSize()) collapse(3) nowait)
+  AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3) nowait)
   for (long z = startZ; z < endZ; z += 4) {
     for (long y = startY; y < endY; y += 4) {
       for (long x = startX; x < endX; x += 4) {
