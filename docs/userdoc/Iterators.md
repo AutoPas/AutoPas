@@ -1,6 +1,6 @@
 # Iterating Through Particles
 
-Since particles in AutoPas can stored in many different ways, it is generally not feasible to provide random access to individual particles.
+Since particles could be stored in many different ways within AutoPas, it is generally not feasible to provide random access to individual particles.
 To access particles, iterators are used.
 AutoPas provides three interfaces to do this:
 1. Classic iterators 
@@ -39,8 +39,9 @@ for(auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
 ```
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const` iterator.
 
-Some gotchas to be aware of:
+Some gotchas and further information to be aware of:
 - The iterator can only go forward.
+  Its design doesn't necessarily prohibit reverse iteration, but it is (currently) not implemented.
 - Adding particles during iteration is considered undefined behavior.
   See [Issue #766](https://github.com/AutoPas/AutoPas/issues/766) for details
 - There is no guarantee on the order of iteration.
@@ -145,8 +146,8 @@ All of those functions also exist in a `const` version with the otherwise same s
 
 ```cpp
 autoPas.forEachInRegionParallel([](auto &particle) {
-  // user code
-  particle.getR();
+  // user code (here e.g. calculating newR)
+  particle.setR(newR);
 }, lowCorner, highCorner, behavior);
 ```
 
