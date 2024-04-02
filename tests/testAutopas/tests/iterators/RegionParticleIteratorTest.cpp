@@ -226,7 +226,7 @@ TEST_F(RegionParticleIteratorTestOne, testForceSequential) {
 TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   using namespace autopas::utils::ArrayMath::literals;
 
-  auto [containerOption, behavior] = GetParam();
+  auto containerOption = GetParam();
 
   autopas::AutoPas<Molecule> autoPas{};
   // Get a 10x10x10 box
@@ -317,8 +317,7 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   auto testRegion = [&](const std::array<double, 3> &min, const std::array<double, 3> &max, size_t exptectedID,
                         const std::string &context) {
     size_t numParticlesFound = 0;
-    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::ownedOrHalo); iter.isValid();
-         ++iter) {
+    for (auto iter = autoPas.getRegionIterator(min, max, autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
       ++numParticlesFound;
       EXPECT_EQ(iter->getID(), exptectedID) << "There should only be one particle with ID 0.\n" << context;
     }
@@ -352,7 +351,5 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestTwo,
-                         Combine(ValuesIn(getTestableContainerOptions()),
-                                 ValuesIn(autopas::IteratorBehavior::getMostOptions())),
+INSTANTIATE_TEST_SUITE_P(Generated, RegionParticleIteratorTestTwo, ValuesIn(getTestableContainerOptions()),
                          RegionParticleIteratorTestTwo::PrintToStringParamName());

@@ -15,8 +15,6 @@
 using testingTupleOne = std::tuple<autopas::ContainerOption, double /*cell size factor*/, bool /*testConstIterators*/,
                                    bool /*priorForceCalc*/, autopas::IteratorBehavior>;
 
-using testingTupleTwo = std::tuple<autopas::ContainerOption, autopas::IteratorBehavior>;
-
 class RegionParticleIteratorTestBase : public AutoPasTestBase {
  protected:
   /**
@@ -51,15 +49,14 @@ class RegionParticleIteratorTestOne : public RegionParticleIteratorTestBase,
 };
 
 class RegionParticleIteratorTestTwo : public RegionParticleIteratorTestBase,
-                                      public ::testing::WithParamInterface<testingTupleTwo> {
+                                      public ::testing::WithParamInterface<autopas::ContainerOption> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
     std::string operator()(const testing::TestParamInfo<ParamType> &info) const {
-      auto [containerOption, behavior] = static_cast<ParamType>(info.param);
+      auto containerOption = static_cast<ParamType>(info.param);
       std::string str;
       str += containerOption.to_string() + "_";
-      str += "_" + behavior.to_string();
       std::replace(str.begin(), str.end(), '-', '_');
       std::replace(str.begin(), str.end(), '.', '_');
       return str;
