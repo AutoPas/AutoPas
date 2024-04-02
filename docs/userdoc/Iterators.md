@@ -142,6 +142,7 @@ For this, multiple member functions are available:
 
 **Parallel functions currently do NOT YET implement any parallelization and an equivalent to their sequential counterparts!**
 
+Here, `Lambda` stands for a function of the signature `(Particle &) -> void`.
 All of those functions also exist in a `const` version with the otherwise same signature.
 
 ```cpp
@@ -154,7 +155,7 @@ autoPas.forEachInRegionParallel([](auto &particle) {
 ### Reductions
 
 On top of that for every `forEach`-style function, there is also a corresponding `reduce[inRegion][Parallel]()` function.
-
+Here, the lambda function has the form `(Particle &, ResultT &) -> void`
 ```cpp
 size_t result = 0;
 autoPas.reduceInRegionParallel([](auto &particle, auto &accumulator) {
