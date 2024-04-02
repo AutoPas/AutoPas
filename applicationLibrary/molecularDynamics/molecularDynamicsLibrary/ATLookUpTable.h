@@ -52,7 +52,6 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 //  }
 
   std::vector<autopas::utils::Timer>* LUTtimers;
-  autopas::utils::Timer* LUTtimerD;
 
   // list: cutoffSquared, nu, ... (numberOfPoints)
   // Extremely unreadable and user-error-prone
@@ -66,7 +65,6 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
    */
   ATLookUpTable(std::initializer_list<floatType> args, std::vector<autopas::utils::Timer>* timer) {
     LUTtimers = timer;
-    LUTtimerD = &((*timer)[3]);
     //    std::cout << "LUT created.\n";
     if (args.size() < 3) {  // Fail gracefully
       throw autopas::utils::ExceptionHandler::AutoPasException("Not enough arguments for ATLookUpTable creation");
@@ -357,51 +355,18 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
   Entry rotate(floatType a1, floatType a2, floatType a3, floatType b1, floatType b2, floatType b3, floatType c1,
                floatType c2, floatType c3, size_t index) {
     using namespace autopas::utils::ArrayMath;
-
-    (*LUTtimers)[0].start(); // Timer 3 start; Timer 1 start; Timer timer start
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[1].start();
-    (*LUTtimers)[1].stop();
-    (*LUTtimers)[0].stop(); // Timer timer stop
-    (*LUTtimers)[2].start(); // Direct timer
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    LUTtimerD->start();
-    LUTtimerD->stop();
-    (*LUTtimers)[2].stop();
+    (*LUTtimers)[0].start(); // Timer 5 start
+    (*LUTtimers)[1].start(); // Timer 6 start
+    (*LUTtimers)[1].stop(); // Timer 6 stop
+    (*LUTtimers)[0].stop(); // Timer 5
+    (*LUTtimers)[2].start(); // Timer 7 start
+    (*LUTtimers)[3].start(); // Timer 8 start
+    (*LUTtimers)[3].stop(); // Timer 8 stop
+    (*LUTtimers)[3].start(); // Timer 8 start
+    (*LUTtimers)[3].stop(); // Timer 8 stop
+    (*LUTtimers)[3].start(); // Timer 8 start
+    (*LUTtimers)[3].stop(); // Timer 8 stop
+    (*LUTtimers)[2].stop(); // Timer 7 stop
 
     std::array<floatType, 4> rot1Quaternion;
     std::array<floatType, 4> rot1InverseQuaternion;
