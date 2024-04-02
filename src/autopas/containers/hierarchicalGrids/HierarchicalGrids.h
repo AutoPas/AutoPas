@@ -73,8 +73,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       const double cellSize = gridBorder / radiusMax;
       _hierarchicalGridBorders.emplace_back(gridBorder);
 
-      _hierarchyLevels.emplace_back(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor,
-                                    loadEstimator);
+      _hierarchyLevels.emplace_back(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, cellSize, loadEstimator);
 
       std::cout << "Created Hierarchical Grid level: " << level << std::endl;
       std::cout << "  with max. allowed particle radii of " << _hierarchicalGridBorders[level] << std::endl;
@@ -280,8 +279,25 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     // @idea: Reduce the number of threads per level and parallelize as much as
     // possible over the levels. Might mean some major redesign all over autopas?
     // AUTOPAS_OPENMP(parallel firstprivate (traversal))
+
     for (auto &hgLevel : _hierarchyLevels) {
-      hgLevel.iteratePairwise(traversal);
+      TraversalOption traversalOpt = traversal->getTraversalType();
+
+      bool n3 = traversal->getUseNewton3();
+
+      DataLayoutOption lay = traversal->getDataLayout();
+
+      TraversalSelectorInfo travInfo = hgLevel.getTraversalSelectorInfo();
+
+      // auto *traversalType = dynamic_cast<LCC01Traversal<ParticleCell, demLib::DEMFunctor<Particle>> *>(traversal);
+      // auto *functor = traversalType->getPairwiseFunctor();
+
+      demLib::DEMFunctor<Particle> functor(1.);
+
+      std::unique_ptr<TraversalInterface> newUniqueTraversal =
+          autopas::TraversalSelector<ParticleCell>::generateTraversal(traversalOpt, functor, travInfo, lay, n3);
+      TraversalInterface *newTraversal = newUniqueTraversal.get();
+      hgLevel.iteratePairwise(newTraversal);
     }
   }
 
@@ -335,25 +351,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * @param traversal The traversal to use for the iteration.
    */
   void iteratePairwise(TraversalInterface *traversal) override {
-    TraversalOption traversalOpt = traversal->getTraversalType();
-
-    bool n3 = traversal->getUseNewton3();
-
-    DataLayoutOption lay = traversal->getDataLayout();
-
-    TraversalSelectorInfo travInfo = getTraversalSelectorInfo();
-
-    auto *traversalType = dynamic_cast<LCC04Traversal<ParticleCell, demLib::DEMFunctor<Particle>> *>(traversal);
-    // auto *functor = traversalType->getPairwiseFunctor();
-
-    demLib::DEMFunctor<Particle> functor(1.);
-
-    std::unique_ptr<TraversalInterface> newUniqueTraversal =
-        autopas::TraversalSelector<ParticleCell>::generateTraversal(traversalOpt, functor, travInfo, lay, n3);
-    TraversalInterface *newTraversal = newUniqueTraversal.get();
-
     // Iterate over hierarchy levels
-    iterateAllHGLevels(newTraversal);
+    iterateAllHGLevels(traversal);
 
     // Iterate over cross levels
     // @note No traversal needed, since forces between HG-levels are calculated directly
