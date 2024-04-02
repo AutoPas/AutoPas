@@ -623,7 +623,7 @@ TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
 }
 
 /**
- *  Add less measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ *  Add more measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
  *  Version with two rebuilds during sampling.
  */
 TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
