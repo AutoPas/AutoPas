@@ -144,7 +144,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * Neighbor list abstraction for neighbor list used in the container.
    */
   NeighborList _neighborList;
-  
+
   /**
    * Load estimation algorithm for balanced traversals.
    */

@@ -110,7 +110,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     }
   }
 
- private:
+ protected:
   /**
    * Update the verlet lists for AoS usage
    * @param useNewton3

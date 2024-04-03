@@ -44,7 +44,7 @@ namespace autopas {
 template <typename Particle>
 class LogicHandler {
  public:
-  /**
+  /**getVe
    * Constructor of the LogicHandler.
    * @param autoTuner
    * @param logicHandlerInfo
@@ -816,10 +816,11 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
+  _neighborListsAreValid.store(true, std::memory_order_relaxed);
   auto halfSkinSquare = (getContainer().getVerletSkin() * getContainer().getVerletSkin()) / 4;
   bool listInvalid = false;
 
-  for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
     auto distance = iter->calculateDisplacementSinceRebuild();
     double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
@@ -829,7 +830,7 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
   }
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
-      listInvalid) {
+      listInvalid){ 
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);

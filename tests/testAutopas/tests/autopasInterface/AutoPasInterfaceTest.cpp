@@ -87,6 +87,7 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule> &le
       }
     }
     p.setR(pos);
+    p.setRAtRebuild();
   }
   return enteringParticles;
 }
@@ -136,6 +137,7 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
              ++iter) {
           auto particleCopy = *iter;
           particleCopy.addR(shiftVec);
+          particleCopy.setRAtRebuild();
           haloParticles.push_back(particleCopy);
         }
       }
@@ -338,26 +340,24 @@ void testSimulationLoop(const autopas::Configuration &conf) {
 
   LJFunctorGlobals functor(cutoff);
   functor.setParticleProperties(24.0, 1);
+  
   // do first simulation loop
   doSimulationLoop(autoPas, &functor);
-
   doAssertions(autoPas, &functor, numParticles, __LINE__);
-
   moveParticlesAndResetF({autoPas.getVerletSkin() / 6, 0., 0.});
+
   addParticlePair({9.99, 1., 5.});
 
   // do second simulation loop
   doSimulationLoop(autoPas, &functor);
-
   doAssertions(autoPas, &functor, numParticles, __LINE__);
-
   moveParticlesAndResetF({-autoPas.getVerletSkin() / 6, 0., 0.});
+  
   addParticlePair({9.99, 7., 5.});
   deleteIDs({2, 3});
 
   // do third simulation loop.
   doSimulationLoop(autoPas, &functor);
-
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 
   // update positions a bit (outside of domain!) + reset F
@@ -365,7 +365,6 @@ void testSimulationLoop(const autopas::Configuration &conf) {
 
   // do fourth simulation loop, tests rebuilding of container.
   doSimulationLoop(autoPas, &functor);
-
   doAssertions(autoPas, &functor, numParticles, __LINE__);
 }
 
@@ -614,7 +613,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{autoPas1.getVerletSkin() / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(iter->getR() + moveVec);
@@ -630,7 +629,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{-skinPerTimestep * rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{-autoPas1.getVerletSkin() / 3., 0., 0.}; //VerletSkin is same for both containers
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(iter->getR() + moveVec);
@@ -646,7 +645,7 @@ void testSimulationLoop(autopas::ContainerOption containerOption1, autopas::Cont
 
   // update positions a bit (outside of domain!) + reset F
   {
-    std::array<double, 3> moveVec{skinPerTimestep * rebuildFrequency / 3., 0., 0.};
+    std::array<double, 3> moveVec{autoPas1.getVerletSkin() / 3., 0., 0.};
     for (auto *aP : {&autoPas1, &autoPas2}) {
       for (auto iter = aP->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
         iter->setR(iter->getR() + moveVec);

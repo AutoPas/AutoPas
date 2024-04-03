@@ -168,7 +168,7 @@ class ParticleBase {
    */
   const std::array<double, 3> calculateDisplacementSinceRebuild() const { 
     using namespace autopas::utils::ArrayMath::literals;
-    auto dist = _rAtRebuild - _r;
+    auto dist = utils::ArrayMath::sub(_rAtRebuild, _r);
     return dist;
   }
 
