@@ -32,7 +32,7 @@ target_link_libraries(
     PRIVATE
         # harmony are only needed privately when building AutoPas.
         harmony
-        # hwy
+        hwy
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
