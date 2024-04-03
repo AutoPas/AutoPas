@@ -344,29 +344,19 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
   }
 
   std::array<floatType, 4> quaternionMultiply(std::array<floatType, 4> v1, std::array<floatType, 4> v2) {
+    //(*LUTtimers)[0].start(); // Timer 9 start
     std::array<floatType, 4> ret;
     ret[0] = v1[0] * v2[0] - v1[1] * v2[1] - v1[2] * v2[2] - v1[3] * v2[3];
     ret[1] = v1[0] * v2[1] + v1[1] * v2[0] - v1[2] * v2[3] + v1[3] * v2[2];
     ret[2] = v1[0] * v2[2] + v1[1] * v2[3] + v1[2] * v2[0] - v1[3] * v2[1];
     ret[3] = v1[0] * v2[3] - v1[1] * v2[2] + v1[2] * v2[1] + v1[3] * v2[0];
+    //(*LUTtimers)[0].stop(); // Timer 9 stop
     return ret;
   }
 
   Entry rotate(floatType a1, floatType a2, floatType a3, floatType b1, floatType b2, floatType b3, floatType c1,
                floatType c2, floatType c3, size_t index) {
     using namespace autopas::utils::ArrayMath;
-    (*LUTtimers)[0].start(); // Timer 5 start
-    (*LUTtimers)[1].start(); // Timer 6 start
-    (*LUTtimers)[1].stop(); // Timer 6 stop
-    (*LUTtimers)[0].stop(); // Timer 5
-    (*LUTtimers)[2].start(); // Timer 7 start
-    (*LUTtimers)[3].start(); // Timer 8 start
-    (*LUTtimers)[3].stop(); // Timer 8 stop
-    (*LUTtimers)[3].start(); // Timer 8 start
-    (*LUTtimers)[3].stop(); // Timer 8 stop
-    (*LUTtimers)[3].start(); // Timer 8 start
-    (*LUTtimers)[3].stop(); // Timer 8 stop
-    (*LUTtimers)[2].stop(); // Timer 7 stop
 
     std::array<floatType, 4> rot1Quaternion;
     std::array<floatType, 4> rot1InverseQuaternion;
@@ -382,8 +372,10 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
     AutoPasLog(DEBUG, "B: {} {} {}    C: {} {} {}", b1, b2, b3, c1, c2, c3);
 
+    (*LUTtimers)[1].start(); // Timer norm3 start
     auto targetB = norm3(b1, b2, b3);  // ((eps + 1)^3 (b1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - b1)^2 + (a1 - b1)^2 + 3 eps (a2 - b2)^2 + (a2 - b2)^2 + 2 eps (a3 - b3)^2 + (a3 - b3)^2))
     auto targetC = norm3(c1, c2, c3);  // ((eps + 1)^3 (c1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - c1)^2 + (a1 - c1)^2 + 3 eps (a2 - c2)^2 + (a2 - c2)^2 + 2 eps (a3 - c3)^2 + (a3 - c3)^2))
+    (*LUTtimers)[1].stop(); // Timer norm3 stop
     std::array<floatType, 3> sourceB = {1, 0, 0};
     AutoPasLog(DEBUG, "targetB normalized: {}", targetB);
     AutoPasLog(DEBUG, "targetC normalized: {}", targetC);
@@ -399,16 +391,17 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     // which are 0
     //    rot1Quaternion = {(1 + targetB[0]) / norm, 0, targetB[2] / norm, -targetB[1] / norm};
     //    rot1InverseQuaternion = {rot1Quaternion[0], 0, -rot1Quaternion[2], -rot1Quaternion[3]};
+    (*LUTtimers)[2].start(); // Timer rot1Quat start
     auto cross = autopas::utils::ArrayMath::cross(targetB, sourceB);
     std::array<floatType, 4> targetBQuat = {0, targetB[0], targetB[1], targetB[2]};
     std::array<floatType, 4> sourceBQuat = {0, sourceB[0], sourceB[1], sourceB[2]};
     rot1Quaternion = {(1 + dot(targetBQuat, sourceBQuat)), cross[0], cross[1], cross[2]};
     rot1Quaternion = normalize(rot1Quaternion);
     rot1InverseQuaternion = {rot1Quaternion[0], -rot1Quaternion[1], -rot1Quaternion[2], -rot1Quaternion[3]};
+    (*LUTtimers)[2].stop(); // Timer rot1Quat stop
 
     // Rotate targetB for debugging purposes
-    // TODO: Rotations will be optimized in the way that the quaternion representing a vector has a real part of 0, so
-    // any calculation involving quatTargetB[0] is 0 and can be removed
+    // TODO: Rotations will be optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving quatTargetB[0] is 0 and can be removed
     std::array<floatType, 4> tempQuat = {};
     AutoPasLog(DEBUG, "{}", [targetBQuat, rot1InverseQuaternion, rot1Quaternion, this]() -> std::string {
       std::array<floatType, 4> res =
@@ -429,11 +422,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     //        rot1InverseQuaternion[1]*targetC[1] + rot1InverseQuaternion[2]*targetC[0]
     //    };
     std::array<floatType, 4> targetCQuat = {0, targetC[0], targetC[1], targetC[2]};
-    //(*LUTtimers)[0].start(); // Timer 4 start
+    (*LUTtimers)[0].start(); // Timer 4 start
     tempQuat = quaternionMultiply(rot1InverseQuaternion, targetCQuat);
     // tempQuat * quat
     tempQuat = quaternionMultiply(tempQuat, rot1Quaternion);
-    //(*LUTtimers)[0].stop(); // Timer 4 stop
+    (*LUTtimers)[0].stop(); // Timer 4 stop
     targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
     AutoPasLog(DEBUG, "TargetC after first rotation is {}", targetC);
 
@@ -441,7 +434,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     // Use C = (tagetC[0], sqrt(target[1]^2 + target[2]^2), 0) to ensure rotation around the xy-axis at the cost of some
     // operations.
     // TODO: Try optimizing the 2D rotation
-
+    (*LUTtimers)[3].start(); // Timer rot2Quat start
     auto C1 = std::sqrt(targetC[1] * targetC[1] + targetC[2] * targetC[2]);
     std::array<floatType, 3> sourceC = {targetC[0], C1, 0};
 
@@ -456,6 +449,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     rot2Quaternion = {(1 + dot(targetBQuat, sourceBQuat)), cross[0], cross[1], cross[2]};
     rot2Quaternion = normalize(rot2Quaternion);
     rot2InverseQuaternion = {rot2Quaternion[0], -rot2Quaternion[1], -rot2Quaternion[2], -rot2Quaternion[3]};
+    (*LUTtimers)[3].stop(); // Timer rot2Quat stop
 
     // Rotate C for debugging purposes
     AutoPasLog(DEBUG, "quatC is {}",
@@ -464,6 +458,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     // Initialize forceQuaternion and rotate one force after the other
     Entry forces = lut[index];
     Entry ret{};
+
+    AutoPasLog(DEBUG, "rot1Quat: {}", rot1Quaternion);
+    AutoPasLog(DEBUG, "rot1InvQuat: {}", rot1InverseQuaternion);
+    AutoPasLog(DEBUG, "rot2Quat: {}", rot2Quaternion);
+    AutoPasLog(DEBUG, "rot2InvQuat: {}", rot2InverseQuaternion);
 
     // invQuat2 * tempQuat
     // TODO: Godbolt
@@ -479,11 +478,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       //                  rot2InverseQuaternion[2] * tempQuat[1]
       //      };
       //      AutoPasLog(DEBUG, "After first half rotation {}: {}", i, tempQuat);
-      //(*LUTtimers)[0].start(); // Timer 4 start
-      tempQuat = quaternionMultiply(rot1InverseQuaternion, tempQuat);
+      (*LUTtimers)[0].start(); // Timer 4 start
+      tempQuat = quaternionMultiply(rot2InverseQuaternion, tempQuat);
       // tempQuat * Quat2
       tempQuat = quaternionMultiply(tempQuat, rot2Quaternion);
-      //(*LUTtimers)[0].stop(); // Timer 4 stop
+      (*LUTtimers)[0].stop(); // Timer 4 stop
 
       // tempQuat now
       AutoPasLog(DEBUG, "After first rotation {}: {}", i, tempQuat);
@@ -499,12 +498,12 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       //                  rot1Quaternion[3] * tempQuat[1], rot1Quaternion[0] * tempQuat[3] - rot1Quaternion[1] *
       //                  tempQuat[2] + rot1Quaternion[2] * tempQuat[1]
       //      };
-      //(*LUTtimers)[0].start(); // Timer 4 start
+      (*LUTtimers)[0].start(); // Timer 4 start
       tempQuat = quaternionMultiply(rot1Quaternion, tempQuat);
       AutoPasLog(DEBUG, "After second half rotation {}: {}", i, tempQuat);
       // force * invQuat1
       tempQuat = quaternionMultiply(tempQuat, rot1InverseQuaternion);
-      //(*LUTtimers)[0].stop(); // Timer 4 stop
+      (*LUTtimers)[0].stop(); // Timer 4 stop
 
       AutoPasLog(DEBUG, "After second rotation {}: {}", i, tempQuat);
 
