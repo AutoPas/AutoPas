@@ -295,7 +295,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
-        // if particles might have moved extend search box here
+        // We extend the search box for cells here since particles might have moved
         const auto boxMinWithSafetyMargin =
             boxMin - (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
         const auto boxMaxWithSafetyMargin =

@@ -64,8 +64,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
       : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
         _loadEstimator(loadEstimator),
-        _skinPerTimestep(skinPerTimestep),
-        _rebuildFrequency(rebuildFrequency) {}
+        _skinPerTimestep(skinPerTimestep) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -238,9 +237,11 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
-        // if particles might have moved extend search box for cells here
-        const auto boxMinWithSafetyMargin = boxMin - (_skinPerTimestep * _rebuildFrequency);
-        const auto boxMaxWithSafetyMargin = boxMax + (_skinPerTimestep * _rebuildFrequency);
+        // We extend the search box for cells here since particles might have moved
+        const auto boxMinWithSafetyMargin =
+            boxMin - (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+        const auto boxMaxWithSafetyMargin =
+            boxMax + (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
 
         return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
                 _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
@@ -613,10 +614,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * Skin distance a particle is allowed to move in one time-step.
    */
   double _skinPerTimestep;
-  /**
-   * Frequency of container rebuild.
-   */
-  unsigned int _rebuildFrequency;
   /**
    * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
    */
