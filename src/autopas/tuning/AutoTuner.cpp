@@ -199,8 +199,9 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
   // sanity check
   if (getCurrentNumSamples() >= _maxSamples) {
-    autopas::utils::ExceptionHandler::exception(
-        "AutoTuner::addMeasurement(): Trying to add new measurements but there are already enough!"
+    utils::ExceptionHandler::exception(
+        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough"
+        "for this configuration!\n"
         "tuneConfiguration() should have been called before to process and flush samples.");
   }
   AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
@@ -355,7 +356,7 @@ long AutoTuner::estimateRuntimeFromSamples() const {
           : autopas::OptimumSelector::optimumValue(_samplesNotRebuildingNeighborLists, _selectorStrategy);
 
   // Calculate weighted average as if there was exactly one sample for each iteration in the rebuild interval.
-  return (1 * reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
+  return (reducedValueBuilding + (_rebuildFrequency - 1) * reducedValueNotBuilding) / _rebuildFrequency;
 }
 
 bool AutoTuner::prepareIteration() {
@@ -419,4 +420,6 @@ const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMet
 bool AutoTuner::inTuningPhase() const {
   return (_iterationsSinceTuning >= _tuningInterval) and not searchSpaceIsTrivial();
 }
+
+const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 }  // namespace autopas
