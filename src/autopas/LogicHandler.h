@@ -792,7 +792,6 @@ class LogicHandler {
   void updateRebuildPositions();
 };
 
-
 template <typename Particle>
 void LogicHandler<Particle>::updateRebuildPositions() {
   for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
@@ -830,7 +829,7 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
   }
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
-      listInvalid){ 
+      listInvalid) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);
