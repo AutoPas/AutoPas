@@ -101,11 +101,13 @@ class LogicHandler {
     for (auto &cell : _particleBuffer) {
       auto &buffer = cell._particles;
       if (insertOwnedParticlesToContainer) {
-        for (const auto &p : buffer) {
+        // Can't be const because we potentially modify particels before readding them
+        for (auto &p : buffer) {
           if (p.isDummy()) {
             continue;
           }
           if (utils::inBox(p.getR(), boxMin, boxMax)) {
+            p.setOwnershipState(OwnershipState::owned);
             _containerSelector.getCurrentContainer().addParticle(p);
           } else {
             leavingBufferParticles.push_back(p);
@@ -276,6 +278,7 @@ class LogicHandler {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
     const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
+    Particle particleCopy = p;
     if (utils::notInBox(p.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
@@ -284,12 +287,14 @@ class LogicHandler {
           "{}",
           boxMin, boxMax, p.toString());
     }
+    particleCopy.setOwnershipState(OwnershipState::owned);
+    particleCopy.setRAtRebuild();  // to discuss this
     if (not neighborListsAreValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
-      _containerSelector.getCurrentContainer().template addParticle<false>(p);
+      _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
       // If the container is valid, we add it to the particle buffer.
-      _particleBuffer[autopas_get_thread_num()].addParticle(p);
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
     }
     _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
   }
@@ -301,6 +306,7 @@ class LogicHandler {
     auto &container = _containerSelector.getCurrentContainer();
     const auto &boxMin = container.getBoxMin();
     const auto &boxMax = container.getBoxMax();
+    Particle particleCopy = haloParticle;
     if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
@@ -309,12 +315,14 @@ class LogicHandler {
           "{}",
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
     }
+    particleCopy.setOwnershipState(OwnershipState::halo);
+    particleCopy.setRAtRebuild();  // to discuss this
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
-      container.template addHaloParticle</* checkInBox */ false>(haloParticle);
+      container.template addHaloParticle</* checkInBox */ false>(particleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = container.updateHaloParticle(haloParticle);
+      bool updated = container.updateHaloParticle(particleCopy);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticle);

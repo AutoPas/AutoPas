@@ -83,9 +83,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::addParticleImpl()
    */
   void addParticleImpl(const ParticleType &p) override {
-    ParticleType pCopy = p;
     addParticleLock.lock();
-    _particleList.push_back(pCopy);
+    _particleList.push_back(p);
     updateDirtyParticleReferences();
     addParticleLock.unlock();
   }
@@ -94,10 +93,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
     addParticleLock.lock();
-    _particleList.push_back(pCopy);
+    _particleList.push_back(haloParticle);
     updateDirtyParticleReferences();
     addParticleLock.unlock();
   }
@@ -106,16 +103,14 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
+    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
         return true;
       }
     }
-    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
+    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
     return false;
   }
 

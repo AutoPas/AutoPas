@@ -68,16 +68,20 @@ TEST_P(AllContainersTests, testParticleAdding) {
                      boxMax[1] + .5, boxMax[1] + 1.5}) {
       for (double z : {boxMin[2] - 1.5, boxMin[2] - .5, boxMin[2], boxMin[2] + 5., boxMax[2] - 0.001, boxMax[2],
                        boxMax[2] + .5, boxMax[2] + 1.5}) {
-        const autopas::Particle p({x, y, z}, {0., 0., 0.}, id++);
+        autopas::Particle p({x, y, z}, {0., 0., 0.},
+                            id++);  // not const as updating ownership (as containers no longer handle this)
         if (x == -1.5 or y == -1.5 or z == -1.5 or x == 11.5 or y == 11.5 or z == 11.5) {
-          EXPECT_ANY_THROW(container.addParticle(p));     // outside, therefore not ok!
+          EXPECT_ANY_THROW(container.addParticle(p));  // outside, therefore not ok!
+          p.setOwnershipState(autopas::OwnershipState::halo);
           EXPECT_NO_THROW(container.addHaloParticle(p));  // much outside, still ok because it is ignored!
         } else if (x == 10. or y == 10. or z == 10. or x == -.5 or y == -.5 or z == -.5 or x == 10.5 or y == 10.5 or
                    z == 10.5) {
-          EXPECT_ANY_THROW(container.addParticle(p));     // outside, therefore not ok!
+          EXPECT_ANY_THROW(container.addParticle(p));  // outside, therefore not ok!
+          p.setOwnershipState(autopas::OwnershipState::halo);
           EXPECT_NO_THROW(container.addHaloParticle(p));  // outside, therefore ok!
         } else {
           EXPECT_NO_THROW(container.addParticle(p));  // inside, therefore ok!
+          p.setOwnershipState(autopas::OwnershipState::halo);
           EXPECT_ANY_THROW(
               // inside, and not ok, as halo particles cannot be added inside of the domain!
               container.addHaloParticle(p));
@@ -118,7 +122,8 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
         }
         auto pos = domainCenter + std::array<double, 3>{distCenterToMidHalo[0] * x, distCenterToMidHalo[1] * y,
                                                         distCenterToMidHalo[2] * z};
-        const Particle p{pos, zeros, numParticles++};
+        Particle p{pos, zeros, numParticles++};
+        p.setOwnershipState(autopas::OwnershipState::halo);
         container.addHaloParticle(p);
       }
     }
@@ -137,7 +142,8 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
  */
 TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
-  const autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
+  autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
+  p.setOwnershipState(autopas::OwnershipState::halo);
   container.addHaloParticle(p);
 
   EXPECT_EQ(container.size(), 1);
@@ -175,10 +181,12 @@ void AllContainersTestsBothUpdates::testUpdateContainerDeletesDummy(bool previou
   // Add particle
   {
     const double pos = previouslyOwned ? 0.5 : -0.5;
-    const TestParticle p({pos, pos, pos}, {0, 0, 0}, 42);
+    TestParticle p({pos, pos, pos}, {0, 0, 0}, 42);
     if (previouslyOwned) {
+      p.setOwnershipState(autopas::OwnershipState::owned);
       container.addParticle(p);
     } else {
+      p.setOwnershipState(autopas::OwnershipState::halo);
       container.addHaloParticle(p);
     }
   }
@@ -230,17 +238,20 @@ TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
 
   {
-    const Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 0);
+    Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 0);
+    p.setOwnershipState(autopas::OwnershipState::halo);
     container.addHaloParticle(p);
   }
 
   {
-    const Particle p({.02, .1, .1}, {0., 0., 0.}, 1);
+    Particle p({.02, .1, .1}, {0., 0., 0.}, 1);
+    p.setOwnershipState(autopas::OwnershipState::owned);
     container.addParticle(p);
   }
 
   {
-    const Particle p({1.23, .1, .1}, {0., 0., 0.}, 2);
+    Particle p({1.23, .1, .1}, {0., 0., 0.}, 2);
+    p.setOwnershipState(autopas::OwnershipState::owned);
     container.addParticle(p);
   }
   struct Values {
@@ -254,9 +265,11 @@ TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified
     if (p.getID() == 1) {
       // moves particle 1 outside the container (leaving particle!)
       p.addR({-0.04, 0., 0.});
+      p.setRAtRebuild();
     } else if (p.getID() == 2) {
       // Should normally move it to next linked cell, here the cell should NOT change!
       p.addR({0.04, 0., 0.});
+      p.setRAtRebuild();
     }
   }
 

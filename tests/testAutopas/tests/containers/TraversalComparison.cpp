@@ -150,7 +150,6 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   if (particleDeletionPosition & DeletionPosition::afterLists) {
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 99);
   }
-
   functor.initTraversal();
   container.iteratePairwise(traversal.get());
   functor.endTraversal(newton3Option);
@@ -206,7 +205,6 @@ TEST_P(TraversalComparison, traversalTest) {
   // (and OK to do so)
   constexpr double rel_err_tolerance = 1.0e-10;
   constexpr double rel_err_tolerance_globals = 1.0e-12;
-
   std::vector<std::array<double, 3>> calculatedForces;
   Globals calculatedGlobals;
   if (globals) {

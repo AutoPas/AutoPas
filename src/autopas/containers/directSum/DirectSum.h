@@ -78,11 +78,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   /**
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
-  void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleType p_copy = haloParticle;
-    p_copy.setOwnershipState(OwnershipState::halo);
-    getHaloCell().addParticle(p_copy);
-  }
+  void addHaloParticleImpl(const ParticleType &haloParticle) override { getHaloCell().addParticle(haloParticle); }
 
   /**
    * @copydoc ParticleContainerInterface::updateHaloParticle()

@@ -184,9 +184,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void addHaloParticleImpl(const Particle &haloParticle) override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
-    Particle copy = haloParticle;
-    copy.setOwnershipState(OwnershipState::halo);
-    _particlesToAdd[autopas_get_thread_num()].push_back(copy);
+    _particlesToAdd[autopas_get_thread_num()].push_back(haloParticle);
   }
 
   bool updateHaloParticle(const Particle &haloParticle) override {
@@ -201,6 +199,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that
         // overlap with this region.
         it->setR(haloPos);
+        it->setRAtRebuild();
         it->setV(haloParticle.getV());
         it->setF(haloParticle.getF());
         return true;

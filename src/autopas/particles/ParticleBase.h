@@ -165,6 +165,7 @@ class ParticleBase {
   /**
    * calculate distance since last rebuild
    * this is used to check if neighbour lists are still valid inside the logic handler
+   * @return displacement vector of particle since rebuild
    */
   const std::array<double, 3> calculateDisplacementSinceRebuild() const {
     using namespace autopas::utils::ArrayMath::literals;
