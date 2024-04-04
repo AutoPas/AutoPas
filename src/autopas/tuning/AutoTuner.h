@@ -216,6 +216,12 @@ class AutoTuner {
    */
   bool inTuningPhase() const;
 
+  /**
+   * Getter for the internal evidence collection.
+   * @return
+   */
+  const EvidenceCollection &getEvidenceCollection() const;
+
  private:
   /**
    * Measures consumed energy for tuning
