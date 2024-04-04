@@ -8,7 +8,9 @@ FetchContent_Declare(
     URL ${AUTOPAS_SOURCE_DIR}/libs/highway-master.zip
 )
 
-option(AUTOPAS_BUILD_HIGHWAY "" ON)
+# option(AUTOPAS_BUILD_HIGHWAY "" ON)
+set(AUTOPAS_BUILD_TESTS OFF)
+set(MD_FLEXIBLE_FUNCTOR_HIGHWAY ON)
 
 FetchContent_GetProperties(highway)
 if (NOT highway_POPULATED)

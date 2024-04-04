@@ -228,7 +228,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         } else if(strArg.find("mipp") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_MIPP;
         } else if(strArg.find("simde") != std::string::npos) {
-            config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
+        } else if(strArg.find("highway") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
         } else {
           throw std::runtime_error("Unrecognized functor!");
         }

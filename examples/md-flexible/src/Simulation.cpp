@@ -39,6 +39,10 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
 #include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSIMDe.h"
 #endif
+// #if defined(MD_FLEXIBLE_FUNCTOR_HIGHWAY)
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorHWY.h"
+// #endif
+
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
 //! @endcond
@@ -703,7 +707,7 @@ T Simulation::applyWithChosenFunctor(F f) {
           "MD-Flexible was not compiled with support for LJFunctor MIPP. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_MIPP=ON`.");
 #endif
-    }  case MDFlexConfig::FunctorOption::lj12_6_SIMDe:
+    }  case MDFlexConfig::FunctorOption::lj12_6_SIMDe: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
         return f(mdLib::LJFunctorSIMDe<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
 #else
@@ -711,6 +715,17 @@ T Simulation::applyWithChosenFunctor(F f) {
           "MD-Flexible was not compiled with support for LJFunctor SIMDe. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SIMDE=ON`.");
 #endif
+    }  case MDFlexConfig::FunctorOption::lj12_6_HWY: {
+// #if defined(MD_FLEXIBLE_FUNCTOR_HIGHWAY)
+        return f(mdLib::HWY_NAMESPACE::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+/*
+#else
+        throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor Highway. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_HIGHWAY=ON`.");
+#endif
+*/
+    }
     }
 
     throw std::runtime_error("Unknown functor choice" +

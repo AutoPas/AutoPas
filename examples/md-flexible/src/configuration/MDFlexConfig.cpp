@@ -313,6 +313,9 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) SIMD Everywhere Wrapper" << endl;
         break;
     }
+    case FunctorOption::lj12_6_HWY: {
+        os << "Lennard-Jones (12-6) Highway Wrapper" << endl;
+    }
   }
   printOption(newton3Options);
   printOption(cutoff);
