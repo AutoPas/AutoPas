@@ -20,5 +20,5 @@ TEST_F(LookUpTableTest, MostBasicRotate) {
                                   ForceLookUpTable::nextNeighbor, double, int> ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                                             ForceLookUpTable::nextNeighbor, double, int>(
       {cutoff * cutoff, nu, 8.0}, &LUTtimers));
-  ATLookUpTable.retrieveValue({0., 0., 0.}, {1., 0., 0.}, {0.5, -std::sqrt(0.75), 0.}, 1., 1., 1.); // Change so targetB ends up on 1,0,0 to check second rotation
+  ATLookUpTable.retrieveValue({0., 0., 0.}, {1., 0., 0.}, {0.5, 0., std::sqrt(0.75)}, 1., 1., 1.); // Change so targetB ends up on 1,0,0 to check second rotation
 }

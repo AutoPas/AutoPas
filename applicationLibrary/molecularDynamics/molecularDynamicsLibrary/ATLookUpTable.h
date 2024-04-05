@@ -431,6 +431,8 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     (*LUTtimers)[0].stop(); // Timer 4 stop
     targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
     AutoPasLog(DEBUG, "TargetC after first rotation is {}", targetC);
+    targetC[0] = 0.;
+    targetC = norm3(targetC[0], targetC[1], targetC[2]);
 
     // Find 2-D transformation that rotates C onto targetC
     // Use C = (tagetC[0], sqrt(target[1]^2 + target[2]^2), 0) to ensure rotation around the xy-axis at the cost of some
