@@ -1,6 +1,8 @@
-//
-// Created by jan on 1/29/24.
-//
+/**
+ * @file LookUpTableTypes.h
+ * @author J. Hampe
+ * @date 29.1.2024
+ */
 
 #ifndef AUTOPAS_LOOKUPTABLETYPES_H
 #define AUTOPAS_LOOKUPTABLETYPES_H

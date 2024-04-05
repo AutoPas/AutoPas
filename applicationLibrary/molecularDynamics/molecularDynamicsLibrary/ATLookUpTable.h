@@ -1,6 +1,8 @@
-//
-// Created by jan on 1/26/24.
-//
+/**
+ * @file ATLookUpTable.h
+ * @author J. Hampe
+ * @date 26.1.2024
+ */
 
 #ifndef AUTOPAS_ATLOOKUPTABLE_H
 #define AUTOPAS_ATLOOKUPTABLE_H
@@ -443,10 +445,12 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     // ((targetC[0] * targetC[1] - C1 * targetC[0]) * (targetC[0] * targetC[1] - C1 * targetC[0]))); rot2Quaternion =
     // {(1 + targetC[0] * targetC[0] + targetC[1] * C1) / norm, (C1*targetC[2]) / norm, -(targetC[0] * targetC[2]) /
     // norm, (targetC[0] * targetC[1] - C1 * targetC[0]) / norm};
+    AutoPasLog(DEBUG, "SourceC: {} | TargetC: {}", sourceC, targetC);
     cross = autopas::utils::ArrayMath::cross(sourceC, targetC);
+    AutoPasLog(DEBUG, "C cross: {}", cross);
     targetCQuat = {0, targetC[0], targetC[1], targetC[2]};
     std::array<floatType, 4> sourceCQuat = {0, sourceC[0], sourceC[1], sourceC[2]};
-    rot2Quaternion = {(1 + dot(targetBQuat, sourceBQuat)), cross[0], cross[1], cross[2]};
+    rot2Quaternion = {(1 + dot(sourceCQuat, targetCQuat)), cross[0], cross[1], cross[2]};
     rot2Quaternion = normalize(rot2Quaternion);
     rot2InverseQuaternion = {rot2Quaternion[0], -rot2Quaternion[1], -rot2Quaternion[2], -rot2Quaternion[3]};
     (*LUTtimers)[3].stop(); // Timer rot2Quat stop

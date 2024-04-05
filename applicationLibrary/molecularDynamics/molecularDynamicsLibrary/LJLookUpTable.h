@@ -1,6 +1,8 @@
-//
-// Created by jan on 1/1/24.
-//
+/**
+ * @file LJLookUpTable.h
+ * @author J. Hampe
+ * @date 1.1.2024
+ */
 
 #ifndef AUTOPAS_LJLOOKUPTABLE_H
 #define AUTOPAS_LJLOOKUPTABLE_H
