@@ -73,8 +73,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
          const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
-        _skinPerTimestep(skinPerTimestep) {
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
@@ -232,8 +231,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                    IteratorBehavior iteratorBehavior,
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const {
-    using namespace autopas::utils::ArrayMath::literals;
-
     // FIXME think about parallelism.
     // This `if` currently disables it but should be replaced with logic that determines the start index.
     if (autopas_get_thread_num() > 0 and not(iteratorBehavior & IteratorBehavior::forceSequential)) {
@@ -585,15 +582,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   OctreeLogger<Particle> logger;
 
-  /**
-   * The verlet skin
-   */
   double skin;
-
-  /**
-   * Skin distance a particle is allowed to move in one time-step.
-   */
-  double _skinPerTimestep;
 };
 
 }  // namespace autopas
