@@ -56,9 +56,9 @@ If you only want to run only those specific to one example, in your build direct
 Many IDEs (e.g., CLion) have integrated support for googletest, and you can debug the tests directly within the IDE.
 
 If you prefer `gdb` from the command line:
-1. Find the command to start your desired test with `-N` aka. `--show-only`:
+1. Find the command to start your desired test with `-N` (aka. `--show-only`) plus `-V` (aka. `--verbose`):
    ```bash
-   ctest -R 'Array.*testAdd' -N
+   ctest -R 'Array.*testAdd' -N -V
    ```
 2. Start the test with `gdb`
    ```bash
