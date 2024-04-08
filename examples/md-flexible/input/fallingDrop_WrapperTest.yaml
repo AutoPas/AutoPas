@@ -1,11 +1,12 @@
 container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
+functor                          :  highway
 verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.1
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]
 traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ] # Please see AllOptions.yaml for a comprehensive list of traversals
-tuning-strategy                  :  full-Search
+# tuning-strategies                :  [full-Search]
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
@@ -27,7 +28,7 @@ Objects:
       bottomLeftCorner           :  [1, 1, 1]
       box-length                 :  [48, 28, 10]
       velocity                   :  [0, 0, 0]
-      particle-type              :  0
+      particle-type-id           :  0
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
@@ -37,7 +38,7 @@ Objects:
       radius                     :  6
       particle-spacing           :  1.122462048
       velocity                   :  [0, 0, 0]
-      particle-type              :  1
+      particle-type-id           :  1
       particle-epsilon           :  1
       particle-sigma             :  1
       particle-mass              :  1
