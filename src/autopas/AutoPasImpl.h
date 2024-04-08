@@ -184,8 +184,9 @@ template <class Collection, class F>
 void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
+  auto numParticles = particles.size(); //adding this
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
-  for (auto i = 0; i < particles.size(); ++i) {
+  for (auto i = 0; i < numParticles; ++i) { // changing particles.size() -> numParticles
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
       ++numTrue;
@@ -194,7 +195,7 @@ void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
     }
   }
 
-  addParticlesAux(numTrue, 0, particles.size(), [&](auto i) {
+  addParticlesAux(numTrue, 0, numParticles, [&](auto i) { // changing particles.size() -> numParticles
     if (predicateMask[i]) {
       addParticle(particles[i]);
     }

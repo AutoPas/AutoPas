@@ -88,9 +88,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   linkedCells.getCells()[particleIdToCellIdMap[4]].begin()->addR({-0.9, -2.0, -2.0});  // move to {1.6, 0.5, 0.5}
 
   std::vector<Particle> invalidParticles;
-  std::cout << "before\n";
   EXPECT_NO_THROW(invalidParticles = linkedCells.updateContainer(this->_keepListsValid));
-  std::cout << "here\n";
   EXPECT_EQ(invalidParticles.size(), 1);
   EXPECT_EQ(invalidParticles[0].getID(), 3);
 

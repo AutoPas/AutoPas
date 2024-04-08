@@ -44,7 +44,7 @@ namespace autopas {
 template <typename Particle>
 class LogicHandler {
  public:
-  /**getVe
+  /**
    * Constructor of the LogicHandler.
    * @param autoTuner
    * @param logicHandlerInfo
