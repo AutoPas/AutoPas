@@ -914,9 +914,7 @@ class AutoPas {
    * Getter for the tuning metric option.
    * @return
    */
-  [[nodiscard]] const TuningMetricOption &getTuningMetricOption() const {
-    return _autoTunerInfo.tuningMetric;
-  }
+  [[nodiscard]] const TuningMetricOption &getTuningMetricOption() const { return _autoTunerInfo.tuningMetric; }
 
   /**
    * Setter for the tuning metric option.
