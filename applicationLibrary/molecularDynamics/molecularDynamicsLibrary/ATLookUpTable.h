@@ -107,7 +107,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
  private:
   std::vector<Entry> lut;   // Pair of potential energy and Triplets of forces for newton3, each of which consist of 3
-                            // values fpr the 3 dimensions
+                            // values for the 3 dimensions
   intType numberOfPoints;   // For even spacing
   floatType pointDistance;  // For even spacing
   floatType cutoffSquared;
@@ -140,31 +140,36 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
           rootC = std::sqrt(distC);
           // This code is now slower for no reason, but more readable, so it will remain until everything has been
           // validated to work
-          cX = (rootB * rootB - rootC * rootC + rootA * rootA) / (2 * rootA);
-          cY = std::sqrt((rootB * rootB) - (cX * cX));
+          cX = (distB - distC + distA) / (2 * rootA);
+          cY = std::sqrt((distB) - (cX * cX));
           Entry val = ATFunctor(0, 0, 0, rootA, 0, 0, cX, cY, 0);
           lut.push_back(val);
         }
       }
     }
 
-    //    auto first = 0;
-    //    auto total = 0;
-    //    auto nan = 0;
-    //    auto last = 0;
-    //    for (auto i=0; i<lut.size(); i++) {
-    //      if (!std::isnan(lut.at(i).second)) {
-    //        if (first == 0)
-    //          first = i;
-    //        last = i;
-    //        total++;
-    //      }
-    //      else {
-    //        nan++;
-    //      }
-    //    }
-    //    std::cout << "First: " << first << " Last: " << last << " Total: " << total << " Nan: " << nan << " Size: "<<
-    //    lut.size() << "\n";
+    auto first = 0;
+    auto total = 0;
+    auto nan = 0;
+    auto zero = 0;
+    auto inf = 0;
+    auto last = 0;
+    for (auto i=0; i<lut.size(); i++) {
+      if (std::isnan(lut.at(i).second)) {
+        nan++;
+        continue;
+      }
+      if (std::isinf(lut.at(i).second)) {
+        inf++;
+        continue;
+      }
+      if (lut.at(i).second == 0.0) {
+        zero++;
+        continue;
+      }
+      total++;
+    }
+    std::cout << "Size: "<< lut.size() << " Total: " << total << " Nan: " << nan << " Inf: " << inf << " Zero: " << zero << "\n";
   };
 
   // Interpolation functions
@@ -431,8 +436,6 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     (*LUTtimers)[0].stop(); // Timer 4 stop
     targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
     AutoPasLog(DEBUG, "TargetC after first rotation is {}", targetC);
-    targetC[0] = 0.;
-    targetC = norm3(targetC[0], targetC[1], targetC[2]);
 
     // Find 2-D transformation that rotates C onto targetC
     // Use C = (tagetC[0], sqrt(target[1]^2 + target[2]^2), 0) to ensure rotation around the xy-axis at the cost of some
@@ -440,7 +443,8 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     // TODO: Try optimizing the 2D rotation
     (*LUTtimers)[3].start(); // Timer rot2Quat start
     auto C1 = std::sqrt(targetC[1] * targetC[1] + targetC[2] * targetC[2]);
-    std::array<floatType, 3> sourceC = {targetC[0], C1, 0};
+    std::array<floatType, 3> sourceC = {0, 1, 0};
+    targetC = norm3(0, targetC[1], targetC[2]);
 
     // norm = std::sqrt(((1 + targetC[0] * targetC[0] + targetC[1] * C1) * (1 + targetC[0] * targetC[0] + targetC[1] *
     // C1)) + ((C1*targetC[2]) * (C1*targetC[2])) + ((targetC[0] * targetC[2]) * (targetC[0] * targetC[2])) +
@@ -458,8 +462,9 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     (*LUTtimers)[3].stop(); // Timer rot2Quat stop
 
     // Rotate C for debugging purposes
-    AutoPasLog(DEBUG, "quatC is {}",
+    AutoPasLog(DEBUG, "sourceCQuat rotated is {}",
                quaternionMultiply(quaternionMultiply(rot2InverseQuaternion, sourceCQuat), rot2Quaternion));
+    AutoPasLog(DEBUG, "targetC rotated is {}", quaternionMultiply(quaternionMultiply(rot2Quaternion, targetCQuat), rot2InverseQuaternion));
 
     // Initialize forceQuaternion and rotate one force after the other
     Entry forces = lut[index];
@@ -492,6 +497,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
       // tempQuat now
       AutoPasLog(DEBUG, "After first rotation {}: {}", i, tempQuat);
+      AutoPasLog(DEBUG, "Norm after first rotation {}: {}", i, normalize(tempQuat));
       tempQuat[0] = 0;
 
       // Rotate force onto original position

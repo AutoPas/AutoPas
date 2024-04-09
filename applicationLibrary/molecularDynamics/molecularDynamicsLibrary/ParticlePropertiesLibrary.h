@@ -317,7 +317,7 @@ class ParticlePropertiesLibrary {
     if (_storeATData) {
       _ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                                        ForceLookUpTable::nextNeighbor, floatType, intType>(
-          {_cutoff * _cutoff, getNu(0), 8.0}, &LUTtimers));
+          {_cutoff * _cutoff, getNu(0), 60.0}, &LUTtimers));
     }
   }
 
