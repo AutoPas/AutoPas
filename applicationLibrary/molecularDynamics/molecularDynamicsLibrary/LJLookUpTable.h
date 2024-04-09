@@ -27,13 +27,14 @@ namespace ForceLookUpTable {
 template <IntervalType intervalType, InterpolationType interpolationType, typename floatType = double,
           typename intType = unsigned long>
 class LJLookUpTable {
+
+  using Entry = floatType;
+
  public:
   LJLookUpTable() {
+    // This comment needs to be here, otherwise the default constructor gets deleted and compilation fails
     // AutoPasLog(DEBUG, "Default constructor called.");
   }
-
-  // list: cutoffSquared, sigmaSquared, epsilon24, ... (numberOfPoints)
-  // Extremely unreadable and user-error-prone
 
   /**
    * Constructor of the look-up table
@@ -45,7 +46,7 @@ class LJLookUpTable {
   LJLookUpTable(std::initializer_list<floatType> args) {
     // AutoPasLog(DEBUG, "LUT created.");
     if (args.size() < 3) {  // Fail gracefully
-      // AutoPasLog(CRITICAL, "Args only has {} elements, but needs at least 3.", args.size());
+      AutoPasLog(CRITICAL, "Args only has {} elements, but needs at least 3.", args.size());
       return;
     }
     cutoffSquared = args.begin()[0];
@@ -53,7 +54,7 @@ class LJLookUpTable {
     epsilon24 = args.begin()[2];
     if constexpr (intervalType == evenSpacing) {
       if (args.size() != 4) {  // Fail
-        // AutoPasLog(CRITICAL, "Args has {} elements, but needs 4 for even spacing.", args.size());
+         AutoPasLog(CRITICAL, "Args has {} elements, but needs 4 for even spacing.", args.size());
         return;
       }
       numberOfPoints = static_cast<intType>(args.begin()[3]);
@@ -80,7 +81,7 @@ class LJLookUpTable {
   }
 
  private:
-  std::vector<floatType> lut;  // If we need to save the points, just use every other spot for point and then data
+  std::vector<Entry> lut;  // If we need to save the points, just use every other spot for point and then data
   intType numberOfPoints;      // For even spacing
   floatType pointDistance;     // For even spacing
   floatType cutoffSquared;
@@ -108,23 +109,21 @@ class LJLookUpTable {
   floatType getNextNeighbor(floatType dr2) {
     if constexpr (intervalType == evenSpacing) {
       if (dr2 == cutoffSquared) {
-        auto ret = lut.at(numberOfPoints - 1);
-        AutoPasLog(DEBUG, "dr2 was cutoffSquared. Returning {}", ret);
-        return ret;
+        AutoPasLog(DEBUG, "dr2 was cutoffSquared. Returning {}", lut.at(numberOfPoints-1));
+        return lut.at(numberOfPoints - 1);
       }
       // Compute perfect value for lowest dr2 where error is greatest
       if (dr2 < pointDistance / 2) {
         AutoPasLog(DEBUG, "dr2 is less than half pointDistance. Computing perfect value {}", LJFunctor(dr2));
         return LJFunctor(dr2);
       }
-      auto ret = lut.at(std::floor(dr2 / pointDistance));  // How slow is std::floor?
-      AutoPasLog(DEBUG, "Return {} instead of {}", ret, LJFunctor(dr2));
-      static float totalError;
-      AutoPasLog(DEBUG, "Error: {} | totalError {}", LJFunctor(dr2) - ret, [dr2, ret, this]() {
-        totalError += abs(LJFunctor(dr2) - ret);
-        return totalError;
-      }());
-      return ret;
+      AutoPasLog(DEBUG, "Return {} instead of {} | Error: {}", lut.at(std::floor(dr2 / pointDistance)), LJFunctor(dr2), std::abs(LJFunctor(dr2) - lut.at(std::floor(dr2 / pointDistance))));
+//      static float totalError;
+//      AutoPasLog(DEBUG, "Error: {} | totalError {}", LJFunctor(dr2) - ret, [dr2, ret, this]() {
+//        totalError += abs(LJFunctor(dr2) - ret);
+//        return totalError;
+//      }());
+      return lut.at(std::floor(dr2 / pointDistance));;
     }
   }
 
@@ -148,24 +147,15 @@ class LJLookUpTable {
       }
       floatType lowerX = std::floor((dr2 - pointDistance / 2) / pointDistance);
       floatType upperX = std::ceil((dr2 - pointDistance / 2) / pointDistance);
-      floatType lowerY = lut.at(lowerX);
-      floatType upperY = lut.at(upperX);
+      const floatType lowerY = lut.at(lowerX);
+      const floatType upperY = lut.at(upperX);
       lowerX = lowerX * pointDistance + pointDistance / 2;
       upperX = upperX * pointDistance + pointDistance / 2;
-      auto ret =
-          lowerY +
-          (dr2 - lowerX) * (upperY - lowerY) /
-              (upperX -
-               lowerX);  // Content: 0 : 0.5 : 5760 | 1 : 1.5 : -1.93141 | 2 : 2.5 : -0.535757 | 3 : 3.5 : -0.152473
-      static float totalError;
       AutoPasLog(DEBUG,
                  "lowerX: {} | upperX: {} | lowerY {} | upperY {}\n                            Input: {} | Return: {} "
-                 "| Correct: {} | Error {} | totalError {}",
-                 lowerX, upperX, lowerY, upperY, dr2, ret, LJFunctor(dr2), LJFunctor(dr2) - ret, [dr2, ret, this]() {
-                   totalError += abs(LJFunctor(dr2) - ret);
-                   return totalError;
-                 }());
-      return ret;
+                 "| Correct: {} | Error {}",
+                 lowerX, upperX, lowerY, upperY, dr2, lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX), LJFunctor(dr2), LJFunctor(dr2) - (lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX)));
+      return lowerY + (dr2 - lowerX) * (upperY - lowerY) / (upperX - lowerX);
     }
   }
 

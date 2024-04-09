@@ -224,7 +224,7 @@ using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true
 
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, false>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
 using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, false, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX

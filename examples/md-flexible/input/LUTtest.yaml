@@ -8,7 +8,7 @@ container                            :  [LinkedCells] # DirectSum
 # Uncomment to combine pairwise and 3-body interaction
 functor                              :  lj
 traversal                            :  [lc_c01]
-newton3                              :  [disabled]
+newton3                              :  [enabled, disabled]
 data-layout                          :  [AoS]
 # lut-enable : [true, false]
 # LJ-LUT :
@@ -19,7 +19,7 @@ data-layout                          :  [AoS]
 #
 
 verlet-rebuild-frequency             :  10
-verlet-skin-radius-per-timestep      :  0.02
+verlet-skin-radius-per-timestep      :  0.7
 selector-strategy                    :  Fastest-Absolute-Value
 tuning-strategies                    :  []
 tuning-interval                      :  2000
@@ -28,10 +28,10 @@ tuning-max-evidence                  :  10
 
 cutoff                               :  2.0
 box-min                              :  [-1., -1, -1]
-box-max                              :  [900, 1, 1]
+box-max                              :  [300, 100, 100]
 cell-size                            :  [1]
 deltaT                               :  0.05
-iterations                           :  1
+iterations                           :  1000
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 
@@ -43,67 +43,67 @@ Sites:
     nu                               :  0.073 # Value for Argon
 Objects:
   CubeGrid:
-    0:
-      particles-per-dimension: [ 2, 1, 1 ]
-      particle-spacing: 2.0 # -> 3 : -0.09
-      bottomLeftCorner: [ 0, 0, 0 ]
-      velocity: [ 0, 0, 0 ]
-      particle-type-id: 0
-    1:
-      particles-per-dimension: [ 2, 1, 1 ]
-      particle-spacing: 1.95 # -> 3 : -0.09
-      bottomLeftCorner: [ 100, 0, 0 ]
-      velocity: [ 0, 0, 0 ]
-      particle-type-id: 0
-    2:
-      particles-per-dimension: [ 2, 1, 1 ]
-      particle-spacing: 1.8 # -> 3 : -0.09
-      bottomLeftCorner: [ 200, 0, 0 ]
-      velocity: [ 0, 0, 0 ]
-      particle-type-id: 0
-    3:
-      particles-per-dimension: [ 2, 1, 1 ]
-      particle-spacing: 1.65 # -> 2 : -0.27
-      bottomLeftCorner: [ 300, 0, 0 ]
-      velocity: [ 0, 0, 0 ]
-      particle-type-id: 0
-    4:
-      particles-per-dimension: [ 2, 1, 1 ]
-      particle-spacing: 1.5 # -> 2 : -0.27
-      bottomLeftCorner: [ 400, 0, 0 ]
-      velocity: [ 0, 0, 0 ]
-      particle-type-id: 0
-    5:
-      particles-per-dimension: [ 2, 1, 1 ]
-      particle-spacing: 1.35 # -> 1 : -1.125
-      bottomLeftCorner: [ 500, 0, 0 ]
-      velocity: [ 0, 0, 0 ]
-      particle-type-id: 0
+#    0:
+#      particles-per-dimension: [ 2, 1, 1 ]
+#      particle-spacing: 2.0 # -> 3 : -0.09
+#      bottomLeftCorner: [ 0, 0, 0 ]
+#      velocity: [ 0, 0, 0 ]
+#      particle-type-id: 0
+#    1:
+#      particles-per-dimension: [ 2, 1, 1 ]
+#      particle-spacing: 1.95 # -> 3 : -0.09
+#      bottomLeftCorner: [ 100, 0, 0 ]
+#      velocity: [ 0, 0, 0 ]
+#      particle-type-id: 0
+#    2:
+#      particles-per-dimension: [ 2, 1, 1 ]
+#      particle-spacing: 1.8 # -> 3 : -0.09
+#      bottomLeftCorner: [ 200, 0, 0 ]
+#      velocity: [ 0, 0, 0 ]
+#      particle-type-id: 0
+#    3:
+#      particles-per-dimension: [ 2, 1, 1 ]
+#      particle-spacing: 1.65 # -> 2 : -0.27
+#      bottomLeftCorner: [ 300, 0, 0 ]
+#      velocity: [ 0, 0, 0 ]
+#      particle-type-id: 0
+#    4:
+#      particles-per-dimension: [ 2, 1, 1 ]
+#      particle-spacing: 1.5 # -> 2 : -0.27
+#      bottomLeftCorner: [ 400, 0, 0 ]
+#      velocity: [ 0, 0, 0 ]
+#      particle-type-id: 0
+#    5:
+#      particles-per-dimension: [ 2, 1, 1 ]
+#      particle-spacing: 1.35 # -> 1 : -1.125
+#      bottomLeftCorner: [ 500, 0, 0 ]
+#      velocity: [ 0, 0, 0 ]
+#      particle-type-id: 0
     6:
       particles-per-dimension: [ 2, 1, 1 ]
       particle-spacing: 1.2 # -> 1 : -1.125
-      bottomLeftCorner: [ 600, 0, 0 ]
+      bottomLeftCorner: [ 50, 50, 50 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
     7:
       particles-per-dimension: [ 2, 1, 1 ]
       particle-spacing: 0.9 # -> 0 : 24
-      bottomLeftCorner: [ 700, 0, 0 ]
+      bottomLeftCorner: [ 100, 50, 50 ]
       velocity: [ 0, 0, 0 ]
       particle-type-id: 0
-    8:
-      particles-per-dimension: [ 2, 1, 1 ]
-      particle-spacing: 0.31 # -> 0 : 24
-      bottomLeftCorner: [ 800, 0, 0 ]
-      velocity: [ 0, 0, 0 ]
-      particle-type-id: 0
+    #8:
+    #  particles-per-dimension: [ 2, 1, 1 ]
+    #  particle-spacing: 0.31 # -> 0 : 24
+    #  bottomLeftCorner: [ 800, 0, 0 ]
+    #  velocity: [ 0, 0, 0 ]
+    #  particle-type-id: 0
 
 
 log-level                            :  debug
 no-flops                             :  true
 no-end-config                        :  true
 no-progress-bar                      :  true
-vtk-filename                         :  LUTtest
+vtk-filename                         :  LUTtest2
 vtk-output-folder                    :  LUTtestOutput
-vtk-write-frequency                  :  1000000000000
+vtk-write-frequency                  :  1
 #log-file                            : log.txt
