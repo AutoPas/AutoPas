@@ -30,8 +30,8 @@ cutoff                               :  2.0
 box-min                              :  [-1., -1, -1]
 box-max                              :  [300, 100, 100]
 cell-size                            :  [1]
-deltaT                               :  0.05
-iterations                           :  1000
+deltaT                               :  0.02
+iterations                           :  25000
 boundary-type                        :  [periodic, periodic, periodic]
 fastParticlesThrow                   :  false
 
@@ -102,8 +102,8 @@ Objects:
 log-level                            :  debug
 no-flops                             :  true
 no-end-config                        :  true
-no-progress-bar                      :  true
-vtk-filename                         :  LUTtestLinear
+no-progress-bar                      :  false
+vtk-filename                         :  LUTtestNeu
 vtk-output-folder                    :  LUTtestOutput
 vtk-write-frequency                  :  1
 #log-file                            : log.txt

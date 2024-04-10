@@ -238,7 +238,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
           final = {{ret.first[2], ret.first[1], ret.first[0]}, ret.second};
         }
       }
-      AutoPasLog(DEBUG, [i1, i2, i3, j1, j2, j3, k1, k2, k3, this]() -> std::string {
+      AutoPasLog(CRITICAL, [i1, i2, i3, j1, j2, j3, k1, k2, k3, this]() -> std::string {
         Entry compareEntry = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
         std::array<std::array<floatType, 3>, 3> compareNormalized = {
             norm3(compareEntry.first[0][0], compareEntry.first[0][1], compareEntry.first[0][2]),
@@ -250,12 +250,12 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
                std::to_string(compareNormalized[1][2]) + " | " + std::to_string(compareNormalized[2][0]) + " " +
                std::to_string(compareNormalized[2][1]) + " " + std::to_string(compareNormalized[2][2]);
       }());
-      AutoPasLog(DEBUG, [&final, this]() -> std::string {
+      AutoPasLog(CRITICAL, [&final, this]() -> std::string {
         std::array<std::array<floatType, 3>, 3> finalNormalized = {
             norm3(final.first[0][0], final.first[0][1], final.first[0][2]),
             norm3(final.first[1][0], final.first[1][1], final.first[1][2]),
             norm3(final.first[2][0], final.first[2][1], final.first[2][2])};
-        return "Return  normalized: " + std::to_string(finalNormalized[0][0]) + " " +
+        return "Return normalized: " + std::to_string(finalNormalized[0][0]) + " " +
                std::to_string(finalNormalized[0][1]) + " " + std::to_string(finalNormalized[0][2]) + " | " +
                std::to_string(finalNormalized[1][0]) + " " + std::to_string(finalNormalized[1][1]) + " " +
                std::to_string(finalNormalized[1][2]) + " | " + std::to_string(finalNormalized[2][0]) + " " +
