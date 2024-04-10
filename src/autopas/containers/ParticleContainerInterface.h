@@ -49,6 +49,7 @@ class ParticleContainerInterface {
 
   /**
    * Constructor
+   * @param skinPerTimestep Skin distance a particle is allowed to move in one time-step.
    */
   ParticleContainerInterface(double skinPerTimestep) : _skinPerTimestep(skinPerTimestep) {}
 

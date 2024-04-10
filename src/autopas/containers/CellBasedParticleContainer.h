@@ -31,7 +31,8 @@ class CellBasedParticleContainer : public ParticleContainerInterface<typename Pa
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skin
+   * @param skinPerTimestep
+   * @param rebuildFrequency
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                              const double cutoff, double skinPerTimestep, unsigned int rebuildFrequency)

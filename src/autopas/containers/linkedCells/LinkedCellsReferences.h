@@ -540,8 +540,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @param cellIndex
    * @param particleIndex
    * @param iteratorBehavior
-   * @param boxMin
-   * @param boxMax
+   * @param boxMin The actual search box min
+   * @param boxMax The actual search box max
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
    * @param endCellIndex Last relevant cell index
    * @return tuple<cellIndex, particleIndex>
    */
