@@ -108,7 +108,7 @@ class LJLookUpTable {
 
   floatType getNextNeighbor(floatType dr2) {
     if constexpr (intervalType == evenSpacing) {
-      if (dr2 == cutoffSquared) {
+      if (dr2 >= cutoffSquared) {
         AutoPasLog(DEBUG, "dr2 was cutoffSquared. Returning {}", lut.at(numberOfPoints-1));
         return lut.at(numberOfPoints - 1);
       }

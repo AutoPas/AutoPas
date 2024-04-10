@@ -103,7 +103,7 @@ log-level                            :  debug
 no-flops                             :  true
 no-end-config                        :  true
 no-progress-bar                      :  true
-vtk-filename                         :  LUTtest2
+vtk-filename                         :  LUTtestLinear
 vtk-output-folder                    :  LUTtestOutput
 vtk-write-frequency                  :  1
 #log-file                            : log.txt

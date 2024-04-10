@@ -134,16 +134,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
         for (floatType distC = pointDistance / 2; distC <= distB; distC += pointDistance) {
           floatType cX, cY;
           // Use roots because distABC are technically distanceSquared
-          floatType rootA, rootB, rootC;
-          rootA = std::sqrt(distA);
-          rootB = std::sqrt(distB);
-          rootC = std::sqrt(distC);
-          // This code is now slower for no reason, but more readable, so it will remain until everything has been
-          // validated to work
+          const floatType rootA = std::sqrt(distA);
+          // Circle equation
           cX = (distB - distC + distA) / (2 * rootA);
           cY = std::sqrt((distB) - (cX * cX));
-          Entry val = ATFunctor(0, 0, 0, rootA, 0, 0, cX, cY, 0);
-          lut.push_back(val);
+          lut.push_back(ATFunctor(0, 0, 0, rootA, 0, 0, cX, cY, 0));
         }
       }
     }
@@ -204,13 +199,13 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
       // Sort points from longest to shortest
 
-      auto I = 0;
-      auto J = 0;
-      auto K = 0;
+      uint8_t I = 0;
+      uint8_t J = 0;
+      uint8_t K = 0;
 
       IJround >= JKround ? K++ : I++;
-      JKround > KIround ? I++ : J++;
-      KIround > IJround ? J++ : K++;
+      JKround >  KIround ? I++ : J++;
+      KIround >  IJround ? J++ : K++;
 
       AutoPasLog(DEBUG, "Points: I: {}    J: {}   K: {}", I, J, K);
 
@@ -381,6 +376,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
     (*LUTtimers)[1].start(); // Timer norm3 start
     auto targetB = norm3(b1, b2, b3);  // ((eps + 1)^3 (b1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - b1)^2 + (a1 - b1)^2 + 3 eps (a2 - b2)^2 + (a2 - b2)^2 + 2 eps (a3 - b3)^2 + (a3 - b3)^2))
+    // Can maybe remove
     auto targetC = norm3(c1, c2, c3);  // ((eps + 1)^3 (c1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - c1)^2 + (a1 - c1)^2 + 3 eps (a2 - c2)^2 + (a2 - c2)^2 + 2 eps (a3 - c3)^2 + (a3 - c3)^2))
     (*LUTtimers)[1].stop(); // Timer norm3 stop
     std::array<floatType, 3> sourceB = {1, 0, 0};
@@ -438,11 +434,8 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     AutoPasLog(DEBUG, "TargetC after first rotation is {}", targetC);
 
     // Find 2-D transformation that rotates C onto targetC
-    // Use C = (tagetC[0], sqrt(target[1]^2 + target[2]^2), 0) to ensure rotation around the xy-axis at the cost of some
-    // operations.
     // TODO: Try optimizing the 2D rotation
     (*LUTtimers)[3].start(); // Timer rot2Quat start
-    auto C1 = std::sqrt(targetC[1] * targetC[1] + targetC[2] * targetC[2]);
     std::array<floatType, 3> sourceC = {0, 1, 0};
     targetC = norm3(0, targetC[1], targetC[2]);
 
@@ -477,7 +470,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
     // invQuat2 * tempQuat
     // TODO: Godbolt
-    for (auto i = 0; i < 3; i++) {
+    for (size_t i = 0; i < 3; i++) {
       tempQuat = {0.0, forces.first[i][0], forces.first[i][1], forces.first[i][2]};
       AutoPasLog(DEBUG, "Force quat {} before rotation", tempQuat);
       //      tempQuat = {-rot2InverseQuaternion[1] * tempQuat[1] - rot2InverseQuaternion[2] * tempQuat[2] -
@@ -541,7 +534,8 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
  */
 template <IntervalType intervalType, InterpolationType interpolationType, typename floatType, typename intType>
 class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intType> {
-  using Entry = std::pair<std::array<std::array<floatType, 3>, 3>, floatType>;
+
+ using Entry = std::pair<std::array<std::array<floatType, 3>, 3>, floatType>;
 
  public:
   ATLookUpTable() {
@@ -577,6 +571,7 @@ class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intTyp
       if (numberOfPoints == 0)
         throw autopas::utils::ExceptionHandler::AutoPasException("At least one point needed for LUT.");
       pointDistance = (cutoffSquared * 4) / numberOfPoints;
+      invPointDistance = 1 / pointDistance;
       two = numberOfPoints;
       three = two * numberOfPoints;
       four = three * numberOfPoints;
@@ -608,6 +603,7 @@ class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intTyp
                             // values fpr the 3 dimensions
   intType numberOfPoints;   // For even spacing
   floatType pointDistance;  // For even spacing
+  floatType invPointDistance;
   floatType cutoffSquared;
   size_t two;
   size_t three;
@@ -628,7 +624,7 @@ class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intTyp
 
   void fillTableEvenSpacing() {
     std::cout << "Building Table\n";
-    std::cout << "Number of points: " << numberOfPoints << " Point distance: " << pointDistance << "\n";
+    std::cout << "Number of points: " << numberOfPoints << " Point distance: " << pointDistance << " Inverse pointDistance: " << invPointDistance << "\n";
     floatType i1, i2, i3, j1, j2, j3, k1, k2, k3;
     j1 = j2 = j3 = k1 = k2 = k3 = (pointDistance / 2) - 2 * cutoffSquared;  // Why 2 * cutoffSquared?
     uint64_t dupes = 0;
@@ -694,12 +690,12 @@ class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intTyp
       k2 += 2 * cutoffSquared;
       k3 += 2 * cutoffSquared;
       // / pointDistance als member
-      size_t ij1 = std::floor(j1 / pointDistance);
-      size_t ij2 = std::floor(j2 / pointDistance);
-      size_t ij3 = std::floor(j3 / pointDistance);
-      size_t ik1 = std::floor(k1 / pointDistance);
-      size_t ik2 = std::floor(k2 / pointDistance);
-      size_t ik3 = std::floor(k3 / pointDistance);
+      size_t ij1 = std::floor(j1 * invPointDistance);
+      size_t ij2 = std::floor(j2 * invPointDistance);
+      size_t ij3 = std::floor(j3 * invPointDistance);
+      size_t ik1 = std::floor(k1 * invPointDistance);
+      size_t ik2 = std::floor(k2 * invPointDistance);
+      size_t ik3 = std::floor(k3 * invPointDistance);
       if (ij1 == numberOfPoints) ij1--;
       if (ij2 == numberOfPoints) ij2--;
       if (ij3 == numberOfPoints) ij3--;
@@ -707,21 +703,21 @@ class ATLookUpTable<absolute, intervalType, interpolationType, floatType, intTyp
       if (ik2 == numberOfPoints) ik2--;
       if (ik3 == numberOfPoints) ik3--;
 
-      auto ret = lut[(
-          getIndexNoP(ij1, ij2, ij3, ik1, ik2, ik3))];  // How slow is std::floor?
-                                                        //      auto relErr = relError(ret, accurate);
-                                                        //      totalRelError.first[0] += relErr.first[0];
-                                                        //      totalRelError.first[1] += relErr.first[1];
-                                                        //      totalRelError.first[2] += relErr.first[2];
-                                                        //      totalRelError.second += relErr.second;
-                                                        //      AutoPasLog(DEBUG, "Total rel Error: {}", totalRelError);
-      // AutoPasLog(DEBUG, "Return {} instead of {}\nAbs: {} Rel: {}", ret, accurate, absError(ret, accurate),
-      // relError(ret, accurate)); AutoPasLog(DEBUG, "Used {} {} {} | {} {} {}", (pointDistance / 2) - 2*cutoffSquared +
-      // ij1 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ij2 * pointDistance, (pointDistance / 2) -
-      // 2*cutoffSquared + ij3 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ik1 * pointDistance,
-      // (pointDistance / 2) - 2*cutoffSquared + ik2 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ik3 *
-      // pointDistance);
-      return ret;
+//      auto ret = lut[(
+//          getIndexNoP(ij1, ij2, ij3, ik1, ik2, ik3))];  // How slow is std::floor?
+//                                                        //      auto relErr = relError(ret, accurate);
+//                                                              totalRelError.first[0] += relErr.first[0];
+//                                                              totalRelError.first[1] += relErr.first[1];
+//                                                              totalRelError.first[2] += relErr.first[2];
+//                                                              totalRelError.second += relErr.second;
+//                                                              AutoPasLog(DEBUG, "Total rel Error: {}", totalRelError);
+//       AutoPasLog(DEBUG, "Return {} instead of {}\nAbs: {} Rel: {}", ret, accurate, absError(ret, accurate),
+//       relError(ret, accurate)); AutoPasLog(DEBUG, "Used {} {} {} | {} {} {}", (pointDistance / 2) - 2*cutoffSquared +
+//       ij1 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ij2 * pointDistance, (pointDistance / 2) -
+//       2*cutoffSquared + ij3 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ik1 * pointDistance,
+//       (pointDistance / 2) - 2*cutoffSquared + ik2 * pointDistance, (pointDistance / 2) - 2*cutoffSquared + ik3 *
+//       pointDistance);
+      return lut[getIndexNoP(ij1, ij2, ij3, ik1, ik2, ik3)];
     }
   }
 
