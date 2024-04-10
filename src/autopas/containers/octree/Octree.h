@@ -319,6 +319,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return {currentCellIndex, dynamic_cast<OctreeLeafNode<Particle> *>(currentCell)};
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::deleteParticle()
+   */
   bool deleteParticle(Particle &particle) override {
     if (particle.isOwned()) {
       return this->_cells[CellTypes::OWNED].deleteParticle(particle);
@@ -330,6 +333,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     }
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::deleteParticle()
+   */
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
     auto [cellIndexVector, cell] = getLeafCellByIndex(cellIndex);
     auto &particleVec = cell->_particles;
