@@ -48,9 +48,9 @@ class ParticleContainerInterface {
   virtual CellType getParticleCellTypeEnum() const = 0;
 
   /**
-   * Default constructor
+   * Constructor
    */
-  ParticleContainerInterface() = default;
+  ParticleContainerInterface(double skinPerTimestep) : _skinPerTimestep(skinPerTimestep) {}
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -427,6 +427,11 @@ class ParticleContainerInterface {
    * be 0
    */
   size_t _stepsSinceLastRebuild{0};
+
+  /**
+   * Skin distance a particle is allowed to move in one time-step.
+   */
+  double _skinPerTimestep;
 };
 
 }  // namespace autopas

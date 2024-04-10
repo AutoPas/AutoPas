@@ -73,7 +73,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
          const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency) {
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
@@ -231,6 +231,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                    IteratorBehavior iteratorBehavior,
                                                                    const std::array<double, 3> &boxMin,
                                                                    const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
     // FIXME think about parallelism.
     // This `if` currently disables it but should be replaced with logic that determines the start index.
     if (autopas_get_thread_num() > 0 and not(iteratorBehavior & IteratorBehavior::forceSequential)) {
@@ -247,6 +248,15 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
       return {nullptr, 0, 0};
     }
 
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin +=
+          boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    }
+
     std::vector<size_t> currentCellIndex{};
     OctreeLeafNode<Particle> *currentCellPtr = nullptr;
 
@@ -256,8 +266,9 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
         not containerIteratorUtils::particleFulfillsIteratorRequirements<regionIter>(
             (*currentCellPtr)[particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
-      std::tie(currentCellPtr, particleIndex) = advanceIteratorIndices<regionIter>(
-          currentCellIndex, currentCellPtr, particleIndex, iteratorBehavior, boxMin, boxMax);
+      std::tie(currentCellPtr, particleIndex) =
+          advanceIteratorIndices<regionIter>(currentCellIndex, currentCellPtr, particleIndex, iteratorBehavior, boxMin,
+                                             boxMax, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
     }
 
     // shortcut if the given index doesn't exist
@@ -471,8 +482,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   template <bool regionIter>
   std::tuple<OctreeLeafNode<Particle> *, size_t> advanceIteratorIndices(
       std::vector<size_t> &currentCellIndex, OctreeNodeInterface<Particle> *const currentCellPtr, size_t particleIndex,
-      IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
-      const std::array<double, 3> &boxMax) const {
+      IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+      const std::array<double, 3> &boxMinWithSafetyMargin, const std::array<double, 3> &boxMaxWithSafetyMargin) const {
     // TODO: parallelize at the higher tree levels. Choose tree level to parallelize via log_8(numThreads)
     const size_t minLevel = 0;
     //        (iteratorBehavior & IteratorBehavior::forceSequential) or autopas_get_num_threads() == 1
@@ -486,10 +497,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     auto cellIsRelevant = [&](const OctreeNodeInterface<Particle> *const cellPtr) {
       bool isRelevant = cellPtr->size() > 0;
       if constexpr (regionIter) {
-        // particles can move over cell borders. Calculate the volume this cell's particles can be.
-        const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellPtr->getBoxMin(), this->getVerletSkin() * 0.5);
-        const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellPtr->getBoxMax(), this->getVerletSkin() * 0.5);
-        isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
+        isRelevant = utils::boxesOverlap(cellPtr->getBoxMin(), cellPtr->getBoxMax(), boxMinWithSafetyMargin,
+                                         boxMaxWithSafetyMargin);
       }
       return isRelevant;
     };

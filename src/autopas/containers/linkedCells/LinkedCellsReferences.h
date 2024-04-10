@@ -61,10 +61,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                         const double skinPerTimestep, const unsigned int rebuildFrequency,
                         const double cellSizeFactor = 1.0,
                         LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
+      : CellBasedParticleContainer<ReferenceCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
-        _loadEstimator(loadEstimator),
-        _skinPerTimestep(skinPerTimestep) {}
+        _loadEstimator(loadEstimator) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -234,15 +233,15 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                const std::array<double, 3> &boxMax) const {
     using namespace autopas::utils::ArrayMath::literals;
 
+    const auto boxMinWithSafetyMargin =
+        boxMin - (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    const auto boxMaxWithSafetyMargin =
+        boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
         // We extend the search box for cells here since particles might have moved
-        const auto boxMinWithSafetyMargin =
-            boxMin - (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-        const auto boxMaxWithSafetyMargin =
-            boxMax + (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-
         return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
                 _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
       } else {
@@ -271,7 +270,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
       std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax,
+                                             boxMinWithSafetyMargin, boxMaxWithSafetyMargin, endCellIndex);
     }
 
     // shortcut if the given index doesn't exist
@@ -546,10 +546,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * @return tuple<cellIndex, particleIndex>
    */
   template <bool regionIter>
-  std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
-                                                    IteratorBehavior iteratorBehavior,
-                                                    const std::array<double, 3> &boxMin,
-                                                    const std::array<double, 3> &boxMax, size_t endCellIndex) const {
+  std::tuple<size_t, size_t> advanceIteratorIndices(
+      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
+      const std::array<double, 3> &boxMaxWithSafetyMargin, size_t endCellIndex) const {
     // Finding the indices for the next particle
     const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
@@ -564,10 +564,8 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
         if (isRelevant) {
           // is the cell in the region?
           const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
-          // particles can move over cell borders. Calculate the volume this cell's particles can be.
-          const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellLowCorner, this->getVerletSkin() * 0.5);
-          const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellHighCorner, this->getVerletSkin() * 0.5);
-          isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
+          isRelevant =
+              utils::boxesOverlap(cellLowCorner, cellHighCorner, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
         }
       }
       return isRelevant;
@@ -610,10 +608,6 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
    * load estimation algorithm for balanced traversals.
    */
   autopas::LoadEstimatorOption _loadEstimator;
-  /**
-   * Skin distance a particle is allowed to move in one time-step.
-   */
-  double _skinPerTimestep;
   /**
    * Workaround for adding particles in parallel -> https://github.com/AutoPas/AutoPas/issues/555
    */

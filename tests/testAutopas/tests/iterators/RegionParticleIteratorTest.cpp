@@ -248,7 +248,7 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
 
     // this creates the positions (min + offset) and (max - offset) and positions mirrored at min and max (along one
     // dimension)
-    auto generateInteresting1DPositions = [&](double min, double max) -> auto {
+    auto generateInteresting1DPositions = [&](double min, double max) -> auto{
       return std::array<std::tuple<double, double>, numParticles1DTotal>{
           {{min + offset, min - offset}, {(max - min) / 2.0, (max - min) / 2.0}, {max - offset, max + offset}}};
     };

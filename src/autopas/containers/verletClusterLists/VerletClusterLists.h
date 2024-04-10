@@ -89,12 +89,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
                      double skinPerTimestep, unsigned int rebuildFrequency, size_t clusterSize,
                      LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<Particle>(),
+      : ParticleContainerInterface<Particle>(skinPerTimestep),
         _towerBlock{boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
         _cutoff{cutoff},
-        _skinPerTimestep{skinPerTimestep},
         _rebuildFrequency{rebuildFrequency},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
@@ -292,15 +291,16 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (_towerBlock.empty()) {
       return {nullptr, 0, 0};
     }
+
+    const auto boxMinWithSafetyMargin =
+        boxMin - (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    const auto boxMaxWithSafetyMargin =
+        boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
         // We extend the search box for cells here since particles might have moved
-        const auto boxMinWithSafetyMargin =
-            boxMin - (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-        const auto boxMaxWithSafetyMargin =
-            boxMax + (_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-
         return {_towerBlock.getTowerIndex1DAtPosition(boxMinWithSafetyMargin),
                 _towerBlock.getTowerIndex1DAtPosition(boxMaxWithSafetyMargin)};
       } else {
@@ -329,7 +329,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
             _towerBlock[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
       std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax,
+                                             boxMinWithSafetyMargin, boxMaxWithSafetyMargin, endCellIndex);
     }
     // shortcut if the given index doesn't exist
     if (cellIndex > endCellIndex) {
@@ -934,13 +935,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  [[nodiscard]] double getVerletSkin() const override { return _skinPerTimestep * _rebuildFrequency; }
+  [[nodiscard]] double getVerletSkin() const override { return this->_skinPerTimestep * _rebuildFrequency; }
 
   /**
    * Set the verlet skin length per timestep for the container.
    * @param skinPerTimestep
    */
-  void setSkinPerTimestep(double skinPerTimestep) { _skinPerTimestep = skinPerTimestep; }
+  void setSkinPerTimestep(double skinPerTimestep) { this->_skinPerTimestep = skinPerTimestep; }
 
   /**
    * Get the rebuild Frequency value for the container.
@@ -954,7 +955,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   void setRebuildFrequency(unsigned int rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 
-  [[nodiscard]] double getInteractionLength() const override { return _cutoff + _skinPerTimestep * _rebuildFrequency; }
+  [[nodiscard]] double getInteractionLength() const override {
+    return _cutoff + this->_skinPerTimestep * _rebuildFrequency;
+  }
 
   void deleteAllParticles() override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
@@ -988,7 +991,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       particlesBuffer.clear();
     });
 
-    const double interactionLength = _cutoff + _skinPerTimestep * _rebuildFrequency;
+    const double interactionLength = _cutoff + this->_skinPerTimestep * _rebuildFrequency;
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(
         _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3);
 
@@ -1166,11 +1169,10 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @return tuple<cellIndex, particleIndex>
    */
   template <bool regionIter>
-  [[nodiscard]] std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
-                                                                  IteratorBehavior iteratorBehavior,
-                                                                  const std::array<double, 3> &boxMin,
-                                                                  const std::array<double, 3> &boxMax,
-                                                                  size_t endCellIndex) const {
+  [[nodiscard]] std::tuple<size_t, size_t> advanceIteratorIndices(
+      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, const std::array<double, 3> &boxMinWithSafetyMargin,
+      const std::array<double, 3> &boxMaxWithSafetyMargin, size_t endCellIndex) const {
     // Finding the indices for the next particle
     const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
@@ -1184,10 +1186,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       if constexpr (regionIter) {
         // is the cell in the region?
         const auto [towerLowCorner, towerHighCorner] = _towerBlock.getTowerBoundingBox(cellIndex);
-        // particles can move over cell borders. Calculate the volume this cell's particles can be.
-        const auto towerLowCornerSkin = utils::ArrayMath::subScalar(towerLowCorner, this->getVerletSkin() * 0.5);
-        const auto towerHighCornerSkin = utils::ArrayMath::addScalar(towerHighCorner, this->getVerletSkin() * 0.5);
-        isRelevant = utils::boxesOverlap(towerLowCornerSkin, towerHighCornerSkin, boxMin, boxMax);
+        isRelevant =
+            utils::boxesOverlap(towerLowCorner, towerHighCorner, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
       }
       return isRelevant;
     };
@@ -1288,10 +1288,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   double _cutoff{};
 
-  /**
-   * SkinPerTimestep.
-   */
-  double _skinPerTimestep{};
   /**
    * rebuidFrequency.
    */
