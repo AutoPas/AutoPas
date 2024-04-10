@@ -340,24 +340,36 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return particleIndex < particleVec.size();
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::begin()
+   */
   [[nodiscard]] ContainerIterator<Particle, true, false> begin(
       IteratorBehavior behavior,
       typename ContainerIterator<Particle, true, false>::ParticleVecType *additionalVectors = nullptr) override {
     return ContainerIterator<Particle, true, false>(*this, behavior, additionalVectors);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::begin()
+   */
   [[nodiscard]] ContainerIterator<Particle, false, false> begin(
       IteratorBehavior behavior,
       typename ContainerIterator<Particle, false, false>::ParticleVecType *additionalVectors = nullptr) const override {
     return ContainerIterator<Particle, false, false>(*this, behavior, additionalVectors);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getRegionIterator()
+   */
   [[nodiscard]] ContainerIterator<Particle, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return ContainerIterator<Particle, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
+  /**
+   * @copydoc ParticleContainerInterface::getRegionIterator()
+   */
   [[nodiscard]] ContainerIterator<Particle, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
       typename ContainerIterator<Particle, false, true>::ParticleVecType *additionalVectors = nullptr) const override {
