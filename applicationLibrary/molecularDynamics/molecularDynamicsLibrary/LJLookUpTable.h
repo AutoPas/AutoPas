@@ -110,6 +110,7 @@ class LJLookUpTable {
     if constexpr (intervalType == evenSpacing) {
       if (dr2 >= cutoffSquared) {
         AutoPasLog(DEBUG, "dr2 was cutoffSquared. Returning {}", lut.at(numberOfPoints-1));
+        //TODO: remove .at()
         return lut.at(numberOfPoints - 1);
       }
       // Compute perfect value for lowest dr2 where error is greatest
@@ -123,6 +124,7 @@ class LJLookUpTable {
 //        totalError += abs(LJFunctor(dr2) - ret);
 //        return totalError;
 //      }());
+      //TODO: Try multiplication
       return lut.at(std::floor(dr2 / pointDistance));;
     }
   }
