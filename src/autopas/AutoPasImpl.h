@@ -176,9 +176,7 @@ void AutoPas<Particle>::addParticle(const Particle &p) {
 template <class Particle>
 template <class Collection>
 void AutoPas<Particle>::addParticles(Collection &&particles) {
-  auto numParticles = particles.size();  // adding this
-  addParticlesAux(numParticles, 0, numParticles,
-                  [&](auto i) { addParticle(particles[i]); });  // changing particles.size() -> numParticles
+  addParticlesAux(particles.size(), 0, particles.size(), [&](auto i) { addParticle(particles[i]); });
 }
 
 template <class Particle>
@@ -186,9 +184,8 @@ template <class Collection, class F>
 void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-  auto numParticles = particles.size();  // adding this
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
-  for (auto i = 0; i < numParticles; ++i) {  // changing particles.size() -> numParticles
+  for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
       ++numTrue;
@@ -197,7 +194,7 @@ void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
     }
   }
 
-  addParticlesAux(numTrue, 0, numParticles, [&](auto i) {  // changing particles.size() -> numParticles
+  addParticlesAux(numTrue, 0, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
       addParticle(particles[i]);
     }
@@ -236,8 +233,7 @@ void AutoPas<Particle>::addHaloParticle(const Particle &haloParticle) {
 template <class Particle>
 template <class Collection>
 void AutoPas<Particle>::addHaloParticles(Collection &&particles) {
-  auto numParticles = particles.size();  // adding this
-  addParticlesAux(0, numParticles, numParticles, [&](auto i) { addHaloParticle(particles[i]); });
+  addParticlesAux(0, particles.size(), particles.size(), [&](auto i) { addHaloParticle(particles[i]); });
 }
 
 template <class Particle>
@@ -245,9 +241,8 @@ template <class Collection, class F>
 void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-  auto numParticles = particles.size();  // adding this
   AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
-  for (auto i = 0; i < numParticles; ++i) {
+  for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
       ++numTrue;
@@ -256,7 +251,7 @@ void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) 
     }
   }
 
-  addParticlesAux(0, numTrue, numParticles, [&](auto i) {
+  addParticlesAux(0, numTrue, particles.size(), [&](auto i) {
     if (predicateMask[i]) {
       addHaloParticle(particles[i]);
     }

@@ -808,7 +808,7 @@ class LogicHandler {
 
   /**
    * neighborListInvalid - true if a particle has moved more than skin/2
-  */
+   */
   bool _neighborListInvalidDynamicRebuild{false};
 
   /**
