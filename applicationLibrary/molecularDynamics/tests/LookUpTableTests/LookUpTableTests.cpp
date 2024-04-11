@@ -13,7 +13,7 @@
  * Very simple test to check that rotate still works
  */
 TEST_F(LookUpTableTest, MostBasicRotate) {
-  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::critical);
   double cutoff = 2.5;
   double nu = 0.073;
   std::vector<autopas::utils::Timer> LUTtimers = {autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer()};
@@ -25,7 +25,7 @@ TEST_F(LookUpTableTest, MostBasicRotate) {
 }
 
 TEST_F(LookUpTableTest, SehrFalsch) {
-  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::critical);
   double cutoff = 2.5;
   double nu = 0.073;
   std::vector<autopas::utils::Timer> LUTtimers = {autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer()};

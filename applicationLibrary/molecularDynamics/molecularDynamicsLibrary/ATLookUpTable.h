@@ -384,11 +384,6 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
                floatType c2, floatType c3, size_t index) {
     using namespace autopas::utils::ArrayMath;
 
-    std::array<floatType, 4> rot1Quaternion;
-    std::array<floatType, 4> rot1InverseQuaternion;
-    std::array<floatType, 4> rot2Quaternion;
-    std::array<floatType, 4> rot2InverseQuaternion;
-
     b1 -= a1;  // (b1-a1)*(1 + eps)
     b2 -= a2;  // (b2-a2)*(1 + eps)
     b3 -= a3;  // (b3-a3)*(1 + eps)
@@ -399,11 +394,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     AutoPasLog(DEBUG, "B: {} {} {}    C: {} {} {}", b1, b2, b3, c1, c2, c3);
 
     (*LUTtimers)[1].start(); // Timer norm3 start
-    auto targetB = norm3(b1, b2, b3);  // ((eps + 1)^3 (b1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - b1)^2 + (a1 - b1)^2 + 3 eps (a2 - b2)^2 + (a2 - b2)^2 + 2 eps (a3 - b3)^2 + (a3 - b3)^2))
+    const auto targetB = norm3(b1, b2, b3);  // ((eps + 1)^3 (b1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - b1)^2 + (a1 - b1)^2 + 3 eps (a2 - b2)^2 + (a2 - b2)^2 + 2 eps (a3 - b3)^2 + (a3 - b3)^2))
     // Can maybe remove
-    auto targetC = norm3(c1, c2, c3);  // ((eps + 1)^3 (c1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - c1)^2 + (a1 - c1)^2 + 3 eps (a2 - c2)^2 + (a2 - c2)^2 + 2 eps (a3 - c3)^2 + (a3 - c3)^2))
+    const auto targetC = norm3(c1, c2, c3);  // ((eps + 1)^3 (c1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - c1)^2 + (a1 - c1)^2 + 3 eps (a2 - c2)^2 + (a2 - c2)^2 + 2 eps (a3 - c3)^2 + (a3 - c3)^2))
     (*LUTtimers)[1].stop(); // Timer norm3 stop
-    std::array<floatType, 3> sourceB = {1, 0, 0};
+    const std::array<floatType, 3> sourceB = {1, 0, 0};
     AutoPasLog(DEBUG, "targetB normalized: {}", targetB);
     AutoPasLog(DEBUG, "targetC normalized: {}", targetC);
 
@@ -411,139 +406,90 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     // stay the same
 
     // Find quaternion that rotates target B to (1,0,0)
-    // auto norm = std::sqrt(((1 + targetB[0]) * (1 + targetB[0])) + (targetB[2] * targetB[2]) + (targetB[1] *
-    // targetB[1]));
-    // AutoPasLog(DEBUG, "Quaternion norm is {}", norm);
-    // Second entry is always zero because it only depends on elements from the cross product that contain B2 and B3,
-    // which are 0
-    //    rot1Quaternion = {(1 + targetB[0]) / norm, 0, targetB[2] / norm, -targetB[1] / norm};
-    //    rot1InverseQuaternion = {rot1Quaternion[0], 0, -rot1Quaternion[2], -rot1Quaternion[3]};
     (*LUTtimers)[2].start(); // Timer rot1Quat start
-    auto cross = autopas::utils::ArrayMath::cross(targetB, sourceB);
-    std::array<floatType, 4> targetBQuat = {0, targetB[0], targetB[1], targetB[2]};
-    std::array<floatType, 4> sourceBQuat = {0, sourceB[0], sourceB[1], sourceB[2]};
-    rot1Quaternion = {(1 + dot(targetBQuat, sourceBQuat)), cross[0], cross[1], cross[2]};
-    rot1Quaternion = normalize(rot1Quaternion);
-    rot1InverseQuaternion = {rot1Quaternion[0], -rot1Quaternion[1], -rot1Quaternion[2], -rot1Quaternion[3]};
+    const std::array<floatType, 3> crossB = autopas::utils::ArrayMath::cross(targetB, sourceB);
+    const std::array<floatType, 4> targetBQuat = {0, targetB[0], targetB[1], targetB[2]};
+    const std::array<floatType, 4> sourceBQuat = {0, sourceB[0], sourceB[1], sourceB[2]};
+    const std::array<floatType, 4> rot1Quaternion = {(1 + dot(targetBQuat, sourceBQuat)), crossB[0], crossB[1], crossB[2]};
+    const std::array<floatType, 4> rot1QuaternionNormalized = normalize(rot1Quaternion);
+    const std::array<floatType, 4> rot1InverseQuaternionNormalized = {rot1QuaternionNormalized[0], -rot1QuaternionNormalized[1], -rot1QuaternionNormalized[2], -rot1QuaternionNormalized[3]};
     (*LUTtimers)[2].stop(); // Timer rot1Quat stop
 
     // Rotate targetB for debugging purposes
-    // TODO: Rotations will be optimized in the way that the quaternion representing a vector has a real part of 0, so any calculation involving quatTargetB[0] is 0 and can be removed
-    std::array<floatType, 4> tempQuat = {};
-    AutoPasLog(DEBUG, "{}", [targetBQuat, rot1InverseQuaternion, rot1Quaternion, this]() -> std::string {
+    AutoPasLog(DEBUG, "{}", [targetBQuat, rot1InverseQuaternionNormalized, rot1QuaternionNormalized, this]() -> std::string {
       std::array<floatType, 4> res =
-          quaternionMultiply(quaternionMultiply(rot1InverseQuaternion, targetBQuat), rot1Quaternion);
+          quaternionMultiply(quaternionMultiply(rot1InverseQuaternionNormalized, targetBQuat), rot1QuaternionNormalized);
       return "TargetB after rotation should be x 0 0 is " + std::to_string(res[1]) + " " + std::to_string(res[2]) +
              " " + std::to_string(res[3]);
     }());
 
     // Rotate targetC
     // invQuat * quatTargetC
-    // TODO: Abuse that rot1InverseQuaternion[1] ist also 0
-    //    tempQuat = {
-    //        -rot1InverseQuaternion[1]*targetC[0] - rot1InverseQuaternion[2]*targetC[1] -
-    //        rot1InverseQuaternion[3]*targetC[2], rot1InverseQuaternion[0]*targetC[0] -
-    //        rot1InverseQuaternion[2]*targetC[2] + rot1InverseQuaternion[3]*targetC[1],
-    //        rot1InverseQuaternion[0]*targetC[1] + rot1InverseQuaternion[1]*targetC[2] -
-    //        rot1InverseQuaternion[3]*targetC[0], rot1InverseQuaternion[0]*targetC[2] -
-    //        rot1InverseQuaternion[1]*targetC[1] + rot1InverseQuaternion[2]*targetC[0]
-    //    };
-    std::array<floatType, 4> targetCQuat = {0, targetC[0], targetC[1], targetC[2]};
+    const std::array<floatType, 4> targetCQuat = {0, targetC[0], targetC[1], targetC[2]};
     (*LUTtimers)[0].start(); // Timer 4 start
-    tempQuat = quaternionMultiply(rot1InverseQuaternion, targetCQuat);
-    // tempQuat * quat
-    tempQuat = quaternionMultiply(tempQuat, rot1Quaternion);
+    const std::array<floatType, 4> targetCQuatRotated = quaternionMultiply(quaternionMultiply(rot1InverseQuaternionNormalized, targetCQuat), rot1QuaternionNormalized);
     (*LUTtimers)[0].stop(); // Timer 4 stop
-    targetC = {tempQuat[1], tempQuat[2], tempQuat[3]};
-    AutoPasLog(DEBUG, "TargetC after first rotation is {}", targetC);
+    AutoPasLog(DEBUG, "TargetC after first rotation is {}", targetCQuatRotated);
 
     // Find 2-D transformation that rotates C onto targetC
     // TODO: Try optimizing the 2D rotation
     (*LUTtimers)[3].start(); // Timer rot2Quat start
-    std::array<floatType, 3> sourceC = {0, 1, 0};
-    targetC = norm3(0, targetC[1], targetC[2]);
+    const std::array<floatType, 3> sourceC = {0, 1, 0};
+    const std::array<floatType, 3> targetC2DNormed = norm3(0., targetCQuatRotated[2], targetCQuatRotated[3]);
 
-    // norm = std::sqrt(((1 + targetC[0] * targetC[0] + targetC[1] * C1) * (1 + targetC[0] * targetC[0] + targetC[1] *
-    // C1)) + ((C1*targetC[2]) * (C1*targetC[2])) + ((targetC[0] * targetC[2]) * (targetC[0] * targetC[2])) +
-    // ((targetC[0] * targetC[1] - C1 * targetC[0]) * (targetC[0] * targetC[1] - C1 * targetC[0]))); rot2Quaternion =
-    // {(1 + targetC[0] * targetC[0] + targetC[1] * C1) / norm, (C1*targetC[2]) / norm, -(targetC[0] * targetC[2]) /
-    // norm, (targetC[0] * targetC[1] - C1 * targetC[0]) / norm};
-    AutoPasLog(DEBUG, "SourceC: {} | TargetC: {}", sourceC, targetC);
-    cross = autopas::utils::ArrayMath::cross(sourceC, targetC);
-    AutoPasLog(DEBUG, "C cross: {}", cross);
-    targetCQuat = {0, targetC[0], targetC[1], targetC[2]};
-    std::array<floatType, 4> sourceCQuat = {0, sourceC[0], sourceC[1], sourceC[2]};
-    rot2Quaternion = {(1 + dot(sourceCQuat, targetCQuat)), cross[0], cross[1], cross[2]};
-    rot2Quaternion = normalize(rot2Quaternion);
-    rot2InverseQuaternion = {rot2Quaternion[0], -rot2Quaternion[1], -rot2Quaternion[2], -rot2Quaternion[3]};
+    AutoPasLog(DEBUG, "SourceC: {} | TargetC: {}", sourceC, targetCQuatRotated);
+    const std::array<floatType, 3> crossC = autopas::utils::ArrayMath::cross(sourceC, targetC2DNormed);
+    AutoPasLog(DEBUG, "C cross: {}", crossC);
+    const std::array<floatType, 4> targetCQuat2D = {0., 0., targetC2DNormed[1], targetC2DNormed[2]};
+    const std::array<floatType, 4> sourceCQuat = {0, sourceC[0], sourceC[1], sourceC[2]};
+    const std::array<floatType, 4> rot2Quaternion = {(1 + dot(sourceCQuat, targetCQuat)), crossC[0], crossC[1], crossC[2]};
+    const std::array<floatType, 4> rot2QuaternionNormalized = normalize(rot2Quaternion);
+    const std::array<floatType, 4> rot2InverseQuaternionNormalized = {rot2QuaternionNormalized[0], -rot2QuaternionNormalized[1], -rot2QuaternionNormalized[2], -rot2QuaternionNormalized[3]};
     (*LUTtimers)[3].stop(); // Timer rot2Quat stop
 
     // Rotate C for debugging purposes
     AutoPasLog(DEBUG, "sourceCQuat rotated is {}",
-               quaternionMultiply(quaternionMultiply(rot2InverseQuaternion, sourceCQuat), rot2Quaternion));
-    AutoPasLog(DEBUG, "targetC rotated is {}", quaternionMultiply(quaternionMultiply(rot2Quaternion, targetCQuat), rot2InverseQuaternion));
+               quaternionMultiply(quaternionMultiply(rot2InverseQuaternionNormalized, sourceCQuat), rot2QuaternionNormalized));
+    AutoPasLog(DEBUG, "targetC rotated is {}", quaternionMultiply(quaternionMultiply(rot2QuaternionNormalized, targetCQuat2D), rot2InverseQuaternionNormalized));
 
     // Initialize forceQuaternion and rotate one force after the other
     Entry forces = lut[index];
     Entry ret{};
 
-    AutoPasLog(DEBUG, "rot1Quat: {}", rot1Quaternion);
-    AutoPasLog(DEBUG, "rot1InvQuat: {}", rot1InverseQuaternion);
-    AutoPasLog(DEBUG, "rot2Quat: {}", rot2Quaternion);
-    AutoPasLog(DEBUG, "rot2InvQuat: {}", rot2InverseQuaternion);
+    AutoPasLog(DEBUG, "rot1Quat: {}", rot1QuaternionNormalized);
+    AutoPasLog(DEBUG, "rot1InvQuat: {}", rot1InverseQuaternionNormalized);
+    AutoPasLog(DEBUG, "rot2Quat: {}", rot2QuaternionNormalized);
+    AutoPasLog(DEBUG, "rot2InvQuat: {}", rot2InverseQuaternionNormalized);
 
     // invQuat2 * tempQuat
     // TODO: Godbolt
     for (size_t i = 0; i < 3; i++) {
-      tempQuat = {0.0, forces.first[i][0], forces.first[i][1], forces.first[i][2]};
-      AutoPasLog(DEBUG, "Force quat {} before rotation", tempQuat);
-      //      tempQuat = {-rot2InverseQuaternion[1] * tempQuat[1] - rot2InverseQuaternion[2] * tempQuat[2] -
-      //      rot2InverseQuaternion[3] * tempQuat[3],
-      //                  rot2InverseQuaternion[0] * tempQuat[1] - rot2InverseQuaternion[2] * tempQuat[3] +
-      //                  rot2InverseQuaternion[3] * tempQuat[2], rot2InverseQuaternion[0] * tempQuat[2] +
-      //                  rot2InverseQuaternion[1] * tempQuat[3] - rot2InverseQuaternion[3] * tempQuat[1],
-      //                  rot2InverseQuaternion[0] * tempQuat[3] - rot2InverseQuaternion[1] * tempQuat[2] +
-      //                  rot2InverseQuaternion[2] * tempQuat[1]
-      //      };
-      //      AutoPasLog(DEBUG, "After first half rotation {}: {}", i, tempQuat);
+      const std::array<floatType, 4> forceQuat = {0.0, forces.first[i][0], forces.first[i][1], forces.first[i][2]};
+      AutoPasLog(DEBUG, "Force quat {} before rotation", forceQuat);
       (*LUTtimers)[0].start(); // Timer 4 start
-      tempQuat = quaternionMultiply(rot2InverseQuaternion, tempQuat);
-      // tempQuat * Quat2
-      tempQuat = quaternionMultiply(tempQuat, rot2Quaternion);
+      const std::array<floatType, 4> forceQuatFirstRot = quaternionMultiply(quaternionMultiply(rot2InverseQuaternionNormalized, forceQuat), rot2QuaternionNormalized);
       (*LUTtimers)[0].stop(); // Timer 4 stop
 
       // tempQuat now
-      AutoPasLog(DEBUG, "After first rotation {}: {}", i, tempQuat);
-      AutoPasLog(DEBUG, "Norm after first rotation {}: {}", i, normalize(tempQuat));
-      tempQuat[0] = 0;
+      AutoPasLog(DEBUG, "After first rotation {}: {}", i, forceQuat);
+      AutoPasLog(DEBUG, "Norm after first rotation {}: {}", i, normalize(forceQuat));
+      //Could set quat[0] to 0 because it should be
 
-      // Rotate force onto original position
-      // quat1 * force
-
-      //      tempQuat = {-rot1Quaternion[1] * tempQuat[1] - rot1Quaternion[2] * tempQuat[2] - rot1Quaternion[3] *
-      //      tempQuat[3],
-      //                  rot1Quaternion[0] * tempQuat[1] - rot1Quaternion[2] * tempQuat[3] + rot1Quaternion[3] *
-      //                  tempQuat[2], rot1Quaternion[0] * tempQuat[2] + rot1Quaternion[1] * tempQuat[3] -
-      //                  rot1Quaternion[3] * tempQuat[1], rot1Quaternion[0] * tempQuat[3] - rot1Quaternion[1] *
-      //                  tempQuat[2] + rot1Quaternion[2] * tempQuat[1]
-      //      };
       (*LUTtimers)[0].start(); // Timer 4 start
-      tempQuat = quaternionMultiply(rot1Quaternion, tempQuat);
-      AutoPasLog(DEBUG, "After second half rotation {}: {}", i, tempQuat);
       // force * invQuat1
-      tempQuat = quaternionMultiply(tempQuat, rot1InverseQuaternion);
+      const std::array<floatType, 4> forceQuatSecondRot = quaternionMultiply(quaternionMultiply(rot1QuaternionNormalized, forceQuatFirstRot), rot1InverseQuaternionNormalized);
       (*LUTtimers)[0].stop(); // Timer 4 stop
 
-      AutoPasLog(DEBUG, "After second rotation {}: {}", i, tempQuat);
+      AutoPasLog(DEBUG, "After second rotation {}: {}", i, forceQuatSecondRot);
 
       // Forces should be rotated now
-      ret.first[i][0] = tempQuat[1];
-      ret.first[i][1] = tempQuat[2];
-      ret.first[i][2] = tempQuat[3];
+      ret.first[i][0] = forceQuatSecondRot[1];
+      ret.first[i][1] = forceQuatSecondRot[2];
+      ret.first[i][2] = forceQuatSecondRot[3];
     }
     ret.second = forces.second;
     //(*LUTtimers)[0].stop(); // Timer 3 stop; Timer 1 stop
-    AutoPasLog(CRITICAL, "After first rotation normalized:\n{}", [&forces, a1, a2, a3, b1, b2, b3, c1, c2, c3, &rot1Quaternion, &rot1InverseQuaternion, &rot2Quaternion, &rot2InverseQuaternion, this] -> std::string {
+    AutoPasLog(DEBUG, "After first rotation normalized:\n{}", [&forces, a1, a2, a3, b1, b2, b3, c1, c2, c3, &rot1QuaternionNormalized, &rot1InverseQuaternionNormalized, &rot2QuaternionNormalized, &rot2InverseQuaternionNormalized, this] -> std::string {
       std::array<floatType, 4> forces1Quat = {0.0, forces.first[0][0], forces.first[0][1], forces.first[0][2]};
       std::array<floatType, 4> forces2Quat = {0.0, forces.first[1][0], forces.first[1][1], forces.first[1][2]};
       std::array<floatType, 4> forces3Quat = {0.0, forces.first[2][0], forces.first[2][1], forces.first[2][2]};
@@ -551,13 +497,13 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       std::array<floatType, 4> perfect1Quat = {0.0, perfect.first[0][0], perfect.first[0][1], perfect.first[0][2]};
       std::array<floatType, 4> perfect2Quat = {0.0, perfect.first[1][0], perfect.first[1][1], perfect.first[1][2]};
       std::array<floatType, 4> perfect3Quat = {0.0, perfect.first[2][0], perfect.first[2][1], perfect.first[2][2]};
-      forces1Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternion, forces1Quat), rot2Quaternion);
-      forces2Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternion, forces2Quat), rot2Quaternion);
-      forces3Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternion, forces3Quat), rot2Quaternion);
+      forces1Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternionNormalized, forces1Quat), rot2QuaternionNormalized);
+      forces2Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternionNormalized, forces2Quat), rot2QuaternionNormalized);
+      forces3Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternionNormalized, forces3Quat), rot2QuaternionNormalized);
 
-      perfect1Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternion, perfect1Quat), rot1Quaternion);
-      perfect2Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternion, perfect2Quat), rot1Quaternion);
-      perfect3Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternion, perfect3Quat), rot1Quaternion);
+      perfect1Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternionNormalized, perfect1Quat), rot1QuaternionNormalized);
+      perfect2Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternionNormalized, perfect2Quat), rot1QuaternionNormalized);
+      perfect3Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternionNormalized, perfect3Quat), rot1QuaternionNormalized);
       return "Perfect is " + std::to_string(perfect.first[0][0]) + " " + std::to_string(perfect.first[0][1]) + " " + std::to_string(perfect.first[0][2]) + " | "
              + std::to_string(perfect.first[1][0]) + " " + std::to_string(perfect.first[1][1]) + " " + std::to_string(perfect.first[1][2]) + " | "
              + std::to_string(perfect.first[2][0]) + " " + std::to_string(perfect.first[2][1]) + " " + std::to_string(perfect.first[2][2]) + "\n"
