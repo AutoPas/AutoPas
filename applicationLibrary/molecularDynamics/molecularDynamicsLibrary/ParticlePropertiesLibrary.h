@@ -315,9 +315,9 @@ class ParticlePropertiesLibrary {
               {_cutoff * _cutoff, getMixingSigmaSquared(0, 0), getMixing24Epsilon(0, 0), 1000.0});
     }
     if (_storeATData) {
-      _ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::absolute, ForceLookUpTable::evenSpacing,
+      _ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                                        ForceLookUpTable::nextNeighbor, floatType, intType>(
-          {_cutoff * _cutoff, getNu(0), 4.0}));
+          {_cutoff * _cutoff, getNu(0), 100.0}, &LUTtimers));
     }
   }
 
@@ -332,7 +332,7 @@ class ParticlePropertiesLibrary {
   /**
    * @return The Axilrod-Teller look-up table
    */
-  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::absolute, ForceLookUpTable::evenSpacing,
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                   ForceLookUpTable::nextNeighbor, floatType, intType>
       &getATLUT() {
     return _ATLookUpTable;
@@ -379,7 +379,7 @@ class ParticlePropertiesLibrary {
   ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, floatType, intType>
       _LJLookUpTable;
   // LJLookUpTableType _LJLookUpTable;
-  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::absolute, ForceLookUpTable::evenSpacing,
+  ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                   ForceLookUpTable::nextNeighbor, floatType, intType>
       _ATLookUpTable;
 };

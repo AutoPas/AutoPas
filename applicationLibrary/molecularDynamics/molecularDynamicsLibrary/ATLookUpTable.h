@@ -173,7 +173,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
                         floatType k1, floatType k2, floatType k3, floatType distSquaredIJ, floatType distSquaredJK,
                         floatType distSquaredKI) {
     //(*LUTtimers)[0].start(); // Timer 2; Timer
-    AutoPasLog(DEBUG, "Input was {} {} {} | {} {} {} | {} {} {} | dist: IJ {} JK {} KI {}", i1, i2, i3, j1, j2, j3, k1,
+    AutoPasLog(CRITICAL, "Input was {} {} {} | {} {} {} | {} {} {} | dist: IJ {} JK {} KI {}", i1, i2, i3, j1, j2, j3, k1,
                k2, k3, distSquaredIJ, distSquaredJK, distSquaredKI);
 
     /*
@@ -238,6 +238,30 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
           final = {{ret.first[2], ret.first[1], ret.first[0]}, ret.second};
         }
       }
+      AutoPasLog(CRITICAL, [&final, i1, i2, i3, j1, j2, j3, k1, k2, k3, this]() -> std::string {
+        Entry compareEntry = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
+        std::array<std::array<floatType, 3>, 3> compareNormalized = {
+            norm3(compareEntry.first[0][0], compareEntry.first[0][1], compareEntry.first[0][2]),
+            norm3(compareEntry.first[1][0], compareEntry.first[1][1], compareEntry.first[1][2]),
+            norm3(compareEntry.first[2][0], compareEntry.first[2][1], compareEntry.first[2][2])};
+        std::array<std::array<floatType, 3>, 3> finalNormalized = {
+            norm3(final.first[0][0], final.first[0][1], final.first[0][2]),
+            norm3(final.first[1][0], final.first[1][1], final.first[1][2]),
+            norm3(final.first[2][0], final.first[2][1], final.first[2][2])};
+        return "Diffs:\nIJ: " + std::to_string(i1-j1) + " " + std::to_string(i2-j2) + " " + std::to_string(i3-j3) + " | \n"
+               + "IK: " + std::to_string(i1-k1) + " " + std::to_string(i2-k2) + " " + std::to_string(i3-k3) + " | \n"
+               + "JK: " + std::to_string(j1-k1) + " " + std::to_string(j2-k2) + " " + std::to_string(j3-k3) + "\n"
+               + "Result\n"
+               + "    " + std::to_string(finalNormalized[0][0] - compareNormalized[0][0])
+               + " " + std::to_string(finalNormalized[0][1] - compareNormalized[0][1])
+               + " " + std::to_string(finalNormalized[0][2] - compareNormalized[0][2]) + "\n"
+               + "    " + std::to_string(finalNormalized[1][0] - compareNormalized[1][0])
+               + " " + std::to_string(finalNormalized[1][1] - compareNormalized[1][1])
+               + " " + std::to_string(finalNormalized[1][2] - compareNormalized[1][2]) + "\n"
+               + "    " + std::to_string(finalNormalized[2][0] - compareNormalized[2][0])
+               + " " + std::to_string(finalNormalized[2][1] - compareNormalized[2][1])
+               + " " + std::to_string(finalNormalized[2][2] - compareNormalized[2][2]);
+      }());
       AutoPasLog(CRITICAL, [i1, i2, i3, j1, j2, j3, k1, k2, k3, this]() -> std::string {
         Entry compareEntry = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
         std::array<std::array<floatType, 3>, 3> compareNormalized = {
@@ -519,6 +543,31 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     }
     ret.second = forces.second;
     //(*LUTtimers)[0].stop(); // Timer 3 stop; Timer 1 stop
+    AutoPasLog(CRITICAL, "After first rotation normalized:\n{}", [&forces, a1, a2, a3, b1, b2, b3, c1, c2, c3, &rot1Quaternion, &rot1InverseQuaternion, &rot2Quaternion, &rot2InverseQuaternion, this] -> std::string {
+      std::array<floatType, 4> forces1Quat = {0.0, forces.first[0][0], forces.first[0][1], forces.first[0][2]};
+      std::array<floatType, 4> forces2Quat = {0.0, forces.first[1][0], forces.first[1][1], forces.first[1][2]};
+      std::array<floatType, 4> forces3Quat = {0.0, forces.first[2][0], forces.first[2][1], forces.first[2][2]};
+      Entry perfect = ATFunctor(2.703957905911746, -0.0026572954522118756, 6.610864923489291, 3.3706888660320056, 0.3937881695307143, 7.713014487295848, 2.031792390399456, -1.60843618566604, 7.721119056770151);
+      std::array<floatType, 4> perfect1Quat = {0.0, perfect.first[0][0], perfect.first[0][1], perfect.first[0][2]};
+      std::array<floatType, 4> perfect2Quat = {0.0, perfect.first[1][0], perfect.first[1][1], perfect.first[1][2]};
+      std::array<floatType, 4> perfect3Quat = {0.0, perfect.first[2][0], perfect.first[2][1], perfect.first[2][2]};
+      forces1Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternion, forces1Quat), rot2Quaternion);
+      forces2Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternion, forces2Quat), rot2Quaternion);
+      forces3Quat = quaternionMultiply(quaternionMultiply(rot2InverseQuaternion, forces3Quat), rot2Quaternion);
+
+      perfect1Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternion, perfect1Quat), rot1Quaternion);
+      perfect2Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternion, perfect2Quat), rot1Quaternion);
+      perfect3Quat = quaternionMultiply(quaternionMultiply(rot1InverseQuaternion, perfect3Quat), rot1Quaternion);
+      return "Perfect is " + std::to_string(perfect.first[0][0]) + " " + std::to_string(perfect.first[0][1]) + " " + std::to_string(perfect.first[0][2]) + " | "
+             + std::to_string(perfect.first[1][0]) + " " + std::to_string(perfect.first[1][1]) + " " + std::to_string(perfect.first[1][2]) + " | "
+             + std::to_string(perfect.first[2][0]) + " " + std::to_string(perfect.first[2][1]) + " " + std::to_string(perfect.first[2][2]) + "\n"
+             + "Forces: " + std::to_string(forces1Quat[0]) + " " + std::to_string(forces1Quat[1]) + " " + std::to_string(forces1Quat[2]) + " " + std::to_string(forces1Quat[3]) + " | "
+                        + std::to_string(forces2Quat[0]) + " " + std::to_string(forces2Quat[1]) + " " + std::to_string(forces2Quat[2]) + " " + std::to_string(forces2Quat[3]) + " | "
+                        + std::to_string(forces3Quat[0]) + " " + std::to_string(forces3Quat[1]) + " " + std::to_string(forces3Quat[2]) + " " + std::to_string(forces3Quat[3]) + "\nPerfect: "
+                        + std::to_string(perfect1Quat[0]) + " " + std::to_string(perfect1Quat[1]) + " " + std::to_string(perfect1Quat[2]) + " " + std::to_string(perfect1Quat[3]) + " | "
+                        + std::to_string(perfect2Quat[0]) + " " + std::to_string(perfect2Quat[1]) + " " + std::to_string(perfect2Quat[2]) + " " + std::to_string(perfect2Quat[3]) + " | "
+                        + std::to_string(perfect3Quat[0]) + " " + std::to_string(perfect3Quat[1]) + " " + std::to_string(perfect3Quat[2]) + " " + std::to_string(perfect3Quat[3]);
+    }());
     return ret;
   }
 };
