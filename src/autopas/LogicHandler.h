@@ -307,16 +307,17 @@ class LogicHandler {
     const auto &boxMin = container.getBoxMin();
     const auto &boxMax = container.getBoxMax();
     Particle particleCopy = haloParticle;
-    if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
+    if (utils::inBox(particleCopy.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
           "Box Min {}\n"
           "Box Max {}\n"
           "{}",
-          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
+          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), particleCopy.toString());
     }
     particleCopy.setOwnershipState(OwnershipState::halo);
-    particleCopy.setRAtRebuild();  // to discuss this
+    particleCopy.setRAtRebuild();  // to discuss this -> a particle entering halo may not have already moved more than
+                                   // skin/2 -> will lead to update when not needed, but not sure
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
       container.template addHaloParticle</* checkInBox */ false>(particleCopy);
@@ -326,7 +327,8 @@ class LogicHandler {
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticle);
-        _haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
+        //_haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo); //
+        //should be already halo now
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
