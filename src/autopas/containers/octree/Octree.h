@@ -320,11 +320,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
   }
 
   /**
-   * Deletes the given particle as long as this does not compromise the validity of the container.
-   * If this is not possible the particle is just marked as deleted.
-   * @note This function might be implemented via swap-delete and is thus not completely thread safe.
-   * @param particle Reference to the particle that is to be deleted.
-   * @return True if the given pointer still points to a new particle.
+   * @copydoc ParticleContainerInterface::deleteParticle()
    */
   bool deleteParticle(Particle &particle) override {
     if (particle.isOwned()) {
@@ -337,14 +333,6 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     }
   }
 
-  /**
-   * Deletes the particle at the given index positions as long as this does not compromise the validity of the
-   * container. If this is not possible the particle is just marked as deleted. If the positions do not exist the
-   * behavior is undefined.
-   * @param cellIndex
-   * @param particleIndex
-   * @return True if the given indices still point to a new particle.
-   */
   bool deleteParticle(size_t cellIndex, size_t particleIndex) override {
     auto [cellIndexVector, cell] = getLeafCellByIndex(cellIndex);
     auto &particleVec = cell->_particles;
