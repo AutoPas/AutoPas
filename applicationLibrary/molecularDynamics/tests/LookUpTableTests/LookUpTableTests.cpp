@@ -13,27 +13,47 @@
  * Very simple test to check that rotate still works
  */
 TEST_F(LookUpTableTest, MostBasicRotate) {
-  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::critical);
+  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
   double cutoff = 2.5;
   double nu = 0.073;
   std::vector<autopas::utils::Timer> LUTtimers = {autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer()};
   ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                   ForceLookUpTable::nextNeighbor, double, int> ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
                                                             ForceLookUpTable::nextNeighbor, double, int>(
-      {cutoff * cutoff, nu, 8.0}, &LUTtimers));
+      {cutoff * cutoff, nu, 100.0}, &LUTtimers));
   ATLookUpTable.retrieveValue({0., 0., 0.}, {std::sqrt(0.75), 0., 0.5}, {0., 0., 1.}, 1., 1., 1.); // Change so targetB ends up on 1,0,0 to check second rotation
 }
 
 TEST_F(LookUpTableTest, SehrFalsch) {
-  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::critical);
-  double cutoff = 2.5;
-  double nu = 0.073;
+  autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
+  using namespace autopas::utils::ArrayMath::literals;
+  using autopas::utils::ArrayMath::dot;
+
+  const double cutoff = 2.5;
+  const double nu = 0.073;
   std::vector<autopas::utils::Timer> LUTtimers = {autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer()};
   ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
-                                  ForceLookUpTable::nextNeighbor, double, int> ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
-                                                                ForceLookUpTable::nextNeighbor, double, int>(
-          {cutoff * cutoff, nu, 100.0}, &LUTtimers));
-  ATLookUpTable.retrieveValue({2.703957905911746, -0.0026572954522118756, 6.610864923489291}, {3.3706888660320056, 0.3937881695307143, 7.713014487295848}, {2.031792390399456, -1.60843618566604, 7.721119056770151}, 1.816432840887397, 5.801611825050684, 4.262996564967491); // Change so targetB ends up on 1,0,0 to check second rotation
+                                  ForceLookUpTable::nextNeighbor, double, int> ATLookUpTable(
+          {cutoff * cutoff, nu, 100.0},
+          &LUTtimers
+  );
+
+  const std::array<double ,3> posI{2.703957905911746, -0.0026572954522118756, 6.610864923489291};
+  const std::array<double ,3> posJ{3.3706888660320056, 0.3937881695307143, 7.713014487295848};
+  const std::array<double ,3> posK{2.031792390399456, -1.60843618566604, 7.721119056770151};
+  const auto vecIJ = posJ - posI;
+  const auto distIJsquared = dot(vecIJ, vecIJ);
+  EXPECT_NEAR(distIJsquared, 1.816432840887397, 1e-12);
+
+  const auto vecJK = posK - posJ;
+  const auto distJKsquared = dot(vecJK, vecJK);
+  EXPECT_NEAR(distJKsquared, 5.801611825050684, 1e-12);
+
+  const auto vecKI = posI - posK;
+  const auto distKIsquared = dot(vecKI, vecKI);
+  EXPECT_NEAR(distKIsquared, 4.262996564967491, 1e-12);
+
+  ATLookUpTable.retrieveValue(posI, posJ, posK, distIJsquared, distJKsquared, distKIsquared); // Change so targetB ends up on 1,0,0 to check second rotation
 }
 
 /**
@@ -45,9 +65,10 @@ TEST_F(LookUpTableTest, RotateErrorFirstRot) {
   double nu = 0.073;
   std::vector<autopas::utils::Timer> LUTtimers = {autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer(), autopas::utils::Timer()};
   ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
-                                  ForceLookUpTable::nextNeighbor, double, int> ATLookUpTable = std::move(ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
-                                                                ForceLookUpTable::nextNeighbor, double, int>(
-          {cutoff * cutoff, nu, 8.0}, &LUTtimers));
+                                  ForceLookUpTable::nextNeighbor, double, int> ATLookUpTable(
+          {cutoff * cutoff, nu, 8.0},
+          &LUTtimers
+  );
   //ATLookUpTable.retrieveValue({0., 0., 0.}, {std::sqrt(0.75), 0., 0.5}, {0., 0., 1.}, 1., 1., 1.); // Change so targetB ends up on 1,0,0 to check second rotation
   ATLookUpTable.retrieveValue({-0.0038729557731159102, 0.00040231088697253504, 0.00012919291748858297}, {1.346814631105968, 0.001708787507448397, -0.0013156195867966409}, {-0.0006312167672606656, 1.558781017264059, 1.1007112931787657}, 1.8243607517135754, 5.454547558089624, 3.6398356607768276);
 

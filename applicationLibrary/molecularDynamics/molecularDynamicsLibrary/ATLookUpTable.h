@@ -117,8 +117,16 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
   // Vector Index
 
-  size_t getIndexNoP(size_t a, size_t b, size_t c) {
+  /**
+   * From three 1D indices get the actual 1D index in the lookup table.
+   * @param a
+   * @param b
+   * @param c
+   * @return
+   */
+  size_t getLUTIndex(size_t a, size_t b, size_t c) {
     AutoPasLog(DEBUG, "For {} {} {} return index {}", a, b, c, (a * (a + 1) * (a + 2)) / 6 + (b * (b + 1)) / 2 + c);
+    //TODO think about eliminating divisions
     return (a * (a + 1) * (a + 2)) / 6 + (b * (b + 1)) / 2 + c;
   }
 
@@ -129,6 +137,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     // std::cout << "Number of points: " << numberOfPoints << " Point distance: " << pointDistance << "\n";
     floatType j1, k1, k2;
 
+    // TODO: explain why pointDistance / 2
     for (floatType distA = pointDistance / 2; distA < cutoffSquared; distA += pointDistance) {
       for (floatType distB = pointDistance / 2; distB <= distA; distB += pointDistance) {
         for (floatType distC = pointDistance / 2; distC <= distB; distC += pointDistance) {
@@ -169,6 +178,9 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
   // Interpolation functions
 
+  /**
+   * TODO: take std::arrays instead of individual values
+   */
   Entry getNextNeighbor(floatType i1, floatType i2, floatType i3, floatType j1, floatType j2, floatType j3,
                         floatType k1, floatType k2, floatType k3, floatType distSquaredIJ, floatType distSquaredJK,
                         floatType distSquaredKI) {
@@ -187,58 +199,71 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
      */
 
     if constexpr (intervalType == evenSpacing) {
-      floatType IJround = std::floor(distSquaredIJ / pointDistance);
-      floatType JKround = std::floor(distSquaredJK / pointDistance);
-      floatType KIround = std::floor(distSquaredKI / pointDistance);
+      // calculate 1D LUT index per dimension
+      const auto calc1DLUTIndex = [&] (const auto distSquared) {
+        // Edge case: any distance is exactly the longest distance in the table (=cutoff)
+        if (distSquared >= cutoffSquared) {
+          return static_cast<floatType>(numberOfPoints - 1);
+        } else {
+          return std::floor(distSquared / pointDistance);
+        }
+      };
+      const auto IJ1DIndex = calc1DLUTIndex(distSquaredIJ);
+      const auto JK1DIndex = calc1DLUTIndex(distSquaredJK);
+      const auto KI1DIndex = calc1DLUTIndex(distSquaredKI);
 
-      if (IJround == numberOfPoints) IJround--;
-      if (JKround == numberOfPoints) JKround--;
-      if (KIround == numberOfPoints) KIround--;
+      AutoPasLog(DEBUG, "IJround: {}    JKround: {}    KIround: {}", IJ1DIndex, JK1DIndex, KI1DIndex);
 
-      AutoPasLog(DEBUG, "IJround: {}    JKround: {}    KIround: {}", IJround, JKround, KIround);
+      // Rank the points by distance.
+      // 0 touches the two longest sides
+      // 1 touches the longest and shortest side
+      // 2 touches the medium and shortest side
+      uint8_t distRankI = 0;
+      uint8_t distRankJ = 0;
+      uint8_t distRankK = 0;
 
-      // Sort points from longest to shortest
+      IJ1DIndex >= JK1DIndex ? distRankK++ : distRankI++;
+      JK1DIndex > KI1DIndex ? distRankI++ : distRankJ++;
+      KI1DIndex > IJ1DIndex ? distRankJ++ : distRankK++;
 
-      uint8_t I = 0;
-      uint8_t J = 0;
-      uint8_t K = 0;
-
-      IJround >= JKround ? K++ : I++;
-      JKround >  KIround ? I++ : J++;
-      KIround >  IJround ? J++ : K++;
-
-      AutoPasLog(DEBUG, "Points: I: {}    J: {}   K: {}", I, J, K);
+      AutoPasLog(DEBUG, "Points: distRankI: {}    distRankJ: {}    distRankK: {}", distRankI, distRankJ, distRankK);
 
       Entry forces;
       Entry ret;
       Entry final;
 
-      if (I == 0) {
-        if (J == 1) {
-          ret = rotate(i1, i2, i3, j1, j2, j3, k1, k2, k3, getIndexNoP(IJround, KIround, JKround));
+      if (distRankI == 0) {
+        if (distRankJ == 1) {
+          // I < J < K
+          ret = rotate(i1, i2, i3, j1, j2, j3, k1, k2, k3, getLUTIndex(IJ1DIndex, KI1DIndex, JK1DIndex));
           final = ret;
         } else {
-          ret = rotate(i1, i2, i3, k1, k2, k3, j1, j2, j3, getIndexNoP(KIround, IJround, JKround));
+          // I < K < J
+          ret = rotate(i1, i2, i3, k1, k2, k3, j1, j2, j3, getLUTIndex(KI1DIndex, IJ1DIndex, JK1DIndex));
           final = {{ret.first[0], ret.first[2], ret.first[1]}, ret.second};
         }
-      } else if (J == 0) {
-        if (I == 1) {
-          ret = rotate(j1, j2, j3, i1, i2, i3, k1, k2, k3, getIndexNoP(IJround, JKround, KIround));
+      } else if (distRankJ == 0) {
+        if (distRankI == 1) {
+          // J < I < K
+          ret = rotate(j1, j2, j3, i1, i2, i3, k1, k2, k3, getLUTIndex(IJ1DIndex, JK1DIndex, KI1DIndex));
           final = {{ret.first[1], ret.first[0], ret.first[2]}, ret.second};
         } else {
-          ret = rotate(j1, j2, j3, k1, k2, k3, i1, i2, i3, getIndexNoP(JKround, IJround, KIround));
+          // J < K < I
+          ret = rotate(j1, j2, j3, k1, k2, k3, i1, i2, i3, getLUTIndex(JK1DIndex, IJ1DIndex, KI1DIndex));
           final = {{ret.first[2], ret.first[0], ret.first[1]}, ret.second};
         }
       } else {
-        if (I == 1) {
-          ret = rotate(k1, k2, k3, i1, i2, i3, j1, j2, j3, getIndexNoP(KIround, JKround, IJround));
+        if (distRankI == 1) {
+          // K < I < J
+          ret = rotate(k1, k2, k3, i1, i2, i3, j1, j2, j3, getLUTIndex(KI1DIndex, JK1DIndex, IJ1DIndex));
           final = {{ret.first[1], ret.first[2], ret.first[0]}, ret.second};
         } else {
-          ret = rotate(k1, k2, k3, j1, j2, j3, i1, i2, i3, getIndexNoP(JKround, KIround, IJround));
+          // K < J < I
+          ret = rotate(k1, k2, k3, j1, j2, j3, i1, i2, i3, getLUTIndex(JK1DIndex, KI1DIndex, IJ1DIndex));
           final = {{ret.first[2], ret.first[1], ret.first[0]}, ret.second};
         }
       }
-      AutoPasLog(CRITICAL, [&final, i1, i2, i3, j1, j2, j3, k1, k2, k3, this]() -> std::string {
+      AutoPasLog(CRITICAL, [&]() -> std::string {
         Entry compareEntry = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
         std::array<std::array<floatType, 3>, 3> compareNormalized = {
             norm3(compareEntry.first[0][0], compareEntry.first[0][1], compareEntry.first[0][2]),
@@ -262,7 +287,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
                + " " + std::to_string(finalNormalized[2][1] - compareNormalized[2][1])
                + " " + std::to_string(finalNormalized[2][2] - compareNormalized[2][2]);
       }());
-      AutoPasLog(CRITICAL, [i1, i2, i3, j1, j2, j3, k1, k2, k3, this]() -> std::string {
+      AutoPasLog(CRITICAL, [&]() -> std::string {
         Entry compareEntry = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
         std::array<std::array<floatType, 3>, 3> compareNormalized = {
             norm3(compareEntry.first[0][0], compareEntry.first[0][1], compareEntry.first[0][2]),
@@ -274,7 +299,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
                std::to_string(compareNormalized[1][2]) + " | " + std::to_string(compareNormalized[2][0]) + " " +
                std::to_string(compareNormalized[2][1]) + " " + std::to_string(compareNormalized[2][2]);
       }());
-      AutoPasLog(CRITICAL, [&final, this]() -> std::string {
+      AutoPasLog(CRITICAL, [&]() -> std::string {
         std::array<std::array<floatType, 3>, 3> finalNormalized = {
             norm3(final.first[0][0], final.first[0][1], final.first[0][2]),
             norm3(final.first[1][0], final.first[1][1], final.first[1][2]),
@@ -285,9 +310,35 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
                std::to_string(finalNormalized[1][2]) + " | " + std::to_string(finalNormalized[2][0]) + " " +
                std::to_string(finalNormalized[2][1]) + " " + std::to_string(finalNormalized[2][2]);
       }());
-      AutoPasLog(DEBUG, "Perfect value: {}", ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3));
-      AutoPasLog(DEBUG, "Return  value: {}", final);
-      AutoPasLog(DEBUG, "Relative Error: {}", relError(final, ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3)));
+      // TODO: move calculations into logger macros
+      using namespace autopas::utils::ArrayMath;
+      const auto expectedEntry = ATFunctor(i1, i2, i3, j1, j2, j3, k1, k2, k3);
+      std::array<double ,3> expectedVecLengths = {
+          L2Norm(expectedEntry.first[0]),
+          L2Norm(expectedEntry.first[1]),
+          L2Norm(expectedEntry.first[2]),
+      };
+      std::array<double ,3> retVecLengths = {
+          L2Norm(final.first[0]),
+          L2Norm(final.first[1]),
+          L2Norm(final.first[2]),
+      };
+      AutoPasLog(DEBUG, "\n"
+                 "Perfect value: {}\n"
+                 "Return  value: {}\n"
+                 "Absolute Error: {}\n"
+                 "Relative Error: {}\n"
+                 "Perfect value vector lengths: {}\n"
+                 "Return  value vector lengths: {}\n",
+                 expectedEntry,
+                 final,
+                 absError(final, expectedEntry),
+                 relError(final, expectedEntry),
+                 expectedVecLengths,
+                 retVecLengths
+      );
+
+
       //(*LUTtimers)[0].stop(); // Timer 2 stop
       return final;
     }
@@ -358,6 +409,7 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
         std::abs(e.second - acc.second));
   }
 
+  // TODO replace this with autopas::utils::ArrayMath::normalize
   std::array<floatType, 3> norm3(floatType x1, floatType x2, floatType x3) {
     floatType div =
         std::sqrt(x1 * x1 + x2 * x2 +
@@ -380,10 +432,26 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     return ret;
   }
 
+  /**
+   * Assumption: A touches the longest sides, B the longest and the shortest, C the medium and shortest.
+   * TODO: take std::arrays instead of individual values
+   * @param a1
+   * @param a2
+   * @param a3
+   * @param b1
+   * @param b2
+   * @param b3
+   * @param c1
+   * @param c2
+   * @param c3
+   * @param index
+   * @return
+   */
   Entry rotate(floatType a1, floatType a2, floatType a3, floatType b1, floatType b2, floatType b3, floatType c1,
                floatType c2, floatType c3, size_t index) {
     using namespace autopas::utils::ArrayMath;
 
+    // Move all coordinates so that A is at 0,0,0
     b1 -= a1;  // (b1-a1)*(1 + eps)
     b2 -= a2;  // (b2-a2)*(1 + eps)
     b3 -= a3;  // (b3-a3)*(1 + eps)
@@ -394,38 +462,37 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     AutoPasLog(DEBUG, "B: {} {} {}    C: {} {} {}", b1, b2, b3, c1, c2, c3);
 
     (*LUTtimers)[1].start(); // Timer norm3 start
-    const auto targetB = norm3(b1, b2, b3);  // ((eps + 1)^3 (b1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - b1)^2 + (a1 - b1)^2 + 3 eps (a2 - b2)^2 + (a2 - b2)^2 + 2 eps (a3 - b3)^2 + (a3 - b3)^2))
+    const auto bNorm = norm3(b1, b2, b3);  // ((eps + 1)^3 (b1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - b1)^2 + (a1 - b1)^2 + 3 eps (a2 - b2)^2 + (a2 - b2)^2 + 2 eps (a3 - b3)^2 + (a3 - b3)^2))
     // Can maybe remove
-    const auto targetC = norm3(c1, c2, c3);  // ((eps + 1)^3 (c1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - c1)^2 + (a1 - c1)^2 + 3 eps (a2 - c2)^2 + (a2 - c2)^2 + 2 eps (a3 - c3)^2 + (a3 - c3)^2))
+    const auto cNorm = norm3(c1, c2, c3);  // ((eps + 1)^3 (c1 - a1))/sqrt((eps + 1)^2 (3 eps (a1 - c1)^2 + (a1 - c1)^2 + 3 eps (a2 - c2)^2 + (a2 - c2)^2 + 2 eps (a3 - c3)^2 + (a3 - c3)^2))
     (*LUTtimers)[1].stop(); // Timer norm3 stop
-    const std::array<floatType, 3> sourceB = {1, 0, 0};
-    AutoPasLog(DEBUG, "targetB normalized: {}", targetB);
-    AutoPasLog(DEBUG, "targetC normalized: {}", targetC);
+    const std::array<floatType, 3> xAxis = {1., 0., 0.};
+    AutoPasLog(DEBUG, "targetB normalized: {}", bNorm);
+    AutoPasLog(DEBUG, "targetC normalized: {}", cNorm);
 
     // Use B and C being (1,0,0) and (0,1,0) because that way they are already unit vectors but the angle calculations
     // stay the same
 
-    // Find quaternion that rotates target B to (1,0,0)
+    // Find quaternion that rotates B to (1,0,0)
     (*LUTtimers)[2].start(); // Timer rot1Quat start
-    const std::array<floatType, 3> crossB = autopas::utils::ArrayMath::cross(targetB, sourceB);
-    const std::array<floatType, 4> targetBQuat = {0, targetB[0], targetB[1], targetB[2]};
-    const std::array<floatType, 4> sourceBQuat = {0, sourceB[0], sourceB[1], sourceB[2]};
-    const std::array<floatType, 4> rot1Quaternion = {(1 + dot(targetBQuat, sourceBQuat)), crossB[0], crossB[1], crossB[2]};
+    const std::array<floatType, 3> crossB = cross(bNorm, xAxis);
+    const std::array<floatType, 4> rot1Quaternion = {1. + dot(bNorm, xAxis), crossB[0], crossB[1], crossB[2]};
     const std::array<floatType, 4> rot1QuaternionNormalized = normalize(rot1Quaternion);
     const std::array<floatType, 4> rot1InverseQuaternionNormalized = {rot1QuaternionNormalized[0], -rot1QuaternionNormalized[1], -rot1QuaternionNormalized[2], -rot1QuaternionNormalized[3]};
     (*LUTtimers)[2].stop(); // Timer rot1Quat stop
 
-    // Rotate targetB for debugging purposes
-    AutoPasLog(DEBUG, "{}", [targetBQuat, rot1InverseQuaternionNormalized, rot1QuaternionNormalized, this]() -> std::string {
+    //    Sanity check: if we actually rotate B it should be at 1,0,0 because it is normalized
+    AutoPasLog(DEBUG, "{}", [&]() -> std::string {
+      const std::array<floatType, 4> targetBQuat = {0, bNorm[0], bNorm[1], bNorm[2]};
+      const std::array<floatType, 4> sourceBQuat = {0, xAxis[0], xAxis[1], xAxis[2]};
       std::array<floatType, 4> res =
           quaternionMultiply(quaternionMultiply(rot1InverseQuaternionNormalized, targetBQuat), rot1QuaternionNormalized);
       return "TargetB after rotation should be x 0 0 is " + std::to_string(res[1]) + " " + std::to_string(res[2]) +
              " " + std::to_string(res[3]);
     }());
 
-    // Rotate targetC
-    // invQuat * quatTargetC
-    const std::array<floatType, 4> targetCQuat = {0, targetC[0], targetC[1], targetC[2]};
+    // Rotate C with previously calculated rotation
+    const std::array<floatType, 4> targetCQuat = {0., cNorm[0], cNorm[1], cNorm[2]};
     (*LUTtimers)[0].start(); // Timer 4 start
     const std::array<floatType, 4> targetCQuatRotated = quaternionMultiply(quaternionMultiply(rot1InverseQuaternionNormalized, targetCQuat), rot1QuaternionNormalized);
     (*LUTtimers)[0].stop(); // Timer 4 stop
@@ -434,27 +501,27 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
     // Find 2-D transformation that rotates C onto targetC
     // TODO: Try optimizing the 2D rotation
     (*LUTtimers)[3].start(); // Timer rot2Quat start
-    const std::array<floatType, 3> sourceC = {0, 1, 0};
+    // Project C onto yz plane because we want to exactly rotate around the x-axis
     const std::array<floatType, 3> targetC2DNormed = norm3(0., targetCQuatRotated[2], targetCQuatRotated[3]);
+    const std::array<floatType, 3> yAxis = {0., 1., 0.};
 
-    AutoPasLog(DEBUG, "SourceC: {} | TargetC: {}", sourceC, targetCQuatRotated);
-    const std::array<floatType, 3> crossC = autopas::utils::ArrayMath::cross(sourceC, targetC2DNormed);
-    AutoPasLog(DEBUG, "C cross: {}", crossC);
-    const std::array<floatType, 4> targetCQuat2D = {0., 0., targetC2DNormed[1], targetC2DNormed[2]};
-    const std::array<floatType, 4> sourceCQuat = {0, sourceC[0], sourceC[1], sourceC[2]};
-    const std::array<floatType, 4> rot2Quaternion = {(1 + dot(sourceCQuat, targetCQuat)), crossC[0], crossC[1], crossC[2]};
+    const std::array<floatType, 3> crossC = cross(yAxis, targetC2DNormed);
+    const std::array<floatType, 4> rot2Quaternion = {(1. + dot(yAxis, targetC2DNormed)), crossC[0], crossC[1], crossC[2]};
     const std::array<floatType, 4> rot2QuaternionNormalized = normalize(rot2Quaternion);
     const std::array<floatType, 4> rot2InverseQuaternionNormalized = {rot2QuaternionNormalized[0], -rot2QuaternionNormalized[1], -rot2QuaternionNormalized[2], -rot2QuaternionNormalized[3]};
     (*LUTtimers)[3].stop(); // Timer rot2Quat stop
 
+    AutoPasLog(DEBUG, "SourceC: {} | TargetC: {}", yAxis, targetCQuatRotated);
+    AutoPasLog(DEBUG, "C cross: {}", crossC);
     // Rotate C for debugging purposes
     AutoPasLog(DEBUG, "sourceCQuat rotated is {}",
-               quaternionMultiply(quaternionMultiply(rot2InverseQuaternionNormalized, sourceCQuat), rot2QuaternionNormalized));
-    AutoPasLog(DEBUG, "targetC rotated is {}", quaternionMultiply(quaternionMultiply(rot2QuaternionNormalized, targetCQuat2D), rot2InverseQuaternionNormalized));
+               quaternionMultiply(quaternionMultiply(rot2InverseQuaternionNormalized, {0, yAxis[0], yAxis[1], yAxis[2]}), rot2QuaternionNormalized));
+    AutoPasLog(DEBUG, "targetC rotated is {}", quaternionMultiply(quaternionMultiply(rot2QuaternionNormalized, {0., 0., targetC2DNormed[1], targetC2DNormed[2]}), rot2InverseQuaternionNormalized));
 
-    // Initialize forceQuaternion and rotate one force after the other
-    Entry forces = lut[index];
-    Entry ret{};
+    // fetch values from table
+    std::array<std::array<floatType, 3>, 3> forces{};
+    floatType potentialEnergy{};
+    std::tie(forces, potentialEnergy) = lut[index];
 
     AutoPasLog(DEBUG, "rot1Quat: {}", rot1QuaternionNormalized);
     AutoPasLog(DEBUG, "rot1InvQuat: {}", rot1InverseQuaternionNormalized);
@@ -463,8 +530,11 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
 
     // invQuat2 * tempQuat
     // TODO: Godbolt
+    // Initialize forceQuaternion and rotate one force after the other
+    Entry ret{};
+    // For all force vectors from the table, undo both previous rotations
     for (size_t i = 0; i < 3; i++) {
-      const std::array<floatType, 4> forceQuat = {0.0, forces.first[i][0], forces.first[i][1], forces.first[i][2]};
+      const std::array<floatType, 4> forceQuat = {0.0, forces[i][0], forces[i][1], forces[i][2]};
       AutoPasLog(DEBUG, "Force quat {} before rotation", forceQuat);
       (*LUTtimers)[0].start(); // Timer 4 start
       const std::array<floatType, 4> forceQuatFirstRot = quaternionMultiply(quaternionMultiply(rot2InverseQuaternionNormalized, forceQuat), rot2QuaternionNormalized);
@@ -487,12 +557,12 @@ class ATLookUpTable<relative, intervalType, interpolationType, floatType, intTyp
       ret.first[i][1] = forceQuatSecondRot[2];
       ret.first[i][2] = forceQuatSecondRot[3];
     }
-    ret.second = forces.second;
+    ret.second = potentialEnergy;
     //(*LUTtimers)[0].stop(); // Timer 3 stop; Timer 1 stop
-    AutoPasLog(DEBUG, "After first rotation normalized:\n{}", [&forces, a1, a2, a3, b1, b2, b3, c1, c2, c3, &rot1QuaternionNormalized, &rot1InverseQuaternionNormalized, &rot2QuaternionNormalized, &rot2InverseQuaternionNormalized, this] -> std::string {
-      std::array<floatType, 4> forces1Quat = {0.0, forces.first[0][0], forces.first[0][1], forces.first[0][2]};
-      std::array<floatType, 4> forces2Quat = {0.0, forces.first[1][0], forces.first[1][1], forces.first[1][2]};
-      std::array<floatType, 4> forces3Quat = {0.0, forces.first[2][0], forces.first[2][1], forces.first[2][2]};
+    AutoPasLog(DEBUG, "After first rotation normalized:\n{}", [&]() -> std::string {
+      std::array<floatType, 4> forces1Quat = {0.0, forces[0][0], forces[0][1], forces[0][2]};
+      std::array<floatType, 4> forces2Quat = {0.0, forces[1][0], forces[1][1], forces[1][2]};
+      std::array<floatType, 4> forces3Quat = {0.0, forces[2][0], forces[2][1], forces[2][2]};
       Entry perfect = ATFunctor(2.703957905911746, -0.0026572954522118756, 6.610864923489291, 3.3706888660320056, 0.3937881695307143, 7.713014487295848, 2.031792390399456, -1.60843618566604, 7.721119056770151);
       std::array<floatType, 4> perfect1Quat = {0.0, perfect.first[0][0], perfect.first[0][1], perfect.first[0][2]};
       std::array<floatType, 4> perfect2Quat = {0.0, perfect.first[1][0], perfect.first[1][1], perfect.first[1][2]};
