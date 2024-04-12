@@ -46,7 +46,8 @@ class ATFunctorTest : public AutoPasTestBase {
 
 // typedefs to hide clutter
 template <bool mixing, bool globals>
-using ATFunMol = mdLib::AxilrodTellerFunctor<Molecule, mixing, autopas::FunctorN3Modes::Both, globals>;
+using ATFunMol =
+    mdLib::AxilrodTellerFunctor<Molecule, mixing, /*useLUT*/ false, autopas::FunctorN3Modes::Both, globals>;
 
 // struct aliasing for readable names
 struct ATFunMixNoGlob : public ATFunMol<true, false> {

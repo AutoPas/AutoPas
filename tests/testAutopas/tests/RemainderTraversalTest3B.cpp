@@ -87,8 +87,9 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
-  mdLib::AxilrodTellerFunctor<Molecule, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
-      logicHandlerInfo.cutoff);
+  mdLib::AxilrodTellerFunctor<Molecule, /*mixing*/ false, /*useLUT*/ false, autopas::FunctorN3Modes::Both,
+                              /*globals*/ true>
+      functor(logicHandlerInfo.cutoff);
   constexpr double nu = 1.;
   functor.setParticleProperties(nu);
 

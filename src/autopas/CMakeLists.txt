@@ -27,12 +27,12 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         Eigen3
     PRIVATE
-        # harmony are only needed privately when building AutoPas.
+#harmony are only needed privately when building AutoPas.
         harmony
 )
 
-# OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
-# target. this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
+#OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
+#target.this can be resolved by upgrading to CMake 3.13 and enforcing CMP0079.
 target_compile_definitions(
     autopas
     PUBLIC

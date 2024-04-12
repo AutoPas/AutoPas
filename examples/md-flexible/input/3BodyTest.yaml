@@ -5,8 +5,8 @@ traversal-3b                         :  [lc_c01_3b] # ds_sequential_3b
 newton3-3b                           :  [enabled, disabled]
 data-layout-3b                       :  [AoS]
 
-# Uncomment to combine pairwise and 3-body interaction
-#functor                              :  lj-avx
+## Uncomment to combine pairwise and 3-body interaction
+#functor                              :  lj
 #traversal                            :  [lc_c01, lc_c08, lc_sliced]
 #newton3                              :  [enabled, disabled]
 #data-layout                          :  [AoS, SoA]
@@ -44,14 +44,14 @@ thermostat:
   initialTemperature                 :  1.1
   targetTemperature                  :  1.1
   deltaTemperature                   :  0.5
-  thermostatInterval                 :  25
+  thermostatInterval                 :  2500
   addBrownianMotion                  :  true
 
-log-level                            :  warn
+log-level                            :  debug
 no-flops                             :  false
 no-end-config                        :  true
 no-progress-bar                      :  false
 vtk-filename                         :  3BodyTest
 vtk-output-folder                    :  3BodyTestOutput
-vtk-write-frequency                  :  10
+vtk-write-frequency                  :  1000000000
 #log-file                            : log.txt

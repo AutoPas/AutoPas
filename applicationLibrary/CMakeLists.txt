@@ -9,7 +9,10 @@ file(
         "molecularDynamics/molecularDynamicsLibrary/*.cpp"
 )
 
-add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
+add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC}
+        molecularDynamics/molecularDynamicsLibrary/LJLookUpTable.h
+        molecularDynamics/molecularDynamicsLibrary/ATLookUpTable.h
+        molecularDynamics/molecularDynamicsLibrary/LookUpTableTypes.h)
 
 # Set CMake option for md-flexible mode
 set(MD_FLEXIBLE_MODE
@@ -82,7 +85,9 @@ if (AUTOPAS_BUILD_TESTS)
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
             "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
     )
-    add_executable(${TEST_EXE_NAME} ${TEST_SRC} mdLibTests.cpp)
+    add_executable(${TEST_EXE_NAME} ${TEST_SRC} mdLibTests.cpp
+            molecularDynamics/tests/LookUpTableTests/LookUpTableTests.h
+            molecularDynamics/tests/LookUpTableTests/LookUpTableTests.cpp)
 
     target_include_directories(
             ${TEST_EXE_NAME}

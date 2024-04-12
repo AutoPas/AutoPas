@@ -63,7 +63,7 @@ using ParticleType = mdLib::MoleculeLJ;
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #else
-using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, false>;  // Changed from true
 #endif
 
 #endif
@@ -78,7 +78,8 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 using LJFunctorTypeAutovecGlobals =
     mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #else
-using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAutovecGlobals =
+    mdLib::LJFunctor<ParticleType, true, true, false, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #endif
@@ -120,16 +121,94 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, /*useLUT*/ true>;  // Changed
 #endif
 
 #endif
 
 /**
- * Type of the Particle Properties Library.
- * Set to the same precision as ParticleType.
+ * Look-up Table types
  */
-using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
+
+#include "molecularDynamicsLibrary/LJLookUpTable.h"
+
+#if defined(MD_USE_LJ_LUT)
+
+const bool USE_LJ_LUT = true;
+
+#if LJ_LUT_INTERVALL == EVEN_SPACING
+
+#if LJ_LUT_INTERPOLATION_FUNCTION == NEXT_NEIGHBOR
+
+using LJLookUpTableType = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor,
+                                                          FloatPrecision, size_t>;
+
+#elif LJ_LUT_INTERPOLATION_FUNCTION
+
+using LJLookUpTableType =
+    ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::linear, FloatPrecision, size_t>;
+
+#endif  // LJ_LUT_INTERPOLATION_FUNCTION
+
+#endif  // LJ_LUT_INTERVALL
+
+#else
+
+/**
+ * Attempt to define templated LJlut type to be used in all places instead of hardcoding. Currently unused
+ */
+using LJLookUpTableType = ForceLookUpTable::LJLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor,
+                                                          FloatPrecision, size_t>;
+
+/**
+ * Attempt to define a templated switch to determine if the LJlut shall be used
+ */
+const bool USE_LJ_LUT = false;
+
+#endif  // MD_USE_LJ_LUT
+
+#include "molecularDynamicsLibrary/ATLookUpTable.h"
+
+#if defined(MD_USE_AT_LUT)
+
+const bool USE_AT_LUT = true;
+
+#if AT_LUT_INTERVALL == EVEN_SPACING
+
+#if AT_LUT_INTERPOLATION_FUNCTION == NEXT_NEIGHBOR
+
+using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::evenSpacing, ForceLookUpTable::nextNeighbor,
+                                                          FloatPrecision, size_t>;
+
+#elif AT_LUT_INTERPOLATION_FUNCTION == LINEAR
+
+using ATLookUpTableType = ForceLookUpTable::ATLookUpTable < ForceLookUpTable::evenSpacing, ForceLookUpTable::linear,
+      FloatPrecision, size_t;
+
+#endif  // AT_LUT_INTERPOLATION_FUNCTION
+
+#endif  // AT_LUT_INTERVALL
+Oh,
+#else
+
+/**
+ * Attempt to define templated ATlut type to be used in all places instead of hardcoding. Currently unused
+ */
+using ATLookUpTableType = ForceLookUpTable::ATLookUpTable<ForceLookUpTable::relative, ForceLookUpTable::evenSpacing,
+                                                          ForceLookUpTable::nextNeighbor, FloatPrecision, size_t>;
+
+/**
+ * Attempt to define a templated switch to determine if the ATlut shall be used
+ */
+const bool USE_AT_LUT = false;
+
+#endif  // MD_USE_AT_LUT
+
+    /**
+     * Type of the Particle Properties Library.
+     * Set to the same precision as ParticleType.
+     */
+    using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
 
 /**
  * We require access to a version of the force functor for non-computeInteractions purposes, e.g. calculating FLOPs or
@@ -145,9 +224,9 @@ using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true
 
 #else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, false>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, false, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
 using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
@@ -155,7 +234,7 @@ using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #endif
 
 #ifdef MD_FLEXIBLE_FUNCTOR_AT
-using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true, /*useLUT*/ true>;  // Changed
 #endif
 
 #endif
