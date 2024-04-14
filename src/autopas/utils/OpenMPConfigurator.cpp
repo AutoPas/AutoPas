@@ -79,6 +79,14 @@ namespace autopas {
      */
     [[maybe_unused]] void autopas::OpenMPConfigurator::setKind(OpenMPKindOption kind) {
       _kind = kind;
+    }
+
+    /**
+     * OpenMP schedule setter.
+     * @param k the new scheduling kind
+     * @param s the new chunk size
+     */
+    [[maybe_unused]] void autopas::OpenMPConfigurator::setSchedule() {
       autopas_set_schedule(_kind, _chunkSize);
     }
 
@@ -90,6 +98,7 @@ namespace autopas {
     [[maybe_unused]] void autopas::OpenMPConfigurator::setSchedule(OpenMPKindOption kind, int chunkSize) {
       setChunkSize(chunkSize);
       setKind(kind);
+      setSchedule();
     }
 
     /**
@@ -97,6 +106,6 @@ namespace autopas {
      * @return whether the scheduling chunk size should be overwritten
      */
     [[maybe_unused]] [[nodiscard]] bool autopas::OpenMPConfigurator::overrideChunkSize() const {
-      return _kind > 0;
+      return _kind >= 1;
     }
 }

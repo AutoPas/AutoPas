@@ -199,6 +199,13 @@ class OpenMPConfigurator {
          * @param k the new scheduling kind
          * @param s the new chunk size
          */
+        [[maybe_unused]] void setSchedule();
+
+        /**
+         * OpenMP schedule setter.
+         * @param k the new scheduling kind
+         * @param s the new chunk size
+         */
         [[maybe_unused]] void setSchedule(OpenMPKindOption kind, int chunkSize);
 
         /**
