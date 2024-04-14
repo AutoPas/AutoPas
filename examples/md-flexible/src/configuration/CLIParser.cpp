@@ -26,6 +26,14 @@ bool checkFileExists(const std::string &filename) {
 
 }  // namespace
 
+/**
+ * Tests if string s contains sub-string sub.
+ * @param s the string
+ * @param sub the sub-string
+ * @return whether s contains sub
+ */
+bool contains(const std::string &s, const std::string &sub) { return s.find(sub) != std::string::npos; }
+
 MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **argv, MDFlexConfig &config) {
   using namespace std;
 
@@ -77,6 +85,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
       config.openMPChunkSize,
+      config.openMPKind,
       config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
@@ -675,13 +684,36 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.openMPChunkSize)::getoptChar: {
-          try {
-            config.openMPChunkSize.value = (unsigned long) stoul(strArg);
-          } catch (const exception &) {
-              cerr << "Error parsing OpenMP chunk size: " << optarg << endl;
-              displayHelp = true;
-          }
-          break;
+        try {
+          config.openMPChunkSize.value = stoi(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing OpenMP chunk size: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.openMPKind)::getoptChar: {
+        if (contains(strArg, "aut"))
+          config.openMPKind.value = autopas::OpenMPKindOption::omp_auto;
+        else if (contains(strArg, "dyn"))
+          config.openMPKind.value = autopas::OpenMPKindOption::omp_dynamic;
+        else if (contains(strArg, "guid"))
+          config.openMPKind.value = autopas::OpenMPKindOption::omp_guided;
+        else if (contains(strArg, "run"))
+          config.openMPKind.value = autopas::OpenMPKindOption::omp_runtime;
+        else if (contains(strArg, "sta"))
+          config.openMPKind.value = autopas::OpenMPKindOption::omp_static;
+        else if (contains(strArg, "rand"))
+          config.openMPKind.value = autopas::OpenMPKindOption::auto4omp_randomsel;
+        else if (contains(strArg, "exh"))
+          config.openMPKind.value = autopas::OpenMPKindOption::auto4omp_exhaustivesel;
+        else if (contains(strArg, "exp"))
+          config.openMPKind.value = autopas::OpenMPKindOption::auto4omp_expertsel;
+        else {
+          cerr << "Error parsing OpenMP kind: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
       }
 
       default: {

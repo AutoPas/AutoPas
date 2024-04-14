@@ -990,7 +990,13 @@ class AutoPas {
    * OpenMP default chunk size setter for manual testing.
    * @param s OpenMP default chunk size
    */
-  void setOpenMPDefaultChunkSize(unsigned long s) { openMPDefaultChunkSize = s; }
+  void setOpenMPDefaultChunkSize(int s) { openMPDefaultChunkSize = s; }
+
+  /**
+    * OpenMP default scheduling kind setter for manual testing.
+    * @param k OpenMP default kind
+    */
+  void setOpenMPDefaultKind(OpenMPKindOption k) { openMPDefaultKind = k; }
 
   /**
    * Get the sorting-threshold for traversals that use the CellFunctor

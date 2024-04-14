@@ -20,6 +20,8 @@
 
 #include <cstddef>  // for size_t
 #include <vector>
+
+#include "OpenMPConfigurator.h"  // For the AutoPas scheduling kind option, must be included after omp.h
 #else
 #include "ExceptionHandler.h"
 #endif
@@ -65,6 +67,38 @@ inline int autopas_get_max_threads() { return omp_get_max_threads(); }
  * @param n New max number of threads.
  */
 inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
+
+/**
+ * Wrapper for omp_set_schedule().
+ * Sets the scheduling kind and chunk size used by schedule(runtime).
+ */
+inline void autopas_set_schedule(OpenMPKindOption kind, int chunkSize) {
+  switch (kind) {
+    case OpenMPKindOption::omp_auto:
+      omp_set_schedule(omp_sched_t::omp_sched_auto, 1);
+      break;
+    case OpenMPKindOption::omp_dynamic:
+      omp_set_schedule(omp_sched_t::omp_sched_dynamic, std::max(1, chunkSize));
+      break;
+    case OpenMPKindOption::omp_guided:
+      omp_set_schedule(omp_sched_t::omp_sched_guided, std::max(1, chunkSize));
+      break;
+    case OpenMPKindOption::omp_runtime:
+      break;
+    case OpenMPKindOption::omp_static:
+      omp_set_schedule(omp_sched_t::omp_sched_static, std::max(1, chunkSize));
+      break;
+    case OpenMPKindOption::auto4omp_randomsel:
+      omp_set_schedule(omp_sched_t::omp_sched_auto, 2);
+      break;
+    case OpenMPKindOption::auto4omp_exhaustivesel:
+      omp_set_schedule(omp_sched_t::omp_sched_auto, 3);
+      break;
+    case OpenMPKindOption::auto4omp_expertsel:
+      omp_set_schedule(omp_sched_t::omp_sched_auto, 4);
+      break;
+  }
+}
 
 /**
  * AutoPasLock for the openmp case, this wraps a omp_lock_t object. To make it copyable, etc.
@@ -115,8 +149,10 @@ class AutoPasLock {
  * Custom reductions:
  */
 // reduction for merging vectors: {1,2} + {2,3} -> {1,2,2,3}
-#pragma omp declare reduction(vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-#pragma omp declare reduction(vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp declare reduction( \
+        vecMerge : std::vector<size_t> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
+#pragma omp declare reduction( \
+        vecMerge : std::vector<double> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
 
 #else
 
@@ -124,6 +160,17 @@ class AutoPasLock {
  * Empty macro to throw away any arguments.
  */
 #define AUTOPAS_OPENMP(args)
+
+/**
+ * Wrapper for omp_sched_t, same as in OpenMP's omp.h
+ */
+typedef enum omp_sched_t {
+  omp_sched_static = 1,
+  omp_sched_dynamic = 2,
+  omp_sched_guided = 3,
+  omp_sched_auto = 4,
+  omp_sched_monotonic = 0x80000000U
+} omp_sched_t;
 
 /**
  * Dummy for omp_set_lock() when no OpenMP is available.
@@ -148,6 +195,12 @@ inline int autopas_get_max_threads() { return 1; }
  * Does nothing when OpenMP is disabled.
  */
 inline void autopas_set_num_threads(int /* n */) {}
+
+/**
+ * Wrapper for omp_set_schedule().
+ * @return Id of the current thread.
+ */
+inline void autopas_set_schedule(OpenMPKindOption /* kind */, int /* chunkSize */) {}
 
 /**
  * AutoPasLock for the sequential case.

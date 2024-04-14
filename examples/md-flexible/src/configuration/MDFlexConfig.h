@@ -432,9 +432,20 @@ class MDFlexConfig {
   /**
    * openMPChunkSize
    */
-  MDFlexOption<unsigned long, __LINE__> openMPChunkSize{
-          1, "openmp-chunk-size", true,
-          "OpenMP default chunk size for manual testing."
+  MDFlexOption<int, __LINE__> openMPChunkSize{
+      0, "openmp-chunk-size", true,
+      "Manual OpenMP chunk size for color-based traversals. "
+      "Default: Auto4OMP's expert chunk parameter."
+  };
+
+  /**
+    * openMPKind
+    */
+  MDFlexOption<autopas::OpenMPKindOption, __LINE__> openMPKind{
+      autopas::OpenMPKindOption::auto4omp_expertsel, "openmp-kind", true,
+      "OpenMP's scheduling kind for color-based traversals. "
+      "Possible values: auto, dynamic, exhaustiveSel, expertSel, guided, randomSel, runtime, static. "
+      "Default: expertSel"
   };
 
   // Simulation Options:
