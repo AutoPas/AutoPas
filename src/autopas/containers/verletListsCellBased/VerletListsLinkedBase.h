@@ -41,7 +41,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
   VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                         const double skinPerTimestep, const unsigned int rebuildFrequency,
                         const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
-      : _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
+      : ParticleContainerInterface<Particle>(skinPerTimestep),
+        _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
@@ -51,6 +52,15 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @copydoc autopas::ParticleContainerInterface::getParticleCellTypeEnum()
    */
   CellType getParticleCellTypeEnum() const override { return _linkedCells.getParticleCellTypeEnum(); };
+
+  /**
+   * Set the number of time-steps since last neighbor list rebuild
+   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
+   */
+  void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) override {
+    this->_stepsSinceLastRebuild = stepsSinceLastRebuild;
+    _linkedCells.setStepsSinceLastRebuild(stepsSinceLastRebuild);
+  }
 
   void reserve(size_t numParticles, size_t numParticlesHaloEstimate) override {
     _linkedCells.reserve(numParticles, numParticlesHaloEstimate);
@@ -139,7 +149,8 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
-    return _linkedCells.getParticle(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax);
+    return _linkedCells.template getParticleImpl<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin,
+                                                             boxMax);
   }
 
   bool deleteParticle(Particle &particle) override {

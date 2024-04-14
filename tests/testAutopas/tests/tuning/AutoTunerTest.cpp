@@ -596,3 +596,56 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   EXPECT_EQ(tuner.getCurrentConfig(), firstConfig);
   EXPECT_NE(tuner.getCurrentConfig(), secondConfig);
 }
+
+/**
+ *  Add less measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ */
+TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 3,
+  };
+  constexpr size_t rebuildFrequency = 10;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  const auto [config, _] = autoTuner.getNextConfig();
+
+  constexpr long sampleWithRebuild = 10;
+  constexpr long sampleWithoutRebuild = 2;
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+
+  constexpr long expectedEvidence =
+      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
+}
+
+/**
+ *  Add more measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ *  Version with two rebuilds during sampling.
+ */
+TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 5,
+  };
+  constexpr size_t rebuildFrequency = 3;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  const auto [config, _] = autoTuner.getNextConfig();
+
+  constexpr long sampleWithRebuild = 10;
+  constexpr long sampleWithoutRebuild = 2;
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+
+  constexpr long expectedEvidence =
+      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
+}
