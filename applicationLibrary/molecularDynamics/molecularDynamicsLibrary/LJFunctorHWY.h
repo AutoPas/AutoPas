@@ -398,7 +398,7 @@ namespace HWY_NAMESPACE {
                     VectorDouble x2;
                     VectorDouble y2;
                     VectorDouble z2;
-                    if (remainderIsMasked) {
+                    if constexpr (remainderIsMasked) {
 
                         x2 = highway::MaskedLoad(restMaskDouble, tag_double, &x2Ptr[j]);
                         y2 = highway::MaskedLoad(restMaskDouble, tag_double, &y2Ptr[j]);
