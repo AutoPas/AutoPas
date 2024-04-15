@@ -1,7 +1,7 @@
 /**
- * @file LCC08Traversal.h
- * @author F. Gratl
- * @date 5/4/18
+ * @file LCC08NeighborListBuilding3B.h
+ * @author Alexander Haberl
+ * @date 2024/04/15
  */
 
 #pragma once

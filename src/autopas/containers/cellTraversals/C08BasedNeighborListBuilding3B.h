@@ -1,7 +1,7 @@
 /**
- * @file C08BasedTraversal.h
- * @author F. Gratl
- * @date 5/4/18
+ * @file C08BasedTraversalListBuilding3B.h
+ * @author Alexander Haberl
+ * @date 2024/04/15
  */
 
 #pragma once

@@ -1,8 +1,7 @@
 /**
- * @file CellFunctor.h
- *
- * @date 22 Jan 2018
- * @author tchipevn
+ * @file CellFunctorNeighborListBuild3B.h
+ * @date 2024/04/15
+ * @author Alexander Haberl
  */
 
 #pragma once

@@ -164,54 +164,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         this->updateVerletListsAoS3B(traversal->getUseNewton3());
       }
     }
-
-    // code for neighborlist stats:
-    /*double averageLength;
-    size_t maxLength = 0, numberOfListsOwned = 0, numberOfListsHalo = 0;
-    u_int64_t totalSizeBytesOwned = 0, totalSizeBytesHalo = 0, totalLengthOwned = 0, totalLengthHalo = 0;
-
-    if (traversal->getTraversalType() != TraversalOption::vl_pair_list_iteration_3b) {
-      for (auto &entry : _aosNeighborLists) {
-        auto &list = entry.second;
-
-        if(entry.first->isOwned()){
-          totalLengthOwned += list.size();
-          totalSizeBytesOwned += (list.size() * sizeof(Particle *));
-          numberOfListsOwned++;
-        }else{
-          totalLengthHalo += list.size();
-          totalSizeBytesHalo += (list.size() * sizeof(Particle *));
-          numberOfListsHalo++;
-        }
-
-        maxLength = list.size() > maxLength ? list.size() : maxLength;
-      }
-    } else {
-      for (auto &entry : _pairwiseAosNeighborLists) {
-        auto &list = entry.second;
-
-        if(entry.first->isOwned()){
-          totalLengthOwned += list.size();
-          totalSizeBytesOwned += (list.size() * sizeof(std::pair<Particle *, Particle *>));
-          numberOfListsOwned++;
-        }else{
-          totalLengthHalo += list.size();
-          totalSizeBytesHalo += (list.size() * sizeof(std::pair<Particle *, Particle *>));
-          numberOfListsHalo++;
-        }
-
-        maxLength = list.size() > maxLength ? list.size() : maxLength;
-      }
-    }
-
-    averageLength = (totalLengthOwned + totalLengthHalo) / (numberOfListsOwned + numberOfListsHalo);
-
-    AutoPasLog(INFO,
-               "NeighborList stats for both Halo and Owned particles: averageLength, maxLength, totalSizeBytesOwned, "
-               "numberOfListsOwned, totalSizeBytesHalo, numberOfListsHalo\n{},{},{},{},{},{}",
-               averageLength, maxLength, totalSizeBytesOwned, numberOfListsOwned, totalSizeBytesHalo,
-    numberOfListsHalo);*/
-
+    
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 

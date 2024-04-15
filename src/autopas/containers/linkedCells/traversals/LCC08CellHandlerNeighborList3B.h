@@ -1,7 +1,7 @@
 /**
- * @file LCC08CellHandler.h
- * @author S. Seckler
- * @date 10.01.2019
+ * @file LCC08CellHandlerNeighborList3B.h
+ * @author Alexander Haberl
+ * @date 2024/04/15
  */
 
 #pragma once
