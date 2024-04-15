@@ -57,8 +57,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
 
     if (distanceSquared <= _cutoffSquare) {
       _kernelCalls.fetch_add(1, std::memory_order_relaxed);
-      _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), newton3),
-                             std::memory_order_relaxed);
+      // _kernelFlops.fetch_add(_forceFunctor.getNumFlopsPerKernelCall(i.getTypeId(), j.getTypeId(), newton3),
+      //                        std::memory_order_relaxed);
     }
   }
 
@@ -73,7 +73,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     double *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict typePtr = nullptr; // soa.template begin<Particle::AttributeNames::typeId>();
 
     // Use accumulators per SoA Functor Single call i.e. per thread to avoid potentially waiting at atomic fetch_add
     // for every particle pair
@@ -119,8 +119,8 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     double *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
     double *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    unsigned long *const __restrict type1Ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    unsigned long *const __restrict type2Ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict type1Ptr = nullptr; // soa1.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict type2Ptr = nullptr; // soa2.template begin<Particle::AttributeNames::typeId>();
 
     // Use accumulators per SoA Functor Pair call i.e. per thread to avoid potentially waiting at atomic fetch_add
     // for every particle pair
@@ -170,7 +170,7 @@ class FlopCounterFunctor : public Functor<Particle, FlopCounterFunctor<Particle,
     double *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
     double *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    unsigned long *const __restrict typePtr = soa.template begin<Particle::AttributeNames::typeId>();
+    unsigned long *const __restrict typePtr = nullptr; // soa.template begin<Particle::AttributeNames::typeId>();
 
     const size_t neighborListSize = neighborList.size();
     const size_t *const __restrict currentList = neighborList.data();

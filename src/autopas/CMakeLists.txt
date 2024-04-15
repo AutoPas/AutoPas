@@ -26,6 +26,7 @@ target_link_libraries(
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
         Eigen3
+        hwy
     PRIVATE
         # harmony are only needed privately when building AutoPas.
         harmony

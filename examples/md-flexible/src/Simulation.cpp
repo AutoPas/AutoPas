@@ -30,6 +30,9 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeSVE *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeHWY *);
+#endif
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
 //! @endcond

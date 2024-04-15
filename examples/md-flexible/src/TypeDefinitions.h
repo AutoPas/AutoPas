@@ -30,6 +30,10 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -105,6 +109,15 @@ using LJFunctorTypeAVX = mdLib::LJFunctorAVX<true, true>;
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
 using LJFunctorTypeSVE = mdLib::LJFunctorSVE<true, true>;
+#endif
+
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "Multi-Site Lennard-Jones Functor does not have Highway support!"
+#else
+using LJFunctorTypeHWY = mdLib::HWY_NAMESPACE::LJFunctorHWY<true, true>;
 #endif
 
 #endif
