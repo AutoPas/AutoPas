@@ -38,10 +38,11 @@ namespace mdLib {
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+          bool relevantForTuning = true, bool countFLOPs = false>
 class LJFunctorSVE
     : public autopas::Functor<
           Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
@@ -72,6 +73,9 @@ class LJFunctorSVE
         _postProcessed{false} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
+    }
+    if constexpr (countFLOPs) {
+      autopas::utils::ExceptionHandler::exception("FLOP counting is not implemented for the AVX functor. Please use the AutoVec Functor.");
     }
   }
 #else
