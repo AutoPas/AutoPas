@@ -36,13 +36,15 @@ namespace mdLib {
  * values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam countFLOPs counts FLOPs and hitrate. Currently not implemented as this functor is problematically bad and will be
+ * replaced.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+          bool relevantForTuning = true, bool countFLOPs = false>
 class LJMultisiteFunctor
     : public autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
-                                                           calculateGlobals, relevantForTuning>> {
+                                                           calculateGlobals, relevantForTuning, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -112,7 +114,7 @@ class LJMultisiteFunctor
    */
   explicit LJMultisiteFunctor(SoAFloatPrecision cutoff, void * /*dummy*/)
       : autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                      relevantForTuning>>(cutoff),
+                                                      relevantForTuning, countFLOPs>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -120,6 +122,9 @@ class LJMultisiteFunctor
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
+    }
+    if constexpr (countFLOPs) {
+      autopas::utils::ExceptionHandler::exception("FLOP counting is not supported for multi-site functors yet!");
     }
   }
 
