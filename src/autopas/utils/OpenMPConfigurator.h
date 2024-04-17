@@ -10,7 +10,21 @@
 #include <set>
 
 #include "autopas/options/Option.h"
-#include "WrapOpenMP.h"
+
+#if defined(AUTOPAS_USE_OPENMP)
+#include <omp.h>
+#else
+/**
+ * Wrapper for omp_sched_t, same as in OpenMP's omp.h
+ */
+typedef enum omp_sched_t {
+  omp_sched_static = 1,
+  omp_sched_dynamic = 2,
+  omp_sched_guided = 3,
+  omp_sched_auto = 4,
+  omp_sched_monotonic = 0x80000000U
+} omp_sched_t;
+#endif
 
 namespace autopas {
 /**
@@ -140,7 +154,7 @@ extern int openMPDefaultChunkSize;
 
 /**
  * OpenMP default scheduling kind for manual testing.
- * md-flexible: set via command-line option --openmp-kind <int>
+ * md-flexible: set via command-line option --openmp-kind <OpenMPKindOption>
  */
 extern OpenMPKindOption openMPDefaultKind;
 

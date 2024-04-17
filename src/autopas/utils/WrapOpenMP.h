@@ -21,10 +21,11 @@
 #include <cstddef>  // for size_t
 #include <vector>
 
-#include "OpenMPConfigurator.h"  // For the AutoPas scheduling kind option, must be included after omp.h
 #else
 #include "ExceptionHandler.h"
 #endif
+
+#include "autopas/utils/OpenMPConfigurator.h"  // For autopas::OpenMPKindOption, must be included after omp.h
 
 namespace autopas {
 

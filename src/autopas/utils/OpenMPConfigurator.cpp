@@ -4,7 +4,8 @@
  * @date 13.03.2024
  */
 
-#include "OpenMPConfigurator.h"
+#include "autopas/utils/OpenMPConfigurator.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
     /**
