@@ -150,12 +150,17 @@ namespace HWY_NAMESPACE {
 
             private:
 
-                // TODO : add another variable for vectorization pattern
+                // TODO : handle different vectorization patterns
                 inline void decrementFirstLoop(size_t& i) {
                     --i;
                 }
 
-                // TODO : add another variable for vectorization pattern
+                // TODO : handle different vectorization patterns
+                inline void incrementFirstLoop(size_t& i) {
+                    ++i;
+                }
+
+                // TODO : handle different vectorization patterns
                 inline void incrementSecondLoop(size_t& j) {
                     j += _vecLengthDouble;
                 }
@@ -190,6 +195,35 @@ namespace HWY_NAMESPACE {
                     const auto sqrtEpsilon1Mul24 = highway::Set(tag_double, sqrtEpsilonPtr1[i] * 24.);
                     const auto sqrtEpsilon2 = highway::LoadU(tag_double, &sqrtEpsilonPtr2[j]);
                     epsilon24s = useMixing ? highway::Mul(sqrtEpsilon1Mul24, sqrtEpsilon2) : highway::Set(tag_double, _epsilon24);
+                }
+
+                inline void reduceAccumulatedForce(const VectorDouble& fxAcc, const VectorDouble& fyAcc, const VectorDouble& fzAcc,
+                    double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const size_t i) {
+                        
+                    // TODO : handle different vectorization patterns
+                    fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
+                    fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
+                    fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+                }
+
+                template <bool remainder>
+                inline void handleNewton3Accumulation(const VectorDouble& fx, const VectorDouble& fy, const VectorDouble& fz,
+                    double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const size_t j const size_t rest = 0) {
+                        
+                    // TODO : handle different vectorization patterns
+                    // TODO : handle remainder case
+
+                    VectorDouble fx2 = highway::LoadU(tag_double, &fxPtr[j]);
+                    VectorDouble fy2 = highway::LoadU(tag_double, &fyPtr[j]);
+                    VectorDouble fz2 = highway::LoadU(tag_double, &fzPtr[j]);
+
+                    fx2 = highway::Sub(fx2, fx);
+                    fy2 = highway::Sub(fy2, fy);
+                    fz2 = highway::Sub(fz2, fz);
+
+                    highway::StoreU(fx2, tag_double, &fxPtr[j]);
+                    highway::StoreU(fy2, tag_double, &fyPtr[j]);
+                    highway::StoreU(fz2, tag_double, &fzPtr[j]);
                 }
 
                 template <bool newton3>
@@ -248,15 +282,17 @@ namespace HWY_NAMESPACE {
                                 epsilon24s, sigmaSquareds, sigmaDiv2Ptr, sigmaDiv2Ptr, sqrtEpsilonPtr, sqrtEpsilonPtr,
                                 xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, ownedStatePtr, ownedStatePtr, i, j);
 
+                            // compute forces
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum, 0);
+                                x2, y2, z2, sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
+                            // accumulate forces
                             fxAcc = highway::Add(fxAcc, fx);
                             fyAcc = highway::Add(fyAcc, fy);
                             fzAcc = highway::Add(fzAcc, fz);
 
                             if constexpr (newton3) {
-                                // TODO : handle this case
+                                handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
                             }
                         }
 
@@ -268,21 +304,23 @@ namespace HWY_NAMESPACE {
                             // load interaction partners
                             fillVectorRegisters<true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
                                 epsilon24s, sigmaSquareds, sigmaDiv2Ptr, sigmaDiv2Ptr, sqrtEpsilonPtr, sqrtEpsilonPtr,
-                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, ownedStatePtr, ownedStatePtr, i, j);
+                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, ownedStatePtr, ownedStatePtr, i, j, rest);
 
-                            // TODO : decide what kernel should do and which parameters are necessary
+                            // calculate forces
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum, 0);
+                                x2, y2, z2, sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
+
+                            // accumulate forces
+                            fxAcc = highway::Add(fxAcc, fx);
+                            fyAcc = highway::Add(fyAcc, fy);
+                            fzAcc = highway::Add(fzAcc, fz);
+
+                            if constexpr (newton3) {
+                                handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, rest);
+                            }
                         }
 
-                        // TODO : handle this case different when considering various vectorization patterns
-                        double sumFx = highway::ReduceSum(tag_double, fxAcc);
-                        double sumFy = highway::ReduceSum(tag_double, fyAcc);
-                        double sumFz = highway::ReduceSum(tag_double, fzAcc);
-
-                        fxPtr[i] += sumFx;
-                        fyPtr[i] += sumFy;
-                        fzPtr[i] += sumFz;
+                        reduceAccumulatedForce(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i);
                     }
 
                     if constexpr (calculateGlobals) {
@@ -324,15 +362,30 @@ namespace HWY_NAMESPACE {
                     auto *const __restrict fy2Ptr = soa2.template begin<molecule::AttributeNames::forceY>();
                     auto *const __restrict fz2Ptr = soa2.template begin<molecule::AttributeNames::forceZ>();
 
-                    // const auto *const __restrict typeID1Ptr = soa1.template begin<molecule::AttributeNames::typeId>();
-                    // const auto *const __restrict typeID2Ptr = soa2.template begin<molecule::AttributeNames::typeId>();
+                    const auto *const __restrict sigmaDiv2Ptr1 = soa1.template begin<molecule::AttributeNames::sigmaDiv2>();
+                    const auto *const __restrict sqrtEpsilonPtr1 = soa1.template begin<molecule::AttributeNames::squareRootEpsilon>();
+
+                    const auto *const __restrict sigmaDiv2Ptr2 = soa2.template begin<molecule::AttributeNames::sigmaDiv2>();
+                    const auto *const __restrict sqrtEpsilonPtr2 = soa2.template begin<molecule::AttributeNames::squareRootEpsilon>();
 
                     VectorDouble virialSumX = highway::Zero(tag_double);
                     VectorDouble virialSumY = highway::Zero(tag_double);
                     VectorDouble virialSumZ = highway::Zero(tag_double);
                     VectorDouble uPotSum = highway::Zero(tag_double);
 
-                    for (size_t i = 0; i < soa1.size(); ++i) {
+                    VectorDouble x1;
+                    VectorDouble y1;
+                    VectorDouble z1;
+                    VectorDouble x2;
+                    VectorDouble y2;
+                    VectorDouble z2;
+                    VectorLong ownedStateI;
+                    VectorLong ownedStateJ;
+
+                    VectorDouble epsilon24s;
+                    VectorDouble sigmaSquareds;
+
+                    for (size_t i = 0; i < soa1.size(); incrementFirstLoop(i)) {
                         if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
                             continue;
                         }
@@ -341,22 +394,42 @@ namespace HWY_NAMESPACE {
                         VectorDouble fyAcc = highway::Zero(tag_double);
                         VectorDouble fzAcc = highway::Zero(tag_double);
 
-                        VectorLong ownedStateI = highway::Set(tag_long, static_cast<int64_t>(ownedStatePtr1[i]));
-
-                        const VectorDouble x1 = highway::Set(tag_double, x1Ptr[i]);
-                        const VectorDouble y1 = highway::Set(tag_double, y1Ptr[i]);
-                        const VectorDouble z1 = highway::Set(tag_double, z1Ptr[i]);
-
                         size_t j = 0;
-                        for (; j < (soa2.size() & ~ (_vecLengthDouble - 1)); j += _vecLengthDouble) {
-                            // SoAKernel<newton3, false>();
+                        for (; j < (soa2.size() & ~ (_vecLengthDouble - 1)); incrementSecondLoop(j)) {
 
+                            fillVectorRegisters<false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds,
+                                sigmaDiv2Ptr1, sigmaDiv2Ptr2, sqrtEpsilonPtr1, sqrtEpsilonPtr2,
+                                x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr1, ownedStatePtr2, i, j);
+                            
+                            auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
+                                sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
+
+                            fxAcc = highway::Add(fxAcc, fx);
+                            fyAcc = highway::Add(fyAcc, fy);
+                            fzAcc = highway::Add(fzAcc, fz);
+
+                            if constexpr (newton3) {
+                                handleNewton3Accumulation(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j);
+                            }
                         }
 
                         const int rest = (int) (soa2.size() & (_vecLengthDouble - 1));
                         if (rest > 0) {
 
-                            // SoAKernel<newton3, true>();
+                            fillVectorRegisters<true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds,
+                                sigmaDiv2Ptr1, sigmaDiv2Ptr2, sqrtEpsilonPtr1, sqrtEpsilonPtr2,
+                                x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr1, ownedStatePtr2, i, j, rest);
+                            
+                            auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
+                                sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
+
+                            fxAcc = highway::Add(fxAcc, fx);
+                            fyAcc = highway::Add(fyAcc, fy);
+                            fzAcc = highway::Add(fzAcc, fz);
+
+                            if constexpr (newton3) {
+                                handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, rest);
+                            }
                         }
 
                         fx1Ptr[i] += highway::ReduceSum(tag_double, fxAcc);
@@ -385,17 +458,167 @@ namespace HWY_NAMESPACE {
                     }                
                 }
 
-                // goal : make the kernel independent of the vectorization pattern -> pass the pre-loaded vector registers
+            public:
+                // clang-format off
+            /**
+             * @copydoc Functor::SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst, const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList, bool newton3)
+             * @note If you want to parallelize this by openmp, please ensure that there
+             * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
+             */
+                // clang-format on
+                inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                                            const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
+                                            bool newton3) final {
+                    if (soa.size() == 0 or neighborList.empty()) return;
+                    if (newton3) {
+                        SoAFunctorVerletImpl<true>(soa, indexFirst, neighborList);
+                    } else {
+                        SoAFunctorVerletImpl<false>(soa, indexFirst, neighborList);
+                    }
+                }
+
+            private:
+
+                template <bool newton3>
+                inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
+                    const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
+                        
+                    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+                    if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
+                        return;
+                    }
+
+                    const auto *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
+                    const auto *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
+                    const auto *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
+
+                    auto *const __restrict fxPtr = soa.template begin<Particle::AttributeNames::forceX>();
+                    auto *const __restrict fyPtr = soa.template begin<Particle::AttributeNames::forceY>();
+                    auto *const __restrict fzPtr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+
+                    const auto *const __restrict typeIDPtr = soa.template begin<Particle::AttributeNames::typeId>();
+
+                    VectorDouble virialSumX = highway::Zero(tag_double);
+                    VectorDouble virialSumY = highway::Zero(tag_double);
+                    VectorDouble virialSumZ = highway::Zero(tag_double);
+                    VectorDouble uPotSum = highway::Zero(tag_double);
+                    VectorDouble fxAcc = highway::Zero(tag_double);
+                    VectorDouble fyAcc = highway::Zero(tag_double);
+                    VectorDouble fzAcc = highway::Zero(tag_double);
+
+                    const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
+                    const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
+                    const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
+
+                    VectorLong ownedStateI = highway::Set(tag_long, static_cast<int64_t>(ownedStatePtr[indexFirst]));
+
+                    alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
+                    alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
+                    alignas(64) std::array<double, _vecLengthDouble> z2Tmp{};
+                    
+                    alignas(64) std::array<double, _vecLengthDouble> fx2Tmp{};
+                    alignas(64) std::array<double, _vecLengthDouble> fy2Tmp{};
+                    alignas(64) std::array<double, _vecLengthDouble> fz2Tmp{};
+                    alignas(64) std::array<size_t, _vecLengthDouble> typeID2Tmp{};
+                    alignas(64) std::array<autopas::OwnershipState, _vecLengthDouble> ownedStates2Tmp{};
+
+                    size_t j = 0;
+
+                    for (; j < (neighborList.size() & ~(_vecLengthDouble - 1)); j += _vecLengthDouble) {
+
+                        for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
+                            x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
+                            y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
+                            z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
+                            if constexpr (newton3) {
+                                fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
+                                fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
+                                fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
+                            }
+                            typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
+                            ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
+                        }
+
+                        // TODO : reuse the generalized Kernel
+                        // SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
+                        //         x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
+                        //         &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+                        //         virialSumY, virialSumZ, uPotSum, 0);
+
+                        if constexpr (newton3) {
+                            for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
+                                fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
+                                fyPtr[neighborList[j + vecIndex]] = fy2Tmp[vecIndex];
+                                fzPtr[neighborList[j + vecIndex]] = fz2Tmp[vecIndex];
+                            }
+                        }
+                    }
+
+                    const size_t rest = neighborList.size() & (_vecLengthDouble - 1);
+
+                    if (rest > 0) {
+                        for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
+                            x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
+                            y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
+                            z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
+                            // if newton3 is used we need to load f of particle j so the kernel can update it too
+                            if constexpr (newton3) {
+                                fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
+                                fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
+                                fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
+                            }
+                            typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
+                            ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
+                        }
+
+                        // TODO : reuse the generalized Kernel
+                        // SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
+                        //         x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
+                        //         &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
+                        //         virialSumZ, uPotSum, rest);
+
+                        if constexpr (newton3) {
+                            for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
+                                fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
+                                fyPtr[neighborList[j + vecIndex]] = fy2Tmp[vecIndex];
+                                fzPtr[neighborList[j + vecIndex]] = fz2Tmp[vecIndex];
+                            }
+                        }
+                    }
+
+                    fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
+                    fyPtr[indexFirst] += highway::ReduceSum(tag_double, fyAcc);
+                    fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
+
+                    if constexpr (calculateGlobals) {
+                        const int threadnum = autopas::autopas_get_num_threads();
+
+                        double globals[] = {
+                            highway::ReduceSum(tag_double, virialSumX),
+                            highway::ReduceSum(tag_double, virialSumY),
+                            highway::ReduceSum(tag_double, virialSumZ),
+                            highway::ReduceSum(tag_double, uPotSum)
+                        };
+
+                        double factor = 1.;
+                        factor *= newton3 ? .5 : 1.;
+                        _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
+                        _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
+                        _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
+                        _aosThreadData[threadnum].upotSum += globals[3] * factor;
+                    }
+                }
+
                 template <bool newton3>
                 inline std::tuple<VectorDouble, VectorDouble, VectorDouble> SoAKernel(const VectorLong& ownedStateI, const VectorLong& ownedStateJ,
                                         const VectorDouble& x1, const VectorDouble& y1, const VectorDouble& z1,
                                         const VectorDouble& x2, const VectorDouble& y2, const VectorDouble& z2,
                                         const VectorDouble& sigmaSquareds, const VectorDouble& epsilon24s,
                                         VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ,
-                                        VectorDouble& potentialEnergySum, const size_t rest = 0) {
+                                        VectorDouble& potentialEnergySum) {
 
-                    // TODO : handle case for rest with e.g. masking
-
+                    // determine distances
                     const VectorDouble drX = highway::Sub(x1, x2);
                     const VectorDouble drY = highway::Sub(y1, y2);
                     const VectorDouble drZ = highway::Sub(z1, z2);
@@ -413,7 +636,7 @@ namespace HWY_NAMESPACE {
                         return std::make_tuple(_zeroDouble, _zeroDouble, _zeroDouble);
                     }
 
-                    // So far: some lj-calculation stuff
+                    // actual force computation
                     const VectorDouble invDistance2 = highway::Div(_oneDouble, distanceSquared);
                     const VectorDouble lj2 = highway::Mul(sigmaSquareds, invDistance2);
                     const VectorDouble lj4 = highway::Mul(lj2, lj2);
