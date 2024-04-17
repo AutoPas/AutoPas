@@ -12,6 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/logging/FLOPLogger.h"
 
 namespace autopas {
 
@@ -222,6 +223,18 @@ class Functor {
    * @return
    */
   double getCutoff() const { return _cutoff; }
+
+  /**
+   * Get the number of FLOPs. Implementation required if FLOP logger used.
+   * @return number of FLOPs
+   */
+  virtual size_t getNumFLOPs() = 0;
+
+  /**
+   * Get the hit rate. Implementation required if FLOP logger used.
+   * @return (number of kernel calls) / (number of distance calculations)
+   */
+  virtual double getHitRate() = 0;
 
  private:
   /**

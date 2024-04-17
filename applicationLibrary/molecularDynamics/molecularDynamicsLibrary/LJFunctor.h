@@ -735,10 +735,6 @@ class LJFunctor
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
-  /**
-   * Get the number of FLOPs
-   * @return number of FLOPs
-   */
   size_t getNumFLOPs() {
     if constexpr (countFLOPs) {
       return _numDistCalls * 8 + _numKernelCallsN3 * 18 + _numKernelCallsNoN3 * 15;
@@ -748,10 +744,6 @@ class LJFunctor
     }
   }
 
-  /**
-   * Get the hit rate
-   * @return (number of kernel calls) / (number of distance calculations)
-   */
   double getHitRate() {
     if constexpr (countFLOPs) {
       return ((double)_numKernelCallsNoN3 + (double)_numKernelCallsN3)/((double)_numDistCalls);
