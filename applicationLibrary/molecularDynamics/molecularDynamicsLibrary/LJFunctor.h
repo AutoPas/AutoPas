@@ -38,7 +38,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           bool relevantForTuning = true, bool countFLOPs = false>
 class LJFunctor
     : public autopas::Functor<
-          Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+          Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -1138,6 +1138,6 @@ class LJFunctor
   /**
    * Counter for FLOPs outside of the standard distance calculations + kernel calls. Primarily these FLOPs are for calculating globals.
    */
-  size_t _numOtherFLOPs = 0.;
+  size_t _numOtherFLOPs = 0;
 };
 }  // namespace mdLib

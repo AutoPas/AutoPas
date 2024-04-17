@@ -45,7 +45,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           bool relevantForTuning = true, bool countFLOPs = false>
 class LJFunctorSVE
     : public autopas::Functor<
-          Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+          Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, countFLOPs>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
