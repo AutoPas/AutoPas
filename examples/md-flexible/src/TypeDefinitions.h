@@ -149,6 +149,8 @@ using LJFunctorTypeAbstract = mdLib::LJFunctor<true, true, autopas::FunctorN3Mod
 using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
 using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_HWY
+using LJFunctorTypeAbstract = mdLib::HWY_NAMESPACE::LJFunctorHWY<true, true>;
 #endif
 
 #endif

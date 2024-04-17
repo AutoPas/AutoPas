@@ -173,8 +173,7 @@ namespace HWY_NAMESPACE {
                     const double *const __restrict xPtr1, const double *const __restrict yPtr1, const double *const __restrict zPtr1,
                     const double *const __restrict xPtr2, const double *const __restrict yPtr2, const double *const __restrict zPtr2,
                     const int64_t *const __restrict ownedPtr1, const int64_t *const __restrict ownedPtr2, const size_t i, const size_t j, const size_t rest = 0) {
-                    
-                    // TODO : handle case of remainder and rest
+
                     // TODO : handle various vectorization patterns with switch case
 
                     ownedI = highway::Set(tag_long, ownedPtr1[i]);
@@ -182,10 +181,20 @@ namespace HWY_NAMESPACE {
                     y1 = highway::Set(tag_double, yPtr1[i]);
                     z1 = highway::Set(tag_double, zPtr1[i]);
 
-                    ownedJ = highway::LoadU(tag_long, &ownedPtr2[j]);
-                    x2 = highway::LoadU(tag_double, &xPtr2[j]);
-                    y2 = highway::LoadU(tag_double, &yPtr2[j]);
-                    z2 = highway::LoadU(tag_double, &zPtr2[j]);
+                    if constexpr (remainder) {
+                        const auto restMaskDouble = highway::FirstN(tag_double, rest);
+                        const auto restMaskLong = highway::FirstN(tag_long, rest);
+
+                        ownedJ = highway::MaskedLoad(restMaskLong, tag_long, &ownedPtr2[j]);
+                        x2 = highway::MaskedLoad(restMaskDouble, tag_double, &xPtr2[j]);
+                        y2 = highway::MaskedLoad(restMaskDouble, tag_double, &yPtr2[j]);
+                        z2 = highway::MaskedLoad(restMaskDouble, tag_double, &zPtr2[j]);
+                    }
+                    else {
+                        x2 = highway::LoadU(tag_double, &xPtr2[j]);
+                        y2 = highway::LoadU(tag_double, &yPtr2[j]);
+                        z2 = highway::LoadU(tag_double, &zPtr2[j]);
+                    }
 
                     const auto sigmaDiv21 = highway::Set(tag_double, sigmaDiv2Ptr1[i]);
                     const auto sigmaDiv22 = highway::LoadU(tag_double, &sigmaDiv2Ptr2[j]);
@@ -208,22 +217,40 @@ namespace HWY_NAMESPACE {
 
                 template <bool remainder>
                 inline void handleNewton3Accumulation(const VectorDouble& fx, const VectorDouble& fy, const VectorDouble& fz,
-                    double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const size_t j const size_t rest = 0) {
+                    double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const size_t j, const size_t rest = 0) {
                         
                     // TODO : handle different vectorization patterns
-                    // TODO : handle remainder case
+                    VectorDouble fx2;
+                    VectorDouble fy2;
+                    VectorDouble fz2;
 
-                    VectorDouble fx2 = highway::LoadU(tag_double, &fxPtr[j]);
-                    VectorDouble fy2 = highway::LoadU(tag_double, &fyPtr[j]);
-                    VectorDouble fz2 = highway::LoadU(tag_double, &fzPtr[j]);
+                    const auto restMask = highway::FirstN(tag_double, rest);
+
+                    if constexpr (remainder) {
+                        fx2 = highway::MaskedLoad(restMask, tag_double, &fxPtr[j]);
+                        fy2 = highway::MaskedLoad(restMask, tag_double, &fyPtr[j]);
+                        fz2 = highway::MaskedLoad(restMask, tag_double, &fzPtr[j]);
+                    }
+                    else {
+                        fx2 = highway::LoadU(tag_double, &fxPtr[j]);
+                        fy2 = highway::LoadU(tag_double, &fyPtr[j]);
+                        fz2 = highway::LoadU(tag_double, &fzPtr[j]);
+                    }
 
                     fx2 = highway::Sub(fx2, fx);
                     fy2 = highway::Sub(fy2, fy);
                     fz2 = highway::Sub(fz2, fz);
 
-                    highway::StoreU(fx2, tag_double, &fxPtr[j]);
-                    highway::StoreU(fy2, tag_double, &fyPtr[j]);
-                    highway::StoreU(fz2, tag_double, &fzPtr[j]);
+                    if constexpr (remainder) {
+                        highway::BlendedStore(fx2, restMask, tag_double, &fxPtr[j]);
+                        highway::BlendedStore(fy2, restMask, tag_double, &fyPtr[j]);
+                        highway::BlendedStore(fz2, restMask, tag_double, &fzPtr[j]);
+                    }
+                    else {
+                        highway::StoreU(fx2, tag_double, &fxPtr[j]);
+                        highway::StoreU(fy2, tag_double, &fyPtr[j]);
+                        highway::StoreU(fz2, tag_double, &fzPtr[j]);
+                    }
                 }
 
                 template <bool newton3>
@@ -398,8 +425,8 @@ namespace HWY_NAMESPACE {
                         for (; j < (soa2.size() & ~ (_vecLengthDouble - 1)); incrementSecondLoop(j)) {
 
                             fillVectorRegisters<false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds,
-                                sigmaDiv2Ptr1, sigmaDiv2Ptr2, sqrtEpsilonPtr1, sqrtEpsilonPtr2,
-                                x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr1, ownedStatePtr2, i, j);
+                                sigmaDiv2Ptr1, sigmaDiv2Ptr2, sqrtEpsilonPtr1, sqrtEpsilonPtr2, x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr,
+                                reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2), i, j);
                             
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
                                 sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
@@ -409,7 +436,7 @@ namespace HWY_NAMESPACE {
                             fzAcc = highway::Add(fzAcc, fz);
 
                             if constexpr (newton3) {
-                                handleNewton3Accumulation(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j);
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j);
                             }
                         }
 
@@ -417,8 +444,8 @@ namespace HWY_NAMESPACE {
                         if (rest > 0) {
 
                             fillVectorRegisters<true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds,
-                                sigmaDiv2Ptr1, sigmaDiv2Ptr2, sqrtEpsilonPtr1, sqrtEpsilonPtr2,
-                                x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr1, ownedStatePtr2, i, j, rest);
+                                sigmaDiv2Ptr1, sigmaDiv2Ptr2, sqrtEpsilonPtr1, sqrtEpsilonPtr2, x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr,
+                                reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2), i, j, rest);
                             
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
                                 sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
@@ -437,7 +464,7 @@ namespace HWY_NAMESPACE {
                         fz1Ptr[i] += highway::ReduceSum(tag_double, fzAcc);
                     }
                     if constexpr (calculateGlobals) {        
-                        const int threadnum = autopas::autopas_get_num_threads();
+                        const int threadnum = autopas::autopas_get_thread_num();
 
                         double globals [] = {
                             highway::ReduceSum(tag_double, virialSumX),
@@ -483,21 +510,18 @@ namespace HWY_NAMESPACE {
                 inline void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                     const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
                         
-                    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-                    if (ownedStatePtr[indexFirst] == autopas::OwnershipState::dummy) {
+                    const auto *const __restrict ownedStatePtr = soa.template begin<molecule::AttributeNames::ownershipState>();
+                    if (ownedStatePtr[indexFirst] == (autopas::OwnershipState::dummy)) {
                         return;
                     }
 
-                    const auto *const __restrict xPtr = soa.template begin<Particle::AttributeNames::posX>();
-                    const auto *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
-                    const auto *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
+                    const auto *const __restrict xPtr = soa.template begin<molecule::AttributeNames::posX>();
+                    const auto *const __restrict yPtr = soa.template begin<molecule::AttributeNames::posY>();
+                    const auto *const __restrict zPtr = soa.template begin<molecule::AttributeNames::posZ>();
 
-                    auto *const __restrict fxPtr = soa.template begin<Particle::AttributeNames::forceX>();
-                    auto *const __restrict fyPtr = soa.template begin<Particle::AttributeNames::forceY>();
-                    auto *const __restrict fzPtr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-
-                    const auto *const __restrict typeIDPtr = soa.template begin<Particle::AttributeNames::typeId>();
+                    auto *const __restrict fxPtr = soa.template begin<molecule::AttributeNames::forceX>();
+                    auto *const __restrict fyPtr = soa.template begin<molecule::AttributeNames::forceY>();
+                    auto *const __restrict fzPtr = soa.template begin<molecule::AttributeNames::forceZ>();
 
                     VectorDouble virialSumX = highway::Zero(tag_double);
                     VectorDouble virialSumY = highway::Zero(tag_double);
@@ -536,7 +560,7 @@ namespace HWY_NAMESPACE {
                                 fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
                                 fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
                             }
-                            typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
+                            // typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
                             ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                         }
 
@@ -568,7 +592,7 @@ namespace HWY_NAMESPACE {
                                 fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
                                 fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
                             }
-                            typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
+                            // typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
                             ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                         }
 
@@ -592,7 +616,7 @@ namespace HWY_NAMESPACE {
                     fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
 
                     if constexpr (calculateGlobals) {
-                        const int threadnum = autopas::autopas_get_num_threads();
+                        const int threadnum = autopas::autopas_get_thread_num();
 
                         double globals[] = {
                             highway::ReduceSum(tag_double, virialSumX),
@@ -726,10 +750,11 @@ namespace HWY_NAMESPACE {
              * radius.
              * @return the number of floating point operations
                  */
-                static unsigned long getNumFlopsPerKernelCall() {
-                    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply
-                    // scale) sum Forces: 6 (forces) kernel total = 12 + 6 = 18
-                    return 18ul;
+                static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
+                    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale) sum
+                    // Adding to particle forces: 6 or 3 depending newton3
+                    // Total = 12 + (6 or 3) = 18 or 15
+                    return newton3 ? 18ul : 15ul;
                 }
 
                 /**
