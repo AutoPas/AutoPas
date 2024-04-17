@@ -679,6 +679,15 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_HWY: {
+#if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+      return f(LJFunctorTypeHWY{cutoff});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor Highway."
+      );
+#endif
+    }
   }
   throw std::runtime_error("Unknown functor choice" +
                            std::to_string(static_cast<int>(_configuration.functorOption.value)));
