@@ -25,8 +25,6 @@
 #include "ExceptionHandler.h"
 #endif
 
-#include "autopas/utils/OpenMPConfigurator.h"  // For autopas::OpenMPKindOption, must be included after omp.h
-
 namespace autopas {
 
 #if defined(AUTOPAS_USE_OPENMP)
@@ -73,32 +71,8 @@ inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
  * Wrapper for omp_set_schedule().
  * Sets the scheduling kind and chunk size used by schedule(runtime).
  */
-inline void autopas_set_schedule(OpenMPKindOption kind, int chunkSize) {
-  switch (kind) {
-    case OpenMPKindOption::omp_auto:
-      omp_set_schedule(omp_sched_t::omp_sched_auto, 1);
-      break;
-    case OpenMPKindOption::omp_dynamic:
-      omp_set_schedule(omp_sched_t::omp_sched_dynamic, std::max(1, chunkSize));
-      break;
-    case OpenMPKindOption::omp_guided:
-      omp_set_schedule(omp_sched_t::omp_sched_guided, std::max(1, chunkSize));
-      break;
-    case OpenMPKindOption::omp_runtime:
-      break;
-    case OpenMPKindOption::omp_static:
-      omp_set_schedule(omp_sched_t::omp_sched_static, std::max(1, chunkSize));
-      break;
-    case OpenMPKindOption::auto4omp_randomsel:
-      omp_set_schedule(omp_sched_t::omp_sched_auto, 2);
-      break;
-    case OpenMPKindOption::auto4omp_exhaustivesel:
-      omp_set_schedule(omp_sched_t::omp_sched_auto, 3);
-      break;
-    case OpenMPKindOption::auto4omp_expertsel:
-      omp_set_schedule(omp_sched_t::omp_sched_auto, 4);
-      break;
-  }
+inline void autopas_set_schedule(omp_sched_t kind, int chunkSize) {
+  omp_set_schedule(kind, chunkSize);
 }
 
 /**

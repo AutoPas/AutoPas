@@ -10,21 +10,7 @@
 #include <set>
 
 #include "autopas/options/Option.h"
-
-#if defined(AUTOPAS_USE_OPENMP)
-#include <omp.h>
-#else
-/**
- * Wrapper for omp_sched_t, same as in OpenMP's omp.h
- */
-typedef enum omp_sched_t {
-  omp_sched_static = 1,
-  omp_sched_dynamic = 2,
-  omp_sched_guided = 3,
-  omp_sched_auto = 4,
-  omp_sched_monotonic = 0x80000000U
-} omp_sched_t;
-#endif
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 /**
@@ -207,20 +193,6 @@ class OpenMPConfigurator {
          * @param k the new scheduling kind to use
          */
         [[maybe_unused]] void setKind(OpenMPKindOption kind);
-
-        /**
-         * OpenMP schedule setter.
-         * @param k the new scheduling kind
-         * @param s the new chunk size
-         */
-        [[maybe_unused]] void setSchedule();
-
-        /**
-         * OpenMP schedule setter.
-         * @param k the new scheduling kind
-         * @param s the new chunk size
-         */
-        [[maybe_unused]] void setSchedule(OpenMPKindOption kind, int chunkSize);
 
         /**
          * Tells whether the scheduling chunk size should be overwritten.

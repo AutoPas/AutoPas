@@ -148,7 +148,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
 
       // Set OpenMP's scheduling runtime variables from the configurator.
       // schedule(runtime) will then use them for the traversal in the concerned calling thread.
-      TraversalInterface::_openMPConfigurator.setSchedule();
+      autopas_set_schedule(TraversalInterface::_openMPConfigurator.getOMPKind(), TraversalInterface::_openMPConfigurator.getChunkSize());
 
       if (collapseDepth == 2) {
         AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
