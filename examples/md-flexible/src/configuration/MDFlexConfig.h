@@ -32,6 +32,7 @@
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "molecularDynamicsLibrary/VectorizationPatterns.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -450,6 +451,12 @@ class MDFlexConfig {
         "Force functor to use. Possible Values: (lennard-jones "
         "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
   };
+
+
+  MDFlexOption<mdLib::VectorizationPattern, __LINE__> vectorizationPattern {
+    VectorizationPattern::p1xVec, "vec-pattern", true, "Vectorization pattern to use."
+  };
+
   /**
    * iterations
    */

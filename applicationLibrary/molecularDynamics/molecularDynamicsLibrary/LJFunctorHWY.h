@@ -2,9 +2,11 @@
 
 #pragma once
 
-#include "ParticlePropertiesLibrary.h"
+#include "MoleculeLJ_NoPPL.h"
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/WrapOpenMP.h"
+#include "VectorizationPatterns.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "molecularDynamicsLibrary/LJFunctorHWY.h"
@@ -150,19 +152,77 @@ namespace HWY_NAMESPACE {
 
             private:
 
-                // TODO : handle different vectorization patterns
                 inline void decrementFirstLoop(size_t& i) {
-                    --i;
+
+                    switch (_vectorizationPattern)
+                    {
+                    case VectorizationPattern::p1xVec:
+                        --i;
+                        break;
+                    
+                    case VectorizationPattern::p2xVecDiv2:
+                        i = i-2;
+                        break;
+                    case VectorizationPattern::pVecDiv2x2:
+                        i = i - (_vecLengthDouble / 2);
+                        break;
+                    case VectorizationPattern::pVecx1:
+                        i = i - _vecLengthDouble;
+                        break;
+                    case VectorizationPattern::pVecxVec:
+                        i = i - _vecLengthDouble;
+                        break;
+                    default:
+                        throw std::runtime_error("No vectorization pattern matched, error!");
+                    }
                 }
 
-                // TODO : handle different vectorization patterns
                 inline void incrementFirstLoop(size_t& i) {
-                    ++i;
+                    switch (_vectorizationPattern)
+                    {
+                    case VectorizationPattern::p1xVec:
+                        ++i;
+                        break;
+                    
+                    case VectorizationPattern::p2xVecDiv2:
+                        i = i + 2;
+                        break;
+                    case VectorizationPattern::pVecDiv2x2:
+                        i = i + (_vecLengthDouble / 2);
+                        break;
+                    case VectorizationPattern::pVecx1:
+                        i = i + _vecLengthDouble;
+                        break;
+                    case VectorizationPattern::pVecxVec:
+                        i = i + _vecLengthDouble;
+                        break;
+                    default:
+                        throw std::runtime_error("No vectorization pattern matched, error!");
+                    }
                 }
 
-                // TODO : handle different vectorization patterns
                 inline void incrementSecondLoop(size_t& j) {
-                    j += _vecLengthDouble;
+                    switch (_vectorizationPattern)
+                    {
+                    case VectorizationPattern::p1xVec:
+                        i = i + _vecLengthDouble;
+                        break;
+                    
+                    case VectorizationPattern::p2xVecDiv2:
+                        i = i + _vecLengthDouble / 2;
+                        break;
+                    case VectorizationPattern::pVecDiv2x2:
+                        i = i + 2;
+                        break;
+                    case VectorizationPattern::pVecx1:
+                        ++i;
+                        break;
+                    case VectorizationPattern::pVecxVec:
+                        i = i + _vecLengthDouble;
+                        break;
+                    default:
+                        throw std::runtime_error("No vectorization pattern matched, error!");
+                    }
                 }
 
                 template <bool remainder>
@@ -175,13 +235,12 @@ namespace HWY_NAMESPACE {
                     const int64_t *const __restrict ownedPtr1, const int64_t *const __restrict ownedPtr2, const size_t i, const size_t j, const size_t rest = 0) {
 
                     // TODO : handle various vectorization patterns with switch case
-
-                    ownedI = highway::Set(tag_long, ownedPtr1[i]);
-                    x1 = highway::Set(tag_double, xPtr1[i]);
-                    y1 = highway::Set(tag_double, yPtr1[i]);
-                    z1 = highway::Set(tag_double, zPtr1[i]);
-
                     if constexpr (remainder) {
+                        ownedI = highway::Set(tag_long, ownedPtr1[i]);
+                        x1 = highway::Set(tag_double, xPtr1[i]);
+                        y1 = highway::Set(tag_double, yPtr1[i]);
+                        z1 = highway::Set(tag_double, zPtr1[i]);
+
                         const auto restMaskDouble = highway::FirstN(tag_double, rest);
                         const auto restMaskLong = highway::FirstN(tag_long, rest);
 
@@ -209,10 +268,70 @@ namespace HWY_NAMESPACE {
                 inline void reduceAccumulatedForce(const VectorDouble& fxAcc, const VectorDouble& fyAcc, const VectorDouble& fzAcc,
                     double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const size_t i) {
                         
-                    // TODO : handle different vectorization patterns
-                    fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
-                    fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
-                    fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+                    switch (_vectorizationPattern) {
+                        case VectorizationPattern::p1xVec:
+                            fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
+                            fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
+                            fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+                            break;
+                        case VectorizationPattern::p2xVecDiv2:
+                            double* tmpX [_vecLengthDouble] = {0.};
+                            double* tmpY [_vecLengthDouble] = {0.};
+                            double* tmpZ [_vecLengthDouble] = {0.};
+                            highway::StoreU(fxAcc, tag_double, tmpX);
+                            highway::StoreU(fyAcc, tag_double, tmpY);
+                            highway::StoreU(fzAcc, tag_double, tmpZ);
+
+                            for (size_t n = 0; n < _vecLengthDouble; ++n) {
+                                fxPtr[i + n%2] += tmpX[n];
+                                fyPtr[i + n%2] += tmpY[n];
+                                fzPtr[i + n%2] += tmpZ[n];
+                            }
+                            break;
+                        case VectorizationPattern::pVecDiv2x2:
+                            double* tmpX [_vecLengthDouble] = {0.};
+                            double* tmpY [_vecLengthDouble] = {0.};
+                            double* tmpZ [_vecLengthDouble] = {0.};
+                            highway::StoreU(fxAcc, tag_double, tmpX);
+                            highway::StoreU(fyAcc, tag_double, tmpY);
+                            highway::StoreU(fzAcc, tag_double, tmpZ);
+
+                            for (size_t n = 0; n < _vecLengthDouble; ++n) {
+                                fxPtr[i + n%(_vecLengthDouble/2)] += tmpX[n];
+                                fyPtr[i + n%(_vecLengthDouble/2)] += tmpY[n];
+                                fzPtr[i + n%(_vecLengthDouble/2)] += tmpZ[n];
+                            }
+
+                            break;
+                        case VectorizationPattern::pVecx1:
+                            double* tmpX [_vecLengthDouble] = {0.};
+                            double* tmpY [_vecLengthDouble] = {0.};
+                            double* tmpZ [_vecLengthDouble] = {0.};
+                            highway::StoreU(fxAcc, tag_double, tmpX);
+                            highway::StoreU(fyAcc, tag_double, tmpY);
+                            highway::StoreU(fzAcc, tag_double, tmpZ);
+
+                            for (size_t n = 0; n < _vecLengthDouble; ++n) {
+                                fxPtr[i + n] += tmpX[n];
+                                fyPtr[i + n] += tmpY[n];
+                                fzPtr[i + n] += tmpZ[n];
+                            }
+                            break;
+                        case VectorizationPattern::pVecxVec:
+                            double* tmpX [_vecLengthDouble] = {0.};
+                            double* tmpY [_vecLengthDouble] = {0.};
+                            double* tmpZ [_vecLengthDouble] = {0.};
+                            highway::StoreU(fxAcc, tag_double, tmpX);
+                            highway::StoreU(fyAcc, tag_double, tmpY);
+                            highway::StoreU(fzAcc, tag_double, tmpZ);
+
+                            for (size_t n = 0; n < _vecLengthDouble; ++n) {
+                                fxPtr[i + n] += tmpX[n];
+                                fyPtr[i + n] += tmpY[n];
+                                fzPtr[i + n] += tmpZ[n];
+                            }
+                            break;
+                    }
                 }
 
                 template <bool remainder>
@@ -885,6 +1004,8 @@ namespace HWY_NAMESPACE {
                 std::array<double, 3> _virialSum;
                 std::vector<AoSThreadData> _aosThreadData;
                 bool _postProcessed;
+
+                VectorizationPattern _vectorizationPattern {VectorizationPattern::p1xVec};
     };
 } // Highway
 } // mdLib
