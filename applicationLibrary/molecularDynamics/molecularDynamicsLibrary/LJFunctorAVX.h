@@ -41,7 +41,7 @@ namespace mdLib {
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true, bool countFLOPs = false>
+          bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorAVX
     : public autopas::Functor<
           Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, countFLOPs>> {
@@ -996,6 +996,16 @@ class LJFunctorAVX
     } else {
       _shift6AoS = 0.;
     }
+  }
+
+  size_t getNumFLOPs() {
+    autopas::utils::ExceptionHandler::exception("LJFunctorAVX::getNumFLOPs called but is not implemented");
+    return 0;
+  }
+
+  double getHitRate() {
+    autopas::utils::ExceptionHandler::exception("LJFunctorAVX::getNumFLOPs called but is not implemented");
+    return 0;
   }
 
  private:
