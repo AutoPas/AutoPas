@@ -19,10 +19,8 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam TriwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class TriwiseFunctor>
 class VLPairListIterationTraversal3B : public TraversalInterface<InteractionTypeOption::threeBody>,
                                        public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
@@ -31,36 +29,37 @@ class VLPairListIterationTraversal3B : public TraversalInterface<InteractionType
   /**
    * Constructor for Verlet Traversal
    * @param triwiseFunctor Functor to be used with this Traversal
+   * @param dataLayout
+   * @param useNewton3
    */
-  explicit VLPairListIterationTraversal3B(TriwiseFunctor *triwiseFunctor) : _functor(triwiseFunctor) {}
+  explicit VLPairListIterationTraversal3B(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout, bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vl_pair_list_iteration_3b; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
-
-  [[nodiscard]] bool isApplicable() const override { return (not useNewton3) and dataLayout == DataLayoutOption::aos; }
+  [[nodiscard]] bool isApplicable() const override {
+    return (not _useNewton3) and _dataLayout == DataLayoutOption::aos;
+  }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
-    if (dataLayout == DataLayoutOption::soa) {
+    if (_dataLayout == DataLayoutOption::soa) {
       utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLPairListIterationTraversal3B.");
     }
   }
 
   void endTraversal() override {
     auto &cells = *(this->_cells);
-    if (dataLayout == DataLayoutOption::soa) {
+    if (_dataLayout == DataLayoutOption::soa) {
       utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLPairListIterationTraversal3B.");
     }
   }
 
   void traverseParticleTriplets() override {
     auto &pairwiseAosNeighborLists = *(this->_pairwiseAosNeighborLists);
-    switch (dataLayout) {
+    switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
-        if (not useNewton3) {
+        if (not _useNewton3) {
           size_t buckets = pairwiseAosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic))
@@ -88,9 +87,10 @@ class VLPairListIterationTraversal3B : public TraversalInterface<InteractionType
 
       case DataLayoutOption::soa: {
         utils::ExceptionHandler::exception("SoA dataLayout not implemented yet for VLPairListIterationTraversal3B.");
+        return;
       }
       default: {
-        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout);
+        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", _dataLayout);
       }
     }
   }

@@ -1,5 +1,5 @@
 /**
- * @file C08BasedTraversalListBuilding3B.h
+ * @file C08BasedNeighborListBuilding3B.h
  * @author Alexander Haberl
  * @date 2024/04/15
  */
@@ -12,20 +12,16 @@
 namespace autopas {
 
 /**
- * This class provides the base for traversals using the c08 base step.
+ * This class provides the base for traversals using the c08 base step for 3-Body neighbor list building.
  *
  * The traversal is defined in the function c08Traversal and uses 8 colors, such that interactions between the base
  * cell and all adjacent cells with greater ID in each direction are safe, even when using newton3 optimizations.
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction between particles.
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
-          DataLayoutOption::Value dataLayout, bool useNewton3>
-class C08BasedNeighborListBuilding3B
-    : public ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3> {
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
+class C08BasedNeighborListBuilding3B : public ColorBasedTraversal<ParticleCell, Functor, interactionType> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -34,11 +30,14 @@ class C08BasedNeighborListBuilding3B
    * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit C08BasedNeighborListBuilding3B(const std::array<unsigned long, 3> &dims, Functor *functor,
-                                          const double interactionLength, const std::array<double, 3> &cellLength)
-      : ColorBasedTraversal<ParticleCell, Functor, interactionType, dataLayout, useNewton3>(
-            dims, functor, interactionLength, cellLength) {}
+                                          const double interactionLength, const std::array<double, 3> &cellLength,
+                                          DataLayoutOption dataLayout, bool useNewton3)
+      : ColorBasedTraversal<ParticleCell, Functor, interactionType>(dims, functor, interactionLength, cellLength,
+                                                                    dataLayout, useNewton3) {}
 
  protected:
   /**
@@ -49,11 +48,9 @@ class C08BasedNeighborListBuilding3B
   inline void c08Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType,
-          DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
 template <typename LoopBody>
-inline void C08BasedNeighborListBuilding3B<ParticleCell, Functor, interactionType, dataLayout,
-                                           useNewton3>::c08Traversal(LoopBody &&loopBody) {
+inline void C08BasedNeighborListBuilding3B<ParticleCell, Functor, interactionType>::c08Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   // last cells also have to be traversed to have correct Neighborlist building between Halo Cells

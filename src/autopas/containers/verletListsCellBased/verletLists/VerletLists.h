@@ -213,34 +213,21 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                                                        this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
-    switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal = LCC08NeighborListBuilding3B<LinkedParticleCell,
-                                                       typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
-                                                       DataLayoutOption::aos, theBool>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&traversal);
-        });
-        break;
-      }
-      case BuildVerletListType::VerletSoA: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal = LCC08NeighborListBuilding3B<LinkedParticleCell,
-                                                       typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
-                                                       DataLayoutOption::soa, theBool>(
-              this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-              this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&traversal);
-        });
-        break;
-      }
-      default:
-        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS3B(): unsupported BuildVerletListType: {}",
-                                           _buildVerletListType);
-        break;
+    DataLayoutOption dataLayout;
+    if (_buildVerletListType == BuildVerletListType::VerletAoS) {
+      dataLayout = DataLayoutOption::aos;
+    } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
+      dataLayout = DataLayoutOption::soa;
+    } else {
+      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+                                         _buildVerletListType);
     }
+
+    auto traversal = LCC08NeighborListBuilding3B<LinkedParticleCell,
+                                                 typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
+        this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+        this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+    this->_linkedCells.iteratePairwise(&traversal);
 
     _soaListIsValid = false;
   }
@@ -256,30 +243,23 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         _pairwiseAosNeighborLists, this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
-    switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS: {
-        auto traversal =
-            VLListIterationTraversal3B<LinkedParticleCell,
-                                       typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
-                                       DataLayoutOption::aos, false>(&f);
-        this->iterateTriwise(&traversal);
-        break;
-      }
-      case BuildVerletListType::VerletSoA: {
-        // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
-        AutoPasLog(WARN, "Pairwise Verlet-Lists can currently only be built with AoS DataLayout, using that instead!");
-        auto traversal =
-            VLListIterationTraversal3B<LinkedParticleCell,
-                                       typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor,
-                                       DataLayoutOption::aos, false>(&f);
-        this->iterateTriwise(&traversal);
-        break;
-      }
-      default:
-        utils::ExceptionHandler::exception(
-            "VerletLists::updatePairwiseVerletListsAoS3B(): unsupported BuildVerletListType: {}", _buildVerletListType);
-        break;
+    DataLayoutOption dataLayout;
+    if (_buildVerletListType == BuildVerletListType::VerletAoS) {
+      dataLayout = DataLayoutOption::aos;
+    } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
+      // there are no SoA 3-body traversals, so we print out a warning and use AoS Layout instead
+      AutoPasLog(WARN, "Pairwise Verlet-Lists can currently only be built with AoS DataLayout, using that instead!");
+      dataLayout = DataLayoutOption::aos;
+    } else {
+      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+                                         _buildVerletListType);
     }
+
+    auto traversal =
+        VLListIterationTraversal3B<LinkedParticleCell,
+                                   typename VerletListHelpers<Particle>::PairwiseVerletListGeneratorFunctor>(
+            &f, dataLayout, useNewton3);
+    this->iterateTriwise(&traversal);
   }
 
   /**

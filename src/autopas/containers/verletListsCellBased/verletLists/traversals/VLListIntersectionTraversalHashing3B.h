@@ -22,10 +22,8 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam TriwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class TriwiseFunctor>
 class VLListIntersectionTraversalHashing3B : public TraversalInterface<InteractionTypeOption::threeBody>,
                                              public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
@@ -34,22 +32,24 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface<Interacti
   /**
    * Constructor for Verlet Traversal
    * @param triwiseFunctor Functor to be used with this Traversal
+   * @param dataLayout
+   * @param useNewton3
    */
-  explicit VLListIntersectionTraversalHashing3B(TriwiseFunctor *triwiseFunctor) : _functor(triwiseFunctor) {}
+  explicit VLListIntersectionTraversalHashing3B(TriwiseFunctor *triwiseFunctor, DataLayoutOption dataLayout,
+                                                bool useNewton3)
+      : TraversalInterface(dataLayout, useNewton3), _functor(triwiseFunctor) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     return TraversalOption::vl_list_intersection_hashing_3b;
   }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
-
-  [[nodiscard]] bool isApplicable() const override { return (not useNewton3) and dataLayout == DataLayoutOption::aos; }
+  [[nodiscard]] bool isApplicable() const override {
+    return (not _useNewton3) and _dataLayout == DataLayoutOption::aos;
+  }
 
   void initTraversal() override {
     auto &cells = *(this->_cells);
-    if (dataLayout == DataLayoutOption::soa) {
+    if (_dataLayout == DataLayoutOption::soa) {
       utils::ExceptionHandler::exception(
           "SoA dataLayout not implemented yet for VLListIntersectionTraversalHashing3B.");
     }
@@ -57,7 +57,7 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface<Interacti
 
   void endTraversal() override {
     auto &cells = *(this->_cells);
-    if (dataLayout == DataLayoutOption::soa) {
+    if (_dataLayout == DataLayoutOption::soa) {
       utils::ExceptionHandler::exception(
           "SoA dataLayout not implemented yet for VLListIntersectionTraversalHashing3B.");
     }
@@ -66,10 +66,10 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface<Interacti
   void traverseParticleTriplets() override {
     auto &aosNeighborLists = *(this->_aosNeighborLists);
     auto &soaNeighborLists = *(this->_soaNeighborLists);
-    switch (dataLayout) {
+    switch (this->_dataLayout) {
       case DataLayoutOption::aos: {
         /// @todo add parelelization
-        if (not useNewton3) {
+        if (not _useNewton3) {
           size_t buckets = aosNeighborLists.bucket_count();
           /// @todo find a sensible chunk size
           AUTOPAS_OPENMP(parallel for schedule(dynamic))
@@ -103,6 +103,7 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface<Interacti
           }
         } else {
           // list intersection does not work with the current way neighborlists are built for N3 case
+          utils::ExceptionHandler::exception("VLListIntersectionTraversalHashing3B does not support Newton3.");
         }
         return;
       }
@@ -110,9 +111,10 @@ class VLListIntersectionTraversalHashing3B : public TraversalInterface<Interacti
       case DataLayoutOption::soa: {
         utils::ExceptionHandler::exception(
             "SoA dataLayout not implemented yet for VLListIntersectionTraversalHashing3B.");
+        return;
       }
       default: {
-        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", dataLayout);
+        utils::ExceptionHandler::exception("VerletList dataLayout {} not available", _dataLayout);
       }
     }
   }
