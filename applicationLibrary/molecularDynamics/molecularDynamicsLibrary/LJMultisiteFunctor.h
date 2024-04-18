@@ -41,7 +41,7 @@ namespace mdLib {
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true, bool countFLOPs = false>
+          bool countFLOPs = false, bool relevantForTuning = true>
 class LJMultisiteFunctor
     : public autopas::Functor<Particle, LJMultisiteFunctor<Particle, applyShift, useMixing, useNewton3,
                                                            calculateGlobals, relevantForTuning, countFLOPs>> {
