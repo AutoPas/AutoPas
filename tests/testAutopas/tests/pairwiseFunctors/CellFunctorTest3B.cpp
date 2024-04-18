@@ -10,29 +10,25 @@
 
 // Type aliases via inheritance for more readable test names (using declarations do not work for this)
 struct CellFunctor_AoS_NoN3_NoBi
-    : public autopas::internal::CellFunctor3B<Molecule, autopas::FullParticleCell<Molecule>,
-                                              mdLib::AxilrodTellerFunctor<Molecule>, autopas::DataLayoutOption::aos,
-                                              false, false> {
+    : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                              mdLib::AxilrodTellerFunctor<Molecule>, false> {
   CellFunctor_AoS_NoN3_NoBi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
-      : CellFunctor3B(f, sortingCutoff) {}
+      : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
-struct CellFunctor_AoS_NoN3_Bi : public autopas::internal::CellFunctor3B<Molecule, autopas::FullParticleCell<Molecule>,
-                                                                         mdLib::AxilrodTellerFunctor<Molecule>,
-                                                                         autopas::DataLayoutOption::aos, false, true> {
+struct CellFunctor_AoS_NoN3_Bi : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                                                         mdLib::AxilrodTellerFunctor<Molecule>, true> {
   CellFunctor_AoS_NoN3_Bi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
-      : CellFunctor3B(f, sortingCutoff) {}
+      : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
-struct CellFunctor_AoS_N3_NoBi : public autopas::internal::CellFunctor3B<Molecule, autopas::FullParticleCell<Molecule>,
-                                                                         mdLib::AxilrodTellerFunctor<Molecule>,
-                                                                         autopas::DataLayoutOption::aos, true, false> {
+struct CellFunctor_AoS_N3_NoBi : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                                                         mdLib::AxilrodTellerFunctor<Molecule>, false> {
   CellFunctor_AoS_N3_NoBi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
-      : CellFunctor3B(f, sortingCutoff) {}
+      : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
-struct CellFunctor_AoS_N3_Bi : public autopas::internal::CellFunctor3B<Molecule, autopas::FullParticleCell<Molecule>,
-                                                                       mdLib::AxilrodTellerFunctor<Molecule>,
-                                                                       autopas::DataLayoutOption::aos, true, true> {
+struct CellFunctor_AoS_N3_Bi : public autopas::internal::CellFunctor3B<autopas::FullParticleCell<Molecule>,
+                                                                       mdLib::AxilrodTellerFunctor<Molecule>, true> {
   CellFunctor_AoS_N3_Bi(mdLib::AxilrodTellerFunctor<Molecule> *f, const double sortingCutoff)
-      : CellFunctor3B(f, sortingCutoff) {}
+      : CellFunctor3B(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 // TODO: Enable once SoA is implemented for AxilrodTellerFunctor
 /*

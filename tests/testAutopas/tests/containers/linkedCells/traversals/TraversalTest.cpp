@@ -48,11 +48,11 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
   if (useN3 and traversalOption != autopas::TraversalOption::lc_c01) {
     traversal =
         autopas::TraversalSelector<FPCell, autopas::InteractionTypeOption::pairwise>::template generateTraversal<
-            TraversalTest::CountFunctor, autopas::DataLayoutOption::aos, true>(traversalOption, functor, tsi);
+            TraversalTest::CountFunctor>(traversalOption, functor, tsi, autopas::DataLayoutOption::aos, true);
   } else {
     traversal =
         autopas::TraversalSelector<FPCell, autopas::InteractionTypeOption::pairwise>::template generateTraversal<
-            TraversalTest::CountFunctor, autopas::DataLayoutOption::aos, false>(traversalOption, functor, tsi);
+            TraversalTest::CountFunctor>(traversalOption, functor, tsi, autopas::DataLayoutOption::aos, false);
   }
 
   unsigned long cellId = 0;

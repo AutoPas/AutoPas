@@ -24,6 +24,13 @@ class TraversalInterface {
   virtual ~TraversalInterface() = default;
 
   /**
+   * Constructor of the TraversalInterface.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
+   */
+  TraversalInterface(DataLayoutOption dataLayout, bool useNewton3) : _dataLayout(dataLayout), _useNewton3(useNewton3) {}
+
+  /**
    * Return a enum representing the name of the traversal class.
    * @return Enum representing traversal.
    */
@@ -34,18 +41,6 @@ class TraversalInterface {
    * @return true iff the traversal can be applied.
    */
   [[nodiscard]] virtual bool isApplicable() const = 0;
-
-  /**
-   * Return whether the traversal uses newton 3.
-   * @return true iff newton 3 is used.
-   */
-  [[nodiscard]] virtual bool getUseNewton3() const = 0;
-
-  /**
-   * Return the data layout option
-   * @return the data layout option
-   */
-  [[nodiscard]] virtual DataLayoutOption getDataLayout() const = 0;
 
   /**
    * Initializes the traversal. Should be called before traverse().
@@ -76,6 +71,29 @@ class TraversalInterface {
         "not implemented for this traversal: {}!",
         typeid(*this).name());
   };
+
+  /**
+   * Return whether the traversal uses newton 3.
+   * @return true iff newton 3 is used.
+   */
+  [[nodiscard]] bool getUseNewton3() const { return _useNewton3; }
+
+  /**
+   * Return the data layout option
+   * @return the data layout option
+   */
+  [[nodiscard]] DataLayoutOption getDataLayout() const { return _dataLayout; }
+
+ protected:
+  /**
+   * The datalayout used by this traversal.
+   */
+  DataLayoutOption _dataLayout;
+
+  /**
+   * If this traversal makes use of newton3.
+   */
+  bool _useNewton3;
 };
 
 }  // namespace autopas
