@@ -16,6 +16,7 @@
 #include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyFactoryInfo.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/NumberSetFinite.h"
@@ -101,6 +102,11 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
 
     case TuningStrategyOption::ruleBasedTuning: {
       tuningStrategy = std::make_unique<RuleBasedTuning>(searchSpace, /*verify mode*/ false, info.ruleFileName);
+      break;
+    }
+
+    case TuningStrategyOption::fuzzyTuning: {
+      tuningStrategy = std::make_unique<FuzzyTuning>();
       break;
     }
 
