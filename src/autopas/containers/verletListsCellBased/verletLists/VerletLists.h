@@ -164,7 +164,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         this->updateVerletListsAoS3B(traversal->getUseNewton3());
       }
     }
-    
+
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
 
