@@ -23,11 +23,11 @@ class FuzzyRule {
   FuzzyRule(const std::shared_ptr<FuzzySet> &antecedent, const std::shared_ptr<FuzzySet> &consequent);
 
   /**
-   * Applies the FuzzyRule to the given data.
+   * Applies the FuzzyRule using the given data.
    * @param data A map of the form {dimension_name: value}.
-   * @return The cut FuzzySet resulting from the application of the FuzzyRule to the given data.
+   * @return The cut consequent FuzzySet resulting from the application of the FuzzyRule.
    */
-  [[nodiscard]] std::shared_ptr<FuzzySet> apply(const std::map<std::string, double> &data) const;
+  [[nodiscard]] std::shared_ptr<FuzzySet> apply(const FuzzySet::Data &data) const;
 
  private:
   /**

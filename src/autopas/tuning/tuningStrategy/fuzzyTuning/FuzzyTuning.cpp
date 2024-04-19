@@ -6,15 +6,14 @@
 
 #include "FuzzyTuning.h"
 
-#include "CrispSet.h"
 #include "FuzzyRule.h"
+#include "FuzzySetFactory.h"
 #include "FuzzySystem.h"
 #include "LinguisticVariable.h"
-#include "MembershipFunction.h"
 
 namespace autopas {
 
-FuzzyTuning::FuzzyTuning() {}
+FuzzyTuning::FuzzyTuning() = default;
 
 bool FuzzyTuning::needsLiveInfo() const { return true; }
 

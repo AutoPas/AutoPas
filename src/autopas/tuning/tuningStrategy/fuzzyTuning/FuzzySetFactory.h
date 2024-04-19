@@ -1,7 +1,7 @@
 /**
- * @file MembershipFunction.h
+ * @file FuzzySetFactory.h
  * @author Manuel Lerchner
- * @date 17.04.24
+ * @date 19.04.24
  */
 
 #pragma once

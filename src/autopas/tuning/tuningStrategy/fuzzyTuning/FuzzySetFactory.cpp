@@ -1,17 +1,17 @@
 /**
- * @file ComposedMembershipFunction.cpp
+ * @file FuzzySetFactory.cpp
  * @author Manuel Lerchner
- * @date 17.04.24
+ * @date 19.04.24
  */
 
-#include "MembershipFunction.h"
-
 #include <cmath>
+
+#include "FuzzySetFactory.h"
 
 namespace autopas::fuzzy_logic {
 
 std::shared_ptr<FuzzySet> makeTriangle(const std::string &linguisticTerm, double min, double mid, double max) {
-  auto triangular = std::make_shared<FuzzySet::BaseMembershipFunction>([min, mid, max](double value) {
+  auto triangular = [min, mid, max](double value) {
     if (value <= min or value >= max) {
       return 0.0;
     } else if (value <= mid) {
@@ -19,13 +19,13 @@ std::shared_ptr<FuzzySet> makeTriangle(const std::string &linguisticTerm, double
     } else {
       return (max - value) / (max - mid);
     }
-  });
+  };
   return std::make_shared<FuzzySet>(linguisticTerm, triangular);
 }
 
 std::shared_ptr<FuzzySet> makeTrapezoid(const std::string &linguisticTerm, double min, double mid1, double mid2,
                                         double max) {
-  auto trapezoidal = std::make_shared<FuzzySet::BaseMembershipFunction>([min, mid1, mid2, max](double value) {
+  auto trapezoidal = [min, mid1, mid2, max](double value) {
     if (value <= min or value >= max) {
       return 0.0;
     } else if (value <= mid1) {
@@ -35,13 +35,12 @@ std::shared_ptr<FuzzySet> makeTrapezoid(const std::string &linguisticTerm, doubl
     } else {
       return (max - value) / (max - mid2);
     }
-  });
+  };
   return std::make_shared<FuzzySet>(linguisticTerm, trapezoidal);
 }
 
 std::shared_ptr<FuzzySet> makeGaussian(const std::string &linguisticTerm, double mean, double sigma) {
-  auto gaussian = std::make_shared<FuzzySet::BaseMembershipFunction>(
-      [mean, sigma](double value) { return std::exp(-0.5 * std::pow((value - mean) / sigma, 2)); });
+  auto gaussian = [mean, sigma](double value) { return std::exp(-0.5 * std::pow((value - mean) / sigma, 2)); };
   return std::make_shared<FuzzySet>(linguisticTerm, gaussian);
 }
 

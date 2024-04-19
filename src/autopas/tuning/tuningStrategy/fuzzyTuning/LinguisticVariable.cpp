@@ -12,9 +12,9 @@ LinguisticVariable::LinguisticVariable(const std::string &name, const std::pair<
   _crispSet = std::make_shared<CrispSet>(name, range);
 }
 
-void LinguisticVariable::addLinguisticTerm(const std::shared_ptr<FuzzySet> &fuzzySet) {
-  fuzzySet->setCrispSet(_crispSet);
-  _linguisticTerms[fuzzySet->getLinguisticTerm()] = fuzzySet;
+void LinguisticVariable::addLinguisticTerm(const std::shared_ptr<FuzzySet> &linguisticTerm) {
+  linguisticTerm->setCrispSet(_crispSet);
+  _linguisticTerms[linguisticTerm->getLinguisticTerm()] = linguisticTerm;
 }
 
 std::shared_ptr<FuzzySet> LinguisticVariable::operator==(const std::string &linguisticTerm) const {

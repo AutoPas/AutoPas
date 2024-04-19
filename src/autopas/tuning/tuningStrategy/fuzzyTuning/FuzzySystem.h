@@ -17,25 +17,30 @@ namespace autopas::fuzzy_logic {
 class FuzzySystem {
  public:
   /**
+   * Constructs an empty FuzzySystem.
+   */
+  FuzzySystem() = default;
+
+  /**
    * Adds a new FuzzyRule to the FuzzySystem.
    * @param rule The FuzzyRule to add.
    */
   void addRule(const FuzzyRule &rule);
 
   /**
-   * Applies the FuzzySystem to the given data.
+   * Applies all the rules of the FuzzySystem with the given data and calculates the union of all the cut-consequents.
    * @param data A map of the form {dimension_name: value}.
    * @return The FuzzySet resulting from the application of the FuzzySystem to the given data.
    */
-  [[nodiscard]] std::shared_ptr<FuzzySet> applyRules(const std::map<std::string, double> &data) const;
+  [[nodiscard]] std::shared_ptr<FuzzySet> applyRules(const FuzzySet::Data &data) const;
 
   /**
    * Predicts the output of the FuzzySystem for the given data.
    * @param data A map of the form {dimension_name: value}.
-   * @param numSamples The number of samples to use for the centroid calculation.
+   * @param numSamples The number of samples to use for the numerical centroid calculation. Default is 100.
    * @return The predicted output of the FuzzySystem for the given data.
    */
-  [[nodiscard]] double predict(const std::map<std::string, double> &data, size_t numSamples = 100) const;
+  [[nodiscard]] double predict(const FuzzySet::Data &data, size_t numSamples = 100) const;
 
  private:
   /**

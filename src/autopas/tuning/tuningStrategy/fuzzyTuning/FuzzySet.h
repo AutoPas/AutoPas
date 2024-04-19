@@ -22,30 +22,39 @@ namespace autopas::fuzzy_logic {
  */
 class FuzzySet {
  public:
-  using ComposedMembershipFunction = std::function<double(const std::map<std::string, double> &)>;
+  /**
+   * A map of the form {dimension_name: value}. Used to represent higher dimensional function inputs.
+   */
+  using Data = std::map<std::string, double>;
+
+  /**
+   * A composed membership function is a membership function that relies on different FuzzySets to calculate the
+   * membership value. This is important as it allows for straightforward implementation of fuzzy logic operators.
+   * Composed membership represent higher dimensional membership functions (m=f(x1,x2,...,xn)). The necessary data is
+   * passed as a map of the form {dimension_name: value}.
+   */
+  using ComposedMembershipFunction = std::function<double(const Data &)>;
+
+  /**
+   * A base membership function calculates the membership value based on a direct function evaluation.
+   * Base membership function take a single value and returns the corresponding membership value. (m=f(x))
+   */
   using BaseMembershipFunction = std::function<double(double)>;
 
   /**
-   * Constructs a FuzzySet with the given linguistic term and membership function.
+   * Constructs a FuzzySet with a given linguistic term and base membership function.
    * @param linguisticTerm
    * @param membershipFunction
    */
-  FuzzySet(std::string linguisticTerm, const std::shared_ptr<ComposedMembershipFunction> &membershipFunction);
+  FuzzySet(std::string linguisticTerm, BaseMembershipFunction &&baseMembershipFunction);
 
   /**
-   * Constructs a FuzzySet with the given linguistic term and membership function.
-   * @param linguisticTerm
-   * @param membershipFunction
-   */
-  FuzzySet(std::string linguisticTerm, const std::shared_ptr<BaseMembershipFunction> &baseMembershipFunction);
-
-  /**
-   * Constructs a FuzzySet with the given linguistic term and crisp set.
+   * Constructs a FuzzySet with a given linguistic term, composed membership function and crisp set.
    * @param linguisticTerm
    * @param membershipFunction
    * @param crispSet
    */
-  FuzzySet(std::string linguisticTerm, const std::shared_ptr<ComposedMembershipFunction> &membershipFunction,
+  FuzzySet(std::string linguisticTerm, ComposedMembershipFunction &&membershipFunction,
            const std::shared_ptr<CrispSet> &crispSet);
 
   /**
@@ -53,13 +62,13 @@ class FuzzySet {
    * @param data A map of the form {dimension_name: value}.
    * @return The membership value of the given value in this FuzzySet.
    */
-  [[nodiscard]] double evaluate_membership(const std::map<std::string, double> &data) const;
+  [[nodiscard]] double evaluate_membership(const Data &data) const;
 
   /**
    * Calculates the x-coordinate of the centroid of this FuzzySet.
    * @return The x-coordinate of the centroid of this FuzzySet.
    */
-  [[nodiscard]] double centroid(size_t numSamples = 100) const;
+  [[nodiscard]] double centroid(size_t numSamples) const;
 
   /**
    * Returns the linguistic term of the FuzzySet.
@@ -97,9 +106,16 @@ class FuzzySet {
   friend std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &lhs);
 
  private:
+  /**
+   * The linguistic term of the FuzzySet.
+   */
   std::string _linguisticTerm;
-  std::shared_ptr<ComposedMembershipFunction> _membershipFunction;
-  std::optional<std::shared_ptr<BaseMembershipFunction>> _baseMembershipFunction;
+
+  /**
+   * The membership function of the FuzzySet.
+   */
+  ComposedMembershipFunction _membershipFunction;
+  std::optional<BaseMembershipFunction> _baseMembershipFunction;
   std::shared_ptr<CrispSet> _crispSet;
 };
 

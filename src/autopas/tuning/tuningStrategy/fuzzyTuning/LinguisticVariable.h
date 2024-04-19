@@ -14,23 +14,30 @@
 
 namespace autopas::fuzzy_logic {
 
+/**
+ * A class representing a LinguisticVariable. A LinguisticVariable is defined on a CrispSet and consists of several
+ * FuzzySets, which are the linguistic terms of the LinguisticVariable.
+ */
 class LinguisticVariable {
  public:
   /**
-   * Constructs a LinguisticVariable with the given name.
-   * @param name
+   * Constructs a LinguisticVariable with the given name and range.
+   * @param name The name of the LinguisticVariable.
+   * @param range The range of the LinguisticVariable in the form [min, max].
    */
   explicit LinguisticVariable(const std::string &name, const std::pair<double, double> &range);
 
   /**
-   * Adds a FuzzySet to the LinguisticVariable.
+   * Adds a new linguistic term to the LinguisticVariable.
+   * Additionally updates the CrispSet of the linguistic term to the current CrispSet.
    * @param fuzzySet
    */
-  void addLinguisticTerm(const std::shared_ptr<FuzzySet> &fuzzySet);
+  void addLinguisticTerm(const std::shared_ptr<FuzzySet> &linguisticTerm);
 
   /**
-   * Overload of the operator== to get a FuzzySet by its name. This allows a very concise syntax to create fuzzy rules.
-   * @param linguisticTerm
+   * Overload of the operator== to extract a linguistic term by its name. This allows a very concise syntax to create
+   * fuzzy rules.
+   * @param linguisticTerm The name of the linguistic term to extract.
    * @return The FuzzySet with the given name.
    */
   std::shared_ptr<FuzzySet> operator==(const std::string &linguisticTerm) const;
