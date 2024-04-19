@@ -88,6 +88,7 @@ include(version.cmake)
 add_subdirectory(libs)
 
 include(autopas_antlr4cpp)
+include(autopas_libxsd)
 
 # autopas
 add_subdirectory(src)

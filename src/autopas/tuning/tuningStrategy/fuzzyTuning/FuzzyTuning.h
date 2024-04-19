@@ -14,7 +14,7 @@ namespace autopas {
 
 class FuzzyTuning : public TuningStrategyInterface {
  public:
-  FuzzyTuning();
+  FuzzyTuning(const std::string &ruleFileName);
 
   TuningStrategyOption getOptionType() override;
 

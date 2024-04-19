@@ -10,10 +10,11 @@
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyRule.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/xmlParser/XMLParser.h"
 
 namespace autopas {
 
-FuzzyTuning::FuzzyTuning() = default;
+FuzzyTuning::FuzzyTuning(const std::string &ruleFileName) : _ruleFileName(ruleFileName) {}
 
 bool FuzzyTuning::needsLiveInfo() const { return true; }
 
@@ -21,6 +22,8 @@ void FuzzyTuning::receiveLiveInfo(const LiveInfo &info) { _currentLiveInfo = inf
 
 void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   using namespace autopas::fuzzy_logic;
+
+  parse(_ruleFileName);
 
   // Just a demo showing how to use the fuzzy logic controller
 

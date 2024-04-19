@@ -106,7 +106,7 @@ std::unique_ptr<TuningStrategyInterface> generateTuningStrategy(const std::set<C
     }
 
     case TuningStrategyOption::fuzzyTuning: {
-      tuningStrategy = std::make_unique<FuzzyTuning>();
+      tuningStrategy = std::make_unique<FuzzyTuning>(info.ruleFileName);
       break;
     }
 
