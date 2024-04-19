@@ -135,12 +135,6 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
   // schedule(runtime) will then use them for the traversal in the concerned calling thread.
   TraversalInterface::_openMPConfigurator.setSchedule();
 
-  // For manual testing, try OMP_SCHEDULE=auto,4 vs OMP_SCHEDULE=dynamic,1 before running the simulator.
-  // Also, try KMP_Expert_Chunk=0
-
-  // For Debugging
-  //std::cout << TraversalInterface::_openMPConfigurator.getRuntimeSchedule() << std::endl;
-
   AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {

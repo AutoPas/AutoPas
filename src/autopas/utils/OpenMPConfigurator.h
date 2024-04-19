@@ -95,9 +95,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    * Set of options that are very unlikely to be interesting.
    * @return
    */
-  static std::set<OpenMPKindOption> getDiscouragedOptions() {
-    return {};
-  }
+  static std::set<OpenMPKindOption> getDiscouragedOptions() { return {}; }
 
   /**
    * Provides a way to iterate over the possible choices of OpenMPKindOption.
@@ -148,80 +146,78 @@ extern OpenMPKindOption openMPDefaultKind;
  * This class provides configurable parameters for OpenMP.
  */
 class OpenMPConfigurator {
-    private:
-        OpenMPKindOption _kind = openMPDefaultKind;
-        int _chunkSize = openMPDefaultChunkSize;
+ private:
+  OpenMPKindOption _kind = openMPDefaultKind;
+  int _chunkSize = openMPDefaultChunkSize;
 
-    public:
-        /**
-         * OpenMP configurator default constructor.
-         */
-        [[maybe_unused]] OpenMPConfigurator();
+ public:
+  /**
+   * OpenMP configurator default constructor.
+   */
+  [[maybe_unused]] OpenMPConfigurator();
 
-        /**
-         * OpenMP configurator constructor.
-         * @param s chunk size used in OpenMP's loop scheduling
-         */
-        [[maybe_unused]] explicit OpenMPConfigurator(OpenMPKindOption kind, int chunkSize);
+  /**
+   * OpenMP configurator constructor.
+   * @param s chunk size used in OpenMP's loop scheduling
+   */
+  [[maybe_unused]] explicit OpenMPConfigurator(OpenMPKindOption kind, int chunkSize);
 
-        /**
-         * OpenMP chunk size getter.
-         * @return the current OpenMP chunk size
-         */
-        [[maybe_unused]] [[nodiscard]] int getChunkSize() const;
+  /**
+   * OpenMP chunk size getter.
+   * @return the current OpenMP chunk size
+   */
+  [[maybe_unused]] [[nodiscard]] int getChunkSize() const;
 
-        /**
-         * OpenMP chunk size getter for setting OpenMP's scheduling runtime variables.
-         * @return the current OpenMP chunk size
-         */
-        [[maybe_unused]] [[nodiscard]] int getOMPChunkSize() const;
+  /**
+   * OpenMP chunk size getter for setting OpenMP's scheduling runtime variables.
+   * @return the current OpenMP chunk size
+   */
+  [[maybe_unused]] [[nodiscard]] int getOMPChunkSize() const;
 
-        /**
-         * OpenMP chunk size setter.
-         * @param s the new chunk size to use
-         */
-        [[maybe_unused]] void setChunkSize(int chunkSize);
+  /**
+   * OpenMP chunk size setter.
+   * @param s the new chunk size to use
+   */
+  [[maybe_unused]] void setChunkSize(int chunkSize);
 
-        /**
-         * OpenMP scheduling kind getter.
-         * @return the current OpenMP scheduling kind, directly usable as an argument for OpenMP's schedule-clause
-         */
-        [[maybe_unused]] [[nodiscard]] OpenMPKindOption getKind() const;
+  /**
+   * OpenMP scheduling kind getter.
+   * @return the current OpenMP scheduling kind, directly usable as an argument for OpenMP's schedule-clause
+   */
+  [[maybe_unused]] [[nodiscard]] OpenMPKindOption getKind() const;
 
-        /**
-         * OpenMP standard scheduling kind getter.
-         * @return the current OpenMP chunk size
-         */
-        [[maybe_unused]] [[nodiscard]] omp_sched_t getOMPKind() const;
+  /**
+   * OpenMP standard scheduling kind getter.
+   * @return the current OpenMP chunk size
+   */
+  [[maybe_unused]] [[nodiscard]] omp_sched_t getOMPKind() const;
 
-        /**
-         * OpenMP scheduling kind setter.
-         * @param k the new scheduling kind to use
-         */
-        [[maybe_unused]] void setKind(OpenMPKindOption kind);
+  /**
+   * OpenMP scheduling kind setter.
+   * @param k the new scheduling kind to use
+   */
+  [[maybe_unused]] void setKind(OpenMPKindOption kind);
 
-        /**
-         * Sets OpenMP's scheduling runtime variables.
-         */
-        [[maybe_unused]] inline void setSchedule() const;
+  /**
+   * Sets OpenMP's scheduling runtime variables.
+   */
+  [[maybe_unused]] inline void setSchedule() const { autopas_set_schedule(getOMPKind(), getOMPChunkSize()); }
 
-        /**
-         * Sets OpenMP's scheduling runtime variables.
-         * @param k the new scheduling kind
-         * @param s the new chunk size
-         */
-        [[maybe_unused]] inline void setSchedule(OpenMPKindOption kind, int chunkSize);
+  /**
+   * Sets OpenMP's scheduling runtime variables.
+   * @param k the new scheduling kind
+   * @param s the new chunk size
+   */
+  [[maybe_unused]] inline void setSchedule(OpenMPKindOption kind, int chunkSize) {
+    setKind(kind);
+    setChunkSize(chunkSize);
+    setSchedule();
+  }
 
-        /**
-         * Gets OpenMP's scheduling runtime variables as a string.
-         * @return the scheduling kind and chunk size used by schedule(runtime) as a string
-         */
-        [[maybe_unused]] std::string getRuntimeSchedule();
-
-        /**
-         * Tells whether the scheduling chunk size should be overwritten.
-         * @return whether the scheduling chunk size should be overwritten
-         */
-         [[maybe_unused]] [[nodiscard]] bool overrideChunkSize() const;
+  /**
+   * Tells whether the scheduling chunk size should be overwritten.
+   * @return whether the scheduling chunk size should be overwritten
+   */
+  [[maybe_unused]] [[nodiscard]] bool overrideChunkSize() const;
 };
-}
+}  // namespace autopas
