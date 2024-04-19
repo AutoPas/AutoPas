@@ -28,7 +28,8 @@ class FuzzyControlSystem {
   void addRule(const FuzzyRule &rule);
 
   /**
-   * Applies all the rules of the FuzzyControlSystem with the given data and calculates the union of all the cut-consequents.
+   * Applies all the rules of the FuzzyControlSystem with the given data and calculates the union of all the
+   * cut-consequents.
    * @param data A map of the form {dimension_name: value}.
    * @return The FuzzySet resulting from the application of the FuzzyControlSystem to the given data.
    */

@@ -4,9 +4,9 @@
  * @date 19.04.24
  */
 
-#include <cmath>
-
 #include "FuzzySetFactory.h"
+
+#include <cmath>
 
 namespace autopas::fuzzy_logic {
 

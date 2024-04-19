@@ -11,7 +11,7 @@
 namespace autopas::fuzzy_logic {
 
 /**
- * Constructs a Triangle FuzzySet with the given linguistic term and membership function.
+ * Constructs a Triangle FuzzySet with the given linguistic term.
  * @param linguisticTerm The linguistic term of this FuzzySet.
  * @param min The left border of the triangle. The membership function will be 0 for values smaller than min.
  * @param mid The peak of the triangle. The membership function will be 1 for values equal to mid.
@@ -20,7 +20,7 @@ namespace autopas::fuzzy_logic {
 std::shared_ptr<FuzzySet> makeTriangle(const std::string &linguisticTerm, double min, double mid, double max);
 
 /**
- * Constructs a Trapezoid FuzzySet with the given linguistic term and membership function.
+ * Constructs a Trapezoid FuzzySet with the given linguistic term.
  * @param linguisticTerm The linguistic term of this FuzzySet.
  * @param min The left border of the trapezoid. The membership function will be 0 for values smaller than min.
  * @param mid1 The left peak of the trapezoid. The membership function will be 1 for values equal to mid1.
@@ -31,7 +31,7 @@ std::shared_ptr<FuzzySet> makeTrapezoid(const std::string &linguisticTerm, doubl
                                         double max);
 
 /**
- * Constructs a Gaussian FuzzySet with the given linguistic term and membership function.
+ * Constructs a Gaussian FuzzySet with the given linguistic term.
  * @param linguisticTerm The linguistic term of this FuzzySet.
  * @param mean The mean of the Gaussian. The membership function will be 1 for values equal to mean.
  * @param sigma The standard deviation of the Gaussian.
