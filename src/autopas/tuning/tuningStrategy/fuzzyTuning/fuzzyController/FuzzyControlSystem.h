@@ -1,5 +1,5 @@
 /**
- * @file FuzzySystem.h
+ * @file FuzzyControlSystem.h
  * @author Manuel Lerchner
  * @date 18.04.24
  */
@@ -14,37 +14,37 @@
 
 namespace autopas::fuzzy_logic {
 
-class FuzzySystem {
+class FuzzyControlSystem {
  public:
   /**
-   * Constructs an empty FuzzySystem.
+   * Constructs an empty FuzzyControlSystem.
    */
-  FuzzySystem() = default;
+  FuzzyControlSystem() = default;
 
   /**
-   * Adds a new FuzzyRule to the FuzzySystem.
+   * Adds a new FuzzyRule to the FuzzyControlSystem.
    * @param rule The FuzzyRule to add.
    */
   void addRule(const FuzzyRule &rule);
 
   /**
-   * Applies all the rules of the FuzzySystem with the given data and calculates the union of all the cut-consequents.
+   * Applies all the rules of the FuzzyControlSystem with the given data and calculates the union of all the cut-consequents.
    * @param data A map of the form {dimension_name: value}.
-   * @return The FuzzySet resulting from the application of the FuzzySystem to the given data.
+   * @return The FuzzySet resulting from the application of the FuzzyControlSystem to the given data.
    */
   [[nodiscard]] std::shared_ptr<FuzzySet> applyRules(const FuzzySet::Data &data) const;
 
   /**
-   * Predicts the output of the FuzzySystem for the given data.
+   * Predicts the output of the FuzzyControlSystem for the given data.
    * @param data A map of the form {dimension_name: value}.
    * @param numSamples The number of samples to use for the numerical centroid calculation. Default is 100.
-   * @return The predicted output of the FuzzySystem for the given data.
+   * @return The predicted output of the FuzzyControlSystem for the given data.
    */
   [[nodiscard]] double predict(const FuzzySet::Data &data, size_t numSamples = 100) const;
 
  private:
   /**
-   * All rules of the FuzzySystem.
+   * All rules of the FuzzyControlSystem.
    */
   std::vector<FuzzyRule> _rules;
 };

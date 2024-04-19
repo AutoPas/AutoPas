@@ -6,10 +6,10 @@
 
 #include "FuzzyTuning.h"
 
-#include "FuzzyRule.h"
-#include "FuzzySetFactory.h"
-#include "FuzzySystem.h"
-#include "LinguisticVariable.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyControlSystem.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyRule.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
 
 namespace autopas {
 
@@ -21,6 +21,8 @@ void FuzzyTuning::receiveLiveInfo(const LiveInfo &info) { _currentLiveInfo = inf
 
 void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
   using namespace autopas::fuzzy_logic;
+
+  // Just a demo showing how to use the fuzzy logic controller
 
   auto service = LinguisticVariable("service", std::pair(0, 10));
   auto food = LinguisticVariable("food", std::pair(0, 10));
@@ -37,12 +39,14 @@ void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence
   tip.addLinguisticTerm(makeTriangle("average", 10, 15, 20));
   tip.addLinguisticTerm(makeTriangle("generous", 20, 25, 30));
 
-  auto fs = FuzzySystem();
-  fs.addRule(FuzzyRule(service == "poor" || food == "rancid", tip == "cheap"));
-  fs.addRule(FuzzyRule(service == "good", tip == "average"));
-  fs.addRule(FuzzyRule(service == "excellent" || food == "delicious", tip == "generous"));
+  auto fcs = FuzzyControlSystem();
+  fcs.addRule(FuzzyRule(service == "poor" || food == "rancid", tip == "cheap"));
+  fcs.addRule(FuzzyRule(service == "good", tip == "average"));
+  fcs.addRule(FuzzyRule(service == "excellent" || food == "delicious", tip == "generous"));
 
-  auto x2 = fs.predict({{"service", 1}, {"food", 3}});
+  // Make a prediction for a sample input
+  FuzzySet::Data sample = {{"service", 1}, {"food", 3}};
+  auto x2 = fcs.predict(sample);
 
   std::cout << "Predicted tip: " << x2 << std::endl;
 }
