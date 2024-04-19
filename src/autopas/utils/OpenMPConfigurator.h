@@ -171,6 +171,12 @@ class OpenMPConfigurator {
         [[maybe_unused]] [[nodiscard]] int getChunkSize() const;
 
         /**
+         * OpenMP chunk size getter for setting OpenMP's scheduling runtime variables.
+         * @return the current OpenMP chunk size
+         */
+        [[maybe_unused]] [[nodiscard]] int getOMPChunkSize() const;
+
+        /**
          * OpenMP chunk size setter.
          * @param s the new chunk size to use
          */
@@ -193,6 +199,24 @@ class OpenMPConfigurator {
          * @param k the new scheduling kind to use
          */
         [[maybe_unused]] void setKind(OpenMPKindOption kind);
+
+        /**
+         * Sets OpenMP's scheduling runtime variables.
+         */
+        [[maybe_unused]] inline void setSchedule() const;
+
+        /**
+         * Sets OpenMP's scheduling runtime variables.
+         * @param k the new scheduling kind
+         * @param s the new chunk size
+         */
+        [[maybe_unused]] inline void setSchedule(OpenMPKindOption kind, int chunkSize);
+
+        /**
+         * Gets OpenMP's scheduling runtime variables as a string.
+         * @return the scheduling kind and chunk size used by schedule(runtime) as a string
+         */
+        [[maybe_unused]] std::string getRuntimeSchedule();
 
         /**
          * Tells whether the scheduling chunk size should be overwritten.

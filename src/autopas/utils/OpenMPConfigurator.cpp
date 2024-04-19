@@ -29,8 +29,8 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::auto4omp_expertsel;
  * @param s chunk size used in OpenMP's loop scheduling
  */
 [[maybe_unused]] autopas::OpenMPConfigurator::OpenMPConfigurator(OpenMPKindOption kind, int chunkSize) {
-  _kind = kind;
-  _chunkSize = chunkSize;
+  setKind(kind);
+  setChunkSize(chunkSize);
 }
 
 /**
@@ -38,6 +38,14 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::auto4omp_expertsel;
  * @return the current OpenMP chunk size
  */
 [[maybe_unused]] [[nodiscard]] int autopas::OpenMPConfigurator::getChunkSize() const {
+  return _kind;
+}
+
+/**
+ * OpenMP chunk size getter for setting OpenMP's scheduling runtime variables.
+ * @return the current OpenMP chunk size
+ */
+[[maybe_unused]] [[nodiscard]] int autopas::OpenMPConfigurator::getOMPChunkSize() const {
   switch (_kind) {
     case OpenMPKindOption::omp_auto:
       return 1;
@@ -86,6 +94,53 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::auto4omp_expertsel;
  * @param k the new scheduling kind to use
  */
 [[maybe_unused]] void autopas::OpenMPConfigurator::setKind(OpenMPKindOption kind) { _kind = kind; }
+
+/**
+ * Sets OpenMP's scheduling runtime variables.
+ */
+[[maybe_unused]] inline void autopas::OpenMPConfigurator::setSchedule() const {
+  autopas_set_schedule(getOMPKind(), getOMPChunkSize());
+}
+
+/**
+ * Sets OpenMP's scheduling runtime variables.
+ * @param k the new scheduling kind
+ * @param s the new chunk size
+ */
+[[maybe_unused]] inline void autopas::OpenMPConfigurator::setSchedule(OpenMPKindOption kind, int chunkSize) {
+  setKind(kind);
+  setChunkSize(chunkSize);
+  setSchedule();
+}
+
+/**
+ * Gets OpenMP's scheduling runtime variables as a string.
+ * @return the scheduling kind and chunk size used by schedule(runtime) as a string
+ */
+[[maybe_unused]] std::string autopas::OpenMPConfigurator::getRuntimeSchedule() {
+  omp_sched_t kind;
+  int chunkSize;
+  autopas_get_schedule(&kind, &chunkSize);
+  std::string schedule = "Schedule = ";
+  switch (kind) {
+    case omp_sched_static:
+      schedule += "Static";
+      break;
+    case omp_sched_dynamic:
+      schedule += "Dynamic";
+      break;
+    case omp_sched_guided:
+      schedule += "Guided";
+      break;
+    case omp_sched_auto:
+      schedule += "Auto";
+      break;
+    case omp_sched_monotonic:
+      schedule += "Monotonic";
+  }
+  schedule += "," + std::to_string(chunkSize);
+  return schedule;
+}
 
 /**
  * Tells whether the scheduling chunk size should be overwritten.

@@ -130,6 +130,17 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;
+
+  // Set OpenMP's scheduling runtime variables from the configurator.
+  // schedule(runtime) will then use them for the traversal in the concerned calling thread.
+  TraversalInterface::_openMPConfigurator.setSchedule();
+
+  // For manual testing, try OMP_SCHEDULE=auto,4 vs OMP_SCHEDULE=dynamic,1 before running the simulator.
+  // Also, try KMP_Expert_Chunk=0
+
+  // For Debugging
+  //std::cout << TraversalInterface::_openMPConfigurator.getRuntimeSchedule() << std::endl;
+
   AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
@@ -145,10 +156,6 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-
-      // Set OpenMP's scheduling runtime variables from the configurator.
-      // schedule(runtime) will then use them for the traversal in the concerned calling thread.
-      autopas_set_schedule(TraversalInterface::_openMPConfigurator.getOMPKind(), TraversalInterface::_openMPConfigurator.getChunkSize());
 
       if (collapseDepth == 2) {
         AUTOPAS_OPENMP(for schedule(runtime) collapse(2))

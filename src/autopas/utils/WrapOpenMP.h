@@ -70,10 +70,16 @@ inline void autopas_set_num_threads(int n) { omp_set_num_threads(n); }
 /**
  * Wrapper for omp_set_schedule().
  * Sets the scheduling kind and chunk size used by schedule(runtime).
+ * @param kind the scheduling kind to use
+ * @param chunkSize the chunk size to use
  */
-inline void autopas_set_schedule(omp_sched_t kind, int chunkSize) {
-  omp_set_schedule(kind, chunkSize);
-}
+inline void autopas_set_schedule(omp_sched_t kind, int chunkSize) { omp_set_schedule(kind, chunkSize); }
+
+/**
+ * Wrapper for omp_get_schedule().
+ * Puts the values of OpenMP's scheduling runtime variables at the given pointers.
+ */
+inline void autopas_get_schedule(omp_sched_t *kind, int *chunkSize) { omp_get_schedule(kind, chunkSize); }
 
 /**
  * AutoPasLock for the openmp case, this wraps a omp_lock_t object. To make it copyable, etc.
@@ -173,9 +179,16 @@ inline void autopas_set_num_threads(int /* n */) {}
 
 /**
  * Wrapper for omp_set_schedule().
- * @return Id of the current thread.
+ * @param kind the scheduling kind to use
+ * @param chunkSize the chunk size to use
  */
 inline void autopas_set_schedule(OpenMPKindOption /* kind */, int /* chunkSize */) {}
+
+/**
+ * Wrapper for omp_get_schedule().
+ * Puts the values of OpenMP's scheduling runtime variables at the given pointers.
+ */
+inline void autopas_get_schedule(omp_sched_t *kind, int *chunkSize) {}
 
 /**
  * AutoPasLock for the sequential case.
