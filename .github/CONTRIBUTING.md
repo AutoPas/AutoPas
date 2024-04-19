@@ -24,7 +24,7 @@ Please keep in mind the following notes while working.
 * Use `camelCase` over `snake_case`.
 * Google code style is enforced by the CI server.
 * To enable code formatting targets set the `cmake` variable `AUTOPAS_FORMATTING_TARGETS` to `ON`.
-* [Clang format](https://clang.llvm.org/docs/ClangFormat.html) version 14 is enforced (other versions might format slightly differently).
+* [Clang format](https://clang.llvm.org/docs/ClangFormat.html) version 14 is enforced (other versions might format slightly differently - you must use version 14 only).
 * Run `make clangformat` before submitting a PR for review.
 * [cmake format](https://github.com/cheshirekow/cmake_format) is enforced.
 * Run `make cmakeformat` before submitting a PR for review.

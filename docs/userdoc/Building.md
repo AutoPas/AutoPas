@@ -44,8 +44,8 @@ CC=clang CXX=clang++ cmake ..
 CC=clang CXX=clang++ cmake --build .
 ```
 
-This assumes `clang` and `clang++` is in your path.
-Otherwise, specify the full path.
+This assumes `clang` and `clang++` is in your search path.
+Otherwise, specify the full path e.g. `/usr/bin/clang` or wherever your clang is kept.
 
 Explicitly selecting the compiler is very often especially important when compiling on a cluster!
 

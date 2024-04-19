@@ -1,7 +1,7 @@
 # Container Interface Model
 
 The behavior described in this section is completely hidden from AutoPas users.
-To ensure functionality, particles must not move more than `skin / 2` within the specified Verlet rebuild frequency.
+To ensure functionality, particles must not move more than `verletSkinPerTimestep / 2` per timestep.
 This was initially implemented in [PR 642](https://github.com/AutoPas/AutoPas/pull/642), so more details can be found there.
 
 ## External Linked Cells-like interface
@@ -30,7 +30,7 @@ This effectively updates halo particles instead of deleting and reinserting them
 
 #### Weird Edge Cases
 It is still possible that there is a dummy that is not updated, and a new particle is added. Consider the following chain of events:
-- The container is `LinkedCells` (or anything based on `CellBlock3D.h`), and a particle is stored in a cell right before the halo region.
+- The container is `LinkedCells` (or anything based on `CellBlock3D.h`), and a particle is stored in a cell just inside the boundary.
 - The particle's position changes to the halo region before a data structure update.
 - The particle is deleted (= turned `dummy`) by `AutoPas::updateContainer` because it left the domain.
 - The particle is immediately added as a halo again. Since halo particles are not allowed to exist in non-halo cells, the existing dummy is not updated, and a new halo particle is added to buffers.

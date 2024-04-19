@@ -39,7 +39,7 @@ for(auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
 ```
 Analogously to `begin()`, `cbegin()` is also defined, which guarantees to return a `const` iterator.
 
-Some gotchas and further information to be aware of:
+Some further information to be aware of:
 - The iterator can only go forward.
   Its design doesn't necessarily prohibit reverse iteration, but it is (currently) not implemented.
 - Adding particles during iteration is considered undefined behavior.
@@ -115,7 +115,7 @@ All features described above also work in parallel, including particle deletion.
 #### Nested Loops
 
 If iterators are nested, inner loops should not spawn multiple iterators to avoid spreading the work too thin.
-This can be achieved by adapting the `IteratorBehavior`, which is basically a bit vector:
+This can be achieved by adapting the `IteratorBehavior`, which works similar to a bit vector:
 ```cpp
 AUTOPAS_OPENMP(parallel)
 for(auto& particle : autoPas) {   // spawns N iterators
@@ -135,7 +135,7 @@ For this, multiple member functions are available:
 
 | Function | Purpose |
 |:---------|:--------|
-| `forEach(Lambda, IteratorBehavior)` | Squential iteration over all particles in the container. |
+| `forEach(Lambda, IteratorBehavior)` | Sequential iteration over all particles in the container. |
 | `forEachParallel(Lambda, IteratorBehavior)` | Parallel iteration over all particles in the container. |
 | `forEachInRegion(Lambda, lowCorner, highCorner, IteratorBehavior)` | Sequential iteration over a given box, same as region iterators. |
 | `forEachInRegionParallel(Lambda, lowCorner, highCorner, IteratorBehavior)` | Parallel iteration over a given box, same as region iterators. |
@@ -154,7 +154,7 @@ autoPas.forEachInRegionParallel([](auto &particle) {
 
 ### Reductions
 
-On top of that for every `forEach`-style function, there is also a corresponding `reduce[inRegion][Parallel]()` function.
+On top of that, for every `forEach`-style function, there is also a corresponding `reduce[inRegion][Parallel]()` function.
 Here, the lambda function has the form `(Particle &, ResultT &) -> void`
 ```cpp
 size_t result = 0;
