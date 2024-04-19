@@ -20,7 +20,7 @@ class LinguisticVariable {
    * Constructs a LinguisticVariable with the given name.
    * @param name
    */
-  LinguisticVariable(const std::shared_ptr<CrispSet> &crispSet);
+  explicit LinguisticVariable(const std::string &name, const std::pair<double, double> &range);
 
   /**
    * Adds a FuzzySet to the LinguisticVariable.
@@ -33,13 +33,13 @@ class LinguisticVariable {
    * @param linguisticTerm
    * @return The FuzzySet with the given name.
    */
-  const FuzzySet &operator==(const std::string &linguisticTerm) const;
+  std::shared_ptr<FuzzySet> operator==(const std::string &linguisticTerm) const;
 
  private:
   /**
    * The CrispSet on which the LinguisticVariable is defined.
    */
-  std::shared_ptr<autopas::fuzzy_logic::CrispSet> _crispSet;
+  std::shared_ptr<CrispSet> _crispSet;
 
   /**
    * All linguistic terms of the LinguisticVariable organized by their name.

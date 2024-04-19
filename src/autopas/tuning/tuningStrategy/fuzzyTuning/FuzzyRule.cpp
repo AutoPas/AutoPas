@@ -6,23 +6,22 @@
 
 #include "FuzzyRule.h"
 
-#include "autopas/utils/ExceptionHandler.h"
-
 namespace autopas::fuzzy_logic {
 
-FuzzyRule::FuzzyRule(const FuzzySet &antecedent, const FuzzySet &consequent)
+FuzzyRule::FuzzyRule(const std::shared_ptr<FuzzySet> &antecedent, const std::shared_ptr<FuzzySet> &consequent)
     : _antecedent(antecedent), _consequent(consequent) {}
 
-FuzzySet FuzzyRule::apply(const std::map<std::string, double> &data) const {
-  const double cut = _antecedent.evaluate_membership(data);
+std::shared_ptr<FuzzySet> FuzzyRule::apply(const std::map<std::string, double> &data) const {
+  const double cut = _antecedent->evaluate_membership(data);
 
-  const std::string newLinguisticTerm = fmt::format("{}↑{:0.2f}", _consequent.getLinguisticTerm(), cut);
+  const std::string newLinguisticTerm = _consequent->getLinguisticTerm() + "↑" + std::to_string(cut);
 
-  const auto cut_consequent = FuzzySet(
-      newLinguisticTerm, [cut, this](auto data) { return std::min(cut, _consequent.evaluate_membership(data)); },
-      _consequent.getCrispSet());
+  const auto cons =
+      std::make_shared<FuzzySet::ComposedMembershipFunction>([cut, this](const std::map<std::string, double> &data) {
+        return std::min(cut, _consequent->evaluate_membership(data));
+      });
 
-  return cut_consequent;
+  return std::make_shared<FuzzySet>(newLinguisticTerm, cons, _consequent->getCrispSet());
 }
 
 }  // namespace autopas::fuzzy_logic

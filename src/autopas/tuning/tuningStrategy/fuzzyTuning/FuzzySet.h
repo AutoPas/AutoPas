@@ -5,6 +5,7 @@
  */
 
 #pragma once
+
 #include <functional>
 #include <map>
 #include <memory>
@@ -21,7 +22,7 @@ namespace autopas::fuzzy_logic {
  */
 class FuzzySet {
  public:
-  using MembershipFunction = std::function<double(std::map<std::string, double>)>;
+  using ComposedMembershipFunction = std::function<double(const std::map<std::string, double> &)>;
   using BaseMembershipFunction = std::function<double(double)>;
 
   /**
@@ -29,14 +30,14 @@ class FuzzySet {
    * @param linguisticTerm
    * @param membershipFunction
    */
-  FuzzySet(const std::string &linguisticTerm, const MembershipFunction &membershipFunction);
+  FuzzySet(std::string linguisticTerm, const std::shared_ptr<ComposedMembershipFunction> &membershipFunction);
 
   /**
    * Constructs a FuzzySet with the given linguistic term and membership function.
    * @param linguisticTerm
    * @param membershipFunction
    */
-  FuzzySet(const std::string &linguisticTerm, const BaseMembershipFunction &membershipFunction);
+  FuzzySet(std::string linguisticTerm, const std::shared_ptr<BaseMembershipFunction> &baseMembershipFunction);
 
   /**
    * Constructs a FuzzySet with the given linguistic term and crisp set.
@@ -44,7 +45,7 @@ class FuzzySet {
    * @param membershipFunction
    * @param crispSet
    */
-  FuzzySet(const std::string &linguisticTerm, const MembershipFunction &membershipFunction,
+  FuzzySet(std::string linguisticTerm, const std::shared_ptr<ComposedMembershipFunction> &membershipFunction,
            const std::shared_ptr<CrispSet> &crispSet);
 
   /**
@@ -52,45 +53,19 @@ class FuzzySet {
    * @param data A map of the form {dimension_name: value}.
    * @return The membership value of the given value in this FuzzySet.
    */
-  double evaluate_membership(const std::map<std::string, double> &data) const;
+  [[nodiscard]] double evaluate_membership(const std::map<std::string, double> &data) const;
 
   /**
    * Calculates the x-coordinate of the centroid of this FuzzySet.
    * @return The x-coordinate of the centroid of this FuzzySet.
    */
-  double centroid(size_t numSamples = 100) const;
-
-  /**
-   * Calculates the intersection of two FuzzySets.
-   * @param rhs
-   * @return A new FuzzySet, which is the intersection of this and rhs.
-   */
-  FuzzySet operator&&(const FuzzySet &rhs) const;
-
-  /**
-   * Calculates the union of two FuzzySets.
-   * @param rhs
-   * @return A new FuzzySet, which is the union of this and rhs.
-   */
-  FuzzySet operator||(const FuzzySet &rhs) const;
-
-  /**
-   * Calculates the complement of this FuzzySet.
-   * @return A new FuzzySet, which is the complement of this.
-   */
-  FuzzySet operator!() const;
+  [[nodiscard]] double centroid(size_t numSamples = 100) const;
 
   /**
    * Returns the linguistic term of the FuzzySet.
    * @return The linguistic term of the FuzzySet.
    */
   [[nodiscard]] const std::string &getLinguisticTerm() const;
-
-  /**
-   * Returns the membership function of the FuzzySet.
-   * @return The membership function of the FuzzySet.
-   */
-  [[nodiscard]] const MembershipFunction &getMembershipFunction() const;
 
   /**
    * Returns the crisp set of the FuzzySet.
@@ -105,16 +80,50 @@ class FuzzySet {
   void setCrispSet(const std::shared_ptr<CrispSet> &crispSet);
 
   /**
-   * Sets the base membership function of the FuzzySet.
-   * @param baseMembershipFunction
+   * Make the Union Operator a friend of the class.
    */
-  void setBaseMembershipFunction(const BaseMembershipFunction &baseMembershipFunction);
+  friend std::shared_ptr<FuzzySet> operator||(const std::shared_ptr<FuzzySet> &lhs,
+                                              const std::shared_ptr<FuzzySet> &rhs);
+
+  /**
+   * Make the Intersection Operator a friend of the class.
+   */
+  friend std::shared_ptr<FuzzySet> operator&&(const std::shared_ptr<FuzzySet> &lhs,
+                                              const std::shared_ptr<FuzzySet> &rhs);
+
+  /**
+   * Make the Complement Operator a friend of the class.
+   */
+  friend std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &lhs);
 
  private:
   std::string _linguisticTerm;
-  MembershipFunction _membershipFunction;
-  std::optional<BaseMembershipFunction> _baseMembershipFunction;
+  std::shared_ptr<ComposedMembershipFunction> _membershipFunction;
+  std::optional<std::shared_ptr<BaseMembershipFunction>> _baseMembershipFunction;
   std::shared_ptr<CrispSet> _crispSet;
 };
+
+/**
+ * Returns the union of two FuzzySets.
+ * @param lhs
+ * @param rhs
+ * @return The union of lhs and rhs.
+ */
+std::shared_ptr<FuzzySet> operator||(const std::shared_ptr<FuzzySet> &lhs, const std::shared_ptr<FuzzySet> &rhs);
+
+/**
+ * Returns the intersection of two FuzzySets.
+ * @param lhs
+ * @param rhs
+ * @return The intersection of lhs and rhs.
+ */
+std::shared_ptr<FuzzySet> operator&&(const std::shared_ptr<FuzzySet> &lhs, const std::shared_ptr<FuzzySet> &rhs);
+
+/**
+ * Returns the complement of a FuzzySet.
+ * @param set
+ * @return The complement of lhs.
+ */
+std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &set);
 
 }  // namespace autopas::fuzzy_logic

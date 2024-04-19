@@ -20,25 +20,25 @@ class FuzzyRule {
    * @param antecedent A FuzzySet representing the antecedent of the FuzzyRule.
    * @param consequent A FuzzySet representing the consequent of the FuzzyRule.
    */
-  FuzzyRule(const FuzzySet &antecedent, const FuzzySet &consequent);
+  FuzzyRule(const std::shared_ptr<FuzzySet> &antecedent, const std::shared_ptr<FuzzySet> &consequent);
 
   /**
    * Applies the FuzzyRule to the given data.
    * @param data A map of the form {dimension_name: value}.
    * @return The cut FuzzySet resulting from the application of the FuzzyRule to the given data.
    */
-  FuzzySet apply(const std::map<std::string, double> &data) const;
+  [[nodiscard]] std::shared_ptr<FuzzySet> apply(const std::map<std::string, double> &data) const;
 
  private:
   /**
    * The antecedent of the FuzzyRule.
    */
-  const FuzzySet &_antecedent;
+  const std::shared_ptr<FuzzySet> _antecedent;
 
   /**
    * The consequent of the FuzzyRule.
    */
-  const FuzzySet &_consequent;
+  const std::shared_ptr<FuzzySet> _consequent;
 };
 
 }  // namespace autopas::fuzzy_logic

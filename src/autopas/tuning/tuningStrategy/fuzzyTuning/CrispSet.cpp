@@ -8,16 +8,17 @@
 
 namespace autopas::fuzzy_logic {
 
-CrispSet::CrispSet(const std::map<std::string, std::pair<double, double>> &dimensions) : _dimensions(dimensions) {}
+CrispSet::CrispSet(const std::string &name, const std::pair<double, double> &range) : _dimensions({{name, range}}) {}
 
-CrispSet CrispSet::operator*(const CrispSet &rhs) const {
-  std::map<std::string, std::pair<double, double>> newDimensions;
+std::shared_ptr<CrispSet> CrispSet::operator*(CrispSet &rhs) const {
+  auto cartesian = std::make_shared<CrispSet>();
 
-  newDimensions.insert(_dimensions.begin(), _dimensions.end());
-  newDimensions.insert(rhs._dimensions.begin(), rhs._dimensions.end());
-  return CrispSet(newDimensions);
+  cartesian->getDimensions().insert(_dimensions.begin(), _dimensions.end());
+  cartesian->getDimensions().insert(rhs.getDimensions().begin(), rhs.getDimensions().end());
+
+  return cartesian;
 }
 
-const std::map<std::string, std::pair<double, double>> &CrispSet::getDimensions() const { return _dimensions; }
+std::map<std::string, std::pair<double, double>> &CrispSet::getDimensions() { return _dimensions; }
 
 }  // namespace autopas::fuzzy_logic

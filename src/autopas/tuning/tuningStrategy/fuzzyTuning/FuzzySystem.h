@@ -27,7 +27,7 @@ class FuzzySystem {
    * @param data A map of the form {dimension_name: value}.
    * @return The FuzzySet resulting from the application of the FuzzySystem to the given data.
    */
-  FuzzySet applyRules(const std::map<std::string, double> &data) const;
+  [[nodiscard]] std::shared_ptr<FuzzySet> applyRules(const std::map<std::string, double> &data) const;
 
   /**
    * Predicts the output of the FuzzySystem for the given data.
@@ -35,9 +35,12 @@ class FuzzySystem {
    * @param numSamples The number of samples to use for the centroid calculation.
    * @return The predicted output of the FuzzySystem for the given data.
    */
-  double predict(const std::map<std::string, double> &data, size_t numSamples = 100) const;
+  [[nodiscard]] double predict(const std::map<std::string, double> &data, size_t numSamples = 100) const;
 
  private:
+  /**
+   * All rules of the FuzzySystem.
+   */
   std::vector<FuzzyRule> _rules;
 };
 
