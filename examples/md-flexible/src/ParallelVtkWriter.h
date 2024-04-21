@@ -40,13 +40,8 @@ class ParallelVtkWriter {
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    * @param decomposition: The decomposition of the global domain.
    */
-#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
   void recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
                       const RegularGridDecomposition &decomposition);
-#else
-  void recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
-          const MoleculeContainer& moleculeContainer, const RegularGridDecomposition &decomposition);
-#endif
 
  private:
   /**
@@ -98,23 +93,12 @@ class ParallelVtkWriter {
    */
   int _maximumNumberOfDigitsInIteration;
 
-  #if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
   /**
    * Writes the current state of particles into vtk files.
    * @param currentIteration: The simulations current iteration.
    * @param autoPasContainer The AutoPas container whose owned particles will be logged.
    */
   void recordParticleStates(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer);
-  #else
-  /**
-   * Writes the current state of particles into vtk files.
-   * @param currentIteration: The simulations current iteration.
-   * @param moleculeContainer The moleculeContainer whose owned molecules will be logged.
-   *
-   * In the bundling multisite approach the particles of the AutoPasContainer are actually sites and the MoleculeContainer contains the actual Molecules/"Particles that we care about"
-   */
-  void recordParticleStates(size_t currentIteration, const MoleculeContainer &moleculeContainer);
-  #endif
 
   /**
    * Writes the current domain subdivision into vtk files.

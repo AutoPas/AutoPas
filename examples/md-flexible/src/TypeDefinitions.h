@@ -8,16 +8,7 @@
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-#error "MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS can not be set at the same time with this version"
-#endif
-
 #include "molecularDynamicsLibrary/MultisiteMoleculeLJ.h"
-
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-#include "molecularDynamicsLibrary/Site.h"
-#include "molecularDynamicsLibrary/LJFunctor.h"
-#endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC) || defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
@@ -57,10 +48,7 @@ using FloatPrecision = double;
 * MD_FLEXIBLE_MODE.
 */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-using ParticleType = mdLib::Site;
-using MoleculeType = mdLib::MultisiteMoleculeLJ;
-#elif defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
 using ParticleType = mdLib::PositionStoringMultiSiteMolecule;
 //using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
@@ -82,14 +70,6 @@ using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 #endif
 
-#endif
-
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-#if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeBundling = mdLib::LJFunctor<ParticleType, true, true>;
-#else
-#error "Single site simulation can't use bundling approach multisite functor."
-#endif
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
@@ -162,9 +142,7 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
 * be used in the CMake.
 */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#ifdef MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC
+#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
 using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS
 using LJFunctorTypeAbstract = mdLib::LJPositionUsingMultiSiteFunctor<ParticleType, true, true>;

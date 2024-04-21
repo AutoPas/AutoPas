@@ -97,12 +97,7 @@ class CubeClosestPacked : public Object {
    * Generates particles based on the parameters provided to the CubeClosestPacked Object in the configuration file.
    * @param particles: The container, where the new particles get stored.
    */
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const override {
-#else
-void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
-              MoleculeContainer& moleculeContainer) const override{
-#endif
 
     bool evenLayer = true;
 
@@ -113,11 +108,7 @@ void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const 
         double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + _xOffset;
         for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
 
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
           insertMolecule({x,y,z}, ppl, particles);
-#else
-          insertMolecule({x,y,z}, ppl, particles, moleculeContainer);
-#endif
         }
         evenRow = not evenRow;
       }

@@ -35,14 +35,8 @@ class Object {
    * Generate the object in the given AutoPas container.
    * @param particles The container to which the new particles will be appended to.
    */
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   virtual void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const = 0;
-#else
-  virtual void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
-                        MoleculeContainer& moleculeContainer) const = 0;
-#endif
 
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void insertMolecule(const std::array<double, 3>& position, const std::shared_ptr<const ParticlePropertiesLibraryType> ppl,
                                     std::vector<ParticleType> &particles) const {
     //the typeID set in getDummyParticle is the ID of the MOLECULE. Since in this configuration a Particle is just a single
@@ -59,37 +53,6 @@ class Object {
 #endif
     particles.push_back(particle);
   }
-#else
-  void insertMolecule(const std::array<double, 3>& position, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
-                                    std::vector<ParticleType> &particles, MoleculeContainer& moleculeContainer) const {
-    //insert molecule by inserting individual sites at their respective place and inserting the bundled molecule in moleculeContainer
-    const auto moleculeID = moleculeContainer.size();
-    MoleculeType molecule = getDummyMolecule(moleculeID);
-    molecule.setR(position);
-    moleculeContainer.push_back(std::move(molecule));
-
-    //the typeID set in getDummyParticle is the ID of the MOLECULE. Since in this configuration a Particle is just a single
-    //site we need to overwrite this typeID with the proper siteID
-    ParticleType particle = getDummyParticle(particles.size());
-    const auto siteTypes = ppl->getSiteTypes(_typeId);
-    const auto unrotatedRelativeSitePositions = ppl->getSitePositions(_typeId);
-    const auto rotatedRelativeSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(molecule.getQuaternion(), unrotatedRelativeSitePositions);
-
-    //insert individual sites
-    for(size_t siteIndex=0; siteIndex < siteTypes.size(); siteIndex++) {
-      const auto& relSitePos = rotatedRelativeSitePositions[siteIndex];
-      const auto siteType = siteTypes[siteIndex];
-
-      particle.setR(autopas::utils::ArrayMath::add(position, relSitePos));
-      particle.setTypeId(siteType); //overwrite previously stored moleculeID with the actual SiteID //when i am actually storing the siteType here then i don't have  a place to store the reference to the molecule. That's why i am using the typeID as moleculeID instead
-      particle.setID(particle.getID() + 1);
-      particle.setMoleculeId(moleculeID);
-      particle.setIndexInsideMolecule(siteIndex);
-      particle.setTypeId(siteTypes[siteIndex]);
-      particles.push_back(particle);
-    }
-  }
-#endif
 
   /**
    * Create a particle that acts as blueprint for all particles to be created for the object.
@@ -103,11 +66,9 @@ class Object {
     particle.setOwnershipState(autopas::OwnershipState::owned);
     particle.setV(_velocity);
     particle.setF({0.0, 0.0, 0.0});
-#if MD_FLEXIBLE_MODE != MULTISITE or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
     particle.setOldF({0.0, 0.0, 0.0});
-#endif
 
-#if MD_FLEXIBLE_MODE == MULTISITE and not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+#if MD_FLEXIBLE_MODE == MULTISITE
 #if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
 #else
@@ -119,21 +80,6 @@ class Object {
 
     return particle;
   }
-
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and (MD_FLEXIBLE_MODE == MULTISITE)
-  [[nodiscard]] MoleculeType getDummyMolecule(const size_t &particleId) const {
-    MoleculeType molecule{};
-    molecule.setID(particleId);
-    molecule.setTypeId(_typeId);
-    molecule.setOwnershipState(autopas::OwnershipState::owned);
-    molecule.setV(_velocity);
-    molecule.setF({0.0, 0.0, 0.0});
-    molecule.setOldF({0.0, 0.0, 0.0});
-    molecule.setQuaternion({1.0, 0.0, 0.0, 0.0});
-
-    return molecule;
-  }
-#endif
 
   /**
    * Getter for Velocity

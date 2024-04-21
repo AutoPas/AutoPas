@@ -295,12 +295,8 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
   }
 }
 
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
 void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer,
                                                             ParticlePropertiesLibraryType &particlePropertiesLib)
-#else
-void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, MoleculeContainer& moleculeContainer, ParticlePropertiesLibraryType &particlePropertiesLib)
-#endif
 {
   using autopas::utils::Math::isNear;
   std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
@@ -358,14 +354,14 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 
         const bool reflectMoleculeFlag =
             distanceToBoundary < sixthRootOfTwo * 0.5 *
-#if MD_FLEXIBLE_MODE == MULTISITE and not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+#if MD_FLEXIBLE_MODE == MULTISITE
                                      particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
 #else
                                      particlePropertiesLib.getSigma(p->getTypeId());
 #endif
 
         if (reflectMoleculeFlag) {
-#if MD_FLEXIBLE_MODE == MULTISITE and not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+#if MD_FLEXIBLE_MODE == MULTISITE
           // Keep track of current force and torque to see if molecule is repulsed, and, if not, reset the force.
           const auto currentForce = p->getF();
           const auto currentTorque = p->getTorque();
@@ -408,35 +404,9 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
               p->addTorque((autopas::utils::ArrayMath::cross(rotatedSitePositions[site], force)));
             }
           }
-#elif MD_FLEXIBLE_MODE == MULTISITE and defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-          const auto molecule = moleculeContainer.get(p->getMoleculeId());
-          const auto moleculeType = molecule.getTypeId();
-          const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
-            const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
-            auto returnedPosition = position;
-            returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
-            return returnedPosition;
-          }();
-          const auto siteType = particlePropertiesLib.getSiteTypes(molecule.getTypeId())[p->getIndexInsideMolecule()];
-          const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
-          const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
-          const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
-          p->addF(force);
-#else
-          const auto siteType = p->getTypeId();
-          const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
-            const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
-            auto returnedPosition = position;
-            returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
-            return returnedPosition;
-          }();
-          const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
-          const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
-          const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
-          p->addF(force);
 #endif
 
-#if MD_FLEXIBLE_MODE == MULTISITE and not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
+#if MD_FLEXIBLE_MODE == MULTISITE
           // test if attraction has occurred
           const bool reflectionIsAttractive = isUpper ? p->getF()[dimensionIndex] - currentForce[dimensionIndex] > 0
                                                       : p->getF()[dimensionIndex] - currentForce[dimensionIndex] < 0;

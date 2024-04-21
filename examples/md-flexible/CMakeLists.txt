@@ -10,8 +10,6 @@ add_executable(md-flexible ${MDFlex_SRC}
         src/configuration/objects/AbsoluteMultiSiteMoleculeInitializer.cpp
         ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/Site.h
         ../../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/Site.cpp
-        src/temporaryTests.h
-        src/temporaryTests.cpp
 )
 
 target_include_directories(md-flexible PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -23,8 +21,6 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
-option(I_JUST_WANNA_RUN_UNIT_TESTS " " OFF)
-option(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH "Defines whether or not a multisite-simulation should be run using Single-Site Particles bundled to Molecules or not" ON)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_STS_AOS_FUNCTOR "When turned on the AoS Multisite Functor will use the StS cutoff-condition instead of CoM" ON)
 option(MD_FLEXIBLE_NO_AUTOVECTORIZATION "Determines whether or not Autovectorization should be disabled" OFF)

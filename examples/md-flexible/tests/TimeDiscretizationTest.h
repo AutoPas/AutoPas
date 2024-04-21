@@ -19,20 +19,12 @@
 #include "src/TimeDiscretization.h"
 #include "src/configuration/MDFlexConfig.h"
 
-#if MD_FLEXIBLE_MODE!=MULTISITE or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-#include "src/MoleculeContainer.h"
-#endif
-
 namespace {
 /**
  * Initializes an AutoPas container for a simple 5x5x5 domain, and fills it with particles.
  * @param autopasContainer
  */
-#if MD_FLEXIBLE_MODE!=MULTISITE or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
 void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer);
-#else
-void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer, MoleculeContainer& moleculeContainer, ParticlePropertiesLibrary<> &PPL);
-#endif
 
 /**
  * Initialise particle properties library with a single site type (and multi-site molecule type, if needed)

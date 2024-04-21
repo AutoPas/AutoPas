@@ -177,10 +177,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                       _configuration.initTemperature.value, std::numeric_limits<double>::max());
   }
 
-  #if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
-  _moleculeContainer = _configuration.moveAwayMoleculeContainer();
-  #endif
-
   _timers.initialization.stop();
 }
 
@@ -202,11 +198,7 @@ void Simulation::run() {
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
       _timers.vtk.start();
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
       _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
-#else
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _moleculeContainer, *_domainDecomposition);
-#endif
       _timers.vtk.stop();
     }
 
@@ -253,13 +245,9 @@ void Simulation::run() {
       _timers.migratingParticleExchange.stop();
 
       _timers.reflectParticlesAtBoundaries.start();
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
       _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
                                                          *_configuration.getParticlePropertiesLibrary());
-#else
-      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer, _moleculeContainer,
-                                                         *_configuration.getParticlePropertiesLibrary());
-#endif
+
       _timers.reflectParticlesAtBoundaries.stop();
 
       _timers.haloParticleExchange.start();
@@ -298,11 +286,7 @@ void Simulation::run() {
 
   // Record last state of simulation.
   if (_createVtkFiles) {
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
-#else
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, _moleculeContainer, *_domainDecomposition);
-#endif
   }
 }
 
@@ -407,29 +391,17 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
 
 void Simulation::updatePositions() {
   _timers.positionUpdate.start();
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or (MD_FLEXIBLE_MODE!=MULTISITE)
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
       _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
-#else
-  TimeDiscretization::calculatePositionsAndResetForces(
-      *_autoPasContainer, _moleculeContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
-#endif
   _timers.positionUpdate.stop();
 }
 
 void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.start();
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or (MD_FLEXIBLE_MODE!=MULTISITE)
   TimeDiscretization::calculateQuaternionsAndResetTorques(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
       _configuration.globalForce.value);
-#else
-  TimeDiscretization::calculateQuaternionsAndResetTorques(
-      *_autoPasContainer, _moleculeContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value);
-#endif
   _timers.quaternionUpdate.stop();
 }
 
@@ -450,11 +422,7 @@ void Simulation::updateForces() {
   //});
 
   const bool isTuningIteration = calculatePairwiseForces();
-#if MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-  //@TODO: maybe outside of force-calculation runtime measurement?
-  TimeDiscretization::accumulateSiteForcesInMol(*_autoPasContainer, _moleculeContainer);
-  TimeDiscretization::gatherTorquesFromForces(*_autoPasContainer, _moleculeContainer, *_configuration.getParticlePropertiesLibrary());
-#elif MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE)
+#if MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE)
   TimeDiscretization::gatherTorquesAndForcesFromSiteForces(*_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
 #endif
 
@@ -488,14 +456,8 @@ void Simulation::updateVelocities() {
 
   if (deltaT != 0) {
     _timers.velocityUpdate.start();
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
     TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                             deltaT);
-#else
-    TimeDiscretization::accumulateSiteForcesInMol(*_autoPasContainer, _moleculeContainer);
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, _moleculeContainer,
-                                            *(_configuration.getParticlePropertiesLibrary()), deltaT);
-#endif
     _timers.velocityUpdate.stop();
   }
 }
@@ -504,13 +466,8 @@ void Simulation::updateAngularVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
   _timers.angularVelocityUpdate.start();
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or (MD_FLEXIBLE_MODE != MULTISITE)
   TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                                  deltaT);
-#else
-  TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, _moleculeContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                                 deltaT);
-#endif
   _timers.angularVelocityUpdate.stop();
 }
 
@@ -671,9 +628,6 @@ void Simulation::logMeasurements() {
                 << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
       std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
-    std::cout << "CSV appendix: (,Total accumulated,ForceUpdateTotal,)" << std::endl;
-    //std::cout << "," << timerToString("",total,maximumNumberOfDigits) << "," << timerToString("",forceUpdateTotal, maximumNumberOfDigits) << std::endl;
-    std::cout << "," << std::setw(6) <<  ((double)total * 1e-9) << "," << std::setw(6) << ((double)forceUpdateTotal * 1e-9) << std::endl;
   }
 }
 
@@ -734,15 +688,6 @@ T Simulation::applyWithChosenFunctor(F f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor Absolute Site Positions. Activate it via `cmake "
           "-MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS=ON`.");
-#endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_Bundling: {
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-      return f(LJFunctorTypeBundling{cutoff, particlePropertiesLibrary});
-#else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for Bundling Multisite Approach. Activate it via `cmake "
-          "-MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH=ON`.");
 #endif
     }
     case MDFlexConfig::FunctorOption::lj12_6_Globals: {

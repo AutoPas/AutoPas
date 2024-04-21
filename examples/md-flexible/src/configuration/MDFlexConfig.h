@@ -32,9 +32,7 @@
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-#include "src/MoleculeContainer.h"
-#endif
+
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -752,12 +750,6 @@ class MDFlexConfig {
    */
   static constexpr int valueOffset{33};
 
-#if MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-  MoleculeContainer moveAwayMoleculeContainer(){
-    return std::move(_moleculeContainer);
-  }
-#endif
-
  private:
   /**
    * Stores the particles generated based on the provided configuration file
@@ -765,14 +757,6 @@ class MDFlexConfig {
    * but have to be converted to the respective particle type, first.
    */
   std::vector<ParticleType> _particles;
-
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
-  /**
-   * In case the bundling approach gets used the particles are actually just the individual sites. The moleculeContainer
-   * holds the actual molecules. The sites know the molecules (via Id) inside the container but not the other way around.
-   */
-  MoleculeContainer _moleculeContainer;
-#endif
 
   /**
    * Stores the physical properties of the particles used in the an MDFlexSimulation

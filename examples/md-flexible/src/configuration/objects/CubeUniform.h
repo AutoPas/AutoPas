@@ -76,12 +76,7 @@ class CubeUniform : public Object {
    * Generates the particles based on the configuration of the cube object defined in the yaml file.
    * @param particles The container where the generated particles will be stored.
    */
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const override {
-#else
-  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
-              MoleculeContainer& moleculeContainer) const override{
-#endif
 
     // Set up random number generation
     std::random_device randomDevice;
@@ -93,11 +88,7 @@ class CubeUniform : public Object {
       const std::array<double, 3> position{_bottomLeftCorner[0] + distribution(randomNumberEngine) * _boxLength[0],
                      _bottomLeftCorner[1] + distribution(randomNumberEngine) * _boxLength[1],
                      _bottomLeftCorner[2] + distribution(randomNumberEngine) * _boxLength[2]};
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
       insertMolecule(position, ppl, particles);
-#else
-      insertMolecule(position, ppl, particles, moleculeContainer);
-#endif
     }
   }
 

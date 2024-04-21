@@ -95,12 +95,8 @@ class CubeGauss : public Object {
    * Generates the particles based on the configuration of the cube gauss object provided in the yaml file.
    * @param particles The container where the new particles will be stored.
    */
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const override {
-#else
-  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
-                MoleculeContainer& moleculeContainer) const override{
-#endif
+
     ParticleType particle = getDummyParticle(particles.size());
 
     std::default_random_engine generator(42);
@@ -113,11 +109,7 @@ class CubeGauss : public Object {
       const std::array<double, 3> position{_bottomLeftCorner[0] + distributions[0](generator),
             _bottomLeftCorner[1] + distributions[1](generator),
             _bottomLeftCorner[2] + distributions[2](generator)};
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
       insertMolecule(position, ppl, particles);
-#else
-      insertMolecule(position, ppl, particles, moleculeContainer);
-#endif
     }
   }
 

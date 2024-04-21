@@ -34,21 +34,11 @@ namespace TimeDiscretization {
  * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
  * (>skin/2/rebuildFrequency).
  */
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                       const double &deltaT, const std::array<double, 3> &globalForce,
                                       bool fastParticlesThrow);
-#else
-void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
-                                      const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                      const double &deltaT, const std::array<double, 3> &globalForce,
-                                      bool fastParticlesThrow);
-#endif
 
-#if defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_MODE==MULTISITE
-void accumulateSiteForcesInMol(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer);
-#endif
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by
@@ -65,21 +55,9 @@ void accumulateSiteForcesInMol(autopas::AutoPas<ParticleType> &autoPasContainer,
  * @param deltaT
  * @param globalForce
  */
-#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
-void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
+ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer,
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                          const double &deltaT, const std::array<double, 3> &globalForce);
-#else
-void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
-                                         const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                         const double &deltaT, const std::array<double, 3> &globalForce);
-#endif
-
-#if defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH and MD_FLEXIBLE_MODE==MULTISITE
-void gatherTorquesFromForces(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
-                                         const ParticlePropertiesLibraryType &particlePropertiesLibrary);
-
-#endif
 
 #if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
 void gatherTorquesAndForcesFromSiteForces(autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLibrary);
@@ -95,13 +73,8 @@ void gatherTorquesAndForcesFromSiteForces(autopas::AutoPas<ParticleType> &autoPa
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  */
-#if not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                          const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
-#else
-void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
-                         const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
-#endif
 
 /**
  * Calculate and update the angular velocity for every particle.
@@ -112,12 +85,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, Molec
  * @param particlePropertiesLibrary
  * @param deltaT
  */
-#if not defined MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH or MD_FLEXIBLE_MODE!=MULTISITE
 void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
                                 const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
-#else
-void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer, MoleculeContainer& moleculeContainer,
-                                const ParticlePropertiesLibraryType &particlePropertiesLibrary, const double &deltaT);
-#endif
 
 }  // namespace TimeDiscretization

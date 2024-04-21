@@ -98,12 +98,7 @@ class CubeGrid : public Object {
    * Generates the particles based on the configuration of the CubeGrid object provided in the yaml file.
    * @param particles The container in which the generated particles get stored.
    */
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const override {
-#else
-  void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
-                MoleculeContainer& moleculeContainer) const override{
-#endif
     ParticleType particle = getDummyParticle(particles.size());
 
     for (unsigned long z = 0; z < _particlesPerDim[2]; ++z) {
@@ -112,11 +107,7 @@ class CubeGrid : public Object {
           const std::array<double, 3> position{_bottomLeftCorner[0] + static_cast<double>(x) * _particleSpacing,
                 _bottomLeftCorner[1] + static_cast<double>(y) * _particleSpacing,
                 _bottomLeftCorner[2] + static_cast<double>(z) * _particleSpacing};
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
           insertMolecule(position, ppl, particles);
-#else
-          insertMolecule(position, ppl, particles, moleculeContainer);
-#endif
         }
       }
     }

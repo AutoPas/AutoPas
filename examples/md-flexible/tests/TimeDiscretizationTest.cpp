@@ -9,17 +9,12 @@
 #include <memory>
 
 namespace {
-#if MD_FLEXIBLE_MODE!=MULTISITE or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
 void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer) {
-#else
-void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer, MoleculeContainer& moleculeContainer, ParticlePropertiesLibrary<> &PPL) {
-#endif
   // Init autopas
   autopasContainer.setBoxMin({0., 0., 0.});
   autopasContainer.setBoxMax({5., 5., 5.});
   autopasContainer.init();
 
-#if MD_FLEXIBLE_MODE!=MULTISITE or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   // Define dummy particle
   ParticleType dummy;
   dummy.setTypeId(0);
@@ -34,43 +29,6 @@ void fillWithParticlesAndInit(autopas::AutoPas<ParticleType> &autopasContainer, 
   // Use dummy to fill container
   autopasTools::generators::GridGenerator::fillWithParticles(autopasContainer, {2, 2, 2}, dummy, {1, 1, 1},
                                                              {0., 0., 0.});
-#else
-
-  MoleculeType dummyMol;
-  dummyMol.setF({0., 0., 1.});
-  dummyMol.setTypeId(0);
-  dummyMol.setV({0., 0., 1.});
-
-  ParticleType dummySite;
-  dummySite.setF({0.,0.,0.});
-  dummySite.setTypeId(0);
-
-
-  //strong similarity with fillWithParticles but different enough using the helper function would not make things significantly easier
-  const std::array<int, 3> particlesPerDim{2,2,2};
-  const std::array<double , 3> spacing{1.,1.,1.};
-  int id = 0;
-
-  for (unsigned int z = 0; z < particlesPerDim[2]; ++z) {
-    for (unsigned int y = 0; y < particlesPerDim[1]; ++y) {
-      for (unsigned int x = 0; x < particlesPerDim[0]; ++x) {
-        dummyMol.setR({x * spacing[0], y * spacing[1], z * spacing[2]});
-        MoleculeType dummyMolCopy = dummyMol; //can be removed if in the future moleculeContainer gets more than the std::move - push_back
-        moleculeContainer.push_back(std::move(dummyMolCopy));
-        const std::vector<std::array<double, 3>> unrotatedSitePositions = PPL.getSitePositions(dummyMol.getTypeId());
-        const std::vector<std::array<double, 3>> rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(dummyMol.getQuaternion(), unrotatedSitePositions);
-
-        for(unsigned int siteIndex = 0; siteIndex < unrotatedSitePositions.size(); siteIndex++){
-          const std::array<double, 3> rotatedSitePosition = autopas::utils::quaternion::rotatePosition(dummyMol.getQuaternion(), unrotatedSitePositions[siteIndex]);
-          dummySite.setR(autopas::utils::ArrayMath::add(dummyMol.getR(), rotatedSitePosition));
-          dummySite.setTypeId(PPL.getSiteTypes(dummyMol.getTypeId())[siteIndex]);
-          dummySite.setID(id++);
-          autopasContainer.addParticle(dummySite);
-        }
-      }
-    }
-  }
-#endif
 }
 
 void initPPL(ParticlePropertiesLibrary<> &PPL) {
@@ -89,13 +47,7 @@ TEST_F(TimeDiscretizationTest, testCalculateVelocities) {
   auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
 
   initPPL(*PPL);
-#if MD_FLEXIBLE_MODE!=MULTISITE or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   fillWithParticlesAndInit(*autoPas);
-
-#else
-  auto moleculeContainer = MoleculeContainer();
-  fillWithParticlesAndInit(*autoPas, moleculeContainer, *PPL);
-#endif
 
   // First timestep
   TimeDiscretization::calculateVelocities(*autoPas, *PPL, 0.1);

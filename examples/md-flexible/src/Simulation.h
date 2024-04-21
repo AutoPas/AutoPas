@@ -65,10 +65,6 @@ class Simulation {
    */
   std::shared_ptr<autopas::AutoPas<ParticleType>> _autoPasContainer;
 
-#if defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH) and MD_FLEXIBLE_MODE==MULTISITE
-  MoleculeContainer _moleculeContainer;
-#endif
-
   /**
    * Shared pointer to the logfile.
    */

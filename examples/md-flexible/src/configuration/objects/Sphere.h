@@ -138,19 +138,10 @@ class Sphere : public Object {
    * Generates the particles based on the configuration of the sphere object provided in the yaml file.
    * @param particles The container where the generated particles will be stored.
    */
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
   void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl) const override {
-#else
-void generate(std::vector<ParticleType> &particles, const std::shared_ptr<const ParticlePropertiesLibraryType>& ppl,
-    MoleculeContainer& moleculeContainer) const override {
-#endif
     //ParticleType particle = getDummyParticle(particles.size());
     const std::function<void(const std::array<double, 3>&)> insertMolAtPos = [&](const auto &pos) {
-#if (MD_FLEXIBLE_MODE != MULTISITE) or not defined(MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH)
       insertMolecule(pos, ppl, particles);
-#else
-      insertMolecule(pos, ppl, particles, moleculeContainer);
-#endif
     };
 
     iteratePositions(insertMolAtPos);
