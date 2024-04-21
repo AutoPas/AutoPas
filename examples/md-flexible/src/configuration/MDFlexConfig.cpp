@@ -524,7 +524,6 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 }
 
 void MDFlexConfig::initializeObjects() {
-#if MD_FLEXIBLE_MODE!=MULTISITE
   for (const auto &object : cubeGridObjects) {
     object.generate(_particles, _particlePropertiesLibrary);
   }
@@ -540,8 +539,8 @@ void MDFlexConfig::initializeObjects() {
   for (const auto &object : cubeClosestPackedObjects) {
     object.generate(_particles, _particlePropertiesLibrary);
   }
-#endif
 }
+
 
 void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize) {
   const std::string &filename = checkpointfile.value;

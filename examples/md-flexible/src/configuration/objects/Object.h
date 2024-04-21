@@ -14,7 +14,6 @@
 #include "autopas/AutoPasDecl.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/Quaternion.h"
-#include "src/MoleculeContainer.h"
 #include "src/TypeDefinitions.h"
 
 /**
