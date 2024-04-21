@@ -55,7 +55,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    */
   DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
             double skinPerTimestep, unsigned int verletRebuildFrequency)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * verletRebuildFrequency),
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, verletRebuildFrequency),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
   }
@@ -202,13 +202,14 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+          nullptr) const override {
     return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 

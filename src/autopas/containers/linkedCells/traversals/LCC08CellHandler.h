@@ -22,10 +22,8 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class ParticleCell, class PairwiseFunctor>
 class LCC08CellHandler {
  public:
   /**
@@ -35,17 +33,22 @@ class LCC08CellHandler {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
   explicit LCC08CellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,
-                            const double interactionLength, const std::array<double, 3> &cellLength,
-                            const std::array<unsigned long, 3> &overlap)
-      : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/),
+                            double interactionLength, const std::array<double, 3> &cellLength,
+                            const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
+      : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
+                     dataLayout, useNewton3),
         _cellPairOffsets{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),
-        _overlap(overlap) {
+        _overlap(overlap),
+        _dataLayout(dataLayout),
+        _useNewton3(useNewton3) {
     computeOffsets(cellsPerDimension);
   }
 
@@ -56,6 +59,11 @@ class LCC08CellHandler {
    * @param baseIndex Index respective to which box is constructed.
    */
   void processBaseCell(std::vector<ParticleCell> &cells, unsigned long baseIndex);
+
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  protected:
   /**
@@ -77,11 +85,22 @@ class LCC08CellHandler {
    */
   const std::array<unsigned long, 3> _overlap;
 
+  /**
+   * The datalayout to be used.
+   */
+  DataLayoutOption _dataLayout;
+
+  /**
+   * If newton3 should be used or not.
+   */
+  bool _useNewton3;
+
  private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<typename ParticleCell::ParticleType, ParticleCell, PairwiseFunctor, dataLayout, useNewton3>
+  internal::CellFunctor<ParticleCell, PairwiseFunctor,
+                        /*bidirectional*/ true>
       _cellFunctor;
 
   /**
@@ -95,9 +114,9 @@ class LCC08CellHandler {
   const std::array<double, 3> _cellLength;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long baseIndex) {
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<ParticleCell> &cells,
+                                                                             unsigned long baseIndex) {
   for (auto const &[offset1, offset2, r] : _cellPairOffsets) {
     const unsigned long cellIndex1 = baseIndex + offset1;
     const unsigned long cellIndex2 = baseIndex + offset2;
@@ -113,8 +132,8 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::computeOffsets(
+template <class ParticleCell, class PairwiseFunctor>
+inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::computeOffsets(
     const std::array<unsigned long, 3> &cellsPerDimension) {
   using namespace autopas::utils::ArrayMath::literals;
   using std::make_pair;
@@ -149,15 +168,29 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
       for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
         const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
+        const std::array<double, 3> offsetVec =
+            utils::ArrayUtils::static_cast_copy_array<double>(
+                utils::ThreeDimensionalMapping::oneToThreeD(offset, cellsPerDimension)) *
+            this->_cellLength;
         // origin
         {
-          // check whether cell is within interaction length
+          // check whether cell is within interaction length. distVec is the direction between borders of cells.
           const auto distVec =
               std::array<double, 3>{std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)} *
               _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[z], offset, utils::ArrayMath::normalize(distVec)));
+            const auto baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
+                utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[z], cellsPerDimension));
+
+            // Calculate the sorting direction from the base cell to the other cell.
+            auto sortingDir = offsetVec - baseCellVec;
+            if (x == 0 and y == 0 and z == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+
+            _cellPairOffsets.push_back(
+                std::make_tuple(cellOffsets[z], offset, utils::ArrayMath::normalize(sortingDir)));
           }
         }
         // back left
@@ -168,8 +201,16 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
                                _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(
-                std::make_tuple(cellOffsets[ov1_squared - ov1 + z], offset, utils::ArrayMath::normalize(distVec)));
+            const auto baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
+                utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[ov1_squared - ov1 + z], cellsPerDimension));
+
+            // Calculate the sorting direction from the base cell to the other cell.
+            auto sortingDir = offsetVec - baseCellVec;
+            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+            _cellPairOffsets.emplace_back(cellOffsets[ov1_squared - ov1 + z], offset,
+                                          utils::ArrayMath::normalize(sortingDir));
           }
         }
         // front right
@@ -180,8 +221,18 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
                                _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared * _overlap[0] + z], offset,
-                                                       utils::ArrayMath::normalize(distVec)));
+            const auto baseCellVec =
+                utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
+                    cellOffsets[ov1_squared * _overlap[0] + z], cellsPerDimension));
+
+            // Calculate the sorting direction from the base cell to the other cell.
+            auto sortingDir = offsetVec - baseCellVec;
+            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+            sortingDir = utils::ArrayMath::normalize(sortingDir);
+            _cellPairOffsets.emplace_back(cellOffsets[ov1_squared * _overlap[0] + z], offset,
+                                          utils::ArrayMath::normalize(sortingDir));
           }
         }
         // back right
@@ -192,8 +243,18 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewto
                                _cellLength;
           const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
           if (distSquare <= interactionLengthSquare) {
-            _cellPairOffsets.push_back(std::make_tuple(cellOffsets[ov1_squared * ov1 - ov1 + z], offset,
-                                                       utils::ArrayMath::normalize(distVec)));
+            const auto baseCellVec =
+                utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
+                    cellOffsets[ov1_squared * ov1 - ov1 + z], cellsPerDimension));
+
+            // Calculate the sorting direction from the base cell to the other cell.
+            auto sortingDir = offsetVec - baseCellVec;
+            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
+              sortingDir = {1., 1., 1.};
+            }
+
+            _cellPairOffsets.emplace_back(cellOffsets[ov1_squared * ov1 - ov1 + z], offset,
+                                          utils::ArrayMath::normalize(sortingDir));
           }
         }
       }

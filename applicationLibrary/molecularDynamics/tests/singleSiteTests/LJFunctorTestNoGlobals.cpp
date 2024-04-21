@@ -131,8 +131,8 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
       }
     }
     // Load the particles into the soa.
-    functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-    functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
+    functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
     if (auto msg = this->shouldSkipIfNotImplemented([&]() {
           switch (interactionType) {
@@ -205,8 +205,8 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     }
 
     if (interactionType == TestType::InteractionType::pair) {
-      functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-      functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
+      functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+      functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
       functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
       functor->SoAExtractor(cell1, cell1._particleSoABuffer, 0);
       functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);

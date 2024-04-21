@@ -35,5 +35,9 @@ class LogicHandlerInfo {
    * Number of particles in a cluster to use in VCL.
    */
   unsigned int verletClusterSize{4};
+  /**
+   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
+   */
+  size_t sortingThreshold{8};
 };
 }  // namespace autopas

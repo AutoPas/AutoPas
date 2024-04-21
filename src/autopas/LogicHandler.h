@@ -29,6 +29,7 @@
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
@@ -58,6 +59,7 @@ class LogicHandler {
         _haloParticleBuffer(autopas_get_max_threads()),
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
+        _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
@@ -111,7 +113,7 @@ class LogicHandler {
         }
         buffer.clear();
       } else {
-        for (auto iter = buffer.begin(); iter != buffer.end();) {
+        for (auto iter = buffer.begin(); iter < buffer.end();) {
           auto &p = *iter;
 
           auto fastRemoveP = [&]() {
@@ -123,8 +125,12 @@ class LogicHandler {
           if (p.isDummy()) {
             // We remove dummies!
             fastRemoveP();
+            // In case we swapped a dummy here, don't increment the iterator and do another iteration to check again.
+            continue;
           }
-          if (utils::notInBox(p.getR(), boxMin, boxMax)) {
+          // if p was a dummy a new particle might now be at the memory location of p so we need to check that.
+          // We also just might have deleted the last particle in the buffer in that case the inBox check is meaningless
+          if (not buffer.empty() and utils::notInBox(p.getR(), boxMin, boxMax)) {
             leavingBufferParticles.push_back(p);
             fastRemoveP();
           } else {
@@ -706,6 +712,11 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
+   * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
+   */
+  size_t _sortingThreshold;
+
+  /**
    * Reference to the AutoTuner that owns the container, ...
    */
   autopas::AutoTuner &_autoTuner;
@@ -830,7 +841,7 @@ template <class PairwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
     PairwiseFunctor &functor, TraversalInterface &traversal) {
   const bool doListRebuild = not neighborListsAreValid();
-  const auto configuration = _autoTuner.getCurrentConfig();
+  const auto &configuration = _autoTuner.getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;
@@ -956,10 +967,8 @@ void LogicHandler<Particle>::remainderHelperBufferContainer(
   const auto interactionLengthInv = 1. / container.getInteractionLength();
 
   const double cutoff = container.getCutoff();
-#ifdef AUTOPAS_OPENMP
-// one halo and particle buffer pair per thread
-#pragma omp parallel for schedule(static, 1), shared(f, _spacialLocks, haloBoxMin, interactionLengthInv)
-#endif
+  // one halo and particle buffer pair per thread
+  AUTOPAS_OPENMP(parallel for schedule(static, 1) shared(f, _spacialLocks, haloBoxMin, interactionLengthInv))
   for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
     auto &particleBuffer = particleBuffers[bufferId];
     auto &haloParticleBuffer = haloParticleBuffers[bufferId];
@@ -1012,23 +1021,18 @@ void LogicHandler<Particle>::remainderHelperBufferBuffer(PairwiseFunctor *f,
                                                          std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
   for (auto &buffer : particleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
   for (auto &buffer : haloParticleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0);
+    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
   }
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  {
+  AUTOPAS_OPENMP(parallel) {
     // For buffer interactions where bufferA == bufferB we can always enable newton3. For all interactions between
     // different buffers we turn newton3 always off, which ensures that only one thread at a time is writing to a
     // buffer. This saves expensive locks.
-#ifdef AUTOPAS_OPENMP
     // we can not use collapse here without locks, otherwise races would occur.
-#pragma omp for
-#endif
+    AUTOPAS_OPENMP(for)
     for (size_t i = 0; i < particleBuffers.size(); ++i) {
       for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
         auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
@@ -1049,14 +1053,10 @@ template <bool newton3, class PairwiseFunctor>
 void LogicHandler<Particle>::remainderHelperBufferHaloBuffer(
     PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
     std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
-#ifdef AUTOPAS_OPENMP
   // Here, phase / color based parallelism turned out to be more efficient than tasks
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (int interactionOffset = 0; interactionOffset < haloParticleBuffers.size(); ++interactionOffset) {
-#ifdef AUTOPAS_OPENMP
-#pragma omp for
-#endif
+    AUTOPAS_OPENMP(for)
     for (size_t i = 0; i < particleBuffers.size(); ++i) {
       auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
       auto &haloBufferSoA =
@@ -1085,6 +1085,14 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
               TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
                   configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
                   configuration.newton3);
+
+          // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+          if (auto *cellPairTraversalPtr =
+                  dynamic_cast<autopas::CellPairTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
+                      traversalPtr.get())) {
+            cellPairTraversalPtr->setSortingThreshold(_sortingThreshold);
+          }
+
           if (traversalPtr->isApplicable()) {
             return std::optional{std::move(traversalPtr)};
           } else {
@@ -1193,6 +1201,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     }
     ++_stepsSinceLastListRebuild;
 
+    _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
+
     _autoTuner.bumpIterationCounters();
     ++_iteration;
   }
@@ -1234,6 +1244,14 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
         auto traversalPtr =
             TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<PairwiseFunctor>(
                 conf.traversal, pairwiseFunctor, traversalInfo, conf.dataLayout, conf.newton3);
+
+        // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+        if (auto *cellPairTraversalPtr =
+                dynamic_cast<autopas::CellPairTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
+                    traversalPtr.get())) {
+          cellPairTraversalPtr->setSortingThreshold(_sortingThreshold);
+        }
+
         if (traversalPtr->isApplicable()) {
           return std::optional{std::move(traversalPtr)};
         } else {

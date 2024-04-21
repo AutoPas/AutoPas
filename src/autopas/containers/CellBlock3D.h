@@ -42,7 +42,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * @param cellSizeFactor cell size factor relative to interactionLength
    */
   CellBlock3D(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
-              double interactionLength, double cellSizeFactor = 1.0) {
+              double interactionLength, double cellSizeFactor = 1.0)
+      : _cells(&vec), _boxMin(bMin), _boxMax(bMax), _interactionLength(interactionLength) {
     rebuild(vec, bMin, bMax, interactionLength, cellSizeFactor);
 
     for (int i = 0; i < 3; ++i) {
@@ -68,9 +69,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
     if (index1d < _firstOwnedCellIndex or index1d > _lastOwnedCellIndex) {
       return true;
     }
-    auto index3d = index3D(index1d);
+    const auto index3d = index3D(index1d);
     bool isHaloCell = false;
-    for (size_t i = 0; i < 3; i++) {
+    for (size_t i = 0; i < index3d.size(); ++i) {
       if (index3d[i] < _cellsPerInteractionLength or
           index3d[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
         isHaloCell = true;
@@ -82,25 +83,6 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   [[nodiscard]] bool cellCanContainOwnedParticles(index_t index1d) const override {
     return not cellCanContainHaloParticles(index1d);
-  }
-
-  /**
-   * Checks if cell with index1d can be ignored for iteration with currently selected behavior.
-   * @param index1d 1d index of checked cell
-   * @param behavior @see IteratorBehavior
-   * @return false if this cell can contain particles that would be affected by current behavior
-   */
-  [[nodiscard]] bool ignoreCellForIteration(index_t index1d, IteratorBehavior behavior) const {
-    if ((behavior & IteratorBehavior::halo) and cellCanContainHaloParticles(index1d)) {
-      return false;
-    }
-    if ((behavior & IteratorBehavior::owned) and cellCanContainOwnedParticles(index1d)) {
-      return false;
-    }
-    if (behavior & IteratorBehavior::dummy) {
-      return false;
-    }
-    return true;
   }
 
   /**
@@ -304,23 +286,23 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * Number of cells to be checked in each direction where we can find valid interaction partners.
    * This is also the number of Halo cells per direction (always symmetric in each dimension).
    */
-  std::array<index_t, 3> _cellsPerDimensionWithHalo;
-  index_t _firstOwnedCellIndex;
-  index_t _lastOwnedCellIndex;
+  std::array<index_t, 3> _cellsPerDimensionWithHalo{};
+  index_t _firstOwnedCellIndex{};
+  index_t _lastOwnedCellIndex{};
   std::vector<ParticleCell> *_cells;
 
   std::array<double, 3> _boxMin, _boxMax;
-  std::array<double, 3> _haloBoxMin, _haloBoxMax;
+  std::array<double, 3> _haloBoxMin{}, _haloBoxMax{};
 
-  double _interactionLength;
+  double _interactionLength{};
 
-  unsigned long _cellsPerInteractionLength;
+  unsigned long _cellsPerInteractionLength{};
 
-  std::array<double, 3> _cellLength;
+  std::array<double, 3> _cellLength{};
 
   // 1 over above. Since this value is needed for sorting particles in cells, it
   // is computed quite often
-  std::array<double, 3> _cellLengthReciprocal;
+  std::array<double, 3> _cellLengthReciprocal{};
 };
 
 template <class ParticleCell>
@@ -465,16 +447,19 @@ inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<Parti
   for (int d = 0; d < 3; d++) {
     // defaults
     boxmin[d] = index3d[d] * this->_cellLength[d] + _haloBoxMin[d];
-    boxmax[d] = (index3d[d] + 1) * this->_cellLength[d] + _haloBoxMin[d];
 
-    // stupid rounding errors. Make sure that the lower corner is set correctly!
+    // stupid rounding errors. Snap values to the exact box values.
     if (index3d[d] == 0) {
       boxmin[d] = _haloBoxMin[d];
-      boxmax[d] = this->_cellLength[d];
     } else if (index3d[d] == _cellsPerInteractionLength) {
+      // Case: we are at the lower boundary of the non-halo box
       boxmin[d] = _boxMin[d];
     }
-    // no else, as this might ALSO be 1
+
+    boxmax[d] = boxmin[d] + this->_cellLength[d];
+
+    // This must not be an else to the if block above as both cases can be true.
+    // e.g. if there is only one cell
     if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - _cellsPerInteractionLength - 1) {
       boxmax[d] = _boxMax[d];
     } else if (index3d[d] == this->_cellsPerDimensionWithHalo[d] - 1) {

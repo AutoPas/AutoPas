@@ -48,9 +48,10 @@ class ParticleContainerInterface {
   virtual CellType getParticleCellTypeEnum() const = 0;
 
   /**
-   * Default constructor
+   * Constructor
+   * @param skinPerTimestep Skin distance a particle is allowed to move in one time-step.
    */
-  ParticleContainerInterface() = default;
+  ParticleContainerInterface(double skinPerTimestep) : _skinPerTimestep(skinPerTimestep) {}
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -260,22 +261,10 @@ class ParticleContainerInterface {
   [[nodiscard]] virtual const std::array<double, 3> &getBoxMax() const = 0;
 
   /**
-   * Set the upper corner of the container without halo.
-   * @param boxMax Upper corner to be set.
-   */
-  virtual void setBoxMax(const std::array<double, 3> &boxMax) = 0;
-
-  /**
    * Get the lower corner of the container without halo.
    * @return Lower corner of the container.
    */
   [[nodiscard]] virtual const std::array<double, 3> &getBoxMin() const = 0;
-
-  /**
-   * Set the lower corner of the container without halo.
-   * @param boxMin Lower corner to be set.
-   */
-  virtual void setBoxMin(const std::array<double, 3> &boxMin) = 0;
 
   /**
    * Return the cutoff of the container.
@@ -294,6 +283,22 @@ class ParticleContainerInterface {
    * @return verletSkin
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
+
+  /**
+   * Return the number of time-steps since last neighbor list rebuild
+   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
+   * return 0
+   * @return steps since last rebuild
+   */
+  [[nodiscard]] virtual size_t getStepsSinceLastRebuild() const { return _stepsSinceLastRebuild; }
+
+  /**
+   * Set the number of time-steps since last neighbor list rebuild
+   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
+   */
+  virtual void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) {
+    _stepsSinceLastRebuild = stepsSinceLastRebuild;
+  }
 
   /**
    * Return the interaction length (cutoff+skin) of the container.
@@ -334,17 +339,17 @@ class ParticleContainerInterface {
    * even exist.
    * The only guarantee is that the indices {0,0} yield the first particle in the container that satisfies the iterator
    * requirements.
-
    *
    * @note This function should handle any offsets if used in a parallel iterator.
    *
    * @param cellIndex Index of the cell the particle is located in.
    * @param particleIndex Particle index within the cell.
    * @param iteratorBehavior Which ownership states should be considered for the next particle.
-   * @return Pointer to the particle and its indices.
+   * @return Pointer to the particle and its indices. tuple<Particle*, cellIndex, particleIndex>
    * If a index pair is given that does not exist but is also not beyond the last cell, the next fitting particle shall
-   * be returned. Example: If [4,2] does not exist, [5,1] shall be returned (or whatever is the next particle that
-   * fulfills the iterator requirements).
+   * be returned.
+   * Example: If [4,2] does not exist, [5,1] shall be returned
+   * (or whatever is the next particle that fulfills the iterator requirements).
    * If there is no next fitting particle {nullptr, 0, 0} is returned.
    */
   virtual std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
@@ -415,6 +420,19 @@ class ParticleContainerInterface {
    * @return True if the given indices still point to a new particle.
    */
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
+
+ protected:
+  /**
+   * Stores the number of time-steps since last neighbor list rebuild
+   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
+   * be 0
+   */
+  size_t _stepsSinceLastRebuild{0};
+
+  /**
+   * Skin distance a particle is allowed to move in one time-step.
+   */
+  double _skinPerTimestep;
 };
 
 }  // namespace autopas

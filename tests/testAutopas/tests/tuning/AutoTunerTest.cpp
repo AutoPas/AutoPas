@@ -51,11 +51,11 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
   // Need to resize cells during loading, otherwise we get exceptions in SoAFunctors
-  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _))
+  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::ReferenceParticleCell<Molecule> &>(_), _, _, _))
       .Times(testing::AtLeast(1))
       .WillRepeatedly(
           testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
-  EXPECT_CALL(functor, SoALoader(::testing::Matcher<FMCell &>(_), _, _))
+  EXPECT_CALL(functor, SoALoader(::testing::Matcher<FMCell &>(_), _, _, _))
       .Times(testing::AtLeast(1))
       .WillRepeatedly(
           testing::WithArgs<0, 1>(testing::Invoke([](auto &cell, auto &buf) { buf.resizeArrays(cell.size()); })));
@@ -556,7 +556,7 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
-  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
+  EXPECT_CALL(functor, SoALoader(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _, _))
       .Times(testing::AtLeast(0));
   EXPECT_CALL(functor, SoAExtractor(::testing::Matcher<autopas::FullParticleCell<Molecule> &>(_), _, _))
       .Times(testing::AtLeast(0));
@@ -595,4 +595,57 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   EXPECT_EQ(tuner.getCurrentConfig(), firstConfig);
   EXPECT_NE(tuner.getCurrentConfig(), secondConfig);
+}
+
+/**
+ *  Add less measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ */
+TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 3,
+  };
+  constexpr size_t rebuildFrequency = 10;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  const auto [config, _] = autoTuner.getNextConfig();
+
+  constexpr long sampleWithRebuild = 10;
+  constexpr long sampleWithoutRebuild = 2;
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+
+  constexpr long expectedEvidence =
+      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
+}
+
+/**
+ *  Add more measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ *  Version with two rebuilds during sampling.
+ */
+TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 5,
+  };
+  constexpr size_t rebuildFrequency = 3;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  const auto [config, _] = autoTuner.getNextConfig();
+
+  constexpr long sampleWithRebuild = 10;
+  constexpr long sampleWithoutRebuild = 2;
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+
+  constexpr long expectedEvidence =
+      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
 }

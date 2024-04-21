@@ -20,27 +20,26 @@ namespace autopas {
  *
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLSlicedC02Traversal
-    : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>,
-      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
+template <class ParticleCell, class PairwiseFunctor>
+class VCLSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>,
+                              public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
 
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
+  internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
 
   void processBaseStep(unsigned long x, unsigned long y) {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
     auto &currentTower = clusterList.getTowerByIndex(x, y);
-    for (auto &cluster : currentTower.getClusters()) {
-      _clusterFunctor.traverseCluster(cluster);
-      for (auto *neighborCluster : cluster.getNeighbors()) {
-        _clusterFunctor.traverseClusterPair(cluster, *neighborCluster);
-      }
+    for (auto clusterIter =
+             (this->_useNewton3 ? currentTower.getClusters().begin() : currentTower.getFirstOwnedCluster());
+         clusterIter < (this->_useNewton3 ? currentTower.getClusters().end() : currentTower.getFirstTailHaloCluster());
+         ++clusterIter) {
+      const auto isHaloCluster =
+          clusterIter < currentTower.getFirstOwnedCluster() or clusterIter >= currentTower.getFirstTailHaloCluster();
+      _clusterFunctor.processCluster(*clusterIter, isHaloCluster);
     }
   }
 
@@ -53,29 +52,27 @@ class VCLSlicedC02Traversal
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param clusterSize the number of particles per cluster.
+   * @param dataLayout
+   * @param useNewton3
    */
   explicit VCLSlicedC02Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                                 const double interactionLength, const std::array<double, 3> &cellLength,
-                                 size_t clusterSize)
-      : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
+                                 double interactionLength, const std::array<double, 3> &cellLength, size_t clusterSize,
+                                 DataLayoutOption dataLayout, bool useNewton3)
+      : SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                               dataLayout, useNewton3, false),
         _functor(pairwiseFunctor),
-        _clusterFunctor(pairwiseFunctor, clusterSize) {}
+        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_sliced_c02; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
-
   void loadDataLayout() override {
-    if constexpr (dataLayout == DataLayoutOption::soa) {
+    if (this->_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
   }
 
   void endTraversal() override {
-    if constexpr (dataLayout == DataLayoutOption::soa) {
+    if (this->_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
     }
   }
@@ -83,5 +80,11 @@ class VCLSlicedC02Traversal
   void traverseParticlePairs() override {
     this->cSlicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
   }
+
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * This traversal does not use the CellFunctor, so the function has no effect here
+   */
+  void setSortingThreshold(size_t sortingThreshold) override {}
 };
 }  // namespace autopas

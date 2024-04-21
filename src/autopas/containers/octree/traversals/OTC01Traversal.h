@@ -24,10 +24,8 @@ namespace autopas {
  *
  * @tparam Particle
  * @tparam PairwiseFunctor
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class Particle, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
+template <class Particle, class PairwiseFunctor>
 class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
                        public OTTraversalInterface<OctreeNodeWrapper<Particle>> {
  public:
@@ -41,20 +39,20 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param cutoff cutoff (this is enough for the octree traversal, please don't use the interaction length here.)
    * @param interactionLength The minimum distance at which a force is considered nonzero, cutoff+skin.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength)
-      : CellPairTraversal<ParticleCell>({2, 1, 1}),
+  explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
+                          DataLayoutOption dataLayout, bool useNewton3)
+      : CellPairTraversal<ParticleCell>({2, 1, 1}, dataLayout, useNewton3),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength),
-        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/),
-        _dataLayoutConverter(pairwiseFunctor) {}
+        _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
+                     useNewton3),
+        _dataLayoutConverter(pairwiseFunctor, dataLayout) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::ot_c01; }
 
-  [[nodiscard]] bool isApplicable() const override { return not useNewton3; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; };
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; };
+  [[nodiscard]] bool isApplicable() const override { return not this->_useNewton3; }
 
   void initTraversal() override {
     // Preprocess all leaves
@@ -105,16 +103,21 @@ class OTC01Traversal : public CellPairTraversal<OctreeLeafNode<Particle>>,
     }
   }
 
+  /**
+   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   */
+  void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
+
  private:
   /**
    * CellFunctor to be used for the traversal defining the interaction between two cells.
    */
-  internal::CellFunctor<Particle, ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false> _cellFunctor;
+  internal::CellFunctor<ParticleCell, PairwiseFunctor, /*bidirectional*/ false> _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal
    */
-  utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+  utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
 };
 
 }  // namespace autopas

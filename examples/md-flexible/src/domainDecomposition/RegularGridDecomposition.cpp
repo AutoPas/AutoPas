@@ -17,6 +17,7 @@
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/Quaternion.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "src/ParticleCommunicator.h"
 #include "src/TypeDefinitions.h"
 
@@ -259,13 +260,13 @@ void RegularGridDecomposition::exchangeMigratingParticles(AutoPasType &autoPasCo
       _receivedParticlesBuffer.clear();
       sendAndReceiveParticlesLeftAndRight(_particlesForLeftNeighbor, _particlesForRightNeighbor,
                                           _receivedParticlesBuffer, leftNeighbor, rightNeighbor);
-#ifdef AUTOPAS_OPENMP
-#pragma omp declare reduction(vecMergeParticle : std::remove_reference_t<decltype(emigrants)> : omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end()))
-// make sure each buffer gets filled equally while not inducing scheduling overhead
-#pragma omp parallel for reduction(vecMergeParticle \
-                                   : emigrants),    \
-    schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / omp_get_max_threads()))
-#endif
+      // custom openmp reduction to concatenate all local vectors to one at the end of a parallel region
+      AUTOPAS_OPENMP(declare reduction(vecMergeParticle :                                                 \
+                                       std::remove_reference_t<decltype(emigrants)> :                     \
+                                           omp_out.insert(omp_out.end(), omp_in.begin(), omp_in.end())))
+      // make sure each buffer gets filled equally while not inducing scheduling overhead
+      AUTOPAS_OPENMP(parallel for reduction(vecMergeParticle : emigrants) \
+                                  schedule(static, std::max(1ul, _receivedParticlesBuffer.size() / autopas::autopas_get_max_threads())))
       // we can't use range based for loops here because clang accepts this only starting with version 11
       for (size_t i = 0; i < _receivedParticlesBuffer.size(); ++i) {
         const auto &particle = _receivedParticlesBuffer[i];

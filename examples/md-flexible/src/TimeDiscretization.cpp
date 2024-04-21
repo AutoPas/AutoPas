@@ -8,6 +8,13 @@
 #include "autopas/utils/ArrayMath.h"
 #include <stdexcept>
 
+#include <cmath>
+#include <iostream>
+#include <stdexcept>
+
+#include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/WrapOpenMP.h"
+
 namespace TimeDiscretization {
 
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
@@ -23,9 +30,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
   bool throwException = false;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(|| : throwException) shared(autoPasContainer, particlePropertiesLibrary, globalForce, deltaT, maxAllowedDistanceMoved, maxAllowedDistanceMovedSquared, fastParticlesThrow, std::cerr) default(none)
-#endif
+  AUTOPAS_OPENMP(parallel reduction(|| : throwException))
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     auto v = iter->getV();
@@ -35,20 +40,20 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
     v *= deltaT;
     f *= (deltaT * deltaT / (2 * m));
     const auto displacement = v + f;
-    // sanity check that particles are not too fast for the Verlet skin technique.
-    // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
-    // the whole rebuild frequency is farther than the skin we lose interactions.
-    const auto distanceMovedSquared = dot(displacement, displacement);
-    if (distanceMovedSquared > maxAllowedDistanceMovedSquared) {
-#pragma omp critical
-      std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << std::sqrt(distanceMovedSquared) << " > "
+    // Sanity check that particles are not too fast for the Verlet skin technique. Only makes sense if skin > 0.
+    if (not iter->addRDistanceCheck(displacement, maxAllowedDistanceMovedSquared) and
+        maxAllowedDistanceMovedSquared > 0) {
+      const auto distanceMoved = std::sqrt(dot(displacement, displacement));
+      // If this condition is violated once this is not necessarily an error. Only if the total distance traveled over
+      // the whole rebuild frequency is farther than the skin we lose interactions.
+      AUTOPAS_OPENMP(critical)
+      std::cerr << "A particle moved farther than verletSkinPerTimestep/2: " << distanceMoved << " > "
                 << autoPasContainer.getVerletSkinPerTimestep() << "/2 = " << maxAllowedDistanceMoved << "\n"
                 << *iter << "\nNew Position: " << iter->getR() + displacement << std::endl;
       if (fastParticlesThrow) {
         throwException = true;
       }
     }
-    iter->addR(displacement);
   }
 
   if (throwException) {
@@ -78,9 +83,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
   const double tol = 1e-13;  // tolerance given in paper
   const double tolSquared = tol * tol;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     // Calculate Quaternions
     const auto q = iter->getQuaternion();
@@ -174,9 +177,7 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
   // helper declarations for operations with vector
   using namespace autopas::utils::ArrayMath::literals;
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
     const auto force = iter->getF();
@@ -196,18 +197,10 @@ void calculateAngularVelocities(autopas::AutoPas<ParticleType> &autoPasContainer
 
 #if MD_FLEXIBLE_MODE == MULTISITE
 
-  //you cannot parallelize loops using iters that easily with openmp. #pragma omp parallel (without the "for") will only
-  // lead to the whole loop being executed by all threads instead of the workload being distributed
-  //adding #pragma omp parallel for won't work since openmp doesn't know at the start of the iteration whether there will
-  // be a next iteration
-//#ifdef AUTOPAS_OPENMP
-//#pragma omp parallel
-//#endif
+  AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto torqueW = iter->getTorque();
-
     const auto q = iter->getQuaternion();
-
     const auto I = particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId());  // moment of inertia
 
     // convert torque to molecular-frame

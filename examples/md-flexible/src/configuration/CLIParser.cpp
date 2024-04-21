@@ -55,6 +55,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.cutoff,
       config.dataLayoutOptions,
       config.deltaT,
+      config.sortingThreshold,
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
@@ -68,6 +69,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.iterations,
       config.loadBalancer,
       config.loadBalancingInterval,
+      config.loadEstimatorOptions,
       config.logFileName,
       config.logLevel,
       config.maxTuningPhasesWithoutTest,
@@ -205,7 +207,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         try {
           config.deltaT.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing epsilon value: " << optarg << endl;
+          cerr << "Error parsing deltaT value: " << optarg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.sortingThreshold)::getoptChar: {
+        try {
+          config.sortingThreshold.value = stoul(strArg);
+        } catch (const exception &) {
+          cerr << "Error parsing value for sorting-threshold: " << optarg << endl;
           displayHelp = true;
         }
         break;

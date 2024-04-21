@@ -278,6 +278,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.deltaT.description;
 
         config.deltaT.value = node[key].as<double>();
+      } else if (key == config.sortingThreshold.name) {
+        expected = "Unsigned Integer >= 0.";
+        description = config.sortingThreshold.description;
+
+        config.sortingThreshold.value = node[key].as<size_t>();
       } else if (key == config.traversalOptions.name) {
         expected = "YAML-sequence of possible values.";
         description = config.traversalOptions.description;
@@ -716,8 +721,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.thermostatInterval.description;
         try {
           config.thermostatInterval.value = node[key][config.thermostatInterval.name].as<size_t>();
-          if (config.thermostatInterval.value <= 1) {
-            throw std::runtime_error("thermostatInterval has to be > 0!");
+          if (config.thermostatInterval.value < 1) {
+            throw std::runtime_error("thermostatInterval has to be > 0");
           }
         } catch (const std::exception &e) {
           errors.push_back(makeErrorMsg(mark, key, e.what(), expected, description));

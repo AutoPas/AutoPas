@@ -30,9 +30,7 @@ template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary)
-#endif
+  AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
 #if MD_FLEXIBLE_MODE == MULTISITE
@@ -89,10 +87,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
     numParticleMap[typeID] = 0ul;
   }
 
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif
-  {
+  AUTOPAS_OPENMP(parallel) {
     // create aggregators for each thread
     std::map<size_t, double> kineticEnergyMul2MapThread;
     std::map<size_t, size_t> numParticleMapThread;
@@ -114,10 +109,7 @@ auto calcTemperatureComponent(const AutoPasTemplate &autopas,
       numParticleMapThread.at(iter->getTypeId())++;
     }
     // manual reduction
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-    {
+    AUTOPAS_OPENMP(critical) {
       for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
         kineticEnergyMul2Map[typeID] += kineticEnergyMul2MapThread[typeID];
         numParticleMap[typeID] += numParticleMapThread[typeID];
@@ -193,11 +185,7 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
 #endif
   }
 
-  //@TODO: (Johnny) again- this for-loop doesn't get distributed but rather executed multiple times
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)
-#endif
-  {
+  AUTOPAS_OPENMP(parallel default(none) shared(autopas, translationalVelocityScale, rotationalVelocityScale)) {
     // we use a constant seed for repeatability.
     // we need one random engine and distribution per thread
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
@@ -252,9 +240,7 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
   }
 
   // Scale velocities (and angular velocities) with the scaling map
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel default(none) shared(autopas, scalingMap)
-#endif
+  AUTOPAS_OPENMP(parallel default(none) shared(autopas, scalingMap))
   for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     iter->setV(iter->getV() * scalingMap[iter->getTypeId()]);
 #if MD_FLEXIBLE_MODE == MULTISITE

@@ -14,17 +14,18 @@ namespace autopas::utils {
  * This converts cells to the target data Layout using the given functor
  *
  * @tparam Functor The functor that defines the interaction of two particles.
- * @tparam DataLayout the Layout to convert to
  */
-template <class FunctorSoaWrapper, DataLayoutOption::Value dataLayout>
+template <class FunctorSoaWrapper>
 class DataLayoutConverter {
  public:
   /**
    * Constructor
    * @tparam Functor Functor Type
    * @param functor responsible for the conversion
+   * @param dataLayout The data layout to be used.
    */
-  explicit DataLayoutConverter(FunctorSoaWrapper *functor) : _functor(functor) {}
+  explicit DataLayoutConverter(FunctorSoaWrapper *functor, DataLayoutOption dataLayout)
+      : _functor(functor), _dataLayout(dataLayout) {}
 
   /**
    * loads the target dataLayout in a cell
@@ -33,12 +34,12 @@ class DataLayoutConverter {
    */
   template <class ParticleCell>
   void loadDataLayout(ParticleCell &cell) {
-    switch (dataLayout) {
+    switch (_dataLayout) {
       case DataLayoutOption::aos: {
         return;
       }
       case DataLayoutOption::soa: {
-        _functor->SoALoader(cell, cell._particleSoABuffer, 0);
+        _functor->SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
         return;
       }
     }
@@ -51,7 +52,7 @@ class DataLayoutConverter {
    */
   template <class ParticleCell>
   void storeDataLayout(ParticleCell &cell) {
-    switch (dataLayout) {
+    switch (_dataLayout) {
       case DataLayoutOption::aos: {
         return;
       }
@@ -67,6 +68,8 @@ class DataLayoutConverter {
    *  Functor to convert cells
    */
   FunctorSoaWrapper *_functor;
+
+  DataLayoutOption _dataLayout;
 };
 
 }  // namespace autopas::utils

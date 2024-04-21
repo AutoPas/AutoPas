@@ -26,6 +26,7 @@
 #include "autopas/utils/CompileInfo.h"
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSetFinite.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -109,6 +110,7 @@ void AutoPas<Particle>::init() {
   _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
                                                     _verletRebuildFrequency, _outputSuffix);
 
+  _logicHandlerInfo.sortingThreshold = _sortingThreshold;
   _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
       *_autoTuner, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
@@ -160,9 +162,7 @@ void AutoPas<Particle>::addParticlesAux(size_t numParticlesToAdd, size_t numHalo
                                         F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads()))
-#endif
+  AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads())))
   for (auto i = 0; i < collectionSize; ++i) {
     loopBody(i);
   }
@@ -184,9 +184,7 @@ template <class Collection, class F>
 void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(+ : numTrue)
-#endif
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
@@ -243,9 +241,7 @@ template <class Collection, class F>
 void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(+ : numTrue)
-#endif
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
