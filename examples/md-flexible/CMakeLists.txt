@@ -22,14 +22,13 @@ option(MD_FLEXIBLE_USE_MPI "Enable MPI parallelism for md-flexible." OFF)
 target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsLibrary yaml-cpp  ${ALL_LIB} $<$<BOOL:${MD_FLEXIBLE_USE_MPI}>:MPI::MPI_CXX>)
 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
-option(MD_FLEXIBLE_STS_AOS_FUNCTOR "When turned on the AoS Multisite Functor will use the StS cutoff-condition instead of CoM" ON)
 option(MD_FLEXIBLE_NO_AUTOVECTORIZATION "Determines whether or not Autovectorization should be disabled" OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS "Compile AutoVec Functor using absolute site positions." OFF)
 option(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING "Temporary option- If MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS is set this variable defines whether or not it should flatten the vectors before using them." OFF)# ON)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
-option(MD_FLEXIBLE_TORQUE_AFTER_FORCE "If set the torque calculation doesn't get managed by the force functor but by time discretization drastically reducing the number floating point operations required" OFF)
+option(MD_FLEXIBLE_TORQUE_AFTER_FORCE "If set the torque calculation doesn't get managed by the force functor but by time discretization drastically reducing the number of cross product computations required" OFF)
 
 
 target_compile_definitions(

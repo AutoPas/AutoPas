@@ -178,11 +178,9 @@ class LJMultisiteFunctor
     const auto displacementCoM = autopas::utils::ArrayMath::sub(particleA.getR(), particleB.getR());
     const auto distanceSquaredCoM = autopas::utils::ArrayMath::dot(displacementCoM, displacementCoM);
 
-#if not defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
     if (distanceSquaredCoM > _cutoffSquared) {
       return;
     }
-#endif
 
     // get number of sites
     const size_t numSitesA = useMixing ? _PPLibrary->getNumSites(particleA.getTypeId()) : _sitePositionsLJ.size();
@@ -211,12 +209,6 @@ class LJMultisiteFunctor
         const auto displacement = autopas::utils::ArrayMath::add(
             autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
-
-#if defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
-        if (distanceSquared > _cutoffSquared) {
-          continue;
-        }
-#endif
 
         const auto sigmaSquared =
             useMixing ? _PPLibrary->getMixingSigmaSquared(siteIdsA[i], siteIdsB[j]) : _sigmaSquared;

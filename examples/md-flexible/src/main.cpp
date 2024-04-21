@@ -44,28 +44,10 @@ int main(int argc, char **argv) {
     }
 
     Simulation simulation(configuration, domainDecomposition);
-#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
-    std::cout<<"MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS defined" << std::endl;
-#else
-    std::cout<<"MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS not defined" << std::endl;
-#endif
-    #if defined(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING)
-    std::cout<<"MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING defined"<< std::endl;
-    #else
-    std::cout<<"MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING not defined"<< std::endl;
-    #endif
 
-#if defined(MD_FLEXIBLE_NO_AUTOVECTORIZATION)
-  std::cout<<"OMP AutoVectorization disabled" << std::endl;
-#else
-  std::cout<<"OMP AutoVectorization NOT disabled" << std::endl;
-#endif
 
-#if defined(MD_FLEXIBLE_STS_AOS_FUNCTOR)
-  std::cout<<"Using StS-cutoff in AoS-functor" << std::endl;
-#else
-  std::cout<<"Using CoM-cutoff in AoS-functor" << std::endl;
-#endif
+
+
 
     simulation.run();
     simulation.finalize();
