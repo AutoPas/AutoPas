@@ -25,7 +25,6 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation 
 option(MD_FLEXIBLE_NO_AUTOVECTORIZATION "Determines whether or not Autovectorization should be disabled" OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS "Compile AutoVec Functor using absolute site positions." OFF)
-option(MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING "Temporary option- If MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS is set this variable defines whether or not it should flatten the vectors before using them." OFF)# ON)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_TORQUE_AFTER_FORCE "If set the torque calculation doesn't get managed by the force functor but by time discretization drastically reducing the number of cross product computations required" OFF)
@@ -34,17 +33,13 @@ option(MD_FLEXIBLE_TORQUE_AFTER_FORCE "If set the torque calculation doesn't get
 target_compile_definitions(
         md-flexible
         PUBLIC
-        $<$<BOOL:${I_JUST_WANNA_RUN_UNIT_TESTS}>:I_JUST_WANNA_RUN_UNIT_TESTS>
-        $<$<BOOL:${MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH}>:MD_FLEXIBLE_USE_BUNDLING_MULTISITE_APPROACH>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC>
         $<$<BOOL:${MD_FLEXIBLE_NO_AUTOVECTORIZATION}>:MD_FLEXIBLE_NO_AUTOVECTORIZATION>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS}>:MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS>
-        $<$<BOOL:${MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING}>:MD_FLEXIBLE_ABSOLUTE_POS_USE_FLATTENING>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_TORQUE_AFTER_FORCE}>:MD_FLEXIBLE_TORQUE_AFTER_FORCE>
-        $<$<BOOL:${MD_FLEXIBLE_STS_AOS_FUNCTOR}>:MD_FLEXIBLE_STS_AOS_FUNCTOR>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
