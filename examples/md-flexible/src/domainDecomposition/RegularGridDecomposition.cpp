@@ -500,6 +500,7 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
       auto position = particleIter->getR();
       position[direction] = position[direction] + wrapAroundDistance;
       haloParticlesBuffer.back().setR(position);
+      haloParticlesBuffer.back().setRAtRebuild();
     }
   }
 }
@@ -570,6 +571,8 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         const auto justInsideOfBox = std::nextafter(_globalBoxMax[direction], _globalBoxMin[direction]);
         position[direction] = std::min(justInsideOfBox, periodicPosition);
         leftNeighborParticles.back().setR(position);
+        leftNeighborParticles.back().setRAtRebuild();  // TODO: this isn't correct, best thing would be to shift so that
+                                                       // displacement before and after remains same
       }
       // if the particle is right of the box
     } else if (position[direction] >= _localBoxMax[direction]) {
@@ -582,6 +585,8 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         const auto periodicPosition = position[direction] - globalBoxDimensions[direction];
         position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
         rightNeighborParticles.back().setR(position);
+        rightNeighborParticles.back().setRAtRebuild();  // TODO: this isn't correct, best thing would be to shift so
+                                                        // that displacement before and after remains same
       }
     } else {
       uncategorizedParticles.push_back(particle);
