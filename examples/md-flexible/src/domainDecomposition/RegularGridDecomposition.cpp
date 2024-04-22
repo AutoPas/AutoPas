@@ -197,28 +197,6 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     const double rightHaloMin = _localBoxMax[dimensionIndex] - _cutoffWidth - skinWidth;
     const double rightHaloMax = _localBoxMax[dimensionIndex] + skinWidth;
 
-    for (const auto &particle : _haloParticles) {
-      std::array<double, _dimensionCount> position = particle.getR();
-      if (position[dimensionIndex] >= leftHaloMin and position[dimensionIndex] < leftHaloMax) {
-        _particlesForLeftNeighbor.push_back(particle);
-
-        // Apply boundary condition
-        if (isNear(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex])) {
-          position[dimensionIndex] =
-              position[dimensionIndex] + (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
-          _particlesForLeftNeighbor.back().setR(position);
-        }
-      } else if (position[dimensionIndex] >= rightHaloMin and position[dimensionIndex] < rightHaloMax) {
-        _particlesForRightNeighbor.push_back(particle);
-
-        // Apply boundary condition
-        if (isNear(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
-          position[dimensionIndex] =
-              position[dimensionIndex] - (_globalBoxMax[dimensionIndex] - _globalBoxMin[dimensionIndex]);
-          _particlesForRightNeighbor.back().setR(position);
-        }
-      }
-    }
     // See documentation for _neighborDomainIndices to explain the indexing
     const int leftNeighbor = _neighborDomainIndices[(dimensionIndex * 2) % _neighborCount];
     const int rightNeighbor = _neighborDomainIndices[(dimensionIndex * 2 + 1) % _neighborCount];
