@@ -45,7 +45,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           bool countFLOPs = false, bool relevantForTuning = true>
 class LJFunctorSVE
     : public autopas::Functor<
-          Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning, countFLOPs>> {
+          Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -80,7 +80,7 @@ class LJFunctorSVE
   }
 #else
       : autopas::Functor<
-            Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+            Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
             cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
