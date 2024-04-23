@@ -1,10 +1,6 @@
 message(STATUS "gtest - using bundled version")
 find_package(Threads REQUIRED)
 
-if(AUTOPAS_BUILD_HIGHWAY)
-    return()
-endif()
-
 # Enable FetchContent CMake module
 include(FetchContent)
 

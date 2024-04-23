@@ -35,7 +35,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_XSIMD}>:MD_FLEXIBLE_FUNCTOR_XSIMD>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIPP}>:MD_FLEXIBLE_FUNCTOR_MIPP>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SIMDE}>:MD_FLEXIBLE_FUNCTOR_SIMDE>
-        # $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HIGHWAY}>:MD_FLEXIBLE_FUNCTOR_HIGWHAY>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HIGHWAY}>:MD_FLEXIBLE_FUNCTOR_HWY>
         )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---

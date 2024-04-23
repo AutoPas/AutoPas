@@ -1,22 +1,15 @@
-# Enable FetchContent CMake module
+message(STATUS "highway")
 
 include(FetchContent)
 
-# Build Highway and make the cmake targets available
 FetchContent_Declare(
-    highway
+    autopas_highway
     URL ${AUTOPAS_SOURCE_DIR}/libs/highway-master.zip
 )
 
-# option(AUTOPAS_BUILD_HIGHWAY "" ON)
-set(AUTOPAS_BUILD_TESTS OFF)
-set(MD_FLEXIBLE_FUNCTOR_HWY ON)
-
-FetchContent_GetProperties(highway)
-if (NOT highway_POPULATED)
-
-    FetchContent_Populate(highway)
-    message(STATUS "Highway")
-    add_subdirectory(${highway_SOURCE_DIR} ${highway_BINARY_DIR})
-
-endif()
+FetchContent_GetProperties(autopas_highway)
+if (NOT autopas_highway_POPULATED)
+    FetchContent_Populate(autopas_highway)
+    set(HWY_ENABLE_TESTS OFF)
+    add_subdirectory(${autopas_highway_SOURCE_DIR} ${autopas_highway_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif ()
