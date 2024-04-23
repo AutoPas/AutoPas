@@ -345,13 +345,12 @@ class LJFunctor
       fxptr[i] += fxacc;
       fyptr[i] += fyacc;
       fzptr[i] += fzacc;
-
-      if constexpr (countFLOPs) {
-        _numDistCalls += numDistanceCalculationSum;
-        _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-        _numKernelCallsN3 += numKernelCallsN3Sum;
-        _numOtherFLOPs += numFLOPsCalculateGlobalsSum + 3; // 3 is from the above force accumulation.
-      }
+    }
+    if constexpr (countFLOPs) {
+      _numDistCalls += numDistanceCalculationSum;
+      _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _numKernelCallsN3 += numKernelCallsN3Sum;
+      _numOtherFLOPs += numFLOPsCalculateGlobalsSum;
     }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
@@ -545,13 +544,12 @@ class LJFunctor
       fx1ptr[i] += fxacc;
       fy1ptr[i] += fyacc;
       fz1ptr[i] += fzacc;
-
-      if constexpr (countFLOPs) {
-        _numDistCalls += numDistanceCalculationSum;
-        _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-        _numKernelCallsN3 += numKernelCallsN3Sum;
-        _numOtherFLOPs += numFLOPsCalculateGlobalsSum + 3;
-      }
+    }
+    if constexpr (countFLOPs) {
+      _numDistCalls += numDistanceCalculationSum;
+      _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _numKernelCallsN3 += numKernelCallsN3Sum;
+      _numOtherFLOPs += numFLOPsCalculateGlobalsSum;
     }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
@@ -737,7 +735,11 @@ class LJFunctor
 
   size_t getNumFLOPs() {
     if constexpr (countFLOPs) {
-      return _numDistCalls * 8 + _numKernelCallsN3 * 18 + _numKernelCallsNoN3 * 15;
+      AutoPasLog(TRACE, "Number of Distance Calls           = {}", _numDistCalls);
+      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", _numKernelCallsN3);
+      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", _numKernelCallsNoN3);
+      AutoPasLog(TRACE, "Number of Other FLOPs              = {}", _numOtherFLOPs);
+      return _numDistCalls * 8 + _numKernelCallsN3 * 18 + _numKernelCallsNoN3 * 15 + _numOtherFLOPs;
     } else {
       autopas::utils::ExceptionHandler::exception("LJFunctor::getNumFLOPs called without countFLOPs enabled!");
       return 0;
@@ -746,6 +748,9 @@ class LJFunctor
 
   double getHitRate() {
     if constexpr (countFLOPs) {
+      AutoPasLog(TRACE, "Number of Distance Calls           = {}", _numDistCalls);
+      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", _numKernelCallsN3);
+      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", _numKernelCallsNoN3);
       return ((double)_numKernelCallsNoN3 + (double)_numKernelCallsN3)/((double)_numDistCalls);
     } else {
       autopas::utils::ExceptionHandler::exception("LJFunctor::getHitRate called without countFLOPs enabled!");
@@ -927,12 +932,6 @@ class LJFunctor
             }
           }
         }
-        if constexpr (countFLOPs) {
-          _numDistCalls += numDistanceCalculationSum;
-          _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-          _numKernelCallsN3 += numKernelCallsN3Sum;
-          _numOtherFLOPs += numFLOPsCalculateGlobalsSum;
-        }
         // scatter the forces to where they belong, this is only needed for newton3
         if (newton3) {
 #pragma omp simd safelen(vecsize)
@@ -942,7 +941,6 @@ class LJFunctor
             fyptr[j] -= fyArr[tmpj];
             fzptr[j] -= fzArr[tmpj];
           }
-          if constexpr (countFLOPs) {_numOtherFLOPs += 3 * vecsize;}
         }
       }
     }
@@ -1024,7 +1022,6 @@ class LJFunctor
         virialSumY += virialy * energyFactor;
         virialSumZ += virialz * energyFactor;
 
-        if constexpr (countFLOPs) {_numOtherFLOPs += 14;}
       }
     }
 
@@ -1032,7 +1029,13 @@ class LJFunctor
       fxptr[indexFirst] += fxacc;
       fyptr[indexFirst] += fyacc;
       fzptr[indexFirst] += fzacc;
-      if constexpr (countFLOPs) {_numOtherFLOPs += 3;}
+    }
+
+    if constexpr (countFLOPs) {
+      _numDistCalls += numDistanceCalculationSum;
+      _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _numKernelCallsN3 += numKernelCallsN3Sum;
+      _numOtherFLOPs += numFLOPsCalculateGlobalsSum;
     }
 
     if (calculateGlobals) {
