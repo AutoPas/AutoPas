@@ -94,7 +94,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
         _cutoff{cutoff},
-        _skinPerTimestep{skinPerTimestep},
         _rebuildFrequency{rebuildFrequency},
         _loadEstimator(loadEstimator) {
     // always have at least one tower.
