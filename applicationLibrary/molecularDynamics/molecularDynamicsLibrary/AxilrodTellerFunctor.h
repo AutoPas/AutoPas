@@ -67,8 +67,8 @@ class AxilrodTellerFunctor
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
-        _cutoffSquaredPd{simde_mm512_set1_pd(cutoff * cutoff)},
-        _postProcessed{false} {
+        _postProcessed{false},
+        _cutoffSquaredPd{simde_mm512_set1_pd(cutoff * cutoff)} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -204,7 +204,7 @@ class AxilrodTellerFunctor
 
   inline double simde_mm512_reduce_add_pd(__m512d a) {
 #ifdef __AVX512F__
-    _mm512_reduce_add_pd(a);
+    return _mm512_reduce_add_pd(a);
 #else
     std::array<double, vecLength> a_vec = {0.0};
     simde_mm512_storeu_pd(a_vec.data(), a);
@@ -218,7 +218,7 @@ class AxilrodTellerFunctor
 
   inline void simde_mm512_mask_i64scatter_pd(void *base_addr, __mmask8 k, __m512i vindex, __m512d a, const int scale) {
 #ifdef __AVX512F__
-    _mm512_mask_i64scatter_pd(base_addr, vindex, a, scale);
+    _mm512_mask_i64scatter_pd(base_addr, k, vindex, a, scale);
 #else
     for (int i = 0; i < vecLength; ++i) {
       if (k & (1 << i)) {
@@ -240,9 +240,9 @@ class AxilrodTellerFunctor
 
   inline simde__m512i simde_mm512_alignr_epi64(simde__m512i a, simde__m512i b, const int imm8) {
 #ifdef __AVX512F__
-    _mm512_alignr_epi64(a, b, imm8);
+    return _mm512_alignr_epi64(a, b, imm8);
 #else
-    std::array<int64_t, 2 *vecLength> buffer = {0};
+    std::array<int64_t, 2 * vecLength> buffer = {0};
     simde_mm512_storeu_epi64(buffer.data() + vecLength, a);
     simde_mm512_storeu_epi64(buffer.data(), b);
     return simde_mm512_loadu_epi64(buffer.data() + imm8);
@@ -272,9 +272,9 @@ class AxilrodTellerFunctor
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (newton3) {
-      SoAFunctorSingleImplOld<true>(soa);
+      SoAFunctorSingleImpl<true>(soa);
     } else {
-      SoAFunctorSingleImplOld<false>(soa);
+      SoAFunctorSingleImpl<false>(soa);
     }
   }
 
@@ -284,9 +284,9 @@ class AxilrodTellerFunctor
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       const bool newton3) final {
     if (newton3) {
-      SoAFunctorPairImplOld<true>(soa1, soa2);
+      SoAFunctorPairImpl<true>(soa1, soa2);
     } else {
-      SoAFunctorPairImplOld<false>(soa1, soa2);
+      SoAFunctorPairImpl<false>(soa1, soa2);
     }
   }
 
@@ -305,9 +305,9 @@ class AxilrodTellerFunctor
                         autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
     // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
     if (newton3) {
-      SoAFunctorTripleImplOld<true>(soa1, soa2, soa3);
+      SoAFunctorTripleImpl<true>(soa1, soa2, soa3);
     } else {
-      SoAFunctorTripleImplOld<false>(soa1, soa2, soa3);
+      SoAFunctorTripleImpl<false>(soa1, soa2, soa3);
     }
   }
 
@@ -517,19 +517,21 @@ class AxilrodTellerFunctor
           simde_mm512_mask_i64scatter_pd(fx3ptr, _masks[rest], vindex, fxk_new, 8);
           simde_mm512_mask_i64scatter_pd(fy3ptr, _masks[rest], vindex, fyk_new, 8);
           simde_mm512_mask_i64scatter_pd(fy3ptr, _masks[rest], vindex, fzk_new, 8);
-#endif
+#else
           simde_mm512_mask_storeu_pd(buffer_fxk.data(), _masks[rest], fxk_new);
           simde_mm512_mask_storeu_pd(buffer_fyk.data(), _masks[rest], fyk_new);
           simde_mm512_mask_storeu_pd(buffer_fzk.data(), _masks[rest], fzk_new);
+#endif
         } else {
 #ifdef __AVX512F__
           simde_mm512_i64scatter_pd(fx3ptr, vindex, fxk_new, 8);
           simde_mm512_i64scatter_pd(fy3ptr, vindex, fyk_new, 8);
           simde_mm512_i64scatter_pd(fz3ptr, vindex, fzk_new, 8);
-#endif
+#else
           simde_mm512_storeu_pd(buffer_fxk.data(), fxk_new);
           simde_mm512_storeu_pd(buffer_fyk.data(), fyk_new);
           simde_mm512_storeu_pd(buffer_fzk.data(), fzk_new);
+#endif
         }
 #ifndef __AVX512F__
         for (int index = 0; index < (remainderIsMasked ? rest : vecLength); ++index) {
@@ -748,20 +750,22 @@ class AxilrodTellerFunctor
           simde_mm512_mask_i64scatter_pd(fx3ptr, _masks[rest], indicesK, fxk_new, 8);
           simde_mm512_mask_i64scatter_pd(fy3ptr, _masks[rest], indicesK, fyk_new, 8);
           simde_mm512_mask_i64scatter_pd(fy3ptr, _masks[rest], indicesK, fzk_new, 8);
-#endif
+#else
           simde_mm512_mask_storeu_pd(buffer_fxk.data(), _masks[rest], fxk_new);
           simde_mm512_mask_storeu_pd(buffer_fyk.data(), _masks[rest], fyk_new);
           simde_mm512_mask_storeu_pd(buffer_fzk.data(), _masks[rest], fzk_new);
+#endif
         } else {
           // TODO scatter
 #ifdef __AVX512F__
           simde_mm512_i64scatter_pd(fx3ptr, indicesK, fxk_new, 8);
           simde_mm512_i64scatter_pd(fy3ptr, indicesK, fyk_new, 8);
           simde_mm512_i64scatter_pd(fz3ptr, indicesK, fzk_new, 8);
-#endif
+#else
           simde_mm512_storeu_pd(buffer_fxk.data(), fxk_new);
           simde_mm512_storeu_pd(buffer_fyk.data(), fyk_new);
           simde_mm512_storeu_pd(buffer_fzk.data(), fzk_new);
+#endif
         }
 #ifndef __AVX512F__
         for (int index = 0; index < (remainderIsMasked ? rest : vecLength); ++index) {  // TODO mask_store
@@ -775,16 +779,16 @@ class AxilrodTellerFunctor
   }
 
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
-  void SoACompressAlignr(simde__m512i &interactionIndices, int &numAssignedRegisters, const size_t k,
-                         const simde__m512d x1, const simde__m512d y1, const simde__m512d z1, const simde__m512d x2,
-                         const simde__m512d y2, const simde__m512d z2, const double *const __restrict x3ptr,
-                         const double *const __restrict y3ptr, const double *const __restrict z3ptr,
-                         const size_t *const ownedState3ptr, const size_t type1, const size_t type2,
-                         const size_t *const __restrict type3ptr, const simde__m512d &drxij, const simde__m512d &dryij,
-                         const simde__m512d &drzij, const simde__m512d &drij2, simde__m512d &fxiacc,
-                         simde__m512d &fyiacc, simde__m512d &fziacc, simde__m512d &fxjacc, simde__m512d &fyjacc,
-                         simde__m512d &fzjacc, double *const __restrict fx3ptr, double *const __restrict fy3ptr,
-                         double *const __restrict fz3ptr, unsigned int rest = 0) {
+  void SoAKernelOuterCompressAlignr(
+      simde__m512i &interactionIndices, int &numAssignedRegisters, const size_t k, const simde__m512d &x1,
+      const simde__m512d &y1, const simde__m512d &z1, const simde__m512d &x2, const simde__m512d &y2,
+      const simde__m512d &z2, const double *const __restrict x3ptr, const double *const __restrict y3ptr,
+      const double *const __restrict z3ptr, const autopas::OwnershipState *const ownedState3ptr, const size_t type1,
+      const size_t type2, const size_t *const __restrict type3ptr, const simde__m512d &drxij, const simde__m512d &dryij,
+      const simde__m512d &drzij, const simde__m512d &drij2, simde__m512d &fxiacc, simde__m512d &fyiacc,
+      simde__m512d &fziacc, simde__m512d &fxjacc, simde__m512d &fyjacc, simde__m512d &fzjacc,
+      double *const __restrict fx3ptr, double *const __restrict fy3ptr, double *const __restrict fz3ptr,
+      unsigned int rest = 0) {
     const simde__m512i loopIndices = simde_mm512_add_epi64(simde_mm512_set1_epi64(k), _ascendingIndices);
 
     const simde__m512d x3 =
@@ -849,6 +853,11 @@ class AxilrodTellerFunctor
     }
   }
 
+  // TODO remove later; just used to quickly switch between implementations for testing
+ public:
+  enum Impl { AutoVec, GatherScatter, CompressAlign };
+  static constexpr Impl impl = CompressAlign;
+ private:
   /**
    * Implementation function of SoAFunctorSingle(soa, newton3)
    *
@@ -856,7 +865,61 @@ class AxilrodTellerFunctor
    * @param soa
    */
   template <bool newton3>
-  void SoAFunctorSingleImplOld(autopas::SoAView<SoAArraysType> soa) {
+  inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
+    if constexpr (impl == AutoVec) {
+      SoAFunctorSingleImplAutoVec<newton3>(soa);
+    } else if constexpr (impl == GatherScatter) {
+      SoAFunctorSingleImplGatherScatter<newton3>(soa);
+    } else if constexpr (impl == CompressAlign) {
+      SoAFunctorSingleImplCompressAlign<newton3>(soa);
+    }
+  }
+  /**
+   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
+   *
+   * @tparam newton3
+   * @param soa1
+   * @param soa2
+   */
+  template <bool newton3>
+  inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
+    if constexpr (impl == AutoVec) {
+      SoAFunctorPairImplAutoVec<newton3>(soa1, soa2);
+    } else if constexpr (impl == GatherScatter) {
+      SoAFunctorPairImplGatherScatter<newton3>(soa1, soa2);
+    } else if constexpr (impl == CompressAlign) {
+      SoAFunctorPairImplCompressAlign<newton3>(soa1, soa2);
+    }
+  }
+
+  /**
+   * Implementation function of SoAFunctorTriple(soa1, soa2, soa3, newton3)
+   *
+   * @tparam newton3
+   * @param soa1
+   * @param soa2
+   * @param soa3
+   */
+  template <bool newton3>
+  inline void SoAFunctorTripleImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                   autopas::SoAView<SoAArraysType> soa3) {
+    if constexpr (impl == AutoVec) {
+      SoAFunctorTripleImplAutoVec<newton3>(soa1, soa2, soa3);
+    } else if constexpr (impl == GatherScatter) {
+      SoAFunctorTripleImplGatherScatter<newton3>(soa1, soa2, soa3);
+    } else if constexpr (impl == CompressAlign) {
+      SoAFunctorTripleImplCompressAlign<newton3>(soa1, soa2, soa3);
+    }
+  }
+
+  /**
+   * Implementation function of SoAFunctorSingle(soa, newton3)
+   *
+   * @tparam newton3
+   * @param soa
+   */
+  template <bool newton3>
+  void SoAFunctorSingleImplGatherScatter(autopas::SoAView<SoAArraysType> soa) {
     // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
     if (soa.size() == 0) {
       return;
@@ -874,13 +937,13 @@ class AxilrodTellerFunctor
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
     std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
-      indicesK.reserve(soa.size());
+    indicesK.reserve(soa.size());
 
     if constexpr (not useMixing) {
       _nuPd = simde_mm512_set1_pd(_nu);
     }
 
-    for (size_t i = 0; i < soa.size(); ++i) {
+    for (size_t i = soa.size() - 1; static_cast<long>(i) >= 0; --i) {
       if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
         continue;
       }
@@ -954,82 +1017,6 @@ class AxilrodTellerFunctor
     }
   }
 
-  template <bool newton3, bool compress = false>
-  void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
-    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
-    if (soa.size() == 0) {
-      return;
-    }
-
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-
-    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
-
-    std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
-    if (not compress) {
-      indicesK.reserve(soa.size());
-    }
-
-    if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
-    }
-
-    for (size_t i = soa.size(); i > 0; --i) {
-      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
-        continue;
-      }
-
-      const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(zptr[i]);
-
-      simde__m512d fxiacc = simde_mm512_setzero_pd();
-      simde__m512d fyiacc = simde_mm512_setzero_pd();
-      simde__m512d fziacc = simde_mm512_setzero_pd();
-
-      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
-      for (size_t j = i - 1; j > 0; --j) {
-        if (ownedStatePtr[j] == autopas::OwnershipState::dummy or
-            not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, i, j)) {
-          continue;
-        }
-
-        const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(zptr[j]);
-
-        simde__m512d fxjacc = simde_mm512_setzero_pd();
-        simde__m512d fyjacc = simde_mm512_setzero_pd();
-        simde__m512d fzjacc = simde_mm512_setzero_pd();
-
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
-
-        const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
-        const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
-        const simde__m512d drzij2 = simde_mm512_mul_pd(drzij, drzij);
-
-        const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
-        const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
-//
-        fxptr[j] += simde_mm512_reduce_add_pd(fxjacc);
-        fyptr[j] += simde_mm512_reduce_add_pd(fyjacc);
-        fzptr[j] += simde_mm512_reduce_add_pd(fzjacc);
-      }
-      fxptr[i] += simde_mm512_reduce_add_pd(fxiacc);
-      fyptr[i] += simde_mm512_reduce_add_pd(fyiacc);
-      fzptr[i] += simde_mm512_reduce_add_pd(fziacc);
-    }
-  }
-
   /**
    * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
    *
@@ -1038,7 +1025,7 @@ class AxilrodTellerFunctor
    * @param soa2
    */
   template <bool newton3>
-  void SoAFunctorPairImplOld(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
+  void SoAFunctorPairImplGatherScatter(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     if (soa1.size() == 0 or soa2.size() == 0) {
       return;
     }
@@ -1063,7 +1050,7 @@ class AxilrodTellerFunctor
     [[maybe_unused]] auto *const __restrict type2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
 
     std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
-    indicesK.reserve(soa2.size());
+    indicesK.reserve(std::max(soa1.size(), soa2.size()));
 
     if constexpr (not useMixing) {
       _nuPd = simde_mm512_set1_pd(_nu);
@@ -1205,392 +1192,6 @@ class AxilrodTellerFunctor
     }
   }
 
-  template <bool newton3>
-  void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
-    if (soa1.size() == 0 or soa2.size() == 0) {
-      return;
-    }
-
-    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedState1ptr = soa1.template begin<Particle::AttributeNames::ownershipState>();
-    const auto *const __restrict ownedState2ptr = soa2.template begin<Particle::AttributeNames::ownershipState>();
-
-    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
-    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
-    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
-    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
-
-    [[maybe_unused]] auto *const __restrict type1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
-    [[maybe_unused]] auto *const __restrict type2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
-
-    std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
-    indicesK.reserve(soa2.size());
-
-    if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
-    }
-
-    for (size_t i = 0; i < soa1.size(); ++i) {
-      if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
-        continue;
-      }
-
-      const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(z1ptr[i]);
-
-      simde__m512d fxiacc = simde_mm512_setzero_pd();
-      simde__m512d fyiacc = simde_mm512_setzero_pd();
-      simde__m512d fziacc = simde_mm512_setzero_pd();
-
-      // TODO maybe change loop order to always pick particle 2 from soa2 and soa3 from either soa1 or soa2
-      // particle 2 from soa1 and 3 from soa2
-
-      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
-      for (size_t j = i + 1; j < soa1.size(); ++j) {
-        if (ownedState1ptr[j] == autopas::OwnershipState::dummy or
-            not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x1ptr, y1ptr, z1ptr, i, j)) {
-          continue;
-        }
-
-        const simde__m512d x2 = simde_mm512_set1_pd(x1ptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(y1ptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(z1ptr[j]);
-
-        simde__m512d fxjacc = simde_mm512_setzero_pd();
-        simde__m512d fyjacc = simde_mm512_setzero_pd();
-        simde__m512d fzjacc = simde_mm512_setzero_pd();
-
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
-
-        const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
-        const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
-        const simde__m512d drzij2 = simde_mm512_mul_pd(drzij, drzij);
-
-        const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
-        const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
-
-        simde__m512i interactionIndices = _zeroI;
-        int numAssignedRegisters = 0;
-
-        size_t k = 0;
-        for (; k < (soa2.size() & ~(vecLength - 1)); k += vecLength) {
-          const simde__m512i loopIndices = simde_mm512_add_epi64(simde_mm512_set1_epi64(k), _ascendingIndices);
-
-          const simde__m512d x3 = simde_mm512_loadu_pd(&x2ptr[k]);
-          const simde__m512d y3 = simde_mm512_loadu_pd(&y2ptr[k]);
-          const simde__m512d z3 = simde_mm512_loadu_pd(&z2ptr[k]);
-
-          const simde__m512d drxki = simde_mm512_sub_pd(x1, x3);
-          const simde__m512d dryki = simde_mm512_sub_pd(y1, y3);
-          const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
-
-          const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
-          const simde__m512d dryki2 = simde_mm512_mul_pd(dryki, dryki);
-          const simde__m512d drzki2 = simde_mm512_mul_pd(drzki, drzki);
-
-          const simde__m512d drki2PART = simde_mm512_add_pd(drxki2, dryki2);
-          const simde__m512d drki2 = simde_mm512_add_pd(drki2PART, drzki2);
-
-          const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-          const simde__m512d drxjk = simde_mm512_sub_pd(x3, x2);
-          const simde__m512d dryjk = simde_mm512_sub_pd(y3, y2);
-          const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
-
-          const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
-          const simde__m512d dryjk2 = simde_mm512_mul_pd(dryjk, dryjk);
-          const simde__m512d drzjk2 = simde_mm512_mul_pd(drzjk, drzjk);
-
-          const simde__m512d drjk2PART = simde_mm512_add_pd(drxjk2, dryjk2);
-          const simde__m512d drjk2 = simde_mm512_add_pd(drjk2PART, drzjk2);
-
-          const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-          const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
-
-          const simde__m512i ownershipState3 = simde_mm512_loadu_epi64(&ownedState2ptr[k]);
-          const simde__mmask8 dummyMask =
-              simde_mm512_cmp_epi64_mask(ownershipState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
-
-          const simde__mmask8 mask = simde_mm512_kand(cutoffMask, dummyMask);
-
-          const int popCountMask = std::bitset<8>(mask).count();
-
-          const simde__m512i newInteractionIndices = simde_mm512_maskz_compress_epi64(mask, loopIndices);
-          if (numAssignedRegisters + popCountMask < 8) {
-            interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, popCountMask);
-            numAssignedRegisters += popCountMask;
-          } else {
-            interactionIndices =
-                simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, 8 - numAssignedRegisters);
-
-            SoAKernel<true, newton3, false>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr,
-                                            type1ptr[i], type1ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc,
-                                            fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr);
-
-            interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, _zeroI, popCountMask);
-            numAssignedRegisters += popCountMask - 8;
-          }
-        }
-        if (k < soa2.size()) {
-          const simde__mmask8 remainderMask = _masks[soa2.size() - k];
-          const simde__m512i loopIndices = simde_mm512_add_epi64(simde_mm512_set1_epi64(k), _ascendingIndices);
-
-          const simde__m512d x3 = simde_mm512_maskz_loadu_pd(remainderMask, &x2ptr[k]);
-          const simde__m512d y3 = simde_mm512_maskz_loadu_pd(remainderMask, &y2ptr[k]);
-          const simde__m512d z3 = simde_mm512_maskz_loadu_pd(remainderMask, &z2ptr[k]);
-
-          const simde__m512d drxki = simde_mm512_sub_pd(x1, x3);
-          const simde__m512d dryki = simde_mm512_sub_pd(y1, y3);
-          const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
-
-          const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
-          const simde__m512d dryki2 = simde_mm512_mul_pd(dryki, dryki);
-          const simde__m512d drzki2 = simde_mm512_mul_pd(drzki, drzki);
-
-          const simde__m512d drki2PART = simde_mm512_add_pd(drxki2, dryki2);
-          const simde__m512d drki2 = simde_mm512_add_pd(drki2PART, drzki2);
-
-          const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-          const simde__m512d drxjk = simde_mm512_sub_pd(x3, x2);
-          const simde__m512d dryjk = simde_mm512_sub_pd(y3, y2);
-          const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
-
-          const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
-          const simde__m512d dryjk2 = simde_mm512_mul_pd(dryjk, dryjk);
-          const simde__m512d drzjk2 = simde_mm512_mul_pd(drzjk, drzjk);
-
-          const simde__m512d drjk2PART = simde_mm512_add_pd(drxjk2, dryjk2);
-          const simde__m512d drjk2 = simde_mm512_add_pd(drjk2PART, drzjk2);
-
-          const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-          const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
-
-          const simde__m512i ownershipState3 = simde_mm512_loadu_epi64(&ownedState2ptr[k]);
-          const simde__mmask8 dummyMask =
-              simde_mm512_cmp_epi64_mask(ownershipState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
-
-          const simde__mmask8 mask = simde_mm512_kand(remainderMask, simde_mm512_kand(cutoffMask, dummyMask));
-
-          const int popCountMask = std::bitset<8>(mask).count();
-
-          const simde__m512i newInteractionIndices = simde_mm512_maskz_compress_epi64(mask, loopIndices);
-          if (numAssignedRegisters + popCountMask < 8) {
-            interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, popCountMask);
-            numAssignedRegisters += popCountMask;
-          } else {
-            interactionIndices =
-                simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, 8 - numAssignedRegisters);
-
-            SoAKernel<true, newton3, false>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr,
-                                            type1ptr[i], type1ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc,
-                                            fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr);
-
-            interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, _zeroI, popCountMask);
-            numAssignedRegisters += popCountMask - 8;
-          }
-        }
-        if (numAssignedRegisters > 0) {
-          // shift remainder to right
-          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
-          SoAKernel<true, newton3, true>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
-                                         type1ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc,
-                                         fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr, numAssignedRegisters);
-        }
-        fx1ptr[j] += simde_mm512_reduce_add_pd(fxjacc);
-        fy1ptr[j] += simde_mm512_reduce_add_pd(fyjacc);
-        fz1ptr[j] += simde_mm512_reduce_add_pd(fzjacc);
-      }
-
-      // both particles 2 and 3 from soa2
-
-      for (size_t j = soa2.size() - 1; j > 0; --j) {
-        if (ownedState2ptr[j] == autopas::OwnershipState::dummy or
-            not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x2ptr, y2ptr, z2ptr, i, j)) {
-          continue;
-        }
-
-        const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(y2ptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(z2ptr[j]);
-
-        simde__m512d fxjacc = simde_mm512_setzero_pd();
-        simde__m512d fyjacc = simde_mm512_setzero_pd();
-        simde__m512d fzjacc = simde_mm512_setzero_pd();
-
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
-
-        const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
-        const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
-        const simde__m512d drzij2 = simde_mm512_mul_pd(drzij, drzij);
-
-        const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
-        const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
-
-        // particle 3 from soa 2
-
-        simde__m512i interactionIndices = _zeroI;
-        int numAssignedRegisters = 0;
-
-        size_t k = 0;
-        for (; k < (j & ~(vecLength - 1)); k += vecLength) {
-          const simde__m512i loopIndices = simde_mm512_add_epi64(simde_mm512_set1_epi64(k), _ascendingIndices);
-
-          const simde__m512d x3 = simde_mm512_loadu_pd(&x2ptr[k]);
-          const simde__m512d y3 = simde_mm512_loadu_pd(&y2ptr[k]);
-          const simde__m512d z3 = simde_mm512_loadu_pd(&z2ptr[k]);
-
-          const simde__m512d drxki = simde_mm512_sub_pd(x1, x3);
-          const simde__m512d dryki = simde_mm512_sub_pd(y1, y3);
-          const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
-
-          const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
-          const simde__m512d dryki2 = simde_mm512_mul_pd(dryki, dryki);
-          const simde__m512d drzki2 = simde_mm512_mul_pd(drzki, drzki);
-
-          const simde__m512d drki2PART = simde_mm512_add_pd(drxki2, dryki2);
-          const simde__m512d drki2 = simde_mm512_add_pd(drki2PART, drzki2);
-
-          const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-          const simde__m512d drxjk = simde_mm512_sub_pd(x3, x2);
-          const simde__m512d dryjk = simde_mm512_sub_pd(y3, y2);
-          const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
-
-          const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
-          const simde__m512d dryjk2 = simde_mm512_mul_pd(dryjk, dryjk);
-          const simde__m512d drzjk2 = simde_mm512_mul_pd(drzjk, drzjk);
-
-          const simde__m512d drjk2PART = simde_mm512_add_pd(drxjk2, dryjk2);
-          const simde__m512d drjk2 = simde_mm512_add_pd(drjk2PART, drzjk2);
-
-          const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-          const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
-
-          const simde__m512i ownershipState3 = simde_mm512_loadu_epi64(&ownedState2ptr[k]);
-          const simde__mmask8 dummyMask =
-              simde_mm512_cmp_epi64_mask(ownershipState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
-
-          const simde__mmask8 mask = simde_mm512_kand(cutoffMask, dummyMask);
-
-          const int popCountMask = std::bitset<8>(mask).count();
-
-          const simde__m512i newInteractionIndices = simde_mm512_maskz_compress_epi64(mask, loopIndices);
-          if (numAssignedRegisters + popCountMask < 8) {
-            interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, popCountMask);
-            numAssignedRegisters += popCountMask;
-          } else {
-            interactionIndices =
-                simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, 8 - numAssignedRegisters);
-
-            SoAKernel<newton3, newton3, false>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr,
-                                               type1ptr[i], type2ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc,
-                                               fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr);
-
-            interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, _zeroI, popCountMask);
-            numAssignedRegisters += popCountMask - 8;
-          }
-        }
-        if (k < j) {
-          const simde__mmask8 remainderMask = _masks[j - k];
-          const simde__m512i loopIndices = simde_mm512_add_epi64(simde_mm512_set1_epi64(k), _ascendingIndices);
-
-          const simde__m512d x3 = simde_mm512_maskz_loadu_pd(remainderMask, &x2ptr[k]);
-          const simde__m512d y3 = simde_mm512_maskz_loadu_pd(remainderMask, &y2ptr[k]);
-          const simde__m512d z3 = simde_mm512_maskz_loadu_pd(remainderMask, &z2ptr[k]);
-
-          const simde__m512d drxki = simde_mm512_sub_pd(x1, x3);
-          const simde__m512d dryki = simde_mm512_sub_pd(y1, y3);
-          const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
-
-          const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
-          const simde__m512d dryki2 = simde_mm512_mul_pd(dryki, dryki);
-          const simde__m512d drzki2 = simde_mm512_mul_pd(drzki, drzki);
-
-          const simde__m512d drki2PART = simde_mm512_add_pd(drxki2, dryki2);
-          const simde__m512d drki2 = simde_mm512_add_pd(drki2PART, drzki2);
-
-          const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-          const simde__m512d drxjk = simde_mm512_sub_pd(x3, x2);
-          const simde__m512d dryjk = simde_mm512_sub_pd(y3, y2);
-          const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
-
-          const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
-          const simde__m512d dryjk2 = simde_mm512_mul_pd(dryjk, dryjk);
-          const simde__m512d drzjk2 = simde_mm512_mul_pd(drzjk, drzjk);
-
-          const simde__m512d drjk2PART = simde_mm512_add_pd(drxjk2, dryjk2);
-          const simde__m512d drjk2 = simde_mm512_add_pd(drjk2PART, drzjk2);
-
-          const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-          const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
-
-          const simde__m512i ownershipState3 = simde_mm512_loadu_epi64(&ownedState2ptr[k]);
-          const simde__mmask8 dummyMask =
-              simde_mm512_cmp_epi64_mask(ownershipState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
-
-          const simde__mmask8 mask = simde_mm512_kand(remainderMask, simde_mm512_kand(cutoffMask, dummyMask));
-
-          const int popCountMask = std::bitset<8>(mask).count();
-
-          const simde__m512i newInteractionIndices = simde_mm512_maskz_compress_epi64(mask, loopIndices);
-          if (numAssignedRegisters + popCountMask < 8) {
-            interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, popCountMask);
-            numAssignedRegisters += popCountMask;
-          } else {
-            interactionIndices =
-                simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, 8 - numAssignedRegisters);
-
-            SoAKernel<newton3, newton3, false>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr,
-                                               type1ptr[i], type2ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc,
-                                               fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr);
-
-            interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, _zeroI, popCountMask);
-            numAssignedRegisters += popCountMask - 8;
-          }
-        }
-        if (numAssignedRegisters > 0) {
-          // shift remainder to right
-          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
-          SoAKernel<newton3, newton3, true>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr,
-                                            type1ptr[i], type2ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc,
-                                            fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr,
-                                            numAssignedRegisters);
-        }
-
-        if constexpr (newton3) {
-          fx2ptr[j] += simde_mm512_reduce_add_pd(fxjacc);
-          fy2ptr[j] += simde_mm512_reduce_add_pd(fyjacc);
-          fz2ptr[j] += simde_mm512_reduce_add_pd(fzjacc);
-        }
-      }
-
-      fx1ptr[i] += simde_mm512_reduce_add_pd(fxiacc);
-      fy1ptr[i] += simde_mm512_reduce_add_pd(fyiacc);
-      fz1ptr[i] += simde_mm512_reduce_add_pd(fziacc);
-    }
-    if constexpr (calculateGlobals) {
-      autopas::utils::ExceptionHandler::exception("Globals not yet implemented.");  // TODO
-    }
-  }
-
   /**
    * Implementation function of SoAFunctorTriple(soa1, soa2, soa3, newton3)
    *
@@ -1600,8 +1201,8 @@ class AxilrodTellerFunctor
    * @param soa3
    */
   template <bool newton3>
-  void SoAFunctorTripleImplOld(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                               autopas::SoAView<SoAArraysType> soa3) {
+  void SoAFunctorTripleImplGatherScatter(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                         autopas::SoAView<SoAArraysType> soa3) {
     if (soa1.size() == 0 or soa2.size() == 0 or soa3.size() == 0) {
       return;
     }
@@ -1634,6 +1235,7 @@ class AxilrodTellerFunctor
     [[maybe_unused]] auto *const __restrict type3ptr = soa3.template begin<Particle::AttributeNames::typeId>();
 
     std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
+    indicesK.reserve(soa3.size());
 
     if constexpr (not useMixing) {
       _nuPd = simde_mm512_set1_pd(_nu);
@@ -1719,8 +1321,278 @@ class AxilrodTellerFunctor
   }
 
   template <bool newton3>
-  void SoAFunctorTripleImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                            autopas::SoAView<SoAArraysType> soa3) {
+  void SoAFunctorSingleImplCompressAlign(autopas::SoAView<SoAArraysType> soa) {
+    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
+    if (soa.size() == 0) {
+      return;
+    }
+
+    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
+
+    auto *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
+
+    if constexpr (not useMixing) {
+      _nuPd = simde_mm512_set1_pd(_nu);
+    }
+
+    for (size_t i = soa.size() - 1; static_cast<long>(i) >= 0; --i) {
+      if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
+      const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
+      const simde__m512d z1 = simde_mm512_set1_pd(zptr[i]);
+
+      simde__m512d fxiacc = simde_mm512_setzero_pd();
+      simde__m512d fyiacc = simde_mm512_setzero_pd();
+      simde__m512d fziacc = simde_mm512_setzero_pd();
+
+      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
+      for (size_t j = i - 1; static_cast<long>(j) >= 0; --j) {
+        if (ownedStatePtr[j] == autopas::OwnershipState::dummy or
+            not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, i, j)) {
+          continue;
+        }
+
+        const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
+        const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
+        const simde__m512d z2 = simde_mm512_set1_pd(zptr[j]);
+
+        simde__m512d fxjacc = simde_mm512_setzero_pd();
+        simde__m512d fyjacc = simde_mm512_setzero_pd();
+        simde__m512d fzjacc = simde_mm512_setzero_pd();
+
+        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
+        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
+        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+
+        const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
+        const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
+        const simde__m512d drzij2 = simde_mm512_mul_pd(drzij, drzij);
+
+        const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
+        const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
+
+        simde__m512i interactionIndices = _zeroI;
+        int numAssignedRegisters = 0;
+
+        size_t k = 0;
+        for (; k < (j & ~(vecLength - 1)); k += vecLength) {
+          SoAKernelOuterCompressAlignr<true, true, false>(interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2,
+                                                          y2, z2, xptr, yptr, zptr, ownedStatePtr, typeptr[i],
+                                                          typeptr[j], typeptr, drxij, dryij, drzij, drij2, fxiacc,
+                                                          fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fxptr, fyptr, fzptr);
+        }
+        if (k < j) {
+          SoAKernelOuterCompressAlignr<true, true, true>(
+              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, ownedStatePtr,
+              typeptr[i], typeptr[j], typeptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc,
+              fzjacc, fxptr, fyptr, fzptr, j - k);
+        }
+        if (numAssignedRegisters > 0) {
+          // shift remainder to right
+          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
+          SoAKernel<true, true, true>(interactionIndices, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i],
+                                      typeptr[j], typeptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc,
+                                      fyjacc, fzjacc, fxptr, fyptr, fzptr, numAssignedRegisters);
+        }
+
+        fxptr[j] += simde_mm512_reduce_add_pd(fxjacc);
+        fyptr[j] += simde_mm512_reduce_add_pd(fyjacc);
+        fzptr[j] += simde_mm512_reduce_add_pd(fzjacc);
+      }
+      fxptr[i] += simde_mm512_reduce_add_pd(fxiacc);
+      fyptr[i] += simde_mm512_reduce_add_pd(fyiacc);
+      fzptr[i] += simde_mm512_reduce_add_pd(fziacc);
+    }
+    if constexpr (calculateGlobals) {
+      autopas::utils::ExceptionHandler::exception("Globals not yet implemented.");  // TODO
+    }
+  }
+
+  template <bool newton3>
+  void SoAFunctorPairImplCompressAlign(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
+    if (soa1.size() == 0 or soa2.size() == 0) {
+      return;
+    }
+
+    const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    const auto *const __restrict y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    const auto *const __restrict z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    const auto *const __restrict ownedState1ptr = soa1.template begin<Particle::AttributeNames::ownershipState>();
+    const auto *const __restrict ownedState2ptr = soa2.template begin<Particle::AttributeNames::ownershipState>();
+
+    auto *const __restrict fx1ptr = soa1.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy1ptr = soa1.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz1ptr = soa1.template begin<Particle::AttributeNames::forceZ>();
+    auto *const __restrict fx2ptr = soa2.template begin<Particle::AttributeNames::forceX>();
+    auto *const __restrict fy2ptr = soa2.template begin<Particle::AttributeNames::forceY>();
+    auto *const __restrict fz2ptr = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+    [[maybe_unused]] auto *const __restrict type1ptr = soa1.template begin<Particle::AttributeNames::typeId>();
+    [[maybe_unused]] auto *const __restrict type2ptr = soa2.template begin<Particle::AttributeNames::typeId>();
+
+    std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesK;
+    indicesK.reserve(soa2.size());
+
+    if constexpr (not useMixing) {
+      _nuPd = simde_mm512_set1_pd(_nu);
+    }
+
+    for (size_t i = 0; i < soa1.size(); ++i) {
+      if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        continue;
+      }
+
+      const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
+      const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
+      const simde__m512d z1 = simde_mm512_set1_pd(z1ptr[i]);
+
+      simde__m512d fxiacc = simde_mm512_setzero_pd();
+      simde__m512d fyiacc = simde_mm512_setzero_pd();
+      simde__m512d fziacc = simde_mm512_setzero_pd();
+
+      // TODO maybe change loop order to always pick particle 2 from soa2 and soa3 from either soa1 or soa2
+      // particle 2 from soa1 and 3 from soa2
+
+      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
+      for (size_t j = i + 1; j < soa1.size(); ++j) {
+        if (ownedState1ptr[j] == autopas::OwnershipState::dummy or
+            not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x1ptr, y1ptr, z1ptr, i, j)) {
+          continue;
+        }
+
+        const simde__m512d x2 = simde_mm512_set1_pd(x1ptr[j]);
+        const simde__m512d y2 = simde_mm512_set1_pd(y1ptr[j]);
+        const simde__m512d z2 = simde_mm512_set1_pd(z1ptr[j]);
+
+        simde__m512d fxjacc = simde_mm512_setzero_pd();
+        simde__m512d fyjacc = simde_mm512_setzero_pd();
+        simde__m512d fzjacc = simde_mm512_setzero_pd();
+
+        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
+        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
+        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+
+        const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
+        const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
+        const simde__m512d drzij2 = simde_mm512_mul_pd(drzij, drzij);
+
+        const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
+        const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
+
+        simde__m512i interactionIndices = _zeroI;
+        int numAssignedRegisters = 0;
+
+        size_t k = 0;
+        for (; k < (soa2.size() & ~(vecLength - 1)); k += vecLength) {
+          SoAKernelOuterCompressAlignr<true, newton3, false>(
+              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, ownedState2ptr,
+              type1ptr[i], type1ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc,
+              fzjacc, fx2ptr, fy2ptr, fz2ptr);
+        }
+        if (k < soa2.size()) {
+          SoAKernelOuterCompressAlignr<true, newton3, true>(
+              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, ownedState2ptr,
+              type1ptr[i], type1ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc,
+              fzjacc, fx2ptr, fy2ptr, fz2ptr, soa2.size() - k);
+        }
+        if (numAssignedRegisters > 0) {
+          // shift remainder to right
+          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
+          SoAKernel<true, newton3, true>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
+                                         type1ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc,
+                                         fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr, numAssignedRegisters);
+        }
+        fx1ptr[j] += simde_mm512_reduce_add_pd(fxjacc);
+        fy1ptr[j] += simde_mm512_reduce_add_pd(fyjacc);
+        fz1ptr[j] += simde_mm512_reduce_add_pd(fzjacc);
+      }
+
+      // both particles 2 and 3 from soa2
+
+      for (size_t j = soa2.size() - 1; static_cast<long>(j) >= 0; --j) {
+        if (ownedState2ptr[j] == autopas::OwnershipState::dummy or
+            not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x2ptr, y2ptr, z2ptr, i, j)) {
+          continue;
+        }
+
+        const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
+        const simde__m512d y2 = simde_mm512_set1_pd(y2ptr[j]);
+        const simde__m512d z2 = simde_mm512_set1_pd(z2ptr[j]);
+
+        simde__m512d fxjacc = simde_mm512_setzero_pd();
+        simde__m512d fyjacc = simde_mm512_setzero_pd();
+        simde__m512d fzjacc = simde_mm512_setzero_pd();
+
+        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
+        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
+        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+
+        const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
+        const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
+        const simde__m512d drzij2 = simde_mm512_mul_pd(drzij, drzij);
+
+        const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
+        const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
+
+        // particle 3 from soa 2
+
+        simde__m512i interactionIndices = _zeroI;
+        int numAssignedRegisters = 0;
+
+        size_t k = 0;
+        for (; k < (j & ~(vecLength - 1)); k += vecLength) {
+          SoAKernelOuterCompressAlignr<newton3, newton3, false>(
+              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, ownedState2ptr,
+              type1ptr[i], type2ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc,
+              fzjacc, fx2ptr, fy2ptr, fz2ptr);
+        }
+        if (k < j) {
+          SoAKernelOuterCompressAlignr<newton3, newton3, true>(
+              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, ownedState2ptr,
+              type1ptr[i], type2ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc,
+              fzjacc, fx2ptr, fy2ptr, fz2ptr, j - k);
+        }
+        if (numAssignedRegisters > 0) {
+          // shift remainder to right
+          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
+          SoAKernel<newton3, newton3, true>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr,
+                                            type1ptr[i], type2ptr[j], type2ptr, drxij, dryij, drzij, drij2, fxiacc,
+                                            fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr,
+                                            numAssignedRegisters);
+        }
+
+        if constexpr (newton3) {
+          fx2ptr[j] += simde_mm512_reduce_add_pd(fxjacc);
+          fy2ptr[j] += simde_mm512_reduce_add_pd(fyjacc);
+          fz2ptr[j] += simde_mm512_reduce_add_pd(fzjacc);
+        }
+      }
+
+      fx1ptr[i] += simde_mm512_reduce_add_pd(fxiacc);
+      fy1ptr[i] += simde_mm512_reduce_add_pd(fyiacc);
+      fz1ptr[i] += simde_mm512_reduce_add_pd(fziacc);
+    }
+    if constexpr (calculateGlobals) {
+      autopas::utils::ExceptionHandler::exception("Globals not yet implemented.");  // TODO
+    }
+  }
+
+  template <bool newton3>
+  void SoAFunctorTripleImplCompressAlign(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                         autopas::SoAView<SoAArraysType> soa3) {
     if (soa1.size() == 0 or soa2.size() == 0 or soa3.size() == 0) {
       return;
     }
@@ -1801,16 +1673,16 @@ class AxilrodTellerFunctor
 
         size_t k = 0;
         for (; k < (soa3.size() & ~(vecLength - 1)); k += vecLength) {
-          SoACompressAlignr<newton3, newton3, false>(interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2,
-                                                     z2, x3ptr, y3ptr, z3ptr, ownedState3ptr, type1ptr[i], type2ptr[j],
-                                                     type3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc,
-                                                     fxjacc, fyjacc, fzjacc, fx3ptr, fy3ptr, fz3ptr);
+          SoAKernelOuterCompressAlignr<newton3, newton3, false>(
+              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x3ptr, y3ptr, z3ptr, ownedState3ptr,
+              type1ptr[i], type2ptr[j], type3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc,
+              fzjacc, fx3ptr, fy3ptr, fz3ptr);
         }
         if (k < soa3.size()) {
-          SoACompressAlignr<newton3, newton3, false>(interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2,
-                                                     z2, x3ptr, y3ptr, z3ptr, ownedState3ptr, type1ptr[i], type2ptr[j],
-                                                     type3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc,
-                                                     fxjacc, fyjacc, fzjacc, fx3ptr, fy3ptr, fz3ptr, soa3.size() - k);
+          SoAKernelOuterCompressAlignr<newton3, newton3, true>(
+              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x3ptr, y3ptr, z3ptr, ownedState3ptr,
+              type1ptr[i], type2ptr[j], type3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc,
+              fzjacc, fx3ptr, fy3ptr, fz3ptr, soa3.size() - k);
         }
         if (numAssignedRegisters > 0) {
           // shift remainder to right
@@ -1838,7 +1710,7 @@ class AxilrodTellerFunctor
   }
 
   template <bool newton3>
-  void SoAFunctorSingleImplScalar(autopas::SoAView<SoAArraysType> soa) {
+  void SoAFunctorSingleImplAutoVec(autopas::SoAView<SoAArraysType> soa) {
     // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
     //  TODO
     if (soa.size() == 0) {
@@ -1992,7 +1864,7 @@ class AxilrodTellerFunctor
   }
 
   template <bool newton3>
-  void SoAFunctorPairImplScalar(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
+  void SoAFunctorPairImplAutoVec(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     // TODO: should always calculate forces for all particles in soa1, even when newton3 == false
     // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
     // TODO
@@ -2289,8 +2161,8 @@ class AxilrodTellerFunctor
   }
 
   template <bool newton3>
-  void SoAFunctorTripleImplScalar(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                  autopas::SoAView<SoAArraysType> soa3) {
+  void SoAFunctorTripleImplAutoVec(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
+                                   autopas::SoAView<SoAArraysType> soa3) {
     // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
     //   TODO
     if (soa1.size() == 0 or soa2.size() == 0 or soa3.size() == 0) {
