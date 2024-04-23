@@ -45,7 +45,7 @@ class Object {
 #if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     const ParticlePropertiesLibraryType * ppl_ptr = ppl.get();  //black magic to get const reference out of const std::shared_ptr
     particle.setQuaternion(particle.getQuaternion(), *ppl_ptr);
-#elif defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE)
+#elif defined(MD_FLEXIBLE_USE_LAZY_TORQUE)
     particle.setForcesOnSitesX(std::vector<double>(ppl->getNumSites((particle.getTypeId())), 0.));
     particle.setForcesOnSitesY(std::vector<double>(ppl->getNumSites((particle.getTypeId())), 0.));
     particle.setForcesOnSitesZ(std::vector<double>(ppl->getNumSites((particle.getTypeId())), 0.));

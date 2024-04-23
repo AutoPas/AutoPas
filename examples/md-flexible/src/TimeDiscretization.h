@@ -59,7 +59,7 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
                                          const ParticlePropertiesLibraryType &particlePropertiesLibrary,
                                          const double &deltaT, const std::array<double, 3> &globalForce);
 
-#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and MD_FLEXIBLE_MODE==MULTISITE
 void gatherTorquesAndForcesFromSiteForces(autopas::AutoPas<ParticleType> &autoPasContainer, const ParticlePropertiesLibraryType &particlePropertiesLibrary);
 #endif
 

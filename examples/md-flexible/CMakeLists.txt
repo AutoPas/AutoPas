@@ -27,7 +27,7 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calcula
 option(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS "Compile AutoVec Functor using absolute site positions." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
-option(MD_FLEXIBLE_TORQUE_AFTER_FORCE "If set the torque calculation doesn't get managed by the force functor but by time discretization drastically reducing the number of cross product computations required" OFF)
+option(MD_FLEXIBLE_USE_LAZY_TORQUE "If set the torque calculation doesn't get managed by the force functor but by time discretization drastically reducing the number of cross product computations required" OFF)
 
 
 target_compile_definitions(
@@ -39,7 +39,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
-        $<$<BOOL:${MD_FLEXIBLE_TORQUE_AFTER_FORCE}>:MD_FLEXIBLE_TORQUE_AFTER_FORCE>
+        $<$<BOOL:${MD_FLEXIBLE_USE_LAZY_TORQUE}>:MD_FLEXIBLE_TORQUE_AFTER_FORCE>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---

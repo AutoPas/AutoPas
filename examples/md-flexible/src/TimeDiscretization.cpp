@@ -149,7 +149,7 @@ void calculateQuaternionsAndResetTorques(autopas::AutoPas<ParticleType> &autoPas
 #endif
 }
 
-#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and MD_FLEXIBLE_MODE==MULTISITE
 void gatherTorquesAndForcesFromSiteForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                              const ParticlePropertiesLibraryType &particlePropertiesLibrary) {
   using autopas::utils::quaternion::rotateVectorOfPositions;

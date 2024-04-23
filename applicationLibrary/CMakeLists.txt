@@ -9,18 +9,14 @@ file(
         "molecularDynamics/molecularDynamicsLibrary/*.cpp"
 )
 
-add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC}
-        molecularDynamics/molecularDynamicsLibrary/LJPositionUsingMultiSiteFunctor.h
-        molecularDynamics/molecularDynamicsLibrary/PositionStoringMultiSiteMolecule.cpp
-        molecularDynamics/molecularDynamicsLibrary/PositionStoringMultiSiteMolecule.h
-        molecularDynamics/molecularDynamicsLibrary/Site.h)
+add_library(molecularDynamicsLibrary STATIC ${LIB_MD_SRC})
 
 # Set CMake option for md-flexible mode
 set(MD_FLEXIBLE_MODE
         "SINGLESITE"
         CACHE
         STRING "Choose the mode of md-flexible to be compiled."
-        )
+)
 set_property(CACHE MD_FLEXIBLE_MODE PROPERTY STRINGS "SINGLESITE;MULTISITE")
 
 # Define numerical values for different md-flexible modes
@@ -71,7 +67,7 @@ if (AUTOPAS_BUILD_TESTS)
 
     # sanity check to prevent against globbing the whole file system
     if(NOT DEFINED TEST_EXE_NAME OR TEST_EXE_NAME STREQUAL "" OR
-       NOT DEFINED TEST_EXE_UNIQUE_PATH OR TEST_EXE_UNIQUE_PATH STREQUAL "")
+            NOT DEFINED TEST_EXE_UNIQUE_PATH OR TEST_EXE_UNIQUE_PATH STREQUAL "")
         message(FATAL_ERROR "Both TEST_EXE_NAME and TEST_EXE_UNIQUE_PATH must be defined and not empty.\
         This probably resulted from MD_FLEXIBLE_MODE being set wrong.\
         MD_FLEXIBLE_MODE=${MD_FLEXIBLE_MODE}")
@@ -98,42 +94,6 @@ if (AUTOPAS_BUILD_TESTS)
     target_link_libraries(
             ${TEST_EXE_NAME}
             PUBLIC
-            mdLibSingleSiteTests PUBLIC
-            autopas autopasTools molecularDynamicsLibrary gmock
-    )
-
-    file(
-            GLOB_RECURSE
-            MS_TEST_SRC
-            "molecularDynamics/tests/multiSiteTests/*.cpp"
-            "molecularDynamics/tests/multiSiteTests/*.h"
-            "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
-            "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
-            "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
-    )
-
-    add_executable(mdLibMultiSiteTests ${MS_TEST_SRC} mdLibTests.cpp
-            molecularDynamics/tests/multiSiteTests/LJMultisiteFunctorTest.h
-            molecularDynamics/tests/multiSiteTests/LJMultisiteFunctorTest.cpp
-            molecularDynamics/tests/multiSiteTests/LJPositionUsingMultisiteFunctorTest.cpp
-            molecularDynamics/tests/multiSiteTests/LJPositionUsingMultisiteFunctorTest.h
-    )
-
-    target_compile_definitions(
-            mdLibMultiSiteTests PRIVATE
-            MD_FLEXIBLE_MODE=1  # set MD_FLEXIBLE_MODE to multi-site
-            # Tests need definitions of SINGLESITE and MULTISITE so it can correctly compile multi-site tests
-            SINGLESITE=0
-            MULTISITE=1
-    )
-
-    target_include_directories(
-            mdLibMultiSiteTests PUBLIC
-            ${PROJECT_SOURCE_DIR}/tests/testAutopas molecularDynamics
-    )
-
-    target_link_libraries(
-            mdLibMultiSiteTests PUBLIC
             autopas autopasTools molecularDynamicsLibrary gmock
     )
 
@@ -147,7 +107,7 @@ if (AUTOPAS_BUILD_TESTS)
             ENVIRONMENT "${LSAN_OPTIONS_STR}"
     )
 
-# --- SPH ---
+    # --- SPH ---
     file(
             GLOB_RECURSE
             SPH_TEST_SRC

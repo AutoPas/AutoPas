@@ -73,7 +73,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
     torqueZ,
     typeId,
     ownershipState
-#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and MD_FLEXIBLE_MODE==MULTISITE
         ,
     forcesOnSitesX,
     forcesOnSitesY,
@@ -116,7 +116,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
       double, // tz
       size_t, // typeid
       autopas::OwnershipState //ownerState
-#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and MD_FLEXIBLE_MODE==MULTISITE
         ,
     std::vector<double>,  //forcesOnSitesX
     std::vector<double>,  //forcesOnSitesY
@@ -196,7 +196,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     }
-#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and MD_FLEXIBLE_MODE==MULTISITE
     else if constexpr (attribute == AttributeNames::forcesOnSitesX) {
       return this->_forcesOnSitesX;
     }
@@ -272,7 +272,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       this->_ownershipState = value;
     }
-#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and MD_FLEXIBLE_MODE==MULTISITE
     else if constexpr (attribute == AttributeNames::forcesOnSitesX) {
       this->_forcesOnSitesX = value;
     }
@@ -349,7 +349,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    */
   [[nodiscard]] std::string toString() const override;
 
-#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and MD_FLEXIBLE_MODE==MULTISITE
   /**
    * Classic setter
    * @param forces_on_sites
@@ -422,7 +422,7 @@ class MultisiteMoleculeLJ : public mdLib::MoleculeLJ {
    */
   std::array<double, 3> _torque{};
 
-#if defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE) and MD_FLEXIBLE_MODE==MULTISITE
+#if defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and MD_FLEXIBLE_MODE==MULTISITE
   /**
    * When computing the torque after collecting all forces acting on each site, some helper variables are required to store the
    * forces each individual site is experiencing. This variable stores the x-components of the forces acting on the individual sites.

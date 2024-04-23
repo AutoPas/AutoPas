@@ -424,7 +424,7 @@ void Simulation::updateForces() {
   //});
 
   const bool isTuningIteration = calculatePairwiseForces();
-#if MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_TORQUE_AFTER_FORCE)
+#if MD_FLEXIBLE_MODE==MULTISITE and defined(MD_FLEXIBLE_USE_LAZY_TORQUE)
   TimeDiscretization::gatherTorquesAndForcesFromSiteForces(*_autoPasContainer, *_configuration.getParticlePropertiesLibrary());
 #endif
 
