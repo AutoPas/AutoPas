@@ -1,0 +1,214 @@
+/**
+ * @file LJFunctorTestHWY.cpp
+ * @author Luis Gall
+ * @date 04/23/24
+ */
+
+#include "LJFunctorTestHWY.h"
+
+#include "autopas/cells/FullParticleCell.h"
+#include "autopas/particles/Particle.h"
+#include "autopasTools/generators/RandomGenerator.h"
+#include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
+
+template <class SoAType>
+bool LJFunctorTestHWY::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
+    
+    EXPECT_GT(soa1.size(), 0);
+    EXPECT_EQ(soa1.size(), soa2.size());
+
+    unsigned long *const __restrict idptr1 = soa1.template begin<Particle::AttributeNames::id>();
+    unsigned long *const __restrict idptr2 = soa2.template begin<Particle::AttributeNames::id>();
+
+    double *const __restrict xptr1 = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr1 = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr1 = soa1.template begin<Particle::AttributeNames::posZ>();
+    double *const __restrict xptr2 = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict yptr2 = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict zptr2 = soa2.template begin<Particle::AttributeNames::posZ>();
+
+    double *const __restrict fxptr1 = soa1.template begin<Particle::AttributeNames::forceX>();
+    double *const __restrict fyptr1 = soa1.template begin<Particle::AttributeNames::forceY>();
+    double *const __restrict fzptr1 = soa1.template begin<Particle::AttributeNames::forceZ>();
+    double *const __restrict fxptr2 = soa2.template begin<Particle::AttributeNames::forceX>();
+    double *const __restrict fyptr2 = soa2.template begin<Particle::AttributeNames::forceY>();
+    double *const __restrict fzptr2 = soa2.template begin<Particle::AttributeNames::forceZ>();
+
+    for (size_t i = 0; i < soa1.size(); ++i) {
+    EXPECT_EQ(idptr1[i], idptr2[i]);
+
+    double tolerance = 1e-8;
+        EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
+        EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
+        EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
+        EXPECT_NEAR(fxptr1[i], fxptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
+        EXPECT_NEAR(fyptr1[i], fyptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
+        EXPECT_NEAR(fzptr1[i], fzptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
+    }
+    // clang-format off
+    return not ::testing::Test::HasFailure();
+    // clang-format on
+}
+
+bool LJFunctorTestHWY::particleEqual(Particle &p1, Particle &p2) {
+    EXPECT_EQ(p1.getID(), p2.getID());
+
+    double tolerance = 1e-8;
+
+    EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
+    EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
+    EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
+    EXPECT_NEAR(p1.getF()[0], p2.getF()[0], tolerance) << "for particle pair " << p1.getID();
+    EXPECT_NEAR(p1.getF()[1], p2.getF()[1], tolerance) << "for particle pair " << p1.getID();
+    EXPECT_NEAR(p1.getF()[2], p2.getF()[2], tolerance) << "for particle pair " << p1.getID();
+
+    // clang-format off
+    return not ::testing::Test::HasFailure();
+    // clang-format on
+}
+
+bool LJFunctorTestHWY::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
+    EXPECT_GT(cell1.size(), 0);
+    EXPECT_EQ(cell1.size(), cell2.size());
+
+    bool ret = true;
+    for (size_t i = 0; i < cell1.size(); ++i) {
+        ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
+    }
+
+    return ret;
+}
+
+void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews) {
+    FMCell cell1HWY;
+    FMCell cell2HWY;
+
+    size_t numParticles = 7;
+
+    Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+    autopasTools::generators::RandomGenerator::fillWithParticles(
+        cell1HWY, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
+    autopasTools::generators::RandomGenerator::fillWithParticles(
+        cell2HWY, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
+
+    if (doDeleteSomeParticles) {
+        for (auto &particle : cell1HWY) {
+        if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+        }
+        for (auto &particle : cell2HWY) {
+        if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
+        }
+    }
+
+    // copy cells
+    FMCell cell1NoHWY(cell1HWY);
+    FMCell cell2NoHWY(cell2HWY);
+
+    constexpr bool shifting = true;
+    constexpr bool mixing = false;
+    mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoHWY(_cutoff);
+    ljFunctorNoHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    mdLib::HWY_NAMESPACE::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
+    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+    ljFunctorHWY.initTraversal();
+    ljFunctorNoHWY.initTraversal();
+
+    ASSERT_TRUE(AoSParticlesEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after copy initialization.";
+    ASSERT_TRUE(AoSParticlesEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after copy initialization.";
+
+    ljFunctorNoHWY.SoALoader(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ljFunctorNoHWY.SoALoader(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ljFunctorHWY.SoALoader(cell1HWY, cell1HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ljFunctorHWY.SoALoader(cell2HWY, cell2HWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+    ASSERT_TRUE(SoAParticlesEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
+        << "Cells 1 not equal after loading.";
+    ASSERT_TRUE(SoAParticlesEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
+        << "Cells 2 not equal after loading.";
+
+    if (useUnalignedViews) {
+        ljFunctorNoHWY.SoAFunctorPair(cell1NoHWY._particleSoABuffer.constructView(1, cell1NoHWY.size()),
+                                    cell2NoHWY._particleSoABuffer.constructView(1, cell2NoHWY.size()), newton3);
+        ljFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer.constructView(1, cell1HWY.size()),
+                                    cell2HWY._particleSoABuffer.constructView(1, cell2HWY.size()), newton3);
+    } else {
+        ljFunctorNoHWY.SoAFunctorPair(cell1NoHWY._particleSoABuffer, cell2NoHWY._particleSoABuffer, newton3);
+        ljFunctorHWY.SoAFunctorPair(cell1HWY._particleSoABuffer, cell2HWY._particleSoABuffer, newton3);
+    }
+    ASSERT_TRUE(SoAParticlesEqual(cell1HWY._particleSoABuffer, cell1NoHWY._particleSoABuffer))
+        << "Cells 1 not equal after applying functor.";
+    ASSERT_TRUE(SoAParticlesEqual(cell2HWY._particleSoABuffer, cell2NoHWY._particleSoABuffer))
+        << "Cells 2 not equal after applying functor.";
+
+    ljFunctorHWY.SoAExtractor(cell1HWY, cell1HWY._particleSoABuffer, 0);
+    ljFunctorHWY.SoAExtractor(cell2HWY, cell2HWY._particleSoABuffer, 0);
+    ljFunctorHWY.SoAExtractor(cell1NoHWY, cell1NoHWY._particleSoABuffer, 0);
+    ljFunctorHWY.SoAExtractor(cell2NoHWY, cell2NoHWY._particleSoABuffer, 0);
+
+    ASSERT_TRUE(AoSParticlesEqual(cell1HWY, cell1NoHWY)) << "Cells 1 not equal after extracting.";
+    ASSERT_TRUE(AoSParticlesEqual(cell2HWY, cell2NoHWY)) << "Cells 2 not equal after extracting.";
+
+    ljFunctorHWY.endTraversal(newton3);
+    ljFunctorNoHWY.endTraversal(newton3);
+
+    double tolerance = 1e-8;
+    EXPECT_NEAR(ljFunctorHWY.getUpot(), ljFunctorNoHWY.getPotentialEnergy(), tolerance) << "global uPot";
+    EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctorNoHWY.getVirial(), tolerance) << "global virial";
+}
+
+void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews) {
+    return;
+}
+
+void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles) {
+    return;
+}
+
+void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
+    return;
+}
+
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorHWYAoS(newton3, doDeleteSomeParticle);
+}
+
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorHWYVerlet(newton3, doDeleteSomeParticle);
+}
+
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorHWYOneCell(newton3, doDeleteSomeParticle, false);
+}
+
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellUseUnalignedViews) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorHWYOneCell(newton3, doDeleteSomeParticle, true);
+}
+
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsAlignedAccess) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorHWYTwoCells(newton3, doDeleteSomeParticle, false);
+}
+
+TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
+  auto [newton3, doDeleteSomeParticle] = GetParam();
+  testLJFunctorVSLJFunctorHWYTwoCells(newton3, doDeleteSomeParticle, true);
+}
+
+static auto toString = [](const auto &info) {
+  auto [newton3, doDeleteSomeParticle] = info.param;
+  std::stringstream resStream;
+  resStream << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
+  std::string res = resStream.str();
+  std::replace(res.begin(), res.end(), '-', '_');
+  std::replace(res.begin(), res.end(), '.', '_');
+  return res;
+};
+
+INSTANTIATE_TEST_SUITE_P(Generated, LJFunctorTestHWY, ::testing::Combine(::testing::Bool(), ::testing::Bool()),
+                         toString);
