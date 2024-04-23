@@ -1186,7 +1186,9 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
                                 tuningTimer.getTotalTime(), measurements.energyPsys, measurements.energyPkg,
                                 measurements.energyRam);
 
+#ifdef AUTOPAS_LOG_FLOPS
   _FLOPLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
+#endif
 
   /// Pass on measurements
   // if this was a major iteration add measurements and bump counters
