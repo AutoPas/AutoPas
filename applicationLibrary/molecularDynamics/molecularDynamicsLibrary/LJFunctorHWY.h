@@ -745,9 +745,9 @@ namespace HWY_NAMESPACE {
 
                         double factor = 1.;
                         factor *= newton3 ? 0.5 : 1.;
-                        _aosThreadData[threadnum].viralSum[0] += globals[0] * factor;
-                        _aosThreadData[threadnum].viralSum[1] += globals[1] * factor;
-                        _aosThreadData[threadnum].viralSum[2] += globals[2] * factor;
+                        _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
+                        _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
+                        _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
                         _aosThreadData[threadnum].uPotSum += globals[3] * factor;
                     }
                 }
@@ -867,7 +867,7 @@ namespace HWY_NAMESPACE {
                         _aosThreadData[threadnum].virialSum[0] += globals[0] * energyfactor;
                         _aosThreadData[threadnum].virialSum[1] += globals[1] * energyfactor;
                         _aosThreadData[threadnum].virialSum[2] += globals[2] * energyfactor;
-                        _aosThreadData[threadnum].upotSum += globals[3] * energyfactor;
+                        _aosThreadData[threadnum].uPotSum += globals[3] * energyfactor;
                     }                
                 }
 
@@ -1265,7 +1265,7 @@ namespace HWY_NAMESPACE {
                             _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
                             _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
                             _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-                            _aosThreadData[threadnum].upotSum += globals[3] * factor;
+                            _aosThreadData[threadnum].uPotSum += globals[3] * factor;
                         }
                     }
 
