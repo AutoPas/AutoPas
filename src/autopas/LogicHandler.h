@@ -315,22 +315,20 @@ class LogicHandler {
           "{}",
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), particleCopy.toString());
     }
-    // particleCopy.setOwnershipState(OwnershipState::halo);
+    particleCopy.setOwnershipState(OwnershipState::halo);
     particleCopy.setRAtRebuild();  // to discuss this -> a particle entering halo may not have already moved more than
                                    // skin/2 -> will lead to update when not needed, but not sure
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
-      particleCopy.setOwnershipState(OwnershipState::halo);
       container.template addHaloParticle</* checkInBox */ false>(particleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
-      particleCopy.setOwnershipState(OwnershipState::dummy);
       bool updated = container.updateHaloParticle(particleCopy);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         particleCopy.setOwnershipState(OwnershipState::halo);
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
-        _haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
+        //_haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
         // should be already halo now
       }
     }
