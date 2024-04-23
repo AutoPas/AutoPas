@@ -10,7 +10,7 @@ FetchContent_Declare(
 
 # option(AUTOPAS_BUILD_HIGHWAY "" ON)
 set(AUTOPAS_BUILD_TESTS OFF)
-set(MD_FLEXIBLE_FUNCTOR_HIGHWAY ON)
+set(MD_FLEXIBLE_FUNCTOR_HWY ON)
 
 FetchContent_GetProperties(highway)
 if (NOT highway_POPULATED)

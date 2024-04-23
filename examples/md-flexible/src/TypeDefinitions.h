@@ -94,6 +94,10 @@ using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
 
 #endif
 
+#include "molecularDynamicsLibrary/LJFunctorHWY.h"
+
+using LJFunctorTypeHWY = mdLib::HWY_NAMESPACE::LJFunctorHWY<ParticleType, true, true>;
+
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
 /**
  * Type of LJFunctorTypeSVE used in md-flexible.
@@ -136,6 +140,8 @@ using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas
 using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
 using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
+#elif MD_FLEXIBLE_FUNCTOR_HIGHWAY
+using LJFunctorTypeAbstract = mdLib::LJFunctorHWY<ParticleType, true, true>;
 #endif
 
 #endif
