@@ -192,6 +192,7 @@ class LJMultisiteFunctor
     const std::vector<size_t> siteIdsB =
         useMixing ? _PPLibrary->getSiteTypes(particleB.getTypeId()) : std::vector<unsigned long>();
 
+#if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
     // get unrotated relative site positions
     const std::vector<std::array<double, 3>> unrotatedSitePositionsA =
         useMixing ? _PPLibrary->getSitePositions(particleA.getTypeId()) : _sitePositionsLJ;
@@ -203,11 +204,20 @@ class LJMultisiteFunctor
         autopas::utils::quaternion::rotateVectorOfPositions(particleA.getQuaternion(), unrotatedSitePositionsA);
     const auto rotatedSitePositionsB =
         autopas::utils::quaternion::rotateVectorOfPositions(particleB.getQuaternion(), unrotatedSitePositionsB);
+#endif
 
     for (int i = 0; i < numSitesA; i++) {
       for (int j = 0; j < numSitesB; j++) {
+#if not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+        const auto relSitePosA = rotatedSitePositionsA[i];
+        const auto relSitePosB = rotatedSitePositionsB[j];
+#else
+        const auto relSitePosA = particleA.getRelativeSitePosition(i);
+        const auto relSitePosB = particleB.getRelativeSitePosition(j);
+#endif
+
         const auto displacement = autopas::utils::ArrayMath::add(
-            autopas::utils::ArrayMath::sub(displacementCoM, rotatedSitePositionsB[j]), rotatedSitePositionsA[i]);
+            autopas::utils::ArrayMath::sub(displacementCoM, relSitePosB), relSitePosA);
         const auto distanceSquared = autopas::utils::ArrayMath::dot(displacement, displacement);
 
         const auto sigmaSquared =
@@ -236,9 +246,9 @@ class LJMultisiteFunctor
           particleB.subF(force);
         }
         // Add torque applied by force
-        particleA.addTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsA[i], force));
+        particleA.addTorque(autopas::utils::ArrayMath::cross(relSitePosA, force));
         if (newton3) {
-          particleB.subTorque(autopas::utils::ArrayMath::cross(rotatedSitePositionsB[j], force));
+          particleB.subTorque(autopas::utils::ArrayMath::cross(relSitePosB, force));
         }
 #else
         // Add force on site to net force
@@ -312,6 +322,12 @@ class LJMultisiteFunctor
   auto *const __restrict fYOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesY>();
   auto *const __restrict fZOnSitesPtr = soa.template begin<Particle::AttributeNames::forcesOnSitesZ>();
 
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteSitePositionsX;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteSitePositionsY;
+    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> absoluteSitePositionsZ;
 #endif
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
@@ -390,14 +406,26 @@ class LJMultisiteFunctor
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.size(); ++mol) {
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+        const auto relativeSitePositionsX = relSitePosXptr[mol];
+        const auto relativeSitePositionsY = relSitePosYptr[mol];
+        const auto relativeSitePositionsZ = relSitePosZptr[mol];
+#else
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
         const auto siteTypesOfMol = _PPLibrary->getSiteTypes(typeptr[mol]);
+#endif
 
-        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
+        for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site){
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+          absoluteSitePositionsX[siteIndex] = relativeSitePositionsX[site] + xptr[mol];
+          absoluteSitePositionsY[siteIndex] = relativeSitePositionsY[site] + yptr[mol];
+          absoluteSitePositionsZ[siteIndex] = relativeSitePositionsZ[site] + zptr[mol];
+#else
           exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
           exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
           exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[mol];
+#endif
           siteTypes[siteIndex] = siteTypesOfMol[site];
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
@@ -411,12 +439,24 @@ class LJMultisiteFunctor
     } else {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.size(); mol++) {
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+        const auto relativeSitePositionsX = relSitePosXptr[mol];
+        const auto relativeSitePositionsY = relSitePosYptr[mol];
+        const auto relativeSitePositionsZ = relSitePosZptr[mol];
+#else
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
+#endif
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+          absoluteSitePositionsX[siteIndex] = relativeSitePositionsX[site] + xptr[mol];
+          absoluteSitePositionsY[siteIndex] = relativeSitePositionsY[site] + yptr[mol];
+          absoluteSitePositionsZ[siteIndex] = relativeSitePositionsZ[site] + zptr[mol];
+#else
           exactSitePositionX[siteIndex] = rotatedSitePositions[site][0] + xptr[mol];
           exactSitePositionY[siteIndex] = rotatedSitePositions[site][1] + yptr[mol];
           exactSitePositionZ[siteIndex] = rotatedSitePositions[site][2] + zptr[mol];
+#endif
           siteForceX[siteIndex] = 0.;
           siteForceY[siteIndex] = 0.;
           siteForceZ[siteIndex] = 0.;
@@ -543,10 +583,16 @@ class LJMultisiteFunctor
     if constexpr (useMixing) {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.size(); ++mol) {
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+        const auto relativeSitePositionsX = relSitePosXptr[mol];
+        const auto relativeSitePositionsY = relSitePosYptr[mol];
+        const auto relativeSitePositionsZ = relSitePosZptr[mol];
+#else
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, _PPLibrary->getSitePositions(typeptr[mol]));
+#endif
         for (size_t site = 0; site < _PPLibrary->getNumSites(typeptr[mol]); ++site) {
-#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) or MD_FLEXIBLE_MODE!=MULTISITE
+#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
           fxptr[mol] += siteForceX[siteIndex];
           fyptr[mol] += siteForceY[siteIndex];
           fzptr[mol] += siteForceZ[siteIndex];
@@ -556,6 +602,16 @@ class LJMultisiteFunctor
                         rotatedSitePositions[site][0] * siteForceZ[siteIndex];
           tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                         rotatedSitePositions[site][1] * siteForceX[siteIndex];
+#elif not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+          fxptr[mol] += siteForceX[siteIndex];
+          fyptr[mol] += siteForceY[siteIndex];
+          fzptr[mol] += siteForceZ[siteIndex];
+          txptr[mol] += relativeSitePositionsY[site] * siteForceZ[siteIndex] -
+                        relativeSitePositionsZ[site] * siteForceY[siteIndex];
+          typtr[mol] += relativeSitePositionsZ[site] * siteForceX[siteIndex] -
+                        relativeSitePositionsX[site] * siteForceZ[siteIndex];
+          tzptr[mol] += relativeSitePositionsX[site] * siteForceY[siteIndex] -
+                        relativeSitePositionsY[site] * siteForceX[siteIndex];
 #else
           fXOnSitesPtr[mol][site] += siteForceX[siteIndex];
           fYOnSitesPtr[mol][site] += siteForceY[siteIndex];
@@ -567,10 +623,16 @@ class LJMultisiteFunctor
     } else {
       size_t siteIndex = 0;
       for (size_t mol = 0; mol < soa.size(); mol++) {
+#if defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+        const auto relativeSitePositionsX = relSitePosXptr[mol];
+        const auto relativeSitePositionsY = relSitePosYptr[mol];
+        const auto relativeSitePositionsZ = relSitePosZptr[mol];
+#else
         const auto rotatedSitePositions = autopas::utils::quaternion::rotateVectorOfPositions(
             {q0ptr[mol], q1ptr[mol], q2ptr[mol], q3ptr[mol]}, const_unrotatedSitePositions);
+#endif
         for (size_t site = 0; site < const_unrotatedSitePositions.size(); ++site) {
-#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) or MD_FLEXIBLE_MODE!=MULTISITE
+#if not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and not defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
           fxptr[mol] += siteForceX[siteIndex];
           fyptr[mol] += siteForceY[siteIndex];
           fzptr[mol] += siteForceZ[siteIndex];
@@ -580,6 +642,16 @@ class LJMultisiteFunctor
                         rotatedSitePositions[site][0] * siteForceZ[siteIndex];
           tzptr[mol] += rotatedSitePositions[site][0] * siteForceY[siteIndex] -
                         rotatedSitePositions[site][1] * siteForceX[siteIndex];
+#elif not defined(MD_FLEXIBLE_USE_LAZY_TORQUE) and defined(MD_FLEXIBLE_FUNCTOR_ABSOLUTE_POS)
+          fxptr[mol] += siteForceX[siteIndex];
+          fyptr[mol] += siteForceY[siteIndex];
+          fzptr[mol] += siteForceZ[siteIndex];
+          txptr[mol] += relativeSitePositionsY[site] * siteForceZ[siteIndex] -
+                        relativeSitePositionsZ[site] * siteForceY[siteIndex];
+          typtr[mol] += relativeSitePositionsZ[site] * siteForceX[siteIndex] -
+                        relativeSitePositionsX[site] * siteForceZ[siteIndex];
+          tzptr[mol] += relativeSitePositionsX[site] * siteForceY[siteIndex] -
+                        relativeSitePositionsY[site] * siteForceX[siteIndex];
 #else
           fXOnSitesPtr[mol][site] += siteForceX[siteIndex];
           fYOnSitesPtr[mol][site] += siteForceY[siteIndex];
