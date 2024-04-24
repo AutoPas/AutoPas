@@ -1166,7 +1166,7 @@ class LJFunctor
     /**
      * dummy parameter to get the right size (64 bytes)
      */
-    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(size_t)) / sizeof(size_t)];
   };
 
   // make sure of the size of AoSThreadDataGlobals and AoSThreadDataFLOPs
