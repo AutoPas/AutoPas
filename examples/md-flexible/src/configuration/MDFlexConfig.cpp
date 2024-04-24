@@ -231,7 +231,6 @@ std::string MDFlexConfig::to_string() const {
   // since all containers are rebuilt only periodically print Verlet config always.
   printOption(verletRebuildFrequency);
   printOption(verletSkinRadiusPerTimestep);
-  printOption(fastParticlesThrow);
   const auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);
   if (passedContainerOptionsStr.find("luster") != std::string::npos) {
     printOption(verletClusterSize);

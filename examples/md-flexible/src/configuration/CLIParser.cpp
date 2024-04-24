@@ -49,7 +49,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.boundaryOption,
       config.boxLength,
       config.cellSizeFactors,
-      config.fastParticlesThrow,
       config.checkpointfile,
       config.containerOptions,
       config.cutoff,
@@ -482,10 +481,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
           displayHelp = true;
         }
-        break;
-      }
-      case decltype(config.fastParticlesThrow)::getoptChar: {
-        config.fastParticlesThrow.value = true;
         break;
       }
       case decltype(config.tuningSamples)::getoptChar: {
