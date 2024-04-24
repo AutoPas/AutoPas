@@ -18,6 +18,7 @@ For this to work, the new particle type has to define a few things to help the c
   This type definition is a type alias for `autopas::utils::SoAType<...>`, which expects as templates the respective types for the aforementioned `AttributeNames`.
 - `get()` and `set()` methods templated with the previously defined `AttributeNames`.
 
+As an example see [`MoleculeLJ`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/MoleculeLJ.h).
 
 ### Multiple Particle Types
 Should your simulation require multiple types of particles, this is not supported from a classic object-oriented point of view, as there can only be one particle type in AutoPas.
@@ -40,6 +41,8 @@ The critical elements to implement are:
   Indicator functions that return a `std::array` of all `AttributeNames`, which the functor needs to load from the particle to perform the calculation, as well as which fields are written.
 - `isRelevantForTuning()`:
   Indicator function to tell the tuning mechanism if iterations using this functor should be considered or not.
+
+As an example see [`SPHCalcDensityFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary/SPHCalcDensityFunctor.h).
 
 ### Using multiple functors
 AutoPas is able to work with simulation setups that use multiple functors to describe different forces.
