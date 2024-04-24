@@ -21,8 +21,9 @@ For this to work, the new particle type has to define a few things to help the c
 As an example see [`MoleculeLJ`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/MoleculeLJ.h).
 
 ### Multiple Particle Types
-Should your simulation require multiple types of particles, this is not supported from a classic object-oriented point of view, as there can only be one particle type in AutoPas.
-However, in many cases, this can be resolved by introducing an indicator member e.g. `typeId`, and having the class itself contain the fields for all types.
+AutoPas only supports a single particle class.
+Therefore, if you want to handle multiple particle types e.g. asteroids vs satellites then you have to differentiate between them manually.
+This could be achieved via the introduction of an indicator member in your particle class e.g. `typeId` or having the class itself contain the fields for all types.
 
 ## Custom Functors
 The functor is a class that defines the interaction of particles, also sometimes referred to as the force kernel.
