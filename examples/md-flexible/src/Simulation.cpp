@@ -13,8 +13,7 @@
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
-
-#include "../applicationLibrary/discreteElementMethod/discreteElementMethodLibrary/DEMFunctor.h"
+#include "discreteElementMethodLibrary/DEMFunctor.h"
 
 // Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
@@ -39,9 +38,8 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include <iostream>
-
 #include <cmath>
+#include <iostream>
 #include <random>
 
 #include "Thermostat.h"
@@ -86,9 +84,6 @@ size_t getTerminalWidth() {
   return terminalWidth;
 }
 }  // namespace
-
-template<>
-bool demLib::DEMFunctor<ParticleType>::_crossLevelTraversal = false;
 
 Simulation::Simulation(const MDFlexConfig &configuration,
                        std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
@@ -164,15 +159,14 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   if (_configuration.functorOption.value == MDFlexConfig::FunctorOption::DEM) {
-
     const double radMin = _configuration.particleRadii.value[0];
     const double radMax = _configuration.particleRadii.value[1];
-    
+
     std::default_random_engine generator;
     std::normal_distribution<double> distributionVel(0, 0.5);
-    std::uniform_real_distribution<double> distributionRad(radMin,radMax);
- 
-    for ( auto &particle : _configuration.getParticles()) {
+    std::uniform_real_distribution<double> distributionRad(radMin, radMax);
+
+    for (auto &particle : _configuration.getParticles()) {
       particle.setPoisson(0.2);
       particle.setYoung(1e5);
 
@@ -182,20 +176,14 @@ Simulation::Simulation(const MDFlexConfig &configuration,
       particle.setRad(radius);
       particle.setMass(mass);
 
-      const std::array<double, 3> v0 = {distributionVel(generator) / radius, 
-                                        distributionVel(generator) / radius, 
+      const std::array<double, 3> v0 = {distributionVel(generator) / radius, distributionVel(generator) / radius,
                                         distributionVel(generator) / radius};
 
       particle.setV(v0);
 
       _autoPasContainer->addParticle(particle);
     }
-    
-
   }
-  // @todo: the object generators should only generate particles relevant for the current rank's domain
-  //_autoPasContainer->addParticlesIf(_configuration.getParticles(),
-  //                                  [&](const auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
 
   _configuration.flushParticles();
   std::cout << "Total number of particles at the initialization: "
@@ -281,10 +269,9 @@ void Simulation::run() {
       if (_configuration.functorOption.value != MDFlexConfig::FunctorOption::DEM) {
         _timers.reflectParticlesAtBoundaries.start();
         _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
-                                                         *_configuration.getParticlePropertiesLibrary());
+                                                           *_configuration.getParticlePropertiesLibrary());
         _timers.reflectParticlesAtBoundaries.stop();
-      }
-      else {
+      } else {
         _timers.reflectParticlesAtBoundaries.start();
         _domainDecomposition->reflectDEMParticlesAtBoundaries(*_autoPasContainer);
         _timers.reflectParticlesAtBoundaries.stop();
@@ -436,12 +423,11 @@ void Simulation::updatePositions() {
         *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
         _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
     _timers.positionUpdate.stop();
-  }
-  else {
+  } else {
     _timers.positionUpdate.start();
-    TimeDiscretization::calculatePositionsAndResetForcesDEM(
-        *_autoPasContainer, _configuration.deltaT.value,
-        _configuration.globalForce.value, _configuration.fastParticlesThrow.value);
+    TimeDiscretization::calculatePositionsAndResetForcesDEM(*_autoPasContainer, _configuration.deltaT.value,
+                                                            _configuration.globalForce.value,
+                                                            _configuration.fastParticlesThrow.value);
     _timers.positionUpdate.stop();
   }
 }
@@ -489,21 +475,17 @@ void Simulation::updateVelocities() {
   const double deltaT = _configuration.deltaT.value;
 
   if (deltaT != 0) {
-
     if (_configuration.functorOption.value != MDFlexConfig::FunctorOption::DEM) {
       _timers.velocityUpdate.start();
       TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
                                               deltaT);
       _timers.velocityUpdate.stop();
-    }
-    else if (_configuration.functorOption.value == MDFlexConfig::FunctorOption::DEM) {
+    } else if (_configuration.functorOption.value == MDFlexConfig::FunctorOption::DEM) {
       _timers.velocityUpdate.start();
       TimeDiscretization::calculateVelocitiesDEM(*_autoPasContainer, deltaT);
       _timers.velocityUpdate.stop();
-    }
-    else {
-      throw std::runtime_error(
-        "Unknown functor option applied to Simulation::updateVelocities()");
+    } else {
+      throw std::runtime_error("Unknown functor option applied to Simulation::updateVelocities()");
     }
   }
 }
@@ -653,9 +635,9 @@ void Simulation::logMeasurements() {
 
     if (_configuration.dontMeasureFlops.value) {
       std::cout << "Statistics for Force Calculation at end of simulation: NOT AVAILABLE!" << std::endl;
-/*       LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
+      LJFunctorTypeAbstract demFunctor(_configuration.cutoff.value);
       autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
-          ljFunctor, _autoPasContainer->getCutoff());
+          demFunctor, _autoPasContainer->getCutoff());
       _autoPasContainer->iteratePairwise(&flopCounterFunctor);
 
       const auto flops = flopCounterFunctor.getFlops();
@@ -664,7 +646,7 @@ void Simulation::logMeasurements() {
       std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
       std::cout << "  GFLOPs/sec                         : "
                 << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl; */
+      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
   }
 }
@@ -710,7 +692,7 @@ T Simulation::applyWithChosenFunctor(F f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      //return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+      // return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "

@@ -11,6 +11,7 @@
 
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/directSum/DirectSum.h"
+#include "autopas/containers/hierarchicalGrids/HierarchicalGrids.h"
 #include "autopas/containers/linkedCells/LinkedCells.h"
 #include "autopas/containers/linkedCells/LinkedCellsReferences.h"
 #include "autopas/containers/octree/Octree.h"
@@ -20,7 +21,6 @@
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/containers/hierarchicalGrids/HierarchicalGrids.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/selectors/ContainerSelectorInfo.h"
 #include "autopas/utils/NumParticlesEstimator.h"
@@ -161,8 +161,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
     case ContainerOption::hierarchicalGrids: {
       container = std::make_unique<HierarchicalGrids<Particle>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkinPerTimestep, containerInfo.verletRebuildFrequency,
-          containerInfo.cellSizeFactor, containerInfo.loadEstimator, 
-          containerInfo.numberOfHGLevels);
+          containerInfo.cellSizeFactor, containerInfo.loadEstimator, containerInfo.numberOfHGLevels);
       break;
     }
     default: {

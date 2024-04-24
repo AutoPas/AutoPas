@@ -39,8 +39,7 @@ class ContainerSelectorInfo {
    */
   explicit ContainerSelectorInfo(double cellSizeFactor, double verletSkinPerTimestep,
                                  unsigned int verletRebuildFrequency, unsigned int verletClusterSize,
-                                 autopas::LoadEstimatorOption loadEstimator,
-                                 unsigned int numberOfHGLevels)
+                                 autopas::LoadEstimatorOption loadEstimator, unsigned int numberOfHGLevels)
       : cellSizeFactor(cellSizeFactor),
         verletSkinPerTimestep(verletSkinPerTimestep),
         verletRebuildFrequency(verletRebuildFrequency),
@@ -76,9 +75,9 @@ class ContainerSelectorInfo {
    */
   bool operator<(const ContainerSelectorInfo &other) {
     return std::tie(cellSizeFactor, verletSkinPerTimestep, verletRebuildFrequency, verletClusterSize, loadEstimator,
-                    numberOfHGLevels) <
-           std::tie(other.cellSizeFactor, other.verletSkinPerTimestep, other.verletRebuildFrequency,
-                    other.verletClusterSize, other.loadEstimator, other.numberOfHGLevels);
+                    numberOfHGLevels) < std::tie(other.cellSizeFactor, other.verletSkinPerTimestep,
+                                                 other.verletRebuildFrequency, other.verletClusterSize,
+                                                 other.loadEstimator, other.numberOfHGLevels);
   }
 
   /**
