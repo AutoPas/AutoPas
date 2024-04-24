@@ -68,10 +68,13 @@ class LJFunctor
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
-        _aosThreadData(),
+        _aosThreadDataGlobals(),
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
-      _aosThreadData.resize(autopas::autopas_get_max_threads());
+      _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
+    }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
     }
   }
 
@@ -121,8 +124,10 @@ class LJFunctor
       return;
     }
 
+    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+
     if constexpr (countFLOPs) {
-      ++_numDistCalls;
+      ++_aosThreadDataFLOPs[threadnum].numDistCalls;
     }
 
     auto sigmaSquared = _sigmaSquared;
@@ -157,9 +162,9 @@ class LJFunctor
 
     if constexpr (countFLOPs) {
       if (newton3) {
-        ++_numKernelCallsN3;
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
       } else {
-        ++_numKernelCallsNoN3;
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
       }
     }
 
@@ -171,24 +176,23 @@ class LJFunctor
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
-      const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
         if (newton3) {
-          _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-          _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
-          if constexpr (countFLOPs) {_numOtherFLOPs+= 8;}
+          _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
+          _aosThreadDataGlobals[threadnum].virialSumN3 += virial * 0.5;
+          if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 8;}
         } else {
           // for non-newton3 the division is in the post-processing step.
-          _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergy6;
-          _aosThreadData[threadnum].virialSumNoN3 += virial;
-          if constexpr (countFLOPs) {_numOtherFLOPs += 4;}
+          _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergy6;
+          _aosThreadDataGlobals[threadnum].virialSumNoN3 += virial;
+          if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 4;}
         }
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-        _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
-        if constexpr (countFLOPs) {_numOtherFLOPs += 8;}
+        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3 += virial * 0.5;
+        if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 8;}
       }
     }
   }
@@ -200,6 +204,8 @@ class LJFunctor
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
+
+    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -347,10 +353,10 @@ class LJFunctor
       fzptr[i] += fzacc;
     }
     if constexpr (countFLOPs) {
-      _numDistCalls += numDistanceCalculationSum;
-      _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-      _numKernelCallsN3 += numKernelCallsN3Sum;
-      _numOtherFLOPs += numFLOPsCalculateGlobalsSum;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numOtherFLOPs += numFLOPsCalculateGlobalsSum;
     }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
@@ -358,17 +364,17 @@ class LJFunctor
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       if (newton3) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-        if constexpr (countFLOPs) {_numOtherFLOPs += 8;}
+        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
+        if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 8;}
       } else {
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
-        if constexpr (countFLOPs) {_numOtherFLOPs += 4;}
+        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
+        if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 4;}
       }
     }
   }
@@ -396,6 +402,8 @@ class LJFunctor
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     if (soa1.size() == 0 || soa2.size() == 0) return;
+
+    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
 
     const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
@@ -546,28 +554,26 @@ class LJFunctor
       fz1ptr[i] += fzacc;
     }
     if constexpr (countFLOPs) {
-      _numDistCalls += numDistanceCalculationSum;
-      _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-      _numKernelCallsN3 += numKernelCallsN3Sum;
-      _numOtherFLOPs += numFLOPsCalculateGlobalsSum;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numOtherFLOPs += numFLOPsCalculateGlobalsSum;
     }
     if (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_thread_num();
-
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       if constexpr (newton3) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-        if constexpr (countFLOPs) {_numOtherFLOPs += 8;}
+        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
+        if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 8;}
       } else {
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
-        if constexpr (countFLOPs) {_numOtherFLOPs += 4;}
+        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
+        if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 4;}
       }
     }
   }
@@ -649,12 +655,10 @@ class LJFunctor
   void initTraversal() final {
     _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
-    _numDistCalls = 0;
-    _numKernelCallsN3 = 0;
-    _numKernelCallsNoN3 = 0;
     _postProcessed = false;
-    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-      _aosThreadData[i].setZero();
+    for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
+      _aosThreadDataGlobals[i].setZero();
+      _aosThreadDataFLOPs[i].setZero();
     }
   }
 
@@ -674,12 +678,12 @@ class LJFunctor
       // Non-newton3 calls are accumulated temporarily and later divided by 2.
       double potentialEnergySumNoN3Acc = 0;
       std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
-      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        potentialEnergySumNoN3Acc += _aosThreadData[i].potentialEnergySumNoN3;
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySumN3;
+      for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
+        potentialEnergySumNoN3Acc += _aosThreadDataGlobals[i].potentialEnergySumNoN3;
+        _potentialEnergySum += _aosThreadDataGlobals[i].potentialEnergySumN3;
 
-        virialSumNoN3Acc += _aosThreadData[i].virialSumNoN3;
-        _virialSum += _aosThreadData[i].virialSumN3;
+        virialSumNoN3Acc += _aosThreadDataGlobals[i].virialSumNoN3;
+        _virialSum += _aosThreadDataGlobals[i].virialSumN3;
       }
       // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
       // here.
@@ -735,11 +739,23 @@ class LJFunctor
 
   size_t getNumFLOPs() {
     if constexpr (countFLOPs) {
-      AutoPasLog(TRACE, "Number of Distance Calls           = {}", _numDistCalls);
-      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", _numKernelCallsN3);
-      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", _numKernelCallsNoN3);
-      AutoPasLog(TRACE, "Number of Other FLOPs              = {}", _numOtherFLOPs);
-      return _numDistCalls * 8 + _numKernelCallsN3 * 18 + _numKernelCallsNoN3 * 15 + _numOtherFLOPs;
+      size_t numDistCallsAcc = 0;
+      size_t numKernelCallsN3Acc = 0;
+      size_t numKernelCallsNoN3Acc = 0;
+      size_t numOtherFLOPsAcc = 0;
+
+      for (int i = 0; i < _aosThreadDataFLOPs.size(); ++i) {
+        numDistCallsAcc += _aosThreadDataFLOPs[i].numDistCalls;
+        numKernelCallsN3Acc += _aosThreadDataFLOPs[i].numKernelCallsN3;
+        numKernelCallsNoN3Acc += _aosThreadDataFLOPs[i].numKernelCallsNoN3;
+        numOtherFLOPsAcc += _aosThreadDataFLOPs[i].numOtherFLOPs;
+      }
+
+      AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
+      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
+      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", numKernelCallsNoN3Acc);
+      AutoPasLog(TRACE, "Number of Other FLOPs              = {}", numOtherFLOPsAcc);
+      return numDistCallsAcc * 8 + numKernelCallsN3Acc * 18 + numKernelCallsNoN3Acc * 15 + numOtherFLOPsAcc;
     } else {
       autopas::utils::ExceptionHandler::exception("LJFunctor::getNumFLOPs called without countFLOPs enabled!");
       return 0;
@@ -748,10 +764,20 @@ class LJFunctor
 
   double getHitRate() {
     if constexpr (countFLOPs) {
-      AutoPasLog(TRACE, "Number of Distance Calls           = {}", _numDistCalls);
-      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", _numKernelCallsN3);
-      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", _numKernelCallsNoN3);
-      return ((double)_numKernelCallsNoN3 + (double)_numKernelCallsN3)/((double)_numDistCalls);
+      size_t numDistCallsAcc = 0;
+      size_t numKernelCallsN3Acc = 0;
+      size_t numKernelCallsNoN3Acc = 0;
+
+      for (int i = 0; i < _aosThreadDataFLOPs.size(); ++i) {
+        numDistCallsAcc += _aosThreadDataFLOPs[i].numDistCalls;
+        numKernelCallsN3Acc += _aosThreadDataFLOPs[i].numKernelCallsN3;
+        numKernelCallsNoN3Acc += _aosThreadDataFLOPs[i].numKernelCallsNoN3;
+      }
+
+      AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
+      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
+      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", numKernelCallsNoN3Acc);
+      return ((double)numKernelCallsNoN3Acc + (double)numKernelCallsN3Acc)/((double)numDistCallsAcc);
     } else {
       autopas::utils::ExceptionHandler::exception("LJFunctor::getHitRate called without countFLOPs enabled!");
       return 0;
@@ -800,6 +826,8 @@ class LJFunctor
     if (ownedStateI == autopas::OwnershipState::dummy) {
       return;
     }
+
+    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
 
     // this is a magic number, that should correspond to at least
     // vectorization width*N have testet multiple sizes:
@@ -971,7 +999,7 @@ class LJFunctor
 
       const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
-      if constexpr (countFLOPs) {_numDistCalls += 1;}
+      if constexpr (countFLOPs) {numDistanceCalculationSum += 1;}
 
       if (dr2 > cutoffSquared) {
         continue;
@@ -998,7 +1026,6 @@ class LJFunctor
       }
 
       if constexpr (countFLOPs) {
-        numDistanceCalculationSum += 1;
         if constexpr (newton3) {
           numKernelCallsN3Sum += 1;
         } else {
@@ -1032,40 +1059,38 @@ class LJFunctor
     }
 
     if constexpr (countFLOPs) {
-      _numDistCalls += numDistanceCalculationSum;
-      _numKernelCallsNoN3 += numKernelCallsNoN3Sum;
-      _numKernelCallsN3 += numKernelCallsN3Sum;
-      _numOtherFLOPs += numFLOPsCalculateGlobalsSum;
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numOtherFLOPs += numFLOPsCalculateGlobalsSum;
     }
 
     if (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_thread_num();
-
       // SoAFunctorVerlet obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
 
       if (newton3) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-        if constexpr (countFLOPs) {_numOtherFLOPs += 8;}
+        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
+        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
+        if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 8;}
       } else {
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
-        if constexpr (countFLOPs) {_numOtherFLOPs += 4;}
+        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
+        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
+        if constexpr (countFLOPs) {_aosThreadDataFLOPs[threadnum].numOtherFLOPs += 4;}
       }
     }
   }
 
   /**
-   * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
+   * This class stores internal data for global calculations for each thread. Make sure that this data has proper size, i.e. k*64 Bytes!
    */
-  class AoSThreadData {
+  class AoSThreadDataGlobals {
    public:
-    AoSThreadData()
+    AoSThreadDataGlobals()
         : virialSumNoN3{0., 0., 0.},
           virialSumN3{0., 0., 0.},
           potentialEnergySumNoN3{0.},
@@ -1088,8 +1113,65 @@ class LJFunctor
     // dummy parameter to get the right size (64 bytes)
     double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
   };
-  // make sure of the size of AoSThreadData
-  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
+
+  /**
+   * This class stores internal data for FLOP counters for each thread. Make sure that this data has proper size, i.e. k*64 Bytes!
+   */
+  class AoSThreadDataFLOPs {
+   public:
+    AoSThreadDataFLOPs()
+        : numKernelCallsNoN3{0},
+          numKernelCallsN3{0},
+          numDistCalls{0},
+          numOtherFLOPs{0},
+          __remainingTo64{} {}
+
+    /**
+     * Set all counters to zero.
+     */
+    void setZero() {
+        numKernelCallsNoN3 = 0;
+        numKernelCallsN3 = 0;
+        numDistCalls = 0;
+        numOtherFLOPs = 0;
+    }
+
+    /**
+     * Number of calls to Lennard-Jones Kernel with newton3 disabled.
+     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
+     * cheaper.
+     */
+    size_t numKernelCallsNoN3 = 0;
+
+    /**
+     * Number of calls to Lennard-Jones Kernel with newton3 enabled.
+     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
+     * cheaper.
+     */
+    size_t numKernelCallsN3 = 0;
+
+    /**
+     * Number of distance calculations.
+     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
+     * cheaper.
+     */
+    size_t numDistCalls = 0;
+
+    /**
+     * Counter for FLOPs outside of the standard distance calculations + kernel calls. Primarily these FLOPs are for calculating globals.
+     */
+    size_t numOtherFLOPs = 0;
+
+   private:
+    /**
+     * dummy parameter to get the right size (64 bytes)
+     */
+    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
+  };
+
+  // make sure of the size of AoSThreadDataGlobals and AoSThreadDataFLOPs
+  static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
+  static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoffSquared;
   // not const because they might be reset through PPL
@@ -1104,35 +1186,12 @@ class LJFunctor
   std::array<double, 3> _virialSum;
 
   // thread buffer for aos
-  std::vector<AoSThreadData> _aosThreadData;
+  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals;
+  std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs;
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 
-  /**
-   * Number of calls to Lennard-Jones Kernel with newton3 disabled.
-   * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-   * cheaper.
-   */
-  size_t _numKernelCallsNoN3 = 0;
 
-  /**
-   * Number of calls to Lennard-Jones Kernel with newton3 enabled.
-   * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-   * cheaper.
-   */
-  size_t _numKernelCallsN3 = 0;
-
-  /**
-   * Number of distance calculations.
-   * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-   * cheaper.
-   */
-  size_t _numDistCalls = 0;
-
-  /**
-   * Counter for FLOPs outside of the standard distance calculations + kernel calls. Primarily these FLOPs are for calculating globals.
-   */
-  size_t _numOtherFLOPs = 0;
 };
 }  // namespace mdLib
