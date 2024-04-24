@@ -15,7 +15,7 @@ Please keep in mind the following notes while working.
 * `const` wherever possible. 
 * `nullptr` instead of `NULL`.
 * `using` instead of `typedef`.
-* Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Meaningfull error message")` instead.
+* Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Meaningful error message")` instead.
 
 ### Code Style
 * Private attributes are prefixed with `_`.
@@ -24,7 +24,7 @@ Please keep in mind the following notes while working.
 * Use `camelCase` over `snake_case`.
 * Google code style is enforced by the CI server.
 * To enable code formatting targets set the `cmake` variable `AUTOPAS_FORMATTING_TARGETS` to `ON`.
-* [Clang format](https://clang.llvm.org/docs/ClangFormat.html) version 14 is enforced (other versions might format slightly differently - you must use version 14 only).
+* [Clang format](https://releases.llvm.org/14.0.0/tools/clang/docs/ClangFormat.html) version 14 is enforced (other versions might format slightly differently - you must use version 14 only).
 * Run `make clangformat` before submitting a PR for review.
 * [cmake format](https://github.com/cheshirekow/cmake_format) is enforced.
 * Run `make cmakeformat` before submitting a PR for review.
