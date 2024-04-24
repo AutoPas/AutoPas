@@ -159,7 +159,61 @@ void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYTwoCells(bool newton3, bool do
 }
 
 void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews) {
-    return;
+    FMCell cellHWY;
+
+    size_t numParticles = 7;
+
+    Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
+                                                                numParticles);
+
+    if (doDeleteSomeParticles) {
+        for (auto &particle : cellHWY) {
+            if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+        }
+    }
+
+    // copy cells
+    FMCell cellNoHWY(cellHWY);
+    constexpr bool shifting = true;
+    constexpr bool mixing = false;
+    mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoHWY(_cutoff);
+    ljFunctorNoHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    mdLib::HWY_NAMESPACE::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
+    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+    ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
+
+    ljFunctorHWY.initTraversal();
+    ljFunctorNoHWY.initTraversal();
+
+    ljFunctorNoHWY.SoALoader(cellNoHWY, cellNoHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    ljFunctorHWY.SoALoader(cellHWY, cellHWY._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+    ASSERT_TRUE(SoAParticlesEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
+        << "Cells not equal after loading.";
+
+    if (useUnalignedViews) {
+        ljFunctorNoHWY.SoAFunctorSingle(cellNoHWY._particleSoABuffer.constructView(1, cellNoHWY.size()), newton3);
+        ljFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer.constructView(1, cellHWY.size()), newton3);
+    } else {
+        ljFunctorNoHWY.SoAFunctorSingle(cellNoHWY._particleSoABuffer, newton3);
+        ljFunctorHWY.SoAFunctorSingle(cellHWY._particleSoABuffer, newton3);
+    }
+    ASSERT_TRUE(SoAParticlesEqual(cellHWY._particleSoABuffer, cellNoHWY._particleSoABuffer))
+        << "Cells not equal after applying functor.";
+
+    ljFunctorHWY.SoAExtractor(cellHWY, cellHWY._particleSoABuffer, 0);
+    ljFunctorHWY.SoAExtractor(cellNoHWY, cellNoHWY._particleSoABuffer, 0);
+
+    ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells 1 not equal after extracting.";
+
+    ljFunctorHWY.endTraversal(newton3);
+    ljFunctorNoHWY.endTraversal(newton3);
+
+    double tolerance = 1e-8;
+    EXPECT_NEAR(ljFunctorHWY.getUpot(), ljFunctorNoHWY.getPotentialEnergy(), tolerance) << "global uPot";
+    EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctorNoHWY.getVirial(), tolerance) << "global virial";
 }
 
 void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles) {
@@ -167,7 +221,53 @@ void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYVerlet(bool newton3, bool doDe
 }
 
 void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
-    return;
+    FMCell cellHWY;
+
+    constexpr size_t numParticles = 7;
+
+    Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
+    autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
+                                                                numParticles);
+
+    if (doDeleteSomeParticles) {
+        // mark some particles as deleted to test if the functor handles them correctly
+        for (auto &particle : cellHWY) {
+        if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+        }
+    }
+
+    // copy cells
+    FMCell cellNoHWY(cellHWY);
+    constexpr bool shifting = true;
+    constexpr bool mixing = false;
+    mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoHWY(_cutoff);
+    ljFunctorNoHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    mdLib::HWY_NAMESPACE::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
+    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+
+    ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
+
+    ljFunctorHWY.initTraversal();
+    ljFunctorNoHWY.initTraversal();
+
+    for (size_t i = 0; i < numParticles; ++i) {
+        for (size_t j = newton3 ? i + 1 : 0; j < numParticles; ++j) {
+        if (i == j) {
+            continue;
+        }
+        ljFunctorNoHWY.AoSFunctor(cellNoHWY[i], cellNoHWY[j], newton3);
+        ljFunctorHWY.AoSFunctor(cellHWY[i], cellHWY[j], newton3);
+        }
+    }
+
+    ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after applying AoSfunctor.";
+
+    ljFunctorHWY.endTraversal(newton3);
+    ljFunctorNoHWY.endTraversal(newton3);
+
+    double tolerance = 1e-8;
+    EXPECT_NEAR(ljFunctorHWY.getUpot(), ljFunctorNoHWY.getPotentialEnergy(), tolerance) << "global uPot";
+    EXPECT_NEAR(ljFunctorHWY.getVirial(), ljFunctorNoHWY.getVirial(), tolerance) << "global virial";
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {

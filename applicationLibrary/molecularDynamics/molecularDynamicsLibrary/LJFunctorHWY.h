@@ -609,7 +609,7 @@ namespace HWY_NAMESPACE {
                     const auto *const __restrict yPtr = soa.template begin<Particle::AttributeNames::posY>();
                     const auto *const __restrict zPtr = soa.template begin<Particle::AttributeNames::posZ>();
 
-                    const auto *const __restrict ownedStatePtr = reinterpret_cast<const int64_t *>(soa.template begin<Particle::AttributeNames::ownershipState>());
+                    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
 
                     auto *const __restrict fxPtr = soa.template begin<Particle::AttributeNames::forceX>();
                     auto *const __restrict fyPtr = soa.template begin<Particle::AttributeNames::forceY>();
@@ -645,6 +645,10 @@ namespace HWY_NAMESPACE {
                     // loop over list for first time
                     for (; checkFirstLoopConditionSingle(i); decrementFirstLoop(i)) {
 
+                        if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
+                            continue;
+                        }
+
                         fxAcc = _zeroDouble;
                         fyAcc = _zeroDouble;
                         fzAcc = _zeroDouble;
@@ -654,11 +658,12 @@ namespace HWY_NAMESPACE {
                         for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
 
                             fillVectorRegisters<false, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr,
-                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, ownedStatePtr, ownedStatePtr, i, j);
+                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr,
+                                reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr), i, j);
 
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
-                            
+
                             fxAcc = highway::Add(fxAcc, fx);
                             fyAcc = highway::Add(fyAcc, fy);
                             fzAcc = highway::Add(fzAcc, fz);
@@ -672,7 +677,8 @@ namespace HWY_NAMESPACE {
                         if (restJ > 0) {
 
                             fillVectorRegisters<false, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr,
-                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, ownedStatePtr, ownedStatePtr, i, j, 0, restJ);
+                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr,
+                                reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr), i, j, 0, restJ);
 
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
@@ -693,12 +699,15 @@ namespace HWY_NAMESPACE {
 
                     if (restI > 0) {
 
+                        throw std::runtime_error("This should not happen yet!");
+
                         size_t j = 0;
 
                         for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
 
                             fillVectorRegisters<true, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr,
-                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, ownedStatePtr, ownedStatePtr, i, j, restI);
+                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr,
+                                reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr), i, j, restI);
 
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
@@ -716,7 +725,8 @@ namespace HWY_NAMESPACE {
                         if (restJ > 0) {
 
                             fillVectorRegisters<true, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr,
-                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr, ownedStatePtr, ownedStatePtr, i, j, restI, restJ);
+                                xPtr, yPtr, zPtr, xPtr, yPtr, zPtr,
+                                reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr), i, j, restI, restJ);
 
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, sigmaSquareds, epsilon24s, virialSumX, virialSumY, virialSumZ, uPotSum);
@@ -797,20 +807,28 @@ namespace HWY_NAMESPACE {
                     VectorDouble sigmaSquareds;
                     VectorDouble shift6s;
 
-                    for (size_t i = 0; checkFirstLoopConditionPair(i, soa1.size()); incrementFirstLoop(i)) {
+                    size_t i = 0;
+
+                    VectorDouble fxAcc = highway::Zero(tag_double);
+                    VectorDouble fyAcc = highway::Zero(tag_double);
+                    VectorDouble fzAcc = highway::Zero(tag_double);
+
+                    for (; checkFirstLoopConditionPair(i, soa1.size()); incrementFirstLoop(i)) {
+
                         if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
                             continue;
                         }
 
-                        VectorDouble fxAcc = highway::Zero(tag_double);
-                        VectorDouble fyAcc = highway::Zero(tag_double);
-                        VectorDouble fzAcc = highway::Zero(tag_double);
+                        fxAcc = _zeroDouble;
+                        fyAcc = _zeroDouble;
+                        fzAcc = _zeroDouble;
 
                         size_t j = 0;
+
                         for (; j < checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
 
                             fillVectorRegisters<false, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr,
-                                /* sigmaDiv2Ptr1, sigmaDiv2Ptr2, sqrtEpsilonPtr1, sqrtEpsilonPtr2, */ x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr,
+                                x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr,
                                 reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2), i, j);
                             
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
@@ -829,7 +847,7 @@ namespace HWY_NAMESPACE {
                         if (restJ > 0) {
 
                             fillVectorRegisters<false, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ, epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr,
-                                /* sigmaDiv2Ptr1, sigmaDiv2Ptr2, sqrtEpsilonPtr1, sqrtEpsilonPtr2, */ x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr,
+                                x1Ptr, y1Ptr, z1Ptr, x2Ptr, y2Ptr, z2Ptr,
                                 reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2), i, j, 0, restJ);
                             
                             auto [fx, fy, fz] = SoAKernel<newton3>(ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
