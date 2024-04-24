@@ -64,8 +64,6 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     // Note: _hierarchyLevels has to be a std::deque, which does not support reserve()
     _hierarchicalGridBorders.reserve(numberOfLevels);
 
-    _crossLevelInteractions.reserve(getNumberOfCrossLevelInteractions());
-
     for (unsigned int level = 0; level < numberOfLevels; level++) {
       const double gridBorder = radiusMax - radiusSegment * level;
       const double cellSize = gridBorder / radiusMax;
@@ -77,6 +75,9 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
       std::cout << "Created Hierarchical Grid level: " << level << std::endl;
       std::cout << "  with max. allowed particle radii of " << _hierarchicalGridBorders[level] << std::endl;
     }
+
+    setUpCrossLevelInteractionPairs();
+    std::cout << "Created " << getNumberOfCrossLevelInteractions() << " cross-levels" << std::endl;
   }
 
   /**
@@ -600,7 +601,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
    * Set the cross-level interaction pairs, i.e. the which larger level is checked with which smaller level
    *
    */
-  void setCrossLevelInteractionPairs() {
+  void setUpCrossLevelInteractionPairs() {
     for (unsigned int largerLevel = 0; largerLevel < _hierarchyLevels.size(); largerLevel++) {
       for (unsigned int smallerLevel = largerLevel + 1; smallerLevel < _hierarchyLevels.size(); smallerLevel++) {
         _crossLevelInteractions.emplace_back(largerLevel, smallerLevel);
