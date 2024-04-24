@@ -85,7 +85,8 @@ void DSSequentialTraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs
   auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);
-  _cellFunctor.processCellPair(cells[0], cells[1]);
+  auto sortDirection = utils::ArrayMath::normalize(std::array<double, 3>({1.0, 1.0, 1.0}));
+  _cellFunctor.processCellPair(cells[0], cells[1], sortDirection);
 }
 
 }  // namespace autopas
