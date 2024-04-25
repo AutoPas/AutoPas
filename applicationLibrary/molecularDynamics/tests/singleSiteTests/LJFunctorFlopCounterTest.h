@@ -9,11 +9,21 @@
 #include "AutoPasTestBase.h"
 #include "autopas/options/DataLayoutOption.h"
 
-class LJFunctorFlopCounterTest : public AutoPasTestBase {
+class LJFunctorFlopCounterTest : public AutoPasTestBase, public ::testing::WithParamInterface<std::tuple<autopas::DataLayoutOption, bool, bool, bool>> {
  public:
   LJFunctorFlopCounterTest() = default;
 
   ~LJFunctorFlopCounterTest() override = default;
 
-  void testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3);
+  template <bool calculateGlobals, bool applyShift>
+    void testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3);
+
+  template <bool calculateGlobals, bool applyShift>
+  void testFLOPCounterAoSOMP(bool newton3);
+
+  template <bool calculateGlobals, bool applyShift>
+  void testFLOPCounterSoASingleAndPairOMP(bool newton3);
+
+  template <bool calculateGlobals, bool applyShift>
+  void testFLOPCounterSoAVerletOMP(bool newton3);
 };
