@@ -133,7 +133,6 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
 
   // Set OpenMP's scheduling runtime variables from the configurator.
   // schedule(runtime) will then use them for the traversal in the concerned calling thread.
-  TraversalInterface::_openMPConfigurator.setSchedule();
 
   AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
@@ -152,6 +151,10 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
       if (collapseDepth == 2) {
+        //omp_sched_t kind = omp_sched_dynamic;
+        //int size = TraversalInterface::_openMPConfigurator.getOMPChunkSize();
+	//std::cout << "Chunk size: " << std::to_string(size) << std::endl;
+        //autopas_set_schedule(kind, size);
         AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
@@ -162,6 +165,10 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
           }
         }
       } else {
+	//omp_sched_t kind = omp_sched_dynamic;
+	//int size = TraversalInterface::_openMPConfigurator.getOMPChunkSize();
+	//autopas_set_schedule(kind, size);
+	//std::cout << "Chunk size: " << std::to_string(size) << std::endl;
         AUTOPAS_OPENMP(for schedule(runtime) collapse(3))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
