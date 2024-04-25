@@ -14,9 +14,12 @@
 extern template class autopas::AutoPas<Molecule>;
 /**
  * Generates a square of four particles, iterates over it with the LJFunctor and checks the values of getNumFLOPs() and getHitRate()
+ * @tparam calculateGlobals
+ * @tparam applyShift
  * @param dataLayoutOption
  * @param newton3
  */
+template <bool calculateGlobals, bool applyShift>
 void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3) {
   autopas::AutoPas<Molecule> autoPas;
 
@@ -30,17 +33,18 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   } else {
     autoPas.setAllowedNewton3Options({autopas::Newton3Option::disabled});
   }
+  autoPas.setAllowedDataLayouts(std::set<autopas::DataLayoutOption>{dataLayoutOption});
 
   autoPas.init();
 
   const std::vector<Molecule> molVec{Molecule({1, 1, 1}, {0, 0, 0}, 0), Molecule({1, 1, 2}, {0, 0, 0}, 1),
-                               Molecule({1, 2, 1}, {0, 0, 0}, 2), Molecule({1, 2, 2}, {0, 0, 0}, 3)};
+                                     Molecule({1, 2, 1}, {0, 0, 0}, 2), Molecule({1, 2, 2}, {0, 0, 0}, 3)};
 
   for (auto &m : molVec) {
     autoPas.addParticle(m);
   }
 
-  mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true, true> ljFunctor(autoPas.getCutoff());
+  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(autoPas.getCutoff());
 
   autoPas.iteratePairwise(&ljFunctor);
 
@@ -61,41 +65,32 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   ASSERT_NEAR(expectedHitRate, ljFunctor.getHitRate(), 1e-14);
 }
 
-TEST_F(LJFunctorFlopCounterTest, testFlopCounterAoS4N3Mol) { testFLOPCounter(autopas::DataLayoutOption::aos, true); }
-
-TEST_F(LJFunctorFlopCounterTest, testFlopCounterSoA4N3Mol) { testFLOPCounter(autopas::DataLayoutOption::soa, true); }
-
-TEST_F(LJFunctorFlopCounterTest, testFlopCounterAoS4NoN3Mol) { testFLOPCounter(autopas::DataLayoutOption::aos, false); }
-
-TEST_F(LJFunctorFlopCounterTest, testFlopCounterSoA4NoN3Mol) { testFLOPCounter(autopas::DataLayoutOption::soa, false); }
-
-TEST_F(LJFunctorFlopCounterTest, testFlopCounterAoSN3OpenMP) {
-  bool newton3 = true;
+template <bool calculateGlobals, bool applyShift>
+void LJFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
   Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  double cutoff = 1.;
+  const double cutoff = 1.;
 
-  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
-  autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> functor(ljFunctor, cutoff);
+  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
   AUTOPAS_OPENMP(parallel) {
     AUTOPAS_OPENMP(sections) {
       AUTOPAS_OPENMP(section)
-      functor.AoSFunctor(p1, p2, newton3);
+      ljFunctor.AoSFunctor(p1, p2, newton3);
       AUTOPAS_OPENMP(section)
-      functor.AoSFunctor(p3, p4, newton3);
+      ljFunctor.AoSFunctor(p3, p4, newton3);
     }
   }
 }
 
-TEST_F(LJFunctorFlopCounterTest, testFlopCounterSoAOpenMP) {
-  bool newton3 = true;
+template <bool calculateGlobals, bool applyShift>
+void LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP(bool newton3) {
   Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
@@ -108,10 +103,9 @@ TEST_F(LJFunctorFlopCounterTest, testFlopCounterSoAOpenMP) {
   Molecule p7({1., 0., 0.}, {0., 0., 0.}, 0, 0);
   Molecule p8({1.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  double cutoff = 1.;
+  const double cutoff = 1.;
 
-  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
-  autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> functor(ljFunctor, cutoff);
+  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
 
   autopas::FullParticleCell<Molecule> cell1;
   cell1.addParticle(p1);
@@ -129,35 +123,163 @@ TEST_F(LJFunctorFlopCounterTest, testFlopCounterSoAOpenMP) {
   cell3.addParticle(p7);
   cell3.addParticle(p8);
 
-  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  functor.SoALoader(cell4, cell4._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell4, cell4._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // This is a basic check for the accumulated values, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
 
-  // first functors on one cell
+  // first functors on one soa
   AUTOPAS_OPENMP(parallel) {
     AUTOPAS_OPENMP(sections) {
       AUTOPAS_OPENMP(section)
-      functor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+      ljFunctor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
       AUTOPAS_OPENMP(section)
-      functor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
+      ljFunctor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
       AUTOPAS_OPENMP(section)
-      functor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
+      ljFunctor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
       AUTOPAS_OPENMP(section)
-      functor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
+      ljFunctor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
     }
   }
 
-  // functors on two cells
+  // functors on two soas
   AUTOPAS_OPENMP(parallel) {
     AUTOPAS_OPENMP(sections) {
       AUTOPAS_OPENMP(section)
-      functor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+      ljFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
       AUTOPAS_OPENMP(section)
-      functor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
+      ljFunctor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
     }
   }
 }
+
+template <bool calculateGlobals, bool applyShift>
+void LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP(bool newton3) {
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
+
+  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
+
+  // generate neighbor lists
+  std::array<std::vector<size_t, autopas::AlignedAllocator<size_t>>, 4> neighborLists;
+  neighborLists[0].push_back(1) // p1 has neighbor p2
+
+  const double cutoff = 1.;
+
+  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
+
+  autopas::FullParticleCell<Molecule> cell1;
+  cell1.addParticle(p1);
+  cell1.addParticle(p2);
+
+  autopas::FullParticleCell<Molecule> cell2;
+  cell2.addParticle(p3);
+  cell2.addParticle(p4);
+
+  autopas::FullParticleCell<Molecule> cell3;
+  cell3.addParticle(p5);
+  cell3.addParticle(p6);
+
+  autopas::FullParticleCell<Molecule> cell4;
+  cell3.addParticle(p7);
+  cell3.addParticle(p8);
+
+  ljFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell4, cell4._particleSoABuffer, 0, /*skipSoAResize*/ false);
+
+  // This is a basic check for the accumulated values, by checking the handling of two particle interactions in
+  // parallel. If interactions are dangerous, archer will complain.
+
+  // first functors on one soa
+  AUTOPAS_OPENMP(parallel) {
+    AUTOPAS_OPENMP(sections) {
+      AUTOPAS_OPENMP(section)
+      ljFunctor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+      AUTOPAS_OPENMP(section)
+      ljFunctor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
+      AUTOPAS_OPENMP(section)
+      ljFunctor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
+      AUTOPAS_OPENMP(section)
+      ljFunctor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
+    }
+  }
+
+  // functors on two soas
+  AUTOPAS_OPENMP(parallel) {
+    AUTOPAS_OPENMP(sections) {
+      AUTOPAS_OPENMP(section)
+      ljFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+      AUTOPAS_OPENMP(section)
+      ljFunctor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
+    }
+  }
+}
+
+/**
+ * Tests that the FLOP counts produced are correct by comparing against partially hard-coded values.
+ */
+TEST_P(LJFunctorFlopCounterTest, testFLOPCountingNoOMP) {
+  const auto [dataLayout, newton3, calculateGlobals, applyShift] = GetParam();
+  if (calculateGlobals and applyShift) {
+    LJFunctorFlopCounterTest::testFLOPCounter<true, true>(dataLayout, newton3);
+  } else if (calculateGlobals and not applyShift) {
+    LJFunctorFlopCounterTest::testFLOPCounter<true, false>(dataLayout, newton3);
+  } else {
+    LJFunctorFlopCounterTest::testFLOPCounter<false, false>(dataLayout, newton3);
+  }
+}
+
+/**
+ * Tests that FLOP counting has no data races by performing interactions in parallel. With thread sanitizer enabled, this
+ * should produce errors. Without thread sanitizer enabled, this test will generally not throw errors. This test does not
+ * test the verlet functor.
+ */
+TEST_P(LJFunctorFlopCounterTest, testFLOPCountingOMP) {
+  const auto [dataLayout, newton3, calculateGlobals, applyShift] = GetParam();
+  if (calculateGlobals and applyShift) {
+    if (dataLayout == autopas::DataLayoutOption::aos) {
+      LJFunctorFlopCounterTest::testFLOPCounterAoSOMP<true, true>(newton3);
+    } else {
+      LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<true, true>(newton3);
+    }
+  } else if (calculateGlobals and not applyShift) {
+    if (dataLayout == autopas::DataLayoutOption::aos) {
+      LJFunctorFlopCounterTest::testFLOPCounterAoSOMP<true, false>(newton3);
+    } else {
+      LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<true, false>(newton3);
+    }
+  } else {
+    if (dataLayout == autopas::DataLayoutOption::aos) {
+      LJFunctorFlopCounterTest::testFLOPCounterAoSOMP<false, false>(newton3);
+    } else {
+      LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<false, false>(newton3);
+    }
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(LJFunctorFlopTestSuite, LJFunctorFlopCounterTest,
+                         /*                               Data Layout              , newton3, calcGlobals, applyShift */
+                         testing::Values(std::make_tuple(autopas::DataLayoutOption::aos, false, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::aos, true, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, false, false),
+
+                                         std::make_tuple(autopas::DataLayoutOption::aos, false, true, false),
+                                         std::make_tuple(autopas::DataLayoutOption::aos, true, true, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, false),
+
+                                         std::make_tuple(autopas::DataLayoutOption::aos, false, true, true),
+                                         std::make_tuple(autopas::DataLayoutOption::aos, true, true, true),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, true),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, true)));
+
+
+
+
