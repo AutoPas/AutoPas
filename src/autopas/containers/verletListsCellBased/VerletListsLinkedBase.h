@@ -192,10 +192,6 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
         return true;
       }
     }
-    AutoPasLog(TRACE,
-               "updateHaloParticle was not able to update particle at "
-               "[{}, {}, {}]",
-               particle.getR()[0], particle.getR()[1], particle.getR()[2]);
     return false;
   }
 

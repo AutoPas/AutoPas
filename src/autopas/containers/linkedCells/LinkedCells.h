@@ -92,7 +92,6 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         return true;
       }
     }
-    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
     return false;
   }
 
