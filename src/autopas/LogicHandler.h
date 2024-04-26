@@ -288,7 +288,7 @@ class LogicHandler {
           boxMin, boxMax, p.toString());
     }
     particleCopy.setOwnershipState(OwnershipState::owned);
-    particleCopy.setRAtRebuild();  // to discuss this
+    particleCopy.setRAtRebuild();
     if (not neighborListsAreValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
       _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
@@ -316,8 +316,7 @@ class LogicHandler {
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), particleCopy.toString());
     }
     particleCopy.setOwnershipState(OwnershipState::halo);
-    particleCopy.setRAtRebuild();  // to discuss this -> a particle entering halo may not have already moved more than
-                                   // skin/2 -> will lead to update when not needed, but not sure
+    particleCopy.setRAtRebuild();
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
       container.template addHaloParticle</* checkInBox */ false>(particleCopy);
@@ -327,8 +326,6 @@ class LogicHandler {
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
-        //_haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
-        // should be already halo now
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
@@ -557,9 +554,12 @@ class LogicHandler {
    * @return value of the mean frequency as double
    */
   [[nodiscard]] double getMeanRebuildFrequency() const {
-    return _rebuildDistances.empty() ? 0
-                                     : (std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0) * 1.0) /
-                                           _rebuildDistances.size();
+    if (_rebuildDistances.empty()) {
+      return 0.;
+    } else {
+      return std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0.) /
+             static_cast<double>(_rebuildDistances.size());
+    }
   }
 
  private:
@@ -721,15 +721,15 @@ class LogicHandler {
 
   /**
    * Checks if any particle has moved more than skin/2.
-   * updates bool: _neighborListInvalidDynamicRebuild to true
+   * updates bool: _neighborListInvalidDoDynamicRebuild to true
    */
   void checkNeighborListsInvalidDynamicRebuild();
 
   /**
    * Checks if any particle has moved more than skin/2.
-   * updates bool: _neighborListInvalidDynamicRebuild to false
+   * updates bool: _neighborListInvalidDoDynamicRebuild to false
    */
-  void resetNeighborListsInvalidDynamicRebuild();
+  void resetNeighborListsInvalidDoDynamicRebuild();
 
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
@@ -741,6 +741,10 @@ class LogicHandler {
    */
   unsigned int _verletClusterSize;
 
+  /**
+   * Array of int which contains number of steps after which rebuild occurs
+   * This is used to calculate the mean rebuild frequency
+   */
   std::vector<int> _rebuildDistances;
 
   /**
@@ -811,7 +815,7 @@ class LogicHandler {
   /**
    * neighborListInvalid - true if a particle has moved more than skin/2
    */
-  bool _neighborListInvalidDynamicRebuild{false};
+  bool _neighborListInvalidDoDynamicRebuild{false};
 
   /**
    * updating position at rebuild for every particle
@@ -821,7 +825,7 @@ class LogicHandler {
 
 template <typename Particle>
 void LogicHandler<Particle>::updateRebuildPositions() {
-  for (auto iter = this->begin(IteratorBehavior::ownedOrHaloOrDummy); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
     iter->setRAtRebuild();
   }
 }
@@ -842,10 +846,8 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
-  //_neighborListsAreValid.store(true, std::memory_order_relaxed); - can be removed
-
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
-      _neighborListInvalidDynamicRebuild) {
+      _neighborListInvalidDoDynamicRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -853,20 +855,22 @@ bool LogicHandler<Particle>::neighborListsAreValid() {
 
 template <typename Particle>
 void LogicHandler<Particle>::checkNeighborListsInvalidDynamicRebuild() {
-  auto halfSkinSquare = (getContainer().getVerletSkin() * getContainer().getVerletSkin()) / 4;
+  const auto skin = getContainer().getVerletSkin();
+  // (skin/2)^2
+  const auto halfSkinSquare = skin * skin * 0.25;
   for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
-    auto distance = iter->calculateDisplacementSinceRebuild();
-    double distanceSquare = utils::ArrayMath::dot(distance, distance);
+    const auto distance = iter->calculateDisplacementSinceRebuild();
+    const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
     if (distanceSquare >= halfSkinSquare) {
-      _neighborListInvalidDynamicRebuild = true;
+      _neighborListInvalidDoDynamicRebuild = true;
     }
   }
 }
 
 template <typename Particle>
-void LogicHandler<Particle>::resetNeighborListsInvalidDynamicRebuild() {
-  _neighborListInvalidDynamicRebuild = false;
+void LogicHandler<Particle>::resetNeighborListsInvalidDoDynamicRebuild() {
+  _neighborListInvalidDoDynamicRebuild = false;
 }
 
 template <typename Particle>
@@ -931,7 +935,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
     timerRebuild.start();
     this->updateRebuildPositions();
     container.rebuildNeighborLists(&traversal);
-    this->resetNeighborListsInvalidDynamicRebuild();
+    this->resetNeighborListsInvalidDoDynamicRebuild();
     timerRebuild.stop();
   }
   timerIteratePairwise.start();
