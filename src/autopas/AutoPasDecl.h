@@ -1027,7 +1027,7 @@ class AutoPas {
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
-  unsigned int _verletRebuildFrequency{20};
+  unsigned int _verletRebuildFrequency{std::numeric_limits<unsigned int>::max()};
   /**
    * Strategy option for the auto tuner.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.

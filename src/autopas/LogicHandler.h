@@ -829,7 +829,7 @@ class LogicHandler {
 
 template <typename Particle>
 void LogicHandler<Particle>::updateRebuildPositions() {
-  for (auto iter = this->begin(IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
     iter->resetRAtRebuild();
   }
 }
