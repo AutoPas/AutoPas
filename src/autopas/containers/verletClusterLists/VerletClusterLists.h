@@ -198,7 +198,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that
         // overlap with this region.
         it->setR(haloPos);
-        it->setRAtRebuild();
+        it->setRAtRebuild(haloParticle.getRAtRebuild());
         it->setV(haloParticle.getV());
         it->setF(haloParticle.getF());
         return true;

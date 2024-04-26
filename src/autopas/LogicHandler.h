@@ -288,7 +288,7 @@ class LogicHandler {
           boxMin, boxMax, p.toString());
     }
     particleCopy.setOwnershipState(OwnershipState::owned);
-    particleCopy.setRAtRebuild();
+    particleCopy.resetRAtRebuild();
     if (not neighborListsAreValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
       _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
@@ -316,7 +316,7 @@ class LogicHandler {
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), particleCopy.toString());
     }
     particleCopy.setOwnershipState(OwnershipState::halo);
-    particleCopy.setRAtRebuild();
+    particleCopy.resetRAtRebuild();
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
       container.template addHaloParticle</* checkInBox */ false>(particleCopy);
@@ -830,7 +830,7 @@ class LogicHandler {
 template <typename Particle>
 void LogicHandler<Particle>::updateRebuildPositions() {
   for (auto iter = this->begin(IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
-    iter->setRAtRebuild();
+    iter->resetRAtRebuild();
   }
 }
 

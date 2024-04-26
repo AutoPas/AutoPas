@@ -152,25 +152,35 @@ class ParticleBase {
   [[nodiscard]] const std::array<double, 3> &getR() const { return _r; }
 
   /**
+   * Get the last rebuild position of the particle
+   * @return current rebuild position
+   */
+  [[nodiscard]] const std::array<double, 3> &getRAtRebuild() const { return _rAtRebuild; }
+
+  /**
    * Set the position of the particle
    * @param r new position
    */
   void setR(const std::array<double, 3> &r) { _r = r; }
 
   /**
-   * update rebuild position of the particle
+   * Set the rebuild position of the particle
+   * @param r rebuild position to be set
    */
-  void setRAtRebuild() { _rAtRebuild = _r; }
+  void setRAtRebuild(const std::array<double, 3> &r) { _rAtRebuild = r; }
 
   /**
-   * calculate distance since last rebuild
-   * this is used to check if neighbour lists are still valid inside the logic handler
+   * Update the rebuild position of the particle to current position
+   */
+  void resetRAtRebuild() { this->setRAtRebuild(_r); }
+
+  /**
+   * Calculate the distance since the last rebuild.
+   * This is used to check if neighbor lists are still valid inside the logic handler
    * @return displacement vector of particle since rebuild
    */
   const std::array<double, 3> calculateDisplacementSinceRebuild() const {
-    using namespace autopas::utils::ArrayMath::literals;
-    auto dist = utils::ArrayMath::sub(_rAtRebuild, _r);
-    return dist;
+    return utils::ArrayMath::sub(_rAtRebuild, _r);
   }
 
   /**

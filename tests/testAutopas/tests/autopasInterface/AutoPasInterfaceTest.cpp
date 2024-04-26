@@ -87,7 +87,7 @@ std::vector<Molecule> convertToEnteringParticles(const std::vector<Molecule> &le
       }
     }
     p.setR(pos);
-    p.setRAtRebuild();
+    p.resetRAtRebuild();
   }
   return enteringParticles;
 }
@@ -137,7 +137,7 @@ auto identifyAndSendHaloParticles(autopas::AutoPas<Molecule> &autoPas) {
              ++iter) {
           auto particleCopy = *iter;
           particleCopy.addR(shiftVec);
-          particleCopy.setRAtRebuild();
+          particleCopy.resetRAtRebuild();
           haloParticles.push_back(particleCopy);
         }
       }
