@@ -500,7 +500,10 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
       auto position = particleIter->getR();
       position[direction] = position[direction] + wrapAroundDistance;
       haloParticlesBuffer.back().setR(position);
-      haloParticlesBuffer.back().resetRAtRebuild();
+      // Shifting the rebuild position of the particle, so that displacement since rebuild remains consistent
+      auto rebuildPosition =  particleIter->getRAtRebuild();
+      rebuildPosition[direction] = rebuildPosition[direction] + wrapAroundDistance;
+      haloParticlesBuffer.back().setRAtRebuild(rebuildPosition);
     }
   }
 }
@@ -571,8 +574,10 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         const auto justInsideOfBox = std::nextafter(_globalBoxMax[direction], _globalBoxMin[direction]);
         position[direction] = std::min(justInsideOfBox, periodicPosition);
         leftNeighborParticles.back().setR(position);
-        // TODO: this isn't best, best thing would be to shift so that displacement before and after remains same
-        leftNeighborParticles.back().resetRAtRebuild();
+        // Shifting the rebuild position of the particle, so that displacement since rebuild remains consistent
+        auto rebuildPosition = particle.getRAtRebuild();
+        rebuildPosition[direction] =  rebuildPosition[direction] + globalBoxDimensions[direction];
+        rightNeighborParticles.back().setRAtRebuild(rebuildPosition);
       }
       // if the particle is right of the box
     } else if (position[direction] >= _localBoxMax[direction]) {
@@ -585,8 +590,10 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         const auto periodicPosition = position[direction] - globalBoxDimensions[direction];
         position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
         rightNeighborParticles.back().setR(position);
-        // TODO: this isn't correct, best thing would be to shift so that displacement before and after remains same
-        rightNeighborParticles.back().resetRAtRebuild();
+        // Shifting the rebuild position of the particle, so that displacement since rebuild remains consistent 
+        auto rebuildPosition = particle.getRAtRebuild();
+        rebuildPosition[direction] =  rebuildPosition[direction] - globalBoxDimensions[direction];
+        rightNeighborParticles.back().setRAtRebuild(rebuildPosition);
       }
     } else {
       uncategorizedParticles.push_back(particle);
