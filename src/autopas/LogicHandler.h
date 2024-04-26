@@ -325,7 +325,7 @@ class LogicHandler {
         AutoPasLog(TRACE,
                    "updateHaloParticle was not able to update particle at "
                    "[{}, {}, {}]",
-                   particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+                   particleCopy.getR()[0], particleCopy.getR()[1], particleCopy.getR()[2]);
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
       }
