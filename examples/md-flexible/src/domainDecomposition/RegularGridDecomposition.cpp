@@ -501,7 +501,7 @@ void RegularGridDecomposition::collectHaloParticlesAux(AutoPasType &autoPasConta
       position[direction] = position[direction] + wrapAroundDistance;
       haloParticlesBuffer.back().setR(position);
       // Shifting the rebuild position of the particle, so that displacement since rebuild remains consistent
-      auto rebuildPosition =  particleIter->getRAtRebuild();
+      auto rebuildPosition = particleIter->getRAtRebuild();
       rebuildPosition[direction] = rebuildPosition[direction] + wrapAroundDistance;
       haloParticlesBuffer.back().setRAtRebuild(rebuildPosition);
     }
@@ -576,7 +576,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         leftNeighborParticles.back().setR(position);
         // Shifting the rebuild position of the particle, so that displacement since rebuild remains consistent
         auto rebuildPosition = particle.getRAtRebuild();
-        rebuildPosition[direction] =  rebuildPosition[direction] + globalBoxDimensions[direction];
+        rebuildPosition[direction] = rebuildPosition[direction] + globalBoxDimensions[direction];
         rightNeighborParticles.back().setRAtRebuild(rebuildPosition);
       }
       // if the particle is right of the box
@@ -590,9 +590,9 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         const auto periodicPosition = position[direction] - globalBoxDimensions[direction];
         position[direction] = std::max(_globalBoxMin[direction], periodicPosition);
         rightNeighborParticles.back().setR(position);
-        // Shifting the rebuild position of the particle, so that displacement since rebuild remains consistent 
+        // Shifting the rebuild position of the particle, so that displacement since rebuild remains consistent
         auto rebuildPosition = particle.getRAtRebuild();
-        rebuildPosition[direction] =  rebuildPosition[direction] - globalBoxDimensions[direction];
+        rebuildPosition[direction] = rebuildPosition[direction] - globalBoxDimensions[direction];
         rightNeighborParticles.back().setRAtRebuild(rebuildPosition);
       }
     } else {
