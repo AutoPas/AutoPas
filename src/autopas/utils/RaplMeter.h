@@ -33,8 +33,8 @@ class RaplMeter {
   ~RaplMeter();
 
   /**
-   * Initialisation may fail, so moved out of constructor.
-   * Note: This functions returns an error message instead of throwing an exception if initialization is not possible.
+   * Initialization may fail, so moved out of constructor.
+   * Note: This function returns an error message instead of throwing an exception if initialization is not possible.
    * This way debuggers don't break on the start of every autopas initialization if we are not interested in energy
    * measurement.
    * @return Error message. The error is message is empty on success
