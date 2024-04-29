@@ -48,9 +48,10 @@ class ParticleContainerInterface {
   virtual CellType getParticleCellTypeEnum() const = 0;
 
   /**
-   * Default constructor
+   * Constructor
+   * @param skinPerTimestep Skin distance a particle is allowed to move in one time-step.
    */
-  ParticleContainerInterface() = default;
+  ParticleContainerInterface(double skinPerTimestep) : _skinPerTimestep(skinPerTimestep) {}
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -241,9 +242,7 @@ class ParticleContainerInterface {
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
-   * End expression for all containers, this simply returns false.
-   * Allows range-based for loops.
-   * @return false
+   * @copydoc autopas::AutoPas::end()
    */
   [[nodiscard]] constexpr bool end() const { return false; }
 
@@ -282,6 +281,22 @@ class ParticleContainerInterface {
    * @return verletSkin
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
+
+  /**
+   * Return the number of time-steps since last neighbor list rebuild
+   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
+   * return 0
+   * @return steps since last rebuild
+   */
+  [[nodiscard]] virtual size_t getStepsSinceLastRebuild() const { return _stepsSinceLastRebuild; }
+
+  /**
+   * Set the number of time-steps since last neighbor list rebuild
+   * @param stepsSinceLastRebuild steps since last neighbor list rebuild
+   */
+  virtual void setStepsSinceLastRebuild(size_t stepsSinceLastRebuild) {
+    _stepsSinceLastRebuild = stepsSinceLastRebuild;
+  }
 
   /**
    * Return the interaction length (cutoff+skin) of the container.
@@ -403,6 +418,19 @@ class ParticleContainerInterface {
    * @return True if the given indices still point to a new particle.
    */
   virtual bool deleteParticle(size_t cellIndex, size_t particleIndex) = 0;
+
+ protected:
+  /**
+   * Stores the number of time-steps since last neighbor list rebuild
+   * @note: The value has to be set by setStepsSinceLastRebuild() from outside the container. Otherwise this will always
+   * be 0
+   */
+  size_t _stepsSinceLastRebuild{0};
+
+  /**
+   * Skin distance a particle is allowed to move in one time-step.
+   */
+  double _skinPerTimestep;
 };
 
 }  // namespace autopas
