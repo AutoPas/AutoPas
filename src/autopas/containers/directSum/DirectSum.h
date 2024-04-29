@@ -57,7 +57,10 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
             double skinPerTimestep, unsigned int verletRebuildFrequency)
       : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, verletRebuildFrequency),
         _cellBorderFlagManager() {
+    using namespace autopas::utils::ArrayMath::literals;
     this->_cells.resize(2);
+    auto boxLength = boxMax - boxMin;
+    this->_cells[0].setCellLength(boxLength);
   }
 
   /**
