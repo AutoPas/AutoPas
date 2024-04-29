@@ -231,7 +231,8 @@ void Simulation::run() {
           return false;
         });
 
-        std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); });
+        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
+                        emigrants.end());
 
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
