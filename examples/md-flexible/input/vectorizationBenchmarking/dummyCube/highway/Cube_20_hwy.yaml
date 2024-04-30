@@ -1,4 +1,4 @@
-functor                          :  avx
+functor                          :  highway
 container                        :  [LinkedCells]
 newton3                          :  [enabled]
 cutoff                           :  2.5
@@ -19,4 +19,4 @@ Objects:
       particle-sigma             :  1
       particle-mass              :  1
 vtk-write-frequency              :  100
-vtk-filename                     :  Cube_20_avx
+vtk-filename                     :  Cube_20_hwy
