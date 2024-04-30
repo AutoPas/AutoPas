@@ -84,7 +84,7 @@ void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYTwoCells(bool newton3, bool do
     FMCell cell1HWY;
     FMCell cell2HWY;
 
-    size_t numParticles = 7;
+    size_t numParticles = 11;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(
@@ -161,7 +161,7 @@ void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYTwoCells(bool newton3, bool do
 void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews) {
     FMCell cellHWY;
 
-    size_t numParticles = 7;
+    size_t numParticles = 11;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -223,7 +223,7 @@ void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYVerlet(bool newton3, bool doDe
 void LJFunctorTestHWY::testLJFunctorVSLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
     FMCell cellHWY;
 
-    constexpr size_t numParticles = 7;
+    constexpr size_t numParticles = 11;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
