@@ -67,13 +67,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @param boxMin The minimum coordinate of the enclosing box
    * @param boxMax The maximum coordinate of the enclosing box
    * @param cutoff The cutoff radius
-   * @param skinPerTimestep The skin radius per timestep
+   * @param skin The skin radius
    * @param rebuildFrequency The Rebuild Frequency
    * @param cellSizeFactor The cell size factor
    */
   Octree(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-         const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency) {
+         const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor)
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin, rebuildFrequency) {
     using namespace autopas::utils::ArrayMath::literals;
 
     // @todo Obtain this from a configuration, reported in https://github.com/AutoPas/AutoPas/issues/624
@@ -248,9 +248,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
     if constexpr (regionIter) {
       // We extend the search box for cells here since particles might have moved
-      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-      boxMaxWithSafetyMargin +=
-          boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMinWithSafetyMargin -= (this->getVerletSkin());
+      boxMaxWithSafetyMargin += boxMax + (this->getVerletSkin());
     }
 
     std::vector<size_t> currentCellIndex{};
@@ -488,8 +487,8 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
    * @param iteratorBehavior
    * @param boxMin The actual search box min
    * @param boxMax The actual search box max
-   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
-   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skin
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skin
    * @return tuple<nextLeafCell, nextParticleIndex>
    */
   template <bool regionIter>

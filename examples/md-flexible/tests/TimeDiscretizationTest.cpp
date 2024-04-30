@@ -80,8 +80,8 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   fillWithParticlesAndInit(*autoPas);
   initPPL(*PPL);
 
-  // Set verlet skin per timestep to something large so no error messages are displayed
-  autoPas->setVerletSkinPerTimestep(1.);
+  // Set verlet skin to something large so no error messages are displayed
+  autoPas->setVerletSkin(10.);
 
   // The reference positions are the position of the particles in the AutoPas container before
   // calling calculatePositions.

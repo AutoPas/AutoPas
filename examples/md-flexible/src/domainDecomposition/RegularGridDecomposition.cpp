@@ -24,7 +24,7 @@
 RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configuration)
     : _loadBalancerOption(configuration.loadBalancer.value),
       _cutoffWidth(configuration.cutoff.value),
-      _skinWidthPerTimestep(configuration.verletSkinRadiusPerTimestep.value),
+      _skinWidth(configuration.verletSkinRadius.value),
       _rebuildFrequency(configuration.verletRebuildFrequency.value),
       _globalBoxMin(configuration.boxMin.value),
       _globalBoxMax(configuration.boxMax.value),
@@ -68,7 +68,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
     _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
     _allLoadBalancer->setCommunicator(reinterpret_cast<MPI_Comm>(_communicator));
 
-    const double minDomainSize = 2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency);
+    const double minDomainSize = 2 * (_cutoffWidth + _skin);
     _allLoadBalancer->setMinDomainSize({minDomainSize, minDomainSize, minDomainSize});
     _allLoadBalancer->setup();
   }
@@ -166,8 +166,7 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
   using namespace autopas::utils::ArrayMath::literals;
 
   _haloParticles.clear();
-  const double skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const double haloWidth = _cutoffWidth + skinWidth;
+  const double haloWidth = _cutoffWidth + _skinWidth;
 
   // since we currently don't have any halo particles, estimate the number by comparing box and halo volume and add 10%
   const auto localBoxDimensions = _localBoxMax - _localBoxMin;
@@ -192,10 +191,10 @@ void RegularGridDecomposition::exchangeHaloParticles(AutoPasType &autoPasContain
     _particlesForRightNeighbor.clear();
     collectHaloParticlesForRightNeighbor(autoPasContainer, dimensionIndex, _particlesForRightNeighbor);
 
-    const double leftHaloMin = _localBoxMin[dimensionIndex] - skinWidth;
-    const double leftHaloMax = _localBoxMin[dimensionIndex] + _cutoffWidth + skinWidth;
-    const double rightHaloMin = _localBoxMax[dimensionIndex] - _cutoffWidth - skinWidth;
-    const double rightHaloMax = _localBoxMax[dimensionIndex] + skinWidth;
+    const double leftHaloMin = _localBoxMin[dimensionIndex] - _skinWidth;
+    const double leftHaloMax = _localBoxMin[dimensionIndex] + _cutoffWidth + _skinWidth;
+    const double rightHaloMin = _localBoxMax[dimensionIndex] - _cutoffWidth - _skinWidth;
+    const double rightHaloMax = _localBoxMax[dimensionIndex] + _skinWidth;
 
     for (const auto &particle : _haloParticles) {
       std::array<double, _dimensionCount> position = particle.getR();
@@ -513,11 +512,10 @@ void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(
   using autopas::utils::Math::isNear;
   using namespace autopas::utils::ArrayMath::literals;
 
-  const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const std::array<double, _dimensionCount> boxMin = _localBoxMin - skinWidth;
+  const std::array<double, _dimensionCount> boxMin = _localBoxMin - _skinWidth;
   const std::array<double, _dimensionCount> boxMax = [&]() {
-    auto boxMax = _localBoxMax + skinWidth;
-    boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + skinWidth;
+    auto boxMax = _localBoxMax + _skinWidth;
+    boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + _skinWidth;
     return boxMax;
   }();
   const auto atGlobalBoundary = isNear(_localBoxMin[direction], _globalBoxMin[direction]);
@@ -531,11 +529,10 @@ void RegularGridDecomposition::collectHaloParticlesForRightNeighbor(
   using autopas::utils::Math::isNear;
   using namespace autopas::utils::ArrayMath::literals;
 
-  const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const std::array<double, _dimensionCount> boxMax = _localBoxMax + skinWidth;
+  const std::array<double, _dimensionCount> boxMax = _localBoxMax + _skinWidth;
   const std::array<double, _dimensionCount> boxMin = [&]() {
-    auto boxMin = _localBoxMin - skinWidth;
-    boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - skinWidth;
+    auto boxMin = _localBoxMin - _skinWidth;
+    boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - _skinWidth;
     return boxMin;
   }();
   const auto atGlobalBoundary = isNear(_localBoxMax[direction], _globalBoxMax[direction]);
@@ -659,9 +656,8 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
 
       // Calculate balanced positions and only shift by half the resulting distance to prevent localBox min to be larger
       // than localBoxMax.
-      balancedPosition = DomainTools::balanceAdjacentDomains(
-          neighborPlaneWork, averageWorkInPlane[i], neighborBoundary, oldLocalBoxMax[i],
-          2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency));
+      balancedPosition = DomainTools::balanceAdjacentDomains(neighborPlaneWork, averageWorkInPlane[i], neighborBoundary,
+                                                             oldLocalBoxMax[i], 2 * (_cutoffWidth + _skinWidth));
       _localBoxMin[i] += (balancedPosition - _localBoxMin[i]) / 2;
     }
 
@@ -674,9 +670,9 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
 
       // Calculate balanced positions and only shift by half the resulting distance to prevent localBox min to be larger
       // than localBoxMax.
-      balancedPosition = DomainTools::balanceAdjacentDomains(
-          averageWorkInPlane[i], neighborPlaneWork, oldLocalBoxMin[i], neighborBoundary,
-          2 * (_cutoffWidth + _skinWidthPerTimestep * _rebuildFrequency));
+      balancedPosition =
+          DomainTools::balanceAdjacentDomains(averageWorkInPlane[i], neighborPlaneWork, oldLocalBoxMin[i],
+                                              neighborBoundary, 2 * (_cutoffWidth + _skinWidth));
       _localBoxMax[i] += (balancedPosition - _localBoxMax[i]) / 2;
     }
   }

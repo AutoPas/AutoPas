@@ -230,7 +230,7 @@ std::string MDFlexConfig::to_string() const {
 
   // since all containers are rebuilt only periodically print Verlet config always.
   printOption(verletRebuildFrequency);
-  printOption(verletSkinRadiusPerTimestep);
+  printOption(verletSkinRadius);
   const auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);
   if (passedContainerOptionsStr.find("luster") != std::string::npos) {
     printOption(verletClusterSize);
@@ -405,7 +405,7 @@ std::string MDFlexConfig::to_string() const {
 }
 
 void MDFlexConfig::calcSimulationBox() {
-  const double interactionLength = cutoff.value + verletSkinRadiusPerTimestep.value * verletRebuildFrequency.value;
+  const double interactionLength = cutoff.value + verletSkinRadius.value;
 
   // helper function so that we can do the same for every object collection
   // resizes the domain to the maximal extents of all objects

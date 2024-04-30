@@ -22,10 +22,10 @@ TEST_P(VerletListsTest, testVerletListBuildAndIterate) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
+  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin, rebuildFrequency,
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -58,10 +58,10 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
+  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin, rebuildFrequency,
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -94,10 +94,10 @@ TEST_P(VerletListsTest, testVerletListBuildTwice) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
+  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin, rebuildFrequency,
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -131,10 +131,10 @@ TEST_P(VerletListsTest, testVerletListBuildFarAway) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
+  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin, rebuildFrequency,
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -172,10 +172,10 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skinPerTimestep, rebuildFrequency,
+  autopas::VerletLists<Particle> verletLists(min, max, cutoff, skin, rebuildFrequency,
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -221,7 +221,7 @@ bool moveUpdateAndExpectEqual(Container &container, Particle &particle, const st
 
 TEST_P(VerletListsTest, testUpdateHaloParticle) {
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.01, 30,
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, 2., 0.3, 30,
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -277,10 +277,10 @@ TEST_P(VerletListsTest, testUpdateHaloParticle) {
 
 TEST_P(VerletListsTest, LoadExtractSoA) {
   const double cutoff = 2.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.3;
   unsigned int rebuildFrequency = 30;
   const double cellSizeFactor = GetParam();
-  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, skinPerTimestep, rebuildFrequency,
+  autopas::VerletLists<Particle> verletLists({0., 0., 0.}, {10., 10., 10.}, cutoff, skin, rebuildFrequency,
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
@@ -292,7 +292,7 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
 
   autopas::VLListIterationTraversal<FPCell, MFunctor> verletTraversal(&mockFunctor, autopas::DataLayoutOption::soa,
                                                                       false);
-  const size_t dimWithHalo = 10 / ((cutoff + skinPerTimestep * rebuildFrequency) * cellSizeFactor) + 2ul;
+  const size_t dimWithHalo = 10 / ((cutoff + skin) * cellSizeFactor) + 2ul;
   const size_t numCells = dimWithHalo * dimWithHalo * dimWithHalo;
   EXPECT_CALL(mockFunctor, SoALoader(testing::An<autopas::FullParticleCell<Particle> &>(), _, _, _)).Times(numCells);
   EXPECT_CALL(mockFunctor, SoAExtractor(testing::An<autopas::FullParticleCell<Particle> &>(), _, _)).Times(numCells);
@@ -309,7 +309,7 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
   const double cutoff = 2.;
   const double cellSizeFactor = GetParam();
   autopas::VerletLists<Molecule> verletLists(
-      {0., 0., 0.}, {10., 10., 10.}, cutoff, 0.01 /*skin*/, 30 /*rebuildFrequency*/,
+      {0., 0., 0.}, {10., 10., 10.}, cutoff, 0.3 /*skin*/, 30 /*rebuildFrequency*/,
       autopas::VerletLists<Molecule>::BuildVerletListType::VerletSoA, cellSizeFactor);
 
   Molecule p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, 0);

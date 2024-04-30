@@ -85,8 +85,7 @@ void AutoPas<Particle>::init() {
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
   const auto cellSizeFactors = [&]() -> NumberSetFinite<double> {
     if (const auto *csfIntervalPtr = dynamic_cast<NumberInterval<double> *>(_allowedCellSizeFactors.get())) {
-      const auto interactionLength =
-          _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency;
+      const auto interactionLength = _logicHandlerInfo.cutoff * _logicHandlerInfo.verletSkin;
       const auto boxLengthX = _logicHandlerInfo.boxMax[0] - _logicHandlerInfo.boxMin[0];
       return {SearchSpaceGenerators::calculateRelevantCsfs(*csfIntervalPtr, interactionLength, boxLengthX)};
     } else {

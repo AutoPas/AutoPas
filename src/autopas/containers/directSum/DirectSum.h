@@ -50,12 +50,12 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skinPerTimestep
+   * @param skin
    * @param verletRebuildFrequency
    */
-  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-            double skinPerTimestep, unsigned int verletRebuildFrequency)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, verletRebuildFrequency),
+  DirectSum(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff, double skin,
+            unsigned int verletRebuildFrequency)
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skin, verletRebuildFrequency),
         _cellBorderFlagManager() {
     this->_cells.resize(2);
   }

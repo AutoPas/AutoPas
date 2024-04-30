@@ -26,7 +26,7 @@ using LJFunctorGlobals =
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(LJFunctorGlobals *);
 
 constexpr double cutoff = 1.1;
-constexpr double skinPerTimestep = 0.1;
+constexpr double skin = 0.4;
 constexpr unsigned int rebuildFrequency = 4;
 constexpr std::array<double, 3> boxMin{0., 0., 0.};
 constexpr std::array<double, 3> boxMax{10., 10., 10.};
@@ -38,7 +38,7 @@ void defaultInit(AutoPasT &autoPas) {
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
-  autoPas.setVerletSkinPerTimestep(skinPerTimestep);
+  autoPas.setVerletSkin(skin);
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setNumSamples(3);
 
@@ -59,7 +59,7 @@ void defaultInit(AutoPasT &autoPas1, AutoPasT &autoPas2, size_t direction) {
 
   for (auto &aP : {&autoPas1, &autoPas2}) {
     aP->setCutoff(cutoff);
-    aP->setVerletSkinPerTimestep(skinPerTimestep);
+    aP->setVerletSkin(skin);
     aP->setVerletRebuildFrequency(2);
     aP->setNumSamples(2);
     // init autopas
@@ -519,7 +519,7 @@ TEST_P(AutoPasInterface1ContainersTest, testResize) {
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({10, 10, 10});
   autoPas.setCutoff(1);
-  autoPas.setVerletSkinPerTimestep(0.1);
+  autoPas.setVerletSkin(0.4);
 
   const auto &containerOp = GetParam();
   autoPas.setAllowedContainers({containerOp});

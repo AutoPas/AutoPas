@@ -539,7 +539,7 @@ class AutoPas {
    * This function only handles short-range interactions.
    * @return _verletSkin
    */
-  double getVerletSkin() { return _logicHandlerInfo.verletSkinPerTimestep * _verletRebuildFrequency; };
+  double getVerletSkin() { return _logicHandlerInfo.verletSkin; };
 
   /**
    * Returns the number of particles in this container.
@@ -631,18 +631,10 @@ class AutoPas {
   }
 
   /**
-   * Get length added to the cutoff for the Verlet lists' skin per timestep.
-   * @return _verletSkinPerTimestep
-   */
-  [[nodiscard]] double getVerletSkinPerTimestep() const { return _logicHandlerInfo.verletSkinPerTimestep; }
-
-  /**
    * Set length added to the cutoff for the Verlet lists' skin per timestep.
-   * @param verletSkinPerTimestep
+   * @param verletSkin
    */
-  void setVerletSkinPerTimestep(double verletSkinPerTimestep) {
-    _logicHandlerInfo.verletSkinPerTimestep = verletSkinPerTimestep;
-  }
+  void setVerletSkin(double verletSkin) { _logicHandlerInfo.verletSkin = verletSkin; }
 
   /**
    * Get Verlet rebuild frequency.
@@ -1031,7 +1023,7 @@ class AutoPas {
   /**
    * Specifies after how many pair-wise traversals the neighbor lists are to be rebuild.
    */
-  unsigned int _verletRebuildFrequency{std::numeric_limits<unsigned int>::max()};
+  unsigned int _verletRebuildFrequency{100};
   /**
    * Strategy option for the auto tuner.
    * For possible tuning strategy choices see options::TuningStrategyOption::Value.

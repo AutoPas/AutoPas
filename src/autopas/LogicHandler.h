@@ -65,16 +65,15 @@ class LogicHandler {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
     const auto configuration = _autoTuner.getCurrentConfig();
-    const ContainerSelectorInfo containerSelectorInfo{
-        configuration.cellSizeFactor, logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
-        _verletClusterSize, configuration.loadEstimator};
+    const ContainerSelectorInfo containerSelectorInfo{configuration.cellSizeFactor, logicHandlerInfo.verletSkin,
+                                                      _neighborListRebuildFrequency, _verletClusterSize,
+                                                      configuration.loadEstimator};
     _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
     checkMinimalSize();
 
     // initialize locks needed for remainder traversal
     const auto boxLength = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin;
-    const auto interactionLengthInv =
-        1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * rebuildFrequency);
+    const auto interactionLengthInv = 1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkin);
     initSpacialLocks(boxLength, interactionLengthInv);
     for (auto &lockPtr : _bufferLocks) {
       lockPtr = std::make_unique<std::mutex>();
@@ -1313,8 +1312,7 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
   // Check if the traversal is applicable to the current state of the container
   _containerSelector.selectContainer(
       conf.container,
-      ContainerSelectorInfo(conf.cellSizeFactor,
-                            _containerSelector.getCurrentContainer().getVerletSkin() / _neighborListRebuildFrequency,
+      ContainerSelectorInfo(conf.cellSizeFactor, _containerSelector.getCurrentContainer().getVerletSkin(),
                             _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator));
   const auto &container = _containerSelector.getCurrentContainer();
   const auto traversalInfo = container.getTraversalSelectorInfo();

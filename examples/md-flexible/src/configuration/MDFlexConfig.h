@@ -381,12 +381,10 @@ class MDFlexConfig {
   MDFlexOption<unsigned int, __LINE__> verletRebuildFrequency{
       15, "verlet-rebuild-frequency", true, "Number of iterations after which containers are rebuilt."};
   /**
-   * verletSkinRadiusPerTimeStep
+   * verletSkinRadius
    */
-  MDFlexOption<double, __LINE__> verletSkinRadiusPerTimestep{
-      .2, "verlet-skin-radius-per-timestep", true,
-      "Skin added to the cutoff to form the interaction length. The total skin width is this number times "
-      "verletRebuildFrequency."};
+  MDFlexOption<double, __LINE__> verletSkinRadius{.2, "verlet-skin-radius", true,
+                                                  "Skin added to the cutoff to form the interaction length."};
   /**
    * boxMin
    */
