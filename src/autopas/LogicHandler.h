@@ -31,6 +31,7 @@
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/IterationLogger.h"
+#include "autopas/utils/logging/LiveInfoLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
@@ -61,6 +62,7 @@ class LogicHandler {
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix),
+        _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -772,6 +774,8 @@ class LogicHandler {
   std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
   IterationLogger _iterationLogger;
+
+  LiveInfoLogger _liveInfoLogger;
 };
 
 template <typename Particle>
@@ -1116,6 +1120,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       _autoTuner.receiveLiveInfo(info);
+      _liveInfoLogger.logLiveInfo(info, _iteration);
     }
 
     std::tie(configuration, stillTuning) = _autoTuner.getNextConfig();
