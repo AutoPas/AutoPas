@@ -468,7 +468,7 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = cutoff;
-  config.verletSkinRadius.value = 0.01;
+  config.verletSkinRadius.value = 0.1;
   config.verletRebuildFrequency.value = 10;
   config.addSiteType(0, 0.1, 0.2, 1.);
   config.addSiteType(1, 1000., 0.4, 1.);
