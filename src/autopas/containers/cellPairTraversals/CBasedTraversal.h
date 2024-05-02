@@ -11,8 +11,14 @@
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/Timer.h"
 
 namespace autopas {
+
+/**
+ * ID for tracking OpenMP traversal loops.
+ */
+static int LoopID = 0;
 
 /**
  * This class provides the base for traversals using base steps based on cell coloring.
@@ -150,6 +156,10 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
+      // Track loop time
+      utils::Timer timer;
+      timer.start();
+
       if (collapseDepth == 2) {
         //omp_sched_t kind = omp_sched_dynamic;
         //int size = TraversalInterface::_openMPConfigurator.getOMPChunkSize();
@@ -179,6 +189,9 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
           }
         }
       }
+
+      long time = timer.stop();
+      std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
     }
   }
 }
