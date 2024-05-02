@@ -27,7 +27,7 @@ namespace autopas {
  * to calculate pairwise interactions of particles.
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
- * Cells are created using a cell size of at least cutoff + skinPerTimestep*rebuildFrequency.
+ * Cells are created using a cell size of at least cutoff + skin.
  * @tparam Particle
  * @tparam NeighborList The neighbor list used by this container.
  */
@@ -45,18 +45,17 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
    * @param rebuildFrequency the rebuild Frequency
-   * @param skinPerTimestep the skin radius per Timestep
+   * @param skin the skin radius per Timestep
    * @param cellSizeFactor cell size factor relative to cutoff
    * @param loadEstimator load estimation algorithm for balanced traversals
    * @param buildType data layout of the particles which are used to generate the neighbor lists
    */
   VerletListsCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                   const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2,
-                   const double cellSizeFactor = 1.0,
+                   const double skin = 0, const unsigned int rebuildFrequency = 2, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
                        VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _loadEstimator(loadEstimator),
         _buildType(buildType) {}

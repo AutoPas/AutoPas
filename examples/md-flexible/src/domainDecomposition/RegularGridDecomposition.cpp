@@ -68,7 +68,7 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
     _allLoadBalancer = std::make_unique<ALL::ALL<double, double>>(ALL::TENSOR, _dimensionCount, 0);
     _allLoadBalancer->setCommunicator(reinterpret_cast<MPI_Comm>(_communicator));
 
-    const double minDomainSize = 2 * (_cutoffWidth + _skin);
+    const double minDomainSize = 2 * (_cutoffWidth + _skinWidth);
     _allLoadBalancer->setMinDomainSize({minDomainSize, minDomainSize, minDomainSize});
     _allLoadBalancer->setup();
   }
@@ -574,7 +574,7 @@ RegularGridDecomposition::categorizeParticlesIntoLeftAndRightNeighbor(const std:
         // Shifting the rebuild position of the particle, so that displacement since rebuild remains consistent
         auto rebuildPosition = particle.getRAtRebuild();
         rebuildPosition[direction] = rebuildPosition[direction] + globalBoxDimensions[direction];
-        rightNeighborParticles.back().setRAtRebuild(rebuildPosition);
+        leftNeighborParticles.back().setRAtRebuild(rebuildPosition);
       }
       // if the particle is right of the box
     } else if (position[direction] >= _localBoxMax[direction]) {

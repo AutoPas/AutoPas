@@ -7,7 +7,7 @@ For an AutoPas user from the outside, it appears that the particle container is 
 Particles leaving the domain are always returned, and particles can be added and deleted at any time.
 Historically this interface behavior was also called 'Linked-Cells-like'.
 For periodic boundary conditions or in an MPI-parallel simulation, the user is responsible for inserting the appropriate halo particles.
-The particle neighbour lists are updated when a particle moves more than `verletSkinPerTimestep / 2` or at the rebuild frequency.
+The particle neighbour lists are updated when a particle moves more than `verletSkin / 2` or at the rebuild frequency.
 
 ## Internal Container Behavior
 For Verlet list-based containers to perform efficiently, the aforementioned behavior is a problem, because they rely on their list references to not change until the next list rebuild.

@@ -90,7 +90,6 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
 
   const double cutoff = 0.3;
   const double sigma = 1.;
-
   // initialise AutoPas container & domainDecomposition
   MDFlexConfig config(0, nullptr);
   config.epsilonMap.value.clear();
