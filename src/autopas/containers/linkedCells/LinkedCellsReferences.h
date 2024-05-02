@@ -355,7 +355,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     if (exceptionCaught) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(exceptionMsg);
+      autopas::utils::ExceptionHandler::exception(exceptionMsg);
     }
 
     // we have to remove halo particles after the above for-loop since removing halo particles changes the underlying

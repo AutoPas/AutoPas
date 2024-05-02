@@ -35,10 +35,10 @@ class Option {
    * @return Set of all possible values of this option type.
    */
   static std::set<actualOption> getAllOptions() {
+    const auto mapOptionNames = actualOption::getOptionNames();
     std::set<actualOption> retSet;
-    auto mapOptionNames = actualOption::getOptionNames();
     std::for_each(mapOptionNames.begin(), mapOptionNames.end(),
-                  [&retSet](auto pairOpStr) { retSet.insert(pairOpStr.first); });
+                  [&](auto pairOpStr) { retSet.insert(pairOpStr.first); });
     return retSet;
   };
 
@@ -48,9 +48,9 @@ class Option {
    * @return
    */
   static std::set<actualOption> getMostOptions() {
+    const auto allOptions = getAllOptions();
+    const auto discouragedOptions = actualOption::getDiscouragedOptions();
     std::set<actualOption> retSet;
-    auto allOptions = getAllOptions();
-    auto discouragedOptions = actualOption::getDiscouragedOptions();
     std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
                         std::inserter(retSet, retSet.begin()));
     return retSet;
@@ -62,9 +62,9 @@ class Option {
    * @return The string representation or "Unknown Option (<IntValue>)".
    */
   [[nodiscard]] std::string to_string(bool fixedLength = false) const {
-    auto &actualThis = *static_cast<const actualOption *>(this);
-    auto mapOptNames = actualOption::getOptionNames();  // <- not copying the map destroys the strings
-    auto match = mapOptNames.find(actualThis);
+    const auto &actualThis = *static_cast<const actualOption *>(this);
+    const auto mapOptNames = actualOption::getOptionNames();  // <- not copying the map destroys the strings
+    const auto match = mapOptNames.find(actualThis);
     if (match == mapOptNames.end()) {
       return "Unknown Option (" + std::to_string(actualThis) + ")";
     } else {
@@ -83,8 +83,7 @@ class Option {
   [[nodiscard]] static size_t maxStringLength() {
     static size_t maxLength = 0;
     if (maxLength == 0) {
-      for (const auto &pair : actualOption::getOptionNames()) {
-        auto &name = pair.second;
+      for (const auto &[_, name] : actualOption::getOptionNames()) {
         maxLength = std::max(maxLength, name.size());
       }
     }
@@ -109,17 +108,15 @@ class Option {
    */
   template <class OutputContainer = std::set<actualOption>>
   static OutputContainer parseOptions(const std::string &optionsString) {
-    OutputContainer foundOptions;
-    std::vector<std::string> haystack;
-    auto needles = autopas::utils::StringUtils::tokenize(optionsString, autopas::utils::StringUtils::delimiters);
+    const auto needles = autopas::utils::StringUtils::tokenize(optionsString, autopas::utils::StringUtils::delimiters);
 
     // Shorthand to get everything
-    if (needles.size() == 1 and needles[0] == "all") {
+    if (needles.size() == 1 and needles.front() == "all") {
       if constexpr (std::is_same_v<OutputContainer, std::set<actualOption>>) {
         return actualOption::getAllOptions();
       } else {
-        OutputContainer allOptionsOut;
         const auto allOptionsSet = actualOption::getAllOptions();
+        OutputContainer allOptionsOut;
         std::copy(allOptionsSet.begin(), allOptionsSet.end(),
                   std::insert_iterator(allOptionsOut, allOptionsOut.begin()));
         return allOptionsOut;
@@ -128,6 +125,7 @@ class Option {
 
     // create a map of enum -> string with lowercase enums as a lookup and fill strings in the haystack
     std::map<std::string, actualOption> allOptionNamesLower;
+    std::vector<std::string> haystack;
     for (auto &[optionEnum, optionString] : actualOption::getOptionNames()) {
       std::transform(optionString.begin(), optionString.end(), optionString.begin(), ::tolower);
       allOptionNamesLower.emplace(optionString, optionEnum);
@@ -135,10 +133,11 @@ class Option {
     }
 
     // convert all needles to options.
+    OutputContainer foundOptions;
     std::transform(needles.begin(), needles.end(), std::insert_iterator(foundOptions, foundOptions.begin()),
                    [&](const auto &needle) {
                      // first find the best matching string
-                     auto matchingString = autopas::utils::StringUtils::matchStrings(haystack, needle);
+                     const auto matchingString = autopas::utils::StringUtils::matchStrings(haystack, needle);
                      // then find the corresponding enum and add it to the return set
                      return allOptionNamesLower[matchingString];
                    });
@@ -158,7 +157,7 @@ class Option {
   template <bool lowercase = false>
   static actualOption parseOptionExact(const std::string &optionString) {
     for (auto [optionEnum, optionName] : actualOption::getOptionNames()) {
-      if (lowercase) {
+      if constexpr (lowercase) {
         std::transform(std::begin(optionName), std::end(optionName), std::begin(optionName), ::tolower);
       }
       if (optionString == optionName) {
@@ -172,7 +171,7 @@ class Option {
   }
 
   /**
-   * Stream operator.
+   * Stream output operator.
    * @param os
    * @param option
    * @return
@@ -184,22 +183,28 @@ class Option {
 
   /**
    * Stream extraction operator.
-   * @param in
-   * @param option
-   * @return
+   * @param in Stream from which will be parsed.
+   * @param option out-parameter that will be filled with the parsed option.
+   * @return Processed stream.
    */
   friend std::istream &operator>>(std::istream &in, actualOption &option) {
+    // Buffer for the current char.
     char c = ' ';
+    // Skip any leading whitespace
     while (std::iswspace(c)) {
       in.get(c);
     }
+    // String that is parsed.
     std::string str{c};
+    // Concat c to str until an unexpected char is encountered
     do {
       in.get(c);
       str.push_back(c);
-    } while (std::isalnum(c) || c == '_' || c == '-');  // This assumes that an option only contains alphanum, _, or -.
+    } while (std::isalnum(c) or c == '_' or c == '-');  // This assumes that an option only contains alphanum, _, or -.
+    // Pop the last char which is an undesired one.
     str.pop_back();
 
+    // Actual parsing.
     option = parseOptionExact(str);
     return in;
   }

@@ -217,19 +217,23 @@ void Simulation::run() {
         _domainDecomposition->update(computationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
-        // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
-        // the container again
+        // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
+        // container again.
+        // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
+        // so that remove_if can erase them after.
         const auto &boxMin = _autoPasContainer->getBoxMin();
         const auto &boxMax = _autoPasContainer->getBoxMax();
         _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
           if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+            // This only changes the ownership state in the emigrants vector, not in AutoPas
             p.setOwnershipState(autopas::OwnershipState::dummy);
             return true;
           }
           return false;
         });
 
-        std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); });
+        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
+                        emigrants.end());
 
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
@@ -468,7 +472,7 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->template iteratePairwise(&functor); });
+      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->iteratePairwise(&functor); });
   return wasTuningIteration;
 }
 
