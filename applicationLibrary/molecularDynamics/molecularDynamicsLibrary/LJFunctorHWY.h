@@ -6,6 +6,7 @@
 #include "autopas/pairwiseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "VectorizationPatterns.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 #undef HWY_TARGET_INCLUDE
 #define HWY_TARGET_INCLUDE "molecularDynamicsLibrary/LJFunctorHWY.h"
