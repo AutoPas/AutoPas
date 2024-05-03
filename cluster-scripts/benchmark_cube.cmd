@@ -16,4 +16,4 @@ module load gcc
 module load cmake
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 
-./build/examples/md-flexible/md-flexible --yaml-filename Cube_20_hwy.yaml
+./build/examples/md-flexible/md-flexible --yaml-filename ./build/examples/md-flexible/Cube_20_hwy.yaml
