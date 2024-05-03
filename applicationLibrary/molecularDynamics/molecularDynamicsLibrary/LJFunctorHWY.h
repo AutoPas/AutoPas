@@ -330,7 +330,23 @@ namespace HWY_NAMESPACE {
 
                     // leave this as it is -> noPPL handles this different anyways
                     if constexpr (useMixing) {
-                        throw std::runtime_error("Not implemented yet");
+                        
+                        double epsilon_buf[_vecLengthDouble] = {0.};
+                        double sigma_buf[_vecLengthDouble] = {0.};
+                        double shift_buf[_vecLengthDouble] = {0.};
+
+                        for (size_t n = 0; (remainderJ ? n < restJ : n < _vecLengthDouble); ++n) {
+                            epsilon_buf[n] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + n));
+                            sigma_buf[n] =  _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + n));
+                            if constexpr (applyShift) {
+                                shift_buf[n] = _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + n));
+                            }
+                        }
+                        epsilon24s = highway::LoadU(tag_double, epsilon_buf);
+                        sigmaSquaredDiv2s = highway::LoadU(tag_double, sigma_buf);
+                        if constexpr (applyShift) {
+                            shift6s = highway::LoadU(tag_double, shift_buf);
+                        }
                     }
                     else {
                         epsilon24s = _epsilon24;
