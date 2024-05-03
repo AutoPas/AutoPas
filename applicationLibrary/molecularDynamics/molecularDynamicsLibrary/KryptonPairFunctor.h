@@ -98,22 +98,105 @@ class KryptonPairFunctor
       return;
     }
 
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
+    auto displacement = i.getR() - j.getR();
+    double dist2 = autopas::utils::ArrayMath::dot(displacement, displacement);
 
-    if (dr2 > _cutoffSquared) {
+    if (dist2 > _cutoffSquared) {
       return;
     }
 
-    auto f = 0.0;
+    // Pre calculations
+    double dist = std::sqrt(dist2);
+    double distNeg = 1. / dist;
+    double distNeg2 = 1. / dist2;
+    double distNeg6 = distNeg2 * distNeg2 * distNeg2;
+    double distNeg8 = distNeg6 * distNeg2;
+    double distNeg10 = distNeg8 * distNeg2;
+    double distNeg12 = distNeg10 * distNeg2;
+    double distNeg14 = distNeg12 * distNeg2;
+    double distNeg16 = distNeg14 * distNeg2;
+
+    double expAlphaTerm = std::exp(_alpha1 * dist + _alpha2 * dist2 + _alphaneg1 * distNeg);
+    double alphaTerm = _alpha1 + 2 * _alpha2 * dist - _alphaneg1 * distNeg2;
+
+    double firstTerm = (- _A * alphaTerm * expAlphaTerm) * distNeg;
+
+    double bdist = _b * dist;
+    double bdist2 = bdist * bdist;
+    double bdist3 = bdist2 * bdist;
+    double bdist4 = bdist3 * bdist;
+    double bdist5 = bdist4 * bdist;
+    double bdist6 = bdist5 * bdist;
+    double bdist7 = bdist6 * bdist;
+    double bdist8 = bdist7 * bdist;
+    double bdist9 = bdist8 * bdist;
+    double bdist10 = bdist9 * bdist;
+    double bdist11 = bdist10 * bdist;
+    double bdist12 = bdist11 * bdist;
+    double bdist13 = bdist12 * bdist;
+    double bdist14 = bdist13 * bdist;
+    double bdist15 = bdist14 * bdist;
+    double bdist16 = bdist15 * bdist;
+
+    double ksum0 = 1.0;
+    double ksum1 = bdist;
+    double ksum2 = bdist2 * 0.5;
+    double ksum3 = bdist3 * _fac3Inv;
+    double ksum4 = bdist4 * _fac4Inv;
+    double ksum5 = bdist5 * _fac5Inv;
+    double ksum6 = bdist6 * _fac6Inv;
+    double ksum7 = bdist7 * _fac7Inv;
+    double ksum8 = bdist8 * _fac8Inv;
+    double ksum9 = bdist9 * _fac9Inv;
+    double ksum10 = bdist10 * _fac10Inv;
+    double ksum11 = bdist11 * _fac11Inv;
+    double ksum12 = bdist12 * _fac12Inv;
+    double ksum13 = bdist13 * _fac13Inv;
+    double ksum14 = bdist14 * _fac14Inv;
+    double ksum15 = bdist15 * _fac15Inv;
+    double ksum16 = bdist16 * _fac16Inv;
+
+    double ksumacc6 = ksum0 + ksum1 + ksum2 + ksum3 + ksum4 + ksum5 + ksum6;
+    double ksumacc8 = ksumacc6 + ksum7 + ksum8;
+    double ksumacc10 = ksumacc8 + ksum9 + ksum10;
+    double ksumacc12 = ksumacc10 + ksum11 + ksum12;
+    double ksumacc14 = ksumacc12 + ksum13 + ksum14;
+    double ksumacc16 = ksumacc14 + ksum15 + ksum16;
+
+    double kksumacc6 = ksum1 + ksum2 * 2. + ksum3 * 3. + ksum4 * 4. + ksum5 * 5. + ksum6 * 6.;
+    double kksumacc8 = kksumacc6 + ksum7 * 7. + ksum8 * 8.;
+    double kksumacc10 = kksumacc8 + ksum9 * 9. + ksum10 * 10.;
+    double kksumacc12 = kksumacc10 + ksum11 * 11. + ksum12 * 12.;
+    double kksumacc14 = kksumacc12 + ksum13 * 13. + ksum14 * 14.;
+    double kksumacc16 = kksumacc14 + ksum15 * 15. + ksum16 * 16.;
+
+    double expbr = std::exp(-_b * dist);
+
+    double term6 = _C6 * distNeg6 * (-6.0 + expbr * ((6.0 + bdist) * ksumacc6 - kksumacc6));
+    double term8 = _C8 * distNeg8 * (-8.0 + expbr * ((8.0 + bdist) * ksumacc8 - kksumacc8));
+    double term10 = _C10 * distNeg10 * (-10.0 + expbr * ((10.0 + bdist) * ksumacc10 - kksumacc10));
+    double term12 = _C12 * distNeg12 * (-12.0 + expbr * ((12.0 + bdist) * ksumacc12 - kksumacc12));
+    double term14 = _C14 * distNeg14 * (-14.0 + expbr * ((14.0 + bdist) * ksumacc14 - kksumacc14));
+    double term16 = _C16 * distNeg16 * (-16.0 + expbr * ((16.0 + bdist) * ksumacc16 - kksumacc16));
+
+    double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16) * distNeg2;
+    auto f = displacement * (firstTerm + secondTerm);
+
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
+
     if (calculateGlobals) {
-      auto virial = dr * f;
-      double potentialEnergy = 0.0;
+      auto virial = displacement * f;
+      double potentialEnergy = _A * expAlphaTerm
+                               - _C6 * distNeg6 * (1 - expbr * ksumacc6)
+                               - _C8 * distNeg8 * (1 - expbr * ksumacc8)
+                               - _C10 * distNeg10 * (1 - expbr * ksumacc10)
+                               - _C12 * distNeg12 * (1 - expbr * ksumacc12)
+                               - _C14 * distNeg14 * (1 - expbr * ksumacc14)
+                               - _C16 * distNeg16 * (1 - expbr * ksumacc16);
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
@@ -310,5 +393,37 @@ class KryptonPairFunctor
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
+
+  // helper constants
+
+  const double _A = 0.3200711798e8;
+  const double _alpha1 = -0.2430565544e2;
+  const double _alpha2 = -0.1435536209e2;
+  const double _alphaneg1 = -0.4532273868e-1;
+  const double _b = 0.2786344368e2;
+  const double _C6 = 0.8992209265;
+  const double _C8 = 0.7316713603e-1;
+  const double _C10 = 0.7835488511e-2;
+  const double _C12 = 1.1043747590e-3;
+  const double _C14 = 2.0486474980e-4;
+  const double _C16 = 5.0017084700e-5;
+
+  const double _fac0Inv = 1.;
+  const double _fac1Inv = 1.;
+  const double _fac2Inv = 0.5;
+  const double _fac3Inv = 1. / 6.;
+  const double _fac4Inv = 1. / 24.;
+  const double _fac5Inv = 1. / 120.;
+  const double _fac6Inv = 1. / 720.;
+  const double _fac7Inv = 1. / 5040.;
+  const double _fac8Inv = 1. / 40320.;
+  const double _fac9Inv = 1. / 362880.;
+  const double _fac10Inv = 1. / 3628800.;
+  const double _fac11Inv = 1. / 39916800.;
+  const double _fac12Inv = 1. / 479001600.;
+  const double _fac13Inv = 1. / 6227020800.;
+  const double _fac14Inv = 1. / 87178291200.;
+  const double _fac15Inv = 1. / 1307674368000.;
+  const double _fac16Inv = 1. / 20922789888000.;
 };
 }  // namespace mdLib
