@@ -24,8 +24,11 @@ namespace HWY_NAMESPACE {
     const highway::ScalableTag<double> tag_double;
     const highway::ScalableTag<int64_t> tag_long;
     const size_t _vecLengthDouble {highway::Lanes(tag_double)};
-    typedef decltype(highway::Zero(tag_double)) VectorDouble;
-    typedef decltype(highway::Zero(tag_long)) VectorLong;
+    using VectorDouble = decltype(highway::Zero(tag_double));
+    using VectorLong = decltype(highway::Zero(tag_long));
+
+    using MaskDouble = decltype(highway::FirstN(tag_double, 1));
+    using MaskLong = decltype(highway::FirstN(tag_long, 2));
 
     template <class Particle, bool applyShift = false, bool useMixing = false,
         autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
@@ -52,6 +55,8 @@ namespace HWY_NAMESPACE {
                     if (calculateGlobals) {
                         _aosThreadData.resize(autopas::autopas_get_max_threads());
                     }
+
+                    initializeRestMasks();
 
                     // AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
                 }
@@ -178,6 +183,17 @@ namespace HWY_NAMESPACE {
                 }
 
             private:
+
+                inline void initializeRestMasks() {
+
+                    // TODO : handle different vectorization patterns
+
+                    for (size_t n = 0; n <_vecLengthDouble-1;++n) {
+                        restMasksDouble[n] = highway::FirstN(tag_double, n+1);
+                        restMasksLong[n] = highway::FirstN(tag_long, n+1);
+                    }
+                }
+
                 inline void decrementFirstLoop(size_t& i) {
 
                     switch (_vectorizationPattern)
@@ -270,8 +286,8 @@ namespace HWY_NAMESPACE {
                     {
                     case VectorizationPattern::p1xVec: {
 
-                        const auto restMaskDouble = highway::FirstN(tag_double, restJ);
-                        const auto restMaskLong = highway::FirstN(tag_long, restJ);
+                        const auto restMaskDouble = restMasksDouble[restJ-1];
+                        const auto restMaskLong = restMasksLong[restJ-1];
 
                         ownedJ = remainderJ ?
                             highway::MaskedLoad(restMaskLong, tag_long, &ownedPtr2[j])
@@ -437,7 +453,7 @@ namespace HWY_NAMESPACE {
                 inline void handleNewton3Accumulation(const VectorDouble& fx, const VectorDouble& fy, const VectorDouble& fz,
                     double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const size_t j, const size_t rest = 0) {
                     
-                    auto restMaskDouble = highway::FirstN(tag_double, rest);
+                    auto restMaskDouble = restMasksDouble[rest-1];
 
                     // TODO : different vectorization patterns
                     VectorDouble fx2 = remainder ?
@@ -561,7 +577,7 @@ namespace HWY_NAMESPACE {
                             
                             auto [fx, fy, fz] = SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, fxPtr, fyPtr, fzPtr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
-                                virialSumX, virialSumY, virialSumZ, uPotSum, 0);
+                                virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, 0);
                         }
@@ -574,7 +590,7 @@ namespace HWY_NAMESPACE {
                             
                             auto [fx, fy, fz] = SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, fxPtr, fyPtr, fzPtr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
-                                virialSumX, virialSumY, virialSumZ, uPotSum, restJ);
+                                virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
                         }
@@ -654,7 +670,7 @@ namespace HWY_NAMESPACE {
 
                             auto [fx, fy, fz] = SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, fx2Ptr, fy2Ptr, fz2Ptr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
-                                virialSumX, virialSumY, virialSumZ, uPotSum, 0);
+                                virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
                                 handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j);
@@ -671,7 +687,7 @@ namespace HWY_NAMESPACE {
 
                             auto [fx, fy, fz] = SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, fx2Ptr, fy2Ptr, fz2Ptr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
-                                virialSumX, virialSumY, virialSumZ, uPotSum, restJ);
+                                virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
                                 handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
@@ -691,10 +707,7 @@ namespace HWY_NAMESPACE {
                     const VectorDouble& z2, double *const __restrict fx2Ptr, double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
                     const VectorDouble& epsilon24s, const VectorDouble& sigmaSquareds,
                     VectorDouble& fxAcc, VectorDouble& fyAcc, VectorDouble& fzAcc, VectorDouble& virialSumX, VectorDouble& virialSumY,
-                    VectorDouble& virialSumZ, VectorDouble& uPotSum, const unsigned int rest = 0) {
-
-                    auto restMaskDouble = highway::FirstN(tag_double, rest);
-                    auto restMaskLong = highway::FirstN(tag_long, rest);
+                    VectorDouble& virialSumZ, VectorDouble& uPotSum) {
                     
                         // distance calculations
                     auto drX = highway::Sub(x1, x2);
@@ -1065,6 +1078,9 @@ namespace HWY_NAMESPACE {
                 VectorDouble _shift6 {highway::Zero(tag_double)};
                 VectorDouble _epsilon24 {highway::Zero(tag_double)};
                 VectorDouble _sigmaSquared {highway::Zero(tag_double)};
+
+                MaskDouble restMasksDouble[_vecLengthDouble-1];
+                MaskLong restMasksLong[_vecLengthDouble-1];
 
                 const double _cutoffSquareAoS {0.};
                 double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0.;
