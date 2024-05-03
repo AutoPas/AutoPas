@@ -100,7 +100,7 @@ class LogicHandler {
     for (auto &cell : _particleBuffer) {
       auto &buffer = cell._particles;
       if (insertOwnedParticlesToContainer) {
-        // Can't be const because we potentially modify particels before readding them
+        // Can't be const because we potentially modify particles before re-adding them
         for (auto &p : buffer) {
           if (p.isDummy()) {
             continue;
@@ -323,7 +323,7 @@ class LogicHandler {
       if (not updated) {
         AutoPasLog(TRACE,
                    "updateHaloParticle was not able to update particle at "
-                   "[{}, {}, {}]",
+                   "[{}, {}, {}]. Adding a copy to the halo buffer.",
                    particleCopy.getR()[0], particleCopy.getR()[1], particleCopy.getR()[2]);
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
@@ -555,11 +555,11 @@ class LogicHandler {
    * @return value of the mean frequency as double
    */
   [[nodiscard]] double getMeanRebuildFrequency() const {
-    if (_rebuildDistances.empty()) {
+    if (_rebuildIntervals.empty()) {
       return 0.;
     } else {
-      return std::accumulate(_rebuildDistances.begin(), _rebuildDistances.end(), 0.) /
-             static_cast<double>(_rebuildDistances.size());
+      return std::accumulate(_rebuildIntervals.begin(), _rebuildIntervals.end(), 0.) /
+             static_cast<double>(_rebuildIntervals.size());
     }
   }
 
@@ -743,10 +743,10 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
-   * Array of int which contains number of steps after which rebuild occurs
-   * This is used to calculate the mean rebuild frequency
+   * Array of int which contains number of iterations after which rebuild occurs.
+   * This is used to calculate the mean rebuild frequency.
    */
-  std::vector<int> _rebuildDistances;
+  std::vector<int> _rebuildIntervals;
 
   /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
