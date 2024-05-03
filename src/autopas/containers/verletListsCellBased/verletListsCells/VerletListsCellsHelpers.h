@@ -21,9 +21,10 @@ template <class Particle>
 class VerletListsCellsHelpers {
  public:
   /**
-   * Cell wise verlet lists: For every cell, a vector of pairs. Each pair maps a particle to a vector of its neighbors.
+   * Cell wise verlet lists for neighbors from all adjacent cells: For every cell, a vector of pairs.
+   * Each pair maps a particle to a vector of its neighbors.
    */
-  using NeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
+  using AllCellsNeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
   /**
    * Pairwise verlet lists: For every cell a vector, for every neighboring cell a vector of particle-neighborlist pairs.

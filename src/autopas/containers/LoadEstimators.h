@@ -54,7 +54,7 @@ unsigned long squaredParticlesPerCell(const std::vector<ParticleCell> &cells,
  */
 template <class Particle>
 unsigned long neighborListLengthImpl(
-    const typename autopas::VerletListsCellsHelpers<Particle>::NeighborListsType &neighborLists,
+    const typename autopas::VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType &neighborLists,
     unsigned long cellIndex) {
   unsigned long cellLoad = 0;
   for (auto &list : neighborLists[cellIndex]) {

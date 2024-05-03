@@ -40,7 +40,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Type of the data structure used to save the neighbor lists.
    */
-  using listType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
+  using listType = typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType;
 
   /**
    * Helper type definition. Pair of particle and neighbor list for SoA layout.
@@ -99,7 +99,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    */
-  typename VerletListsCellsHelpers<Particle>::NeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
+  typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
 
   /**
    * Returns the neighbor list in SoA layout.
@@ -189,7 +189,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell.
    */
-  typename VerletListsCellsHelpers<Particle>::NeighborListsType _aosNeighborList{};
+  typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType _aosNeighborList{};
 
   /**
    * Mapping of each particle to its corresponding cell and id within this cell.
