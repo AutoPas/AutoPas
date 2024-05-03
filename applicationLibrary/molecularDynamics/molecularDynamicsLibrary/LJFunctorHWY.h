@@ -32,7 +32,7 @@ namespace HWY_NAMESPACE {
 
     template <class Particle, bool applyShift = false, bool useMixing = false,
         autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-        bool relevantForTuning = true>
+        bool relevantForTuning = true, VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
 
     class LJFunctorHWY
         : public autopas::Functor<Particle,
@@ -193,78 +193,54 @@ namespace HWY_NAMESPACE {
                         restMasksLong[n] = highway::FirstN(tag_long, n+1);
                     }
                 }
-
+                
                 inline void decrementFirstLoop(size_t& i) {
 
-                    switch (_vectorizationPattern)
-                    {
-                    case VectorizationPattern::p1xVec:
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec)
                         --i;
-                        break;
-                    
-                    case VectorizationPattern::p2xVecDiv2:
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2)
                         i = i-2;
-                        break;
-                    case VectorizationPattern::pVecDiv2x2:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2)
                         i = i - (_vecLengthDouble / 2);
-                        break;
-                    case VectorizationPattern::pVecx1:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1)
                         i = i - _vecLengthDouble;
-                        break;
-                    case VectorizationPattern::pVecxVec:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec)
                         i = i - _vecLengthDouble;
-                        break;
-                    default:
+                    else
                         throw std::runtime_error("No vectorization pattern matched, error!");
-                    }
+                    
                 }
 
                 inline void incrementFirstLoop(size_t& i) {
-                    switch (_vectorizationPattern)
-                    {
-                    case VectorizationPattern::p1xVec:
+
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec)
                         ++i;
-                        break;
-                    
-                    case VectorizationPattern::p2xVecDiv2:
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2)
                         i = i + 2;
-                        break;
-                    case VectorizationPattern::pVecDiv2x2:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2)
                         i = i + (_vecLengthDouble / 2);
-                        break;
-                    case VectorizationPattern::pVecx1:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1)
                         i = i + _vecLengthDouble;
-                        break;
-                    case VectorizationPattern::pVecxVec:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec)
                         i = i + _vecLengthDouble;
-                        break;
-                    default:
+                    else
                         throw std::runtime_error("No vectorization pattern matched, error!");
-                    }
                 }
 
                 inline void incrementSecondLoop(size_t& j) {
-                    switch (_vectorizationPattern)
-                    {
-                    case VectorizationPattern::p1xVec:
+
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec)
                         j = j + _vecLengthDouble;
-                        break;
-                    
-                    case VectorizationPattern::p2xVecDiv2:
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2)
                         j = j + _vecLengthDouble / 2;
-                        break;
-                    case VectorizationPattern::pVecDiv2x2:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2)
                         j = j + 2;
-                        break;
-                    case VectorizationPattern::pVecx1:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1)
                         ++j;
-                        break;
-                    case VectorizationPattern::pVecxVec:
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec)
                         j = j + _vecLengthDouble;
-                        break;
-                    default:
+                    else
                         throw std::runtime_error("No vectorization pattern matched, error!");
-                    }
                 }
 
                 template <bool remainderI, bool remainderJ>
@@ -282,24 +258,25 @@ namespace HWY_NAMESPACE {
                     y1 = highway::Set(tag_double, yPtr1[i]);
                     z1 = highway::Set(tag_double, zPtr1[i]);
 
-                    switch (_vectorizationPattern)
-                    {
-                    case VectorizationPattern::p1xVec: {
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
 
-                        const auto restMaskDouble = restMasksDouble[restJ-1];
-                        const auto restMaskLong = restMasksLong[restJ-1];
+                        if constexpr(remainderJ) {
+                            const auto restMaskDouble = restMasksDouble[restJ-1];
+                            const auto restMaskLong = restMasksLong[restJ-1];
 
-                        ownedJ = remainderJ ?
-                            highway::MaskedLoad(restMaskLong, tag_long, &ownedPtr2[j])
-                            : highway::LoadU(tag_long, &ownedPtr2[j]);
-                        x2 = remainderJ ? highway::MaskedLoad(restMaskDouble, tag_double, &xPtr2[j]) : highway::LoadU(tag_double, &xPtr2[j]);
-                        y2 = remainderJ ? highway::MaskedLoad(restMaskDouble, tag_double, &yPtr2[j]) : highway::LoadU(tag_double, &yPtr2[j]);
-                        z2 = remainderJ ? highway::MaskedLoad(restMaskDouble, tag_double, &zPtr2[j]) : highway::LoadU(tag_double, &zPtr2[j]);
-                        
-                        break;
+                            ownedJ = highway::MaskedLoad(restMaskLong, tag_long, &ownedPtr2[j]);
+                            x2 = highway::MaskedLoad(restMaskDouble, tag_double, &xPtr2[j]);
+                            y2 = highway::MaskedLoad(restMaskDouble, tag_double, &yPtr2[j]);
+                            z2 = highway::MaskedLoad(restMaskDouble, tag_double, &zPtr2[j]);
+                        }
+                        else {
+                            ownedJ = highway::LoadU(tag_long, &ownedPtr2[j]);
+                            x2 = highway::LoadU(tag_double, &xPtr2[j]);
+                            y2 = highway::LoadU(tag_double, &yPtr2[j]);
+                            z2 = highway::LoadU(tag_double, &zPtr2[j]);
+                        }
                     }
-                    case VectorizationPattern::p2xVecDiv2: {
-                        
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         VectorLong tmpOwnedI;
                         VectorDouble tmpX1;
                         VectorDouble tmpY1;
@@ -338,24 +315,18 @@ namespace HWY_NAMESPACE {
                         x2 = highway::ConcatLowerLower(tag_double, x2, x2);
                         y2 = highway::ConcatLowerLower(tag_double, y2, y2);
                         z2 = highway::ConcatLowerLower(tag_double, z2, z2);
-
-                        break;
                     }
-                    case VectorizationPattern::pVecDiv2x2: {
+                    else if (vecPattern == VectorizationPattern::pVecDiv2x2) {
                         // TODO : implement
-                        break;
                     }
-                    case VectorizationPattern::pVecx1: {
+                    else if (vecPattern == VectorizationPattern::pVecx1) {
                         // TODO : implement
-                        break;
                     }
-                    case VectorizationPattern::pVecxVec: {
+                    else if (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : implement
-                        break;
                     }
-                    default:
-                        throw std::runtime_error("So the chosen vectorization pattern is not yet supported!");
-                    }
+                    else
+                        throw std::runtime_error("No vectorization pattern matched, error!");
 
                     // leave this as it is -> noPPL handles this different anyways
                     if constexpr (useMixing) {
@@ -377,76 +348,69 @@ namespace HWY_NAMESPACE {
                     // TODO : think about more efficient way than for loop -> maybe highway provides something
                     
                     // TODO : handle case of rest
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
+                        fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
+                        fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        double tmpX [_vecLengthDouble] = {0.};
+                        double tmpY [_vecLengthDouble] = {0.};
+                        double tmpZ [_vecLengthDouble] = {0.};
+                        highway::StoreU(fxAcc, tag_double, tmpX);
+                        highway::StoreU(fyAcc, tag_double, tmpY);
+                        highway::StoreU(fzAcc, tag_double, tmpZ);
 
-                    switch (_vectorizationPattern) {
-                        case VectorizationPattern::p1xVec: {
-                            fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
-                            fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
-                            fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
-                            break;
-                        }
-                        case VectorizationPattern::p2xVecDiv2: {
-                            double tmpX [_vecLengthDouble] = {0.};
-                            double tmpY [_vecLengthDouble] = {0.};
-                            double tmpZ [_vecLengthDouble] = {0.};
-                            highway::StoreU(fxAcc, tag_double, tmpX);
-                            highway::StoreU(fyAcc, tag_double, tmpY);
-                            highway::StoreU(fzAcc, tag_double, tmpZ);
-
-                            for (size_t n = 0; n < _vecLengthDouble; ++n) {
-                                fxPtr[i + n%2] += tmpX[n];
-                                fyPtr[i + n%2] += tmpY[n];
-                                fzPtr[i + n%2] += tmpZ[n];
-                            }
-                            break;
-                        }
-                        case VectorizationPattern::pVecDiv2x2: {
-                            double tmpX [_vecLengthDouble] = {0.};
-                            double tmpY [_vecLengthDouble] = {0.};
-                            double tmpZ [_vecLengthDouble] = {0.};
-                            highway::StoreU(fxAcc, tag_double, tmpX);
-                            highway::StoreU(fyAcc, tag_double, tmpY);
-                            highway::StoreU(fzAcc, tag_double, tmpZ);
-
-                            for (size_t n = 0; n < _vecLengthDouble; ++n) {
-                                fxPtr[i + n%(_vecLengthDouble/2)] += tmpX[n];
-                                fyPtr[i + n%(_vecLengthDouble/2)] += tmpY[n];
-                                fzPtr[i + n%(_vecLengthDouble/2)] += tmpZ[n];
-                            }
-
-                            break;
-                        }
-                        case VectorizationPattern::pVecx1: {
-                            double tmpX [_vecLengthDouble] = {0.};
-                            double tmpY [_vecLengthDouble] = {0.};
-                            double tmpZ [_vecLengthDouble] = {0.};
-                            highway::StoreU(fxAcc, tag_double, tmpX);
-                            highway::StoreU(fyAcc, tag_double, tmpY);
-                            highway::StoreU(fzAcc, tag_double, tmpZ);
-
-                            for (size_t n = 0; n < _vecLengthDouble; ++n) {
-                                fxPtr[i + n] += tmpX[n];
-                                fyPtr[i + n] += tmpY[n];
-                                fzPtr[i + n] += tmpZ[n];
-                            }
-                            break;
-                        }
-                        case VectorizationPattern::pVecxVec: {
-                            double tmpX [_vecLengthDouble] = {0.};
-                            double tmpY [_vecLengthDouble] = {0.};
-                            double tmpZ [_vecLengthDouble] = {0.};
-                            highway::StoreU(fxAcc, tag_double, tmpX);
-                            highway::StoreU(fyAcc, tag_double, tmpY);
-                            highway::StoreU(fzAcc, tag_double, tmpZ);
-
-                            for (size_t n = 0; n < _vecLengthDouble; ++n) {
-                                fxPtr[i + n] += tmpX[n];
-                                fyPtr[i + n] += tmpY[n];
-                                fzPtr[i + n] += tmpZ[n];
-                            }
-                            break;
+                        for (size_t n = 0; n < _vecLengthDouble; ++n) {
+                            fxPtr[i + n%2] += tmpX[n];
+                            fyPtr[i + n%2] += tmpY[n];
+                            fzPtr[i + n%2] += tmpZ[n];
                         }
                     }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        double tmpX [_vecLengthDouble] = {0.};
+                        double tmpY [_vecLengthDouble] = {0.};
+                        double tmpZ [_vecLengthDouble] = {0.};
+                        highway::StoreU(fxAcc, tag_double, tmpX);
+                        highway::StoreU(fyAcc, tag_double, tmpY);
+                        highway::StoreU(fzAcc, tag_double, tmpZ);
+
+                        for (size_t n = 0; n < _vecLengthDouble; ++n) {
+                            fxPtr[i + n%(_vecLengthDouble/2)] += tmpX[n];
+                            fyPtr[i + n%(_vecLengthDouble/2)] += tmpY[n];
+                            fzPtr[i + n%(_vecLengthDouble/2)] += tmpZ[n];
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        double tmpX [_vecLengthDouble] = {0.};
+                        double tmpY [_vecLengthDouble] = {0.};
+                        double tmpZ [_vecLengthDouble] = {0.};
+                        highway::StoreU(fxAcc, tag_double, tmpX);
+                        highway::StoreU(fyAcc, tag_double, tmpY);
+                        highway::StoreU(fzAcc, tag_double, tmpZ);
+
+                        for (size_t n = 0; n < _vecLengthDouble; ++n) {
+                            fxPtr[i + n] += tmpX[n];
+                            fyPtr[i + n] += tmpY[n];
+                            fzPtr[i + n] += tmpZ[n];
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        double tmpX [_vecLengthDouble] = {0.};
+                        double tmpY [_vecLengthDouble] = {0.};
+                        double tmpZ [_vecLengthDouble] = {0.};
+                        highway::StoreU(fxAcc, tag_double, tmpX);
+                        highway::StoreU(fyAcc, tag_double, tmpY);
+                        highway::StoreU(fzAcc, tag_double, tmpZ);
+
+                        for (size_t n = 0; n < _vecLengthDouble; ++n) {
+                            fxPtr[i + n] += tmpX[n];
+                            fyPtr[i + n] += tmpY[n];
+                            fzPtr[i + n] += tmpZ[n];
+                        }
+                    }
+                    else
+                        throw std::runtime_error("No vectorization pattern matched, error!");
                 }
 
                 template <bool remainder>
@@ -454,19 +418,22 @@ namespace HWY_NAMESPACE {
                     double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const size_t j, const size_t rest = 0) {
                     
                     auto restMaskDouble = restMasksDouble[rest-1];
+                    VectorDouble fx2 = _zeroDouble;
+                    VectorDouble fy2 = _zeroDouble;
+                    VectorDouble fz2 = _zeroDouble;
 
-                    // TODO : different vectorization patterns
-                    VectorDouble fx2 = remainder ?
-                                highway::MaskedLoad(restMaskDouble, tag_double, &fxPtr[j])
-                                : highway::LoadU(tag_double, &fxPtr[j]);
+                    // TODO : handle different vectorization patterns
 
-                    VectorDouble fy2 = remainder ?
-                                highway::MaskedLoad(restMaskDouble, tag_double, &fyPtr[j])
-                                : highway::LoadU(tag_double, &fyPtr[j]);
-
-                    VectorDouble fz2 = remainder ?
-                                highway::MaskedLoad(restMaskDouble, tag_double, &fzPtr[j])
-                                : highway::LoadU(tag_double, &fzPtr[j]);
+                    if constexpr (remainder) {
+                        fx2 = highway::MaskedLoad(restMaskDouble, tag_double, &fxPtr[j]);
+                        fy2 = highway::MaskedLoad(restMaskDouble, tag_double, &fyPtr[j]);
+                        fz2 = highway::MaskedLoad(restMaskDouble, tag_double, &fzPtr[j]);
+                    }
+                    else {
+                        fx2 = highway::LoadU(tag_double, &fxPtr[j]);
+                        fy2 = highway::LoadU(tag_double, &fyPtr[j]);
+                        fz2 = highway::LoadU(tag_double, &fzPtr[j]);
+                    }
 
                     auto fx2New = highway::Sub(fx2, fx);
                     auto fy2New = highway::Sub(fy2, fy);
@@ -1089,8 +1056,6 @@ namespace HWY_NAMESPACE {
                 std::array<double, 3> _virialSum;
                 std::vector<AoSThreadData> _aosThreadData;
                 bool _postProcessed;
-
-                VectorizationPattern _vectorizationPattern {VectorizationPattern::p1xVec};
     };
 } // Highway
 } // mdLib
