@@ -451,9 +451,9 @@ namespace HWY_NAMESPACE {
                         fz2 = highway::LoadU(tag_double, &fzPtr[j]);
                     }
 
-                    auto fx2New = highway::Sub(fx2, fx);
-                    auto fy2New = highway::Sub(fy2, fy);
-                    auto fz2New = highway::Sub(fz2, fz);
+                    auto fx2New = fx2 - fx; // highway::Sub(fx2, fx);
+                    auto fy2New = fy2 - fy; // highway::Sub(fy2, fy);
+                    auto fz2New = fz2 - fz; // highway::Sub(fz2, fz);
 
                     if constexpr (remainder) {
                         highway::BlendedStore(fx2New, restMaskDouble, tag_double, &fxPtr[j]);                            
@@ -709,15 +709,15 @@ namespace HWY_NAMESPACE {
                     VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ, VectorDouble& uPotSum) {
                     
                         // distance calculations
-                    auto drX = highway::Sub(x1, x2);
-                    auto drY = highway::Sub(y1, y2);
-                    auto drZ = highway::Sub(z1, z2);
+                    auto drX = x1 - x2; // highway::Sub(x1, x2);
+                    auto drY = y1 - y2; // highway::Sub(y1, y2);
+                    auto drZ = z1 - z2; // highway::Sub(z1, z2);
                     
-                    auto drX2 = highway::Mul(drX, drX);
-                    auto drY2 = highway::Mul(drY, drY);
-                    auto drZ2 = highway::Mul(drZ, drZ);
+                    auto drX2 = drX * drX; // highway::Mul(drX, drX);
+                    auto drY2 = drY * drY; // highway::Mul(drY, drY);
+                    auto drZ2 = drZ * drZ; // highway::Mul(drZ, drZ);
 
-                    auto dr2 = highway::Add(drX2, highway::Add(drY2, drZ2));
+                    auto dr2 = drX2 + drY2 + drZ2;
 
                     auto cutoffMask = highway::Le(dr2, _cutoffSquared);
 
@@ -733,25 +733,25 @@ namespace HWY_NAMESPACE {
                     }
 
                     // compute LJ Potential
-                    auto invDr2 = highway::Div(_oneDouble, dr2);
-                    auto lj2 = highway::Mul(sigmaSquareds, invDr2);
-                    auto lj4 = highway::Mul(lj2, lj2);
-                    auto lj6 = highway::Mul(lj2, lj4);
-                    auto lj12 = highway::Mul(lj6, lj6);
-                    auto lj12m6 = highway::Sub(lj12, lj6);
-                    auto lj12m6alj12 = highway::Add(lj12m6, lj12);
-                    auto lj12m6alj12e = highway::Mul(lj12m6alj12, epsilon24s);
-                    VectorDouble fac = highway::Mul(lj12m6alj12e, invDr2);
+                    auto invDr2 = _oneDouble / dr2; // highway::Div(_oneDouble, dr2);
+                    auto lj2 = sigmaSquareds * invDr2; // highway::Mul(sigmaSquareds, invDr2);
+                    auto lj4 = lj2 * lj2; // highway::Mul(lj2, lj2);
+                    auto lj6 = lj2 * lj4; // highway::Mul(lj2, lj4);
+                    auto lj12 = lj6 * lj6; // highway::Mul(lj6, lj6);
+                    auto lj12m6 = lj12 - lj6; // highway::Sub(lj12, lj6);
+                    auto lj12m6alj12 = lj12m6 - lj12; // highway::Add(lj12m6, lj12);
+                    auto lj12m6alj12e = lj12m6alj12 * epsilon24s; // highway::Mul(lj12m6alj12, epsilon24s);
+                    VectorDouble fac = lj12m6alj12e * invDr2; // highway::Mul(lj12m6alj12e, invDr2);
 
                     VectorDouble facMasked = highway::IfThenElse(cutoffDummyMask, fac, _zeroDouble);
 
-                    fx = highway::Mul(drX, facMasked);
-                    fy = highway::Mul(drY, facMasked);
-                    fz = highway::Mul(drZ, facMasked);
+                    fx = drX * facMasked; // highway::Mul(drX, facMasked);
+                    fy = drY * facMasked; // highway::Mul(drY, facMasked);
+                    fz = drZ * facMasked; // highway::Mul(drZ, facMasked);
 
-                    fxAcc = highway::Add(fxAcc, fx);
-                    fyAcc = highway::Add(fyAcc, fy);
-                    fzAcc = highway::Add(fzAcc, fz);
+                    fxAcc += fx; // highway::Add(fxAcc, fx);
+                    fyAcc += fy; // highway::Add(fyAcc, fy);
+                    fzAcc += fz; // highway::Add(fzAcc, fz);
                 }
             public:
                 // clang-format off
