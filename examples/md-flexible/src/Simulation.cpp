@@ -717,7 +717,7 @@ T Simulation::applyWithChosenFunctor(F f) {
 #endif
     }  case MDFlexConfig::FunctorOption::lj12_6_HWY: {
 // #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
-        return f(mdLib::HWY_NAMESPACE::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+        return f(mdLib::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
 
     }
     }

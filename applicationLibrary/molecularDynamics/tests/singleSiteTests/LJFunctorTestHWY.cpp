@@ -109,7 +109,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     constexpr bool mixing = false;
     mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
     ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::HWY_NAMESPACE::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ljFunctorHWY.initTraversal();
@@ -178,7 +178,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
     constexpr bool mixing = false;
     mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
     ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::HWY_NAMESPACE::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
@@ -240,7 +240,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
     constexpr bool mixing = false;
     mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
     ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::HWY_NAMESPACE::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorHWY(_cutoff);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";

@@ -9,14 +9,14 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/ArrayMath.h"
 
-#undef HWY_TARGET_INCLUDE
-#define HWY_TARGET_INCLUDE "molecularDynamicsLibrary/LJFunctorHWY.h"
+// #undef HWY_TARGET_INCLUDE
+// #define HWY_TARGET_INCLUDE "molecularDynamicsLibrary/LJFunctorHWY.h"
 // #include <hwy/foreach_target.h>
 #include <hwy/highway.h>
 
-HWY_BEFORE_NAMESPACE();
+// HWY_BEFORE_NAMESPACE();
 namespace mdLib {
-namespace HWY_NAMESPACE {
+//namespace HWY_NAMESPACE {
 
     namespace highway = hwy::HWY_NAMESPACE;
 
@@ -58,7 +58,7 @@ namespace HWY_NAMESPACE {
 
                     initializeRestMasks();
 
-                    // AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
+                    AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
                 }
 
         public:
@@ -1087,6 +1087,6 @@ namespace HWY_NAMESPACE {
                 std::vector<AoSThreadData> _aosThreadData;
                 bool _postProcessed;
     };
-} // Highway
+// } // Highway
 } // mdLib
-HWY_AFTER_NAMESPACE();
+// HWY_AFTER_NAMESPACE();
