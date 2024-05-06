@@ -58,7 +58,7 @@ namespace mdLib {
 
                     initializeRestMasks();
 
-                    AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
+                    std::cout << hwy::TargetName(HWY_TARGET); // AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
                 }
 
         public:
