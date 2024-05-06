@@ -558,9 +558,13 @@ namespace HWY_NAMESPACE {
                                 epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, xPtr, yPtr, zPtr,
                                 xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr), i, j, 0, 0);
                             
-                            auto [fx, fy, fz] = SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
+                            VectorDouble fx = _zeroDouble;
+                            VectorDouble fy = _zeroDouble;
+                            VectorDouble fz = _zeroDouble;
+                            
+                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, fxPtr, fyPtr, fzPtr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
-                                virialSumX, virialSumY, virialSumZ, uPotSum);
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, 0);
                         }
@@ -571,9 +575,13 @@ namespace HWY_NAMESPACE {
                                 epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, xPtr, yPtr, zPtr,
                                 xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr), i, j, 0, restJ);
                             
-                            auto [fx, fy, fz] = SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
+                            VectorDouble fx = _zeroDouble;
+                            VectorDouble fy = _zeroDouble;
+                            VectorDouble fz = _zeroDouble;
+
+                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, fxPtr, fyPtr, fzPtr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
-                                virialSumX, virialSumY, virialSumZ, uPotSum);
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
                         }
@@ -651,9 +659,13 @@ namespace HWY_NAMESPACE {
                                 x2Ptr, y2Ptr, z2Ptr, reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 i, j, 0, 0);
 
-                            auto [fx, fy, fz] = SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
+                            VectorDouble fx = _zeroDouble;
+                            VectorDouble fy = _zeroDouble;
+                            VectorDouble fz = _zeroDouble;
+
+                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, fx2Ptr, fy2Ptr, fz2Ptr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
-                                virialSumX, virialSumY, virialSumZ, uPotSum);
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
                                 handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j);
@@ -668,9 +680,13 @@ namespace HWY_NAMESPACE {
                                 x2Ptr, y2Ptr, z2Ptr, reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 i, j, 0, restJ);
 
-                            auto [fx, fy, fz] = SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
+                            VectorDouble fx = _zeroDouble;
+                            VectorDouble fy = _zeroDouble;
+                            VectorDouble fz = _zeroDouble;
+
+                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
                                 x2, y2, z2, fx2Ptr, fy2Ptr, fz2Ptr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
-                                virialSumX, virialSumY, virialSumZ, uPotSum);
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
                                 handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
@@ -685,12 +701,12 @@ namespace HWY_NAMESPACE {
                     }                
                 }
 
-                inline std::tuple<VectorDouble, VectorDouble, VectorDouble> SoAKernel(const size_t j, const VectorLong& ownedStateI, const VectorLong& ownedStateJ,
+                inline void SoAKernel(const size_t j, const VectorLong& ownedStateI, const VectorLong& ownedStateJ,
                     const VectorDouble& x1, const VectorDouble& y1, const VectorDouble& z1, const VectorDouble& x2, const VectorDouble& y2,
                     const VectorDouble& z2, double *const __restrict fx2Ptr, double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
                     const VectorDouble& epsilon24s, const VectorDouble& sigmaSquareds,
-                    VectorDouble& fxAcc, VectorDouble& fyAcc, VectorDouble& fzAcc, VectorDouble& virialSumX, VectorDouble& virialSumY,
-                    VectorDouble& virialSumZ, VectorDouble& uPotSum) {
+                    VectorDouble& fxAcc, VectorDouble& fyAcc, VectorDouble& fzAcc, VectorDouble& fx, VectorDouble& fy, VectorDouble& fz,
+                    VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ, VectorDouble& uPotSum) {
                     
                         // distance calculations
                     auto drX = highway::Sub(x1, x2);
@@ -713,7 +729,7 @@ namespace HWY_NAMESPACE {
                     auto cutoffDummyMask = highway::And(cutoffMask, dummyMaskDouble);
 
                     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
-                        return std::make_tuple(_zeroDouble, _zeroDouble, _zeroDouble);
+                        return;
                     }
 
                     // compute LJ Potential
@@ -729,15 +745,13 @@ namespace HWY_NAMESPACE {
 
                     VectorDouble facMasked = highway::IfThenElse(cutoffDummyMask, fac, _zeroDouble);
 
-                    auto fx = highway::Mul(drX, facMasked);
-                    auto fy = highway::Mul(drY, facMasked);
-                    auto fz = highway::Mul(drZ, facMasked);
+                    fx = highway::Mul(drX, facMasked);
+                    fy = highway::Mul(drY, facMasked);
+                    fz = highway::Mul(drZ, facMasked);
 
                     fxAcc = highway::Add(fxAcc, fx);
                     fyAcc = highway::Add(fyAcc, fy);
                     fzAcc = highway::Add(fzAcc, fz);
-
-                    return std::make_tuple(fx, fy, fz);
                 }
             public:
                 // clang-format off
