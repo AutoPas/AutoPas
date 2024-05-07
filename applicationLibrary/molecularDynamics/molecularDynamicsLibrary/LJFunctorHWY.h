@@ -738,7 +738,7 @@ namespace mdLib {
                     auto lj6 = lj2 * lj4; // highway::Mul(lj2, lj4);
                     auto lj12 = lj6 * lj6; // highway::Mul(lj6, lj6);
                     auto lj12m6 = lj12 - lj6; // highway::Sub(lj12, lj6);
-                    auto lj12m6alj12 = lj12m6 - lj12; // highway::Add(lj12m6, lj12);
+                    auto lj12m6alj12 = lj12m6 + lj12; // highway::Add(lj12m6, lj12);
                     auto lj12m6alj12e = lj12m6alj12 * epsilon24s; // highway::Mul(lj12m6alj12, epsilon24s);
                     VectorDouble fac = lj12m6alj12e * invDr2; // highway::Mul(lj12m6alj12e, invDr2);
 
@@ -748,9 +748,9 @@ namespace mdLib {
                     fy = drY * facMasked; // highway::Mul(drY, facMasked);
                     fz = drZ * facMasked; // highway::Mul(drZ, facMasked);
 
-                    fxAcc += fx; // highway::Add(fxAcc, fx);
-                    fyAcc += fy; // highway::Add(fyAcc, fy);
-                    fzAcc += fz; // highway::Add(fzAcc, fz);
+                    fxAcc = fxAcc + fx; // highway::Add(fxAcc, fx);
+                    fyAcc = fyAcc + fy; // highway::Add(fyAcc, fy);
+                    fzAcc = fzAcc + fz; // highway::Add(fzAcc, fz);
                 }
             public:
                 // clang-format off
@@ -861,7 +861,7 @@ namespace mdLib {
                                 auto fz2 = highway::LoadU(tag_double, fz2Tmp.data());
 
                                 auto fx2New = fx2 - fx;
-                                auto fy2New = fy2 - fx;
+                                auto fy2New = fy2 - fy;
                                 auto fz2New = fz2 - fz;
 
                                 highway::StoreU(fx2New, tag_double, fx2Tmp.data());
@@ -914,7 +914,7 @@ namespace mdLib {
                                 auto fz2 = highway::LoadU(tag_double, fz2Tmp.data());
 
                                 auto fx2New = fx2 - fx;
-                                auto fy2New = fy2 - fx;
+                                auto fy2New = fy2 - fy;
                                 auto fz2New = fz2 - fz;
 
                                 highway::StoreU(fx2New, tag_double, fx2Tmp.data());
