@@ -563,7 +563,7 @@ namespace mdLib {
                             VectorDouble fz = _zeroDouble;
                             
                             SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, fxPtr, fyPtr, fzPtr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, 0);
@@ -580,7 +580,7 @@ namespace mdLib {
                             VectorDouble fz = _zeroDouble;
 
                             SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, fxPtr, fyPtr, fzPtr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
@@ -664,7 +664,7 @@ namespace mdLib {
                             VectorDouble fz = _zeroDouble;
 
                             SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, fx2Ptr, fy2Ptr, fz2Ptr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
@@ -685,7 +685,7 @@ namespace mdLib {
                             VectorDouble fz = _zeroDouble;
 
                             SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, fx2Ptr, fy2Ptr, fz2Ptr, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
@@ -703,8 +703,7 @@ namespace mdLib {
 
                 inline void SoAKernel(const size_t j, const VectorLong& ownedStateI, const VectorLong& ownedStateJ,
                     const VectorDouble& x1, const VectorDouble& y1, const VectorDouble& z1, const VectorDouble& x2, const VectorDouble& y2,
-                    const VectorDouble& z2, double *const __restrict fx2Ptr, double *const __restrict fy2Ptr, double *const __restrict fz2Ptr,
-                    const VectorDouble& epsilon24s, const VectorDouble& sigmaSquareds,
+                    const VectorDouble& z2, const VectorDouble& epsilon24s, const VectorDouble& sigmaSquareds,
                     VectorDouble& fxAcc, VectorDouble& fyAcc, VectorDouble& fzAcc, VectorDouble& fx, VectorDouble& fy, VectorDouble& fz,
                     VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ, VectorDouble& uPotSum) {
                     
@@ -800,11 +799,19 @@ namespace mdLib {
                         VectorDouble fyAcc = highway::Zero(tag_double);
                         VectorDouble fzAcc = highway::Zero(tag_double);
 
-                        const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
-                        const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
-                        const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
+                        VectorDouble x1 = _zeroDouble;
+                        VectorDouble y1 = _zeroDouble;
+                        VectorDouble z1 = _zeroDouble;
+                        VectorLong ownedStateI = _zeroLong;
 
-                        VectorLong ownedStateI = highway::Set(tag_long, static_cast<int64_t>(ownedStatePtr[indexFirst]));
+                        VectorDouble x2 = _zeroDouble;
+                        VectorDouble y2 = _zeroDouble;
+                        VectorDouble z2 = _zeroDouble;
+                        VectorLong ownedStateJ = _zeroLong;
+
+                        VectorDouble epsilon24s = _zeroDouble;
+                        VectorDouble sigmaSquareds = _zeroDouble;
+                        VectorDouble shift6s = _zeroDouble;
 
                         alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
                         alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
@@ -819,25 +826,48 @@ namespace mdLib {
 
                         for (; j < (neighborList.size() & ~(_vecLengthDouble - 1)); j += _vecLengthDouble) {
 
+                            // load neighbor particles in consecutive array
                             for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
                                 x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
                                 y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
                                 z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
-                                if constexpr (newton3) {
-                                    fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
-                                    fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
-                                    fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
-                                }
                                 typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
 
-                            // SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
-                            //         x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
-                            //         &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
-                            //         virialSumY, virialSumZ, uPotSum, 0);
+                            fillVectorRegisters<false, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
+                                epsilon24s, sigmaSquareds, shift6s, &typeIDPtr[indexFirst], typeID2Tmp.data(),
+                                xPtr, yPtr, zPtr, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
+                                reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()),
+                                indexFirst, j, 0, 0);
+
+                            VectorDouble fx = _zeroDouble;
+                            VectorDouble fy = _zeroDouble;
+                            VectorDouble fz = _zeroDouble;
+
+                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
+                                epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc, fx, fy, fz,
+                                virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
+                                for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
+                                    fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
+                                    fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
+                                    fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
+                                }
+
+                                auto fx2 = highway::LoadU(tag_double, fx2Tmp.data());
+                                auto fy2 = highway::LoadU(tag_double, fy2Tmp.data());
+                                auto fz2 = highway::LoadU(tag_double, fz2Tmp.data());
+
+                                auto fx2New = fx2 - fx;
+                                auto fy2New = fy2 - fx;
+                                auto fz2New = fz2 - fz;
+
+                                highway::StoreU(fx2New, tag_double, fx2Tmp.data());
+                                highway::StoreU(fy2New, tag_double, fy2Tmp.data());
+                                highway::StoreU(fz2New, tag_double, fz2Tmp.data());
+
                                 for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
                                     fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
                                     fyPtr[neighborList[j + vecIndex]] = fy2Tmp[vecIndex];
@@ -846,30 +876,52 @@ namespace mdLib {
                             }
                         }
 
-                        const size_t rest = neighborList.size() & (_vecLengthDouble - 1);
+                        const size_t restJ = neighborList.size() & (_vecLengthDouble - 1);
 
-                        if (rest > 0) {
-                            for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
+                        if (restJ > 0) {
+                            for (size_t vecIndex = 0; vecIndex < restJ; ++vecIndex) {
                                 x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
                                 y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
                                 z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
-                                // if newton3 is used we need to load f of particle j so the kernel can update it too
-                                if constexpr (newton3) {
-                                    fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
-                                    fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
-                                    fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
-                                }
                                 typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
 
-                            // SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
-                            //       x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
-                            //       &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX, virialSumY,
-                            //       virialSumZ, uPotSum, rest);
+                            fillVectorRegisters<false, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
+                                epsilon24s, sigmaSquareds, shift6s, &typeIDPtr[indexFirst], typeID2Tmp.data(),
+                                xPtr, yPtr, zPtr, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
+                                reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()),
+                                 indexFirst, j, 0, 0);
+
+                            VectorDouble fx = _zeroDouble;
+                            VectorDouble fy = _zeroDouble;
+                            VectorDouble fz = _zeroDouble;
+
+                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
+                                epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc, fx, fy, fz,
+                                virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
+                                for (size_t vecIndex = 0; vecIndex < restJ; ++vecIndex) {
+
+                                    fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
+                                    fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
+                                    fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
+                                }
+
+                                auto fx2 = highway::LoadU(tag_double, fx2Tmp.data());
+                                auto fy2 = highway::LoadU(tag_double, fy2Tmp.data());
+                                auto fz2 = highway::LoadU(tag_double, fz2Tmp.data());
+
+                                auto fx2New = fx2 - fx;
+                                auto fy2New = fy2 - fx;
+                                auto fz2New = fz2 - fz;
+
+                                highway::StoreU(fx2New, tag_double, fx2Tmp.data());
+                                highway::StoreU(fy2New, tag_double, fy2Tmp.data());
+                                highway::StoreU(fz2New, tag_double, fz2Tmp.data());
+
+                                for (size_t vecIndex = 0; vecIndex < restJ; ++vecIndex) {
                                     fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
                                     fyPtr[neighborList[j + vecIndex]] = fy2Tmp[vecIndex];
                                     fzPtr[neighborList[j + vecIndex]] = fz2Tmp[vecIndex];
@@ -877,9 +929,7 @@ namespace mdLib {
                             }
                         }
 
-                        fxPtr[indexFirst] += highway::ReduceSum(tag_double, fxAcc);
-                        fyPtr[indexFirst] += highway::ReduceSum(tag_double, fyAcc);
-                        fzPtr[indexFirst] += highway::ReduceSum(tag_double, fzAcc);
+                        reduceAccumulatedForce<false>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, indexFirst);
 
                         if constexpr (calculateGlobals) {
                             const int threadnum = autopas::autopas_get_num_threads();
