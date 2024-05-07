@@ -62,8 +62,7 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
  * Fills an AoS and an SoA list with particles, executes one iteration
  * and compares the positions of each pair of corresponding particles.
  * */
-void soaTest(const double cellSizeFactor,
-             autopas::VerletListsCellsHelpers<Particle>::VLCBuildType oldBuildType) {
+void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType oldBuildType) {
   const double cutoff = 2.;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   std::array<double, 3> min = {0, 0, 0};

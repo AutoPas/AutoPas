@@ -99,7 +99,9 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    */
-  typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType &getAoSNeighborList() { return _aosNeighborList; }
+  typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType &getAoSNeighborList() {
+    return _aosNeighborList;
+  }
 
   /**
    * Returns the neighbor list in SoA layout.
