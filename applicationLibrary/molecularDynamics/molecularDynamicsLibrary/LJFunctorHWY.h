@@ -186,11 +186,23 @@ namespace mdLib {
 
                 inline void initializeRestMasks() {
 
-                    // TODO : handle different vectorization patterns
-
-                    for (size_t n = 0; n <_vecLengthDouble-1;++n) {
-                        restMasksDouble[n] = highway::FirstN(tag_double, n+1);
-                        restMasksLong[n] = highway::FirstN(tag_long, n+1);
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        for (size_t n = 0; n <_vecLengthDouble-1;++n) {
+                            restMasksDouble[n] = highway::FirstN(tag_double, n+1);
+                            restMasksLong[n] = highway::FirstN(tag_long, n+1);
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
                     }
                 }
                 
@@ -468,35 +480,118 @@ namespace mdLib {
                 }
 
                 inline bool checkFirstLoopConditionSingle(const size_t i) {
-                    // TODO : handle different vectorization patterns
-                    return long(i) >=0;
+
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return long(i) >=0;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
+                        return false;
+                    }
                 }
 
                 inline bool checkFirstLoopConditionPair(const size_t i, const size_t size) {
-                    // TODO : handle different vectorization patterns
-                    return i < size;
+
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return i < size;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
+                        return false;
+                    }
                 }
 
                 inline bool checkSecondLoopCondition(const size_t i, const size_t j) {
-                    // TODO : handle different vectorization patterns
 
-                    // floor soa numParticles to multiple of vecLength
-                    // If b is a power of 2 the following holds:
-                    // a & ~(b -1) == a - (a mod b)
-                    return j < (i & ~(_vecLengthDouble - 1));
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return j < (i & ~(_vecLengthDouble - 1));
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
+                        return false;
+                    }
                 }
 
                 inline int obtainFirstLoopRest(const size_t i) {
-                    // TODO : handle different vectorization patterns
-                    return 0;
+
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return 0;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        // TODO : implement
+                        return 0;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                        return 0;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                        return 0;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
+                        return 0;
+                    }
                 }
 
                 inline int obtainSecondLoopRest(const size_t i, const size_t j) {
-                    // TODO : handle different vectorization patterns
-
-                    // If b is a power of 2 the following holds:
-                    // a & (b -1) == a mod b
-                    return (int)(i & (_vecLengthDouble - 1));
+                    
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return (int)(i & (_vecLengthDouble - 1));
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        // TODO : implement
+                        return 0;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                        return 0;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                        return 0;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
+                        return 0;
+                    }
                 }
 
                 template <bool newton3>
@@ -587,10 +682,12 @@ namespace mdLib {
                         }
 
                         reduceAccumulatedForce<false>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i);
+                    }
 
-                        if constexpr (calculateGlobals) {
-                            // nothing yet
-                        }
+                    // TODO : handle restI
+
+                    if constexpr (calculateGlobals) {
+                        // nothing yet
                     }
                 }
 
@@ -696,9 +793,11 @@ namespace mdLib {
                         reduceAccumulatedForce<false>(fxAcc, fyAcc, fzAcc, fx1Ptr, fy1Ptr, fz1Ptr, i);
                     }
 
+                    // TODO : handle restI
+
                     if constexpr (calculateGlobals) {        
                         // nothing yet
-                    }                
+                    }
                 }
 
                 inline void SoAKernel(const size_t j, const VectorLong& ownedStateI, const VectorLong& ownedStateJ,
