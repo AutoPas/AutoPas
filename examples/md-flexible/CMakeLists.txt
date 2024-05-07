@@ -50,7 +50,7 @@ file(
         "*.py"
         "*.yaml"
         "*.rule"
-        "*.xml"
+        "*.frule"
 )
 
 foreach (script ${SCRIPTS})

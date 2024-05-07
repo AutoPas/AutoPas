@@ -65,7 +65,7 @@ struct TuningStrategyFactoryInfo {
   /**
    * The name and path of the file where the rules are stored.
    */
-  std::string fuzzyRuleFileName{"fuzzyRules.xml"};
+  std::string fuzzyRuleFileName{"fuzzyRules.frule"};
 
   // MPI Tuning Options
   /**

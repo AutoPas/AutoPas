@@ -8,11 +8,15 @@
 
 #include <sys/stat.h>
 
+#include "antlr4-runtime.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyControlSystem.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyRule.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/xmlParser/XMLParser.h"
+#include "parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageBaseVisitor.h"
+#include "parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageLexer.h"
+#include "parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageParser.h"
 
 namespace autopas {
 
@@ -22,6 +26,22 @@ FuzzyTuning::FuzzyTuning(const std::string &fuzzyRuleFileName) : _fuzzyRuleFileN
   if (stat(_fuzzyRuleFileName.c_str(), &buffer) != 0) {
     utils::ExceptionHandler::exception("Rule file {} does not exist!", _fuzzyRuleFileName);
   }
+
+  std::ifstream file(_fuzzyRuleFileName);
+
+  std::string programCode((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+  antlr4::ANTLRInputStream input{programCode};
+  autopas_generated_fuzzy_rule_syntax::FuzzyLanguageLexer lexer(&input);
+  antlr4::CommonTokenStream tokens(&lexer);
+
+  tokens.fill();
+
+  autopas_generated_fuzzy_rule_syntax::FuzzyLanguageParser parser{&tokens};
+  antlr4::tree::ParseTree *tree = parser.rule_file();
+
+  auto visitor = std::make_unique<autopas_generated_fuzzy_rule_syntax::FuzzyLanguageBaseVisitor>();
+  visitor->visit(tree);
 
   // parse(_ruleFileName);
 
