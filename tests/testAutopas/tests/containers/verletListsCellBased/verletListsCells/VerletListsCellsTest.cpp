@@ -20,7 +20,7 @@ using ::testing::_;
 using ::testing::AtLeast;
 
 void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
-                  autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) {
+                  autopas::VerletListsCellsHelpers<Particle>::VLCBuildType buildType) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
@@ -63,7 +63,7 @@ void applyFunctor(MockFunctor<Particle> &functor, const double cellSizefactor,
  * and compares the positions of each pair of corresponding particles.
  * */
 void soaTest(const double cellSizeFactor,
-             autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value oldBuildType) {
+             autopas::VerletListsCellsHelpers<Particle>::VLCBuildType oldBuildType) {
   const double cutoff = 2.;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   std::array<double, 3> min = {0, 0, 0};
