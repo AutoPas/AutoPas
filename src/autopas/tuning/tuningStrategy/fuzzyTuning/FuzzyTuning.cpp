@@ -13,7 +13,6 @@
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyRule.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
-#include "autopas/tuning/tuningStrategy/fuzzyTuning/xmlParser/XMLParser.h"
 #include "parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageBaseVisitor.h"
 #include "parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageLexer.h"
 #include "parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageParser.h"
