@@ -27,9 +27,9 @@ else ()
     message(STATUS "Auto4OMP enabled.")
 
     # Used the following old policies to suppress Auto4OMP's CMake warnings.
-    # TODO: didn't supress the warnings. Why?
-    cmake_policy(SET CMP0146 OLD) # FindCUDA.
-    cmake_policy(SET CMP0148 OLD) # FindPythonInterp and FindPythonLibs.
+    # TODO: didn't suppress the warnings. Why?
+    cmake_policy(SET CMP0146 OLD) # The FindCUDA module.
+    cmake_policy(SET CMP0148 OLD) # The FindPythonInterp and FindPythonLibs modules.
 
     if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         # If Clang isn't used, warn. Auto4OMP is tested with up to clang 7 and gcc 4. Modern gcc fails.
@@ -59,7 +59,6 @@ else ()
     # Auto4OMP's CMake options:
 
     # Auto4OMP needs a high resolution counter to make measurements; either a cycle counter or time-stamp counter.
-    # TODO: processes not executing correctly, outputs are empty.
 
     # __builtin_readcyclecounter() is available since clang 4 (possibly prior). [1]
     # On systems lacking a cycle counter register or similar, the function defaults to 0.
@@ -68,10 +67,19 @@ else ()
             EXCLUDE_FROM_ALL "${CMAKE_SOURCE_DIR}/src/autopas/utils/CycleCounterQuery.cpp")
     set_target_properties(has_builtin_readcyclecounter
             PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/scripts")
+
+    # TODO: when building target with a cmake command, cmake fails to load its cache as it's not done generating. Fix.
+    #execute_process(COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target has_builtin_readcyclecounter)
+
+    # For now, build manually.
+    execute_process(
+            COMMAND mkdir -p ${CMAKE_BINARY_DIR}/scripts
+            COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_SOURCE_DIR}/src/autopas/utils/CycleCounterQuery.cpp -o ${CMAKE_BINARY_DIR}/scripts/has_builtin_readcyclecounter)
     execute_process(COMMAND "${CMAKE_BINARY_DIR}/scripts/has_builtin_readcyclecounter"
             OUTPUT_VARIABLE HAS_BUILTIN_READCYCLECOUNTER_OUTPUT)
 
-    if (HAS_BUILTIN_READCYCLECOUNTER_OUTPUT)
+    # TODO: (extra) why doesn't if (string) return true when string's not empty?
+    if (${HAS_BUILTIN_READCYCLECOUNTER_OUTPUT} GREATER 0)
         # If cycle counter available, enable.
         message(STATUS "Cycle counter found, enabling.")
         option(LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER
@@ -80,13 +88,13 @@ else ()
         message(STATUS "No cycle counter found. Will look for time-stamp counter next.")
     endif ()
 
-    # __rdtscp() reads from the time-stamp counter, supported by x86 and x86_64.
-    execute_process(COMMAND lscpu | grep rdtsc OUTPUT_VARIABLE LSCPU_GREP_RDTSC_OUTPUT)
-    if (LSCPU_GREP_RDTSC_OUTPUT)
+    # __rdtscp() reads from the time-stamp counter, supported by x86 and x86_64. Inspired from [4]
+    execute_process(COMMAND lscpu COMMAND grep rdtsc OUTPUT_VARIABLE LSCPU_GREP_RDTSC_OUTPUT)
+    if (NOT ${LSCPU_GREP_RDTSC_OUTPUT} STREQUAL "")
         # If time-stamp counter available, enable.
         message(STATUS "Time-stamp counter found, enabling.")
         option(LIBOMP_HAVE___RDTSC "Indicates whether the system supports __rdtscp()." ON)
-    elseif (NOT HAS_BUILTIN_READCYCLECOUNTER_OUTPUT)
+    elseif (NOT ${HAS_BUILTIN_READCYCLECOUNTER_OUTPUT} GREATER 0)
         message(WARNING "No high resolution counter found, Auto4OMP may complain.")
     endif ()
 
@@ -101,7 +109,7 @@ else ()
         # GPU compute capability:
         if (${CUDA_VERSION_MAJOR} GREATER 10)
             # CUDA 11+ dropped support for compute 3.5. Use 5.3 instead.
-            # List of Nvidia GPUs and their compute capabilities: [4]
+            # List of Nvidia GPUs and their compute capabilities: [5]
             option(LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES "Nvidia GPU's compute capability." 53)
         endif ()
 
@@ -173,13 +181,14 @@ else ()
     link_directories(SYSTEM "${auto4omp_SOURCE_DIR}/runtime/src")
 
     # Reset Policies.
-    cmake_policy(SET CMP0146 NEW) # FindCUDA.
-    cmake_policy(SET CMP0148 NEW) # FindPythonInterp and FindPythonLibs.
+    cmake_policy(SET CMP0146 NEW) # The FindCUDA module.
+    cmake_policy(SET CMP0148 NEW) # The FindPythonInterp and FindPythonLibs module.
 
 endif ()
 
 # [1] https://releases.llvm.org/4.0.1/tools/clang/LanguageExtensions.html
 # [2] https://stackoverflow.com/a/41380220
 # [3] https://stackoverflow.com/a/50306091
-# [4] https://developer.nvidia.com/cuda-gpus
+# [4] https://stackoverflow.com/a/35693504
+# [5] https://developer.nvidia.com/cuda-gpus
 # Some code was inspired from autopas_spdlog.cmake and other AutoPas CMake files.
