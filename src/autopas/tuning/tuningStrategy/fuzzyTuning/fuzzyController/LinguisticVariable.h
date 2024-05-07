@@ -44,6 +44,11 @@ class LinguisticVariable {
 
  private:
   /**
+   * The name of the LinguisticVariable.
+   */
+  std::string _name;
+
+  /**
    * The CrispSet on which the LinguisticVariable is defined.
    */
   std::shared_ptr<CrispSet> _crispSet;

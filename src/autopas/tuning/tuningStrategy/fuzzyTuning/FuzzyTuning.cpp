@@ -6,6 +6,8 @@
 
 #include "FuzzyTuning.h"
 
+#include <sys/stat.h>
+
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyControlSystem.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyRule.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
@@ -14,51 +16,69 @@
 
 namespace autopas {
 
-FuzzyTuning::FuzzyTuning(const std::string &ruleFileName) : _ruleFileName(ruleFileName) {}
+FuzzyTuning::FuzzyTuning(const std::string &fuzzyRuleFileName) : _fuzzyRuleFileName(fuzzyRuleFileName) {
+  // Check if the given rule file exists and throw if not
+  struct stat buffer;
+  if (stat(_fuzzyRuleFileName.c_str(), &buffer) != 0) {
+    utils::ExceptionHandler::exception("Rule file {} does not exist!", _fuzzyRuleFileName);
+  }
+
+  // parse(_ruleFileName);
+
+  // By default, dump the rules for reproducibility reasons.
+  // AutoPasLog(INFO, "Rule File {}:\n{}", _fuzzyRuleFileName, rulesToString(_fuzzyRuleFileName));
+}
 
 bool FuzzyTuning::needsLiveInfo() const { return true; }
 
 void FuzzyTuning::receiveLiveInfo(const LiveInfo &info) { _currentLiveInfo = info; }
 
-void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
-  using namespace autopas::fuzzy_logic;
-
-  parse(_ruleFileName);
-
-  // Just a demo showing how to use the fuzzy logic controller
-
-  auto service = LinguisticVariable("service", std::pair(0, 10));
-  auto food = LinguisticVariable("food", std::pair(0, 10));
-  auto tip = LinguisticVariable("tip", std::pair(0, 30));
-
-  service.addLinguisticTerm(makeGaussian("poor", 0, 1.5));
-  service.addLinguisticTerm(makeGaussian("good", 5, 1.5));
-  service.addLinguisticTerm(makeGaussian("excellent", 10, 1.5));
-
-  food.addLinguisticTerm(makeTrapezoid("rancid", 0, 0, 1, 3));
-  food.addLinguisticTerm(makeTrapezoid("delicious", 7, 9, 10, 10));
-
-  tip.addLinguisticTerm(makeTriangle("cheap", 0, 5, 10));
-  tip.addLinguisticTerm(makeTriangle("average", 10, 15, 20));
-  tip.addLinguisticTerm(makeTriangle("generous", 20, 25, 30));
-
-  auto fcs = FuzzyControlSystem();
-  fcs.addRule(FuzzyRule(service == "poor" || food == "rancid", tip == "cheap"));
-  fcs.addRule(FuzzyRule(service == "good", tip == "average"));
-  fcs.addRule(FuzzyRule(service == "excellent" || food == "delicious", tip == "generous"));
-
-  // Make a prediction for a sample input
-  FuzzySet::Data sample = {{"service", 1}, {"food", 3}};
-  auto x2 = fcs.predict(sample);
-
-  std::cout << "Predicted tip: " << x2 << std::endl;
-}
+void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {}
 
 void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                         const EvidenceCollection &evidenceCollection) {}
 
 void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                      const EvidenceCollection &evidenceCollection) {}
+                                      const EvidenceCollection &evidenceCollection) {
+  using namespace autopas::fuzzy_logic;
+
+  const std::map<std::string, LiveInfo::InfoType> live_info = _currentLiveInfo.get();
+
+  auto spreadParticlesPerCell = LinguisticVariable("spreadParticlesPerCell", std::pair(0, 10));
+  auto avgParticles = LinguisticVariable("avgParticlesPerCell", std::pair(0, 10));
+
+  auto density = LinguisticVariable("density", std::pair(0, 30));
+
+  spreadParticlesPerCell.addLinguisticTerm(makeGaussian("low", 0, 2));
+  spreadParticlesPerCell.addLinguisticTerm(makeGaussian("medium", 5, 2));
+  spreadParticlesPerCell.addLinguisticTerm(makeGaussian("high", 10, 2));
+
+  avgParticles.addLinguisticTerm(makeGaussian("low", 0, 2));
+  avgParticles.addLinguisticTerm(makeGaussian("medium", 5, 2));
+  avgParticles.addLinguisticTerm(makeGaussian("high", 10, 2));
+
+  density.addLinguisticTerm(makeGaussian("low", 0, 10));
+  density.addLinguisticTerm(makeGaussian("medium", 15, 10));
+  density.addLinguisticTerm(makeGaussian("high", 30, 10));
+
+  auto fcs = FuzzyControlSystem();
+
+  fcs.addRule(FuzzyRule(avgParticles == "low" && spreadParticlesPerCell == "low", density == "low"));
+  fcs.addRule(FuzzyRule(avgParticles == "low" && spreadParticlesPerCell == "medium", density == "medium"));
+
+  size_t spread =
+      std::get<size_t>(live_info.at("maxParticlesPerCell")) - std::get<size_t>(live_info.at("minParticlesPerCell"));
+
+  FuzzySet::Data sample = {{"avgParticlesPerCell", std::get<double>(live_info.at("avgParticlesPerCell"))},
+                           {"spreadParticlesPerCell", spread}};
+
+  auto x2 = fcs.predict(sample);
+
+  std::cout << "Predicted tip: " << x2 << std::endl;
+
+  // set new search space
+  // std::copy(newSearchSpace.begin(), newSearchSpace.end(), std::back_inserter(configQueue));
+}
 
 TuningStrategyOption FuzzyTuning::getOptionType() { return TuningStrategyOption::fuzzyTuning; }
 

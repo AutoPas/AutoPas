@@ -29,6 +29,18 @@ class FuzzyRule {
    */
   [[nodiscard]] std::shared_ptr<FuzzySet> apply(const FuzzySet::Data &data) const;
 
+  /**
+   * Returns the antecedent of the FuzzyRule.
+   * @return The antecedent of the FuzzyRule.
+   */
+  [[nodiscard]] const std::shared_ptr<FuzzySet> &getAntecedent() const;
+
+  /**
+   * Returns the consequent of the FuzzyRule.
+   * @return The consequent of the FuzzyRule.
+   */
+  [[nodiscard]] const std::shared_ptr<FuzzySet> &getConsequent() const;
+
  private:
   /**
    * The antecedent of the FuzzyRule.

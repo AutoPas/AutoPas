@@ -25,4 +25,8 @@ std::shared_ptr<FuzzySet> FuzzyRule::apply(const FuzzySet::Data &data) const {
   return std::make_shared<FuzzySet>(newLinguisticTerm, std::move(cutConsequent), _consequent->getCrispSet());
 }
 
+const std::shared_ptr<FuzzySet> &FuzzyRule::getAntecedent() const { return _antecedent; }
+
+const std::shared_ptr<FuzzySet> &FuzzyRule::getConsequent() const { return _consequent; }
+
 }  // namespace autopas::fuzzy_logic

@@ -32,6 +32,11 @@ double FuzzySet::evaluate_membership(const Data &data) const {
     }
     const std::string dimension_name = crisp_dimensions.begin()->first;
     // Extract the value for the current dimension and evaluate the membership function.
+
+    if (data.find(dimension_name) == data.end()) {
+      autopas::utils::ExceptionHandler::exception("The data does not contain a value for the dimension " +
+                                                  dimension_name);
+    }
     return (*_baseMembershipFunction)(data.at(dimension_name));
   } else {
     // The current fuzzy set is a derived set and has needs to delegate the evaluation recursively to its base sets.
