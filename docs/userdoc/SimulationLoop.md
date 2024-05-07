@@ -70,6 +70,8 @@ Examples of this could be:
   - Insertion of particles due to breakup events.
   - Deletion of particles due to outflow condition.
 
+Note that in case of periodic boundaries and movement across MPI domains, user must ensure that rebuild positions are accordingly adjusted in order to not trigger dynamic rebuild, see [`ContainerInterfaceModel.md`](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/ContainerInterfaceModel.md) for more details.
+
 ### 2. Particle Interaction
 ```cpp
 YourFunctor functor();

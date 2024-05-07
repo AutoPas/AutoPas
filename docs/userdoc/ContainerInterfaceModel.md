@@ -1,13 +1,15 @@
 # Container Interface Model
 
-The behavior described in this section is completely hidden from AutoPas users.
+The behavior described in this section is completely hidden from AutoPas users. This was initially implemented in [PR 642](https://github.com/AutoPas/AutoPas/pull/642), so more details can be found there.
 
 ## External Black-Box Interface
 For an AutoPas user from the outside, it appears that the particle container is fully updated every time they call `AutoPas::updateContainer`.
 Particles leaving the domain are always returned, and particles can be added and deleted at any time.
 Historically this interface behavior was also called 'Linked-Cells-like'.
-For periodic boundary conditions or in an MPI-parallel simulation, the user is responsible for inserting the appropriate halo particles.
-The particle neighbour lists are updated when a particle moves more than `verletSkin / 2` or at the rebuild frequency.
+
+### Dynamic Rebuilding
+The particle neighbor lists are updated when a particle moves more than `verletSkin / 2` or at the rebuild frequency. This was implemented in the [PR 821](https://github.com/AutoPas/AutoPas/pull/821), so refer to it for more details.
+For periodic boundary conditions or in an MPI-parallel simulation, the user is responsible for inserting the appropriate halo particles. The user must ensure that the last rebuild position (`rAtRebuild`) of the particle is shifted accordingly (same shift as the current position `r`). The neighbor list of this particle is invalid, but as the particle is added to a particle buffer and not to we do not need to rebuild the neighbor lists just yet. When not handled properly, this will lead to additional rebuilds which might negatively affect the performance.
 
 ## Internal Container Behavior
 For Verlet list-based containers to perform efficiently, the aforementioned behavior is a problem, because they rely on their list references to not change until the next list rebuild.

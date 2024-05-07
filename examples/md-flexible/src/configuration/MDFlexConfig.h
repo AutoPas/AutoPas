@@ -383,8 +383,8 @@ class MDFlexConfig {
   /**
    * verletSkinRadius
    */
-  MDFlexOption<double, __LINE__> verletSkinRadius{.2, "verlet-skin-radius", true,
-                                                  "Skin added to the cutoff to form the interaction length."};
+  MDFlexOption<double, __LINE__> verletSkinRadius{
+      .2, "verlet-skin-radius", true, "Skin added to the cutoff avoid rebuilding containers every iteration."};
   /**
    * boxMin
    */

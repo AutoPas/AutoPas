@@ -298,7 +298,7 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
              iterator.isValid(); ++iterator) {
           Particle p = *iterator;  // copies Particle
           p.addR(shift);
-          p.setRAtRebuild(p.getRAtRebuild()+shift);
+          p.setRAtRebuild(p.getRAtRebuild() + shift);
           sendParticles.push_back(p);
         }
         MPI_Request sendRequest;
@@ -346,7 +346,7 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
             //          << p.getR()[1] << ", " << p.getR()[2] << ")" << std::endl;
             auto pCopy = p;
             pCopy.addR(shift);
-            pCopy.setRAtRebuild(pCopy.getRAtRebuild()+shift);
+            pCopy.setRAtRebuild(pCopy.getRAtRebuild() + shift);
             sendParticles.push_back(pCopy);
           }
         }

@@ -728,7 +728,7 @@ class LogicHandler {
 
   /**
    * Checks if any particle has moved more than skin/2.
-   * updates bool: _neighborListInvalidDoDynamicRebuild to false
+   * resets bool: _neighborListInvalidDoDynamicRebuild to false
    */
   void resetNeighborListsInvalidDoDynamicRebuild();
 
@@ -743,7 +743,7 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
-   * Array of int which contains number of iterations after which rebuild occurs.
+   * Array of int which contains the iteration number when a rebuild occurs.
    * This is used to calculate the mean rebuild frequency.
    */
   std::vector<int> _rebuildIntervals;
