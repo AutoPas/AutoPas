@@ -18,16 +18,25 @@ extern template class autopas::AutoPas<Molecule>;
  * @tparam applyShift
  * @param dataLayoutOption
  * @param newton3
+ * @param isVerlet
  */
 template <bool calculateGlobals, bool applyShift>
-void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3) {
+void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3, bool isVerlet) {
   autopas::AutoPas<Molecule> autoPas;
 
   autoPas.setBoxMin({0, 0, 0});
   autoPas.setBoxMax({3, 3, 3});
   autoPas.setCutoff(1);
-  autoPas.setAllowedContainers({autopas::ContainerOption::directSum});
-  autoPas.setAllowedTraversals({autopas::TraversalOption::ds_sequential});
+  autoPas.setVerletSkinPerTimestep(0.1);
+  autoPas.setVerletRebuildFrequency(1);
+  if (isVerlet) {
+    autoPas.setAllowedContainers({autopas::ContainerOption::verletListsCells});
+    autoPas.setAllowedTraversals({autopas::TraversalOption::vlc_c18});
+  } else {
+    autoPas.setAllowedContainers({autopas::ContainerOption::directSum});
+    autoPas.setAllowedTraversals({autopas::TraversalOption::ds_sequential});
+  }
+
   if (newton3) {
     autoPas.setAllowedNewton3Options({autopas::Newton3Option::enabled});
   } else {
@@ -43,6 +52,9 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   for (auto &m : molVec) {
     autoPas.addParticle(m);
   }
+
+  // update container -> build neighbor lists in case of Verlet
+  auto buffer = autoPas.updateContainer(); // buffer is meaningless here
 
   mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(autoPas.getCutoff());
 
@@ -200,60 +212,85 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP(bool newton3) {
  * Tests that the FLOP counts produced are correct by comparing against partially hard-coded values.
  */
 TEST_P(LJFunctorFlopCounterTest, testFLOPCountingNoOMP) {
-  const auto [dataLayout, newton3, calculateGlobals, applyShift] = GetParam();
+  const auto [dataLayout, newton3, calculateGlobals, applyShift, isVerlet] = GetParam();
   if (calculateGlobals and applyShift) {
-    LJFunctorFlopCounterTest::testFLOPCounter<true, true>(dataLayout, newton3);
+    LJFunctorFlopCounterTest::testFLOPCounter<true, true>(dataLayout, newton3, isVerlet);
   } else if (calculateGlobals and not applyShift) {
-    LJFunctorFlopCounterTest::testFLOPCounter<true, false>(dataLayout, newton3);
+    LJFunctorFlopCounterTest::testFLOPCounter<true, false>(dataLayout, newton3, isVerlet);
   } else {
-    LJFunctorFlopCounterTest::testFLOPCounter<false, false>(dataLayout, newton3);
+    LJFunctorFlopCounterTest::testFLOPCounter<false, false>(dataLayout, newton3, isVerlet);
   }
 }
 
 /**
  * Tests that FLOP counting has no data races by performing interactions in parallel. With thread sanitizer enabled, this
- * should produce errors. Without thread sanitizer enabled, this test will generally not throw errors. This test does not
- * test the verlet functor.
+ * should produce errors. Without thread sanitizer enabled, this test will generally not throw errors.
  */
 TEST_P(LJFunctorFlopCounterTest, testFLOPCountingOMP) {
-  const auto [dataLayout, newton3, calculateGlobals, applyShift] = GetParam();
+  const auto [dataLayout, newton3, calculateGlobals, applyShift, isVerlet] = GetParam();
   if (calculateGlobals and applyShift) {
     if (dataLayout == autopas::DataLayoutOption::aos) {
       LJFunctorFlopCounterTest::testFLOPCounterAoSOMP<true, true>(newton3);
     } else {
-      LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<true, true>(newton3);
+      if (isVerlet) {
+        LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP<true, true>(newton3);
+      } else {
+        LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<true, true>(newton3);
+      }
     }
   } else if (calculateGlobals and not applyShift) {
     if (dataLayout == autopas::DataLayoutOption::aos) {
       LJFunctorFlopCounterTest::testFLOPCounterAoSOMP<true, false>(newton3);
     } else {
-      LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<true, false>(newton3);
+      if (isVerlet) {
+        LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP<true, false>(newton3);
+      } else {
+        LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<true, false>(newton3);
+      }
     }
   } else {
     if (dataLayout == autopas::DataLayoutOption::aos) {
       LJFunctorFlopCounterTest::testFLOPCounterAoSOMP<false, false>(newton3);
     } else {
-      LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<false, false>(newton3);
+      if (isVerlet) {
+        LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP<false, false>(newton3);
+      } else {
+        LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP<false, false>(newton3);
+      }
     }
   }
 }
 
+/**
+ * We test LJFunctor FLOP counting for a combination of data layouts, newton3, calcGlobals, applyShift, isVerlet.
+ *
+ * applyShift is only relevant when calculateGlobals=true.
+ * isVerlet is specifically to test the SoA Verlet functor so only relevant with SoA.
+ *
+ * @return
+ */
 INSTANTIATE_TEST_SUITE_P(LJFunctorFlopTestSuite, LJFunctorFlopCounterTest,
-                         /*                               Data Layout              , newton3, calcGlobals, applyShift */
-                         testing::Values(std::make_tuple(autopas::DataLayoutOption::aos, false, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::aos, true, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, false, false),
+                         /*                               Data Layout              , newton3, calcGlobals, applyShift, isVerlet */
+                         testing::Values(std::make_tuple(autopas::DataLayoutOption::aos, false, false, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::aos, true, false, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, false, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, false, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, false, false, true),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, false, false, true),
 
-                                         std::make_tuple(autopas::DataLayoutOption::aos, false, true, false),
-                                         std::make_tuple(autopas::DataLayoutOption::aos, true, true, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, false),
+                                         std::make_tuple(autopas::DataLayoutOption::aos, false, true, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::aos, true, true, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, false, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, false, true),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, false, true),
 
-                                         std::make_tuple(autopas::DataLayoutOption::aos, false, true, true),
-                                         std::make_tuple(autopas::DataLayoutOption::aos, true, true, true),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, true),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, true)));
+                                         std::make_tuple(autopas::DataLayoutOption::aos, false, true, true, false),
+                                         std::make_tuple(autopas::DataLayoutOption::aos, true, true, true, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, true, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, true, false),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, true, true),
+                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, true, true)));
 
 
 
