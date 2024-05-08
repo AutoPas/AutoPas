@@ -154,7 +154,8 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     ljFunctorAVX.endTraversal(newton3);
 
     double tolerance = 1e-8;
-    // TODO : check globals
+    EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getUpot(), tolerance) << "global uPot";
+    EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews) {
@@ -211,7 +212,8 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
     ljFunctorAVX.endTraversal(newton3);
 
     double tolerance = 1e-8;
-    // TODO : check globals
+    EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getUpot(), tolerance) << "global uPot";
+    EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles) {
@@ -285,6 +287,10 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 
     ljFunctorAVX.endTraversal(newton3);
     ljFunctorHWY.endTraversal(newton3);
+
+    double tolerance = 1e-8;
+    EXPECT_NEAR(ljFunctorAVX.getPotentialEnergy(), ljFunctorHWY.getUpot(), tolerance) << "global uPot";
+    EXPECT_NEAR(ljFunctorAVX.getVirial(), ljFunctorHWY.getVirial(), tolerance) << "global virial";
 }
 
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {

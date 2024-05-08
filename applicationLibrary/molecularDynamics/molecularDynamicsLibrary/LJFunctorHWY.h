@@ -657,8 +657,8 @@ namespace mdLib {
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
                             
-                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
+                            SoAKernel<true>(j, ownedStateI, ownedStateJ, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, 0);
@@ -674,8 +674,8 @@ namespace mdLib {
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
+                            SoAKernel<true>(j, ownedStateI, ownedStateJ, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
@@ -687,7 +687,24 @@ namespace mdLib {
                     // TODO : handle restI
 
                     if constexpr (calculateGlobals) {
-                        // nothing yet
+                        const int threadnum = autopas::autopas_get_thread_num();
+
+                        double globals[4] {
+                            highway::ReduceSum(tag_double, virialSumX),
+                            highway::ReduceSum(tag_double, virialSumY),
+                            highway::ReduceSum(tag_double, virialSumZ),
+                            highway::ReduceSum(tag_double, uPotSum)
+                        };
+
+                        double factor = 1.;
+                        if constexpr (newton3) {
+                            factor = 0.5;
+                        }
+
+                        _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
+                        _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
+                        _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
+                        _aosThreadData[threadnum].uPotSum += globals[3] * factor;
                     }
                 }
 
@@ -760,8 +777,8 @@ namespace mdLib {
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
+                            SoAKernel<newton3>(j, ownedStateI, ownedStateJ, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
@@ -781,8 +798,8 @@ namespace mdLib {
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1,
-                                x2, y2, z2, epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc,
+                            SoAKernel<newton3>(j, ownedStateI, ownedStateJ, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
@@ -795,14 +812,32 @@ namespace mdLib {
 
                     // TODO : handle restI
 
-                    if constexpr (calculateGlobals) {        
-                        // nothing yet
+                    if constexpr (calculateGlobals) {
+                        const int threadnum = autopas::autopas_get_thread_num();
+
+                        double globals[4] {
+                            highway::ReduceSum(tag_double, virialSumX),
+                            highway::ReduceSum(tag_double, virialSumY),
+                            highway::ReduceSum(tag_double, virialSumZ),
+                            highway::ReduceSum(tag_double, uPotSum)
+                        };
+
+                        double factor = 1.;
+                        if constexpr (newton3) {
+                            factor = 0.5;
+                        }
+
+                        _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
+                        _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
+                        _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
+                        _aosThreadData[threadnum].uPotSum += globals[3] * factor;
                     }
                 }
 
+                template <bool newton3>
                 inline void SoAKernel(const size_t j, const VectorLong& ownedStateI, const VectorLong& ownedStateJ,
                     const VectorDouble& x1, const VectorDouble& y1, const VectorDouble& z1, const VectorDouble& x2, const VectorDouble& y2,
-                    const VectorDouble& z2, const VectorDouble& epsilon24s, const VectorDouble& sigmaSquareds,
+                    const VectorDouble& z2, const VectorDouble& epsilon24s, const VectorDouble& sigmaSquareds, const VectorDouble& shift6s,
                     VectorDouble& fxAcc, VectorDouble& fyAcc, VectorDouble& fzAcc, VectorDouble& fx, VectorDouble& fy, VectorDouble& fz,
                     VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ, VectorDouble& uPotSum) {
                     
@@ -841,7 +876,7 @@ namespace mdLib {
                     auto lj12m6alj12e = lj12m6alj12 * epsilon24s; // highway::Mul(lj12m6alj12, epsilon24s);
                     VectorDouble fac = lj12m6alj12e * invDr2; // highway::Mul(lj12m6alj12e, invDr2);
 
-                    VectorDouble facMasked = highway::IfThenElse(cutoffDummyMask, fac, _zeroDouble);
+                    VectorDouble facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
                     fx = drX * facMasked; // highway::Mul(drX, facMasked);
                     fy = drY * facMasked; // highway::Mul(drY, facMasked);
@@ -850,6 +885,29 @@ namespace mdLib {
                     fxAcc = fxAcc + fx; // highway::Add(fxAcc, fx);
                     fyAcc = fyAcc + fy; // highway::Add(fyAcc, fy);
                     fzAcc = fzAcc + fz; // highway::Add(fzAcc, fz);
+
+                    if constexpr (calculateGlobals) {
+
+                        auto virialX = fx * drX;
+                        auto virialY = fy * drY;
+                        auto virialZ = fz * drZ;
+
+                        auto uPot = highway::MulAdd(epsilon24s, lj12m6, shift6s);
+                        auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
+                        
+                        auto ownedMaskI = highway::Eq(highway::ConvertTo(tag_double, ownedStateI), highway::ConvertTo(tag_double, _ownedStateOwned));
+                        auto energyFactor = highway::IfThenElse(ownedMaskI, _oneDouble, _zeroDouble);
+
+                        if constexpr (newton3) {
+                            auto ownedMaskJ = highway::Eq(highway::ConvertTo(tag_double, ownedStateJ), highway::ConvertTo(tag_double, _ownedStateOwned));
+                            energyFactor = energyFactor + highway::IfThenElse(ownedMaskJ, _oneDouble, _zeroDouble);
+                        }
+
+                        uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
+                        virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
+                        virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
+                        virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
+                    }
                 }
             public:
                 // clang-format off
@@ -944,8 +1002,8 @@ namespace mdLib {
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
-                                epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc, fx, fy, fz,
+                            SoAKernel<newton3>(j, ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
+                                epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc, fx, fy, fz,
                                 virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
@@ -996,8 +1054,8 @@ namespace mdLib {
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel(j, ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
-                                epsilon24s, sigmaSquareds, fxAcc, fyAcc, fzAcc, fx, fy, fz,
+                            SoAKernel<newton3>(j, ownedStateI, ownedStateJ, x1, y1, z1, x2, y2, z2,
+                                epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc, fx, fy, fz,
                                 virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
