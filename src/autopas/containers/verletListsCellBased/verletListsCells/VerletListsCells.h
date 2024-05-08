@@ -34,7 +34,6 @@ namespace autopas {
 
 template <class Particle, class NeighborList>
 class VerletListsCells : public VerletListsLinkedBase<Particle> {
-  using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;
   using ParticleCell = FullParticleCell<Particle>;
 
  public:
