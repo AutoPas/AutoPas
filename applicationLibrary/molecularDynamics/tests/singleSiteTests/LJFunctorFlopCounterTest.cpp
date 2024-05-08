@@ -158,65 +158,40 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP(bool newton3) 
 
 template <bool calculateGlobals, bool applyShift>
 void LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP(bool newton3) {
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
+  Molecule p0({0., 0., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p1({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0);
 
-  Molecule p3({0., 2., 0.}, {0., 0., 0.}, 0, 0);
-  Molecule p4({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
+  Molecule p2({0., 2., 0.}, {0., 0., 0.}, 0, 0);
+  Molecule p3({0.1, 2.2, 0.3}, {0., 0., 0.}, 1, 0);
 
   // generate neighbor lists
   std::array<std::vector<size_t, autopas::AlignedAllocator<size_t>>, 4> neighborLists;
-  neighborLists[0].push_back(1) // p1 has neighbor p2
+  neighborLists[0].push_back(1); // p0 has neighbor p1
+  neighborLists[1].push_back(0); // p1 has neighbor p0
+  neighborLists[2].push_back(3); // p2 has neighbor p3
+  neighborLists[3].push_back(2); // p3 has neighbor p2
 
   const double cutoff = 1.;
 
   mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
 
-  autopas::FullParticleCell<Molecule> cell1;
-  cell1.addParticle(p1);
-  cell1.addParticle(p2);
+  autopas::FullParticleCell<Molecule> cell;
+  cell.addParticle(p0);
+  cell.addParticle(p1);
+  cell.addParticle(p2);
+  cell.addParticle(p3);
 
-  autopas::FullParticleCell<Molecule> cell2;
-  cell2.addParticle(p3);
-  cell2.addParticle(p4);
-
-  autopas::FullParticleCell<Molecule> cell3;
-  cell3.addParticle(p5);
-  cell3.addParticle(p6);
-
-  autopas::FullParticleCell<Molecule> cell4;
-  cell3.addParticle(p7);
-  cell3.addParticle(p8);
-
-  ljFunctor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  ljFunctor.SoALoader(cell4, cell4._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  ljFunctor.SoALoader(cell, cell._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   // This is a basic check for the accumulated values, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
 
-  // first functors on one soa
   AUTOPAS_OPENMP(parallel) {
     AUTOPAS_OPENMP(sections) {
       AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+      ljFunctor.SoAFunctorVerlet(cell._particleSoABuffer, 0, neighborLists[0], newton3);
       AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
-    }
-  }
-
-  // functors on two soas
-  AUTOPAS_OPENMP(parallel) {
-    AUTOPAS_OPENMP(sections) {
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
+      ljFunctor.SoAFunctorVerlet(cell._particleSoABuffer, 2, neighborLists[2], newton3);
     }
   }
 }
