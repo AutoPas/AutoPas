@@ -13,7 +13,6 @@
 
 #include "autopas/tuning/selectors/OptimumSelector.h"
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
 #include "autopas/tuning/utils/Smoothing.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"

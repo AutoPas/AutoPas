@@ -6,6 +6,8 @@
 
 #include "TuningDataLogger.h"
 
+#include <spdlog/async.h>
+
 #include "utils/Timer.h"
 
 autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix)
