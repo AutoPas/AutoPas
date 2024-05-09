@@ -202,7 +202,7 @@ class AxilrodTellerFunctor
 
   // TODO simde
 
-  inline double simde_mm512_reduce_add_pd(__m512d a) {
+  inline double simde_mm512_reduce_add_pd(simde__m512d a) {
 #ifdef __AVX512F__
     return _mm512_reduce_add_pd(a);
 #else
@@ -216,7 +216,8 @@ class AxilrodTellerFunctor
 #endif
   }
 
-  inline void simde_mm512_mask_i64scatter_pd(void *base_addr, __mmask8 k, __m512i vindex, __m512d a, const int scale) {
+  inline void simde_mm512_mask_i64scatter_pd(void *base_addr, simde__mmask8 k, simde__m512i vindex, simde__m512 a,
+                                             const int scale) {
 #ifdef __AVX512F__
     _mm512_mask_i64scatter_pd(base_addr, k, vindex, a, scale);
 #else
@@ -228,7 +229,7 @@ class AxilrodTellerFunctor
 #endif
   }
 
-  inline void simde_mm512_i64scatter_pd(void *base_addr, __m512i vindex, __m512d a, const int scale) {
+  inline void simde_mm512_i64scatter_pd(void *base_addr, simde__m512i vindex, simde__m512 a, const int scale) {
 #ifdef __AVX512F__
     _mm512_i64scatter_pd(base_addr, vindex, a, scale);
 #else
@@ -1728,8 +1729,6 @@ class AxilrodTellerFunctor
 
     [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
 
-    std::vector<unsigned int> indicesK;
-
     for (size_t i = 0; i < soa.size(); ++i) {
       SoAFloatPrecision fxacc = 0;
       SoAFloatPrecision fyacc = 0;
@@ -1756,7 +1755,6 @@ class AxilrodTellerFunctor
           continue;
         }
 
-        indicesK.clear();
         for (size_t k = j + 1; k < soa.size(); ++k) {
           if (ownedStatePtr[k] == autopas::OwnershipState::dummy) {
             continue;
