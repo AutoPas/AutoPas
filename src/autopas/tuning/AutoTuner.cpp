@@ -199,9 +199,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
   // sanity check
   if (getCurrentNumSamples() >= _maxSamples) {
-    throw utils::ExceptionHandler::AutoPasException(
-        "Trying to add a measurement to the AutoTuner but for this configuration already enough samples were "
-        "collected!");
+    utils::ExceptionHandler::exception(
+        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough"
+        "for this configuration!\n"
+        "tuneConfiguration() should have been called before to process and flush samples.");
   }
   AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
   if (neighborListRebuilt) {
@@ -287,7 +288,7 @@ bool AutoTuner::initEnergy() {
       _raplMeter.sample();
     } catch (const utils::ExceptionHandler::AutoPasException &e) {
       if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
+        utils::ExceptionHandler::exception(e);
       } else {
         AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
         return false;
@@ -295,7 +296,7 @@ bool AutoTuner::initEnergy() {
     }
   } else {
     if (_tuningMetric == TuningMetricOption::energy) {
-      throw utils::ExceptionHandler::AutoPasException(errMsg);
+      utils::ExceptionHandler::exception(errMsg);
     } else {
       AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", errMsg);
       return false;
@@ -316,7 +317,7 @@ bool AutoTuner::resetEnergy() {
       AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
       _energyMeasurementPossible = false;
       if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
+        utils::ExceptionHandler::exception(e);
       }
     }
   }
@@ -331,7 +332,7 @@ std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
       AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
       _energyMeasurementPossible = false;
       if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
+        utils::ExceptionHandler::exception(e);
       }
     }
   }
