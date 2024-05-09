@@ -6,24 +6,20 @@
 grammar FuzzyLanguage;
 
 // Rule File
-rule_file           : fuzzy_variable* fuzzy_rule* EOF
+rule_file           : linguistic_variable* fuzzy_rule* EOF
                     ;
 
 // Fuzzy Variable
-fuzzy_variable
-                    : 'FuzzyVariable' ':' 'domain' ':' name 'range' ':' '(' NUMBER ',' NUMBER ')' membership_function+
+linguistic_variable
+                    : 'FuzzyVariable' ':' 'domain' ':' STRING 'range' ':' '(' NUMBER ',' NUMBER ')' fuzzy_term+
                     ;
 
-membership_function
-                    : name ':' function
+fuzzy_term
+                    : STRING ':' function
                     ;
 
 function
                     : IDENTIFIER '(' NUMBER (',' NUMBER)* ')'
-                    ;
-
-name
-                    :  STRING
                     ;
 
 // Fuzzy Rule
@@ -33,15 +29,11 @@ fuzzy_rule
                     ;
 
 fuzzy_set
-                    : '(' fuzzy_set ')'
-                    | fuzzy_set '&&' fuzzy_set
-                    | fuzzy_set '||' fuzzy_set
-                    | '!' fuzzy_set
-                    | selection
-                    ;
-
-selection
-                    : name '==' name
+                    : '(' fuzzy_set ')' # Brackets
+                    | fuzzy_set '&&' fuzzy_set # And
+                    | fuzzy_set '||' fuzzy_set # Or
+                    | '!' fuzzy_set # Negate
+                    | STRING '==' STRING # Select
                     ;
 
 // Lexer
@@ -55,6 +47,7 @@ COMMENT             : '#' .*? '\r'? '\n' -> skip
 
 STRING
                     : '"' (~["\r\n] | '""')* '"'
+                    {setText(getText().substr(1, getText().size()-2));}
                     ;
 
 NUMBER

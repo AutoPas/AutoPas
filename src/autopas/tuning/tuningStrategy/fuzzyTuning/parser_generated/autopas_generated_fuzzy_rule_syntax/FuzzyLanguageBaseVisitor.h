@@ -20,29 +20,29 @@ class FuzzyLanguageBaseVisitor : public FuzzyLanguageVisitor {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitFuzzy_variable(FuzzyLanguageParser::Fuzzy_variableContext *ctx) override {
+  virtual antlrcpp::Any visitLinguistic_variable(FuzzyLanguageParser::Linguistic_variableContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitMembership_function(FuzzyLanguageParser::Membership_functionContext *ctx) override {
+  virtual antlrcpp::Any visitFuzzy_term(FuzzyLanguageParser::Fuzzy_termContext *ctx) override {
     return visitChildren(ctx);
   }
 
   virtual antlrcpp::Any visitFunction(FuzzyLanguageParser::FunctionContext *ctx) override { return visitChildren(ctx); }
 
-  virtual antlrcpp::Any visitName(FuzzyLanguageParser::NameContext *ctx) override { return visitChildren(ctx); }
-
   virtual antlrcpp::Any visitFuzzy_rule(FuzzyLanguageParser::Fuzzy_ruleContext *ctx) override {
     return visitChildren(ctx);
   }
 
-  virtual antlrcpp::Any visitFuzzy_set(FuzzyLanguageParser::Fuzzy_setContext *ctx) override {
-    return visitChildren(ctx);
-  }
+  virtual antlrcpp::Any visitOr(FuzzyLanguageParser::OrContext *ctx) override { return visitChildren(ctx); }
 
-  virtual antlrcpp::Any visitSelection(FuzzyLanguageParser::SelectionContext *ctx) override {
-    return visitChildren(ctx);
-  }
+  virtual antlrcpp::Any visitBrackets(FuzzyLanguageParser::BracketsContext *ctx) override { return visitChildren(ctx); }
+
+  virtual antlrcpp::Any visitAnd(FuzzyLanguageParser::AndContext *ctx) override { return visitChildren(ctx); }
+
+  virtual antlrcpp::Any visitSelect(FuzzyLanguageParser::SelectContext *ctx) override { return visitChildren(ctx); }
+
+  virtual antlrcpp::Any visitNegate(FuzzyLanguageParser::NegateContext *ctx) override { return visitChildren(ctx); }
 };
 
 }  // namespace autopas_generated_fuzzy_rule_syntax

@@ -29,4 +29,8 @@ const std::shared_ptr<FuzzySet> &FuzzyRule::getAntecedent() const { return _ante
 
 const std::shared_ptr<FuzzySet> &FuzzyRule::getConsequent() const { return _consequent; }
 
+FuzzyRule::operator std::string() const {
+  return "\tFuzzyRule: " + std::string(*_antecedent) + "  ==>  " + std::string(*_consequent);
+}
+
 }  // namespace autopas::fuzzy_logic

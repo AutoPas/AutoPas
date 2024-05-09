@@ -34,13 +34,11 @@ class FuzzyLanguageParser : public antlr4::Parser {
 
   enum {
     RuleRule_file = 0,
-    RuleFuzzy_variable = 1,
-    RuleMembership_function = 2,
+    RuleLinguistic_variable = 1,
+    RuleFuzzy_term = 2,
     RuleFunction = 3,
-    RuleName = 4,
-    RuleFuzzy_rule = 5,
-    RuleFuzzy_set = 6,
-    RuleSelection = 7
+    RuleFuzzy_rule = 4,
+    RuleFuzzy_set = 5
   };
 
   explicit FuzzyLanguageParser(antlr4::TokenStream *input);
@@ -55,21 +53,19 @@ class FuzzyLanguageParser : public antlr4::Parser {
   virtual antlr4::dfa::Vocabulary &getVocabulary() const override;
 
   class Rule_fileContext;
-  class Fuzzy_variableContext;
-  class Membership_functionContext;
+  class Linguistic_variableContext;
+  class Fuzzy_termContext;
   class FunctionContext;
-  class NameContext;
   class Fuzzy_ruleContext;
   class Fuzzy_setContext;
-  class SelectionContext;
 
   class Rule_fileContext : public antlr4::ParserRuleContext {
    public:
     Rule_fileContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *EOF();
-    std::vector<Fuzzy_variableContext *> fuzzy_variable();
-    Fuzzy_variableContext *fuzzy_variable(size_t i);
+    std::vector<Linguistic_variableContext *> linguistic_variable();
+    Linguistic_variableContext *linguistic_variable(size_t i);
     std::vector<Fuzzy_ruleContext *> fuzzy_rule();
     Fuzzy_ruleContext *fuzzy_rule(size_t i);
 
@@ -78,32 +74,32 @@ class FuzzyLanguageParser : public antlr4::Parser {
 
   Rule_fileContext *rule_file();
 
-  class Fuzzy_variableContext : public antlr4::ParserRuleContext {
+  class Linguistic_variableContext : public antlr4::ParserRuleContext {
    public:
-    Fuzzy_variableContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    Linguistic_variableContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    NameContext *name();
+    antlr4::tree::TerminalNode *STRING();
     std::vector<antlr4::tree::TerminalNode *> NUMBER();
     antlr4::tree::TerminalNode *NUMBER(size_t i);
-    std::vector<Membership_functionContext *> membership_function();
-    Membership_functionContext *membership_function(size_t i);
+    std::vector<Fuzzy_termContext *> fuzzy_term();
+    Fuzzy_termContext *fuzzy_term(size_t i);
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  Fuzzy_variableContext *fuzzy_variable();
+  Linguistic_variableContext *linguistic_variable();
 
-  class Membership_functionContext : public antlr4::ParserRuleContext {
+  class Fuzzy_termContext : public antlr4::ParserRuleContext {
    public:
-    Membership_functionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    Fuzzy_termContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    NameContext *name();
+    antlr4::tree::TerminalNode *STRING();
     FunctionContext *function();
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
-  Membership_functionContext *membership_function();
+  Fuzzy_termContext *fuzzy_term();
 
   class FunctionContext : public antlr4::ParserRuleContext {
    public:
@@ -117,17 +113,6 @@ class FuzzyLanguageParser : public antlr4::Parser {
   };
 
   FunctionContext *function();
-
-  class NameContext : public antlr4::ParserRuleContext {
-   public:
-    NameContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *STRING();
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  NameContext *name();
 
   class Fuzzy_ruleContext : public antlr4::ParserRuleContext {
    public:
@@ -144,27 +129,64 @@ class FuzzyLanguageParser : public antlr4::Parser {
   class Fuzzy_setContext : public antlr4::ParserRuleContext {
    public:
     Fuzzy_setContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+
+    Fuzzy_setContext() = default;
+    void copyFrom(Fuzzy_setContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
+
     virtual size_t getRuleIndex() const override;
+  };
+
+  class OrContext : public Fuzzy_setContext {
+   public:
+    OrContext(Fuzzy_setContext *ctx);
+
     std::vector<Fuzzy_setContext *> fuzzy_set();
     Fuzzy_setContext *fuzzy_set(size_t i);
-    SelectionContext *selection();
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class BracketsContext : public Fuzzy_setContext {
+   public:
+    BracketsContext(Fuzzy_setContext *ctx);
+
+    Fuzzy_setContext *fuzzy_set();
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class AndContext : public Fuzzy_setContext {
+   public:
+    AndContext(Fuzzy_setContext *ctx);
+
+    std::vector<Fuzzy_setContext *> fuzzy_set();
+    Fuzzy_setContext *fuzzy_set(size_t i);
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class SelectContext : public Fuzzy_setContext {
+   public:
+    SelectContext(Fuzzy_setContext *ctx);
+
+    std::vector<antlr4::tree::TerminalNode *> STRING();
+    antlr4::tree::TerminalNode *STRING(size_t i);
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class NegateContext : public Fuzzy_setContext {
+   public:
+    NegateContext(Fuzzy_setContext *ctx);
+
+    Fuzzy_setContext *fuzzy_set();
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Fuzzy_setContext *fuzzy_set();
   Fuzzy_setContext *fuzzy_set(int precedence);
-  class SelectionContext : public antlr4::ParserRuleContext {
-   public:
-    SelectionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    std::vector<NameContext *> name();
-    NameContext *name(size_t i);
-
-    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-  };
-
-  SelectionContext *selection();
 
   virtual bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
   bool fuzzy_setSempred(Fuzzy_setContext *_localctx, size_t predicateIndex);

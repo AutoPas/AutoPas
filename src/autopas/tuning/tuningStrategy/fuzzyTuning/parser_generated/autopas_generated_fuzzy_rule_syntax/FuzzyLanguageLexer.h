@@ -46,6 +46,8 @@ class FuzzyLanguageLexer : public antlr4::Lexer {
   virtual const std::vector<uint16_t> getSerializedATN() const override;
   virtual const antlr4::atn::ATN &getATN() const override;
 
+  virtual void action(antlr4::RuleContext *context, size_t ruleIndex, size_t actionIndex) override;
+
  private:
   static std::vector<antlr4::dfa::DFA> _decisionToDFA;
   static antlr4::atn::PredictionContextCache _sharedContextCache;
@@ -61,6 +63,7 @@ class FuzzyLanguageLexer : public antlr4::Lexer {
   static std::vector<uint16_t> _serializedATN;
 
   // Individual action functions triggered by action() above.
+  void STRINGAction(antlr4::RuleContext *context, size_t actionIndex);
 
   // Individual semantic predicate functions triggered by sempred() above.
 

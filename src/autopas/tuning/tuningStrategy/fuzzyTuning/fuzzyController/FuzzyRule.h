@@ -41,6 +41,11 @@ class FuzzyRule {
    */
   [[nodiscard]] const std::shared_ptr<FuzzySet> &getConsequent() const;
 
+  /**
+   * Returns a string representation of the FuzzyRule.
+   */
+  explicit operator std::string() const;
+
  private:
   /**
    * The antecedent of the FuzzyRule.

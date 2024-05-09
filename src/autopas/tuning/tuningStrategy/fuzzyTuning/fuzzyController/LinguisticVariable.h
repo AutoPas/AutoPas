@@ -25,7 +25,7 @@ class LinguisticVariable {
    * @param name The name of the LinguisticVariable.
    * @param range The range of the LinguisticVariable in the form [min, max].
    */
-  explicit LinguisticVariable(const std::string &name, const std::pair<double, double> &range);
+  explicit LinguisticVariable(const std::string &name, std::pair<double, double> range);
 
   /**
    * Adds a new linguistic term to the LinguisticVariable.
@@ -41,6 +41,17 @@ class LinguisticVariable {
    * @return The FuzzySet with the given name.
    */
   std::shared_ptr<FuzzySet> operator==(const std::string &linguisticTerm) const;
+
+  /**
+   * Getter for the name of the LinguisticVariable.
+   * @return The name of the LinguisticVariable.
+   */
+  [[nodiscard]] const std::string &getName() const;
+
+  /**
+   *  Returns a string representation of the LinguisticVariable.
+   */
+  explicit operator std::string() const;
 
  private:
   /**

@@ -45,6 +45,11 @@ class CrispSet {
    */
   [[nodiscard]] std::map<std::string, std::pair<double, double>> &getDimensions();
 
+  /**
+   * Returns a string representation of the CrispSet.
+   */
+  explicit operator std::string() const;
+
  private:
   /**
    * Stores all dimensions of the CrispSet. Each dimension is represented by a tuple of the form of [min, max], which

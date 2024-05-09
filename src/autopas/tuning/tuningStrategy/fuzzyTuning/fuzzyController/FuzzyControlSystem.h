@@ -24,6 +24,9 @@ class FuzzyControlSystem {
   /**
    * Adds a new FuzzyRule to the FuzzyControlSystem.
    * @param rule The FuzzyRule to add.
+   *
+   * Additionally, the method checks if all the consequents of the FuzzyControlSystem have the same domain.
+   * Otherwise, an exception is thrown.
    */
   void addRule(const FuzzyRule &rule);
 
@@ -43,11 +46,21 @@ class FuzzyControlSystem {
    */
   [[nodiscard]] double predict(const FuzzySet::Data &data, size_t numSamples = 100) const;
 
+  /**
+   * Returns a string representation of the FuzzyControlSystem.
+   */
+  explicit operator std::string() const;
+
  private:
   /**
    * All rules of the FuzzyControlSystem.
    */
   std::vector<FuzzyRule> _rules;
+
+  /**
+   * The output domain of the FuzzyControlSystem.
+   */
+  std::optional<std::string> _outputDomain;
 };
 
 }  // namespace autopas::fuzzy_logic

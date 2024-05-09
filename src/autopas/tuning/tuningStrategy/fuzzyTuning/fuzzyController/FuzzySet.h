@@ -38,8 +38,9 @@ class FuzzySet {
   /**
    * A base membership function calculates the membership value based on a direct function evaluation.
    * Base membership function take a single value and returns the corresponding membership value. (m=f(x))
+   * Additionally, the base membership function stores information about the membership function and its parameters.
    */
-  using BaseMembershipFunction = std::function<double(double)>;
+  using BaseMembershipFunction = std::tuple<std::string, std::vector<double>, std::function<double(double)>>;
 
   /**
    * Constructs a FuzzySet with a given linguistic term and base membership function.
@@ -69,6 +70,16 @@ class FuzzySet {
    * @return The x-coordinate of the centroid of this FuzzySet.
    */
   [[nodiscard]] double centroid(size_t numSamples) const;
+
+  /**
+   * Returns a string representation of the BaseMembershipFunction.
+   */
+  [[nodiscard]] std::string printBaseMembershipFunction() const;
+
+  /**
+   * Returns a string representation of the FuzzySet.
+   */
+  explicit operator std::string() const;
 
   /**
    * Returns the linguistic term of the FuzzySet.
