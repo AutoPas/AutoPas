@@ -2,31 +2,34 @@
 set(AUTOPAS_NVCC_MAX_GCC 12 CACHE STRING "Newest gcc version supported by NVCC.")
 
 # Option descriptions:
-set(AUTOPAS_AUTO4OMP_DOC
+set(
+        AUTOPAS_AUTO4OMP_DOC
         "Activates Auto4OMP to automatically select OpenMP scheduling algorithms \
-        from the LB4OMP portfolio during runtime.")
+        from the LB4OMP portfolio during runtime."
+)
 
-set(AUTOPAS_LLVM_LIT_EXECUTABLE_DOC
+set(
+        AUTOPAS_LLVM_LIT_EXECUTABLE_DOC
         "Path to the LLVM-lit executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/build/utils/lit/lit.py\". \
         To find it, run the terminal command \"find /usr -name lit.py\". \
-        By default, Auto4OMP looks for LLVM-lit with the PATH environment variable.")
+        By default, Auto4OMP looks for LLVM-lit with the PATH environment variable."
+)
 
-set(AUTOPAS_FILECHECK_EXECUTABLE_DOC
+set(
+        AUTOPAS_FILECHECK_EXECUTABLE_DOC
         "Path to the FileCheck executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/bin/FileCheck\". \
         To find it, run the terminal command \"find /usr -name lit.py\". \
-        By default, Auto4OMP looks for FileCheck with the PATH environment variable.")
+        By default, Auto4OMP looks for FileCheck with the PATH environment variable."
+)
 
-set(AUTOPAS_NVCC_GNUC_PATH_DOC
-        "Path to gcc ${AUTOPAS_NVCC_MAX_GCC} or less, required by NVCC, in case system's gcc is newer.")
+set(
+        AUTOPAS_NVCC_GNUC_PATH_DOC
+        "Path to gcc ${AUTOPAS_NVCC_MAX_GCC} or less, required by NVCC, in case system's gcc is newer."
+)
 
-set(LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER_DOC
-        "Indicates whether the system supports __builtin_readcyclecounter().")
-
-set(LIBOMP_HAVE___RDTSC_DOC
-        "Indicates whether the system supports __rdtscp().")
-
-set(LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC
-        "Nvidia GPU's compute capability.")
+set(LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER_DOC "Indicates whether the system supports __builtin_readcyclecounter().")
+set(LIBOMP_HAVE___RDTSC_DOC "Indicates whether the system supports __rdtscp().")
+set(LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC "Nvidia GPU's compute capability.")
 
 # AutoPas options:
 option(AUTOPAS_AUTO4OMP ${AUTOPAS_AUTO4OMP_DOC} ON)
@@ -60,10 +63,14 @@ else ()
     #### __builtin_readcyclecounter() is available since clang 4 (possibly prior). [1]
     #### On systems lacking a cycle counter register or similar, the function defaults to 0.
     #### Compile and run CycleCounterQuery.cpp to check if a cycle counter's available, inspired from [2, 3].
-    add_executable(has_builtin_readcyclecounter
-            EXCLUDE_FROM_ALL "${CMAKE_SOURCE_DIR}/src/autopas/utils/CycleCounterQuery.cpp")
-    set_target_properties(has_builtin_readcyclecounter
-            PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/scripts")
+    add_executable(
+            has_builtin_readcyclecounter
+            EXCLUDE_FROM_ALL "${CMAKE_SOURCE_DIR}/src/autopas/utils/CycleCounterQuery.cpp"
+    )
+    set_target_properties(
+            has_builtin_readcyclecounter
+            PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/scripts"
+    )
 
     #### TODO: when building target with a cmake command, cmake fails to load its cache as it's not done generating.
     ####execute_process(COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target has_builtin_readcyclecounter)
@@ -98,14 +105,17 @@ else ()
         option(LIBOMP_HAVE___RDTSC ${LIBOMP_HAVE___RDTSC_DOC} ON)
     elseif (${HAS_BUILTIN_READCYCLECOUNTER_OUTPUT} LESS_EQUAL 0)
         message(STATUS "No time-stamp counter found.")
-        message(WARNING "No high resolution timer found, Auto4OMP may complain. \n
-        Auto4OMP requires one of two high resolution timers: a cycle counter or time-stamp counter. \n
-        The cycle counter register is read with the builtin function __builtin_readcyclecounter(). \
-        To check if the system provides this timer, call __has_builtin(__builtin_readcyclecounter). \n
-        The time-stamp counter is read with __rdtscp(). \
-        To check if the system provides it, run the following command: lscpu | grep rdtsc \n
-        Cmake attempted to query for the two timers but did not find them. \
-        Auto4OMP will thus likely produce build errors.")
+        message(
+                WARNING
+                "No high resolution timer found, Auto4OMP may complain. \n
+                Auto4OMP requires one of two high resolution timers: a cycle counter or time-stamp counter. \n
+                The cycle counter register is read with the builtin function __builtin_readcyclecounter(). \
+                To check if the system provides this timer, call __has_builtin(__builtin_readcyclecounter). \n
+                The time-stamp counter is read with __rdtscp(). \
+                To check if the system provides it, run the following command: lscpu | grep rdtsc \n
+                Cmake attempted to query for the two timers but did not find them. \
+                Auto4OMP will thus likely produce build errors."
+        )
     endif ()
 
     ## CUDA:
@@ -123,24 +133,31 @@ else ()
             if (${CUDA_VERSION_MAJOR} GREATER 10)
                 # CUDA 11+ dropped support for compute 3.5. Use 5.3 instead.
                 # List of Nvidia GPUs and their compute capabilities: [7]
-                set(LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES
-                        53 CACHE STRING ${LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC} FORCE)
+                set(
+                        LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES 53
+                        CACHE INTERNAL ${LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC}
+                )
             endif ()
 
             # GCC: CUDA requires gcc 12 or less. If installed, pass its path to NVCC.
             # According to LB4OMP's docs, it won't be used to produce binaries, only to pass NVCC's compiler checks.
             if (NOT ${AUTOPAS_NVCC_GNUC_PATH} STREQUAL "")
                 # If alternate gcc specified, pass it to Auto4OMP.
-                set(LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER
-                        ${AUTOPAS_NVCC_GNUC_PATH} CACHE STRING ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
+                set(
+                        LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER ${AUTOPAS_NVCC_GNUC_PATH}
+                        CACHE INTERNAL {AUTOPAS_NVCC_GNUC_PATH_DOC}
+                )
                 message(STATUS "GCC: ${LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER}") # Debug.
             elseif (DEFINED ENV{__GNUC__})
                 if ($ENV{__GNUC__} GREATER AUTOPAS_NVCC_MAX_GCC)
                     # If system's gcc is incompatible with NVCC, warn.
-                    message(WARNING "CUDA enabled, but system's gcc is newer than ${AUTOPAS_NVCC_MAX_GCC}. \
-                    NVCC may complain. To fix, disable CUDA or install e.g. gcc-${AUTOPAS_NVCC_MAX_GCC} \
-                    and and pass its path (e.g. \"/usr/bin/gcc-12\") \
-                    with the CMake option LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER.")
+                    message(
+                            WARNING
+                            "CUDA enabled, but system's gcc is newer than ${AUTOPAS_NVCC_MAX_GCC}. \
+                            NVCC may complain. To fix, disable CUDA or install e.g. gcc-${AUTOPAS_NVCC_MAX_GCC} \
+                            and and pass its path (e.g. \"/usr/bin/gcc-12\") \
+                            with the CMake option LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER."
+                    )
                 endif ()
                 # If system's gcc is compatible, do nothing.
             else ()
@@ -176,13 +193,16 @@ else ()
         set(
                 OPENMP_LLVM_LIT_EXECUTABLE
                 ${AUTOPAS_LLVM_LIT_EXECUTABLE}
-                CACHE FILEPATH ${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC} FORCE
+                CACHE INTERNAL ${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC}
         )
     else ()
-        message(STATUS "No path to LLVM-lit was found, Auto4OMP may warn. \
-        AutoPas attempted to look for lit with the PATH environment variable \
-        and the command \"find /usr/lib -name lit.py\", but did not find it. \
-        To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/lit.py\"")
+        message(
+                STATUS
+                "No path to LLVM-lit was found, Auto4OMP may warn. \
+                AutoPas attempted to look for lit with the PATH environment variable \
+                and the command \"find /usr/lib -name lit.py\", but did not find it. \
+                To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/lit.py\""
+        )
     endif ()
 
     ## FileCheck:
@@ -208,15 +228,17 @@ else ()
     if (AUTOPAS_FILECHECK_EXECUTABLE)
         message(STATUS "FileCheck executable at ${AUTOPAS_FILECHECK_EXECUTABLE}")
         set(
-                OPENMP_FILECHECK_EXECUTABLE
-                ${AUTOPAS_FILECHECK_EXECUTABLE}
-                CACHE FILEPATH ${AUTOPAS_FILECHECK_EXECUTABLE_DOC} FORCE
+                OPENMP_FILECHECK_EXECUTABLE ${AUTOPAS_FILECHECK_EXECUTABLE}
+                CACHE INTERNAL ${AUTOPAS_FILECHECK_EXECUTABLE_DOC}
         )
     else ()
-        message(STATUS "No path to FileCheck was found, Auto4OMP may warn. \
-        AutoPas attempted to look for FileCheck with the PATH environment variable \
-        and the command \"find /usr/lib -name FileCheck\", but did not find it. \
-        To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/FileCheck\"")
+        message(
+                STATUS
+                "No path to FileCheck was found, Auto4OMP may warn. \
+                AutoPas attempted to look for FileCheck with the PATH environment variable \
+                and the command \"find /usr/lib -name FileCheck\", but did not find it. \
+                To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/FileCheck\""
+        )
     endif ()
 
     # Mark Auto4OMP's options advanced.
@@ -260,9 +282,6 @@ else ()
             LIBOMPTARGET_NVPTX_DEBUG
     )
 
-    #set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
-    #set(CMAKE_POLICY_DEFAULT_CMP0126 NEW)
-
     # Mark as standalone build to fix CMake's missing declaration errors.
     set(OPENMP_STANDALONE_BUILD ON)
 
@@ -272,16 +291,14 @@ else ()
     ## Option 1: download Auto4OMP from GIT and make the CMake targets available. TODO: untested.
     #FetchContent_Declare(
     #        auto4omp
-    #        GIT_REPOSITORY https://github.com/unibas-dmi-hpc/LB4OMP
-    #        GIT_TAG v0.1 # The Auto4OMP release.
+    #        GIT_REPOSITORY https://github.com/unibas-dmi-hpc/LB4OMP # [*]
     #)
 
     # Option 2: build the pre-packaged Auto4OMP and make the CMake targets available.
     FetchContent_Declare(
             auto4omp
-            URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-0.1.zip
-            URL_HASH MD5=7bfcf0f896ed99945515a33cd5734cf0 # Calculated with the md5sum command.
-            CMAKE_ARGS "-DCMAKE_C_COMPILER=clang;-DCMAKE_CXX_COMPILER=clang++"
+            URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-master.zip # [*]
+            URL_HASH MD5=b8090fa162eb2232870916271f36650f # Calculated with the md5sum command.
     )
 
     # Use the following old policies to suppress Auto4OMP's CMake warnings.
@@ -291,8 +308,6 @@ else ()
 
     # Integrate Auto4OMP into the project.
     FetchContent_MakeAvailable(auto4omp)
-    include_directories(SYSTEM "${auto4omp_SOURCE_DIR}/runtime/src")
-    link_directories(SYSTEM "${auto4omp_SOURCE_DIR}/runtime/src")
 
     # Reset Policies.
     set(CMAKE_POLICY_DEFAULT_CMP0146 NEW) # The FindCUDA module.
@@ -308,4 +323,11 @@ endif ()
 # [6] https://stackoverflow.com/a/35693504
 # [7] https://developer.nvidia.com/cuda-gpus
 # [8] https://unix.stackexchange.com/a/294493
+# [9] https://stackoverflow.com/a/71817684
 # Some code was inspired from autopas_spdlog.cmake and other AutoPas CMake files.
+
+# [*] Don't use LB4OMP v0.1 (the Auto4OMP release). Clone the newer master branch instead.
+## v0.1 initializes atomics as follows: atomic<int> i = 0;
+## Although this is handled since C++17 [9], CMake seems to set an older C++ standard somewhere.
+## Building thus fails with modern Clang due to the deleted constructor atomic(const atomic&).
+## Auto4OMP's master branch now correctly uses atomic<int> i(0), compatible with all C++ standards.
