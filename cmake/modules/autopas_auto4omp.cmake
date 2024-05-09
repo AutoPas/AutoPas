@@ -1,25 +1,39 @@
+#[=====================================================================================================================[
+File: autopas_auto4omp.cmake
+Author: MehdiHachicha
+Date: 15.04.2024
+
+This CMake module loads Auto4OMP into the AutoPas project.
+It attempts to automatically handle its required CMake arguments, and warns if one must be manually entered.
+Ideally, "cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang" should work without issues.
+If cuda's installed, a gcc compatible with NVCC should also be installed. E.g., gcc-12.
+#]=====================================================================================================================]
+
 # Version settings for convenience. If Auto4OMP supports new packages, update here.
-set(AUTOPAS_NVCC_MAX_GCC 12 CACHE STRING "Newest gcc version supported by NVCC.")
-
-# Option descriptions:
 set(
-        AUTOPAS_AUTO4OMP_DOC
-        "Activates Auto4OMP to automatically select OpenMP scheduling algorithms \
-        from the LB4OMP portfolio during runtime."
+        AUTOPAS_NVCC_MAX_GCC 12
+        CACHE STRING "Newest gcc version supported by NVCC."
 )
 
-set(
-        AUTOPAS_LLVM_LIT_EXECUTABLE_DOC
-        "Path to the LLVM-lit executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/build/utils/lit/lit.py\". \
-        To find it, run the terminal command \"find /usr -name lit.py\". \
-        By default, Auto4OMP looks for LLVM-lit with the PATH environment variable."
+# Variable descriptions:
+string(
+        CONCAT AUTOPAS_AUTO4OMP_DOC
+        "Activates Auto4OMP to automatically select OpenMP scheduling algorithms "
+        "from the LB4OMP portfolio during runtime."
 )
 
-set(
-        AUTOPAS_FILECHECK_EXECUTABLE_DOC
-        "Path to the FileCheck executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/bin/FileCheck\". \
-        To find it, run the terminal command \"find /usr -name lit.py\". \
-        By default, Auto4OMP looks for FileCheck with the PATH environment variable."
+string(
+        CONCAT AUTOPAS_LLVM_LIT_EXECUTABLE_DOC
+        "Path to the LLVM-lit executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/build/utils/lit/lit.py\". "
+        "To find it, run the following command: find /usr -name lit.py. "
+        "By default, Auto4OMP looks for LLVM-lit with the PATH environment variable."
+)
+
+string(
+        CONCAT AUTOPAS_FILECHECK_EXECUTABLE_DOC
+        "Path to the FileCheck executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/bin/FileCheck\". "
+        "To find it, run the following command: find /usr -name lit.py. "
+        "By default, Auto4OMP looks for FileCheck with the PATH environment variable."
 )
 
 set(
@@ -27,15 +41,26 @@ set(
         "Path to gcc ${AUTOPAS_NVCC_MAX_GCC} or less, required by NVCC, in case system's gcc is newer."
 )
 
-set(LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER_DOC "Indicates whether the system supports __builtin_readcyclecounter().")
-set(LIBOMP_HAVE___RDTSC_DOC "Indicates whether the system supports __rdtscp().")
-set(LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC "Nvidia GPU's compute capability.")
+set(
+        LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER_DOC
+        "Indicates whether the system supports __builtin_readcyclecounter()."
+)
 
-# AutoPas options:
+set(
+        LIBOMP_HAVE___RDTSC_DOC
+        "Indicates whether the system supports __rdtscp()."
+)
+
+set(
+        LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC
+        "Nvidia GPU's compute capability."
+)
+
+# AutoPas CMake variables for Auto4OMP:
 option(AUTOPAS_AUTO4OMP ${AUTOPAS_AUTO4OMP_DOC} ON)
-set(AUTOPAS_NVCC_GNUC_PATH "" CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC})
-set(AUTOPAS_LLVM_LIT_EXECUTABLE "" CACHE FILEPATH ${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC})
-set(AUTOPAS_FILECHECK_EXECUTABLE "" CACHE FILEPATH ${AUTOPAS_FILECHECK_EXECUTABLE_DOC})
+set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC})
+set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH ${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC})
+set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH ${AUTOPAS_FILECHECK_EXECUTABLE_DOC})
 
 if (NOT AUTOPAS_AUTO4OMP)
     # If Auto4OMP disabled, notify.
@@ -54,7 +79,7 @@ else ()
         message(WARNING "Auto4OMP needs clang, but ${CMAKE_CXX_COMPILER_ID} is used. Building may produce errors.")
     endif ()
 
-    # Auto4OMP's CMake options:
+    # Auto4OMP's CMake variables:
 
     ## High resolution timer:
     ### Auto4OMP needs a high resolution timer to make measurements; either a cycle counter or time-stamp counter.
@@ -106,14 +131,13 @@ else ()
         message(STATUS "No time-stamp counter found.")
         message(
                 WARNING
-                "No high resolution timer found, Auto4OMP may complain. \n
-                Auto4OMP requires one of two high resolution timers: a cycle counter or time-stamp counter. \n
-                The cycle counter register is read with the builtin function __builtin_readcyclecounter(). \
-                To check if the system provides this timer, call __has_builtin(__builtin_readcyclecounter). \n
-                The time-stamp counter is read with __rdtscp(). \
-                To check if the system provides it, run the following command: lscpu | grep rdtsc \n
-                Cmake attempted to query for the two timers but did not find them. \
-                Auto4OMP will thus likely produce build errors."
+                "No high resolution timer found, Auto4OMP may complain.\n"
+                "Auto4OMP requires one of two high resolution timers: a cycle counter or time-stamp counter.\n"
+                "The cycle counter register is read with the builtin function __builtin_readcyclecounter(). "
+                "To check if the system provides this timer, call __has_builtin(__builtin_readcyclecounter).\n"
+                "The time-stamp counter is read with __rdtscp(). "
+                "To check if the system provides it, run the following command: lscpu | grep rdtsc\n"
+                "Cmake attempted to query for the two timers but did not find them. Auto4OMP may fail."
         )
     endif ()
 
@@ -180,10 +204,10 @@ else ()
                 else ()
                     message(
                             WARNING
-                            "CUDA enabled, but system's gcc is newer than ${AUTOPAS_NVCC_MAX_GCC}. \
-                            NVCC may complain. To fix, disable CUDA or install e.g. gcc-${AUTOPAS_NVCC_MAX_GCC} \
-                            and and pass its path (e.g. \"/usr/bin/gcc-12\") \
-                            with the CMake option LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER."
+                            "CUDA enabled, but system's gcc is newer than ${AUTOPAS_NVCC_MAX_GCC}. NVCC may complain.\n"
+                            "To fix, disable CUDA or install e.g. gcc-${AUTOPAS_NVCC_MAX_GCC} "
+                            "and and pass its path (e.g. \"/usr/bin/gcc-${AUTOPAS_NVCC_MAX_GCC}\") "
+                            "with the CMake variable LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER."
                     )
                 endif ()
 
@@ -229,10 +253,10 @@ else ()
     else ()
         message(
                 STATUS
-                "No path to LLVM-lit was found, Auto4OMP may warn. \
-                AutoPas attempted to look for lit with the PATH environment variable \
-                and the command \"find /usr/lib -name lit.py\", but did not find it. \
-                To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/lit.py\""
+                "No path to LLVM-lit was found, Auto4OMP may warn.\n"
+                "AutoPas attempted to look for lit with the PATH environment variable "
+                "and the command \"find /usr/lib -name lit.py\", but did not find it.\n"
+                "To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/lit.py\""
         )
     endif ()
 
@@ -265,14 +289,14 @@ else ()
     else ()
         message(
                 STATUS
-                "No path to FileCheck was found, Auto4OMP may warn. \
-                AutoPas attempted to look for FileCheck with the PATH environment variable \
-                and the command \"find /usr/lib -name FileCheck\", but did not find it. \
-                To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/FileCheck\""
+                "No path to FileCheck was found, Auto4OMP may warn.\n"
+                "AutoPas attempted to look for FileCheck with the PATH environment variable "
+                "and the command \"find /usr/lib -name FileCheck\", but did not find it.\n"
+                "To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/FileCheck\""
         )
     endif ()
 
-    # Mark Auto4OMP's options advanced.
+    # Mark Auto4OMP's variables advanced.
     mark_as_advanced(
             OPENMP_ENABLE_WERROR
             OPENMP_LIBDIR_SUFFIX
@@ -346,20 +370,23 @@ else ()
 
 endif ()
 
-# [1] https://releases.llvm.org/4.0.1/tools/clang/LanguageExtensions.html
-# [2] https://stackoverflow.com/a/41380220
-# [3] https://stackoverflow.com/a/50306091
-# [4] https://clang.llvm.org/docs/LanguageExtensions.html#has-builtin
-# [5] https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fbuiltin.html
-# [6] https://stackoverflow.com/a/35693504
-# [7] https://developer.nvidia.com/cuda-gpus
-# [8] https://packages.ubuntu.com/
-# [9] https://unix.stackexchange.com/a/294493
-# [10] https://stackoverflow.com/a/71817684
-# Some code was inspired from autopas_spdlog.cmake and other AutoPas CMake files.
+#[=====================================================================================================================[
+Sources:
+    [1]  https://releases.llvm.org/4.0.1/tools/clang/LanguageExtensions.html
+    [2]  https://stackoverflow.com/a/41380220
+    [3]  https://stackoverflow.com/a/50306091
+    [4]  https://clang.llvm.org/docs/LanguageExtensions.html#has-builtin
+    [5]  https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fbuiltin.html
+    [6]  https://stackoverflow.com/a/35693504
+    [7]  https://developer.nvidia.com/cuda-gpus
+    [8]  https://packages.ubuntu.com/
+    [9]  https://unix.stackexchange.com/a/294493
+    [10] https://stackoverflow.com/a/71817684
+         Some code was inspired from autopas_spdlog.cmake and other AutoPas CMake files.
 
-# [*] Don't use LB4OMP v0.1 (the Auto4OMP release). Clone the newer master branch instead.
-## v0.1 initializes atomics as follows: atomic<int> i = 0;
-## Although this is handled since C++17 [10], CMake seems to set an older C++ standard somewhere.
-## Building thus fails with modern Clang due to the deleted constructor atomic(const atomic&).
-## Auto4OMP's master branch now correctly uses atomic<int> i(0), compatible with all C++ standards.
+    [*]  Don't use LB4OMP v0.1 (the Auto4OMP release). Clone the newer master branch instead.
+         v0.1 initializes atomics as follows: atomic<int> i = 0;
+         Although this is handled since C++17 [10], CMake seems to set an older C++ standard somewhere.
+         Building thus fails with modern Clang due to the deleted constructor atomic(const atomic&).
+         Auto4OMP's master branch now correctly uses atomic<int> i(0), compatible with all C++ standards.
+#]=====================================================================================================================]
