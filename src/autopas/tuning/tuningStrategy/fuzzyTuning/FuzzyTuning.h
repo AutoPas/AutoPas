@@ -53,7 +53,7 @@ class FuzzyTuning : public TuningStrategyInterface {
   /**
    * The current live info used to make predictions.
    */
-  LiveInfo _currentLiveInfo;
+  std::map<std::string, double> _currentLiveInfo;
 
   /**
    * The fuzzy control systems parsed from the fuzzy rule file.

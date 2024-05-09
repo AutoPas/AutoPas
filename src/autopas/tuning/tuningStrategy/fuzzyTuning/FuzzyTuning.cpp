@@ -51,7 +51,23 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
 
 bool FuzzyTuning::needsLiveInfo() const { return true; }
 
-void FuzzyTuning::receiveLiveInfo(const LiveInfo &info) { _currentLiveInfo = info; }
+void FuzzyTuning::receiveLiveInfo(const LiveInfo &info) {
+  // clear the current live info
+  _currentLiveInfo.clear();
+
+  // only filter out the numeric values
+  for (const auto &infoEntry : info.get()) {
+    const auto &name = infoEntry.first;
+    const auto &value = infoEntry.second;
+    std::visit(
+        [&](auto type) {
+          if constexpr (std::is_same_v<decltype(type), size_t> or std::is_same_v<decltype(type), double>) {
+            _currentLiveInfo[name] = type;
+          }
+        },
+        value);
+  }
+}
 
 void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {}
 
@@ -62,7 +78,11 @@ void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                       const EvidenceCollection &evidenceCollection) {
   using namespace autopas::fuzzy_logic;
 
-  const std::map<std::string, LiveInfo::InfoType> live_info = _currentLiveInfo.get();
+  for (const auto &[name, fcs] : _fuzzyControlSystems) {
+    auto prediction = fcs->predict(_currentLiveInfo);
+
+    std::cout << "Prediction for " << name << ": " << prediction << std::endl;
+  }
 
   // set new search space
   // std::copy(newSearchSpace.begin(), newSearchSpace.end(), std::back_inserter(configQueue));
