@@ -86,11 +86,10 @@ else ()
             OUTPUT_VARIABLE HAS_BUILTIN_READCYCLECOUNTER_OUTPUT
     )
 
-    #### TODO: (extra) why doesn't if (string) return true when string's not empty?
     if (${HAS_BUILTIN_READCYCLECOUNTER_OUTPUT} GREATER 0)
         # __has_builtin() returns  a non-zero int if the feature's supported, else 0. [4, 5]
         # If cycle counter available, enable.
-        message(STATUS "Cycle counter found, enabling.")
+        message(DEBUG "Cycle counter found, enabling.")
         option(LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER ${LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER_DOC} ON)
     else ()
         message(STATUS "No cycle counter found. Will look for time-stamp counter next.")
@@ -101,7 +100,7 @@ else ()
     execute_process(COMMAND lscpu COMMAND grep rdtsc OUTPUT_VARIABLE LSCPU_GREP_RDTSC_OUTPUT)
     if (NOT ${LSCPU_GREP_RDTSC_OUTPUT} STREQUAL "")
         # If time-stamp counter available, enable.
-        message(STATUS "Time-stamp counter found, enabling.")
+        message(DEBUG "Time-stamp counter found, enabling.")
         option(LIBOMP_HAVE___RDTSC ${LIBOMP_HAVE___RDTSC_DOC} ON)
     elseif (${HAS_BUILTIN_READCYCLECOUNTER_OUTPUT} LESS_EQUAL 0)
         message(STATUS "No time-stamp counter found.")
@@ -127,7 +126,7 @@ else ()
         find_package(CUDA QUIET)
         if (${CUDA_FOUND})
             # If CUDA's installed, Auto4OMP will use it by default. The following fixes build errors.
-            message(STATUS "CUDA found.")
+            message(DEBUG "CUDA found.")
 
             # GPU compute capability:
             if (${CUDA_VERSION_MAJOR} GREATER 10)
@@ -141,16 +140,44 @@ else ()
 
             # GCC: CUDA requires gcc 12 or less. If installed, pass its path to NVCC.
             # According to LB4OMP's docs, it won't be used to produce binaries, only to pass NVCC's compiler checks.
-            if (NOT ${AUTOPAS_NVCC_GNUC_PATH} STREQUAL "")
-                # If alternate gcc specified, pass it to Auto4OMP.
-                set(
-                        LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER ${AUTOPAS_NVCC_GNUC_PATH}
-                        CACHE INTERNAL {AUTOPAS_NVCC_GNUC_PATH_DOC}
-                )
-                message(STATUS "GCC: ${LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER}") # Debug.
-            elseif (DEFINED ENV{__GNUC__})
-                if ($ENV{__GNUC__} GREATER AUTOPAS_NVCC_MAX_GCC)
-                    # If system's gcc is incompatible with NVCC, warn.
+            if (NOT AUTOPAS_NVCC_GNUC_PATH)
+                find_program(GCC_PATH gcc)
+                if (GCC_PATH)
+                    # Isolate gcc's version major from gcc's version output.
+                    set(GCC_VERSION_MAJOR OFF)
+                    execute_process(
+                            COMMAND ${GCC_PATH} --version # Multi-line output.
+                            COMMAND grep gcc # First line, including the version.
+                            COMMAND cut -d " " -f4 # Full version, format ?.?.?.
+                            COMMAND cut -d "." -f1 # Version major.
+                            COMMAND tr -d '\n' # Truncates newlines.
+                            OUTPUT_VARIABLE GCC_VERSION_MAJOR
+                    )
+                    if (${GCC_VERSION_MAJOR} LESS_EQUAL ${AUTOPAS_NVCC_MAX_GCC})
+                        set(AUTOPAS_NVCC_GNUC_PATH ${GCC_PATH} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
+                    else ()
+                        # If system's gcc is incompatible with NVCC, look for compatible gcc.
+                        message(
+                                STATUS
+                                "CUDA enabled, but system's gcc is incompatible with NVCC. Looking for compatible gcc."
+                        )
+
+                        # Look for gcc executable names based on Ubuntu's packages [8].
+                        # Names based on other package managers can be added here too.
+                        find_program(GCC_LESS NAMES gcc-12 gcc-11 gcc-10 gcc-9 gcc-8 gcc-7)
+                        set(AUTOPAS_NVCC_GNUC_PATH ${GCC_LESS} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
+                    endif ()
+                    # If system's gcc is compatible, do nothing.
+                endif ()
+
+                if (AUTOPAS_NVCC_GNUC_PATH)
+                    # If alternate gcc found or specified, pass it to Auto4OMP.
+                    set(
+                            LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER ${AUTOPAS_NVCC_GNUC_PATH}
+                            CACHE INTERNAL ${AUTOPAS_NVCC_GNUC_PATH_DOC}
+                    )
+                    message(DEBUG "Alternate GCC for NVCC at ${LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER}")
+                else ()
                     message(
                             WARNING
                             "CUDA enabled, but system's gcc is newer than ${AUTOPAS_NVCC_MAX_GCC}. \
@@ -159,11 +186,15 @@ else ()
                             with the CMake option LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER."
                     )
                 endif ()
+
                 # If system's gcc is compatible, do nothing.
-            else ()
+                #else ()
                 # If no gcc found, warn.
-                message(WARNING "CUDA enabled, but no gcc found. NVCC may complain. \
-            To fix, install gcc ${AUTOPAS_NVCC_MAX_GCC} or less.")
+                #    message(
+                #            WARNING
+                #            "CUDA enabled, but no gcc found. NVCC may complain during Auto4OMP's build. \
+                #            To fix, install gcc ${AUTOPAS_NVCC_MAX_GCC} or less."
+                #    )
             endif ()
         endif ()
     endblock()
@@ -172,7 +203,7 @@ else ()
     ### Look for FileCheck with the PATH environment variable.
     if (NOT AUTOPAS_LLVM_LIT_EXECUTABLE)
         message(DEBUG "Looking for LLVM-lit with the PATH environment variable.")
-        find_program(AUTOPAS_LLVM_LIT_EXECUTABLE NAMES llvm-lit lit lit.py)
+        find_program(AUTOPAS_LLVM_LIT_EXECUTABLE NAMES lit llvm-lit lit.py)
     endif ()
 
     ### Look for FileCheck with the find command.
@@ -181,7 +212,7 @@ else ()
         execute_process(
                 COMMAND find /usr/lib -name lit.py # Lists paths containing lit.
                 COMMAND sort -dfr # Puts paths through newer LLVM versions at the top.
-                COMMAND grep -m1 "" #Keeps first path only, inspired from [8].
+                COMMAND grep -m1 "" #Keeps first path only, inspired from [9].
                 COMMAND tr -d '\n' # Truncates newlines.
                 OUTPUT_VARIABLE AUTOPAS_LLVM_LIT_EXECUTABLE
         )
@@ -189,7 +220,7 @@ else ()
 
     ### If a path to LLVM-lit executable was specified, pass it to Auto4OMP.
     if (AUTOPAS_LLVM_LIT_EXECUTABLE)
-        message(STATUS "LLVM-lit executable at ${AUTOPAS_LLVM_LIT_EXECUTABLE}")
+        message(DEBUG "LLVM-lit executable at ${AUTOPAS_LLVM_LIT_EXECUTABLE}")
         set(
                 OPENMP_LLVM_LIT_EXECUTABLE
                 ${AUTOPAS_LLVM_LIT_EXECUTABLE}
@@ -209,7 +240,7 @@ else ()
     ### Look for FileCheck with the PATH environment variable.
     if (NOT AUTOPAS_FILECHECK_EXECUTABLE)
         message(DEBUG "Looking for FileCheck with the PATH environment variable.")
-        find_program(AUTOPAS_FILECHECK_EXECUTABLE NAMES FileCheck)
+        find_program(AUTOPAS_FILECHECK_EXECUTABLE FileCheck)
     endif ()
 
     ### Look for FileCheck with the find command.
@@ -218,7 +249,7 @@ else ()
         execute_process(
                 COMMAND find /usr/lib -name FileCheck # Lists paths containing FileCheck.
                 COMMAND sort -dfr # Puts paths through newer LLVM versions at the top.
-                COMMAND grep -m1 "" # Keeps first path only, inspired from [8].
+                COMMAND grep -m1 "" # Keeps first path only, inspired from [9].
                 COMMAND tr -d '\n' # Truncates newlines.
                 OUTPUT_VARIABLE AUTOPAS_FILECHECK_EXECUTABLE
         )
@@ -226,7 +257,7 @@ else ()
 
     ### If a path to FileCheck executable was found or specified, pass it to Auto4OMP.
     if (AUTOPAS_FILECHECK_EXECUTABLE)
-        message(STATUS "FileCheck executable at ${AUTOPAS_FILECHECK_EXECUTABLE}")
+        message(DEBUG "FileCheck executable at ${AUTOPAS_FILECHECK_EXECUTABLE}")
         set(
                 OPENMP_FILECHECK_EXECUTABLE ${AUTOPAS_FILECHECK_EXECUTABLE}
                 CACHE INTERNAL ${AUTOPAS_FILECHECK_EXECUTABLE_DOC}
@@ -322,12 +353,13 @@ endif ()
 # [5] https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fbuiltin.html
 # [6] https://stackoverflow.com/a/35693504
 # [7] https://developer.nvidia.com/cuda-gpus
-# [8] https://unix.stackexchange.com/a/294493
-# [9] https://stackoverflow.com/a/71817684
+# [8] https://packages.ubuntu.com/
+# [9] https://unix.stackexchange.com/a/294493
+# [10] https://stackoverflow.com/a/71817684
 # Some code was inspired from autopas_spdlog.cmake and other AutoPas CMake files.
 
 # [*] Don't use LB4OMP v0.1 (the Auto4OMP release). Clone the newer master branch instead.
 ## v0.1 initializes atomics as follows: atomic<int> i = 0;
-## Although this is handled since C++17 [9], CMake seems to set an older C++ standard somewhere.
+## Although this is handled since C++17 [10], CMake seems to set an older C++ standard somewhere.
 ## Building thus fails with modern Clang due to the deleted constructor atomic(const atomic&).
 ## Auto4OMP's master branch now correctly uses atomic<int> i(0), compatible with all C++ standards.
