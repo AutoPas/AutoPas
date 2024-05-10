@@ -85,23 +85,20 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleType p_copy = haloParticle;
-    p_copy.setOwnershipState(OwnershipState::halo);
+    ParticleType pCopy = haloParticle;
+    pCopy.setOwnershipState(OwnershipState::halo);
     const auto boxMax = this->getBoxMax();
     const auto boxMin = this->getBoxMin();
-    const auto pos = p_copy.getR();
-    if (pos[0] < boxMin[0]) {
-      this->_cells[1].addParticle(p_copy);
-    } else if (pos[0] >= boxMax[0]) {
-      this->_cells[2].addParticle(p_copy);
-    } else if (pos[1] < boxMin[1]) {
-      this->_cells[3].addParticle(p_copy);
-    } else if (pos[1] >= boxMax[1]) {
-      this->_cells[4].addParticle(p_copy);
-    } else if (pos[2] < boxMin[2]) {
-      this->_cells[5].addParticle(p_copy);
-    } else if (pos[2] >= boxMax[2]) {
-      this->_cells[6].addParticle(p_copy);
+    const auto pos = pCopy.getR();
+
+    for (size_t dim = 0; dim < 3; ++dim) {
+      if (pos[dim] < boxMin[dim]) {
+        this->_cells[2 * dim + 1].addParticle(pCopy);
+        return;
+      } else if (pos[dim] >= boxMax[dim]) {
+        this->_cells[2 * dim + 2].addParticle(pCopy);
+        return;
+      }
     }
   }
 
@@ -111,11 +108,24 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   bool updateHaloParticle(const ParticleType &haloParticle) override {
     ParticleType pCopy = haloParticle;
     pCopy.setOwnershipState(OwnershipState::halo);
-    for (auto cellIt = ++this->_cells.begin(); cellIt != this->_cells.end(); cellIt++) {
-      if (internal::checkParticleInCellAndUpdateByIDAndPosition(*cellIt, pCopy, this->getVerletSkin())) {
-        return true;
-      };
+    const auto boxMax = this->getBoxMax();
+    const auto boxMin = this->getBoxMin();
+    const auto pos = pCopy.getR();
+    const auto skin = this->getVerletSkin();
+
+    // Look for the particle in halo cells within skin distance of its position
+    for (size_t dim = 0; dim < 3; ++dim) {
+      if (pos[dim] < boxMin[dim] + skin) {
+        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 1], pCopy, skin)) {
+          return true;
+        }
+      } else if (pos[dim] >= boxMax[dim] - skin) {
+        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 2], pCopy, skin)) {
+          return true;
+        }
+      }
     }
+
     return false;
   }
 
