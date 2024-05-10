@@ -14,9 +14,22 @@ file(
 
 add_library(autopas STATIC ${MY_SRC})
 
-# If the Auto4OMP target was configured, add it as a dependency to the AutoPas target.
 if (TARGET auto4omp)
+    # Add the Auto4OMP dependency to AutoPas.
     add_dependencies(autopas auto4omp)
+
+    # Include and link Auto4OMP's headers in AutoPas (e.g., omp.h).
+    target_include_directories(autopas BEFORE PUBLIC "${auto4omp_BINARY_DIR}/runtime/src")
+    target_link_directories(autopas BEFORE PUBLIC "${auto4omp_BINARY_DIR}/runtime/src")
+
+    # Link Auto4OMP's built libraries.
+    target_link_libraries(autopas PUBLIC auto4omp_libomp auto4omp_libomptarget)
+    if (TARGET auto4omp_libomptarget_rtl_cuda)
+        target_link_libraries(autopas PUBLIC auto4omp_libomptarget_rtl_cuda auto4omp_libomptarget_nvptx)
+    endif ()
+    if (TARGET auto4omp_libomptarget_rtl_x86_64)
+        target_link_libraries(autopas PUBLIC auto4omp_libomptarget_rtl_x86_64)
+    endif ()
 endif ()
 
 target_link_libraries(

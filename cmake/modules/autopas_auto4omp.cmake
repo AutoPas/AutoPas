@@ -375,7 +375,52 @@ else ()
             COMMENT "Building Auto4OMP"
     )
 
-    # TODO: prioritize Auto4OMP's libomp and other libs. [**]
+    # Add targets for Auto4OMP's built libraries. [**]
+    add_library(auto4omp_libomp SHARED IMPORTED GLOBAL)
+    set_target_properties(
+            auto4omp_libomp
+            PROPERTIES
+            IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/runtime/src/libomp.so"
+            IMPORTED_NO_SONAME TRUE
+    )
+
+    add_library(auto4omp_libomptarget SHARED IMPORTED GLOBAL)
+    set_target_properties(
+            auto4omp_libomptarget
+            PROPERTIES
+            IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.so"
+            IMPORTED_NO_SONAME TRUE
+    )
+
+    if (${CUDA_FOUND})
+        add_library(auto4omp_libomptarget_rtl_cuda SHARED IMPORTED GLOBAL)
+        set_target_properties(
+                auto4omp_libomptarget_rtl_cuda
+                PROPERTIES
+                IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.cuda.so"
+                IMPORTED_NO_SONAME TRUE
+        )
+
+        add_library(auto4omp_libomptarget_nvptx STATIC IMPORTED GLOBAL)
+        set_target_properties(
+                auto4omp_libomptarget_nvptx
+                PROPERTIES
+                IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget-nvptx.a"
+                IMPORTED_NO_SONAME TRUE
+        )
+    endif ()
+
+    if (EXISTS "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.x86_64.so")
+        add_library(auto4omp_libomptarget_rtl_x86_64 SHARED IMPORTED GLOBAL)
+        set_target_properties(
+                auto4omp_libomptarget_rtl_x86_64
+                PROPERTIES
+                IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.x86_64.so"
+                IMPORTED_NO_SONAME TRUE
+        )
+    endif ()
+
+    # TODO: prioritize Auto4OMP's libomp and other libs. Did linking the built libraries achieve this? [**]
 
 endif ()
 
@@ -405,7 +450,8 @@ Sources:
 
           Instead, use the local files built with make:
           omp.h, omp-tools.h at auto4omp-build/runtime/src; auto4omp-build/runtime/src/libomp.so;
-          and the libomptargets at auto4omp-build/libomptarget. TODO: Which ompt.h?
+          and the libomptargets at auto4omp-build/libomptarget. For now, no need to include ompt.h. It is a legacy
+          renamed copy of omp-tools.h, included for compatibility purposes. However, AutoPas does not use it.
 
     [***] Some code was inspired from autopas_spdlog.cmake, autopas_eigen.cmake and other AutoPas CMake files.
 #]=====================================================================================================================]
