@@ -58,7 +58,8 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     // allocate the levels according to their size and distribution
     //
     const double radiusMax = cutoff / 2.;
-    const double radiusSegment = radiusMax / numberOfLevels;
+    const double radiusMin = 0.5;  // Problem dependent!!! Should be read in!!!
+    const double radiusSegment = 1.0 / numberOfLevels;
 
     std::cout << "Created Hierarchical Grid with " << numberOfLevels << " levels" << std::endl;
 
@@ -66,10 +67,16 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     // Note: _hierarchyLevels has to be a std::deque, which does not support reserve()
     _hierarchicalGridBorders.reserve(numberOfLevels);
 
-    const double seriesCoefficient = (radiusMax - 0.5) / (std::pow(2., numberOfLevels) - 1.);
+    auto exponentiallyDistributedBoundary = [](const double lowerRadius, const double upperRadius,
+                                               const double segment) {
+      const double radiusDifference = upperRadius - lowerRadius;
+      const double prefactorSegment = (1.0 - exp(-1.0)) * segment;
+      return lowerRadius - radiusDifference * log(1.0 - prefactorSegment);
+    };
 
     for (unsigned int level = 0; level < numberOfLevels; level++) {
-      const double gridBorder = radiusMax - radiusSegment * level;
+      // const double gridBorder = radiusMax - radiusSegment * level;
+      const double gridBorder = exponentiallyDistributedBoundary(radiusMin, radiusMax, 1.0 - radiusSegment * level);
       _hierarchicalGridBorders.emplace_back(gridBorder);
       const double cellSize = _hierarchicalGridBorders[level] / radiusMax;
 
@@ -119,6 +126,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   void addParticleImpl(const ParticleType &p) override {
     // Get level of the particle and add it to the corresponding level
     unsigned int level = getHierarchyLevelOfParticle(p);
+    printf("Added particle %d with radius %4.2f to level %d\n", p.getID(), p.getRad(), level);
     addParticleToGridLevel(p, level);
   }
 

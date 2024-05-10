@@ -157,6 +157,10 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto ids = readPayload<size_t, 1>(inputStream, numParticles);
 
+  findWord(inputStream, "radii");
+  inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  auto radii = readPayload<double, 1>(inputStream, numParticles);
+
   findWord(inputStream, "positions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
@@ -171,6 +175,10 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
     particle.setID(ids[i]);
     particle.setTypeId(typeIds[i]);
 
+    particle.setRad(radii[i]);
+    particle.setPoisson(0.2);
+    particle.setYoung(1e5);
+
 #if MD_FLEXIBLE_MODE == MULTISITE
     particle.setQuaternion(quaternions[i]);
     particle.setAngularVel(angularVelocities[i]);
@@ -179,6 +187,7 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
 
     particles.push_back(particle);
   }
+  printf("Read in particles from checkpoint");
 }
 }  // namespace
 

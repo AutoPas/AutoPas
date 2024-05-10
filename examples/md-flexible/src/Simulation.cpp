@@ -159,29 +159,35 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   }
 
   if (_configuration.functorOption.value == MDFlexConfig::FunctorOption::DEM) {
-    const double radMin = _configuration.particleRadii.value[0];
-    const double radMax = _configuration.particleRadii.value[1];
+    if (_configuration.checkpointfile.value.empty()) {
+      const double radMin = _configuration.particleRadii.value[0];
+      const double radMax = _configuration.particleRadii.value[1];
 
-    std::default_random_engine generator;
-    std::normal_distribution<double> distributionVel(0, 0.5);
-    std::uniform_real_distribution<double> distributionRad(radMin, radMax);
+      std::default_random_engine generator;
+      std::normal_distribution<double> distributionVel(0, 0.5);
+      std::uniform_real_distribution<double> distributionRad(radMin, radMax);
 
-    for (auto &particle : _configuration.getParticles()) {
-      particle.setPoisson(0.2);
-      particle.setYoung(1e5);
+      for (auto &particle : _configuration.getParticles()) {
+        particle.setPoisson(0.2);
+        particle.setYoung(1e5);
 
-      const double radius = distributionRad(generator);
-      const double mass = radius * radius * radius;
+        const double radius = distributionRad(generator);
+        const double mass = radius * radius * radius;
 
-      particle.setRad(radius);
-      particle.setMass(mass);
+        particle.setRad(radius);
+        particle.setMass(mass);
 
-      const std::array<double, 3> v0 = {distributionVel(generator) / radius, distributionVel(generator) / radius,
-                                        distributionVel(generator) / radius};
+        const std::array<double, 3> v0 = {distributionVel(generator) / radius, distributionVel(generator) / radius,
+                                          distributionVel(generator) / radius};
 
-      particle.setV(v0);
+        particle.setV(v0);
 
-      _autoPasContainer->addParticle(particle);
+        _autoPasContainer->addParticle(particle);
+      }
+    } else {  // get particles from save
+      for (auto &particle : _configuration.getParticles()) {
+        _autoPasContainer->addParticle(particle);
+      }
     }
   }
   // @todo: the object generators should only generate particles relevant for the current rank's domain
