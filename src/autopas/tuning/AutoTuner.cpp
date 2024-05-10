@@ -93,13 +93,14 @@ bool AutoTuner::tuneConfiguration() {
   _samplesRebuildingNeighborLists.clear();
 
   // Helper function to reset the ConfigQueue if something wipes it.
-  auto restoreConfigQueueIfEmpty = [&](const auto &configQueueBackup) {
+  auto restoreConfigQueueIfEmpty = [&](const auto &configQueueBackup, const TuningStrategyOption &stratOpt) {
     if (_configQueue.empty()) {
       _configQueue = configQueueBackup;
     }
-    AutoPasLog(DEBUG, "ConfigQueue wipe detected! Resetting to previous state: (Size={}) {}", _configQueue.size(),
-               utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
-                                            [](const auto &conf) { return conf.toShortString(false); }));
+    AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}", stratOpt.to_string(),
+               _configQueue.size(), utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"}, [](const auto &conf) {
+                 return conf.toShortString(false);
+               }));
   };
 
   // Determine where in a tuning phase we are
@@ -122,7 +123,7 @@ bool AutoTuner::tuneConfiguration() {
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
-      restoreConfigQueueIfEmpty(configQueueBackup);
+      restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
     });
   } else {
     // CASE: somewhere in a tuning phase
@@ -136,7 +137,7 @@ bool AutoTuner::tuneConfiguration() {
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
-      restoreConfigQueueIfEmpty(configQueueBackup);
+      restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
     });
   }
 
