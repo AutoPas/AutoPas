@@ -5,7 +5,7 @@ Date: 15.04.2024
 
 This CMake module loads Auto4OMP into the AutoPas project.
 It attempts to automatically handle its required CMake arguments, and warns if one must be manually entered.
-Ideally, "cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang" should work without issues.
+Ideally, "cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++" should work without issues.
 If cuda's installed, a gcc compatible with NVCC should also be installed. E.g., gcc-12.
 #]=====================================================================================================================]
 
@@ -296,7 +296,7 @@ else ()
         )
     endif ()
 
-    # Mark Auto4OMP's variables advanced.
+    # Mark Auto4OMP's variables advanced. [***]
     mark_as_advanced(
             OPENMP_ENABLE_WERROR
             OPENMP_LIBDIR_SUFFIX
@@ -349,7 +349,7 @@ else ()
     #        GIT_REPOSITORY https://github.com/unibas-dmi-hpc/LB4OMP # [*]
     #)
 
-    # Option 2: build the pre-packaged Auto4OMP and make the CMake targets available.
+    # Option 2: build the pre-packaged Auto4OMP and make the CMake targets available. [***]
     FetchContent_Declare(
             auto4omp
             URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-master.zip # [*]
@@ -368,25 +368,44 @@ else ()
     set(CMAKE_POLICY_DEFAULT_CMP0146 NEW) # The FindCUDA module.
     set(CMAKE_POLICY_DEFAULT_CMP0148 NEW) # The FindPythonInterp and FindPythonLibs modules.
 
+    # Add a target for Auto4OMP. It builds Auto4OMP by running make in its build directory.
+    add_custom_target(
+            auto4omp ALL
+            cd ${auto4omp_BINARY_DIR} && ${CMAKE_MAKE_PROGRAM}
+            COMMENT "Building Auto4OMP"
+    )
+
+    # TODO: prioritize Auto4OMP's libomp and other libs. [**]
+
 endif ()
 
 #[=====================================================================================================================[
 Sources:
-    [1]  https://releases.llvm.org/4.0.1/tools/clang/LanguageExtensions.html
-    [2]  https://stackoverflow.com/a/41380220
-    [3]  https://stackoverflow.com/a/50306091
-    [4]  https://clang.llvm.org/docs/LanguageExtensions.html#has-builtin
-    [5]  https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fbuiltin.html
-    [6]  https://stackoverflow.com/a/35693504
-    [7]  https://developer.nvidia.com/cuda-gpus
-    [8]  https://packages.ubuntu.com/
-    [9]  https://unix.stackexchange.com/a/294493
-    [10] https://stackoverflow.com/a/71817684
-         Some code was inspired from autopas_spdlog.cmake and other AutoPas CMake files.
 
-    [*]  Don't use LB4OMP v0.1 (the Auto4OMP release). Clone the newer master branch instead.
-         v0.1 initializes atomics as follows: atomic<int> i = 0;
-         Although this is handled since C++17 [10], CMake seems to set an older C++ standard somewhere.
-         Building thus fails with modern Clang due to the deleted constructor atomic(const atomic&).
-         Auto4OMP's master branch now correctly uses atomic<int> i(0), compatible with all C++ standards.
+    [1]   https://releases.llvm.org/4.0.1/tools/clang/LanguageExtensions.html
+    [2]   https://stackoverflow.com/a/41380220
+    [3]   https://stackoverflow.com/a/50306091
+    [4]   https://clang.llvm.org/docs/LanguageExtensions.html#has-builtin
+    [5]   https://gcc.gnu.org/onlinedocs/cpp/_005f_005fhas_005fbuiltin.html
+    [6]   https://stackoverflow.com/a/35693504
+    [7]   https://developer.nvidia.com/cuda-gpus
+    [8]   https://packages.ubuntu.com/
+    [9]   https://unix.stackexchange.com/a/294493
+    [10]  https://stackoverflow.com/a/71817684
+
+    [*]   Don't use LB4OMP v0.1 (the Auto4OMP release). Clone the newer master branch instead.
+          v0.1 initializes atomics as follows: atomic<int> i = 0;
+          Although this is handled since C++17 [10], CMake seems to set an older C++ standard somewhere.
+          Building thus fails with modern Clang due to the deleted constructor atomic(const atomic&).
+          Auto4OMP's master branch now correctly uses atomic<int> i(0), compatible with all C++ standards.
+
+    [**]  Make install requires access permissions to /usr/local. It installs:
+          omp.h, omp-tools.h, ompt.h at /usr/local/include; libomp.so, libomptarget.so, libomptarget.rtl.cuda.so,
+          libomptarget.rtl.x86_64.so, libomptarget-nvptx.a at /usr/local/lib.
+
+          Instead, use the local files built with make:
+          omp.h, omp-tools.h at auto4omp-build/runtime/src; auto4omp-build/runtime/src/libomp.so;
+          and the libomptargets at auto4omp-build/libomptarget. TODO: Which ompt.h?
+
+    [***] Some code was inspired from autopas_spdlog.cmake, autopas_eigen.cmake and other AutoPas CMake files.
 #]=====================================================================================================================]

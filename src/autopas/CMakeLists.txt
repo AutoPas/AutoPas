@@ -14,6 +14,11 @@ file(
 
 add_library(autopas STATIC ${MY_SRC})
 
+# If the Auto4OMP target was configured, add it as a dependency to the AutoPas target.
+if (TARGET auto4omp)
+    add_dependencies(autopas auto4omp)
+endif ()
+
 target_link_libraries(
     autopas
     PUBLIC
