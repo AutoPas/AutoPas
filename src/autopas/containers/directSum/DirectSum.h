@@ -35,7 +35,8 @@ namespace autopas {
  * interactions with halo particles. The volumes are not equal in size, which should not matter since we only use a
  * sequential traversal (so far). The image below shows how the halo volume is split up:
  *
- * \image html DSHalos.svg "Segmentation of the surrounding halo volume in six cells. One cell on every side, where the halo cell centers always align with the owned cell center." width=1000px
+ * \image html DSHalos.svg "Segmentation of the surrounding halo volume in six cells. One cell on every side, where the
+ * halo cell centers always align with the owned cell center." width=1000px
  *
  * @tparam Particle Particle type that is used with this container.
  */
