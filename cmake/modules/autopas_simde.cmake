@@ -27,7 +27,7 @@ FetchContent_Declare(
     simde
     URL
         ${AUTOPAS_SOURCE_DIR}/libs/simde-0.8.2.zip
-    URL_HASH MD5=d95da9e9c5377e96128ea87caa9be30d
+    URL_HASH MD5=d0dadc0fbc56bdbf33d7eaf28cf7e439
 )
 
 # Check if population has already been performed
