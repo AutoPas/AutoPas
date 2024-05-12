@@ -26,11 +26,18 @@
 namespace autopas {
 
 /**
- * This class stores particles in a single cell.
+ * This class stores all owned particles in a single cell.
  * Interactions are calculated directly, such that each particle interacts with
  * every other particle.
  * Use this class only if you have a very small amount of particles at hand.
- * @tparam ParticleCell type of the cell that stores the particle
+ *
+ * The surrounding halo volume is decomposed into six halo cells. This is done, so that cell sorting can be used for
+ * interactions with halo particles. The volumes are not equal in size, which should not matter since we only use a
+ * sequential traversal (so far). The image below shows how the halo volume is split up:
+ *
+ * \image html DSHalos.svg "Segmentation of the surrounding halo volume in six cells. One cell on every side, where the halo cell centers always align with the owned cell center." width=1000px
+ *
+ * @tparam Particle Particle type that is used with this container.
  */
 template <class Particle>
 class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> {
@@ -125,7 +132,6 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
         }
       }
     }
-
     return false;
   }
 
@@ -188,7 +194,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
     // direct sum consists of seven cells (owned + two halo cells in each dimension)
     return TraversalSelectorInfo(
-        {3, 3, 3},
+        {3, 3, 3}, /* DS container can be viewed as a 3x3x3 grid with some halo cells being combined*/
         this->getCutoff() /*intentionally use cutoff here, as the directsumtraversal should be using the cutoff.*/,
         this->getBoxMax() - this->getBoxMin(), 0);
   }
@@ -316,7 +322,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   bool deleteParticle(Particle &particle) override {
     // swap-delete helper function
-    auto swapDelFromVector = [&](auto &particleVec) -> bool {
+    auto swapDelFromCell = [&](auto &particleCell) -> bool {
+      auto &particleVec = particleCell._particles;
       const bool isRearParticle = &particle == &particleVec.back();
       particle = particleVec.back();
       particleVec.pop_back();
@@ -325,12 +332,23 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
     // deduce into which vector the reference points
     if (particle.isOwned()) {
-      return swapDelFromVector(getOwnedCell()._particles);
+      return swapDelFromCell(getOwnedCell());
     } else if (particle.isHalo()) {
-      for (auto cellIt = ++this->_cells.begin(); cellIt != this->_cells.end(); cellIt++) {
-        auto particleIt = std::find(cellIt->_particles.begin(), cellIt->_particles.end(), particle);
-        if (particleIt != cellIt->_particles.end()) {
-          return swapDelFromVector(cellIt->_particles);
+      const auto boxMin = this->getBoxMin();
+      const auto boxMax = this->getBoxMax();
+      const auto skin = this->getVerletSkin();
+      const auto pos = particle.getR();
+
+      // Look for the particle in halo cells within skin distance of its position
+      for (size_t dim = 0; dim < 3; ++dim) {
+        if (pos[dim] < boxMin[dim] + skin) {
+          if (swapDelFromCell(this->_cells[2 * dim + 1])) {
+            return true;
+          }
+        } else if (pos[dim] >= boxMax[dim] - skin) {
+          if (swapDelFromCell(this->_cells[2 * dim + 2])) {
+            return true;
+          }
         }
       }
     }
