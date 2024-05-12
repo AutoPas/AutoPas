@@ -1,10 +1,8 @@
 option(simde_ForceBundled "Do not look for an installed version, always use bundled." ON)
 
 if (NOT ${simde_ForceBundled})
-    set(expectedVersion 0.8.0)
-    # capital E actually required...
+    set(expectedVersion 0.8.2)
     find_package(simde ${expectedVersion} QUIET)
-    # actually I don't know our minimal supported version but this is the one I tested.
     if (simde_FOUND)
         message(STATUS "simde - using installed system version ${simde_VERSION}")
         # return, as we have found the target
@@ -19,23 +17,22 @@ if (NOT ${simde_ForceBundled})
 endif ()
 
 # system version not found -> install bundled version
-message(STATUS "simde - using bundled version 0.8.0 (commit e651ec3)")
+message(STATUS "simde - using bundled version 0.8.2 (commit 71fd833)")
 
 # Enable FetchContent CMake module
 include(FetchContent)
 
-# Build Eigen3 and make the cmake targets available
+# Build SIMDe and make the cmake targets available
 FetchContent_Declare(
     simde
     URL
-        ${AUTOPAS_SOURCE_DIR}/libs/simde-0.8.0-rc1.zip
+        ${AUTOPAS_SOURCE_DIR}/libs/simde-0.8.2.zip
     URL_HASH MD5=d95da9e9c5377e96128ea87caa9be30d
 )
 
 # Check if population has already been performed
 FetchContent_GetProperties(simde)
-if (NOT simde_POPULATED) # must be lowercase "eigen3" Fetch the content using previously declared
-                          # details
+if (NOT simde_POPULATED)
     FetchContent_Populate(simde)
 
     # Do not add_subdirectory, else we would run configure, build and install Just define a library
