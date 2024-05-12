@@ -191,7 +191,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       }
 
       long time = timer.stop();
-      std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
+      //std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
     }
   }
 }

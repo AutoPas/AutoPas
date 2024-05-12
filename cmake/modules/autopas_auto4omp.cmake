@@ -14,6 +14,10 @@ set(
         AUTOPAS_NVCC_MAX_GCC 12
         CACHE STRING "Newest gcc version supported by NVCC."
 )
+set(
+        AUTOPAS_OMP_VERSION 45
+        CACHE STRING "Newest OpenMP version supported by AutoPas."
+)
 
 # Variable descriptions:
 string(
@@ -80,6 +84,10 @@ else ()
     endif ()
 
     # Auto4OMP's CMake variables:
+
+    ## OpenMP version:
+    ### AutoPas supports up to OpenMP 4.5. Pass this to Auto4OMP.
+    set(LIBOMP_OMP_VERSION ${AUTOPAS_OMP_VERSION} CACHE INTERNAL "OpenMP version for Auto4OMP to build for.")
 
     ## High resolution timer:
     ### Auto4OMP needs a high resolution timer to make measurements; either a cycle counter or time-stamp counter.
@@ -390,6 +398,24 @@ else ()
             PROPERTIES
             IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.so"
             IMPORTED_NO_SONAME TRUE
+    )
+
+    # Prioritise Auto4OMP's libraries, append Auto4OMP's library search paths before other flags. TODO: untested.
+    set(
+            CMAKE_C_FLAGS
+            "-L\"${auto4omp_BINARY_DIR}/runtime/src\" -lomp -L\"${auto4omp_BINARY_DIR}/libomptarget\" -lomptarget ${CMAKE_C_FLAGS}"
+    )
+    set(
+            CMAKE_CXX_FLAGS
+            "-L\"${auto4omp_BINARY_DIR}/runtime/src\" -lomp -L\"${auto4omp_BINARY_DIR}/libomptarget\" -lomptarget ${CMAKE_CXX_FLAGS}"
+    )
+    set(
+            CMAKE_SHARED_LINKER_FLAGS
+            "-L\"${auto4omp_BINARY_DIR}/runtime/src\" -lomp -L\"${auto4omp_BINARY_DIR}/libomptarget\" -lomptarget ${CMAKE_SHARED_LINKER_FLAGS}"
+    )
+    set(
+            CMAKE_EXE_LINKER_FLAGS
+            "-L\"${auto4omp_BINARY_DIR}/runtime/src\" -lomp -L\"${auto4omp_BINARY_DIR}/libomptarget\" -lomptarget ${CMAKE_EXE_LINKER_FLAGS}"
     )
 
     if (${CUDA_FOUND})
