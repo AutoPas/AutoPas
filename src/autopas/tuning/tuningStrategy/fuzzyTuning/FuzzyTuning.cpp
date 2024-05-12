@@ -81,7 +81,7 @@ void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
   for (const auto &[name, fcs] : _fuzzyControlSystems) {
     auto prediction = fcs->predict(_currentLiveInfo);
 
-    std::cout << "Prediction for " << name << ": " << prediction << std::endl;
+    // std::cout << "Prediction for " << name << ": " << prediction << std::endl;
   }
 
   // set new search space

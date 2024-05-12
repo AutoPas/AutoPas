@@ -19,6 +19,7 @@
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -186,6 +187,13 @@ class LiveInfo {
         numParticles == 0 ? 0.
                           : std::sqrt(sumStddev) / static_cast<double>(particleBins.size() - 1) / avgParticlesPerCell;
     infos["avgParticlesPerCell"] = avgParticlesPerCell;
+
+    const auto [homogeneity, maxDensity] =
+        autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
+
+    infos["homogeneity"] = homogeneity;
+    infos["maxDensity"] = maxDensity;
+
     infos["estimatedNumNeighborInteractions"] = static_cast<unsigned long>(estimatedNumNeighborInteractions);
 
     const double sumStddevBlurred = [&]() {
