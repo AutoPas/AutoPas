@@ -1077,6 +1077,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   bool stillTuning = false;
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
+  LiveInfo info{};
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
@@ -1117,10 +1118,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     const auto needsLiveInfo = _autoTuner.prepareIteration();
 
     if (needsLiveInfo) {
-      LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       _autoTuner.receiveLiveInfo(info);
-      _liveInfoLogger.logLiveInfo(info, _iteration);
     }
 
     std::tie(configuration, stillTuning) = _autoTuner.getNextConfig();
@@ -1137,6 +1136,14 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       std::tie(configuration, stillTuning) = _autoTuner.rejectConfig(configuration, rejectIndefinitely);
     }
   }
+
+#ifdef AUTOPAS_LOG_LIVEINFO
+  // if live info has not been gathered yet, gather it now and log it
+  if (info.get().empty()) {
+    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+  }
+  _liveInfoLogger.logLiveInfo(info, _iteration);
+#endif
 
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }

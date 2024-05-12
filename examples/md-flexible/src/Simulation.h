@@ -107,6 +107,11 @@ class Simulation {
   double _homogeneity = 0;
 
   /**
+   * The original deltaT used for the simulation. Supplied by the --yaml-filename argument.
+   */
+  double _originalDeltaT = 0;
+
+  /**
    * Struct containing all timers used for the simulation.
    */
   struct Timers {

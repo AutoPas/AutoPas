@@ -87,7 +87,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
+      _vtkWriter(nullptr),
+      _originalDeltaT(configuration.deltaT.value) {
   _timers.total.start();
   _timers.initialization.start();
 
@@ -408,6 +409,19 @@ void Simulation::updateForces() {
 
   _timers.forceUpdatePairwise.start();
   const bool isTuningIteration = calculatePairwiseForces();
+
+#ifdef MD_FLEXIBLE_PAUSE_SIMULATION_DURING_TUNING
+  // If we are at the beginning of a tuning phase, we need to freeze the simulation by setting deltaT to 0.
+  if (isTuningIteration && (!_previousIterationWasTuningIteration)) {
+    _configuration.deltaT.value = 0;
+  }
+
+  // If we are at the end of a tuning phase, we need to reset the deltaT to the original value
+  // so that the simulation starts moving again.
+  if (_previousIterationWasTuningIteration && (!isTuningIteration)) {
+    _configuration.deltaT.value = _originalDeltaT;
+  }
+#endif
 
   const auto timeIteration = _timers.forceUpdatePairwise.stop();
 
