@@ -21,6 +21,9 @@
 
 namespace mdLib {
 
+// TODO remove later; just used to quickly switch between implementations for testing
+enum Impl { AutoVec, Masked, GatherScatter, CompressAlign };
+
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
@@ -33,7 +36,7 @@ namespace mdLib {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGlobals = false, bool relevantForTuning = true>
+          bool calculateGlobals = false, bool relevantForTuning = true, Impl impl = Masked>
 class AxilrodTellerFunctor
     : public autopas::TriwiseFunctor<
           Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
@@ -588,11 +591,8 @@ class AxilrodTellerFunctor
     const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
 
     const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
-    const simde__m512d dryki2 = simde_mm512_mul_pd(dryki, dryki);
-    const simde__m512d drzki2 = simde_mm512_mul_pd(drzki, drzki);
-
-    const simde__m512d drki2PART = simde_mm512_add_pd(drxki2, dryki2);
-    const simde__m512d drki2 = simde_mm512_add_pd(drki2PART, drzki2);
+    const simde__m512d drki2PART = simde_mm512_fmadd_pd(dryki, dryki, drxki2);
+    const simde__m512d drki2 = simde_mm512_fmadd_pd(drzki, drzki, drki2PART);
 
     const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
 
@@ -601,19 +601,16 @@ class AxilrodTellerFunctor
     const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
 
     const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
-    const simde__m512d dryjk2 = simde_mm512_mul_pd(dryjk, dryjk);
-    const simde__m512d drzjk2 = simde_mm512_mul_pd(drzjk, drzjk);
-
-    const simde__m512d drjk2PART = simde_mm512_add_pd(drxjk2, dryjk2);
-    const simde__m512d drjk2 = simde_mm512_add_pd(drjk2PART, drzjk2);
+    const simde__m512d drjk2PART = simde_mm512_fmadd_pd(dryjk, dryjk, drxjk2);
+    const simde__m512d drjk2 = simde_mm512_fmadd_pd(drzjk, drzjk, drjk2PART);
 
     const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
 
     const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
 
-    const simde__m512i ownershipState3 = simde_mm512_loadu_epi64(&ownedState3ptr[k]);
+    const simde__m512i ownedState3 = simde_mm512_loadu_epi64(&ownedState3ptr[k]);
     const simde__mmask8 dummyMask =
-        simde_mm512_cmp_epi64_mask(ownershipState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
+        simde_mm512_cmp_epi64_mask(ownedState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
 
     const simde__mmask8 mask = remainderIsMasked
                                    ? simde_mm512_kand(_masks[rest], simde_mm512_kand(cutoffMask, dummyMask))
@@ -669,11 +666,8 @@ class AxilrodTellerFunctor
     const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
 
     const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
-    const simde__m512d dryki2 = simde_mm512_mul_pd(dryki, dryki);
-    const simde__m512d drzki2 = simde_mm512_mul_pd(drzki, drzki);
-
-    const simde__m512d drki2PART = simde_mm512_add_pd(drxki2, dryki2);
-    const simde__m512d drki2 = simde_mm512_add_pd(drki2PART, drzki2);
+    const simde__m512d drki2PART = simde_mm512_fmadd_pd(dryki, dryki, drxki2);
+    const simde__m512d drki2 = simde_mm512_fmadd_pd(drzki, drzki, drki2PART);
 
     const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
 
@@ -682,23 +676,23 @@ class AxilrodTellerFunctor
     const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
 
     const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
-    const simde__m512d dryjk2 = simde_mm512_mul_pd(dryjk, dryjk);
-    const simde__m512d drzjk2 = simde_mm512_mul_pd(drzjk, drzjk);
-
-    const simde__m512d drjk2PART = simde_mm512_add_pd(drxjk2, dryjk2);
-    const simde__m512d drjk2 = simde_mm512_add_pd(drjk2PART, drzjk2);
+    const simde__m512d drjk2PART = simde_mm512_fmadd_pd(dryjk, dryjk, drxjk2);
+    const simde__m512d drjk2 = simde_mm512_fmadd_pd(drzjk, drzjk, drjk2PART);
 
     const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
 
     const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
 
-    const simde__m512i ownershipState3 = simde_mm512_loadu_epi64(&ownedState3ptr[k]);
     const simde__mmask8 dummyMask =
-        simde_mm512_cmp_epi64_mask(ownershipState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
+        simde_mm512_cmp_epi64_mask(ownedState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
 
     const simde__mmask8 mask = remainderIsMasked
                                    ? simde_mm512_kand(_masks[rest], simde_mm512_kand(cutoffMask, dummyMask))
                                    : simde_mm512_kand(cutoffMask, dummyMask);
+
+    if (std::bitset<8>(mask).count() == 0) {
+      return;
+    }
 
     const simde__m512d drxi2 = simde_mm512_mul_pd(drxij, drxki);
     const simde__m512d dri2PART = simde_mm512_fmadd_pd(dryij, dryki, drxi2);
@@ -851,11 +845,6 @@ class AxilrodTellerFunctor
     }
   }
 
-  // TODO remove later; just used to quickly switch between implementations for testing
- public:
-  enum Impl { AutoVec, Masked, GatherScatter, CompressAlign };
-  static constexpr Impl impl = CompressAlign;
-
  private:
   /**
    * Implementation function of SoAFunctorSingle(soa, newton3)
@@ -959,9 +948,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedStatePtr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
@@ -979,9 +966,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedStatePtr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
@@ -1094,9 +1079,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState1ptr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
@@ -1117,9 +1100,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState1ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState1ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(x1ptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(y1ptr[j]);
@@ -1179,9 +1160,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState2ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(y2ptr[j]);
@@ -1310,9 +1289,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState1ptr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
@@ -1330,9 +1307,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState2ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         // TODO scalar operations and set1 ?
         const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
@@ -1434,9 +1409,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedStatePtr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
@@ -1454,9 +1427,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedStatePtr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
@@ -1562,9 +1533,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState1ptr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
@@ -1585,9 +1554,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState1ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState1ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(x1ptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(y1ptr[j]);
@@ -1649,9 +1616,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState2ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(y2ptr[j]);
@@ -1772,9 +1737,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState1ptr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
@@ -1792,9 +1755,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState2ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         // TODO scalar operations and set1 ?
         const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
@@ -1898,9 +1859,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals TODO don't need cmp just ? 11111111 : 00000000
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedStatePtr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
@@ -1918,9 +1877,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedStatePtr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedStatePtr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
@@ -2013,9 +1970,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState1ptr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
@@ -2034,9 +1989,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState2ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(x1ptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(y1ptr[j]);
@@ -2084,9 +2037,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState2ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
         const simde__m512d y2 = simde_mm512_set1_pd(y2ptr[j]);
@@ -2193,9 +2144,7 @@ class AxilrodTellerFunctor
       }
 
       // only required for calculating globals
-      const simde__m512i ownedState1 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState1ptr[i]));
-      const simde__mmask8 ownedMask1 =
-          simde_mm512_cmp_epi64_mask(ownedState1, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
       const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
       const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
@@ -2213,9 +2162,7 @@ class AxilrodTellerFunctor
         }
 
         // only required for calculating globals
-        const simde__m512i ownedState2 = simde_mm512_set1_epi64(static_cast<int64_t>(ownedState2ptr[j]));
-        const simde__mmask8 ownedMask2 =
-            simde_mm512_cmp_epi64_mask(ownedState2, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
         // TODO scalar operations and set1 ?
         const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
