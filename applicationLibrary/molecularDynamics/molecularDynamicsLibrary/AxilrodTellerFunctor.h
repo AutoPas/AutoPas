@@ -243,7 +243,7 @@ class AxilrodTellerFunctor
 
   // Not yet implemented in SIMDe 0.8.2
   inline simde__m512i simde_mm512_alignr_epi64(simde__m512i a, simde__m512i b, const int imm8) {
-#if 0 // TODO did not compile on HSUper using gcc
+#if 0  // TODO did not compile on HSUper using gcc
 //#ifdef __AVX512F__
     return _mm512_alignr_epi64(a, b, imm8);
 #else
@@ -529,7 +529,7 @@ class AxilrodTellerFunctor
         if constexpr (remainderIsMasked) {
           simde_mm512_mask_i64scatter_pd(fx3ptr, _masks[rest], indicesK, fxk_new, 8);
           simde_mm512_mask_i64scatter_pd(fy3ptr, _masks[rest], indicesK, fyk_new, 8);
-          simde_mm512_mask_i64scatter_pd(fy3ptr, _masks[rest], indicesK, fzk_new, 8);
+          simde_mm512_mask_i64scatter_pd(fz3ptr, _masks[rest], indicesK, fzk_new, 8);
         } else {
           simde_mm512_i64scatter_pd(fx3ptr, indicesK, fxk_new, 8);
           simde_mm512_i64scatter_pd(fy3ptr, indicesK, fyk_new, 8);
@@ -1556,7 +1556,7 @@ class AxilrodTellerFunctor
       _nuPd = simde_mm512_set1_pd(_nu);
     }
 
-    for (size_t i = soa1.size() - 1; static_cast<long>(i) >= 0; --i) {
+    for (size_t i = 0; i < soa1.size(); ++i) {
       if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
         continue;
       }
@@ -2112,8 +2112,8 @@ class AxilrodTellerFunctor
         size_t k = 0;
         for (; k < (j & ~(vecLength - 1)); k += vecLength) {
           SoAKernelMasked<newton3, newton3, false>(
-              k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i], type2ptr[j], type2ptr,
-              ownedMask1, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i], type2ptr[j], type2ptr, ownedMask1,
+              ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
               fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ);
         }
         if (k < j) {
