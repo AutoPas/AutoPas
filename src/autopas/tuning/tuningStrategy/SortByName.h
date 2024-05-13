@@ -18,7 +18,7 @@ namespace autopas {
  */
 class SortByName : public TuningStrategyInterface {
  public:
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
