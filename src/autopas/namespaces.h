@@ -44,6 +44,12 @@ namespace sph {}
 namespace utils {
 
 /**
+ * Logger to provide interface to basic functions of spdlog.
+ * You can create the spdlog's logger or delete it using the provided functions.
+ */
+namespace Logger {}
+
+/**
  * Namespace to handle mathematical operations of std::array.
  */
 namespace ArrayMath {}

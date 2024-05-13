@@ -19,12 +19,7 @@
  */
 #define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(spdlog::get("AutoPasLog"), fmt, ##__VA_ARGS__)
 
-namespace autopas {
-/**
- * Logger class to provide interface to basic functions of the logger.
- * You can create the spdlog's logger or delete it using the provided functions.
- */
-namespace Logger {
+namespace autopas::Logger {
 
 /**
  * Returns the static name of the logger.
@@ -61,5 +56,4 @@ void unregister();
  * @return Pointer to logger.
  */
 std::shared_ptr<spdlog::logger> get();
-}  // namespace Logger
-}  // namespace autopas
+}  // namespace autopas::Logger
