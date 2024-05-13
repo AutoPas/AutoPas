@@ -445,6 +445,12 @@ void Simulation::updateForces() {
 
     _configuration.deltaT.value = _originalDeltaT;
   }
+
+  // Prevent the iteration from being incremented during tuning phases
+  if (isTuningIteration) {
+    _iteration--;
+  }
+
 #endif
 
   const auto timeIteration = _timers.forceUpdatePairwise.stop();
