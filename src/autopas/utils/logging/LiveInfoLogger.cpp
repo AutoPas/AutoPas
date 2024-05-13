@@ -19,8 +19,6 @@ autopas::LiveInfoLogger::LiveInfoLogger(const std::string &outputSuffix)
   auto logger = spdlog::basic_logger_mt<spdlog::async_factory>(_loggerName, _outputFileName);
   // set pattern to provide date
   logger->set_pattern("%Y-%m-%d %T,%v");
-  // since this logger only writes rarely flush instantly in order to not lose any information if autopas is killed
-  logger->flush_on(spdlog::level::trace);
 #endif
 }
 
