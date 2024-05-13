@@ -261,7 +261,7 @@ class AxilrodTellerFunctor
 #else
     for (unsigned char j = 0; j < 8; ++j) {
       if (k & (1 << j)) {
-        reinterpret_cast<double *>(mem_addr)[j] = a[j];
+        static_cast<double *>(mem_addr)[j] = a[j];
       }
     }
 #endif
@@ -2112,8 +2112,8 @@ class AxilrodTellerFunctor
         size_t k = 0;
         for (; k < (j & ~(vecLength - 1)); k += vecLength) {
           SoAKernelMasked<newton3, newton3, false>(
-              k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, ownedState2ptr, type1ptr[i], type2ptr[j], type2ptr,
-              ownedMask1, ownedMask2, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i], type2ptr[j], type2ptr,
+              ownedMask1, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
               fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ);
         }
         if (k < j) {
