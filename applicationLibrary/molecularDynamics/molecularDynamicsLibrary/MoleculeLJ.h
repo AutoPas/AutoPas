@@ -31,7 +31,7 @@ class MoleculeLJ : public autopas::Particle {
   MoleculeLJ(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
              unsigned long typeId = 0);
 
-  ~MoleculeLJ() = default;
+  ~MoleculeLJ() override = default;
 
   /**
    * Enums used as ids for accessing and creating a dynamically sized SoA.

@@ -297,6 +297,10 @@ class ContainerIterator {
 
   /**
    * Checks if the current iterator has a given validity.
+   *
+   * @note This is what is used implicitly in range-based loops because AutoPas::end()
+   * and ParticleContainerInterface::end() returns false.
+   *
    * @param input
    * @return
    */

@@ -15,24 +15,24 @@ Please keep in mind the following notes while working.
 * `const` wherever possible. 
 * `nullptr` instead of `NULL`.
 * `using` instead of `typedef`.
-* Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Descriptive error message")` instead.
+* Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Meaningful error message")` instead.
 
 ### Code Style
 * Private attributes are prefixed with `_`.
 * Every (abstract) class gets its own file, named exactly like the class.
 * Class names start with a capital letter.
-* Use camelCase over snake_case.
+* Use `camelCase` over `snake_case`.
 * Google code style is enforced by the CI server.
 * To enable code formatting targets set the `cmake` variable `AUTOPAS_FORMATTING_TARGETS` to `ON`.
-* Clang format version 9 is enforced (Other versions might format slightly differently).
-* Use `make clangformat` before submitting a PR.
+* [Clang format](https://releases.llvm.org/14.0.0/tools/clang/docs/ClangFormat.html) version 14 is enforced (other versions might format slightly differently - you must use version 14 only).
+* Run `make clangformat` before submitting a PR for review.
 * [cmake format](https://github.com/cheshirekow/cmake_format) is enforced.
-* Use `make cmakeformat` before submitting a PR.
+* Run `make cmakeformat` before submitting a PR for review.
 
 ### Comment Style
 * Please write full sentences starting with a capital letter and ending with a period.
-* Doxygen (v1.8.11) is used in this project to create the documentation.
-* Documentation style is Javadoc style.
+* [Doxygen](https://www.doxygen.nl/) (> v1.8.11) is used in this project to create the documentation.
+* Documentation style is [Javadoc style](https://en.wikipedia.org/wiki/Javadoc).
 * All public methods and attributes need to be documented.
 * The first comment inside a comment block (`/** <comment> */`) is automatically treated as a brief comment and needs to end with a period. The `brief` keyword is omitted (please delete occurrences).
 * ToDos: All comments containing todos should be prefixed with `@todo`, thus they are visible in the global todo list.
