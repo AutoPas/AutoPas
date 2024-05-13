@@ -121,16 +121,16 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     const auto boxMax = this->getBoxMax();
     const auto boxMin = this->getBoxMin();
     const auto pos = pCopy.getR();
-    const auto skin = this->getVerletSkin();
+    const auto skinHalf = 0.5 * this->getVerletSkin();
 
-    // Look for the particle in halo cells within skin distance of its position
+    // Look for the particle in halo cells that are within half the skin distance of its position
     for (size_t dim = 0; dim < 3; ++dim) {
-      if (pos[dim] < boxMin[dim] + skin) {
-        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 1], pCopy, skin)) {
+      if (pos[dim] < boxMin[dim] + skinHalf) {
+        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 1], pCopy, skinHalf)) {
           return true;
         }
-      } else if (pos[dim] >= boxMax[dim] - skin) {
-        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 2], pCopy, skin)) {
+      } else if (pos[dim] >= boxMax[dim] - skinHalf) {
+        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 2], pCopy, skinHalf)) {
           return true;
         }
       }
@@ -340,16 +340,16 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     } else if (particle.isHalo()) {
       const auto boxMin = this->getBoxMin();
       const auto boxMax = this->getBoxMax();
-      const auto skin = this->getVerletSkin();
+      const auto skinHalf = 0.5 * this->getVerletSkin();
       const auto pos = particle.getR();
 
-      // Look for the particle in halo cells within skin distance of its position
+      // Look for the particle in halo cells that are within half the skinHalf distance of its position
       for (size_t dim = 0; dim < 3; ++dim) {
-        if (pos[dim] < boxMin[dim] + skin) {
+        if (pos[dim] < boxMin[dim] + skinHalf) {
           if (swapDelFromCell(this->_cells[2 * dim + 1])) {
             return true;
           }
-        } else if (pos[dim] >= boxMax[dim] - skin) {
+        } else if (pos[dim] >= boxMax[dim] - skinHalf) {
           if (swapDelFromCell(this->_cells[2 * dim + 2])) {
             return true;
           }
