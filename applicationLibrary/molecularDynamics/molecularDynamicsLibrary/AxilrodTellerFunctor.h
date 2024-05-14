@@ -6,6 +6,8 @@
 
 #pragma once
 
+// TODO this should be set by cmake to check if OpenMP is available
+#define SIMDE_ENABLE_OPENMP
 #include <simde/x86/avx512.h>
 
 #include "ParticlePropertiesLibrary.h"
@@ -617,6 +619,10 @@ class AxilrodTellerFunctor
                                    : simde_mm512_kand(cutoffMask, dummyMask);
 
     const int popCountMask = std::bitset<8>(mask).count();
+
+    if (popCountMask == 0) {
+      return;
+    }
 
     const simde__m512i newInteractionIndices = simde_mm512_maskz_compress_epi64(mask, loopIndices);
     if (numAssignedRegisters + popCountMask < 8) {
