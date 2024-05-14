@@ -10,8 +10,8 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/Timer.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -106,7 +106,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    *
    * @param newColor The new current color.
    */
-  virtual void notifyColorChange(unsigned long newColor){};
+  virtual void notifyColorChange(unsigned long newColor) {};
 
   /**
    * Interaction length (cutoff + skin).
@@ -160,38 +160,134 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       utils::Timer timer;
       timer.start();
 
-      if (collapseDepth == 2) {
-        //omp_sched_t kind = omp_sched_dynamic;
-        //int size = TraversalInterface::_openMPConfigurator.getOMPChunkSize();
-	//std::cout << "Chunk size: " << std::to_string(size) << std::endl;
-        //autopas_set_schedule(kind, size);
-        AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
-        for (unsigned long z = start_z; z < end_z; z += stride_z) {
-          for (unsigned long y = start_y; y < end_y; y += stride_y) {
-            for (unsigned long x = start_x; x < end_x; x += stride_x) {
-              // Don't exchange order of execution (x must be last!), it would break other code
-              loopBody(x, y, z);
+      // Set OpenMP's schedule clause based on the OMP configurator.
+      // The schedule clause can't read the scheduling kind from a sched_t variable, hence the code duplication.
+      // TODO: reduce code duplication.
+      switch (TraversalInterface::_openMPConfigurator.getKind()) {
+        case OpenMPKindOption::omp_dynamic: {
+          if (collapseDepth == 2) {
+            AUTOPAS_OPENMP(for schedule(dynamic, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(2))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
+            }
+          } else {
+            AUTOPAS_OPENMP(for schedule(dynamic, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(3))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
             }
           }
         }
-      } else {
-	//omp_sched_t kind = omp_sched_dynamic;
-	//int size = TraversalInterface::_openMPConfigurator.getOMPChunkSize();
-	//autopas_set_schedule(kind, size);
-	//std::cout << "Chunk size: " << std::to_string(size) << std::endl;
-        AUTOPAS_OPENMP(for schedule(runtime) collapse(3))
-        for (unsigned long z = start_z; z < end_z; z += stride_z) {
-          for (unsigned long y = start_y; y < end_y; y += stride_y) {
-            for (unsigned long x = start_x; x < end_x; x += stride_x) {
-              // Don't exchange order of execution (x must be last!), it would break other code
-              loopBody(x, y, z);
+        break;
+        case OpenMPKindOption::omp_static: {
+          if (collapseDepth == 2) {
+            AUTOPAS_OPENMP(for schedule(static, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(2))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
+            }
+          } else {
+            AUTOPAS_OPENMP(for schedule(static, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(3))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
             }
           }
         }
+        break;
+        case OpenMPKindOption::omp_guided: {
+          if (collapseDepth == 2) {
+            AUTOPAS_OPENMP(for schedule(guided, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(2))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
+            }
+          } else {
+            AUTOPAS_OPENMP(for schedule(guided, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(3))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
+            }
+          }
+        }
+        break;
+        case OpenMPKindOption::omp_auto: {
+          if (collapseDepth == 2) {
+            AUTOPAS_OPENMP(for schedule(auto) collapse(2))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
+            }
+          } else {
+            AUTOPAS_OPENMP(for schedule(auto) collapse(3))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
+            }
+          }
+        }
+        break;
+        default: {
+          if (collapseDepth == 2) {
+            AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
+            }
+          } else {
+            AUTOPAS_OPENMP(for schedule(runtime) collapse(3))
+            for (unsigned long z = start_z; z < end_z; z += stride_z) {
+              for (unsigned long y = start_y; y < end_y; y += stride_y) {
+                for (unsigned long x = start_x; x < end_x; x += stride_x) {
+                  // Don't exchange order of execution (x must be last!), it would break other code
+                  loopBody(x, y, z);
+                }
+              }
+            }
+          }
+        }
+
       }
 
       long time = timer.stop();
-      //std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
+      // std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
     }
   }
 }

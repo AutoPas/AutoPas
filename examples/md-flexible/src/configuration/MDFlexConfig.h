@@ -442,10 +442,10 @@ class MDFlexConfig {
     * openMPKind
     */
   MDFlexOption<autopas::OpenMPKindOption, __LINE__> openMPKind{
-      autopas::OpenMPKindOption::auto4omp_expertsel, "openmp-kind", true,
+      autopas::OpenMPKindOption::omp_runtime, "openmp-kind", true,
       "OpenMP's scheduling kind for color-based traversals. "
       "Possible values: auto, dynamic, exhaustiveSel, expertSel, guided, randomSel, runtime, static. "
-      "Default: expertSel"
+      "Default: runtime"
   };
 
   // Simulation Options:
