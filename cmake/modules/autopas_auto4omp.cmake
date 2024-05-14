@@ -26,6 +26,16 @@ string(
         "from the LB4OMP portfolio during runtime."
 )
 
+set(
+        AUTOPAS_AUTO4OMP_GIT_DOC
+        "Downloads Auto4OMP from Git instead of the bundled zip."
+)
+
+set(
+        AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC
+        "Directory for Auto4OMP to install its libraries."
+)
+
 string(
         CONCAT AUTOPAS_LLVM_LIT_EXECUTABLE_DOC
         "Path to the LLVM-lit executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/build/utils/lit/lit.py\". "
@@ -62,6 +72,8 @@ set(
 
 # AutoPas CMake variables for Auto4OMP:
 option(AUTOPAS_AUTO4OMP ${AUTOPAS_AUTO4OMP_DOC} ON)
+option(AUTOPAS_AUTO4OMP_GIT ${AUTOPAS_AUTO4OMP_GIT_DOC} OFF)
+set(AUTOPAS_AUTO4OMP_INSTALL_DIR "" CACHE PATH ${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC})
 set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC})
 set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH ${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC})
 set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH ${AUTOPAS_FILECHECK_EXECUTABLE_DOC})
@@ -88,6 +100,13 @@ else ()
     ## OpenMP version:
     ### AutoPas supports up to OpenMP 4.5. Pass this to Auto4OMP.
     set(LIBOMP_OMP_VERSION ${AUTOPAS_OMP_VERSION} CACHE INTERNAL "OpenMP version for Auto4OMP to build for.")
+
+    ### OpenMP tools is only supported from OpenMP 5.
+    if (${AUTOPAS_OMP_VERSION} GREATER_EQUAL 50)
+        set(LIBOMP_OMPT_SUPPORT ON CACHE INTERNAL "OpenMP tools support.")
+    else ()
+        set(LIBOMP_OMPT_SUPPORT OFF CACHE INTERNAL "OpenMP tools support.")
+    endif ()
 
     ## High resolution timer:
     ### Auto4OMP needs a high resolution timer to make measurements; either a cycle counter or time-stamp counter.
@@ -150,86 +169,88 @@ else ()
     endif ()
 
     ## CUDA:
-    block(SCOPE_FOR POLICIES)
-        # CMake's FindCUDA is deprecated, but necessary (I think) as Auto4OMP looks for CUDA in the system.
-        # For now, use old policy. TODO: for future-proofing, is there a way to use the new policy?
+    # CMake's FindCUDA is deprecated, but necessary (I think) as Auto4OMP looks for CUDA in the system.
+    # For now, use old policy. TODO: for future-proofing, is there a way to use the new policy?
+    cmake_policy(PUSH) # Use PUSH and POP instead of the new block() to preserve compatibility with older CMakes.
+    if (POLICY CMP0146)
         cmake_policy(SET CMP0146 OLD)
+    endif ()
 
-        find_package(CUDA QUIET)
-        if (${CUDA_FOUND})
-            # If CUDA's installed, Auto4OMP will use it by default. The following fixes build errors.
-            message(DEBUG "CUDA found.")
+    find_package(CUDA QUIET)
+    if (${CUDA_FOUND})
+        # If CUDA's installed, Auto4OMP will use it by default. The following fixes build errors.
+        message(DEBUG "CUDA found.")
 
-            # GPU compute capability:
-            if (${CUDA_VERSION_MAJOR} GREATER 10)
-                # CUDA 11+ dropped support for compute 3.5. Use 5.3 instead.
-                # List of Nvidia GPUs and their compute capabilities: [7]
+        # GPU compute capability:
+        if (${CUDA_VERSION_MAJOR} GREATER 10)
+            # CUDA 11+ dropped support for compute 3.5. Use 5.3 instead.
+            # List of Nvidia GPUs and their compute capabilities: [7]
+            set(
+                    LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES 53
+                    CACHE INTERNAL ${LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC}
+            )
+        endif ()
+
+        # GCC: CUDA requires gcc 12 or less. If installed, pass its path to NVCC.
+        # According to LB4OMP's docs, it won't be used to produce binaries, only to pass NVCC's compiler checks.
+        if (NOT AUTOPAS_NVCC_GNUC_PATH)
+            find_program(GCC_PATH gcc)
+            if (GCC_PATH)
+                # Isolate gcc's version major from gcc's version output.
+                set(GCC_VERSION_MAJOR OFF)
+                execute_process(
+                        COMMAND ${GCC_PATH} --version # Multi-line output.
+                        COMMAND grep gcc # First line, including the version.
+                        COMMAND cut -d " " -f4 # Full version, format ?.?.?.
+                        COMMAND cut -d "." -f1 # Version major.
+                        COMMAND tr -d '\n' # Truncates newlines.
+                        OUTPUT_VARIABLE GCC_VERSION_MAJOR
+                )
+                if (${GCC_VERSION_MAJOR} LESS_EQUAL ${AUTOPAS_NVCC_MAX_GCC})
+                    set(AUTOPAS_NVCC_GNUC_PATH ${GCC_PATH} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
+                else ()
+                    # If system's gcc is incompatible with NVCC, look for compatible gcc.
+                    message(
+                            STATUS
+                            "CUDA enabled, but system's gcc is incompatible with NVCC. Looking for compatible gcc."
+                    )
+
+                    # Look for gcc executable names based on Ubuntu's packages [8].
+                    # Names based on other package managers can be added here too.
+                    find_program(GCC_LESS NAMES gcc-12 gcc-11 gcc-10 gcc-9 gcc-8 gcc-7)
+                    set(AUTOPAS_NVCC_GNUC_PATH ${GCC_LESS} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
+                endif ()
+                # If system's gcc is compatible, do nothing.
+            endif ()
+
+            if (AUTOPAS_NVCC_GNUC_PATH)
+                # If alternate gcc found or specified, pass it to Auto4OMP.
                 set(
-                        LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES 53
-                        CACHE INTERNAL ${LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC}
+                        LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER ${AUTOPAS_NVCC_GNUC_PATH}
+                        CACHE INTERNAL ${AUTOPAS_NVCC_GNUC_PATH_DOC}
+                )
+                message(DEBUG "Alternate GCC for NVCC at ${LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER}")
+            else ()
+                message(
+                        WARNING
+                        "CUDA enabled, but system's gcc is newer than ${AUTOPAS_NVCC_MAX_GCC}. NVCC may complain.\n"
+                        "To fix, disable CUDA or install e.g. gcc-${AUTOPAS_NVCC_MAX_GCC} "
+                        "and and pass its path (e.g. \"/usr/bin/gcc-${AUTOPAS_NVCC_MAX_GCC}\") "
+                        "with the CMake variable LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER."
                 )
             endif ()
 
-            # GCC: CUDA requires gcc 12 or less. If installed, pass its path to NVCC.
-            # According to LB4OMP's docs, it won't be used to produce binaries, only to pass NVCC's compiler checks.
-            if (NOT AUTOPAS_NVCC_GNUC_PATH)
-                find_program(GCC_PATH gcc)
-                if (GCC_PATH)
-                    # Isolate gcc's version major from gcc's version output.
-                    set(GCC_VERSION_MAJOR OFF)
-                    execute_process(
-                            COMMAND ${GCC_PATH} --version # Multi-line output.
-                            COMMAND grep gcc # First line, including the version.
-                            COMMAND cut -d " " -f4 # Full version, format ?.?.?.
-                            COMMAND cut -d "." -f1 # Version major.
-                            COMMAND tr -d '\n' # Truncates newlines.
-                            OUTPUT_VARIABLE GCC_VERSION_MAJOR
-                    )
-                    if (${GCC_VERSION_MAJOR} LESS_EQUAL ${AUTOPAS_NVCC_MAX_GCC})
-                        set(AUTOPAS_NVCC_GNUC_PATH ${GCC_PATH} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
-                    else ()
-                        # If system's gcc is incompatible with NVCC, look for compatible gcc.
-                        message(
-                                STATUS
-                                "CUDA enabled, but system's gcc is incompatible with NVCC. Looking for compatible gcc."
-                        )
-
-                        # Look for gcc executable names based on Ubuntu's packages [8].
-                        # Names based on other package managers can be added here too.
-                        find_program(GCC_LESS NAMES gcc-12 gcc-11 gcc-10 gcc-9 gcc-8 gcc-7)
-                        set(AUTOPAS_NVCC_GNUC_PATH ${GCC_LESS} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
-                    endif ()
-                    # If system's gcc is compatible, do nothing.
-                endif ()
-
-                if (AUTOPAS_NVCC_GNUC_PATH)
-                    # If alternate gcc found or specified, pass it to Auto4OMP.
-                    set(
-                            LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER ${AUTOPAS_NVCC_GNUC_PATH}
-                            CACHE INTERNAL ${AUTOPAS_NVCC_GNUC_PATH_DOC}
-                    )
-                    message(DEBUG "Alternate GCC for NVCC at ${LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER}")
-                else ()
-                    message(
-                            WARNING
-                            "CUDA enabled, but system's gcc is newer than ${AUTOPAS_NVCC_MAX_GCC}. NVCC may complain.\n"
-                            "To fix, disable CUDA or install e.g. gcc-${AUTOPAS_NVCC_MAX_GCC} "
-                            "and and pass its path (e.g. \"/usr/bin/gcc-${AUTOPAS_NVCC_MAX_GCC}\") "
-                            "with the CMake variable LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER."
-                    )
-                endif ()
-
-                # If system's gcc is compatible, do nothing.
-                #else ()
-                # If no gcc found, warn.
-                #    message(
-                #            WARNING
-                #            "CUDA enabled, but no gcc found. NVCC may complain during Auto4OMP's build. \
-                #            To fix, install gcc ${AUTOPAS_NVCC_MAX_GCC} or less."
-                #    )
-            endif ()
+            # If system's gcc is compatible, do nothing.
+            #else ()
+            # If no gcc found, warn.
+            #    message(
+            #            WARNING
+            #            "CUDA enabled, but no gcc found. NVCC may complain during Auto4OMP's build. \
+            #            To fix, install gcc ${AUTOPAS_NVCC_MAX_GCC} or less."
+            #    )
         endif ()
-    endblock()
+    endif ()
+    cmake_policy(POP)
 
     ## LLVM-lit:
     ### Look for FileCheck with the PATH environment variable.
@@ -351,18 +372,28 @@ else ()
     # Enable the FetchContent CMake module.
     include(FetchContent)
 
-    ## Option 1: download Auto4OMP from GIT and make the CMake targets available. TODO: untested.
-    #FetchContent_Declare(
-    #        auto4omp
-    #        GIT_REPOSITORY https://github.com/unibas-dmi-hpc/LB4OMP # [*]
-    #)
-
-    # Option 2: build the pre-packaged Auto4OMP and make the CMake targets available. [***]
-    FetchContent_Declare(
-            auto4omp
-            URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-master.zip # [*]
-            URL_HASH MD5=b8090fa162eb2232870916271f36650f # Calculated with the md5sum command.
-    )
+    # If OMP 4.5 is to be used, use the custom Auto4OMP zip to fix resulting build errors.
+    if (${AUTOPAS_OMP_VERSION} LESS 50)
+        # Build the pre-packaged Auto4OMP including the fix for build errors when specifying an old OMP version.
+        FetchContent_Declare(
+                auto4omp
+                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-custom.zip # [*]
+                URL_HASH MD5=98a1eede80be95a2e93a3ccd2139ecac # Calculated with the md5sum command.
+        )
+    elseif (AUTOPAS_AUTO4OMP_GIT)
+        # Download Auto4OMP from GIT and make the CMake targets available. TODO: untested.
+        FetchContent_Declare(
+                auto4omp
+                GIT_REPOSITORY https://github.com/unibas-dmi-hpc/LB4OMP # [*]
+        )
+    else ()
+        # Build the pre-packaged Auto4OMP and make the CMake targets available. [***]
+        FetchContent_Declare(
+                auto4omp
+                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-master.zip # [*]
+                URL_HASH MD5=b8090fa162eb2232870916271f36650f # Calculated with the md5sum command.
+        )
+    endif ()
 
     # Use the following old policies to suppress Auto4OMP's CMake warnings.
     # cmake_policy() doesn't work, likely because Auto4OMP isn't in a subdirectory of this module's directory.
@@ -379,16 +410,37 @@ else ()
     # Add a target for Auto4OMP. It builds Auto4OMP by running make in its build directory.
     add_custom_target(
             auto4omp ALL
-            cd ${auto4omp_BINARY_DIR} && ${CMAKE_MAKE_PROGRAM}
+            WORKING_DIRECTORY ${auto4omp_BINARY_DIR}
+            COMMAND ${CMAKE_MAKE_PROGRAM}
             COMMENT "Building Auto4OMP"
     )
+
+    # Specify Auto4OMP's install directory.
+    if (NOT AUTOPAS_AUTO4OMP_INSTALL_DIR)
+        set(
+                AUTOPAS_AUTO4OMP_INSTALL_DIR "${auto4omp_BINARY_DIR}/install"
+                CACHE STRING ${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC} FORCE
+        )
+    endif ()
+
+    # Configure cmake install to use the local install directory.
+    install(DIRECTORY "${auto4omp_BINARY_DIR}/runtime/src" DESTINATION "${AUTOPAS_AUTO4OMP_INSTALL_DIR}")
+
+    # Run cmake install post-build. Use a local directory instead of /usr, so no sudo privilege is required.
+    add_custom_command(
+            TARGET auto4omp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} --install "${auto4omp_BINARY_DIR}" --prefix "${AUTOPAS_AUTO4OMP_INSTALL_DIR}"
+    )
+
+    # Linker flags to prioritize Auto4OMP's built libraries.
+    set(AUTOPAS_AUTO4OMP_LINKER_FLAGS "-L\"${auto4omp_BINARY_DIR}/install/lib\" -lomp -lomptarget")
 
     # Add targets for Auto4OMP's built libraries. [**]
     add_library(auto4omp_libomp SHARED IMPORTED GLOBAL)
     set_target_properties(
             auto4omp_libomp
             PROPERTIES
-            IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/runtime/src/libomp.so"
+            IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/install/lib/libomp.so"
             IMPORTED_NO_SONAME TRUE
     )
 
@@ -396,29 +448,11 @@ else ()
     set_target_properties(
             auto4omp_libomptarget
             PROPERTIES
-            IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.so"
+            IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/install/lib/libomptarget.so"
             IMPORTED_NO_SONAME TRUE
     )
 
-    # Prioritise Auto4OMP's libraries, append Auto4OMP's library search paths before other flags. TODO: untested.
-    set(
-            CMAKE_C_FLAGS
-            "-L\"${auto4omp_BINARY_DIR}/runtime/src\" -lomp -L\"${auto4omp_BINARY_DIR}/libomptarget\" -lomptarget ${CMAKE_C_FLAGS}"
-    )
-    set(
-            CMAKE_CXX_FLAGS
-            "-L\"${auto4omp_BINARY_DIR}/runtime/src\" -lomp -L\"${auto4omp_BINARY_DIR}/libomptarget\" -lomptarget ${CMAKE_CXX_FLAGS}"
-    )
-    set(
-            CMAKE_SHARED_LINKER_FLAGS
-            "-L\"${auto4omp_BINARY_DIR}/runtime/src\" -lomp -L\"${auto4omp_BINARY_DIR}/libomptarget\" -lomptarget ${CMAKE_SHARED_LINKER_FLAGS}"
-    )
-    set(
-            CMAKE_EXE_LINKER_FLAGS
-            "-L\"${auto4omp_BINARY_DIR}/runtime/src\" -lomp -L\"${auto4omp_BINARY_DIR}/libomptarget\" -lomptarget ${CMAKE_EXE_LINKER_FLAGS}"
-    )
-
-    if (${CUDA_FOUND})
+    if (EXISTS "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.cuda.so")
         add_library(auto4omp_libomptarget_rtl_cuda SHARED IMPORTED GLOBAL)
         set_target_properties(
                 auto4omp_libomptarget_rtl_cuda
@@ -426,7 +460,10 @@ else ()
                 IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.cuda.so"
                 IMPORTED_NO_SONAME TRUE
         )
+        string(APPEND AUTOPAS_AUTO4OMP_LINKER_FLAGS " -lomptarget.rtl.cuda")
+    endif ()
 
+    if (EXISTS "${auto4omp_BINARY_DIR}/libomptarget/libomptarget-nvptx.a")
         add_library(auto4omp_libomptarget_nvptx STATIC IMPORTED GLOBAL)
         set_target_properties(
                 auto4omp_libomptarget_nvptx
@@ -434,6 +471,7 @@ else ()
                 IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget-nvptx.a"
                 IMPORTED_NO_SONAME TRUE
         )
+        string(APPEND AUTOPAS_AUTO4OMP_LINKER_FLAGS " -lomptarget-nvptx")
     endif ()
 
     if (EXISTS "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.x86_64.so")
@@ -444,7 +482,14 @@ else ()
                 IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.x86_64.so"
                 IMPORTED_NO_SONAME TRUE
         )
+        string(APPEND AUTOPAS_AUTO4OMP_LINKER_FLAGS " -lomptarget.rtl.x86_64")
     endif ()
+
+    # Set the linker flags.
+    set(CMAKE_C_FLAGS "${AUTOPAS_AUTO4OMP_LINKER_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${AUTOPAS_AUTO4OMP_LINKER_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${AUTOPAS_AUTO4OMP_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${AUTOPAS_AUTO4OMP_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
 
     # TODO: prioritize Auto4OMP's libomp and other libs. Did linking the built libraries achieve this? [**]
 
@@ -469,6 +514,10 @@ Sources:
           Although this is handled since C++17 [10], CMake seems to set an older C++ standard somewhere.
           Building thus fails with modern Clang due to the deleted constructor atomic(const atomic&).
           Auto4OMP's master branch now correctly uses atomic<int> i(0), compatible with all C++ standards.
+          A custom fix in kmp_settings.cpp was also added by AutoPas to fix errors with older OMP versions.
+          A number of LB4OMP extension function definitions are skipped for older OMP versions (line 4875),
+          but used for all OMP versions (line 5252). This results in undefined errors when specifying older versions.
+          To fix, move the #endif from line 5250 to 5268, so that the functions are only used for OMP 5 and above.
 
     [**]  Make install requires access permissions to /usr/local. It installs:
           omp.h, omp-tools.h, ompt.h at /usr/local/include; libomp.so, libomptarget.so, libomptarget.rtl.cuda.so,
