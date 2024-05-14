@@ -67,7 +67,6 @@ class LogicHandler {
     // Initialize AutoPas with tuners for given interaction types
     for (auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
-      _synchronizer.addInteractionType(interactionType);
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
@@ -153,10 +152,11 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
-    bool doDataStructureUpdate = not neighborListsAreValid();
+    bool doDataStructureUpdate = (_autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists()
+                              and _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists());
 
     if (doDataStructureUpdate) {
-      _neighborListsAreValid.store(false, std::memory_order_relaxed);
+      _containerStructureIsValid.store(false, std::memory_order_relaxed);
     }
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
@@ -242,7 +242,7 @@ class LogicHandler {
     initSpacialLocks(boxLength, interactionLengthInv);
 
     // Set this flag, s.t., the container is rebuilt!
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    _containerStructureIsValid.store(false, std::memory_order_relaxed);
 
     return particlesNowOutside;
   }
@@ -294,7 +294,7 @@ class LogicHandler {
           "{}",
           boxMin, boxMax, p.toString());
     }
-    if (not neighborListsAreValid()) {
+    if (not _containerStructureIsValid.load(std::memory_order_relaxed)) {
       // Container has to (about to) be invalid to be able to add Particles!
       _containerSelector.getCurrentContainer().template addParticle<false>(p);
     } else {
@@ -319,7 +319,7 @@ class LogicHandler {
           "{}",
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
     }
-    if (not neighborListsAreValid()) {
+    if (not _containerStructureIsValid.load(std::memory_order_relaxed)) {
       // If the neighbor lists are not valid, we can add the particle.
       container.template addHaloParticle</* checkInBox */ false>(haloParticle);
     } else {
@@ -338,7 +338,7 @@ class LogicHandler {
    * @copydoc AutoPas::deleteAllParticles()
    */
   void deleteAllParticles() {
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    _containerStructureIsValid.store(false, std::memory_order_relaxed);
     _containerSelector.getCurrentContainer().deleteAllParticles();
     std::for_each(_particleBuffer.begin(), _particleBuffer.end(), [](auto &buffer) { buffer.clear(); });
     std::for_each(_haloParticleBuffer.begin(), _haloParticleBuffer.end(), [](auto &buffer) { buffer.clear(); });
@@ -384,7 +384,7 @@ class LogicHandler {
   }
 
   /**
-   * This function covers the full pipeline of all mechanics happening during the computation of particle interactions.
+   * This function covers the full pipeline of all mechanics happening during the pairwise iteration.
    * This includes:
    * - selecting a configuration
    *   - gather live info, homogeneity, and max density
@@ -513,12 +513,17 @@ class LogicHandler {
   [[nodiscard]] unsigned long getNumberOfParticlesHalo() const { return _numParticlesHalo; }
 
   /**
-   * Check if other autotuners for any other interaction types are still in a tuning phase.
+   * Check if other autotuners for any other interaction types are still in a tuning process.
    * @param interactionType
    * @return bool whether other tuners are still tuning.
    */
   bool checkTuningStates(InteractionTypeOption::Value interactionType) {
-    return _synchronizer.checkTuningState(interactionType);
+    for (const auto &[interactionT, tuner] : _autoTunerRefs) {
+      if (interactionT != interactionType and tuner->isStillTuning()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -736,16 +741,6 @@ class LogicHandler {
    */
   void checkMinimalSize() const;
 
-  /**
-   * Checks if in the next iteration the neighbor lists have to be rebuilt.
-   *
-   * This can be the case either because we hit the rebuild frequency or because the auto tuner tests
-   * a new configuration.
-   *
-   * @return True iff the neighbor lists will not be rebuild.
-   */
-  bool neighborListsAreValid();
-
   const LogicHandlerInfo &_logicHandlerInfo;
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
@@ -773,14 +768,9 @@ class LogicHandler {
   std::set<InteractionTypeOption> _interactionTypes{};
 
   /**
-   * Synchronizes tuning phases in case of multiple autotuners.
-   */
-  autopas::TunerSynchronizer _synchronizer{};
-
-  /**
    * Specifies if the neighbor list is valid.
    */
-  std::atomic<bool> _neighborListsAreValid{false};
+  std::atomic<bool> _containerStructureIsValid{false};
 
   /**
    * Steps since last rebuild
@@ -791,6 +781,7 @@ class LogicHandler {
    * Total number of relevant functor calls of any interaction type.
    */
   unsigned int _relevantFunctorCalls{0};
+
   /**
    * The current iteration number.
    */
@@ -849,22 +840,6 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 }
 
 template <typename Particle>
-bool LogicHandler<Particle>::neighborListsAreValid() {
-  const auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
-                               _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists() and
-                               not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
-  const auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
-                              _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
-                              not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
-
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
-    _neighborListsAreValid.store(false, std::memory_order_relaxed);
-  }
-
-  return _neighborListsAreValid.load(std::memory_order_relaxed);
-}
-
-template <typename Particle>
 void LogicHandler<Particle>::setParticleBuffers(const std::vector<FullParticleCell<Particle>> &particleBuffers,
                                                 const std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   auto exchangeBuffer = [](const auto &newBuffers, auto &oldBuffers, auto &particleCounter) {
@@ -909,7 +884,7 @@ template <class Functor, InteractionTypeOption::Value interactionType>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::computeInteractions(
     Functor &functor, TraversalInterface<interactionType> &traversal) {
   auto &autoTuner = _autoTunerRefs[interactionType];
-  const bool doListRebuild = not neighborListsAreValid();
+  const bool doListRebuild = (not _containerStructureIsValid.load(std::memory_order_relaxed)) or autoTuner->willRebuildNeighborLists();
   const auto &configuration = autoTuner->getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
 
@@ -1378,11 +1353,6 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor) {
     }
   }
 
-  // log tuning status for current tuner
-  if (functor.isRelevantForTuning()) {
-    _synchronizer.updateTuningState(interactionType, stillTuning);
-  }
-
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }
 
@@ -1450,16 +1420,23 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
             return measurements.energyTotal;
         }
       }();
-      autoTuner->addMeasurement(measurement, not neighborListsAreValid());
+      autoTuner->addMeasurement(measurement, (not _containerStructureIsValid.load(std::memory_order_relaxed)) and _autoTunerRefs[interactionType]->willRebuildNeighborLists());
     } else {
       AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
     }
 
+    bool needToWait = false;
+    if (not stillTuning) {
+      needToWait = checkTuningStates(interactionType);
+    }
+    autoTuner->bumpIterationCounters(needToWait);
+
     // this function depends on LogicHandler's and the AutoTuner's iteration counters,
     // that should not have been updated yet.
-    if (not neighborListsAreValid() /*we have done a rebuild now*/) {
+    if ((not _containerStructureIsValid.load(std::memory_order_relaxed)) and not _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists()
+        and not _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() /*we have done a rebuild now*/) {
       // list is now valid
-      _neighborListsAreValid.store(true, std::memory_order_relaxed);
+      _containerStructureIsValid.store(true, std::memory_order_relaxed);
       _stepsSinceLastListRebuild = 0;
     }
     ++_relevantFunctorCalls;
@@ -1469,8 +1446,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
       _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
       ++_iteration;
     }
-    bool needToWait = checkTuningStates(interactionType);
-    autoTuner->bumpIterationCounters(needToWait);
+
   }
   return stillTuning;
 }

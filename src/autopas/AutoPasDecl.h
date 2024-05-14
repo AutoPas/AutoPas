@@ -256,7 +256,7 @@ class AutoPas {
    * Function to iterate over all inter-particle interactions in the container
    * This function only handles short-range interactions.
    * @param f Functor that describes the interaction (e.g. force).
-   * @return true if this was a tuning iteraction.
+   * @return true if this was a tuning iteration.
    */
   template <class Functor>
   bool computeInteractions(Functor *f);

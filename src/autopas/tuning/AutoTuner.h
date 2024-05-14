@@ -219,6 +219,12 @@ class AutoTuner {
   bool inTuningPhase() const;
 
   /**
+   * Indicate if the tuner is still in the tuning process, a.k.a. still has configurations to sample from.
+   * @return
+   */
+  bool isStillTuning() const;
+
+  /**
    * Getter for the internal evidence collection.
    * @return
    */
@@ -289,6 +295,16 @@ class AutoTuner {
    * Number of iterations since the end of the last tuning phase.
    */
   size_t _iterationsSinceTuning;
+
+  /**
+   * Whether this AutoTuner instance is still in the tuning process.
+   */
+  bool _stillTuning;
+
+  /**
+   * True when this AutoTuner instance is done tuning but needs to wait on other AutoTuner instances.
+   */
+  bool _needsToWait{false};
 
   /**
    * Metric to use for tuning.
