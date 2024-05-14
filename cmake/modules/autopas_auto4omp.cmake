@@ -209,27 +209,20 @@ else ()
                 if (${GCC_VERSION_MAJOR} LESS_EQUAL ${AUTOPAS_NVCC_MAX_GCC})
                     set(AUTOPAS_NVCC_GNUC_PATH ${GCC_PATH} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
                 else ()
-                    # If system's gcc is incompatible with NVCC, look for compatible gcc.
                     message(
                             STATUS
                             "CUDA enabled, but system's gcc is incompatible with NVCC. Looking for compatible gcc."
                     )
-
-                    # Look for gcc executable names based on Ubuntu's packages [8].
-                    # Names based on other package managers can be added here too.
-                    find_program(GCC_LESS NAMES gcc-12 gcc-11 gcc-10 gcc-9 gcc-8 gcc-7)
-                    set(AUTOPAS_NVCC_GNUC_PATH ${GCC_LESS} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
                 endif ()
-                # If system's gcc is compatible, do nothing.
             endif ()
-
-            if (AUTOPAS_NVCC_GNUC_PATH)
-                # If alternate gcc found or specified, pass it to Auto4OMP.
-                set(
-                        LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER ${AUTOPAS_NVCC_GNUC_PATH}
-                        CACHE INTERNAL ${AUTOPAS_NVCC_GNUC_PATH_DOC}
-                )
-                message(DEBUG "Alternate GCC for NVCC at ${LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER}")
+        endif ()
+        if (NOT AUTOPAS_NVCC_GNUC_PATH)
+            # If system's gcc is incompatible with NVCC, look for compatible gcc.
+            # Look for gcc executable names based on Ubuntu's packages [8].
+            # Names based on other package managers can be added here too.
+            find_program(GCC_LESS NAMES gcc-12 gcc-11 gcc-10 gcc-9 gcc-8 gcc-7)
+            if (GCC_LESS)
+                set(AUTOPAS_NVCC_GNUC_PATH ${GCC_LESS} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
             else ()
                 message(
                         WARNING
@@ -239,15 +232,22 @@ else ()
                         "with the CMake variable LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER."
                 )
             endif ()
+        endif ()
 
-            # If system's gcc is compatible, do nothing.
-            #else ()
-            # If no gcc found, warn.
-            #    message(
-            #            WARNING
-            #            "CUDA enabled, but no gcc found. NVCC may complain during Auto4OMP's build. \
-            #            To fix, install gcc ${AUTOPAS_NVCC_MAX_GCC} or less."
-            #    )
+        if (AUTOPAS_NVCC_GNUC_PATH)
+            # If alternate gcc found or specified, pass it to Auto4OMP.
+            set(
+                    LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER ${AUTOPAS_NVCC_GNUC_PATH}
+                    CACHE INTERNAL ${AUTOPAS_NVCC_GNUC_PATH_DOC}
+            )
+            message(DEBUG "Alternate GCC for NVCC at ${LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER}")
+        else ()
+            #If no gcc found, warn.
+            message(
+                    WARNING
+                    "CUDA enabled, but no gcc found. NVCC may complain during Auto4OMP's build."
+                    "To fix, install gcc ${AUTOPAS_NVCC_MAX_GCC} or less."
+            )
         endif ()
     endif ()
     cmake_policy(POP)
