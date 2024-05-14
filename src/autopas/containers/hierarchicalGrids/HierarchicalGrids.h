@@ -59,7 +59,6 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     //
     const double radiusMax = cutoff / 2.;
     const double radiusMin = 0.5;  // Problem dependent!!! Should be read in!!!
-    const double radiusSegment = 1.0 / numberOfLevels;
 
     std::cout << "Created Hierarchical Grid with " << numberOfLevels << " levels" << std::endl;
 
@@ -67,24 +66,21 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
     // Note: _hierarchyLevels has to be a std::deque, which does not support reserve()
     _hierarchicalGridBorders.reserve(numberOfLevels);
 
-    auto exponentiallyDistributedBoundary = [](const double lowerRadius, const double upperRadius,
-                                               const double segment) {
-      const double radiusDifference = upperRadius - lowerRadius;
-      const double prefactorSegment = (1.0 - exp(-1.0)) * segment;
-      return lowerRadius - radiusDifference * log(1.0 - prefactorSegment);
-    };
+    const double stretching = 2.;
+    const double seriesFactor = (radiusMax - radiusMin) / (std::pow(stretching, numberOfLevels) - 1);
+    double gridBorder = radiusMax;
 
     for (unsigned int level = 0; level < numberOfLevels; level++) {
-      // const double gridBorder = radiusMax - radiusSegment * level;
-      const double gridBorder = exponentiallyDistributedBoundary(radiusMin, radiusMax, 1.0 - radiusSegment * level);
       _hierarchicalGridBorders.emplace_back(gridBorder);
       const double cellSize = _hierarchicalGridBorders[level] / radiusMax;
 
       _hierarchyLevels.emplace_back(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, cellSize, loadEstimator);
 
       std::cout << "Created Hierarchical Grid level: " << level << std::endl;
-      std::cout << "  with max. allowed particle radii of " << _hierarchicalGridBorders[level] << std::endl;
+      std::cout << "  with max. allowed particle radii of " << gridBorder << std::endl;
       std::cout << "  and a cellSizeFactor of             " << cellSize << std::endl;
+
+      gridBorder -= seriesFactor * std::pow(stretching, numberOfLevels - level - 1);
     }
 
     setUpCrossLevelInteractionPairs();
@@ -126,7 +122,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   void addParticleImpl(const ParticleType &p) override {
     // Get level of the particle and add it to the corresponding level
     unsigned int level = getHierarchyLevelOfParticle(p);
-    printf("Added particle %d with radius %4.2f to level %d\n", p.getID(), p.getRad(), level);
+    printf("Added particle %ld with radius %4.2f to level %d\n", p.getID(), p.getRad(), level);
     addParticleToGridLevel(p, level);
   }
 
@@ -328,8 +324,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
     // iterate over all particles in a given larger level
     //  @note Maybe parallelize iteration over second level?
-    // AUTOPAS_OPENMP(parallel firstprivate(demFunctor)) // <- cannot parallelize here, since this leads to erroneous
-    // forces
+    // AUTOPAS_OPENMP(parallel firstprivate(functor))  // <- cannot parallelize here, since this leads to errors
     for (auto iterFirstLVLParticles = _hierarchyLevels[firstLevel].begin(); iterFirstLVLParticles.isValid();
          ++iterFirstLVLParticles) {
       // Get position and radius of larger particle
