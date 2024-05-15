@@ -12,6 +12,19 @@ file(
     "*.cuh"
 )
 
+# If rules-based tuning is disabled, we must remove all files which link to antlr. As this includes generated files,
+# where we can't easily change the file, we disable the files here.
+if (AUTOPAS_DISABLE_RULES_BASED_TUNING)
+    list(REMOVE_ITEM MY_SRC "tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageBaseVisitor.h")
+    list(REMOVE_ITEM MY_SRC "tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageBaseVisitor.cpp")
+    list(REMOVE_ITEM MY_SRC "tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageLexer.h")
+    list(REMOVE_ITEM MY_SRC "tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageLexer.cpp")
+    list(REMOVE_ITEM MY_SRC "tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageParser.h")
+    list(REMOVE_ITEM MY_SRC "tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramParser.h")
+    list(REMOVE_ITEM MY_SRC "tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramParser.cpp")
+endif ()
+
+
 add_library(autopas STATIC ${MY_SRC})
 
 target_link_libraries(
