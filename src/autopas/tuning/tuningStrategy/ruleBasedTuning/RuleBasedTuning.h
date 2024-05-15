@@ -15,6 +15,7 @@
 #include <unordered_set>
 #include <variant>
 
+#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
 #include "RuleBasedProgramParser.h"
 #include "RuleBasedProgramTree.h"
 #include "RuleVM.h"
@@ -78,10 +79,14 @@ class RuleBasedTuning : public TuningStrategyInterface {
   /**
    * A function type used to print errors found in verify mode.
    */
+
   using PrintTuningErrorFunType =
       std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
+#else
+      int;
+#endif
 
   /**
    * Constructs a RuleBasedTuning strategy.
@@ -120,6 +125,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
                            const EvidenceCollection &evidenceCollection) override;
 
  private:
+#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
   /**
    * Creates a multi-line string representation of all rules contained in the given rule file.
    *
@@ -169,5 +175,6 @@ class RuleBasedTuning : public TuningStrategyInterface {
   PrintTuningErrorFunType _tuningErrorPrinter;
 
   LiveInfo _currentLiveInfo;
+#endif
 };
 }  // namespace autopas

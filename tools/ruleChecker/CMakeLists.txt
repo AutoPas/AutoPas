@@ -1,12 +1,22 @@
-file(
-        GLOB_RECURSE
-        ruleChecker_SRC
-        "*.cpp"
-        "*.h"
-)
+set(AUTOPAS_DISABLE_RULES_BASED_TUNING
+        OFF
+        CACHE
+        BOOL "Disables rule-based tuning forcing no compilation of ANTLR or uuid. May speed up compilation time and fix compatibility problems"
+        )
 
-add_executable(ruleChecker ${ruleChecker_SRC})
+if(NOT AUTOPAS_DISABLE_RULES_BASED_TUNING)
 
-target_include_directories(ruleChecker PUBLIC .)
+    file(
+            GLOB_RECURSE
+            ruleChecker_SRC
+            "*.cpp"
+            "*.h"
+    )
 
-target_link_libraries(ruleChecker PUBLIC autopas autopasTools)
+    add_executable(ruleChecker ${ruleChecker_SRC})
+
+    target_include_directories(ruleChecker PUBLIC .)
+
+    target_link_libraries(ruleChecker PUBLIC autopas autopasTools)
+
+endif()

@@ -17,6 +17,7 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
       _verifyModeEnabled(verifyModeEnabled),
       _ruleFileName(std::move(ruleFileName)),
       _tuningErrorPrinter(std::move(tuningErrorPrinter)) {
+#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
   // Check if the given rule file exists and throw if not
   struct stat buffer;
   if (stat(_ruleFileName.c_str(), &buffer) != 0) {
@@ -24,6 +25,9 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
   }
   // By default, dump the rules for reproducibility reasons.
   AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
+#elif
+  // Todo add error
+#endif
 }
 
 bool RuleBasedTuning::needsLiveInfo() const { return true; }
@@ -69,6 +73,47 @@ long RuleBasedTuning::getLifetimeWouldHaveSkippedTuningTime() const { return _wo
 
 long RuleBasedTuning::getLifetimeTuningTime() const { return _tuningTimeLifetime; }
 
+
+
+void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                          const EvidenceCollection &evidenceCollection) {
+#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+  _lastApplicableConfigurationOrders = applyRules(configQueue);
+
+  // Don't apply rules if they would wipe the queue and nothing has been tested yet.
+  if (_rulesTooHarsh or (_searchSpace.empty() and _tuningTime == 0)) {
+    _rulesTooHarsh = true;
+    AutoPasLog(WARN, "Rules would remove all available options! Not applying them until next reset.");
+    return;
+  }
+
+  if (not _verifyModeEnabled) {
+    configQueue.clear();
+    std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
+  }
+#endif
+}
+
+TuningStrategyOption RuleBasedTuning::getOptionType() const { return TuningStrategyOption::ruleBasedTuning; }
+
+#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+
+std::string RuleBasedTuning::rulesToString(const std::string &filePath) const {
+  std::ifstream ruleFile(filePath);
+  std::string line;
+  std::stringstream ruleFileStringStream;
+  while (std::getline(ruleFile, line)) {
+    // any string that has a '#' only preceded by space characters.
+    const std::regex rgxContainsComment("^[ \t]*#.*");
+
+    if (line.empty() or std::regex_match(line, rgxContainsComment)) {
+      continue;
+    }
+    ruleFileStringStream << line << "\n";
+  }
+  return ruleFileStringStream.str();
+}
+
 void RuleBasedTuning::verifyCurrentConfigTime(const Configuration &configuration) const {
   for (const auto &order : _lastApplicableConfigurationOrders) {
     bool shouldBeBetter{};
@@ -97,23 +142,6 @@ void RuleBasedTuning::verifyCurrentConfigTime(const Configuration &configuration
         }
       }
     }
-  }
-}
-
-void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                          const EvidenceCollection &evidenceCollection) {
-  _lastApplicableConfigurationOrders = applyRules(configQueue);
-
-  // Don't apply rules if they would wipe the queue and nothing has been tested yet.
-  if (_rulesTooHarsh or (_searchSpace.empty() and _tuningTime == 0)) {
-    _rulesTooHarsh = true;
-    AutoPasLog(WARN, "Rules would remove all available options! Not applying them until next reset.");
-    return;
-  }
-
-  if (not _verifyModeEnabled) {
-    configQueue.clear();
-    std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
   }
 }
 
@@ -170,21 +198,6 @@ std::vector<rule_syntax::ConfigurationOrder> RuleBasedTuning::applyRules(
   return applicableConfigurationOrders;
 }
 
-std::string RuleBasedTuning::rulesToString(const std::string &filePath) const {
-  std::ifstream ruleFile(filePath);
-  std::string line;
-  std::stringstream ruleFileStringStream;
-  while (std::getline(ruleFile, line)) {
-    // any string that has a '#' only preceded by space characters.
-    const std::regex rgxContainsComment("^[ \t]*#.*");
+#endif
 
-    if (line.empty() or std::regex_match(line, rgxContainsComment)) {
-      continue;
-    }
-    ruleFileStringStream << line << "\n";
-  }
-  return ruleFileStringStream.str();
-}
-
-TuningStrategyOption RuleBasedTuning::getOptionType() const { return TuningStrategyOption::ruleBasedTuning; }
 }  // namespace autopas
