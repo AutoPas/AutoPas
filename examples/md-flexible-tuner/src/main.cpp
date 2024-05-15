@@ -1,5 +1,4 @@
 #include <fstream>
-#include <iostream>
 #include <chrono>
 
 #include "SimulationExtForTuning.h"
@@ -40,87 +39,115 @@ int main(int argc, char **argv) {
 #endif
     }
 
-  SimulationExtForTuning simulation(configuration, domainDecomposition);
-  std::ofstream out("values.txt",std::ios_base::out | std::ios_base::trunc);
-  if (out.is_open()) {
-    //out << "Nr. Particles | Difference" << '\n';
-    out << "Nr. Particles | SortThres 0 | SortThres Max | Difference" << '\n';
+    SimulationExtForTuning simulation(configuration, domainDecomposition);
+
+    //Calculate optimal SortingThreshold for ProcessCellPair:
+
     int optimalSortingThreshold = 0;
-    int numParticles = 0;
-    int runs = 3;
+    int numParticles = 20;           //Or int numParticles = configuration.getParticles().size();
+    int runs = 3;                    //Run the calculation several times
+    int repeat = 100000;             //Repeat calling ProcessCell/ProcessCellPair per run
+
     for (int run = 1; run <= runs; run++) {
       std::cout << "-------------------" << std::endl;
       int priorDifference = 0;
       int currentDifference = 0;
 
-    //while (priorDifference >= 0) {
-    for (numParticles = 2; numParticles <= 20 /*configuration.getParticles().size();*/; numParticles+=1) {
-      //std::cout << "Number of Particles: " << numParticles << std::endl;
-      out << "       " << numParticles;
-      int repeat = 100000;
+      for (numParticles = 2; numParticles <= 20 /*configuration.getParticles().size();*/; numParticles+=1) {
 
-    //SortingThreshold = 0
-      milliseconds msStart = duration_cast< milliseconds >(
-          system_clock::now().time_since_epoch()
-      );
-      configuration.sortingThreshold.value = 0;
-      for (int ii = 0; ii < repeat; ii++) {
-          simulation.processCellPair(numParticles, /*sortingThreshold =*/ 0);
-      }
-      milliseconds msEnd = duration_cast< milliseconds >(
-      system_clock::now().time_since_epoch()
-      );
-      milliseconds msDifferenceThreshold0 = msEnd - msStart;
-      // std::cout  << "Number of Particles: " << numParticles << " SortingThreshold: 0. The Simulation took: " << msDifferenceThreshold0.count() << " milliseconds." << std::endl;
-      out << "           " << msDifferenceThreshold0.count();
-
-    //SortingThreshold = Max
-      msStart = duration_cast< milliseconds >(
-          system_clock::now().time_since_epoch()
-      );
-      configuration.sortingThreshold.value = configuration.getParticles().size();
-      for (int ii = 0; ii < repeat; ii++) {
-        simulation.processCellPair(numParticles, /*sortingThreshold =*/ INT_MAX);
-      }
-      msEnd = duration_cast< milliseconds >(
-      system_clock::now().time_since_epoch()
-      );
-      milliseconds msDifferenceThresholdMax = msEnd - msStart;
-      //std::cout  << "Number of Particles: " << numParticles << " SortingThreshold: Max. The Simulation took: " << msDifferenceThresholdMax.count() << " milliseconds." << std::endl;
-      out << "            " << msDifferenceThresholdMax.count();
-
-      currentDifference = msDifferenceThreshold0.count() - msDifferenceThresholdMax.count();
-      std::cout   << "Number of Particles: " << numParticles << " diff =" << currentDifference << std::endl;
-      //out << "       " << numParticles << "           " << currentDifference << '\n';
-      out << "              " << currentDifference << '\n';
-
-      if (currentDifference < 0) {
-        if (abs(currentDifference) < priorDifference) {
-          //std::cout << std::endl << "SortingThreshold: " << numParticles << std::endl << std::endl;
-          //out << '\n' << "SortingThreshold: " << numParticles << '\n';
-          optimalSortingThreshold += numParticles;
+        //SortingThreshold = 0
+        milliseconds msStart = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+       configuration.sortingThreshold.value = 0;
+        for (int ii = 0; ii < repeat; ii++) {
+            simulation.processCellPair(numParticles, /*sortingThreshold =*/ 0);
         }
-        else {
-          //std::cout << std::endl << "SortingThreshold: " << numParticles-1 << std::endl << std::endl;
-          //out << '\n' << "SortingThreshold: " << numParticles-1 << '\n';
-          optimalSortingThreshold += numParticles-1;
+        milliseconds msEnd = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+        milliseconds msDifferenceThreshold0 = msEnd - msStart;
+
+        //SortingThreshold = Max
+        msStart = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+        configuration.sortingThreshold.value = configuration.getParticles().size();
+        for (int ii = 0; ii < repeat; ii++) {
+          simulation.processCellPair(numParticles, /*sortingThreshold =*/ INT_MAX);
         }
-        break;
+        msEnd = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+         milliseconds msDifferenceThresholdMax = msEnd - msStart;
+
+        currentDifference = msDifferenceThreshold0.count() - msDifferenceThresholdMax.count();
+        std::cout   << "Number of Particles: " << numParticles << " diff =" << currentDifference << std::endl;
+ 
+        //When the optimal SortingThreshold lies between two numbers, calculate which one it is closer to
+        if (currentDifference < 0) {
+          if (abs(currentDifference) < priorDifference) {
+            optimalSortingThreshold += numParticles;
+          }
+          else {
+            optimalSortingThreshold += numParticles-1;
+          }
+          break;
+        }
+        priorDifference = currentDifference;
       }
-      priorDifference = currentDifference;
-    }
-    out << '\n';
-    }
-    if (optimalSortingThreshold == 0) {
-      optimalSortingThreshold = numParticles * runs;
+      if (numParticles == 20) {
+        optimalSortingThreshold += numParticles;
+      }
     }
     optimalSortingThreshold = (optimalSortingThreshold + runs/2) / runs;
-    std::cout << std::endl << "Your optimal SortingThreshold is " << optimalSortingThreshold << std::endl << std::endl;
-    out << '\n' << "Optimal SortingThreshold: " << optimalSortingThreshold << '\n';
+    std::cout << std::endl << "Optimal SortingThreshold for ProcessCellPair: " << optimalSortingThreshold << std::endl;
 
+
+    //Calculate optimal SortingThreshold for ProcessCell:
+
+    optimalSortingThreshold = 0;
+
+    for (int run = 1; run <= runs; run++) {
+      std::cout << "-------------------" << std::endl;
+      int priorDifference = 0;
+      int currentDifference = 0;
+
+      for (numParticles = 2; numParticles <= 20 /*configuration.getParticles().size();*/; numParticles+=1) {
+
+        //SortingThreshold = 0
+        milliseconds msStart = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+       configuration.sortingThreshold.value = 0;
+        for (int ii = 0; ii < repeat; ii++) {
+            simulation.processCell(numParticles, /*sortingThreshold =*/ 0);
+        }
+        milliseconds msEnd = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+        milliseconds msDifferenceThreshold0 = msEnd - msStart;
+
+        //SortingThreshold = Max
+        msStart = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+        configuration.sortingThreshold.value = configuration.getParticles().size();
+        for (int ii = 0; ii < repeat; ii++) {
+          simulation.processCell(numParticles, /*sortingThreshold =*/ INT_MAX);
+        }
+        msEnd = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+         milliseconds msDifferenceThresholdMax = msEnd - msStart;
+
+        currentDifference = msDifferenceThreshold0.count() - msDifferenceThresholdMax.count();
+        std::cout   << "Number of Particles: " << numParticles << ", diff =" << currentDifference << std::endl;
+
+        //When the optimal SortingThreshold lies between two numbers, calculate which one it is closer to
+        if (currentDifference < 0) {
+          if (abs(currentDifference) < priorDifference) {
+            optimalSortingThreshold += numParticles;
+          }
+          else {
+            optimalSortingThreshold += numParticles-1;
+          }
+          break;
+        }
+        priorDifference = currentDifference;
+      }
+      if (numParticles == 20) {
+        optimalSortingThreshold += numParticles;
+      }
+    }
+    optimalSortingThreshold = (optimalSortingThreshold + runs/2) / runs;
+    std::cout << std::endl << "Optimal SortingThreshold for ProcessCell: " << optimalSortingThreshold << std::endl;
   }
-  out.close();
-  }
+
   autopas::AutoPas_MPI_Finalize();
   return EXIT_SUCCESS;
 }

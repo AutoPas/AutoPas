@@ -58,6 +58,7 @@ void SimulationExtForTuning::processCell(int numParticles, size_t sortingThresho
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
 
+    //particles are randomly distributed in  a cell
     for (int ii = 0; ii < numParticles; ii++) {
           double fx = static_cast<double>(rand()) / RAND_MAX * cell.getCellLength()[0];
           double fy = static_cast<double>(rand()) / RAND_MAX * cell.getCellLength()[1];
@@ -66,23 +67,6 @@ void SimulationExtForTuning::processCell(int numParticles, size_t sortingThresho
           cell.addParticle(particle);
           particle.setID(particle.getID() + 1);
     }
-    /*
-    double scale = 0.5;
-    int maxi = pow(numParticles, 0.333);
-
-    for (int xi = 0; xi < maxi; xi++) {
-      for (int yi = 0; yi < maxi; yi++) {
-        for (int zi = 0; zi < maxi; zi++) {
-          double fx = static_cast<double>(rand()) / RAND_MAX;
-          double fy = static_cast<double>(rand()) / RAND_MAX;
-          double fz = static_cast<double>(rand()) / RAND_MAX;
-          particle.setR({fx * scale, fy * scale, fz * scale});
-          cell.addParticle(particle);
-          particle.setID(particle.getID() + 1);
-        }
-      }
-    }
-    */
 
     const double interactionLength = _configuration.cutoff.value + _configuration.verletSkinRadiusPerTimestep.value * _configuration.verletRebuildFrequency.value;
     auto dataLayout = _autoPasContainer->getCurrentConfig().dataLayout; // should be DataLayoutOption::aos but is not
@@ -96,8 +80,8 @@ void SimulationExtForTuning::processCell(int numParticles, size_t sortingThresho
 void SimulationExtForTuning::processCellPair(int numParticles, size_t sortingThreshold) {
     autopas::FullParticleCell<ParticleType> cell1;
     autopas::FullParticleCell<ParticleType> cell2;
-    cell1.reserve(numParticles);
-    cell2.reserve(numParticles);
+    cell1.reserve(numParticles/2);
+    cell2.reserve(numParticles-(numParticles/2));
 
     size_t particleId = 0;
     unsigned long _typeId = 0;
@@ -110,7 +94,8 @@ void SimulationExtForTuning::processCellPair(int numParticles, size_t sortingThr
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
 
-    for (int ii = 0; ii < numParticles; ii++) {
+    //particles are randomly distributed in cell 1
+    for (int ii = 0; ii < numParticles/2; ii++) {
           double fx = static_cast<double>(rand()) / RAND_MAX * cell1.getCellLength()[0];
           double fy = static_cast<double>(rand()) / RAND_MAX * cell1.getCellLength()[1];
           double fz = static_cast<double>(rand()) / RAND_MAX * cell1.getCellLength()[2];
@@ -119,7 +104,8 @@ void SimulationExtForTuning::processCellPair(int numParticles, size_t sortingThr
           particle.setID(particle.getID() + 1);
     }
 
-    for (int jj = 0; jj < numParticles; jj++) {
+    //particles are randomly distributed in (neighboring) cell 2
+    for (int jj = numParticles/2; jj < numParticles; jj++) {
           double fx = static_cast<double>(rand()) / RAND_MAX * cell2.getCellLength()[0] + 1.0;
           double fy = static_cast<double>(rand()) / RAND_MAX * cell2.getCellLength()[1];
           double fz = static_cast<double>(rand()) / RAND_MAX * cell2.getCellLength()[2];
