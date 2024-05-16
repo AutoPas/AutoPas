@@ -64,22 +64,23 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption,
                             typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType) override {
-    // Initialize a neighbor list for each cell.
+    // Initialize a map of neighbor lists for each cell.
     _aosNeighborList.clear();
     this->_internalLinkedCells = &linkedCells;
     auto &cells = linkedCells.getCells();
-    size_t cellsSize = cells.size();
-    _aosNeighborList.resize(cellsSize);
-    for (size_t cellIndex = 0; cellIndex < cellsSize; ++cellIndex) {
+    const size_t numCells = cells.size();
+    _aosNeighborList.resize(numCells);
+    for (size_t cellIndex = 0; cellIndex < numCells; ++cellIndex) {
       auto &cell = cells[cellIndex];
-      _aosNeighborList[cellIndex].reserve(cell.size());
+      const auto numParticlesInCell = cell.size();
+      _aosNeighborList[cellIndex].reserve(numParticlesInCell);
       size_t particleIndexWithinCell = 0;
       for (auto iter = cell.begin(); iter != cell.end(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
         _aosNeighborList[cellIndex].emplace_back(particle, std::vector<Particle *>());
         // In a cell with N particles, reserve space for 5N neighbors.
         // 5 is an empirically determined magic number that provides good speed.
-        _aosNeighborList[cellIndex].back().second.reserve(cell.size() * 5);
+        _aosNeighborList[cellIndex].back().second.reserve(numParticlesInCell * 5);
         _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
     }

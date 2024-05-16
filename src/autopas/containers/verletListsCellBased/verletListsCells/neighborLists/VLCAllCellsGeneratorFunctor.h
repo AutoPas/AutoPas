@@ -23,15 +23,15 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
    * Constructor
    * @param neighborLists a verletlist for each cell
    * @param particleToCellMap used to get the verletlist of a particle
-   * @param cutoffskin cutoff + skin
+   * @param cutoffSkin cutoff + skin
    */
   VLCAllCellsGeneratorFunctor(NeighborListsType &neighborLists,
                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
-                              double cutoffskin)
+                              double cutoffSkin)
       : Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
-        _cutoffskinsquared(cutoffskin * cutoffskin) {}
+        _cutoffskinsquared(cutoffSkin * cutoffSkin) {}
 
   bool isRelevantForTuning() override { return false; }
 
@@ -50,22 +50,22 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
   /**
    * @copydoc Functor::AoSFunctor()
    */
-  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
+  void AoSFunctor(Particle &i, Particle &j, bool) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
       return;
     }
-    auto dist = i.getR() - j.getR();
-    double distsquare = utils::ArrayMath::dot(dist, dist);
-    if (distsquare < _cutoffskinsquared) {
+    const auto dist = i.getR() - j.getR();
+    const double distSquare = utils::ArrayMath::dot(dist, dist);
+    if (distSquare < _cutoffskinsquared) {
       // this is thread safe, only if particle i is accessed by only one
       // thread at a time. which is ensured, as particle i resides in a
       // specific cell and each cell is only accessed by one thread at a time
       // (ensured by traversals)
       // also the list is not allowed to be resized!
 
-      auto &[cellIndex, particleIndex] = _particleToCellMap[&i];
+      const auto &[cellIndex, particleIndex] = _particleToCellMap[&i];
       _neighborLists[cellIndex][particleIndex].second.push_back(&j);
     }
   }
@@ -76,13 +76,13 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;
 
-    auto **const __restrict__ ptrptr = soa.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ xptr = soa.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ yptr = soa.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ zptr = soa.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict__ ptrPtr = soa.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ xPtr = soa.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ yPtr = soa.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ zPtr = soa.template begin<Particle::AttributeNames::posZ>();
 
-    // index of cell1 is particleToCellMap of ptr1ptr, same for 2
-    auto cell1 = _particleToCellMap.at(ptrptr[0]).first;
+    // index of cell1 is particleToCellMap of ptrPtr, same for 2
+    const auto cell1 = _particleToCellMap.at(ptrPtr[0]).first;
 
     auto &currentList = _neighborLists[cell1];
 
@@ -92,9 +92,9 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
     size_t numPart = soa.size();
     for (unsigned int i = 0; i < numPart; ++i) {
       for (unsigned int j = i + 1; j < numPart; ++j) {
-        const double drx = xptr[i] - xptr[j];
-        const double dry = yptr[i] - yptr[j];
-        const double drz = zptr[i] - zptr[j];
+        const double drx = xPtr[i] - xPtr[j];
+        const double dry = yPtr[i] - yPtr[j];
+        const double drz = zPtr[i] - zPtr[j];
 
         const double drx2 = drx * drx;
         const double dry2 = dry * dry;
@@ -103,10 +103,10 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
         const double dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _cutoffskinsquared) {
-          currentList[i].second.push_back(ptrptr[j]);
+          currentList[i].second.push_back(ptrPtr[j]);
           if (not newton3) {
             // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
-            currentList[j].second.push_back(ptrptr[i]);
+            currentList[j].second.push_back(ptrPtr[i]);
           }
         }
       }
@@ -124,33 +124,33 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
    * @param soa2 Second structure of arrays.
    */
   void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool /*newton3*/) override {
-    if (soa1.size() == 0 || soa2.size() == 0) return;
+    if (soa1.size() == 0 or soa2.size() == 0) return;
 
-    auto **const __restrict__ ptr1ptr = soa1.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict__ ptr1Ptr = soa1.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ x1Ptr = soa1.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y1Ptr = soa1.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z1Ptr = soa1.template begin<Particle::AttributeNames::posZ>();
 
-    auto **const __restrict__ ptr2ptr = soa2.template begin<Particle::AttributeNames::ptr>();
-    double *const __restrict__ x2ptr = soa2.template begin<Particle::AttributeNames::posX>();
-    double *const __restrict__ y2ptr = soa2.template begin<Particle::AttributeNames::posY>();
-    double *const __restrict__ z2ptr = soa2.template begin<Particle::AttributeNames::posZ>();
+    auto **const __restrict__ ptr2Ptr = soa2.template begin<Particle::AttributeNames::ptr>();
+    double *const __restrict__ x2Ptr = soa2.template begin<Particle::AttributeNames::posX>();
+    double *const __restrict__ y2Ptr = soa2.template begin<Particle::AttributeNames::posY>();
+    double *const __restrict__ z2Ptr = soa2.template begin<Particle::AttributeNames::posZ>();
 
-    // index of cell1 is particleToCellMap of ptr1ptr, same for 2
-    size_t cell1 = _particleToCellMap.at(ptr1ptr[0]).first;
+    // index of cell1 is particleToCellMap of ptr1Ptr, same for 2
+    const size_t cell1 = _particleToCellMap.at(ptr1Ptr[0]).first;
 
     auto &currentList = _neighborLists[cell1];
 
     // iterating over particle indices and accessing currentList at index i works
     // because the particles are iterated in the same order they are loaded in
     // which is the same order they were initialized when building the aosNeighborList
-    size_t numPart1 = soa1.size();
+    const size_t numPart1 = soa1.size();
     for (unsigned int i = 0; i < numPart1; ++i) {
-      size_t numPart2 = soa2.size();
+      const size_t numPart2 = soa2.size();
       for (unsigned int j = 0; j < numPart2; ++j) {
-        const double drx = x1ptr[i] - x2ptr[j];
-        const double dry = y1ptr[i] - y2ptr[j];
-        const double drz = z1ptr[i] - z2ptr[j];
+        const double drx = x1Ptr[i] - x2Ptr[j];
+        const double dry = y1Ptr[i] - y2Ptr[j];
+        const double drz = z1Ptr[i] - z2Ptr[j];
 
         const double drx2 = drx * drx;
         const double dry2 = dry * dry;
@@ -159,7 +159,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
         const double dr2 = drx2 + dry2 + drz2;
 
         if (dr2 < _cutoffskinsquared) {
-          currentList[i].second.push_back(ptr2ptr[j]);
+          currentList[i].second.push_back(ptr2Ptr[j]);
         }
       }
     }
