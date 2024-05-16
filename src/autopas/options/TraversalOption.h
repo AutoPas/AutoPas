@@ -43,8 +43,8 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01_3b,
     /**
-* LCC01CombinedSoATraversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain
-* is traversed line-wise.
+     * LCC01CombinedSoATraversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain
+     * is traversed line-wise.
      */
     lc_c01_combined_SoA,
     /**

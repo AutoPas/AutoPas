@@ -275,7 +275,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
 
 void AutoTuner::bumpIterationCounters(bool needToWait) {
   // reset counter after all autotuners finished tuning
-  if (not (needToWait or inTuningPhase() or _iterationsSinceTuning < _tuningInterval)) {
+  if (not(needToWait or inTuningPhase() or _iterationsSinceTuning < _tuningInterval)) {
     _iterationsSinceTuning = 0;
   }
   ++_iterationsSinceTuning;
@@ -436,9 +436,7 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
-bool AutoTuner::inTuningPhase() const {
-  return _stillTuning and not searchSpaceIsTrivial();
-}
+bool AutoTuner::inTuningPhase() const { return _stillTuning and not searchSpaceIsTrivial(); }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 }  // namespace autopas

@@ -524,14 +524,14 @@ long Simulation::accumulateTime(const long &time) {
 }
 
 bool Simulation::calculatePairwiseForces() {
-  const auto wasTuningIteration = applyWithChosenFunctor<bool>(
-      [&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration =
+      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
-  const auto wasTuningIteration = applyWithChosenFunctor3B<bool>(
-      [&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+  const auto wasTuningIteration =
+      applyWithChosenFunctor3B<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
 }
 

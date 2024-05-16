@@ -56,11 +56,15 @@ INSTANTIATE_TEST_SUITE_P(
                     container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
                       auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy)>();
                       auto traversalWithN3 =
-                          traversalSelector.template generateTraversal<MTriwiseFunctor, autopas::InteractionTypeOption::triwise>(traversalOption, f, container.getTraversalSelectorInfo(),
-                                                              dataLayoutOption, autopas::Newton3Option::enabled);
+                          traversalSelector
+                              .template generateTraversal<MTriwiseFunctor, autopas::InteractionTypeOption::triwise>(
+                                  traversalOption, f, container.getTraversalSelectorInfo(), dataLayoutOption,
+                                  autopas::Newton3Option::enabled);
                       auto traversalWithoutN3 =
-                          traversalSelector.template generateTraversal<MTriwiseFunctor, autopas::InteractionTypeOption::triwise>(traversalOption, f, container.getTraversalSelectorInfo(),
-                                                              dataLayoutOption, autopas::Newton3Option::disabled);
+                          traversalSelector
+                              .template generateTraversal<MTriwiseFunctor, autopas::InteractionTypeOption::triwise>(
+                                  traversalOption, f, container.getTraversalSelectorInfo(), dataLayoutOption,
+                                  autopas::Newton3Option::disabled);
 
                       return traversalWithN3->isApplicable() and traversalWithoutN3->isApplicable();
                     });
@@ -211,10 +215,9 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest3B::eval(autopas::DataLayoutO
 
   // simulate iteration
   autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-    iterate(container,
-            autopas::TraversalSelector<decltype(particleCellDummy)>::
-                template generateTraversal<MTriwiseFunctor, autopas::InteractionTypeOption::triwise>(traversalOption, mockFunctor, traversalSelectorInfo,
-                                                            dataLayout, n3Option));
+    iterate(container, autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<
+                           MTriwiseFunctor, autopas::InteractionTypeOption::triwise>(
+                           traversalOption, mockFunctor, traversalSelectorInfo, dataLayout, n3Option));
   });
 
   return std::make_tuple(callsSC.load(), callsPair.load(), callsTriple.load());
