@@ -60,7 +60,7 @@ class PredictiveTuning final : public TuningStrategyInterface {
                    unsigned int testsUntilFirstPrediction, ExtrapolationMethodOption extrapolationMethodOption,
                    const std::string &outputSuffix = "");
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 

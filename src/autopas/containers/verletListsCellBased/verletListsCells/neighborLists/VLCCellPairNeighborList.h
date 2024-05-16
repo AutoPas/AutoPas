@@ -81,7 +81,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption buildTraversalOption,
-                            typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
+                            typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType) override {
     this->_internalLinkedCells = &linkedCells;
     _aosNeighborList.clear();
     _globalToLocalIndex.clear();
@@ -213,7 +213,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
  private:
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                          double interactionLength, const TraversalOption buildTraversalOption,
-                         typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) override {
+                         typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType) override {
     VLCCellPairGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
@@ -222,7 +222,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
 
-    const auto dataLayout = buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::Value::aosBuild
+    const auto dataLayout = buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild
                                 ? DataLayoutOption::aos
                                 : DataLayoutOption::soa;
 

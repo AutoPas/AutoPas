@@ -425,5 +425,5 @@ void PredictiveTuning::rejectConfiguration(const Configuration &configuration, b
   }
 }
 
-TuningStrategyOption PredictiveTuning::getOptionType() { return TuningStrategyOption::predictiveTuning; }
+TuningStrategyOption PredictiveTuning::getOptionType() const { return TuningStrategyOption::predictiveTuning; }
 }  // namespace autopas
