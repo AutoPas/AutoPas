@@ -15,7 +15,7 @@ namespace autopas {
  */
 template <class Particle>
 class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>> {
-  using NeighborListsType = typename VerletListsCellsHelpers<Particle>::NeighborListsType;
+  using NeighborListsType = typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType;
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
