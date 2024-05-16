@@ -54,7 +54,7 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   ~ActiveHarmony() override;
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 

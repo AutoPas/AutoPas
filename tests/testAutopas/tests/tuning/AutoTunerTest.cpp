@@ -16,6 +16,8 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
+#include "autopas/tuning/tuningStrategy/SlowConfigFilter.h"
+#include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -669,4 +671,91 @@ TEST_F(AutoTunerTest, testBuildNotBuildTimeEstimation) {
 
   EXPECT_EQ(autoTuner.getCurrentConfig(), firstConfig);
   EXPECT_NE(autoTuner.getCurrentConfig(), secondConfig);
+}
+
+/**
+ *  Add less measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ */
+TEST_F(AutoTunerTest, testSampleWeightingOneRebuild) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 3,
+  };
+  constexpr size_t rebuildFrequency = 10;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  const auto [config, _] = autoTuner.getNextConfig();
+
+  constexpr long sampleWithRebuild = 10;
+  constexpr long sampleWithoutRebuild = 2;
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+
+  constexpr long expectedEvidence =
+      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
+}
+
+/**
+ *  Add more measurements than the rebuild frequency and check if the weighted average for the evidence is correct.
+ *  Version with two rebuilds during sampling.
+ */
+TEST_F(AutoTunerTest, testSampleWeightingTwoRebuild) {
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 5,
+  };
+  constexpr size_t rebuildFrequency = 3;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  const auto [config, _] = autoTuner.getNextConfig();
+
+  constexpr long sampleWithRebuild = 10;
+  constexpr long sampleWithoutRebuild = 2;
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+  autoTuner.addMeasurement(sampleWithRebuild, true);
+  autoTuner.addMeasurement(sampleWithoutRebuild, false);
+
+  constexpr long expectedEvidence =
+      (sampleWithRebuild + (rebuildFrequency - 1) * sampleWithoutRebuild) / rebuildFrequency;
+  EXPECT_EQ(expectedEvidence, autoTuner.getEvidenceCollection().getEvidence(config)->front().value);
+}
+
+/**
+ * Test that if a tuning strategy wipes the whole config queue it is not applied.
+ */
+TEST_F(AutoTunerTest, testRestoreAfterWipe) {
+  // Create a tuning strategy that will always reject everything
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+  // This strategy will throw out all configurations that are slower than 50% of the fastest
+  // (incl. fastest, yes this is bug abuse)
+  tuningStrategies.emplace_back(std::make_unique<autopas::SlowConfigFilter>(0.5));
+  tuningStrategies.emplace_back(std::make_unique<autopas::SortByName>());
+
+  // Set up the tuner
+  const autopas::AutoTuner::SearchSpaceType searchSpace{_confLc_c08_noN3, _confLc_c01_noN3};
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .maxSamples = 1,
+  };
+  constexpr size_t rebuildFrequency = 3;
+  autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  // Fill the search space with random data so the slow config filter can work
+  for (const auto conf : searchSpace) {
+    const auto iDontCare = autoTuner.getNextConfig();
+    autoTuner.addMeasurement(42, true);
+  }
+
+  // Trigger the tuning process with evidence. Here the slow config filter would wipe out everything
+  const auto iDontCare = autoTuner.getNextConfig();
+
+  // The slow config filter should have been ignored
+  // But the second strategy should still have been applied reversing the order of configs
+  EXPECT_EQ(autoTuner.getConfigQueue()[0], _confLc_c01_noN3);
+  EXPECT_EQ(autoTuner.getConfigQueue()[1], _confLc_c08_noN3);
 }

@@ -93,7 +93,7 @@ class AutoTuner {
   bool needsHomogeneityAndMaxDensityBeforePrepare() const;
 
   /**
-   * Determines what live infos are needed and resets the strategy upon the start of a new tuning phase.
+   * Determines what live infos are needed and passes collected live info to the tuning strategies.
    *
    * @note The live info is not gathered here because then we would need the container.
    *
@@ -217,6 +217,12 @@ class AutoTuner {
    * @return
    */
   bool inTuningPhase() const;
+
+  /**
+   * Getter for the internal evidence collection.
+   * @return
+   */
+  const EvidenceCollection &getEvidenceCollection() const;
 
  private:
   /**

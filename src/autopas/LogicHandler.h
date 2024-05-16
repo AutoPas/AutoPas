@@ -764,7 +764,7 @@ class LogicHandler {
   size_t _sortingThreshold;
 
   /**
-   * Reference to the map of AutoTuners held by AutoPas.
+   * Reference to the map of AutoTuners which are managed by the AutoPas main interface.
    */
   std::unordered_map<InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> &_autoTunerRefs;
 
@@ -1442,14 +1442,16 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
   // if this was a major iteration add measurements and bump counters
   if (functor->isRelevantForTuning()) {
     if (stillTuning) {
-      switch (autoTuner->getTuningMetric()) {
-        case TuningMetricOption::time:
-          autoTuner->addMeasurement(measurements.timeTotal, not neighborListsAreValid());
-          break;
-        case TuningMetricOption::energy:
-          autoTuner->addMeasurement(measurements.energyTotal, not neighborListsAreValid());
-          break;
-      }
+      // choose the metric of interest
+      const auto measurement = [&]() {
+        switch (autoTuner->getTuningMetric()) {
+          case TuningMetricOption::time:
+            return measurements.timeTotal;
+          case TuningMetricOption::energy:
+            return measurements.energyTotal;
+        }
+      }();
+      autoTuner->addMeasurement(measurement, not neighborListsAreValid());
     } else {
       AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
     }
@@ -1465,6 +1467,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
     // In case of pairwise plus triwise interactions, assume that each functor is called exactly once per timestep.
     if (_relevantFunctorCalls % _interactionTypes.size() == 0) {
       ++_stepsSinceLastListRebuild;
+      _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
       ++_iteration;
     }
     bool needToWait = checkTuningStates(interactionType);
