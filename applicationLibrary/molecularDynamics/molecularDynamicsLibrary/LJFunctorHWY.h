@@ -252,8 +252,6 @@ namespace mdLib {
                     const int64_t *const __restrict ownedPtr1, const int64_t *const __restrict ownedPtr2, const size_t i, const size_t j,
                     const size_t restI = 0, const size_t restJ = 0) {
 
-                    // TODO : make sure that in case of rest, the remaining register slots are filled with 0
-
                     // TODO : keep in mind that i might run reversed (decremented)
 
                     ownedI = highway::Set(tag_long, ownedPtr1[i]);
@@ -297,8 +295,8 @@ namespace mdLib {
                         y1 = highway::ConcatLowerLower(tag_double, tmpY1, y1);
                         z1 = highway::ConcatLowerLower(tag_double, tmpZ1, z1);
 
-                        const auto maskLong = highway::FirstN(tag_long, remainderJ ? restJ : _vecLengthDouble / 2);
-                        const auto maskDouble = highway::FirstN(tag_double, remainderJ ? restJ : _vecLengthDouble / 2);
+                        const auto maskLong = restMasksLong[remainderJ ? restJ-1 : _vecLengthDouble/2-1];
+                        const auto maskDouble = restMasksDouble[remainderJ ? restJ : _vecLengthDouble/2-1];
 
                         // lower part of registers is filled
                         // TODO : figure out why LoadN does not work
@@ -314,10 +312,73 @@ namespace mdLib {
                         z2 = highway::ConcatLowerLower(tag_double, z2, z2);
                     }
                     else if (vecPattern == VectorizationPattern::pVecDiv2x2) {
-                        // TODO : implement
+                        
+                        const auto maskLong = restMasksLong[remainderI ? restI-1 : _vecLengthDouble/2-1];
+                        const auto maskDouble = restMasksDouble[remainderI ? restI-1 : _vecLengthDouble/2-1];
+
+                        size_t index = reversedI ? (remainderI ? 0 : i-_vecLengthDouble/2+1) : i;
+
+                        ownedI = highway::MaskedLoad(maskLong, tag_long, &ownedPtr1[index]);
+                        x1 = highway::MaskedLoad(maskDouble, tag_double, &xPtr1[index]);
+                        y1 = highway::MaskedLoad(maskDouble, tag_double, &yPtr1[index]);
+                        z1 = highway::MaskedLoad(maskDouble, tag_double, &zPtr1[index]);
+
+                        ownedI = highway::ConcatLowerLower(tag_long, ownedI, ownedI);
+                        x1 = highway::ConcatLowerLower(tag_double, x1, x1);
+                        y1 = highway::ConcatLowerLower(tag_double, y1, y1);
+                        z1 = highway::ConcatLowerLower(tag_double, z1, z1);
+
+                        ownedJ = highway::Set(tag_long, ownedPtr2[j]);
+                        x2 = highway::Set(tag_double, xPtr2[j]);
+                        y2 = highway::Set(tag_double, yPtr2[j]);
+                        z2 = highway::Set(tag_double, zPtr2[j]);
+
+                        VectorLong ownedJTmp;
+                        VectorDouble x2Tmp;
+                        VectorDouble y2Tmp;
+                        VectorDouble z2Tmp;
+
+                        if constexpr (remainderJ) {
+                            ownedJTmp = _zeroLong;
+                            x2Tmp =_zeroDouble;
+                            y2Tmp = _zeroDouble;
+                            z2Tmp = _zeroDouble;
+                        }
+                        else {
+                            ownedJTmp = highway::Set(tag_long, ownedPtr2[j+1]);
+                            x2 = highway::Set(tag_double, xPtr2[j+1]);
+                            y2 = highway::Set(tag_double, yPtr2[j+1]);
+                            z2 = highway::Set(tag_double, zPtr2[j+1]);
+                        }
+
+                        ownedJ = highway::ConcatLowerLower(tag_double, ownedJTmp, ownedJ);
+                        x2 = highway::ConcatLowerLower(tag_double, x2Tmp, x2);
+                        y2 = highway::ConcatLowerLower(tag_double, y2Tmp, y2);
+                        z2 = highway::ConcatLowerLower(tag_double, z2Tmp, z2);
                     }
                     else if (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : implement
+                        ownedJ = highway::Set(tag_long, ownedPtr2[j]);
+                        x2 = highway::Set(tag_double, xPtr2[j]);
+                        y2 = highway::Set(tag_double, yPtr2[j]);
+                        z2 = highway::Set(tag_double, zPtr2[j]);
+
+                        size_t index = reversedI ? (remainderI ? 0 : i-_vecLengthDouble+1) : i;
+
+                        if constexpr (remainderI) {
+                            auto maskDouble = restMasksDouble[restI-1];
+                            auto maskLong = restMasksLong[restI-1];
+
+                            ownedI = highway::MaskedLoad(maskLong, tag_long, &ownedPtr1[index]);
+                            x1 = highway::MaskedLoad(maskDouble, tag_double, &xPtr1[index]);
+                            y1 = highway::MaskedLoad(maskDouble, tag_double, &yPtr1[index]);
+                            z1 = highway::MaskedLoad(maskDouble, tag_double, &zPtr1[index]);
+                        }
+                        else {
+                            ownedI = highway::LoadU(tag_long, &ownedPtr1[index]);
+                            x1 = highway::LoadU(tag_double, &xPtr1[index]);
+                            y1 = highway::LoadU(tag_double, &yPtr1[index]);
+                            z1 = highway::LoadU(tag_double, &zPtr1[index]);
+                        }
                     }
                     else if (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : implement
@@ -388,16 +449,25 @@ namespace mdLib {
                         auto lowerFyAcc = highway::LowerHalf(fyAcc);
                         auto lowerFzAcc = highway::LowerHalf(fzAcc);
 
+                        // extend fzAcc to full vector width which makes accumulating easier
+                        VectorDouble fxAcc_1 = highway::ZeroExtendVector(tag_double, lowerFxAcc);
+                        VectorDouble fyAcc_1 = highway::ZeroExtendVector(tag_double, lowerFyAcc);
+                        VectorDouble fzAcc_1 = highway::ZeroExtendVector(tag_double, lowerFzAcc);
+
                         auto higherFxAcc = highway::UpperHalf(tag_double, fxAcc);
                         auto higherFyAcc = highway::UpperHalf(tag_double, fyAcc);
                         auto higherFzAcc = highway::UpperHalf(tag_double, fzAcc);
 
-                        auto fxCombined = lowerFxAcc + higherFxAcc;
-                        auto fyCombined = lowerFyAcc + higherFyAcc;
-                        auto fzCombined = lowerFzAcc + higherFzAcc;
+                        VectorDouble fxAcc_2 = highway::ZeroExtendVector(tag_double, higherFxAcc);
+                        VectorDouble fyAcc_2 = highway::ZeroExtendVector(tag_double, higherFyAcc);
+                        VectorDouble fzAcc_2 = highway::ZeroExtendVector(tag_double, higherFzAcc);
+
+                        auto fxCombined = fxAcc_1 + fxAcc_2;
+                        auto fyCombined = fyAcc_1 + fyAcc_2;
+                        auto fzCombined = fzAcc_1 + fzAcc_2;
 
                         // either load full slice of vecLength / 2 or a shortened slice of rest particles
-                        // for reversed order, the index must be adapted and the resulting vector should be shuffled
+                        // for reversed order, the index must be adapted
                         size_t index = reversed ? (remainder ? 0 : i-_vecLengthDouble/2+1) : i;
                         auto mask = (remainder ? restMasksDouble[rest-1] : restMasksDouble[_vecLengthDouble/2-1]);
 
@@ -405,24 +475,9 @@ namespace mdLib {
                         auto oldFy = highway::MaskedLoad(mask, tag_double, &fyPtr[index]);
                         auto oldFz = highway::MaskedLoad(mask, tag_double, &fzPtr[index]);
 
-                        auto lowerOldFx = highway::LowerHalf(oldFx);
-                        auto lowerOldFy = highway::LowerHalf(oldFy);
-                        auto lowerOldFz = highway::LowerHalf(oldFz);
-                        if constexpr (reversed) {
-                            lowerOldFx = highway::Reverse(tag_double, lowerOldFx);
-                            lowerOldFy = highway::Reverse(tag_double, lowerFyAcc);
-                            lowerOldFz = highway::Reverse(tag_double, lowerFzAcc);
-                        }
-
-                        auto newFx = lowerOldFx + lowerFxAcc;
-                        auto newFy = lowerOldFy + lowerFyAcc;
-                        auto newFz = lowerOldFz + lowerFzAcc;
-
-                        if constexpr (reversed) {
-                            newFx = highway::Reverse(tag_double, newFx);
-                            newFy = highway::Reverse(tag_double, newFy);
-                            newFz = highway::Reverse(tag_double, newFz);
-                        }
+                        auto newFx = oldFx + fxCombined;
+                        auto newFy = oldFy + fyCombined;
+                        auto newFz = oldFz + fzCombined;
 
                         // TODO : get rid of blended store for non remainder case for the sake of performance
                         highway::BlendedStore(newFx, mask, tag_double, &fxPtr[index]);
@@ -438,20 +493,9 @@ namespace mdLib {
                         auto oldFy = remainder ? highway::MaskedLoad(mask, tag_double, &fyPtr[index]) : highway::LoadU(tag_double, &fyPtr[index]);
                         auto oldFz = remainder ? highway::MaskedLoad(mask, tag_double, &fzPtr[index]) : highway::LoadU(tag_double, &fzPtr[index]);
 
-                        if constexpr (reversed) {
-                            oldFx = highway::Reverse(tag_double, oldFx);
-                            oldFy = highway::Reverse(tag_double, oldFy);
-                            oldFz = highway::Reverse(tag_double, oldFz);
-                        }
                         auto newFx = oldFx + fxAcc;
                         auto newFy = oldFy + fyAcc;
                         auto newFz = oldFz + fzAcc;
-
-                        if constexpr (reversed) {
-                            newFx = highway::Reverse(tag_double, newFx);
-                            newFy = highway::Reverse(tag_double, newFy);
-                            newFz = highway::Reverse(tag_double, newFz);
-                        }
 
                         if constexpr (remainder) {
                             highway::BlendedStore(newFx, mask, tag_double, &fxPtr[index]);
@@ -496,30 +540,45 @@ namespace mdLib {
 
                     // TODO : handle different vectorization patterns
 
-                    if constexpr (remainder) {
-                        fx2 = highway::MaskedLoad(restMaskDouble, tag_double, &fxPtr[j]);
-                        fy2 = highway::MaskedLoad(restMaskDouble, tag_double, &fyPtr[j]);
-                        fz2 = highway::MaskedLoad(restMaskDouble, tag_double, &fzPtr[j]);
-                    }
-                    else {
-                        fx2 = highway::LoadU(tag_double, &fxPtr[j]);
-                        fy2 = highway::LoadU(tag_double, &fyPtr[j]);
-                        fz2 = highway::LoadU(tag_double, &fzPtr[j]);
-                    }
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
 
-                    auto fx2New = fx2 - fx; // highway::Sub(fx2, fx);
-                    auto fy2New = fy2 - fy; // highway::Sub(fy2, fy);
-                    auto fz2New = fz2 - fz; // highway::Sub(fz2, fz);
+                        if constexpr (remainder) {
+                            fx2 = highway::MaskedLoad(restMaskDouble, tag_double, &fxPtr[j]);
+                            fy2 = highway::MaskedLoad(restMaskDouble, tag_double, &fyPtr[j]);
+                            fz2 = highway::MaskedLoad(restMaskDouble, tag_double, &fzPtr[j]);
+                        }
+                        else {
+                            fx2 = highway::LoadU(tag_double, &fxPtr[j]);
+                            fy2 = highway::LoadU(tag_double, &fyPtr[j]);
+                            fz2 = highway::LoadU(tag_double, &fzPtr[j]);
+                        }
 
-                    if constexpr (remainder) {
-                        highway::BlendedStore(fx2New, restMaskDouble, tag_double, &fxPtr[j]);                            
-                        highway::BlendedStore(fy2New, restMaskDouble, tag_double, &fyPtr[j]);
-                        highway::BlendedStore(fz2New, restMaskDouble, tag_double, &fzPtr[j]);
+                        auto fx2New = fx2 - fx;
+                        auto fy2New = fy2 - fy;
+                        auto fz2New = fz2 - fz;
+
+                        if constexpr (remainder) {
+                            highway::BlendedStore(fx2New, restMaskDouble, tag_double, &fxPtr[j]);                            
+                            highway::BlendedStore(fy2New, restMaskDouble, tag_double, &fyPtr[j]);
+                            highway::BlendedStore(fz2New, restMaskDouble, tag_double, &fzPtr[j]);
+                        }
+                        else {
+                            highway::StoreU(fx2New, tag_double, &fxPtr[j]);
+                            highway::StoreU(fy2New, tag_double, &fyPtr[j]);
+                            highway::StoreU(fz2New, tag_double, &fzPtr[j]);
+                        }
                     }
-                    else {
-                        highway::StoreU(fx2New, tag_double, &fxPtr[j]);
-                        highway::StoreU(fy2New, tag_double, &fyPtr[j]);
-                        highway::StoreU(fz2New, tag_double, &fzPtr[j]);
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
                     }
                 }
 
@@ -962,14 +1021,14 @@ namespace mdLib {
                     VectorDouble& fxAcc, VectorDouble& fyAcc, VectorDouble& fzAcc, VectorDouble& fx, VectorDouble& fy, VectorDouble& fz,
                     VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ, VectorDouble& uPotSum) {
                     
-                        // distance calculations
-                    auto drX = x1 - x2; // highway::Sub(x1, x2);
-                    auto drY = y1 - y2; // highway::Sub(y1, y2);
-                    auto drZ = z1 - z2; // highway::Sub(z1, z2);
+                    // distance calculations
+                    auto drX = x1 - x2;
+                    auto drY = y1 - y2;
+                    auto drZ = z1 - z2;
                     
-                    auto drX2 = drX * drX; // highway::Mul(drX, drX);
-                    auto drY2 = drY * drY; // highway::Mul(drY, drY);
-                    auto drZ2 = drZ * drZ; // highway::Mul(drZ, drZ);
+                    auto drX2 = drX * drX;
+                    auto drY2 = drY * drY;
+                    auto drZ2 = drZ * drZ;
 
                     auto dr2 = drX2 + drY2 + drZ2;
 
@@ -987,25 +1046,25 @@ namespace mdLib {
                     }
 
                     // compute LJ Potential
-                    auto invDr2 = _oneDouble / dr2; // highway::Div(_oneDouble, dr2);
-                    auto lj2 = sigmaSquareds * invDr2; // highway::Mul(sigmaSquareds, invDr2);
-                    auto lj4 = lj2 * lj2; // highway::Mul(lj2, lj2);
-                    auto lj6 = lj2 * lj4; // highway::Mul(lj2, lj4);
-                    auto lj12 = lj6 * lj6; // highway::Mul(lj6, lj6);
-                    auto lj12m6 = lj12 - lj6; // highway::Sub(lj12, lj6);
-                    auto lj12m6alj12 = lj12m6 + lj12; // highway::Add(lj12m6, lj12);
-                    auto lj12m6alj12e = lj12m6alj12 * epsilon24s; // highway::Mul(lj12m6alj12, epsilon24s);
-                    VectorDouble fac = lj12m6alj12e * invDr2; // highway::Mul(lj12m6alj12e, invDr2);
+                    auto invDr2 = _oneDouble / dr2;
+                    auto lj2 = sigmaSquareds * invDr2;
+                    auto lj4 = lj2 * lj2;
+                    auto lj6 = lj2 * lj4;
+                    auto lj12 = lj6 * lj6;
+                    auto lj12m6 = lj12 - lj6;
+                    auto lj12m6alj12 = lj12m6 + lj12;
+                    auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
+                    VectorDouble fac = lj12m6alj12e * invDr2;
 
                     VectorDouble facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
-                    fx = drX * facMasked; // highway::Mul(drX, facMasked);
-                    fy = drY * facMasked; // highway::Mul(drY, facMasked);
-                    fz = drZ * facMasked; // highway::Mul(drZ, facMasked);
+                    fx = drX * facMasked;
+                    fy = drY * facMasked;
+                    fz = drZ * facMasked;
 
-                    fxAcc = fxAcc + fx; // highway::Add(fxAcc, fx);
-                    fyAcc = fyAcc + fy; // highway::Add(fyAcc, fy);
-                    fzAcc = fzAcc + fz; // highway::Add(fzAcc, fz);
+                    fxAcc = fxAcc + fx;
+                    fyAcc = fyAcc + fy;
+                    fzAcc = fzAcc + fz;
 
                     if constexpr (calculateGlobals) {
 
