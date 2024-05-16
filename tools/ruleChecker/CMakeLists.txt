@@ -1,12 +1,22 @@
-file(
-        GLOB_RECURSE
-        ruleChecker_SRC
-        "*.cpp"
-        "*.h"
-)
+set(AUTOPAS_ENABLE_RULES_BASED_TUNING
+        ON
+        CACHE
+        BOOL "Enables rules-based tuning, which, if using the bundled version, will compile ANTLR and, if uuid is not installed already, will compile uuid which can cause errors."
+        )
 
-add_executable(ruleChecker ${ruleChecker_SRC})
+if(AUTOPAS_ENABLE_RULES_BASED_TUNING)
 
-target_include_directories(ruleChecker PUBLIC .)
+    file(
+            GLOB_RECURSE
+            ruleChecker_SRC
+            "*.cpp"
+            "*.h"
+    )
 
-target_link_libraries(ruleChecker PUBLIC autopas autopasTools)
+    add_executable(ruleChecker ${ruleChecker_SRC})
+
+    target_include_directories(ruleChecker PUBLIC .)
+
+    target_link_libraries(ruleChecker PUBLIC autopas autopasTools)
+
+endif()

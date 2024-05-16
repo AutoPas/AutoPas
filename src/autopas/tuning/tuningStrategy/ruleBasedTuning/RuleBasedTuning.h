@@ -15,9 +15,12 @@
 #include <unordered_set>
 #include <variant>
 
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 #include "RuleBasedProgramParser.h"
 #include "RuleBasedProgramTree.h"
 #include "RuleVM.h"
+#endif
+
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
@@ -72,16 +75,26 @@ namespace autopas {
  *
  * Additionally, the class supports a so called "verify mode" where full search is performed and the given rules are
  * checked for correctness.
+ *
+ *
+ * Due to the compilation cost of ANTLR and issues with compiling the bundled dependency uuid on some machines, this
+ * tuning strategy can be disabled with AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
+ *
  */
 class RuleBasedTuning : public TuningStrategyInterface {
  public:
   /**
    * A function type used to print errors found in verify mode.
    */
+
   using PrintTuningErrorFunType =
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
       std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
+#else
+      int;  // This is simply a dummy type and will never be used.
+#endif
 
   /**
    * Constructs a RuleBasedTuning strategy.
@@ -120,6 +133,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
                            const EvidenceCollection &evidenceCollection) override;
 
  private:
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   /**
    * Creates a multi-line string representation of all rules contained in the given rule file.
    *
@@ -145,10 +159,14 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
 
+  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
+
+#endif
+
   std::set<Configuration> _searchSpace;
   const std::list<Configuration> _originalSearchSpace;
   std::set<Configuration> _removedConfigurations;
-  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
+
   bool _verifyModeEnabled;
   std::string _ruleFileName;
 
