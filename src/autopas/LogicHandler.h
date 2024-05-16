@@ -1437,6 +1437,10 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
             return measurements.timeTotal;
           case TuningMetricOption::energy:
             return measurements.energyTotal;
+          default:
+            autopas::utils::ExceptionHandler::exception(
+                "LogicHandler::iteratePairwisePipeline(): Unknown tuning metric.");
+            return 0l;
         }
       }();
       autoTuner->addMeasurement(measurement, not neighborListsAreValid());

@@ -20,7 +20,7 @@
 class PairwiseVerletListsTest
     : public AutoPasTestBase,
       public ::testing::WithParamInterface<
-          std::tuple<double, bool, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value>> {
+          std::tuple<double, bool, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType>> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
@@ -38,7 +38,7 @@ class PairwiseVerletListsTest
       }
     }
 
-    std::string buildTypeToString(autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) const {
+    std::string buildTypeToString(autopas::VerletListsCellsHelpers<Particle>::VLCBuildType buildType) const {
       if (buildType == autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild) {
         return "buildSoA";
       } else {

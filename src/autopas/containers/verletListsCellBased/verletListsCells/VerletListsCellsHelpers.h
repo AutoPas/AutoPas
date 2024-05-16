@@ -20,9 +20,10 @@ template <class Particle>
 class VerletListsCellsHelpers {
  public:
   /**
-   * Cell wise verlet lists: For every cell, a vector of pairs. Each pair maps a particle to a vector of its neighbors.
+   * Cell wise verlet lists for neighbors from all adjacent cells: For every cell, a vector of pairs.
+   * Each pair maps a particle to a vector of its neighbors.
    */
-  using NeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
+  using AllCellsNeighborListsType = std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>;
 
   /**
    * Pairwise verlet lists: For every cell a vector, for every neighboring cell a vector of particle-neighborlist pairs.
@@ -36,17 +37,9 @@ class VerletListsCellsHelpers {
    * Indicates which build functor should be used for the generation of the neighbor list.
    * To be passed to the generator functors in the neighbor lists.
    */
-  class VLCBuildType {
-   public:
-    /**
-     * Enum value indicating whether the AoS functor or the SoA functors will be used to generate
-     * the neighbor list.
-     */
-    enum Value {
-      aosBuild,
-      soaBuild,
-    };
+  enum class VLCBuildType {
+    aosBuild,
+    soaBuild,
   };
-
 };  // class VerletListsCellsHelpers
 }  // namespace autopas

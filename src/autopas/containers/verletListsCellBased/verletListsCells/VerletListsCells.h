@@ -34,7 +34,6 @@ namespace autopas {
 
 template <class Particle, class NeighborList>
 class VerletListsCells : public VerletListsLinkedBase<Particle> {
-  using verlet_internal = VerletListsCellsHelpers<FullParticleCell<Particle>>;
   using ParticleCell = FullParticleCell<Particle>;
 
  public:
@@ -54,7 +53,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                    const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2,
                    const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
-                   typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
+                   typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType =
                        VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
@@ -159,6 +158,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   /**
    * Data layout of the particles which are used to generate the neighbor lists.
    */
-  typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value _buildType;
+  typename VerletListsCellsHelpers<Particle>::VLCBuildType _buildType;
 };
 }  // namespace autopas
