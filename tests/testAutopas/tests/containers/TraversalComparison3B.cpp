@@ -119,13 +119,13 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison3B::Globals> T
   EXPECT_EQ(container.size(), numMolecules + numHaloMolecules) << "Wrong number of halo molecules inserted!";
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::threeBody>::
+        return autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::triwise>::
             generateTraversal(traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption,
                               newton3Option);
       });
 
   auto triwiseTraversal =
-      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::threeBody> *>(traversal.get());
+      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::triwise> *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }
@@ -271,7 +271,7 @@ auto TraversalComparison3B::getTestParams() {
   std::vector<TestingTuple> params{};
   for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
     for (auto traversalOption : autopas::compatibleTraversals::allCompatibleTraversals(
-             containerOption, autopas::InteractionTypeOption::threeBody)) {
+             containerOption, autopas::InteractionTypeOption::triwise)) {
       for (auto dataLayoutOption : {autopas::DataLayoutOption::aos}) {  // TODO: add soa
         for (auto newton3Option : autopas::Newton3Option::getAllOptions()) {
           for (auto numParticles : {100ul, 400ul}) {

@@ -135,11 +135,11 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   // 3-body specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
-                                           autopas::InteractionTypeOption::threeBody);
+                                           autopas::InteractionTypeOption::triwise);
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options3B.value,
-                                              autopas::InteractionTypeOption::threeBody);
+                                              autopas::InteractionTypeOption::triwise);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions3B.value,
-                                          autopas::InteractionTypeOption::threeBody);
+                                          autopas::InteractionTypeOption::triwise);
   // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
@@ -343,12 +343,12 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                        autopas::InteractionTypeOption::pairwise)
                        .size();
         }
-        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody) > 0) {
+        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) > 0) {
           space3 = autopas::SearchSpaceGenerators::cartesianProduct(
                        _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                        _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                        _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                       autopas::InteractionTypeOption::threeBody)
+                       autopas::InteractionTypeOption::triwise)
                        .size();
         }
         return std::max(space2, space3);
@@ -458,7 +458,7 @@ void Simulation::updateForces() {
     timeIteration += _timers.forceUpdatePairwise.stop();
   }
   // Calculate triwise forces
-  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     _timers.forceUpdateTriwise.start();
     isTuningIteration = (isTuningIteration | calculateTriwiseForces());
     timeIteration += _timers.forceUpdateTriwise.stop();
@@ -666,7 +666,7 @@ void Simulation::logMeasurements() {
       }
 
 #ifdef MD_FLEXIBLE_FUNCTOR_AT
-      if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
+      if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
         ATFunctorTypeAbstract atFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
         autopas::FlopCounterFunctor3B<ParticleType, ATFunctorTypeAbstract> flopCounterFunctor(
             atFunctor, _autoPasContainer->getCutoff());

@@ -320,7 +320,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           cerr << "Please use 'Axilrod-Teller'" << endl;
           displayHelp = true;
         }
-        config.addInteractionType(autopas::InteractionTypeOption::threeBody);
+        config.addInteractionType(autopas::InteractionTypeOption::triwise);
         break;
       }
       case decltype(config.dontMeasureFlops)::getoptChar: {

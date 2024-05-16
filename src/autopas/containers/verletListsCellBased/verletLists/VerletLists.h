@@ -115,7 +115,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @note This function will be called in iterateTriwise()!
    * @param traversal
    */
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
     autopas::utils::ExceptionHandler::exception(
         "VerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletLists has not "
         "been implemented yet.");

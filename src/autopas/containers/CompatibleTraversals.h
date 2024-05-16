@@ -217,7 +217,7 @@ namespace autopas::compatibleTraversals {
       }
     }
     // Check compatible 3-body traversals
-    case InteractionTypeOption::threeBody: {
+    case InteractionTypeOption::triwise: {
       switch (containerOption) {
         case ContainerOption::directSum: {
           return allDSCompatibleTraversals3B();

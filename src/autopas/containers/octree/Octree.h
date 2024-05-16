@@ -192,7 +192,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
 
   void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {}
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {}
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {}
 
   std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                            IteratorBehavior iteratorBehavior,

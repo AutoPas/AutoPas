@@ -848,8 +848,8 @@ template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
   const auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
                                _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists();
-  const auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
-                              _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists();
+  const auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::triwise) != 0 and
+                              _autoTunerRefs[InteractionTypeOption::triwise]->willRebuildNeighborLists();
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
@@ -925,7 +925,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
   timerComputeInteractions.start();
   if constexpr (interactionType == InteractionTypeOption::pairwise) {
     container.iteratePairwise(&traversal);
-  } else if constexpr (interactionType == InteractionTypeOption::threeBody) {
+  } else if constexpr (interactionType == InteractionTypeOption::triwise) {
     container.iterateTriwise(&traversal);
   }
   timerComputeInteractions.stop();
@@ -939,7 +939,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
         doRemainderTraversal<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       }
     });
-  } else if constexpr (interactionType == InteractionTypeOption::threeBody) {
+  } else if constexpr (interactionType == InteractionTypeOption::triwise) {
     withStaticContainerType(container, [&](auto &actualContainerType) {
       if (configuration.newton3) {
         doRemainderTraversal3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
@@ -1411,7 +1411,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor) {
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
   if constexpr (interactionType == InteractionTypeOption::Value::pairwise) {
     AutoPasLog(DEBUG, "Container::iteratePairwise   took {} ns", measurements.timeIteratePairwise);
-  } else if constexpr (interactionType == InteractionTypeOption::Value::threeBody) {
+  } else if constexpr (interactionType == InteractionTypeOption::Value::triwise) {
     AutoPasLog(DEBUG, "Container::iterateTriwise    took {} ns", measurements.timeIteratePairwise);
   }
   AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);

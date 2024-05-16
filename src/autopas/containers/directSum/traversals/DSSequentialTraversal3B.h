@@ -27,7 +27,7 @@ namespace autopas {
 template <class ParticleCell, class TriwiseFunctor>
 class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
                                 public DSTraversalInterface<ParticleCell>,
-                                public TraversalInterface<InteractionTypeOption::threeBody> {
+                                public TraversalInterface<InteractionTypeOption::triwise> {
  public:
   /**
    * Constructor for the DirectSum traversal.
@@ -39,7 +39,7 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
   explicit DSSequentialTraversal3B(TriwiseFunctor *triwiseFunctor, double cutoff, DataLayoutOption dataLayout,
                                    bool useNewton3)
       : CellTraversal<ParticleCell>({2, 1, 1}),
-        TraversalInterface<InteractionTypeOption::threeBody>(dataLayout, useNewton3),
+        TraversalInterface<InteractionTypeOption::triwise>(dataLayout, useNewton3),
         _cellFunctor(triwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(triwiseFunctor, dataLayout) {}

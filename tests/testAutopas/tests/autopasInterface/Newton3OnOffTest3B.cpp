@@ -47,7 +47,7 @@ INSTANTIATE_TEST_SUITE_P(
             containerSelector.selectContainer(containerOption, containerInfo);
             autopas::ParticleContainerInterface<Particle> &container = containerSelector.getCurrentContainer();
 
-            for (auto traversalOption : container.getAllTraversals(autopas::InteractionTypeOption::threeBody)) {
+            for (auto traversalOption : container.getAllTraversals(autopas::InteractionTypeOption::triwise)) {
               for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
                 // this is the functor that will be used in the test.
                 MTriwiseFunctor f;
@@ -55,7 +55,7 @@ INSTANTIATE_TEST_SUITE_P(
                 bool configOk = autopas::utils::withStaticCellType<Particle>(
                     container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
                       auto traversalSelector = autopas::TraversalSelector<decltype(particleCellDummy),
-                                                                          autopas::InteractionTypeOption::threeBody>();
+                                                                          autopas::InteractionTypeOption::triwise>();
                       auto traversalWithN3 =
                           traversalSelector.generateTraversal(traversalOption, f, container.getTraversalSelectorInfo(),
                                                               dataLayoutOption, autopas::Newton3Option::enabled);
@@ -138,7 +138,7 @@ void Newton3OnOffTest3B::countFunctorCalls(autopas::ContainerOption containerOpt
 template <class Container, class Traversal>
 void Newton3OnOffTest3B::iterate(Container &container, Traversal traversal) {
   auto triwiseTraversal =
-      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::threeBody> *>(traversal.get());
+      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::triwise> *>(traversal.get());
   //  container.rebuildNeighborLists(triwiseTraversal);
   container.iterateTriwise(triwiseTraversal);
 }
@@ -213,7 +213,7 @@ std::tuple<size_t, size_t, size_t> Newton3OnOffTest3B::eval(autopas::DataLayoutO
   // simulate iteration
   autopas::utils::withStaticCellType<Particle>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
     iterate(container,
-            autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::threeBody>::
+            autopas::TraversalSelector<decltype(particleCellDummy), autopas::InteractionTypeOption::triwise>::
                 template generateTraversal<MTriwiseFunctor>(traversalOption, mockFunctor, traversalSelectorInfo,
                                                             dataLayout, n3Option));
   });

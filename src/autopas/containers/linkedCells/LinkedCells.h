@@ -106,7 +106,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     // nothing to do.
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
     // nothing to do.
   }
 
@@ -152,7 +152,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     traversal->endTraversal();
   }
 
-  void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+  void iterateTriwise(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);

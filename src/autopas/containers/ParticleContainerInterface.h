@@ -166,7 +166,7 @@ class ParticleContainerInterface {
    * Rebuilds the neighbor lists for 3-body traversals.
    * @param traversal The used triwise traversal.
    */
-  virtual void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) = 0;
+  virtual void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::triwise> *traversal) = 0;
 
   /**
    * Deletes all halo particles.
@@ -263,7 +263,7 @@ class ParticleContainerInterface {
    * @note iterateTriwise does not have to be implemented by the container if it is not used.
    * @param traversal The traversal to use for the iteration.
    */
-  virtual void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) {
+  virtual void iterateTriwise(TraversalInterface<InteractionTypeOption::triwise> *traversal) {
     utils::ExceptionHandler::exception("iterateTriwise called but has not been implemented!");
   }
 

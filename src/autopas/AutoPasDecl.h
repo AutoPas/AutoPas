@@ -1089,20 +1089,20 @@ class AutoPas {
    */
   std::unordered_map<InteractionTypeOption::Value, std::set<TraversalOption>> _allowedTraversals{
       {InteractionTypeOption::pairwise, TraversalOption::getMostPairwiseOptions()},
-      {InteractionTypeOption::threeBody, TraversalOption::getMostTriwiseOptions()}};
+      {InteractionTypeOption::triwise, TraversalOption::getMostTriwiseOptions()}};
   /**
    * List of data layouts AutoPas can choose from for pairwise interactions.
    * For possible data layout choices see options::DataLayoutOption::Value.
    */
   std::unordered_map<InteractionTypeOption::Value, std::set<DataLayoutOption>> _allowedDataLayouts{
       {InteractionTypeOption::pairwise, DataLayoutOption::getMostOptions()},
-      {InteractionTypeOption::threeBody, DataLayoutOption::getMostOptions()}};
+      {InteractionTypeOption::triwise, DataLayoutOption::getMostOptions()}};
   /**
    * Whether AutoPas is allowed to exploit Newton's third law of motion for pairwise traversals.
    */
   std::unordered_map<InteractionTypeOption::Value, std::set<Newton3Option>> _allowedNewton3Options{
       {InteractionTypeOption::pairwise, Newton3Option::getMostOptions()},
-      {InteractionTypeOption::threeBody, Newton3Option::getMostOptions()}};
+      {InteractionTypeOption::triwise, Newton3Option::getMostOptions()}};
   /**
    * What kind of interactions AutoPas should expect.
    * By default AutoPas is configured to only use pairwise interactions.

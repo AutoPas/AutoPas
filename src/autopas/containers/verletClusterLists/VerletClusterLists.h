@@ -782,7 +782,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
     autopas::utils::ExceptionHandler::exception(
         "VerletClusterLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for "
         "VerletClusterLists has not been implemented yet.");

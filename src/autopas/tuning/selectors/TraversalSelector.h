@@ -87,7 +87,7 @@ class TraversalSelector {
       DataLayoutOption dataLayout, bool useNewton3);
 
   template <class TriwiseFunctor>
-  static std::unique_ptr<TraversalInterface<InteractionTypeOption::threeBody>> generateTriwiseTraversal(
+  static std::unique_ptr<TraversalInterface<InteractionTypeOption::triwise>> generateTriwiseTraversal(
       TraversalOption traversalType, TriwiseFunctor &triwiseFunctor, const TraversalSelectorInfo &info,
       DataLayoutOption dataLayout, bool useNewton3);
 };
@@ -287,7 +287,7 @@ TraversalSelector<ParticleCell, interactionType>::generatePairwiseTraversal(Trav
 
 template <class ParticleCell, InteractionTypeOption::Value interactionType>
 template <class TriwiseFunctor>
-std::unique_ptr<TraversalInterface<InteractionTypeOption::threeBody>>
+std::unique_ptr<TraversalInterface<InteractionTypeOption::triwise>>
 TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(TraversalOption traversalType,
                                                                            TriwiseFunctor &triwiseFunctor,
                                                                            const TraversalSelectorInfo &traversalInfo,

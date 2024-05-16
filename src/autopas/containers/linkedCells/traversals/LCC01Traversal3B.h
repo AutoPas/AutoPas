@@ -28,7 +28,7 @@ namespace autopas {
  * @tparam Functor The functor type that defines the interaction of three particles.
  */
 template <class ParticleCell, class Functor>
-class LCC01Traversal3B : public C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, 3>,
+class LCC01Traversal3B : public C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::triwise, 3>,
                          public LCTraversalInterface<ParticleCell> {
  public:
   /**
@@ -45,7 +45,7 @@ class LCC01Traversal3B : public C01BasedTraversal<ParticleCell, Functor, Interac
    */
   explicit LCC01Traversal3B(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
                             const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::threeBody, 3>(
+      : C01BasedTraversal<ParticleCell, Functor, InteractionTypeOption::triwise, 3>(
             dims, functor, interactionLength, cellLength, dataLayout, useNewton3),
         _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),

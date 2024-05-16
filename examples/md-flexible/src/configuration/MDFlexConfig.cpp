@@ -318,7 +318,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(newton3Options, -indentWidth);
   }
 
-  if (getInteractionTypes().count(autopas::InteractionTypeOption::threeBody)) {
+  if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
     constexpr int indentWidth = 2;
     const auto indent = std::string(indentWidth, ' ');

@@ -247,7 +247,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         } else {
           throw std::runtime_error("Unrecognized 3-body functor!");
         }
-        config.addInteractionType(autopas::InteractionTypeOption::threeBody);
+        config.addInteractionType(autopas::InteractionTypeOption::triwise);
       } else if (key == config.iterations.name) {
         expected = "Unsigned Integer > 0";
         description = config.iterations.description;
