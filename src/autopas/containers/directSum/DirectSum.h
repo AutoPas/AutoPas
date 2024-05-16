@@ -106,15 +106,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
-    // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    if (traversalInterface && cellPairTraversal) {
-      cellPairTraversal->setCellsToTraverse(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::iteratePairwise");
-    }
+    prepareTraversal(traversal);
 
     traversal->initTraversal();
     traversal->traverseParticlePairs();
@@ -122,15 +114,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
   }
 
   void iterateTriwise(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
-    // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    if (traversalInterface && cellPairTraversal) {
-      cellPairTraversal->setCellsToTraverse(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "trying to use a traversal of wrong type in DirectSum::iterateTriwise");
-    }
+    prepareTraversal(traversal);
 
     traversal->initTraversal();
     traversal->traverseParticleTriplets();
@@ -419,6 +403,24 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
     // the indices returned at this point should always be valid
     return {cellIndex, particleIndex};
+  }
+
+  /**
+   * Checks if a given traversal is allowed for DirectSum and sets it up for the force interactions.
+   * @tparam Traversal Traversal type. E.g. pairwise, triwise
+   * @param traversal
+   */
+  template <typename Traversal>
+  void prepareTraversal(Traversal &traversal) {
+    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    if (traversalInterface && cellTraversal) {
+      cellTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "The selected traversal is not compatible with the DirectSum container. TraversalID: {}",
+          traversal->getTraversalType());
+    }
   }
 
   ParticleCell &getCell() { return this->_cells[0]; };

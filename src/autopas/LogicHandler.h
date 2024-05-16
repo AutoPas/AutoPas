@@ -1327,7 +1327,7 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor) {
                   configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
                   configuration.newton3);
 
-          // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+          // set sortingThreshold of the traversal if it can be casted to a CellTraversal and uses the CellFunctor
           if (auto *cellTraversalPtr =
                   dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(
                       traversalPtr.get())) {
@@ -1508,7 +1508,7 @@ LogicHandler<Particle>::isConfigurationApplicable(const Configuration &conf, Fun
                                                                                                      interactionType>(
                 conf.traversal, functor, traversalInfo, conf.dataLayout, conf.newton3);
 
-        // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
+        // set sortingThreshold of the traversal if it can be casted to a CellTraversal and uses the CellFunctor
         if (auto *cellTraversalPtr =
                 dynamic_cast<autopas::CellTraversal<std::decay_t<decltype(particleCellDummy)>> *>(traversalPtr.get())) {
           cellTraversalPtr->setSortingThreshold(_sortingThreshold);
