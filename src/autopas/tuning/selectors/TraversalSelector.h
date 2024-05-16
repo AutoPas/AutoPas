@@ -35,7 +35,11 @@
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedC02Traversal.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLSlicedTraversal.h"
 #include "autopas/containers/verletListsCellBased/varVerletLists/traversals/VVLAsBuildTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalHashing3B.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIntersectionTraversalSorted3B.h"
 #include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLListIterationTraversal3B.h"
+#include "autopas/containers/verletListsCellBased/verletLists/traversals/VLPairListIterationTraversal3B.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
@@ -307,6 +311,23 @@ TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(Trave
       return std::make_unique<LCC01Traversal3B<ParticleCell, TriwiseFunctor>>(
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3);
+    }
+    // VerletLists
+    case TraversalOption::vl_list_iteration_3b: {
+      return std::make_unique<VLListIterationTraversal3B<ParticleCell, TriwiseFunctor>>(&triwiseFunctor, dataLayout,
+                                                                                        useNewton3);
+    }
+    case TraversalOption::vl_list_intersection_sorted_3b: {
+      return std::make_unique<VLListIntersectionTraversalSorted3B<ParticleCell, TriwiseFunctor>>(
+          &triwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::vl_list_intersection_hashing_3b: {
+      return std::make_unique<VLListIntersectionTraversalHashing3B<ParticleCell, TriwiseFunctor>>(
+          &triwiseFunctor, dataLayout, useNewton3);
+    }
+    case TraversalOption::vl_pair_list_iteration_3b: {
+      return std::make_unique<VLPairListIterationTraversal3B<ParticleCell, TriwiseFunctor>>(&triwiseFunctor, dataLayout,
+                                                                                            useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known 3-body traversal type!",

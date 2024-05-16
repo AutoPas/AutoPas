@@ -134,8 +134,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison3B::Globals> T
     markSomeParticlesAsDeleted(container, numMolecules + numHaloMolecules, 19);
   }
 
-  // TODO: Add when implemented
-  //  container.rebuildNeighborLists(triwiseTraversal);
+  container.rebuildNeighborLists(triwiseTraversal);
 
   if (doSlightShift) {
     executeShift(container, skinPerTimestep * rebuildFrequency / 2, numMolecules + numHaloMolecules);

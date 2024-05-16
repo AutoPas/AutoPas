@@ -93,6 +93,17 @@ namespace autopas::compatibleTraversals {
 }
 
 /**
+ * Lists all traversal options applicable for the Verlet Lists container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allVLCompatibleTraversals3B() {
+  static const std::set<TraversalOption> s{
+      TraversalOption::vl_list_iteration_3b, TraversalOption::vl_list_intersection_sorted_3b,
+      TraversalOption::vl_list_intersection_hashing_3b, TraversalOption::vl_pair_list_iteration_3b};
+  return s;
+}
+
+/**
  * Lists all traversal options applicable for the Verlet Lists Cells container.
  * @return set of all applicable traversal options.
  */
@@ -140,14 +151,11 @@ namespace autopas::compatibleTraversals {
  * @return
  */
 [[maybe_unused]] static std::set<TraversalOption> allTraversalsSupportingOnlyNewton3Disabled() {
-  return {TraversalOption::lc_c01,
-          TraversalOption::lc_c01_combined_SoA,
-          TraversalOption::ot_c01,
-          TraversalOption::vcl_c01_balanced,
-          TraversalOption::vcl_cluster_iteration,
-          TraversalOption::vl_list_iteration,
-          TraversalOption::vlc_c01,
-          TraversalOption::vlp_c01,
+  return {TraversalOption::lc_c01, TraversalOption::lc_c01_combined_SoA, TraversalOption::ot_c01,
+          TraversalOption::vcl_c01_balanced, TraversalOption::vcl_cluster_iteration, TraversalOption::vl_list_iteration,
+          // TraversalOption::vl_list_iteration_3b,
+          TraversalOption::vl_list_intersection_sorted_3b, TraversalOption::vl_list_intersection_hashing_3b,
+          TraversalOption::vl_pair_list_iteration_3b, TraversalOption::vlc_c01, TraversalOption::vlp_c01,
           TraversalOption::lc_c01_3b};
 };
 /**
@@ -224,6 +232,9 @@ namespace autopas::compatibleTraversals {
         }
         case ContainerOption::linkedCells: {
           return allLCCompatibleTraversals3B();
+        }
+        case ContainerOption::verletLists: {
+          return allVLCompatibleTraversals3B();
         }
         default: {
           static const std::set<TraversalOption> s{};
