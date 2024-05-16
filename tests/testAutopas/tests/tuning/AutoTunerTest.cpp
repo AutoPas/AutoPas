@@ -111,12 +111,12 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   // VarVerletListsAsBuild: vvl_as_built                (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   configsPerContainer[autopas::ContainerOption::varVerletListsAsBuild] = 4;
 
-  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
-  //                        vlp_c01                     (AoS <=> SoA, noNewton3)                                     = 2
-  //                        vlp_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                         = 4
+  // PairwiseVerletLists:   vlp_sliced                  (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_sliced_balanced         (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  //                        vlp_c01                     (AoS <=> SoA, noNewton3)                             = 2
+  //                        vlp_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   configsPerContainer[autopas::ContainerOption::pairwiseVerletLists] = 22;
 
   // Octree:                ot_c01                      (AoS <=> SoA, noNewton3)                             = 2
