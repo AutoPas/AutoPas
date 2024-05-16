@@ -75,6 +75,11 @@ namespace autopas {
  *
  * Additionally, the class supports a so called "verify mode" where full search is performed and the given rules are
  * checked for correctness.
+ *
+ *
+ * Due to the compilation cost of ANTLR and issues with compiling the bundled dependency uuid on some machines, this tuning
+ * strategy can be disabled with AUTOPAS_DISABLE_RULES_BASED_TUNING=ON.
+ *
  */
 class RuleBasedTuning : public TuningStrategyInterface {
  public:
@@ -88,7 +93,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
 #else
-      int;
+      int; // This is simply a dummy type and will never be used.
 #endif
 
   /**
@@ -154,10 +159,15 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
 
+  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
+
+#endif
+
+
   std::set<Configuration> _searchSpace;
   const std::list<Configuration> _originalSearchSpace;
   std::set<Configuration> _removedConfigurations;
-  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
+
   bool _verifyModeEnabled;
   std::string _ruleFileName;
 
@@ -178,6 +188,5 @@ class RuleBasedTuning : public TuningStrategyInterface {
   PrintTuningErrorFunType _tuningErrorPrinter;
 
   LiveInfo _currentLiveInfo;
-#endif
 };
 }  // namespace autopas

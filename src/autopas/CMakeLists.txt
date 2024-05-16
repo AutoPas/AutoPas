@@ -30,8 +30,6 @@ if (AUTOPAS_DISABLE_RULES_BASED_TUNING)
     list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageParser.cpp")
     list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramParser.h")
     list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramParser.cpp")
-    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.h")
-    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedTuning.cpp")
 
     message(STATUS "Here")
 
