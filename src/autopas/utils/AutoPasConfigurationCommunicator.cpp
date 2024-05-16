@@ -189,6 +189,7 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[3] = castToByte(configuration.dataLayout);
   config[4] = castToByte(configuration.newton3);
   config[5] = castToByte(configuration.interactionType);
+  // Doubles can't be easily truncated, so store all 8 bytes via memcpy
   std::memcpy(&config[6], &configuration.cellSizeFactor, sizeof(double));
   return config;
 }

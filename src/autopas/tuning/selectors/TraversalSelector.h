@@ -326,6 +326,7 @@ TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType
   } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
     return generateTriwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
   }
+  autopas::utils::ExceptionHandler::exception("TraversalSelector::generateTraversal(): No Traversals exist for the given Functor: {}", functor.getName());
   return {nullptr};
 }
 }  // namespace autopas

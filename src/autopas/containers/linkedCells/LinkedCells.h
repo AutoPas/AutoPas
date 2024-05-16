@@ -133,19 +133,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
-    // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
-      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
-    }
-    if (traversalInterface && cellPairTraversal) {
-      cellPairTraversal->setCellsToTraverse(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
-          traversal->getTraversalType());
-    }
+    prepareTraversal(traversal);
 
     traversal->initTraversal();
     traversal->traverseParticlePairs();
@@ -153,19 +141,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   void iterateTriwise(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
-    // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
-      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
-    }
-    if (traversalInterface && cellTraversal) {
-      cellTraversal->setCellsToTraverse(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iterateTriwise. TraversalID: {}",
-          traversal->getTraversalType());
-    }
+    prepareTraversal(traversal);
 
     traversal->initTraversal();
     traversal->traverseParticleTriplets();
@@ -572,6 +548,27 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     // the indices returned at this point should always be valid
     return {cellIndex, particleIndex};
+  }
+
+  /**
+   * Checks if a given traversal is allowed for LinkedCells and sets it up for the force interactions.
+   * @tparam Traversal Traversal type. E.g. pairwise, triwise
+   * @param traversal
+   */
+  template <typename Traversal>
+  void prepareTraversal(Traversal &traversal) {
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
+    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
+    }
+    if (traversalInterface && cellTraversal) {
+      cellTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "The selected traversal is not compatible with the LinkedCells container. TraversalID: {}",
+          traversal->getTraversalType());
+    }
   }
 
   /**
