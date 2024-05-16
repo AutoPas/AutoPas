@@ -137,6 +137,10 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vlc_c18,
     /**
+     * VLCC08Traversal : Equivalent to LCC08Traversal. Base cell contains all neighbor lists of the base step.
+     */
+    vlc_c08,
+    /**
      * VLCSlicedTraversal : Equivalent to LCSlicedTraversal but with a c18 base-step.
      */
     vlc_sliced,

@@ -78,9 +78,9 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vlc_sliced, TraversalOption::vlc_c18,
-                                           TraversalOption::vlc_c01, TraversalOption::vlc_sliced_c02,
-                                           TraversalOption::vlc_sliced_balanced};
+  static const std::set<TraversalOption> s{TraversalOption::vlc_sliced,     TraversalOption::vlc_c18,
+                                           TraversalOption::vlc_c08,        TraversalOption::vlc_c01,
+                                           TraversalOption::vlc_sliced_c02, TraversalOption::vlc_sliced_balanced};
   return s;
 }
 
