@@ -77,8 +77,8 @@ namespace autopas {
  * checked for correctness.
  *
  *
- * Due to the compilation cost of ANTLR and issues with compiling the bundled dependency uuid on some machines, this tuning
- * strategy can be disabled with AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
+ * Due to the compilation cost of ANTLR and issues with compiling the bundled dependency uuid on some machines, this
+ * tuning strategy can be disabled with AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
  *
  */
 class RuleBasedTuning : public TuningStrategyInterface {
@@ -93,7 +93,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
 #else
-      int; // This is simply a dummy type and will never be used.
+      int;  // This is simply a dummy type and will never be used.
 #endif
 
   /**
@@ -162,7 +162,6 @@ class RuleBasedTuning : public TuningStrategyInterface {
   std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
 
 #endif
-
 
   std::set<Configuration> _searchSpace;
   const std::list<Configuration> _originalSearchSpace;

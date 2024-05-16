@@ -26,7 +26,8 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
   // By default, dump the rules for reproducibility reasons.
   AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
 #else
-  autopas::utils::ExceptionHandler::exception("RuleBasedTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
+  autopas::utils::ExceptionHandler::exception(
+      "RuleBasedTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
 #endif
 }
 
@@ -76,8 +77,6 @@ void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Co
 long RuleBasedTuning::getLifetimeWouldHaveSkippedTuningTime() const { return _wouldHaveSkippedTuningTimeLifetime; }
 
 long RuleBasedTuning::getLifetimeTuningTime() const { return _tuningTimeLifetime; }
-
-
 
 void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                           const EvidenceCollection &evidenceCollection) {
