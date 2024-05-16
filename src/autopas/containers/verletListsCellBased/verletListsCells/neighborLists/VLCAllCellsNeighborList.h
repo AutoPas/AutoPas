@@ -23,7 +23,7 @@ namespace autopas {
  * Forward declaration necessary to avoid circle of includes:
  * TraversalSelector includes all VLC traversals include VLCTraversalInterface includes VLCAllCellsNeighborList
  */
-template <class ParticleCell, InteractionTypeOption::Value interactionType>
+template <class ParticleCell>
 class TraversalSelector;
 
 template <class Particle, class NeighborList>
@@ -173,7 +173,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     VLCAllCellsGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
-    TraversalSelector<FullParticleCell<Particle>, InteractionTypeOption::pairwise> traversalSelector;
+    TraversalSelector<FullParticleCell<Particle>> traversalSelector;
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
@@ -183,7 +183,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
                                 : DataLayoutOption::soa;
 
     // Build the AoS list using the AoS or SoA functor depending on buildType
-    auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
+    auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>, InteractionTypeOption::pairwise>(
         buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
     auto pairBuildTraversal = dynamic_cast<TraversalInterface<InteractionTypeOption::pairwise> *>(buildTraversal.get());
     linkedCells.iteratePairwise(pairBuildTraversal);

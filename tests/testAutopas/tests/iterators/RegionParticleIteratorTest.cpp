@@ -336,8 +336,8 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   // getParticleImpl of the containers to calculate the correct boxMin and boxMax values
   // Note: It is important to perform this step before the particles are moved. Otherwise they would be sorted into the
   // correct data structure element and the purpose of this test would be lost
-  EmptyFunctor<Molecule> eFunctor;
-  autoPas.iteratePairwise(&eFunctor);
+  EmptyPairwiseFunctor<Molecule> eFunctor;
+  autoPas.computeInteractions(&eFunctor);
 
   // Move the particles outside the simulations box and thus outside the data structure element (e.g: cell) where it is
   // currently stored

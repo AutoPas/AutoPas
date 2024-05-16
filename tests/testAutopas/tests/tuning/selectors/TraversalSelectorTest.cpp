@@ -20,8 +20,8 @@ TEST_F(TraversalSelectorTest, testSelectAndGetCurrentTraversal) {
 
   for (const auto &traversalOption : autopas::TraversalOption::getAllPairwiseOptions()) {
     auto traversal =
-        autopas::TraversalSelector<FPCell, autopas::InteractionTypeOption::pairwise>::template generateTraversal<
-            MPairwiseFunctor>(traversalOption, functor, traversalSelectorInfo, autopas::DataLayoutOption::aos, false);
+        autopas::TraversalSelector<FPCell>::template generateTraversal<
+            MPairwiseFunctor, autopas::InteractionTypeOption::pairwise>(traversalOption, functor, traversalSelectorInfo, autopas::DataLayoutOption::aos, false);
 
     // check that traversals are of the expected type
     EXPECT_EQ(traversalOption, traversal->getTraversalType())

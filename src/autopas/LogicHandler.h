@@ -1321,8 +1321,8 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor) {
         container.getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
           // Can't make this unique_ptr const otherwise we can't move it later.
           auto traversalPtr =
-              TraversalSelector<std::decay_t<decltype(particleCellDummy)>, interactionType>::template generateTraversal<
-                  Functor>(configuration.traversal, functor, container.getTraversalSelectorInfo(),
+              TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<
+                  Functor, interactionType>(configuration.traversal, functor, container.getTraversalSelectorInfo(),
                            configuration.dataLayout, configuration.newton3);
 
           // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
@@ -1502,9 +1502,7 @@ LogicHandler<Particle>::isConfigurationApplicable(const Configuration &conf, Fun
       [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface<interactionType>>> {
         // Can't make this unique_ptr const otherwise we can't move it later.
         auto traversalPtr =
-            TraversalSelector<std::decay_t<decltype(particleCellDummy)>,
-                              interactionType>::template generateTraversal<Functor>(conf.traversal, functor,
-                                                                                    traversalInfo, conf.dataLayout,
+            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor, interactionType>(conf.traversal, functor, traversalInfo, conf.dataLayout,
                                                                                     conf.newton3);
 
         // set sortingThreshold of the traversal if it can be casted to a CellPairTraversal and uses the CellFunctor
