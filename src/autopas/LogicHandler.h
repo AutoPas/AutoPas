@@ -68,7 +68,6 @@ class LogicHandler {
     // Initialize AutoPas with tuners for given interaction types
     for (auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
-      _synchronizer.addInteractionType(interactionType);
 
       const auto configuration = tuner->getCurrentConfig();
       // initialize the container and make sure it is valid
@@ -519,7 +518,8 @@ class LogicHandler {
    * @return bool whether other tuners are still tuning.
    */
   bool checkTuningStates(InteractionTypeOption::Value interactionType) {
-    return _synchronizer.checkTuningState(interactionType);
+    return std::any_of(std::begin(_autoTunerRefs), std::end(_autoTunerRefs),
+            [&](const auto& entry) { return entry.first == interactionType ? false : entry.second->inTuningPhase(); });
   }
 
   /**
@@ -774,11 +774,6 @@ class LogicHandler {
   std::set<InteractionTypeOption> _interactionTypes{};
 
   /**
-   * Synchronizes tuning phases in case of multiple autotuners.
-   */
-  autopas::TunerSynchronizer _synchronizer{};
-
-  /**
    * Specifies if the neighbor list is valid.
    */
   std::atomic<bool> _neighborListsAreValid{false};
@@ -852,11 +847,9 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
   const auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
-                               _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists() and
-                               not _autoTunerRefs[InteractionTypeOption::pairwise]->searchSpaceIsTrivial();
+                               _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists();
   const auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::threeBody) != 0 and
-                              _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists() and
-                              not _autoTunerRefs[InteractionTypeOption::threeBody]->searchSpaceIsTrivial();
+                              _autoTunerRefs[InteractionTypeOption::threeBody]->willRebuildNeighborLists();
 
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
@@ -1377,11 +1370,6 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor) {
       // if no config is left after rejecting this one an exception is thrown here.
       std::tie(configuration, stillTuning) = autoTuner->rejectConfig(configuration, rejectIndefinitely);
     }
-  }
-
-  // log tuning status for current tuner
-  if (functor.isRelevantForTuning()) {
-    _synchronizer.updateTuningState(interactionType, stillTuning);
   }
 
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};

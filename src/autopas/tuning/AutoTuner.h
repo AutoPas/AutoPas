@@ -291,6 +291,11 @@ class AutoTuner {
   size_t _iterationsSinceTuning;
 
   /**
+   * Saves this tuner's tuning state
+   */
+  bool _stillTuning;
+
+  /**
    * Metric to use for tuning.
    */
   TuningMetricOption _tuningMetric;
