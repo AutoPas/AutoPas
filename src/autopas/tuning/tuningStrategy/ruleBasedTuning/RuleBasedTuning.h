@@ -15,7 +15,7 @@
 #include <unordered_set>
 #include <variant>
 
-#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 #include "RuleBasedProgramParser.h"
 #include "RuleBasedProgramTree.h"
 #include "RuleVM.h"
@@ -78,7 +78,7 @@ namespace autopas {
  *
  *
  * Due to the compilation cost of ANTLR and issues with compiling the bundled dependency uuid on some machines, this tuning
- * strategy can be disabled with AUTOPAS_DISABLE_RULES_BASED_TUNING=ON.
+ * strategy can be disabled with AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
  *
  */
 class RuleBasedTuning : public TuningStrategyInterface {
@@ -88,7 +88,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
 
   using PrintTuningErrorFunType =
-#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
       std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
@@ -133,7 +133,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
                            const EvidenceCollection &evidenceCollection) override;
 
  private:
-#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   /**
    * Creates a multi-line string representation of all rules contained in the given rule file.
    *

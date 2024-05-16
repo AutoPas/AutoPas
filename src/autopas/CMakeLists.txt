@@ -11,15 +11,15 @@ file(
     "*.cu"
     "*.cuh"
 )
-set(AUTOPAS_DISABLE_RULES_BASED_TUNING
-        OFF
+set(AUTOPAS_ENABLE_RULES_BASED_TUNING
+        ON
         CACHE
-        BOOL "Disables rule-based tuning forcing no compilation of ANTLR or uuid. May speed up compilation time and fix compatibility problems"
+        BOOL "Enables rules-based tuning, which, if using the bundled version, will compile ANTLR and, if uuid is not installed already, will compile uuid which can cause errors."
         )
 
 # If rules-based tuning is disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
-if (AUTOPAS_DISABLE_RULES_BASED_TUNING)
+if (NOT AUTOPAS_ENABLE_RULES_BASED_TUNING)
     list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageBaseVisitor.h")
     list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageBaseVisitor.cpp")
     list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageVisitor.h")
@@ -56,7 +56,7 @@ target_link_libraries(
 )
 
 # If rules-based tuning is not disabled, also link antlr4cpp
-if (NOT AUTOPAS_DISABLE_RULES_BASED_TUNING)
+if (AUTOPAS_ENABLE_RULES_BASED_TUNING)
     target_link_libraries(autopas PUBLIC antlr4cpp)
 endif()
 
@@ -69,7 +69,7 @@ target_compile_definitions(
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
-        $<$<BOOL:${AUTOPAS_DISABLE_RULES_BASED_TUNING}>:AUTOPAS_DISABLE_RULES_BASED_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_TUNING>
         _USE_MATH_DEFINES
 )
 

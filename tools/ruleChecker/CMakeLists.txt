@@ -1,10 +1,10 @@
-set(AUTOPAS_DISABLE_RULES_BASED_TUNING
-        OFF
+set(AUTOPAS_ENABLE_RULES_BASED_TUNING
+        ON
         CACHE
-        BOOL "Disables rule-based tuning forcing no compilation of ANTLR or uuid. May speed up compilation time and fix compatibility problems"
+        BOOL "Enables rules-based tuning, which, if using the bundled version, will compile ANTLR and, if uuid is not installed already, will compile uuid which can cause errors."
         )
 
-if(NOT AUTOPAS_DISABLE_RULES_BASED_TUNING)
+if(AUTOPAS_ENABLE_RULES_BASED_TUNING)
 
     file(
             GLOB_RECURSE

@@ -17,7 +17,7 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
       _verifyModeEnabled(verifyModeEnabled),
       _ruleFileName(std::move(ruleFileName)),
       _tuningErrorPrinter(std::move(tuningErrorPrinter)) {
-#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   // Check if the given rule file exists and throw if not
   struct stat buffer;
   if (stat(_ruleFileName.c_str(), &buffer) != 0) {
@@ -26,7 +26,7 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
   // By default, dump the rules for reproducibility reasons.
   AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
 #else
-  autopas::utils::ExceptionHandler::exception("RuleBasedTuning constructed but AUTOPAS_DISABLE_RULES_BASED_TUNING=ON! ");
+  autopas::utils::ExceptionHandler::exception("RuleBasedTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
 #endif
 }
 
@@ -35,7 +35,7 @@ bool RuleBasedTuning::needsLiveInfo() const { return true; }
 void RuleBasedTuning::receiveLiveInfo(const LiveInfo &info) { _currentLiveInfo = info; }
 
 void RuleBasedTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {
-#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   _tuningTime += evidence.value;
   _tuningTimeLifetime += evidence.value;
   _traversalTimes[configuration] = evidence.value;
@@ -51,7 +51,7 @@ void RuleBasedTuning::addEvidence(const Configuration &configuration, const Evid
 
 void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                             const EvidenceCollection &evidenceCollection) {
-#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   if (_verifyModeEnabled and _tuningTime > 0) {
     // It is fine to leave this log statement on Info level because it is behind if (_verificationModeEnabled).
     AutoPasLog(INFO, "Rules would have saved {} ns removing {}/{} configurations. ({}% of total tuning time)",
@@ -81,7 +81,7 @@ long RuleBasedTuning::getLifetimeTuningTime() const { return _tuningTimeLifetime
 
 void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                           const EvidenceCollection &evidenceCollection) {
-#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   _lastApplicableConfigurationOrders = applyRules(configQueue);
 
   // Don't apply rules if they would wipe the queue and nothing has been tested yet.
@@ -100,7 +100,7 @@ void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueu
 
 TuningStrategyOption RuleBasedTuning::getOptionType() const { return TuningStrategyOption::ruleBasedTuning; }
 
-#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 
 std::string RuleBasedTuning::rulesToString(const std::string &filePath) const {
   std::ifstream ruleFile(filePath);
