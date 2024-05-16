@@ -53,13 +53,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                    const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2,
                    const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
-<<<<<<< HEAD
-                   typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType =
-||||||| parent of 2b562e52d (rename _buildType to dataLayoutDuringListRebuild + capitalization)
-                   typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
-=======
-                   typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value dataLayoutDuringListRebuild =
->>>>>>> 2b562e52d (rename _buildType to dataLayoutDuringListRebuild + capitalization)
+                   typename VerletListsCellsHelpers<Particle>::VLCBuildType dataLayoutDuringListRebuild =
                        VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
@@ -158,12 +152,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   /**
    * Data layout during the list generation. Has no influence on list layout.
    */
-<<<<<<< HEAD
-  typename VerletListsCellsHelpers<Particle>::VLCBuildType _buildType;
-||||||| parent of 2b562e52d (rename _buildType to dataLayoutDuringListRebuild + capitalization)
-  typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value _buildType;
-=======
-  typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value _dataLayoutDuringListRebuild;
->>>>>>> 2b562e52d (rename _buildType to dataLayoutDuringListRebuild + capitalization)
+  typename VerletListsCellsHelpers<Particle>::VLCBuildType _dataLayoutDuringListRebuild;
 };
 }  // namespace autopas
