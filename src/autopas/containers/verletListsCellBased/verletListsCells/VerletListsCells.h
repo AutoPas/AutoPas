@@ -40,25 +40,31 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   /**
    * Constructor of the VerletListsCells class.
    * The neighbor lists are build using a search radius of cutoff + skin*rebuildfrequency.
-   * @param boxMin the lower corner of the domain
-   * @param boxMax the upper corner of the domain
-   * @param cutoff the cutoff radius of the interaction
-   * @param rebuildFrequency the rebuild Frequency
-   * @param skinPerTimestep the skin radius per Timestep
-   * @param cellSizeFactor cell size factor relative to cutoff
-   * @param loadEstimator load estimation algorithm for balanced traversals
-   * @param buildType data layout of the particles which are used to generate the neighbor lists
+   * @param boxMin The lower corner of the domain.
+   * @param boxMax The upper corner of the domain.
+   * @param cutoff The cutoff radius of the interaction.
+   * @param rebuildFrequency The rebuild Frequency.
+   * @param skinPerTimestep The skin radius per Timestep.
+   * @param cellSizeFactor Cell size factor relative to cutoff.
+   * @param loadEstimator Load estimation algorithm for balanced traversals.
+   * @param dataLayoutDuringListRebuild Data layout during the list generation. Has no influence on list layout.
    */
   VerletListsCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                    const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2,
                    const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
+<<<<<<< HEAD
                    typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType =
+||||||| parent of 2b562e52d (rename _buildType to dataLayoutDuringListRebuild + capitalization)
+                   typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType =
+=======
+                   typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value dataLayoutDuringListRebuild =
+>>>>>>> 2b562e52d (rename _buildType to dataLayoutDuringListRebuild + capitalization)
                        VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _loadEstimator(loadEstimator),
-        _buildType(buildType) {}
+        _dataLayoutDuringListRebuild(dataLayoutDuringListRebuild) {}
 
   /**
    * @copydoc ParticleContainerInterface::getContainerType()
@@ -120,7 +126,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
                                        this->getVerletSkin(), this->getInteractionLength(), TraversalOption::lc_c18,
-                                       _buildType);
+                                       _dataLayoutDuringListRebuild);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
@@ -150,8 +156,14 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   autopas::LoadEstimatorOption _loadEstimator;
 
   /**
-   * Data layout of the particles which are used to generate the neighbor lists.
+   * Data layout during the list generation. Has no influence on list layout.
    */
+<<<<<<< HEAD
   typename VerletListsCellsHelpers<Particle>::VLCBuildType _buildType;
+||||||| parent of 2b562e52d (rename _buildType to dataLayoutDuringListRebuild + capitalization)
+  typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value _buildType;
+=======
+  typename VerletListsCellsHelpers<Particle>::VLCBuildType::Value _dataLayoutDuringListRebuild;
+>>>>>>> 2b562e52d (rename _buildType to dataLayoutDuringListRebuild + capitalization)
 };
 }  // namespace autopas
