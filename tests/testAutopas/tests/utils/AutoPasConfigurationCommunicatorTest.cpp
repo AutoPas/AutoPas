@@ -15,13 +15,14 @@
  * Then checks if the deserialized configs are the same as before.
  * @param configs
  */
-void AutoPasConfigurationCommunicatorTest::testConfigsCommunication(std::set<autopas::Configuration> &configs) {
-  auto configsVector = std::vector<autopas::Configuration>(configs.begin(), configs.end());
+void AutoPasConfigurationCommunicatorTest::testConfigsCommunication(const std::set<autopas::Configuration> &configs) {
+  const auto configsVector = std::vector<autopas::Configuration>(configs.begin(), configs.end());
 
   // Serialize
-  auto byteVector = autopas::utils::AutoPasConfigurationCommunicator::serializeConfigurations(configsVector);
+  const auto byteVector = autopas::utils::AutoPasConfigurationCommunicator::serializeConfigurations(configsVector);
   // Deserialize
-  auto configsDeserialized = autopas::utils::AutoPasConfigurationCommunicator::deserializeConfigurations(byteVector);
+  const auto configsDeserialized =
+      autopas::utils::AutoPasConfigurationCommunicator::deserializeConfigurations(byteVector);
 
   EXPECT_THAT(configsVector, ::testing::ContainerEq(configsDeserialized));
 }
@@ -32,7 +33,7 @@ void AutoPasConfigurationCommunicatorTest::testConfigsCommunication(std::set<aut
  */
 TEST_F(AutoPasConfigurationCommunicatorTest, SerializationTest) {
   // Test pairwise configurations
-  auto pairwiseSearchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
+  const auto pairwiseSearchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, pairwiseTraversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
       &cellSizeFactors, autopas::InteractionTypeOption::pairwise);
   auto maxSearchSpaceSize = autopas::utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(
@@ -43,7 +44,7 @@ TEST_F(AutoPasConfigurationCommunicatorTest, SerializationTest) {
   testConfigsCommunication(pairwiseSearchSpace);
 
   // Test triwise configurations
-  auto triwiseSearchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
+  const auto triwiseSearchSpace = autopas::SearchSpaceGenerators::cartesianProduct(
       containerOptions, triwiseTraversalOptions, loadEstimatorOptions, dataLayoutOptions, newton3Options,
       &cellSizeFactors, autopas::InteractionTypeOption::triwise);
   maxSearchSpaceSize = autopas::utils::AutoPasConfigurationCommunicator::getSearchSpaceSize(

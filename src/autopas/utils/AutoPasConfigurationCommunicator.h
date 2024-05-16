@@ -21,7 +21,6 @@
  * Provides several functions for handling configurations among mpi ranks.
  * This includes functionality for (de)serialization of configurations, splitting up search spaces based on ranks,
  * and finding the globally optimal configuration given time measurements.
- *  * TODO: Check logic for 3-body interactions
  */
 
 namespace autopas::utils::AutoPasConfigurationCommunicator {
