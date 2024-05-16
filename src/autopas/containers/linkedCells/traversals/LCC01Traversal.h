@@ -104,7 +104,7 @@ class LCC01Traversal
   }
 
   /**
-   * Computes pairs used in processBaseCell()
+   * Computes all cell pairs used in processBaseCell()
    */
   void computeOffsets();
 

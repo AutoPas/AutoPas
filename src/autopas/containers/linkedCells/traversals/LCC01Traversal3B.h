@@ -54,7 +54,7 @@ class LCC01Traversal3B : public C01BasedTraversal<ParticleCell, Functor, Interac
   }
 
   /**
-   * Computes pairs used in processBaseCell()
+   * Computes all cell triplets used in processBaseCell()
    */
   void computeOffsets();
 
@@ -137,7 +137,7 @@ inline void LCC01Traversal3B<ParticleCell, Functor>::computeOffsets() {
         const double distSquare = utils::ArrayMath::dot(dist01, dist01);
         if (distSquare > interactionLengthSquare) continue;
 
-        // offsets for the second cell
+        // offsets for cell 2
         for (long x2 = -this->_overlap[0]; x2 <= static_cast<long>(this->_overlap[0]); ++x2) {
           for (long y2 = -this->_overlap[1]; y2 <= static_cast<long>(this->_overlap[1]); ++y2) {
             for (long z2 = -this->_overlap[2]; z2 <= static_cast<long>(this->_overlap[2]); ++z2) {
