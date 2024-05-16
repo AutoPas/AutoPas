@@ -19,6 +19,8 @@
 #include "RuleBasedProgramParser.h"
 #include "RuleBasedProgramTree.h"
 #include "RuleVM.h"
+#endif
+
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
@@ -81,6 +83,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
 
   using PrintTuningErrorFunType =
+#ifndef AUTOPAS_DISABLE_RULES_BASED_TUNING
       std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
