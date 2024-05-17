@@ -86,6 +86,13 @@ set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_LLVM_LIT_EXECUTABL
 set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
 set(AUTOPAS_pthread_LIBRARY OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
 
+# Set boolean variables for Auto4OMP's targets, used in target_link_libraries's conditional generator expressions.
+set(AUTOPAS_TARGET_omp OFF CACHE BOOL "Auto4OMP libomp target.")
+set(TARGET_omptarget OFF CACHE BOOL "Auto4OMP libomptarget target.")
+set(TARGET_omptarget.rtl.cuda OFF CACHE BOOL "Auto4OMP libomptarget.rtl.cuda target.")
+set(TARGET_omptarget.rtl.x86_64 OFF CACHE BOOL "Auto4OMP libomptarget.rtl.x86_64 target.")
+set(TARGET_omptarget-nvptx OFF CACHE BOOL "Auto4OMP libomptarget-nvptx target.")
+
 if (NOT AUTOPAS_AUTO4OMP)
     # If Auto4OMP disabled, notify.
     message(STATUS "Auto4OMP disabled.")
@@ -415,17 +422,17 @@ else ()
             LIBOMPTARGET_NVPTX_DEBUG
     )
 
-    # Set boolean variables for Auto4OMP's targets, used in target_link_libraries's conditional generator expressions.
-    set(AUTOPAS_TARGET_omp ON CACHE BOOL "Auto4OMP libomp target.")
-    set(TARGET_omptarget ON CACHE BOOL "Auto4OMP libomptarget target.")
+    # Set the Auto4OMP target booleans.
+    set(AUTOPAS_TARGET_omp ON CACHE BOOL "Auto4OMP libomp target." FORCE)
+    set(TARGET_omptarget ON CACHE BOOL "Auto4OMP libomptarget target." FORCE)
     if (TARGET omptarget.rtl.cuda)
-        set(TARGET_omptarget.rtl.cuda ON CACHE BOOL "Auto4OMP libomptarget.rtl.cuda target.")
+        set(TARGET_omptarget.rtl.cuda ON CACHE BOOL "Auto4OMP libomptarget.rtl.cuda target." FORCE)
     endif ()
     if (TARGET omptarget.rtl.x86_64)
-        set(TARGET_omptarget.rtl.x86_64 ON CACHE BOOL "Auto4OMP libomptarget.rtl.x86_64 target.")
+        set(TARGET_omptarget.rtl.x86_64 ON CACHE BOOL "Auto4OMP libomptarget.rtl.x86_64 target." FORCE)
     endif ()
     if (TARGET omptarget-nvptx)
-        set(TARGET_omptarget-nvptx ON CACHE BOOL "Auto4OMP libomptarget-nvptx target.")
+        set(TARGET_omptarget-nvptx ON CACHE BOOL "Auto4OMP libomptarget-nvptx target." FORCE)
     endif ()
 
     # TODO: prioritize Auto4OMP's libomp and other libs. Did linking the built libraries achieve this? [**]
