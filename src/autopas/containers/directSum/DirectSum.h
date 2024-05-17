@@ -95,19 +95,19 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   void deleteHaloParticles() override { getHaloCell().clear(); }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
     // nothing to do.
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    // nothing to do.
-  }
+//  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+//    // nothing to do.
+//  }
 
   CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<DSPairTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);
@@ -121,9 +121,9 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     traversal->endTraversal();
   }
 
-  void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+  void iterateTriwise(TriwiseTraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<DSPairTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
     if (traversalInterface && cellPairTraversal) {
       cellPairTraversal->setCellsToTraverse(this->_cells);

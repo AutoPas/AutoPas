@@ -20,8 +20,8 @@ namespace autopas {
  * @tparam ParticleCell the type of cells
  * @tparam Functor The functor that defines the interaction between particles.
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
-class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, interactionType> {
+template <class ParticleCell, class Functor>
+class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
  public:
   /**
    * Constructor of the c08 traversal.
@@ -35,7 +35,7 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
    */
   explicit C08BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor, interactionType>(dims, functor, interactionLength, cellLength,
+      : ColorBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength,
                                                                     dataLayout, useNewton3) {}
 
  protected:
@@ -47,9 +47,9 @@ class C08BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, inte
   inline void c08Traversal(LoopBody &&loopBody);
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType>
+template <class ParticleCell, class Functor>
 template <typename LoopBody>
-inline void C08BasedTraversal<ParticleCell, Functor, interactionType>::c08Traversal(LoopBody &&loopBody) {
+inline void C08BasedTraversal<ParticleCell, Functor>::c08Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto end = this->_cellsPerDimension - this->_overlap;

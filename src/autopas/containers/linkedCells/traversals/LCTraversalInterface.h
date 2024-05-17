@@ -19,6 +19,17 @@ namespace autopas {
  * @tparam ParticleCell
  */
 template <class ParticleCell>
-class LCTraversalInterface {};
+class LCPairTraversalInterface : public PairwiseTraversalInterface {
+ public:
+//  LCPairTraversalInterface(DataLayoutOption dataLayout, bool useNewton3) : TraversalInterface(dataLayout, useNewton3), PairwiseTraversalInterface(dataLayout, useNewton3) {}
+
+};
+
+template <class ParticleCell>
+class LCTriTraversalInterface : public TriwiseTraversalInterface {
+ public:
+//  LCTriTraversalInterface(DataLayoutOption dataLayout, bool useNewton3) : TriwiseTraversalInterface(dataLayout, useNewton3) {}
+
+};
 
 }  // namespace autopas

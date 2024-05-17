@@ -71,7 +71,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
@@ -98,7 +98,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @note This function will be called in iteratePairwise()!
    * @param traversal
    */
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
@@ -115,11 +115,11 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @note This function will be called in iterateTriwise()!
    * @param traversal
    */
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletLists has not "
-        "been implemented yet.");
-  }
+//  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+//    autopas::utils::ExceptionHandler::exception(
+//        "VerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletLists has not "
+//        "been implemented yet.");
+//  }
 
  protected:
   /**

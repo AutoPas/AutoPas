@@ -102,13 +102,13 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
     // nothing to do.
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    // nothing to do.
-  }
+//  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+//    // nothing to do.
+//  }
 
   /**
    * Generates the load estimation function depending on _loadEstimator.
@@ -132,9 +132,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCPairTraversalInterface<ParticleCell> *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
@@ -152,9 +152,9 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     traversal->endTraversal();
   }
 
-  void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+  void iterateTriwise(TriwiseTraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTriTraversalInterface<ParticleCell> *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());

@@ -32,7 +32,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>,
-                          public LCTraversalInterface<ParticleCell> {
+                          public LCPairTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -47,7 +47,8 @@ class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, Pairwise
   explicit LCSlicedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                              double interactionLength, const std::array<double, 3> &cellLength,
                              DataLayoutOption dataLayout, bool useNewton3)
-      : SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+      : TraversalInterface(dataLayout, useNewton3),
+        SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                                 dataLayout, useNewton3, true),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}

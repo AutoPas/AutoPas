@@ -17,6 +17,9 @@ namespace autopas {
  * @tparam ParticleCell
  */
 template <class ParticleCell>
-class DSTraversalInterface {};
+class DSPairTraversalInterface : public PairwiseTraversalInterface {};
+
+template <class ParticleCell>
+class DSTriTraversalInterface : public TriwiseTraversalInterface{};
 
 }  // namespace autopas

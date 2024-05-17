@@ -22,7 +22,7 @@ namespace autopas {
  */
 template <class ParticleCell, class Particle, class PairwiseFunctor>
 class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<Particle>>,
-                            public TraversalInterface<InteractionTypeOption::pairwise> {
+                            public PairwiseTraversalInterface {
  private:
   /**
    * Internal iterate method for AoS.

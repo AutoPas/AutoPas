@@ -23,8 +23,8 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction between particles.
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, int collapseDepth = 3>
-class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface<interactionType> {
+template <class ParticleCell, class Functor, int collapseDepth = 3>
+class ColorBasedTraversal : public CellTraversal<ParticleCell>, virtual public TraversalInterface {
  protected:
   /**
    * Constructor of the ColorBasedTraversal.
@@ -40,7 +40,7 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
                                const double interactionLength, const std::array<double, 3> &cellLength,
                                DataLayoutOption dataLayout, bool useNewton3)
       : CellTraversal<ParticleCell>(dims),
-        TraversalInterface<interactionType>(dataLayout, useNewton3),
+        TraversalInterface(dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _dataLayoutConverter(functor, dataLayout) {
@@ -127,9 +127,9 @@ class ColorBasedTraversal : public CellTraversal<ParticleCell>, public Traversal
   utils::DataLayoutConverter<Functor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class Functor, InteractionTypeOption::Value interactionType, int collapseDepth>
+template <class ParticleCell, class Functor, int collapseDepth>
 template <typename LoopBody>
-inline void ColorBasedTraversal<ParticleCell, Functor, interactionType, collapseDepth>::colorTraversal(
+inline void ColorBasedTraversal<ParticleCell, Functor, collapseDepth>::colorTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;

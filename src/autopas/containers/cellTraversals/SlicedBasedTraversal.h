@@ -28,7 +28,7 @@ namespace autopas {
  */
 template <class ParticleCell, class Functor>
 class SlicedBasedTraversal : public CellTraversal<ParticleCell>,
-                             public TraversalInterface<InteractionTypeOption::pairwise> {
+                             public PairwiseTraversalInterface {
  public:
   /**
    * Constructor of the sliced traversal.
@@ -39,14 +39,14 @@ class SlicedBasedTraversal : public CellTraversal<ParticleCell>,
    * @param cellLength cell length.
    * @param dataLayout The data layout with which this traversal should be initialised.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
-   * @param spaciallyForward Whether the base step only covers neigboring cells tha are spacially forward (for example
+   * @param spaciallyForward Whether the base step only covers neighboring cells tha are spacially forward (for example
    * c08).
    */
   explicit SlicedBasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor,
                                 const double interactionLength, const std::array<double, 3> &cellLength,
                                 DataLayoutOption dataLayout, bool useNewton3, bool spaciallyForward)
       : CellTraversal<ParticleCell>(dims),
-        TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3),
+        TraversalInterface(dataLayout, useNewton3),
         _overlap{},
         _dimsPerLength{},
         _interactionLength(interactionLength),

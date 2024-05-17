@@ -27,8 +27,8 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
-                          public LCTraversalInterface<ParticleCell> {
+class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
+                          public LCPairTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of c04hcp
@@ -43,7 +43,8 @@ class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor
   LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                     const double interactionLength, const std::array<double, 3> &cellLength,
                     DataLayoutOption dataLayout, bool useNewton3)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+      : TraversalInterface(dataLayout, useNewton3),
+        C08BasedTraversal<ParticleCell, PairwiseFunctor>(
             dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3),

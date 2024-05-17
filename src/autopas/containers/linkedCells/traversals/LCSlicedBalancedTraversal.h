@@ -33,7 +33,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>,
-                                  public LCTraversalInterface<ParticleCell> {
+                                  public LCPairTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the balanced sliced traversal.
@@ -48,7 +48,8 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
   explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      double interactionLength, const std::array<double, 3> &cellLength,
                                      DataLayoutOption dataLayout, bool useNewton3)
-      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
+      : TraversalInterface(dataLayout, useNewton3),
+        SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
                                                                     cellLength, dataLayout, useNewton3, true),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}

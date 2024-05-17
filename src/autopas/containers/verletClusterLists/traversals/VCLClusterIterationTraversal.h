@@ -19,7 +19,7 @@ namespace autopas {
 
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VCLClusterIterationTraversal : public TraversalInterface<InteractionTypeOption::pairwise>,
+class VCLClusterIterationTraversal : public PairwiseTraversalInterface,
                                      public VCLTraversalInterface<typename ParticleCell::ParticleType> {
   using Particle = typename ParticleCell::ParticleType;
 

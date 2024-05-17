@@ -41,7 +41,8 @@ class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, 
   explicit VLCC01Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                            double interactionLength, const std::array<double, 3> &cellLength,
                            DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
-      : C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+      : TraversalInterface(dataLayout, useNewton3),
+        C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
             dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}

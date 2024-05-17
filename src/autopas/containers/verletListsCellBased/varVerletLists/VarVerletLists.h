@@ -40,7 +40,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
     auto *traversalInterface = dynamic_cast<VVLTraversalInterface<NeighborList> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setNeighborListToTraverse(_neighborList);
@@ -60,7 +60,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   long getNumberOfNeighborPairs() const { return _neighborList.getNumberOfNeighborPairs(); }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid
@@ -71,11 +71,11 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     }
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VarVerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VarVerletLists has "
-        "not been implemented yet.");
-  }
+//  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
+//    autopas::utils::ExceptionHandler::exception(
+//        "VarVerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VarVerletLists has "
+//        "not been implemented yet.");
+//  }
 
  private:
   NeighborList _neighborList;

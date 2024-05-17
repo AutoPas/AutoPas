@@ -13,7 +13,7 @@ template <class Particle>
  * container.
  * @tparam Particle type of particle
  */
-class VLCCellPairTraversalInterface {
+class VLCCellPairTraversalInterface : public PairwiseTraversalInterface {
  public:
   /**
    * Sets the verlet list for the traversal to iterate over.
