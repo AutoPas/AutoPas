@@ -14,30 +14,22 @@ file(
 
 add_library(autopas STATIC ${MY_SRC})
 
-if (TARGET auto4omp)
-    # Add the Auto4OMP dependency to AutoPas.
-    add_dependencies(autopas auto4omp)
-
-    # Include and link Auto4OMP's headers in AutoPas (e.g., omp.h).
-    target_include_directories(autopas BEFORE PUBLIC "${auto4omp_BINARY_DIR}/runtime/src")
-    target_link_directories(autopas BEFORE PUBLIC "${auto4omp_BINARY_DIR}/runtime/src")
-
-    # Link Auto4OMP's built libraries.
-    target_link_libraries(autopas PUBLIC auto4omp_libomp auto4omp_libomptarget)
-    if (TARGET auto4omp_libomptarget_rtl_cuda)
-        target_link_libraries(autopas PUBLIC auto4omp_libomptarget_rtl_cuda auto4omp_libomptarget_nvptx)
-    endif ()
-    if (TARGET auto4omp_libomptarget_rtl_x86_64)
-        target_link_libraries(autopas PUBLIC auto4omp_libomptarget_rtl_x86_64)
-    endif ()
-endif ()
-
 target_link_libraries(
     autopas
     PUBLIC
         rt # required for Time.h
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
-        $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
+
+        # Standard OpenMP target, linked if (OpenMP AND NOT Auto4OMP).
+        $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${AUTOPAS_AUTO4OMP}>>>:OpenMP::OpenMP_CXX>
+
+        # Auto4OMP targets, linked if they exist.
+        $<$<BOOL:${AUTOPAS_TARGET_omp}>:omp>
+        $<$<BOOL:${AUTOPAS_TARGET_omptarget}>:omptarget>
+        $<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.cuda}>:omptarget.rtl.cuda>
+        $<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.x86_64}>:omptarget.rtl.x86_64>
+        $<$<BOOL:${AUTOPAS_TARGET_omptarget-nvptx}>:omptarget-nvptx>
+
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
         antlr4cpp

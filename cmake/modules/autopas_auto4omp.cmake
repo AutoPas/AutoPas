@@ -46,13 +46,20 @@ string(
 string(
         CONCAT AUTOPAS_FILECHECK_EXECUTABLE_DOC
         "Path to the FileCheck executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/bin/FileCheck\". "
-        "To find it, run the following command: find /usr -name lit.py. "
+        "To find it, run the following command: \"find /usr -name lit.py\". "
         "By default, Auto4OMP looks for FileCheck with the PATH environment variable."
 )
 
 set(
         AUTOPAS_NVCC_GNUC_PATH_DOC
         "Path to gcc ${AUTOPAS_NVCC_MAX_GCC} or less, required by NVCC, in case system's gcc is newer."
+)
+
+string( CONCAT
+        AUTOPAS_pthread_LIBRARY
+        "Path to pthread.a, required by OpenMP. E.g., \"/usr/lib/x86_64-linux-gnu/libpthread.a\". "
+        "To find it, run the following command: \"find /usr -name libpthread.a\". "
+        "By default, AutoPas looks for pthread with FindThreads and the command \"find /usr/lib -name FileCheck\"."
 )
 
 set(
@@ -71,12 +78,13 @@ set(
 )
 
 # AutoPas CMake variables for Auto4OMP:
-option(AUTOPAS_AUTO4OMP ${AUTOPAS_AUTO4OMP_DOC} ON)
-option(AUTOPAS_AUTO4OMP_GIT ${AUTOPAS_AUTO4OMP_GIT_DOC} OFF)
-set(AUTOPAS_AUTO4OMP_INSTALL_DIR "" CACHE PATH ${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC})
-set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC})
-set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH ${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC})
-set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH ${AUTOPAS_FILECHECK_EXECUTABLE_DOC})
+option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" ON)
+option(AUTOPAS_AUTO4OMP_GIT "${AUTOPAS_AUTO4OMP_GIT_DOC}" OFF)
+set(AUTOPAS_AUTO4OMP_INSTALL_DIR "" CACHE PATH "${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC}")
+set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}")
+set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC}")
+set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
+set(AUTOPAS_pthread_LIBRARY OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
 
 if (NOT AUTOPAS_AUTO4OMP)
     # If Auto4OMP disabled, notify.
@@ -85,6 +93,7 @@ if (NOT AUTOPAS_AUTO4OMP)
 elseif (NOT AUTOPAS_OPENMP)
     # If OpenMP disabled, warn.
     message(WARNING "OpenMP must be enabled to use Auto4. Auto4OMP disabled.")
+    set(AUTOPAS_AUTO4OMP OFF CACHE BOOL ${AUTOPAS_AUTO4OMP_DOC} FORCE)
 
 else ()
     # Notify.
@@ -142,7 +151,7 @@ else ()
         # __has_builtin() returns  a non-zero int if the feature's supported, else 0. [4, 5]
         # If cycle counter available, enable.
         message(DEBUG "Cycle counter found, enabling.")
-        option(LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER ${LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER_DOC} ON)
+        option(LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER "${LIBOMP_HAVE___BUILTIN_READCYCLECOUNTER_DOC}" ON)
     else ()
         message(STATUS "No cycle counter found. Will look for time-stamp counter next.")
     endif ()
@@ -150,7 +159,7 @@ else ()
     ### Time-stamp counter:
     #### __rdtscp() reads from the time-stamp counter, supported by x86 and x86_64. Inspired from [6]
     execute_process(COMMAND lscpu COMMAND grep rdtsc OUTPUT_VARIABLE LSCPU_GREP_RDTSC_OUTPUT)
-    if (NOT ${LSCPU_GREP_RDTSC_OUTPUT} STREQUAL "")
+    if (NOT "${LSCPU_GREP_RDTSC_OUTPUT}" STREQUAL "")
         # If time-stamp counter available, enable.
         message(DEBUG "Time-stamp counter found, enabling.")
         option(LIBOMP_HAVE___RDTSC ${LIBOMP_HAVE___RDTSC_DOC} ON)
@@ -187,7 +196,7 @@ else ()
             # List of Nvidia GPUs and their compute capabilities: [7]
             set(
                     LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES 53
-                    CACHE INTERNAL ${LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC}
+                    CACHE INTERNAL "${LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC}"
             )
         endif ()
 
@@ -207,7 +216,7 @@ else ()
                         OUTPUT_VARIABLE GCC_VERSION_MAJOR
                 )
                 if (${GCC_VERSION_MAJOR} LESS_EQUAL ${AUTOPAS_NVCC_MAX_GCC})
-                    set(AUTOPAS_NVCC_GNUC_PATH ${GCC_PATH} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
+                    set(AUTOPAS_NVCC_GNUC_PATH "${GCC_PATH}" CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}" FORCE)
                 else ()
                     message(
                             STATUS
@@ -222,7 +231,7 @@ else ()
             # Names based on other package managers can be added here too.
             find_program(GCC_LESS NAMES gcc-12 gcc-11 gcc-10 gcc-9 gcc-8 gcc-7)
             if (GCC_LESS)
-                set(AUTOPAS_NVCC_GNUC_PATH ${GCC_LESS} CACHE FILEPATH ${AUTOPAS_NVCC_GNUC_PATH_DOC} FORCE)
+                set(AUTOPAS_NVCC_GNUC_PATH "${GCC_LESS}" CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}" FORCE)
             else ()
                 message(
                         WARNING
@@ -237,8 +246,8 @@ else ()
         if (AUTOPAS_NVCC_GNUC_PATH)
             # If alternate gcc found or specified, pass it to Auto4OMP.
             set(
-                    LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER ${AUTOPAS_NVCC_GNUC_PATH}
-                    CACHE INTERNAL ${AUTOPAS_NVCC_GNUC_PATH_DOC}
+                    LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER "${AUTOPAS_NVCC_GNUC_PATH}"
+                    CACHE INTERNAL "${AUTOPAS_NVCC_GNUC_PATH_DOC}"
             )
             message(DEBUG "Alternate GCC for NVCC at ${LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER}")
         else ()
@@ -265,7 +274,7 @@ else ()
         execute_process(
                 COMMAND find /usr/lib -name lit.py # Lists paths containing lit.
                 COMMAND sort -dfr # Puts paths through newer LLVM versions at the top.
-                COMMAND grep -m1 "" #Keeps first path only, inspired from [9].
+                COMMAND grep -m1 "" # Keeps first path only, inspired from [9].
                 COMMAND tr -d '\n' # Truncates newlines.
                 OUTPUT_VARIABLE AUTOPAS_LLVM_LIT_EXECUTABLE
         )
@@ -275,9 +284,8 @@ else ()
     if (AUTOPAS_LLVM_LIT_EXECUTABLE)
         message(DEBUG "LLVM-lit executable at ${AUTOPAS_LLVM_LIT_EXECUTABLE}")
         set(
-                OPENMP_LLVM_LIT_EXECUTABLE
-                ${AUTOPAS_LLVM_LIT_EXECUTABLE}
-                CACHE INTERNAL ${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC}
+                OPENMP_LLVM_LIT_EXECUTABLE "${AUTOPAS_LLVM_LIT_EXECUTABLE}"
+                CACHE INTERNAL "${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC}"
         )
     else ()
         message(
@@ -312,8 +320,8 @@ else ()
     if (AUTOPAS_FILECHECK_EXECUTABLE)
         message(DEBUG "FileCheck executable at ${AUTOPAS_FILECHECK_EXECUTABLE}")
         set(
-                OPENMP_FILECHECK_EXECUTABLE ${AUTOPAS_FILECHECK_EXECUTABLE}
-                CACHE INTERNAL ${AUTOPAS_FILECHECK_EXECUTABLE_DOC}
+                OPENMP_FILECHECK_EXECUTABLE "${AUTOPAS_FILECHECK_EXECUTABLE}"
+                CACHE INTERNAL "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}"
         )
     else ()
         message(
@@ -324,47 +332,6 @@ else ()
                 "To fix, specify the path with -DAUTOPAS_LLVM_LIT_EXECUTABLE=\"path/to/FileCheck\""
         )
     endif ()
-
-    # Mark Auto4OMP's variables advanced. [***]
-    mark_as_advanced(
-            OPENMP_ENABLE_WERROR
-            OPENMP_LIBDIR_SUFFIX
-            OPENMP_TEST_C_COMPILER
-            OPENMP_TEST_CXX_COMPILER
-            OPENMP_LLVM_TOOLS_DIR
-            OPENMP_LLVM_LIT_EXECUTABLE
-            OPENMP_FILECHECK_EXECUTABLE
-            LIBOMP_ARCH
-            LIBOMP_MIC_ARCH
-            LIBOMP_OMP_VERSION
-            LIBOMP_LIB_TYPE
-            LIBOMP_USE_VERSION_SYMBOLS
-            LIBOMP_ENABLE_SHARED
-            LIBOMP_FORTRAN_MODULES
-            LIBOMP_USE_ADAPTIVE_LOCKS
-            LIBOMP_USE_INTERNODE_ALIGNMENT
-            LIBOMP_OMPT_SUPPORT
-            LIBOMP_OMPT_OPTIONAL
-            LIBOMP_STATS
-            LIBOMP_USE_DEBUGGER
-            LIBOMP_USE_HWLOC
-            LIBOMP_HWLOC_INSTALL_DIR
-            LIBOMP_CPPFLAGS
-            LIBOMP_CFLAGS
-            LIBOMP_CXXFLAGS
-            LIBOMP_ASMFLAGS
-            LIBOMP_LDFLAGS
-            LIBOMP_LIBFLAGS
-            LIBOMP_FFLAGS
-            LIBOMPTARGET_OPENMP_HEADER_FOLDER
-            LIBOMPTARGET_OPENMP_HOST_RTL_FOLDER
-            LIBOMPTARGET_NVPTX_ENABLE_BCLIB
-            LIBOMPTARGET_NVPTX_CUDA_COMPILER
-            LIBOMPTARGET_NVPTX_BC_LINKER
-            LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER
-            LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES
-            LIBOMPTARGET_NVPTX_DEBUG
-    )
 
     # Mark as standalone build to fix CMake's missing declaration errors.
     set(OPENMP_STANDALONE_BUILD ON)
@@ -407,93 +374,263 @@ else ()
     set(CMAKE_POLICY_DEFAULT_CMP0146 NEW) # The FindCUDA module.
     set(CMAKE_POLICY_DEFAULT_CMP0148 NEW) # The FindPythonInterp and FindPythonLibs modules.
 
-    # Add a target for Auto4OMP. It builds Auto4OMP by running make in its build directory.
-    add_custom_target(
-            auto4omp ALL
-            WORKING_DIRECTORY ${auto4omp_BINARY_DIR}
-            COMMAND ${CMAKE_MAKE_PROGRAM}
-            COMMENT "Building Auto4OMP"
+    # Mark Auto4OMP's variables advanced. [***]
+    mark_as_advanced(
+            OPENMP_ENABLE_WERROR
+            OPENMP_LIBDIR_SUFFIX
+            OPENMP_TEST_C_COMPILER
+            OPENMP_TEST_CXX_COMPILER
+            OPENMP_LLVM_TOOLS_DIR
+            OPENMP_LLVM_LIT_EXECUTABLE
+            OPENMP_FILECHECK_EXECUTABLE
+            LIBOMP_ARCH
+            LIBOMP_MIC_ARCH
+            LIBOMP_OMP_VERSION
+            LIBOMP_LIB_TYPE
+            LIBOMP_USE_VERSION_SYMBOLS
+            LIBOMP_ENABLE_SHARED
+            LIBOMP_FORTRAN_MODULES
+            LIBOMP_USE_ADAPTIVE_LOCKS
+            LIBOMP_USE_INTERNODE_ALIGNMENT
+            LIBOMP_OMPT_SUPPORT
+            LIBOMP_OMPT_OPTIONAL
+            LIBOMP_STATS
+            LIBOMP_USE_DEBUGGER
+            LIBOMP_USE_HWLOC
+            LIBOMP_HWLOC_INSTALL_DIR
+            LIBOMP_CPPFLAGS
+            LIBOMP_CFLAGS
+            LIBOMP_CXXFLAGS
+            LIBOMP_ASMFLAGS
+            LIBOMP_LDFLAGS
+            LIBOMP_LIBFLAGS
+            LIBOMP_FFLAGS
+            LIBOMPTARGET_OPENMP_HEADER_FOLDER
+            LIBOMPTARGET_OPENMP_HOST_RTL_FOLDER
+            LIBOMPTARGET_NVPTX_ENABLE_BCLIB
+            LIBOMPTARGET_NVPTX_CUDA_COMPILER
+            LIBOMPTARGET_NVPTX_BC_LINKER
+            LIBOMPTARGET_NVPTX_ALTERNATE_HOST_COMPILER
+            LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES
+            LIBOMPTARGET_NVPTX_DEBUG
     )
 
-    # Specify Auto4OMP's install directory.
-    if (NOT AUTOPAS_AUTO4OMP_INSTALL_DIR)
-        set(
-                AUTOPAS_AUTO4OMP_INSTALL_DIR "${auto4omp_BINARY_DIR}/install"
-                CACHE STRING ${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC} FORCE
-        )
+    # Set boolean variables for Auto4OMP's targets, used in target_link_libraries's conditional generator expressions.
+    set(AUTOPAS_TARGET_omp ON CACHE BOOL "Auto4OMP libomp target.")
+    set(TARGET_omptarget ON CACHE BOOL "Auto4OMP libomptarget target.")
+    if (TARGET omptarget.rtl.cuda)
+        set(TARGET_omptarget.rtl.cuda ON CACHE BOOL "Auto4OMP libomptarget.rtl.cuda target.")
     endif ()
-
-    # Configure cmake install to use the local install directory.
-    install(DIRECTORY "${auto4omp_BINARY_DIR}/runtime/src" DESTINATION "${AUTOPAS_AUTO4OMP_INSTALL_DIR}")
-
-    # Run cmake install post-build. Use a local directory instead of /usr, so no sudo privilege is required.
-    add_custom_command(
-            TARGET auto4omp POST_BUILD
-            COMMAND ${CMAKE_COMMAND} --install "${auto4omp_BINARY_DIR}" --prefix "${AUTOPAS_AUTO4OMP_INSTALL_DIR}"
-    )
-
-    # Linker flags to prioritize Auto4OMP's built libraries.
-    set(AUTOPAS_AUTO4OMP_LINKER_FLAGS "-L\"${auto4omp_BINARY_DIR}/install/lib\" -lomp -lomptarget")
-
-    # Add targets for Auto4OMP's built libraries. [**]
-    add_library(auto4omp_libomp SHARED IMPORTED GLOBAL)
-    set_target_properties(
-            auto4omp_libomp
-            PROPERTIES
-            IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/install/lib/libomp.so"
-            IMPORTED_NO_SONAME TRUE
-    )
-
-    add_library(auto4omp_libomptarget SHARED IMPORTED GLOBAL)
-    set_target_properties(
-            auto4omp_libomptarget
-            PROPERTIES
-            IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/install/lib/libomptarget.so"
-            IMPORTED_NO_SONAME TRUE
-    )
-
-    if (EXISTS "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.cuda.so")
-        add_library(auto4omp_libomptarget_rtl_cuda SHARED IMPORTED GLOBAL)
-        set_target_properties(
-                auto4omp_libomptarget_rtl_cuda
-                PROPERTIES
-                IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.cuda.so"
-                IMPORTED_NO_SONAME TRUE
-        )
-        string(APPEND AUTOPAS_AUTO4OMP_LINKER_FLAGS " -lomptarget.rtl.cuda")
+    if (TARGET omptarget.rtl.x86_64)
+        set(TARGET_omptarget.rtl.x86_64 ON CACHE BOOL "Auto4OMP libomptarget.rtl.x86_64 target.")
     endif ()
-
-    if (EXISTS "${auto4omp_BINARY_DIR}/libomptarget/libomptarget-nvptx.a")
-        add_library(auto4omp_libomptarget_nvptx STATIC IMPORTED GLOBAL)
-        set_target_properties(
-                auto4omp_libomptarget_nvptx
-                PROPERTIES
-                IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget-nvptx.a"
-                IMPORTED_NO_SONAME TRUE
-        )
-        string(APPEND AUTOPAS_AUTO4OMP_LINKER_FLAGS " -lomptarget-nvptx")
+    if (TARGET omptarget-nvptx)
+        set(TARGET_omptarget-nvptx ON CACHE BOOL "Auto4OMP libomptarget-nvptx target.")
     endif ()
-
-    if (EXISTS "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.x86_64.so")
-        add_library(auto4omp_libomptarget_rtl_x86_64 SHARED IMPORTED GLOBAL)
-        set_target_properties(
-                auto4omp_libomptarget_rtl_x86_64
-                PROPERTIES
-                IMPORTED_LOCATION "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.rtl.x86_64.so"
-                IMPORTED_NO_SONAME TRUE
-        )
-        string(APPEND AUTOPAS_AUTO4OMP_LINKER_FLAGS " -lomptarget.rtl.x86_64")
-    endif ()
-
-    # Set the linker flags.
-    set(CMAKE_C_FLAGS "${AUTOPAS_AUTO4OMP_LINKER_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${AUTOPAS_AUTO4OMP_LINKER_FLAGS} ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${AUTOPAS_AUTO4OMP_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${AUTOPAS_AUTO4OMP_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
 
     # TODO: prioritize Auto4OMP's libomp and other libs. Did linking the built libraries achieve this? [**]
 
 endif ()
+
+# Function to simulate find_package(OpenMP), but finds to Auto4OMP instead.
+function(auto4omp_FindOpenMP)
+    if (AUTOPAS_AUTO4OMP)
+        # If Auto4OMP is used, don't use for system's OMP. Instead, manually point OMP's variables to Auto4OMP.
+
+        # Set the booleans.
+        set(
+                OpenMP_FOUND TRUE
+                CACHE INTERNAL "Variable indicating that OpenMP flags for all requested languages have been found."
+        )
+        set(
+                OpenMP_C_FOUND TRUE
+                CACHE INTERNAL "Variable indicating if OpenMP support for C was detected.")
+        set(
+                OpenMP_CXX_FOUND TRUE
+                CACHE INTERNAL "Variable indicating if OpenMP support for C++ was detected."
+        )
+
+        # Set the flags.
+        set(
+                OpenMP_C_FLAGS "-fopenmp=libomp -pthread"
+                CACHE INTERNAL "OpenMP compiler flags for C, separated by spaces."
+        )
+        set(
+                OpenMP_CXX_FLAGS "-fopenmp=libomp -pthread"
+                CACHE INTERNAL "OpenMP compiler flags for C++, separated by spaces."
+        )
+
+        # Get the needed library paths.
+
+        ## libomp.so
+        get_target_property(auto4omp_libomp_IMPORTED_LOCATION omp IMPORTED_LOCATION)
+
+        ## libomptarget.so
+        get_target_property(auto4omp_libomptarget_IMPORTED_LOCATION omptarget IMPORTED_LOCATION)
+
+        ## libpthread.a
+        find_package(Threads)
+        if (NOT AUTOPAS_pthread_LIBRARY AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT)
+            set(
+                    AUTOPAS_pthread_LIBRARY "${CMAKE_THREAD_LIBS_INIT}"
+                    CACHE FILEPATH "${AUTOPAS_pthread_LIBRARY_DOC}" FORCE
+            )
+        endif ()
+        if (NOT AUTOPAS_pthread_LIBRARY AND (NOT Threads_FOUND OR NOT CMAKE_USE_PTHREADS_INIT GREATER_EQUAL 0))
+            execute_process(
+                    COMMAND find /usr/lib -name libpthread.a
+                    COMMAND grep -m1 "" # Keeps first path only, inspired from [9].
+                    COMMAND tr -d '\n' # Truncates newlines.
+                    OUTPUT_VARIABLE AUTOPAS_pthread_LIBRARY_FIND_CMD
+            )
+            if (NOT ${AUTOPAS_pthread_LIBRARY_FIND_CMD} STREQUAL "")
+                set(
+                        AUTOPAS_pthread_LIBRARY "${AUTOPAS_pthread_LIBRARY_FIND_CMD}"
+                        CACHE FILEPATH "${AUTOPAS_pthread_LIBRARY_DOC}" FORCE
+                )
+            else ()
+                message(
+                        WARNING
+                        "No pthread found, Auto4OMP may warn. AutoPas attempted to look for pthread.a with FindThreads "
+                        "and the command \"find /usr/lib -name FileCheck\".\n"
+                        "To fix, specify the path with -DAUTOPAS_pthread_LIBRARY=\"path/to/pthread.a\""
+                )
+            endif ()
+        endif ()
+
+        # Set the library paths.
+        set(
+                OpenMP_omp_LIBRARY "${auto4omp_libomp_IMPORTED_LOCATION}"
+                CACHE INTERNAL "Location of libomp.so needed for OpenMP support."
+        )
+        set(
+                OpenMP_omptarget_LIBRARY "${auto4omp_libomptarget_IMPORTED_LOCATION}"
+                CACHE INTERNAL "Location of libomptarget.so needed for OpenMP support."
+        )
+        set(
+                OpenMP_pthread_LIBRARY "${AUTOPAS_pthread_LIBRARY}"
+                CACHE INTERNAL "Location of libpthread.a needed for OpenMP support."
+        )
+
+        ## Join the paths into a list and remove empty items.
+        string(
+                JOIN ";" AUTOPAS_OpenMP_LIBRARIES
+                "${OpenMP_omp_LIBRARY}" "${OpenMP_omptarget_LIBRARY}" "${OpenMP_pthread_LIBRARY}"
+        )
+        list(REMOVE_ITEM AUTOPAS_OpenMP_LIBRARIES "")
+
+        set(
+                OpenMP_C_LIBRARIES "${AUTOPAS_OpenMP_LIBRARIES}"
+                CACHE INTERNAL "A list of libraries needed to link with OpenMP code in C."
+        )
+        set(
+                OpenMP_CXX_LIBRARIES "${AUTOPAS_OpenMP_LIBRARIES}"
+                CACHE INTERNAL "A list of libraries needed to link with OpenMP code in C++."
+        )
+
+        # Figure out OMP's spec date based on the used version. The list is from CMake's FindOpenMP.cmake.
+        if (${AUTOPAS_OMP_VERSION} EQUAL 52)
+            set(OpenMP_C_SPEC_DATE_LOCAL "202111")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 51)
+            set(OpenMP_C_SPEC_DATE_LOCAL "202011")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 50)
+            set(OpenMP_C_SPEC_DATE_LOCAL "201811")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 45)
+            set(OpenMP_C_SPEC_DATE_LOCAL "201511")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 40)
+            set(OpenMP_C_SPEC_DATE_LOCAL "201307")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 31)
+            set(OpenMP_C_SPEC_DATE_LOCAL "201107")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 30)
+            set(OpenMP_C_SPEC_DATE_LOCAL "200805")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 25)
+            set(OpenMP_C_SPEC_DATE_LOCAL "200505")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 20)
+            set(OpenMP_C_SPEC_DATE_LOCAL "200203")
+        elseif (${AUTOPAS_OMP_VERSION} EQUAL 10)
+            set(OpenMP_C_SPEC_DATE_LOCAL "199810")
+        endif ()
+        set(
+                OpenMP_C_SPEC_DATE ${OpenMP_C_SPEC_DATE_LOCAL}
+                CACHE INTERNAL "Date of the OpenMP specification implemented by the C compiler."
+        )
+        set(
+                OpenMP_CXX_SPEC_DATE ${OpenMP_C_SPEC_DATE_LOCAL}
+                CACHE INTERNAL "Date of the OpenMP specification implemented by the C compiler."
+        )
+
+        # Get OMP's version major and minor.
+        string(SUBSTRING ${AUTOPAS_OMP_VERSION} 0 1 AUTOPAS_OMP_VERSION_MAJOR)
+        string(SUBSTRING ${AUTOPAS_OMP_VERSION} 1 1 AUTOPAS_OMP_VERSION_MINOR)
+
+        # Set the versions.
+        set(
+                OpenMP_C_VERSION "${AUTOPAS_OMP_VERSION_MAJOR}.${AUTOPAS_OMP_VERSION_MINOR}"
+                CACHE INTERNAL "OpenMP version implemented by the C compiler."
+        )
+        set(
+                OpenMP_CXX_VERSION "${AUTOPAS_OMP_VERSION_MAJOR}.${AUTOPAS_OMP_VERSION_MINOR}"
+                CACHE INTERNAL "OpenMP version implemented by the C++ compiler."
+        )
+        set(
+                OpenMP_C_VERSION_MAJOR ${AUTOPAS_OMP_VERSION_MAJOR}
+                CACHE INTERNAL "Major version of OpenMP implemented by the C compiler."
+        )
+        set(
+                OpenMP_CXX_VERSION_MAJOR ${AUTOPAS_OMP_VERSION_MAJOR}
+                CACHE INTERNAL "Major version of OpenMP implemented by the C++ compiler."
+        )
+        set(
+                OpenMP_C_VERSION_MINOR ${AUTOPAS_OMP_VERSION_MINOR}
+                CACHE INTERNAL "Major version of OpenMP implemented by the C compiler."
+        )
+        set(
+                OpenMP_CXX_VERSION_MINOR ${AUTOPAS_OMP_VERSION_MINOR}
+                CACHE INTERNAL "Major version of OpenMP implemented by the C++ compiler."
+        )
+    endif ()
+endfunction()
+
+# Prints the variables set by FindOpenMP for debugging purposes.
+macro(printFindOpenMPVars)
+    message(STATUS "OpenMP_FOUND: ${OpenMP_FOUND}")
+    message(STATUS "OpenMP_VERSION: ${OpenMP_VERSION}")
+    message(STATUS "OpenMP_C_FOUND: ${OpenMP_C_FOUND}")
+    message(STATUS "OpenMP_CXX_FOUND: ${OpenMP_CXX_FOUND}")
+    message(STATUS "OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
+    message(STATUS "OpenMP_CXX_FLAGS: ${OpenMP_CXX_FLAGS}")
+    message(STATUS "OpenMP_C_INCLUDE_DIRS: ${OpenMP_C_INCLUDE_DIRS}")
+    message(STATUS "OpenMP_CXX_INCLUDE_DIRS: ${OpenMP_CXX_INCLUDE_DIRS}")
+    message(STATUS "OpenMP_C_LIBNAMES: ${OpenMP_C_LIBNAMES}")
+    message(STATUS "OpenMP_CXX_LIBNAMES: ${OpenMP_CXX_LIBNAMES}")
+    message(STATUS "OpenMP_omp_LIBRARY: ${OpenMP_omp_LIBRARY}")
+    message(STATUS "OpenMP_pthread_LIBRARY: ${OpenMP_pthread_LIBRARY}")
+    message(STATUS "OpenMP_omptarget_LIBRARY: ${OpenMP_omptarget_LIBRARY}")
+    message(STATUS "OpenMP_C_LIBRARIES: ${OpenMP_C_LIBRARIES}")
+    message(STATUS "OpenMP_CXX_LIBRARIES: ${OpenMP_CXX_LIBRARIES}")
+    message(STATUS "OpenMP_C_SPEC_DATE: ${OpenMP_C_SPEC_DATE}")
+    message(STATUS "OpenMP_CXX_SPEC_DATE: ${OpenMP_CXX_SPEC_DATE}")
+    message(STATUS "OpenMP_C_VERSION_MAJOR: ${OpenMP_C_VERSION_MAJOR}")
+    message(STATUS "OpenMP_CXX_VERSION_MAJOR: ${OpenMP_CXX_VERSION_MAJOR}")
+    message(STATUS "OpenMP_C_VERSION_MINOR: ${OpenMP_C_VERSION_MINOR}")
+    message(STATUS "OpenMP_CXX_VERSION_MINOR: ${OpenMP_CXX_VERSION_MINOR}")
+    message(STATUS "OpenMP_C_VERSION: ${OpenMP_C_VERSION}")
+    message(STATUS "OpenMP_CXX_VERSION: ${OpenMP_CXX_VERSION}")
+    message(STATUS "OpenMP_C_SPEC_DATE: ${OpenMP_C_SPEC_DATE}")
+    message(STATUS "OpenMP_CXX_SPEC_DATE: ${OpenMP_CXX_SPEC_DATE}")
+endmacro()
+
+# Function to print all of Auto4OMP's CMake targets. Beware, produces errors but still works. Use for debugging only.
+function(printAuto4OMPCMakeTargets)
+    execute_process(COMMAND find "${auto4omp_SOURCE_DIR}" -type d OUTPUT_VARIABLE auto4omp_PATHS)
+    string(REPLACE "\n" ";" auto4omp_PATHS "${auto4omp_PATHS}")
+    foreach (SUB_DIR ${auto4omp_PATHS})
+        get_property(SUB_TARGETS DIRECTORY "${SUB_DIR}" PROPERTY BUILDSYSTEM_TARGETS)
+        list(APPEND TARGETS ${SUB_TARGETS})
+    endforeach ()
+    list(REMOVE_DUPLICATES TARGETS)
+    message(STATUS "Auto4OMP targets: ${TARGETS}")
+endfunction()
 
 #[=====================================================================================================================[
 Sources:

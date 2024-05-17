@@ -1,9 +1,18 @@
 set(AUTOPAS_OPENMP_DOC "Activates OpenMP shared memory parallelization. (requires OpenMP 4.5)")
 option(AUTOPAS_OPENMP ${AUTOPAS_OPENMP_DOC} ON)
 
+# Include Auto4OMP's CMake module to access its variables. Must be included after AUTOPAS_OPENMP is set.
+include(autopas_auto4omp)
+
 if (AUTOPAS_OPENMP)
     message(STATUS "OpenMP enabled.")
-    find_package(OpenMP REQUIRED)
+
+    if (AUTOPAS_AUTO4OMP)
+        auto4omp_FindOpenMP()
+    else ()
+        find_package(OpenMP REQUIRED)
+    endif ()
+
     # OpenMP version 4.5 was specified in 11.2015
     if (
         (OpenMP_CXX_SPEC_DATE LESS 201511)
