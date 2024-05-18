@@ -74,30 +74,31 @@ class TraversalSelector {
    * @param useNewton3
    * @return Smartpointer to the traversal.
    */
-  template <class Functor, InteractionTypeOption::Value interactionType>
-  static std::unique_ptr<TraversalInterface<interactionType>> generateTraversal(
+  template <class Functor>
+  static std::unique_ptr<TraversalInterface> generateTraversal(
       TraversalOption traversalType, Functor &functor, const TraversalSelectorInfo &traversalInfo,
-      DataLayoutOption dataLayout, bool useNewton3);
+      DataLayoutOption dataLayout, bool useNewton3, InteractionTypeOption::Value interactionType);
 
- private:
+// private:
   template <class PairwiseFunctor>
-  static std::unique_ptr<TraversalInterface<InteractionTypeOption::pairwise>> generatePairwiseTraversal(
+  static std::unique_ptr<TraversalInterface> generatePairwiseTraversal(
       TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info,
       DataLayoutOption dataLayout, bool useNewton3);
 
   template <class TriwiseFunctor>
-  static std::unique_ptr<TraversalInterface<InteractionTypeOption::triwise>> generateTriwiseTraversal(
+  static std::unique_ptr<TriwiseTraversalInterface> generateTriwiseTraversal(
       TraversalOption traversalType, TriwiseFunctor &triwiseFunctor, const TraversalSelectorInfo &info,
       DataLayoutOption dataLayout, bool useNewton3);
 };
 
 template <class ParticleCell>
 template <class PairwiseFunctor>
-std::unique_ptr<TraversalInterface<InteractionTypeOption::pairwise>>
+std::unique_ptr<TraversalInterface>
 TraversalSelector<ParticleCell>::generatePairwiseTraversal(TraversalOption traversalType,
-                                                           PairwiseFunctor &pairwiseFunctor,
-                                                           const TraversalSelectorInfo &traversalInfo,
-                                                           DataLayoutOption dataLayout, bool useNewton3) {
+                                                                            PairwiseFunctor &pairwiseFunctor,
+                                                                            const TraversalSelectorInfo &traversalInfo,
+                                                                            DataLayoutOption dataLayout,
+                                                                            bool useNewton3) {
   switch (traversalType) {
     // Direct sum
     case TraversalOption::ds_sequential: {
@@ -285,10 +286,12 @@ TraversalSelector<ParticleCell>::generatePairwiseTraversal(TraversalOption trave
 
 template <class ParticleCell>
 template <class TriwiseFunctor>
-std::unique_ptr<TraversalInterface<InteractionTypeOption::triwise>>
-TraversalSelector<ParticleCell>::generateTriwiseTraversal(TraversalOption traversalType, TriwiseFunctor &triwiseFunctor,
-                                                          const TraversalSelectorInfo &traversalInfo,
-                                                          DataLayoutOption dataLayout, bool useNewton3) {
+std::unique_ptr<TriwiseTraversalInterface>
+TraversalSelector<ParticleCell>::generateTriwiseTraversal(TraversalOption traversalType,
+                                                                           TriwiseFunctor &triwiseFunctor,
+                                                                           const TraversalSelectorInfo &traversalInfo,
+                                                                           DataLayoutOption dataLayout,
+                                                                           bool useNewton3) {
   switch (traversalType) {
     // Direct sum
     case TraversalOption::ds_sequential_3b: {
@@ -313,14 +316,17 @@ TraversalSelector<ParticleCell>::generateTriwiseTraversal(TraversalOption traver
 }
 
 template <class ParticleCell>
-template <class Functor, InteractionTypeOption::Value interactionType>
-std::unique_ptr<TraversalInterface<interactionType>> TraversalSelector<ParticleCell>::generateTraversal(
-    TraversalOption traversalType, Functor &functor, const TraversalSelectorInfo &traversalInfo,
-    DataLayoutOption dataLayout, bool useNewton3) {
+template <class Functor>
+std::unique_ptr<TraversalInterface>
+TraversalSelector<ParticleCell>::generateTraversal(TraversalOption traversalType, Functor &functor,
+                                                                    const TraversalSelectorInfo &traversalInfo,
+                                                                    DataLayoutOption dataLayout, bool useNewton3, InteractionTypeOption::Value interactionType) {
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    return generatePairwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
+    auto pairTraversal = generatePairwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
+    return std::unique_ptr<TraversalInterface>(dynamic_cast<TraversalInterface *>(pairTraversal.release()));
   } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-    return generateTriwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
+    auto triTraversal = generateTriwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
+    return std::unique_ptr<TraversalInterface>(dynamic_cast<TraversalInterface *>(triTraversal.release()));
   }
   autopas::utils::ExceptionHandler::exception(
       "TraversalSelector::generateTraversal(): No Traversals exist for the given Functor: {}", functor.getName());

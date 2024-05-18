@@ -15,7 +15,6 @@ namespace autopas {
 /**
  * This interface serves as a common parent class for all traversals.
  */
-template <InteractionTypeOption::Value interactionType>
 class TraversalInterface {
  public:
   /**
@@ -53,26 +52,6 @@ class TraversalInterface {
   virtual void endTraversal() = 0;
 
   /**
-   * Traverses all particle pairs.
-   */
-  virtual void traverseParticlePairs() {
-    utils::ExceptionHandler::exception(
-        "Error: TraversalInterface::traverseParticlePairs() is "
-        "not implemented for this traversal: {}!",
-        typeid(*this).name());
-  };
-
-  /**
-   * Traverses all particle triplets.
-   */
-  virtual void traverseParticleTriplets() {
-    utils::ExceptionHandler::exception(
-        "Error: TraversalInterface::traverseParticleTriplets() is "
-        "not implemented for this traversal: {}!",
-        typeid(*this).name());
-  };
-
-  /**
    * Return whether the traversal uses newton 3.
    * @return true iff newton 3 is used.
    */
@@ -95,5 +74,4 @@ class TraversalInterface {
    */
   bool _useNewton3;
 };
-
 }  // namespace autopas

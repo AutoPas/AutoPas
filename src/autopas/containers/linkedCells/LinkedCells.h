@@ -102,11 +102,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
     // nothing to do.
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
+  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
     // nothing to do.
   }
 
@@ -132,7 +132,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
     prepareTraversal(traversal);
 
     traversal->initTraversal();
@@ -140,7 +140,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     traversal->endTraversal();
   }
 
-  void iterateTriwise(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
+  void iterateTriwise(TriwiseTraversalInterface *traversal) override {
     prepareTraversal(traversal);
 
     traversal->initTraversal();
@@ -557,7 +557,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    */
   template <typename Traversal>
   void prepareTraversal(Traversal &traversal) {
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());

@@ -154,12 +154,11 @@ class AutoTuner {
   bool searchSpaceIsEmpty() const;
 
   /**
-   * Log the collected data and if we are at the end of a tuning phase the result to files.
-   * @param conf
+   * After a tuning phase has finished, write the result to a file.
    * @param tuningIteration
    * @param tuningTime
    */
-  void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
+  void logTuningResult(bool tuningIteration, long tuningTime);
 
   /**
    * Initialize rapl meter.
@@ -282,12 +281,12 @@ class AutoTuner {
   /**
    * Number of iterations between two tuning phases.
    */
-  size_t _tuningInterval;
+  std::size_t _tuningInterval;
 
   /**
    * Number of iterations since the end of the last tuning phase.
    */
-  size_t _iterationsSinceTuning;
+  std::size_t _iterationsSinceTuning;
 
   /**
    * Saves this tuner's tuning state

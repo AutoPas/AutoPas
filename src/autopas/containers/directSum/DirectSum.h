@@ -95,17 +95,17 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   void deleteHaloParticles() override { getHaloCell().clear(); }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
     // nothing to do.
   }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
+  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
     // nothing to do.
   }
 
   CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
     prepareTraversal(traversal);
 
     traversal->initTraversal();
@@ -113,7 +113,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     traversal->endTraversal();
   }
 
-  void iterateTriwise(TraversalInterface<InteractionTypeOption::triwise> *traversal) override {
+  void iterateTriwise(TriwiseTraversalInterface *traversal) override {
     prepareTraversal(traversal);
 
     traversal->initTraversal();
@@ -412,9 +412,9 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    */
   template <typename Traversal>
   void prepareTraversal(Traversal &traversal) {
-    auto *traversalInterface = dynamic_cast<DSTraversalInterface<ParticleCell> *>(traversal);
+    auto *dsTraversal = dynamic_cast<DSTraversalInterface *>(traversal);
     auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    if (traversalInterface && cellTraversal) {
+    if (dsTraversal && cellTraversal) {
       cellTraversal->setCellsToTraverse(this->_cells);
     } else {
       autopas::utils::ExceptionHandler::exception(

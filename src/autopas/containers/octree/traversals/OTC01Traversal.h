@@ -44,7 +44,8 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
    */
   explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : CellTraversal<ParticleCell>({2, 1, 1}),
+      : TraversalInterface(dataLayout, useNewton3),
+        CellTraversal<ParticleCell>({2, 1, 1}),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),

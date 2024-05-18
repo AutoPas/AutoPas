@@ -19,7 +19,7 @@ namespace autopas {
  * This interface exists to provide a row interface for octree to add its cells.
  */
 template <typename ParticleCell>
-class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pairwise> {
+class OTTraversalInterface : public PairwiseTraversalInterface {
   /**
    * The particle type used in this traversal.
    */
@@ -34,7 +34,7 @@ class OTTraversalInterface : public TraversalInterface<InteractionTypeOption::pa
    * @param useNewton3
    */
   OTTraversalInterface(double interactionLength, DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface<InteractionTypeOption::pairwise>(dataLayout, useNewton3),
+      : TraversalInterface(dataLayout, useNewton3),
         _interactionLength(interactionLength) {}
 
   /**

@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#include "DSTraversalInterface.h"
+#include "DSTriTraversalInterface.h"
 #include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
@@ -26,8 +26,7 @@ namespace autopas {
  */
 template <class ParticleCell, class TriwiseFunctor>
 class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
-                                public DSTraversalInterface<ParticleCell>,
-                                public TraversalInterface<InteractionTypeOption::triwise> {
+                                public DSTriTraversalInterface {
  public:
   /**
    * Constructor for the DirectSum traversal.
@@ -38,8 +37,8 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
    */
   explicit DSSequentialTraversal3B(TriwiseFunctor *triwiseFunctor, double cutoff, DataLayoutOption dataLayout,
                                    bool useNewton3)
-      : CellTraversal<ParticleCell>({2, 1, 1}),
-        TraversalInterface<InteractionTypeOption::triwise>(dataLayout, useNewton3),
+      : TraversalInterface(dataLayout, useNewton3),
+        CellTraversal<ParticleCell>({2, 1, 1}),
         _cellFunctor(triwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
         _dataLayoutConverter(triwiseFunctor, dataLayout) {}

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <vector>
+#include "DSTraversalInterface.h"
 
 namespace autopas {
 
@@ -15,6 +16,7 @@ namespace autopas {
  *
  * The container only accepts traversals in its computeInteractions() method that implement this interface.
  */
-class DSTraversalInterface {};
+class DSPairTraversalInterface : public DSTraversalInterface,
+                                 public PairwiseTraversalInterface {};
 
 }  // namespace autopas
