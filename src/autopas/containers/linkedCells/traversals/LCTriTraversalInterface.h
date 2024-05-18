@@ -8,8 +8,8 @@
 
 #include <vector>
 
-#include "autopas/containers/TriwiseTraversalInterface.h"
 #include "LCTraversalInterface.h"
+#include "autopas/containers/TriwiseTraversalInterface.h"
 
 namespace autopas {
 
@@ -18,7 +18,6 @@ namespace autopas {
  *
  * The container only accepts traversals in its iterateTriwise() method that implement this interface.
  */
- template <class ParticleCell>
-class LCTriTraversalInterface : public TriwiseTraversalInterface,
-                                public LCTraversalInterface {};
+template <class ParticleCell>
+class LCTriTraversalInterface : public TriwiseTraversalInterface, public LCTraversalInterface {};
 }  // namespace autopas

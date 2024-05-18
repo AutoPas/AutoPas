@@ -537,8 +537,8 @@ class LogicHandler {
    * it will never be applicable.
    */
   template <class Functor>
-  [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool>
-  isConfigurationApplicable(const Configuration &conf, Functor &functor, InteractionTypeOption::Value interactionType);
+  [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
+      const Configuration &conf, Functor &functor, InteractionTypeOption::Value interactionType);
 
   /**
    * Directly exchange the internal particle and halo buffers with the given vectors and update particle counters.
@@ -934,7 +934,6 @@ template <typename Particle>
 template <class Functor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::computeInteractions(
     Functor &functor, TraversalInterface &traversal) {
-
   // Helper to derive the Functor type at compile time
   constexpr auto interactionType = [] {
     if (utils::isPairwiseFunctor<Functor>()) {
@@ -943,8 +942,10 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
       return InteractionTypeOption::triwise;
     } else {
       utils::ExceptionHandler::exception(
-          "LogicHandler::computeInteractions(): Functor is not valid. Only 2-body and 3-body functors are supported. Please use a functor derived from "
-          "PairwiseFunctor or TriwiseFunctor.");    }
+          "LogicHandler::computeInteractions(): Functor is not valid. Only 2-body and 3-body functors are supported. "
+          "Please use a functor derived from "
+          "PairwiseFunctor or TriwiseFunctor.");
+    }
   }();
 
   autopas::utils::Timer timerTotal;
@@ -960,19 +961,19 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
   timerTotal.start();
   functor.initTraversal();
 
-    if (doListRebuild) {
-      timerRebuild.start();
-      rebuildNeighborLists<interactionType>(traversal);
-      timerRebuild.stop();
-    }
+  if (doListRebuild) {
+    timerRebuild.start();
+    rebuildNeighborLists<interactionType>(traversal);
+    timerRebuild.stop();
+  }
 
-    timerComputeInteractions.start();
-    iterateContainer<interactionType>(traversal);
-    timerComputeInteractions.stop();
+  timerComputeInteractions.start();
+  iterateContainer<interactionType>(traversal);
+  timerComputeInteractions.stop();
 
-    timerRemainderTraversal.start();
-    iterateRemainder<interactionType>(functor, newton3);
-    timerRemainderTraversal.stop();
+  timerRemainderTraversal.start();
+  iterateRemainder<interactionType>(functor, newton3);
+  timerRemainderTraversal.stop();
 
   functor.endTraversal(newton3);
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner->sampleEnergy();
@@ -1367,8 +1368,8 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
 
 template <typename Particle>
 template <class Functor>
-std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool>
-LogicHandler<Particle>::selectConfiguration(Functor &functor,InteractionTypeOption::Value interactionType) {
+std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle>::selectConfiguration(
+    Functor &functor, InteractionTypeOption::Value interactionType) {
   bool stillTuning = false;
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
@@ -1392,9 +1393,9 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor,InteractionTypeOpti
         container.getParticleCellTypeEnum(), [&](const auto &particleCellDummy) -> decltype(traversalPtrOpt) {
           // Can't make this unique_ptr const otherwise we can't move it later.
           auto traversalPtr =
-              TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<
-                  Functor>(configuration.traversal, functor, container.getTraversalSelectorInfo(),
-                           configuration.dataLayout, configuration.newton3, interactionType);
+              TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
+                  configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
+                  configuration.newton3, interactionType);
 
           // set sortingThreshold of the traversal if it can be casted to a CellTraversal and uses the CellFunctor
           if (auto *cellTraversalPtr =
@@ -1448,7 +1449,8 @@ LogicHandler<Particle>::selectConfiguration(Functor &functor,InteractionTypeOpti
 
 template <typename Particle>
 template <class Functor>
-bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor, InteractionTypeOption::Value interactionType) {
+bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
+                                                         InteractionTypeOption::Value interactionType) {
   if (not _interactionTypes.count(interactionType)) {
     autopas::utils::ExceptionHandler::exception(
         "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
@@ -1541,8 +1543,8 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor, Inter
 
 template <typename Particle>
 template <class Functor>
-std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool>
-LogicHandler<Particle>::isConfigurationApplicable(const Configuration &conf, Functor &functor, InteractionTypeOption::Value interactionType) {
+std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
+    const Configuration &conf, Functor &functor, InteractionTypeOption::Value interactionType) {
   // Check if the container supports the traversal
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(conf.container, conf.interactionType);
@@ -1573,9 +1575,8 @@ LogicHandler<Particle>::isConfigurationApplicable(const Configuration &conf, Fun
       [&](const auto &particleCellDummy) -> std::optional<std::unique_ptr<TraversalInterface>> {
         // Can't make this unique_ptr const otherwise we can't move it later.
         auto traversalPtr =
-            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(conf.traversal, functor,
-                                                                                    traversalInfo, conf.dataLayout,
-                                                                                    conf.newton3, interactionType);
+            TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
+                conf.traversal, functor, traversalInfo, conf.dataLayout, conf.newton3, interactionType);
 
         // set sortingThreshold of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
         if (auto *cellTraversalPtr =

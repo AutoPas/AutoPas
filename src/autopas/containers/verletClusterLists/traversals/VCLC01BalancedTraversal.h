@@ -20,8 +20,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The type of the functor.
  */
 template <class Particle, class PairwiseFunctor>
-class VCLC01BalancedTraversal : public PairwiseTraversalInterface,
-                                public VCLTraversalInterface<Particle> {
+class VCLC01BalancedTraversal : public PairwiseTraversalInterface, public VCLTraversalInterface<Particle> {
  public:
   /**
    * Constructor of the VCLC01BalancedTraversal.

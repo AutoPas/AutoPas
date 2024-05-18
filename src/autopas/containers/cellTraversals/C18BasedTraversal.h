@@ -34,8 +34,8 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength,
-                                                                    dataLayout, useNewton3) {}
+      : ColorBasedTraversal<ParticleCell, Functor>(dims, functor, interactionLength, cellLength, dataLayout,
+                                                   useNewton3) {}
 
  protected:
   /**

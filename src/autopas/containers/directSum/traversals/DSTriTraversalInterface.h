@@ -8,8 +8,8 @@
 
 #include <vector>
 
-#include "autopas/containers/TriwiseTraversalInterface.h"
 #include "DSTraversalInterface.h"
+#include "autopas/containers/TriwiseTraversalInterface.h"
 
 namespace autopas {
 
@@ -18,6 +18,5 @@ namespace autopas {
  *
  * The container only accepts traversals in its iterateTriwise() method that implement this interface.
  */
-class DSTriTraversalInterface : public DSTraversalInterface,
-                                public TriwiseTraversalInterface {};
+class DSTriTraversalInterface : public DSTraversalInterface, public TriwiseTraversalInterface {};
 }  // namespace autopas

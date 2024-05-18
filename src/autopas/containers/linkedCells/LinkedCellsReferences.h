@@ -149,13 +149,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
-    updateDirtyParticleReferences();
-  }
+  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
-    updateDirtyParticleReferences();
-  }
+  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
   /**
    * Updates all the References in the cells that are out of date.

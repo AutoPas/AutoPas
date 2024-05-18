@@ -43,8 +43,8 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   LCC04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor, double interactionLength,
                  const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
-        C08BasedTraversal<ParticleCell, PairwiseFunctor>(
-            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
+        C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                         dataLayout, useNewton3),
         _cellOffsets32Pack(computeOffsets32Pack()),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3),

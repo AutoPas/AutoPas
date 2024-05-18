@@ -24,8 +24,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class DSSequentialTraversal : public CellTraversal<ParticleCell>,
-                              public DSPairTraversalInterface {
+class DSSequentialTraversal : public CellTraversal<ParticleCell>, public DSPairTraversalInterface {
  public:
   /**
    * Constructor for the DirectSum traversal.

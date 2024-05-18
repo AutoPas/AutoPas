@@ -75,9 +75,8 @@ the initialized buffer must show the same behavior as a buffer which was updated
  * @tparam combineSoA
  */
 template <class ParticleCell, class PairwiseFunctor, bool combineSoA = false>
-class LCC01Traversal
-    : public C01BasedTraversal<ParticleCell, PairwiseFunctor, (combineSoA ? 2 : 3)>,
-      public LCPairTraversalInterface<ParticleCell>{
+class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, (combineSoA ? 2 : 3)>,
+                       public LCPairTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the c01 traversal.
@@ -95,8 +94,8 @@ class LCC01Traversal
                           const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
-        C01BasedTraversal<ParticleCell, PairwiseFunctor, (combineSoA ? 2 : 3)>(
-            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
+        C01BasedTraversal<ParticleCell, PairwiseFunctor, (combineSoA ? 2 : 3)>(dims, pairwiseFunctor, interactionLength,
+                                                                               cellLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
         _pairwiseFunctor(pairwiseFunctor),

@@ -26,7 +26,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
-                        public LCPairTraversalInterface<ParticleCell> {
+                       public LCPairTraversalInterface<ParticleCell> {
  public:
   /**
    * Constructor of the lc_c08 traversal.
@@ -41,8 +41,9 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3), C08BasedTraversal<ParticleCell, PairwiseFunctor>(
-            dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
+      : TraversalInterface(dataLayout, useNewton3),
+        C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                         dataLayout, useNewton3),
 
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}

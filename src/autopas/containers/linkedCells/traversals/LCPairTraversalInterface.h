@@ -8,8 +8,8 @@
 
 #include <vector>
 
-#include "autopas/containers/PairwiseTraversalInterface.h"
 #include "LCTraversalInterface.h"
+#include "autopas/containers/PairwiseTraversalInterface.h"
 
 namespace autopas {
 
@@ -18,7 +18,6 @@ namespace autopas {
  *
  * The container only accepts traversals in its iteratePairwise() method that implement this interface.
  */
- template <class ParticleCell>
-class LCPairTraversalInterface : public PairwiseTraversalInterface,
-                                 public LCTraversalInterface {};
+template <class ParticleCell>
+class LCPairTraversalInterface : public PairwiseTraversalInterface, public LCTraversalInterface {};
 }  // namespace autopas

@@ -25,8 +25,7 @@ namespace autopas {
 
  */
 template <class ParticleCell, class TriwiseFunctor>
-class DSSequentialTraversal3B : public CellTraversal<ParticleCell>,
-                                public DSTriTraversalInterface {
+class DSSequentialTraversal3B : public CellTraversal<ParticleCell>, public DSTriTraversalInterface {
  public:
   /**
    * Constructor for the DirectSum traversal.

@@ -6,10 +6,10 @@
 
 #pragma once
 
+#include "TraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/TraversalOption.h"
-#include "TraversalInterface.h"
 
 namespace autopas {
 

@@ -36,8 +36,8 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
    */
   explicit C01BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, double interactionLength,
                              const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : ColorBasedTraversal<ParticleCell, Functor, collapseDepth>(
-            dims, functor, interactionLength, cellLength, dataLayout, useNewton3) {}
+      : ColorBasedTraversal<ParticleCell, Functor, collapseDepth>(dims, functor, interactionLength, cellLength,
+                                                                  dataLayout, useNewton3) {}
 
  protected:
   /**
@@ -53,8 +53,7 @@ class C01BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor, coll
 
 template <class ParticleCell, class Functor, int collapseDepth>
 template <typename LoopBody>
-inline void C01BasedTraversal<ParticleCell, Functor, collapseDepth>::c01Traversal(
-    LoopBody &&loopBody) {
+inline void C01BasedTraversal<ParticleCell, Functor, collapseDepth>::c01Traversal(LoopBody &&loopBody) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto offset = this->_overlap;

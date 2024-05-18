@@ -12,8 +12,8 @@
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/PairwiseTraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/TriwiseTraversalInterface.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
