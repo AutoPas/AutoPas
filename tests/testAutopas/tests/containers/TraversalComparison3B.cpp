@@ -120,12 +120,12 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison3B::Globals> T
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<
-            decltype(functor), autopas::InteractionTypeOption::triwise>(
-            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+            decltype(functor)>(
+            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option, autopas::InteractionTypeOption::triwise);
       });
 
   auto triwiseTraversal =
-      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::triwise> *>(traversal.get());
+      dynamic_cast<autopas::TriwiseTraversalInterface *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }

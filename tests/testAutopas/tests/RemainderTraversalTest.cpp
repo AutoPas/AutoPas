@@ -94,7 +94,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   constexpr double epsilon = 1.;
   functor.setParticleProperties(24 * epsilon, sigma * sigma);
   // do the actual test
-  logicHandler.computeInteractionsPipeline<decltype(functor), autopas::InteractionTypeOption::pairwise>(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::pairwise);
   constexpr double expectedDist = 1.;
   const double expectedAbsForce =
       std::abs((24 * epsilon) / (expectedDist * expectedDist) *
@@ -371,7 +371,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
   mdLib::LJFunctor<Molecule> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(24, 1);
   // do the actual test
-  logicHandler.computeInteractionsPipeline<decltype(functor), autopas::InteractionTypeOption::pairwise>(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::pairwise);
 
   for (const auto &p : logicHandler.getContainer()) {
     EXPECT_THAT(p.getF(), testing::Not(::testing::ElementsAreArray({0., 0., 0.})))

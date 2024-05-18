@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "autopas/containers/PairwiseTraversalInterface.h"
 #include "LCTraversalInterface.h"
 
 namespace autopas {

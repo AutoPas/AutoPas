@@ -79,14 +79,13 @@ class TraversalSelector {
       TraversalOption traversalType, Functor &functor, const TraversalSelectorInfo &traversalInfo,
       DataLayoutOption dataLayout, bool useNewton3, InteractionTypeOption::Value interactionType);
 
-// private:
   template <class PairwiseFunctor>
   static std::unique_ptr<TraversalInterface> generatePairwiseTraversal(
       TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info,
       DataLayoutOption dataLayout, bool useNewton3);
 
   template <class TriwiseFunctor>
-  static std::unique_ptr<TriwiseTraversalInterface> generateTriwiseTraversal(
+  static std::unique_ptr<TraversalInterface> generateTriwiseTraversal(
       TraversalOption traversalType, TriwiseFunctor &triwiseFunctor, const TraversalSelectorInfo &info,
       DataLayoutOption dataLayout, bool useNewton3);
 };
@@ -286,7 +285,7 @@ TraversalSelector<ParticleCell>::generatePairwiseTraversal(TraversalOption trave
 
 template <class ParticleCell>
 template <class TriwiseFunctor>
-std::unique_ptr<TriwiseTraversalInterface>
+std::unique_ptr<TraversalInterface>
 TraversalSelector<ParticleCell>::generateTriwiseTraversal(TraversalOption traversalType,
                                                                            TriwiseFunctor &triwiseFunctor,
                                                                            const TraversalSelectorInfo &traversalInfo,

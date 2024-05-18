@@ -33,7 +33,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>,
-                                  public LCPairTraversalInterface<ParticleCell> {
+                                  public LCTraversalInterface {
  public:
   /**
    * Constructor of the balanced sliced traversal.

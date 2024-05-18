@@ -27,8 +27,9 @@ namespace autopas {
  * @tparam NeighborList type of the neighbor list
  */
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
-                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
+                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>,
+                        public  PairwiseTraversalInterface {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -45,7 +46,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor, 
                            const double interactionLength, const std::array<double, 3> &cellLength,
                            DataLayoutOption dataLayout, bool useNewton3, ContainerOption::Value typeOfList)
       : TraversalInterface(dataLayout, useNewton3),
-        C18BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>(
+        C18BasedTraversal<ParticleCell, PairwiseFunctor>(
             dims, pairwiseFunctor, interactionLength, cellLength, dataLayout, useNewton3),
         VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}

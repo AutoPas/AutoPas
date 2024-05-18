@@ -77,6 +77,7 @@ bool AutoTuner::searchSpaceIsEmpty() const { return _searchSpace.empty(); }
 void AutoTuner::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
+  _stillTuning = true;
 }
 
 bool AutoTuner::tuneConfiguration() {

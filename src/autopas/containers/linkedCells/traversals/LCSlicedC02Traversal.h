@@ -30,7 +30,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class LCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, PairwiseFunctor>,
-                             public LCPairTraversalInterface<ParticleCell> {
+                             public LCTraversalInterface {
  public:
   /**
    * Constructor of the colored sliced traversal.

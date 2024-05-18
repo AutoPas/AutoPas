@@ -93,7 +93,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   functor.setParticleProperties(nu);
 
   // do the actual test
-  logicHandler.computeInteractionsPipeline<decltype(functor), autopas::InteractionTypeOption::triwise>(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::triwise);
 
   // Expected displacements of particles. Signs can differ
   using namespace autopas::utils::ArrayMath::literals;
@@ -477,7 +477,7 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   mdLib::AxilrodTellerFunctor<Molecule> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(1.);
   // do the actual test
-  logicHandler.computeInteractionsPipeline<decltype(functor), autopas::InteractionTypeOption::triwise>(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::triwise);
 
   for (const auto &p : logicHandler.getContainer()) {
     if (p.isOwned()) {

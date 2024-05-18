@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "LCTraversalInterface.h"
+#include "LCPairTraversalInterface.h"
 #include "autopas/containers/cellTraversals/SlicedLockBasedTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC08CellHandler.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
@@ -32,7 +32,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class LCSlicedTraversal : public SlicedLockBasedTraversal<ParticleCell, PairwiseFunctor>,
-                          public LCPairTraversalInterface<ParticleCell> {
+                          public LCTraversalInterface {
  public:
   /**
    * Constructor of the sliced traversal.

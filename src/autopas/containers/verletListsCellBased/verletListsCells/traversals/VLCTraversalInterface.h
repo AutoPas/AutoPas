@@ -24,7 +24,7 @@ namespace autopas {
  * The container only accepts traversals in its computeInteractions() method that implement this interface.
  */
 template <class Particle, class NeighborList>
-class VLCTraversalInterface : public PairwiseTraversalInterface {
+class VLCTraversalInterface {
  public:
   VLCTraversalInterface() = delete;
 

@@ -122,8 +122,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   auto traversal =
       autopas::utils::withStaticCellType<Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         auto traversalUniquePtr = autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<
-            decltype(functor), autopas::InteractionTypeOption::pairwise>(
-            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
+            decltype(functor)>(
+            traversalOption, functor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option, autopas::InteractionTypeOption::pairwise);
 
         // set useSorting of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
         if (auto *cellPairTraversalPtr =
@@ -135,7 +135,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
       });
 
   auto pairwiseTraversal =
-      dynamic_cast<autopas::TraversalInterface<autopas::InteractionTypeOption::pairwise> *>(traversal.get());
+      dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }

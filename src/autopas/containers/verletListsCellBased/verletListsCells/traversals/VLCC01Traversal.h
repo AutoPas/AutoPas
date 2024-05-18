@@ -24,7 +24,8 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>
 class VLCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise>,
-                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
+                        public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>,
+                        public PairwiseTraversalInterface {
  public:
   /**
    * Constructor of the c01 traversal.

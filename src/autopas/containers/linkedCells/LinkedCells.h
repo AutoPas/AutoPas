@@ -10,6 +10,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/CellBasedParticleContainer.h"
 #include "autopas/containers/CellBlock3D.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"

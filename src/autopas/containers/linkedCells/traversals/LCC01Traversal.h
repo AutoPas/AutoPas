@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "LCTraversalInterface.h"
+#include "LCPairTraversalInterface.h"
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"

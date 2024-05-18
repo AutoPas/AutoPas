@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/containers/TraversalInterface.h"
+#include "autopas/containers/PairwiseTraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
