@@ -468,7 +468,7 @@ else ()
 
     # TODO: prioritize Auto4OMP's libomp and other libs. Did linking the built libraries achieve this? [**]
     # Prioritize Auto4OMP's libomp by prepending its path to the environment variable LD_LIBRARY_PATH.
-    set(AUTOPAS_LIBOMP_PATH "${auto4omp_BINARY_DIR}/runtime/src" CACHE INTERNAL "Auto4OMP's libomp.so path.")
+    set(AUTOPAS_LIBOMP_PATH "${auto4omp_BINARY_DIR}/runtime/src/libomp.so" CACHE INTERNAL "Auto4OMP's libomp.so path.")
     list(PREPEND ENV{LD_LIBRARY_PATH} ${AUTOPAS_LIBOMP_PATH})
     message(STATUS "LD_LIBRARY_PATH: $ENV{LD_LIBRARY_PATH}") # Debug.
 

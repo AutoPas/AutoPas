@@ -57,15 +57,9 @@ AutoPas<Particle>::AutoPas(std::ostream &logOutputStream) {
   // Set LD_LIBRARY_PATH to its new value, i.e., prepended path/to/libomp.so to it.
   setenv("LD_LIBRARY_PATH", newLdLibPath.c_str(), 1);
 
-  // Free.
-  free(currentLdLibPath);
-  currentLdLibPath = nullptr;
-
   // Debug.
   currentLdLibPath = getenv("LD_LIBRARY_PATH");
   std::cout << "LD_LIBRARY_PATH: " << currentLdLibPath << std::endl;
-  free(currentLdLibPath);
-  currentLdLibPath = nullptr;
 #endif
 }
 

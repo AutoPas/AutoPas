@@ -15,7 +15,7 @@ file(
 add_library(autopas STATIC ${MY_SRC})
 
 # TODO: exporting the variable may be too aggressive, is it possible to limit it to the build process?
-add_custom_command(TARGET autopas PRE_LINK COMMAND export LD_LIBRARY_PATH="${LIBOMP_LIBRARY_DIR}")
+add_custom_command(TARGET autopas PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_LIBOMP_PATH}")
 
 target_link_libraries(
     autopas
