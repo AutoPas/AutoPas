@@ -186,5 +186,5 @@ std::string RuleBasedTuning::rulesToString(const std::string &filePath) const {
   return ruleFileStringStream.str();
 }
 
-TuningStrategyOption RuleBasedTuning::getOptionType() { return TuningStrategyOption::ruleBasedTuning; }
+TuningStrategyOption RuleBasedTuning::getOptionType() const { return TuningStrategyOption::ruleBasedTuning; }
 }  // namespace autopas
