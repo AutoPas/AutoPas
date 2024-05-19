@@ -32,17 +32,17 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @param boxMin the lower corner of the domain
    * @param boxMax the upper corner of the domain
    * @param cutoff the cutoff radius of the interaction
-   * @param skinPerTimestep the skin radius per timestep
+   * @param skin   the skin radius
    * @param rebuildFrequency the rebuild frequency.
    * @param applicableTraversals all applicable traversals
    * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
-   * (smaller values are set to 1.0).
+   * (smaller values are set to 1.0)
    */
   VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                        const double skinPerTimestep, const unsigned int rebuildFrequency,
+                        const double skin, const unsigned int rebuildFrequency,
                         const std::set<TraversalOption> &applicableTraversals, const double cellSizeFactor)
-      : ParticleContainerInterface<Particle>(skinPerTimestep),
-        _linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
+      : ParticleContainerInterface<Particle>(skin),
+        _linkedCells(boxMin, boxMax, cutoff, skin, rebuildFrequency, std::max(1.0, cellSizeFactor)) {
     if (cellSizeFactor < 1.0) {
       AutoPasLog(DEBUG, "VerletListsLinkedBase: CellSizeFactor smaller 1 detected. Set to 1.");
     }
@@ -185,19 +185,13 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @return true if a particle was found and updated, false if it was not found.
    */
   bool updateHaloParticle(const Particle &particle) override {
-    Particle pCopy = particle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, particle);
       if (updated) {
         return true;
       }
     }
-    AutoPasLog(TRACE,
-               "updateHaloParticle was not able to update particle at "
-               "[{}, {}, {}]",
-               pCopy.getR()[0], pCopy.getR()[1], pCopy.getR()[2]);
     return false;
   }
 

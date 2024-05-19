@@ -80,8 +80,8 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   fillWithParticlesAndInit(*autoPas);
   initPPL(*PPL);
 
-  // Set verlet skin per timestep to something large so no error messages are displayed
-  autoPas->setVerletSkinPerTimestep(1.);
+  // Set verlet skin to something large so no error messages are displayed
+  autoPas->setVerletSkin(10.);
 
   // The reference positions are the position of the particles in the AutoPas container before
   // calling calculatePositions.
@@ -96,7 +96,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   }
 
   size_t index = 0;
-  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
+  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.});
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     // only change in one direction is expected
     EXPECT_EQ(iter->getR()[0], referencePositions1[index][0]);
@@ -128,7 +128,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
                                                                   {1, 1, 0.105}, {0, 0, 1.105}, {1, 0, 1.105},
                                                                   {0, 1, 1.105}, {1, 1, 1.105}};
 
-  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.}, false);
+  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {0., 0., 0.});
   index = 0;
 
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
@@ -140,7 +140,7 @@ TEST_F(TimeDiscretizationTest, testCalculatePositions) {
   }
 
   // Check that force is reset correctly to some non-zero global force.
-  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {-4.5, 2.3, 0.01}, false);
+  TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, 0.1, {-4.5, 2.3, 0.01});
   for (auto iter = autoPas->begin(); iter.isValid(); ++iter) {
     EXPECT_DOUBLE_EQ(iter->getF()[0], -4.5);
     EXPECT_DOUBLE_EQ(iter->getF()[1], 2.3);
@@ -457,38 +457,6 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   // Try to calculate the quaternion
   EXPECT_ANY_THROW(TimeDiscretization::calculateQuaternionsAndResetTorques(*autopasContainer, *PPL, deltaT, {0, 0, 0}));
 #endif
-}
-
-/**
- * Test the mechanism that throws an exception when particles travel faster than skin/2/rebuildFreq
- */
-TEST_F(TimeDiscretizationTest, testFastParticlesCheck) {
-  auto autoPas = std::make_shared<autopas::AutoPas<ParticleType>>();
-  auto PPL = std::make_shared<ParticlePropertiesLibrary<>>(1.0);
-
-  autoPas->setBoxMin({0., 0., 0.});
-  autoPas->setBoxMax({10., 10., 10.});
-  autoPas->setVerletSkinPerTimestep(.02);
-  autoPas->setVerletRebuildFrequency(10);
-  autoPas->init();
-
-  initPPL(*PPL);
-
-  const auto deltaT = 0.1;
-  // slow particle -> no exception
-#if MD_FLEXIBLE_MODE == MULTISITE
-  autoPas->addParticle(
-      ParticleType({0., 0., 0.}, {0.05, 0., 0.}, {0.7071067811865475, 0.7071067811865475, 0., 0.}, {0., 0., 0.}, 0));
-#else
-  autoPas->addParticle(ParticleType({0., 0., 0.}, {0.05, 0., 0.}, 0));
-#endif
-  EXPECT_NO_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true))
-      << "Updating the position of a slow particle should not throw an exception.";
-  // fast particle -> exception
-  autoPas->begin()->setV({1., 0., 0.});
-  EXPECT_THROW(TimeDiscretization::calculatePositionsAndResetForces(*autoPas, *PPL, deltaT, {0., 0., 0.}, true),
-               std::runtime_error)
-      << "The particle moved farther than the allowed change in position but no exception was thrown.";
 }
 
 // @todo: move tests to new class SimulationTest.cpp -> Issue #641

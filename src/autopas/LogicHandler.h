@@ -65,16 +65,15 @@ class LogicHandler {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
     const auto configuration = _autoTuner.getCurrentConfig();
-    const ContainerSelectorInfo containerSelectorInfo{
-        configuration.cellSizeFactor, logicHandlerInfo.verletSkinPerTimestep, _neighborListRebuildFrequency,
-        _verletClusterSize, configuration.loadEstimator};
+    const ContainerSelectorInfo containerSelectorInfo{configuration.cellSizeFactor, logicHandlerInfo.verletSkin,
+                                                      _neighborListRebuildFrequency, _verletClusterSize,
+                                                      configuration.loadEstimator};
     _containerSelector.selectContainer(configuration.container, containerSelectorInfo);
     checkMinimalSize();
 
     // initialize locks needed for remainder traversal
     const auto boxLength = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin;
-    const auto interactionLengthInv =
-        1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * rebuildFrequency);
+    const auto interactionLengthInv = 1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkin);
     initSpacialLocks(boxLength, interactionLengthInv);
     for (auto &lockPtr : _bufferLocks) {
       lockPtr = std::make_unique<std::mutex>();
@@ -101,11 +100,13 @@ class LogicHandler {
     for (auto &cell : _particleBuffer) {
       auto &buffer = cell._particles;
       if (insertOwnedParticlesToContainer) {
-        for (const auto &p : buffer) {
+        // Can't be const because we potentially modify particles before re-adding them
+        for (auto &p : buffer) {
           if (p.isDummy()) {
             continue;
           }
           if (utils::inBox(p.getR(), boxMin, boxMax)) {
+            p.setOwnershipState(OwnershipState::owned);
             _containerSelector.getCurrentContainer().addParticle(p);
           } else {
             leavingBufferParticles.push_back(p);
@@ -148,9 +149,6 @@ class LogicHandler {
   [[nodiscard]] std::vector<Particle> updateContainer() {
     bool doDataStructureUpdate = not neighborListsAreValid();
 
-    if (doDataStructureUpdate) {
-      _neighborListsAreValid.store(false, std::memory_order_relaxed);
-    }
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
@@ -279,6 +277,7 @@ class LogicHandler {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
     const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
+    Particle particleCopy = p;
     if (utils::notInBox(p.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
@@ -287,12 +286,13 @@ class LogicHandler {
           "{}",
           boxMin, boxMax, p.toString());
     }
+    particleCopy.setOwnershipState(OwnershipState::owned);
     if (not neighborListsAreValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
-      _containerSelector.getCurrentContainer().template addParticle<false>(p);
+      _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
       // If the container is valid, we add it to the particle buffer.
-      _particleBuffer[autopas_get_thread_num()].addParticle(p);
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
     }
     _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
   }
@@ -304,24 +304,29 @@ class LogicHandler {
     auto &container = _containerSelector.getCurrentContainer();
     const auto &boxMin = container.getBoxMin();
     const auto &boxMax = container.getBoxMax();
-    if (utils::inBox(haloParticle.getR(), boxMin, boxMax)) {
+    Particle particleCopy = haloParticle;
+    if (utils::inBox(particleCopy.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
           "Box Min {}\n"
           "Box Max {}\n"
           "{}",
-          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
+          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), particleCopy.toString());
     }
+    particleCopy.setOwnershipState(OwnershipState::halo);
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
-      container.template addHaloParticle</* checkInBox */ false>(haloParticle);
+      container.template addHaloParticle</* checkInBox */ false>(particleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = container.updateHaloParticle(haloParticle);
+      bool updated = container.updateHaloParticle(particleCopy);
       if (not updated) {
+        AutoPasLog(TRACE,
+                   "updateHaloParticle was not able to update particle at "
+                   "[{}, {}, {}]. Adding a copy to the halo buffer.",
+                   particleCopy.getR()[0], particleCopy.getR()[1], particleCopy.getR()[2]);
         // If we couldn't find an existing particle, add it to the halo particle buffer.
-        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticle);
-        _haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
+        _haloParticleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
@@ -544,6 +549,20 @@ class LogicHandler {
   std::tuple<const std::vector<FullParticleCell<Particle>> &, const std::vector<FullParticleCell<Particle>> &>
   getParticleBuffers() const;
 
+  /**
+   * Getter for the mean rebuild frequency.
+   * Helpful for determining the frequency for the dynamic containers
+   * @return value of the mean frequency as double
+   */
+  [[nodiscard]] double getMeanRebuildFrequency() const {
+    if (_rebuildIntervals.empty()) {
+      return 0.;
+    } else {
+      return std::accumulate(_rebuildIntervals.begin(), _rebuildIntervals.end(), 0.) /
+             static_cast<double>(_rebuildIntervals.size());
+    }
+  }
+
  private:
   /**
    * Initialize or update the spacial locks used during the remainder traversal.
@@ -694,12 +713,24 @@ class LogicHandler {
   /**
    * Checks if in the next iteration the neighbor lists have to be rebuilt.
    *
-   * This can be the case either because we hit the rebuild frequency or because the auto tuner tests
-   * a new configuration.
+   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
+   * auto tuner tests a new configuration.
    *
    * @return True iff the neighbor lists will not be rebuild.
    */
   bool neighborListsAreValid();
+
+  /**
+   * Checks if any particle has moved more than skin/2.
+   * updates bool: _neighborListInvalidDoDynamicRebuild to true
+   */
+  void checkNeighborListsInvalidDynamicRebuild();
+
+  /**
+   * Checks if any particle has moved more than skin/2.
+   * resets bool: _neighborListInvalidDoDynamicRebuild to false
+   */
+  void resetNeighborListsInvalidDoDynamicRebuild();
 
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
@@ -712,12 +743,18 @@ class LogicHandler {
   unsigned int _verletClusterSize;
 
   /**
+   * Array of int which contains the iteration number when a rebuild occurs.
+   * This is used to calculate the mean rebuild frequency.
+   */
+  std::vector<int> _rebuildIntervals;
+
+  /**
    * Number of particles in two cells from which sorting should be performed for traversal that use the CellFunctor
    */
   size_t _sortingThreshold;
 
   /**
-   * Reference to the AutoTuner that owns the container, ...
+   * Reference to the AutoTuner which is managed by the AutoPas main interface.
    */
   autopas::AutoTuner &_autoTuner;
 
@@ -771,8 +808,28 @@ class LogicHandler {
    */
   std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
+  /**
+   * iteration logger
+   */
   IterationLogger _iterationLogger;
+
+  /**
+   * neighborListInvalid - true if a particle has moved more than skin/2
+   */
+  bool _neighborListInvalidDoDynamicRebuild{false};
+
+  /**
+   * updating position at rebuild for every particle
+   */
+  void updateRebuildPositions();
 };
+
+template <typename Particle>
+void LogicHandler<Particle>::updateRebuildPositions() {
+  for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
+    iter->resetRAtRebuild();
+  }
+}
 
 template <typename Particle>
 void LogicHandler<Particle>::checkMinimalSize() const {
@@ -790,10 +847,31 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists()) {
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
+      _neighborListInvalidDoDynamicRebuild) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);
+}
+
+template <typename Particle>
+void LogicHandler<Particle>::checkNeighborListsInvalidDynamicRebuild() {
+  const auto skin = getContainer().getVerletSkin();
+  // (skin/2)^2
+  const auto halfSkinSquare = skin * skin * 0.25;
+  for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
+    const auto distance = iter->calculateDisplacementSinceRebuild();
+    const double distanceSquare = utils::ArrayMath::dot(distance, distance);
+
+    if (distanceSquare >= halfSkinSquare) {
+      _neighborListInvalidDoDynamicRebuild = true;
+    }
+  }
+}
+
+template <typename Particle>
+void LogicHandler<Particle>::resetNeighborListsInvalidDoDynamicRebuild() {
+  _neighborListInvalidDoDynamicRebuild = false;
 }
 
 template <typename Particle>
@@ -840,6 +918,7 @@ template <typename Particle>
 template <class PairwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
     PairwiseFunctor &functor, TraversalInterface &traversal) {
+  this->checkNeighborListsInvalidDynamicRebuild();
   const bool doListRebuild = not neighborListsAreValid();
   const auto &configuration = _autoTuner.getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
@@ -855,7 +934,9 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::i
   functor.initTraversal();
   if (doListRebuild) {
     timerRebuild.start();
+    this->updateRebuildPositions();
     container.rebuildNeighborLists(&traversal);
+    this->resetNeighborListsInvalidDoDynamicRebuild();
     timerRebuild.stop();
   }
   timerIteratePairwise.start();
@@ -1180,14 +1261,16 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   // if this was a major iteration add measurements and bump counters
   if (functor->isRelevantForTuning()) {
     if (stillTuning) {
-      switch (_autoTuner.getTuningMetric()) {
-        case TuningMetricOption::time:
-          _autoTuner.addMeasurement(measurements.timeTotal, not neighborListsAreValid());
-          break;
-        case TuningMetricOption::energy:
-          _autoTuner.addMeasurement(measurements.energyTotal, not neighborListsAreValid());
-          break;
-      }
+      // choose the metric of interest
+      const auto measurement = [&]() {
+        switch (_autoTuner.getTuningMetric()) {
+          case TuningMetricOption::time:
+            return measurements.timeTotal;
+          case TuningMetricOption::energy:
+            return measurements.energyTotal;
+        }
+      }();
+      _autoTuner.addMeasurement(measurement, not neighborListsAreValid());
     } else {
       AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
     }
@@ -1231,8 +1314,7 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
   // Check if the traversal is applicable to the current state of the container
   _containerSelector.selectContainer(
       conf.container,
-      ContainerSelectorInfo(conf.cellSizeFactor,
-                            _containerSelector.getCurrentContainer().getVerletSkin() / _neighborListRebuildFrequency,
+      ContainerSelectorInfo(conf.cellSizeFactor, _containerSelector.getCurrentContainer().getVerletSkin(),
                             _neighborListRebuildFrequency, _verletClusterSize, conf.loadEstimator));
   const auto &container = _containerSelector.getCurrentContainer();
   const auto traversalInfo = container.getTraversalSelectorInfo();

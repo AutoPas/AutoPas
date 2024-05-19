@@ -25,13 +25,13 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skinPerTimestep The skin radius per Timestep.
+   * @param skin The skin radius per Timestep.
    * @param rebuildFrequency The rebuild Frequency.
    * @param cellSizeFactor cell size factor relative to cutoff
    */
   VarVerletLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                 const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
+                 const double skin, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0)
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                         compatibleTraversals::allVarVLAsBuildCompatibleTraversals(), cellSizeFactor),
         _neighborList{} {}
 

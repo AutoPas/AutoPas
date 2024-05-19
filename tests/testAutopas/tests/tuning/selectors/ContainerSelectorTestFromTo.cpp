@@ -6,6 +6,8 @@
 
 #include "ContainerSelectorTestFromTo.h"
 
+#include "autopas/particles/OwnershipState.h"
+
 using ::testing::Combine;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::ValuesIn;
@@ -46,7 +48,7 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
   const auto &[from, to] = GetParam();
 
   autopas::ContainerSelector<Particle> containerSelector(bBoxMin, bBoxMax, cutoff);
-  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkinPerTimestep, verletRebuildFrequency, 64,
+  autopas::ContainerSelectorInfo containerInfo(cellSizeFactor, verletSkin, verletRebuildFrequency, 64,
                                                autopas::LoadEstimatorOption::none);
 
   // select container from which we want to convert from
@@ -56,12 +58,8 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
   {
     auto &container = containerSelector.getCurrentContainer();
     auto getPossible1DPositions = [&](double min, double max) -> auto{
-      return std::array<double, 6>{min - cutoff - verletSkinPerTimestep * verletRebuildFrequency,
-                                   min - cutoff,
-                                   min,
-                                   max,
-                                   max + cutoff - 1e-3,
-                                   max + cutoff + verletSkinPerTimestep * verletRebuildFrequency - 1e-3};
+      return std::array<double, 6>{min - cutoff - verletSkin,       min - cutoff, min, max, max + cutoff - 1e-3,
+                                   max + cutoff + verletSkin - 1e-3};
     };
     size_t id = 0;
 
@@ -73,6 +71,7 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
           if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
             container.addParticle(p);
           } else {
+            p.setOwnershipState(autopas::OwnershipState::halo);
             container.addHaloParticle(p);
           }
           ++id;

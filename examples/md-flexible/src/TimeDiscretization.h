@@ -28,13 +28,10 @@ namespace TimeDiscretization {
  * @param particlePropertiesLibrary The particle properties library for the particles in the container.
  * @param deltaT The time step width.
  * @param globalForce Base force value to which every particle is reset.
- * @param fastParticlesThrow When true throws an exception if particles moved too far for verlet technique
- * (>skin/2/rebuildFrequency).
  */
 void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasContainer,
                                       const ParticlePropertiesLibraryType &particlePropertiesLibrary,
-                                      const double &deltaT, const std::array<double, 3> &globalForce,
-                                      bool fastParticlesThrow);
+                                      const double &deltaT, const std::array<double, 3> &globalForce);
 
 /**
  * Calculate and update the quaternion for every particle. Uses the rotational velocity-verlet algorithm as described by

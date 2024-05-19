@@ -49,9 +49,9 @@ class ParticleContainerInterface {
 
   /**
    * Constructor
-   * @param skinPerTimestep Skin distance a particle is allowed to move in one time-step.
+   * @param skin Skin distance a particle is allowed to move.
    */
-  ParticleContainerInterface(double skinPerTimestep) : _skinPerTimestep(skinPerTimestep) {}
+  ParticleContainerInterface(double skin) : _skin(skin) {}
 
   /**
    * Destructor of ParticleContainerInterface.
@@ -242,9 +242,7 @@ class ParticleContainerInterface {
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
-   * End expression for all containers, this simply returns false.
-   * Allows range-based for loops.
-   * @return false
+   * @copydoc autopas::AutoPas::end()
    */
   [[nodiscard]] constexpr bool end() const { return false; }
 
@@ -279,7 +277,7 @@ class ParticleContainerInterface {
   virtual void setCutoff(double cutoff) = 0;
 
   /**
-   * Return the verletSkin of the container verletSkinPerTimestep*rebuildFrequency
+   * Return the verletSkin of the container verletSkin
    * @return verletSkin
    */
   [[nodiscard]] virtual double getVerletSkin() const = 0;
@@ -432,7 +430,7 @@ class ParticleContainerInterface {
   /**
    * Skin distance a particle is allowed to move in one time-step.
    */
-  double _skinPerTimestep;
+  double _skin;
 };
 
 }  // namespace autopas

@@ -53,7 +53,7 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       .boxMin{0., 0., 0.},
       .boxMax{10., 10., 10.},
       .cutoff = 2.5,
-      .verletSkinPerTimestep = 0.05,
+      .verletSkin = 0.5,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,
@@ -332,7 +332,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
       .boxMin{0., 0., 0.},
       .boxMax{9., 9., 9.},
       .cutoff = 2.5,
-      .verletSkinPerTimestep = 0.05,
+      .verletSkin = 0.5,
   };
   const autopas::AutoTunerInfo autoTunerInfo{
       .tuningInterval = 1000,

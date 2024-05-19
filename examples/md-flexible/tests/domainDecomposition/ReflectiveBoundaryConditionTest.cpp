@@ -49,7 +49,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   config.subdivideDimension.value = {true, true, true};
   const double cutoff = 0.3;
   config.cutoff.value = cutoff;
-  config.verletSkinRadiusPerTimestep.value = 0.02;
+  config.verletSkinRadius.value = 0.2;
   config.verletRebuildFrequency.value = 10;
   const double sigma = 1.;
   config.addSiteType(0, 1., sigma, 1.);
@@ -64,7 +64,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
-  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
@@ -317,7 +317,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   const std::array<double, 3> boxLength = boxMax - boxMin;
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = cutoff;
-  config.verletSkinRadiusPerTimestep.value = 0.01;
+  config.verletSkinRadius.value = 0.1;
   config.verletRebuildFrequency.value = 10;
   config.addSiteType(0, 1., sigmas[0], 1.);
   config.addSiteType(1, 1., sigmas[1], 1.);
@@ -332,7 +332,7 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
-  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 
@@ -468,7 +468,7 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   const std::array<double, 3> boxLength = autopas::utils::ArrayMath::sub(boxMax, boxMin);
   config.subdivideDimension.value = {true, true, true};
   config.cutoff.value = cutoff;
-  config.verletSkinRadiusPerTimestep.value = 0.01;
+  config.verletSkinRadius.value = 0.1;
   config.verletRebuildFrequency.value = 10;
   config.addSiteType(0, 0.1, 0.2, 1.);
   config.addSiteType(1, 1000., 0.4, 1.);
@@ -484,7 +484,7 @@ TEST_F(ReflectiveBoundaryConditionTest, reflectiveMultiSiteZoningTest) {
   autoPasContainer->setBoxMin(boxMin);
   autoPasContainer->setBoxMax(boxMax);
   autoPasContainer->setCutoff(cutoff);
-  autoPasContainer->setVerletSkinPerTimestep(config.verletSkinRadiusPerTimestep.value);
+  autoPasContainer->setVerletSkin(config.verletSkinRadius.value);
   autoPasContainer->setVerletRebuildFrequency(config.verletRebuildFrequency.value);
   autoPasContainer->init();
 

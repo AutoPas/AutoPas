@@ -81,16 +81,16 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param boxMin The lower corner of the domain.
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
-   * @param skinPerTimestep The skin radius per Timestep.
+   * @param skin The skin radius.
    * @param rebuildFrequency The rebuild Frequency.
    * @param clusterSize Number of particles per cluster.
    * @param loadEstimator load estimation algorithm for balanced traversals.
    */
   VerletClusterLists(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, double cutoff,
-                     double skinPerTimestep, unsigned int rebuildFrequency, size_t clusterSize,
+                     double skin, unsigned int rebuildFrequency, size_t clusterSize,
                      LoadEstimatorOption loadEstimator = LoadEstimatorOption::none)
-      : ParticleContainerInterface<Particle>(skinPerTimestep),
-        _towerBlock{boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency},
+      : ParticleContainerInterface<Particle>(skin),
+        _towerBlock{boxMin, boxMax, cutoff + skin},
         _clusterSize{clusterSize},
         _particlesToAdd(autopas_get_max_threads()),
         _cutoff{cutoff},
@@ -183,9 +183,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void addHaloParticleImpl(const Particle &haloParticle) override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
-    Particle copy = haloParticle;
-    copy.setOwnershipState(OwnershipState::halo);
-    _particlesToAdd[autopas_get_thread_num()].push_back(copy);
+    _particlesToAdd[autopas_get_thread_num()].push_back(haloParticle);
   }
 
   bool updateHaloParticle(const Particle &haloParticle) override {
@@ -200,6 +198,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
         // don't simply copy haloParticle over iter. This would trigger a dataRace with other regionIterators that
         // overlap with this region.
         it->setR(haloPos);
+        it->setRAtRebuild(haloParticle.getRAtRebuild());
         it->setV(haloParticle.getV());
         it->setF(haloParticle.getF());
         return true;
@@ -292,10 +291,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
 
-    const auto boxMinWithSafetyMargin =
-        boxMin - (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-    const auto boxMaxWithSafetyMargin =
-        boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    const auto boxMinWithSafetyMargin = boxMin - (this->getVerletSkin());
+    const auto boxMaxWithSafetyMargin = boxMax + (this->getVerletSkin());
 
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
@@ -935,13 +932,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
 
   void setCutoff(double cutoff) override { _cutoff = cutoff; }
 
-  [[nodiscard]] double getVerletSkin() const override { return this->_skinPerTimestep * _rebuildFrequency; }
+  [[nodiscard]] double getVerletSkin() const override { return this->_skin; }
 
   /**
    * Set the verlet skin length per timestep for the container.
-   * @param skinPerTimestep
+   * @param skin
    */
-  void setSkinPerTimestep(double skinPerTimestep) { this->_skinPerTimestep = skinPerTimestep; }
+  void setSkin(double skin) { this->_skin = skin; }
 
   /**
    * Get the rebuild Frequency value for the container.
@@ -955,9 +952,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    */
   void setRebuildFrequency(unsigned int rebuildFrequency) { _rebuildFrequency = rebuildFrequency; }
 
-  [[nodiscard]] double getInteractionLength() const override {
-    return _cutoff + this->_skinPerTimestep * _rebuildFrequency;
-  }
+  [[nodiscard]] double getInteractionLength() const override { return _cutoff + this->getVerletSkin(); }
 
   void deleteAllParticles() override {
     _isValid.store(ValidityState::invalid, std::memory_order::memory_order_relaxed);
@@ -991,7 +986,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       particlesBuffer.clear();
     });
 
-    const double interactionLength = _cutoff + this->_skinPerTimestep * _rebuildFrequency;
+    const double interactionLength = _cutoff + this->_skin;
     _builder = std::make_unique<internal::VerletClusterListsRebuilder<Particle>>(
         _towerBlock, particlesToAdd, _neighborLists, _clusterSize, interactionLength * interactionLength, newton3);
 
@@ -1165,8 +1160,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
    * @param iteratorBehavior
    * @param boxMin The actual search box min
    * @param boxMax The actual search box max
-   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
-   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skin
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skin
    * @param endCellIndex
    * @return tuple<cellIndex, particleIndex>
    */

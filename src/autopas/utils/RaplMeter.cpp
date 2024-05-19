@@ -31,12 +31,12 @@ int RaplMeter::open_perf_event(int type, int config, int cpu) {
   int fd = syscall(__NR_perf_event_open, &attr, -1 /*PID*/, cpu, -1 /*GROUP FD*/, 0 /*FLAGS*/);
   if (fd < 0) {
     if (errno == EACCES) {
-      throw ExceptionHandler::AutoPasException("Failed to open perf event: Permission denied");
+      utils::ExceptionHandler::exception("Failed to open perf event: Permission denied");
     }
     std::stringstream err_msg;
     err_msg << "Failed to open perf event " << strerror(errno) << " (type=" << type << ", config=" << config
             << ", cpu=" << cpu << ")";
-    throw ExceptionHandler::AutoPasException(err_msg.str());
+    utils::ExceptionHandler::exception(err_msg.str());
   }
   return fd;
 }
@@ -190,7 +190,7 @@ long RaplMeter::read_perf_event(int fd) {
   long value;
   lseek(fd, 0, SEEK_SET);
   if (read(fd, &value, 8) == -1) {
-    throw ExceptionHandler::AutoPasException("Failed to read perf event:\n\t");
+    utils::ExceptionHandler::exception("Failed to read perf event:\n\t");
   }
   return value;
 }

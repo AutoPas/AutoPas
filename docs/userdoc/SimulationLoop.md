@@ -1,35 +1,90 @@
 # Simulation Loop
+This page describes the assumptions AutoPas makes about how particle simulations look and how AutoPas fits into them.
 
-*TODO SHOW WHOLE LOOP WITH EXAMPLE!*
+## High-Level View
+AutoPas assumes that any (short-range) particle simulation boils down to three high-level steps:
+  1. Particle movement
+  2. Particle interaction
+  3. Measurements
 
-One simulation loop should always consist of the following phases:
+## Code Example
+A conceptual example of a primary simulation loop:
+```cpp
+// main simulation loop
+while (needsMoreIterations()) {
+   // 1. Particles movement as a result of interactions or simulation forces.
+   updatePositions();
 
-1. Updating the Container:
-   ```cpp
-   auto invalidParticles = autoPas.updateContainer();
-   ```
-   This call will trigger an update of the container inside AutoPas.
-   The returned vector `invalidParticles` consists of the particles that were previously owned by this AutoPas container but have left the boundary of this container, i.e., their current position resides outside the container.
+   // 1.1 Data structure update
+   // Due to AutoPas-external alteration of the particles, AutoPas-internal data structures have to be updated.
+   auto emigrants = autopas->updateContainer(); // deletes halo particles, returns particles that are now outside the container
 
-2. Handling the leaving particles
-    * Apply boundary conditions on them
-    * Potentially send them to other mpi-processes, skip this if MPI is not needed
-    * Add them to the containers using
-       ```cpp
-       autoPas.addParticle(particle)
-       ```
+   // 1.2 Particle exchange
+   auto [immigrants, haloParticles] = applyBoundaryConditions(emigrants); // user code. Potentially exchanges particles via MPI
+   autopas->addParticles(immigrants);           // particles that go into the container
+   autopas->addHaloParticles(haloParticles);    // particles that are so close to the container that they have an influence
+                                                // on particles inside (periodic boundaries, MPI rank interfaces, ...)
 
-3. Handle halo particles:
-    * Identify the halo particles by use of AutoPas' iterators and send them in a similar way as the leaving particles.
-    * Add the particles as haloParticles using
-       ```cpp
-       autoPas.addHaloParticle(haloParticle)
-       ```
+   // 2. Particle Interactions
+   YourFunctor functor();                       // User code
+   autopas->iteratePairwise(&functor);          // Tuning and parallelization happens here
 
-4. Perform an iteratePairwise step.
-   ```cpp
-   autoPas.iteratePairwise(functor);
-   ```
+   // 3. Your science goes here.
+}
+```
+
+## Steps
+
+### 1. Particle Movement
+This step is highly user-dependent.
+Based on the simulation at hand, particles move due to the result of interaction forces or forces coming from the simulation model.
+Nevertheless, positions are usually updated through regular AutoPas iterators
+(see [`Iterators.md`](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/Iterators.md) for details):
+```cpp
+void updatePositions() {
+   for (auto &p : autopas) {
+      p.setR(calculateNewPosition(p);
+   }
+}
+```
+
+#### 1.1 Data Structure Update
+```cpp
+auto emigrants = autopas->updateContainer();
+```
+This method has to be called in every iteration after particles are moved.
+It achieves three things (see [`ContainerInterfaceModel.md`](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/ContainerInterfaceModel.md) for more details):
+  - Internal data structures are updated if necessary.
+  - Halo particles are (marked as) deleted.
+  - Particles leaving the bounding box of the container are (marked as) deleted and returned as emigrants.
+
+#### 1.2 Particle Exchange
+```cpp
+autopas->addParticles(immigrants);
+autopas->addHaloParticles(haloParticles);
+```
+Depending on the simulation, the user might want to remove and/or insert particles in the local simulation.
+Examples of this could be:
+  - Particles crossing periodic boundaries (remove in old subdomain, insert in new one).
+  - Particles moving from one MPI rank to another.
+  - Insertion of particles due to breakup events.
+  - Deletion of particles due to outflow condition.
+
+Note that in case of periodic boundaries and movement across MPI domains, user must ensure that rebuild positions are accordingly adjusted in order to not trigger dynamic rebuild, see [`ContainerInterfaceModel.md`](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/ContainerInterfaceModel.md) for more details.
+
+### 2. Particle Interaction
+```cpp
+YourFunctor functor();
+autopas->iteratePairwise(&functor);
+```
+Apply your custom force interaction via one or several functors.
+This step triggers the tuning.
+It internally applies OpenMP parallelization, so do not use it in other thread-parallel environments.
+
+### 3. Measurements
+This part encompasses everything else, like sampling particle data, computing macroscopic properties, statistical analysis, ...
+For performance reasons, it might be advisable to not do any pairwise particle measurements here, like, for example, pairwise distances for a radial distribution function.
+Such `O(N^2)` operations are better handled within or as a separate functor in step 2.
 
 ## Related Files and Folders
 - AutoPasDecl.h

@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
   int functorTypeInt = 0;
   enum FunctorType { densityFunctor, hydroForceFunctor } functorType = densityFunctor;
 
-  double skinPerTimestep = 0.;
+  double skin = 0.;
   unsigned int rebuildFrequency = 10;
   bool useNewton3 = true;
   try {
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
     }
     if (argc >= 7) {
       rebuildFrequency = std::stoi(argv[6]);
-      skinPerTimestep = std::stod(argv[5]);
+      skin = std::stod(argv[5]);
     }
     if (argc >= 5) {
       functorTypeInt = std::stoi(argv[4]);
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
   } catch (const std::exception &e) {
     std::cerr << "ERROR parsing the input arguments: " << e.what() << std::endl
               << "sph-diagram-generation requires the following arguments:" << std::endl
-              << "numParticles numIterations containerType [functorType [skinPerTimestep rebuildFrequency [useNewton3 "
+              << "numParticles numIterations containerType [functorType [skin rebuildFrequency [useNewton3 "
                  "[boxSize]]]]:"
               << std::endl
               << std::endl
@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
   autoPas.setBoxMin(boxMin);
   autoPas.setBoxMax(boxMax);
   autoPas.setCutoff(cutoff);
-  autoPas.setVerletSkinPerTimestep(skinPerTimestep * cutoff / rebuildFrequency);
+  autoPas.setVerletSkin(skin * cutoff);
   autoPas.setVerletRebuildFrequency(rebuildFrequency);
   autoPas.setAllowedContainers(containerOptions);
   autoPas.setAllowedNewton3Options({useNewton3 ? autopas::Newton3Option::enabled : autopas::Newton3Option::disabled});
