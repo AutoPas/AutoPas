@@ -1,7 +1,7 @@
 # Homogeneous scenario using Linked Cells + lc_c08 for OpenMP chunk size performance impact investigation.
 container                            :  [LinkedCells] # Choose one single type.
 verlet-rebuild-frequency             :  10
-verlet-skin-radius-per-timestep      :  0.05
+verlet-skin-radius                   :  0.05
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
 data-layout                          :  [SoA] # Choose one single layout.
@@ -32,7 +32,7 @@ extrapolation-method                 :  linear-regression
 mpi-tuning-max-difference-for-bucket :  0.2
 mpi-tuning-weight-for-max-density    :  0.1
 tuning-acquisition-function          :  upper-confidence-bound
-fastParticlesThrow                   :  false
+#fastParticlesThrow                   :  false # Deprecated.
 globalForce                          :  [0, 0, 0]
 load-balancer                        :  InvertedPressure
 Sites:

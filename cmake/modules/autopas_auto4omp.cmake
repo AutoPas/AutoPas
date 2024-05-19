@@ -674,8 +674,6 @@ function(printAuto4OMPCMakeTargets)
     message(STATUS "Auto4OMP targets: ${TARGETS}")
 endfunction()
 
-# TODO: merge with AutoPas branch Dynamic-VL-Merge c060b02 to fix CooLMUC fallingdrop warnings.
-
 #[=====================================================================================================================[
 Sources:
 
