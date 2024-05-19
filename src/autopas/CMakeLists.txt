@@ -29,9 +29,9 @@ target_link_libraries(
         # Auto4OMP targets, linked if they exist.
         $<$<BOOL:${AUTOPAS_TARGET_omp}>:omp>
         $<$<BOOL:${AUTOPAS_TARGET_omptarget}>:omptarget>
-        $<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.cuda}>:omptarget.rtl.cuda>
-        $<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.x86_64}>:omptarget.rtl.x86_64>
-        $<$<BOOL:${AUTOPAS_TARGET_omptarget-nvptx}>:omptarget-nvptx>
+        #$<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.cuda}>:omptarget.rtl.cuda>
+        #$<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.x86_64}>:omptarget.rtl.x86_64>
+        #$<$<BOOL:${AUTOPAS_TARGET_omptarget-nvptx}>:omptarget-nvptx>
 
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
