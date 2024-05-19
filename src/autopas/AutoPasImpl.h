@@ -42,6 +42,31 @@ AutoPas<Particle>::AutoPas(std::ostream &logOutputStream) {
   // The logger is normally only flushed on successful program termination.
   // This line ensures flushing when log messages of level warning or more severe are created.
   autopas::Logger::get()->flush_on(spdlog::level::warn);
+
+#if defined(AUTOPAS_LIBOMP_PATH)
+  // If Auto4OMP is on, prioritize its libomp by prepending its path to the environment variable LD_LIBRARY_PATH.
+  // TODO: will this conflict with the simulator using AutoPas if it wants to use another libomp?
+
+  // Get the current LD_LIBRARY_PATH.
+  char *currentLdLibPath = getenv("LD_LIBRARY_PATH");
+
+  // Prepare the new LD_LIBRARY_PATH. If the current one's not empty, set to "AUTOPAS_LIBOMP_PATH:currentLdLibPath".
+  std::string newLdLibPath =
+      AUTOPAS_LIBOMP_PATH + (currentLdLibPath == nullptr ? "" : ":" + std::string(currentLdLibPath));
+
+  // Set LD_LIBRARY_PATH to its new value, i.e., prepended path/to/libomp.so to it.
+  setenv("LD_LIBRARY_PATH", newLdLibPath.c_str(), 1);
+
+  // Free.
+  free(currentLdLibPath);
+  currentLdLibPath = nullptr;
+
+  // Debug.
+  currentLdLibPath = getenv("LD_LIBRARY_PATH");
+  std::cout << "LD_LIBRARY_PATH: " << currentLdLibPath << std::endl;
+  free(currentLdLibPath);
+  currentLdLibPath = nullptr;
+#endif
 }
 
 template <class Particle>

@@ -32,8 +32,19 @@ set(
 )
 
 set(
-        AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC
-        "Directory for Auto4OMP to install its libraries."
+        AUTOPAS_AUTO4OMP_GIT_FORCE_DOC
+        "Downloads Auto4OMP from Git despite potential incompatibility issues with AutoPas."
+)
+
+set(
+        AUTOPAS_AUTO4OMP_GIT_TAG_DOC
+        "The Auto4OMP Git branch or commit to use."
+)
+
+string(
+        CONCAT AUTOPAS_AUTO4OMP_DEBUG_DOC
+        "Uses a custom bundled Auto4OMP that prints a message "
+        "to confirm that Auto4OMP is indeed being used instead of standard OpenMP."
 )
 
 string(
@@ -80,7 +91,9 @@ set(
 # AutoPas CMake variables for Auto4OMP:
 option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" ON)
 option(AUTOPAS_AUTO4OMP_GIT "${AUTOPAS_AUTO4OMP_GIT_DOC}" OFF)
-set(AUTOPAS_AUTO4OMP_INSTALL_DIR "" CACHE PATH "${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC}")
+option(AUTOPAS_AUTO4OMP_GIT_FORCE "${AUTOPAS_AUTO4OMP_GIT_FORCE_DOC}" OFF)
+set(AUTOPAS_AUTO4OMP_GIT_TAG "master" CACHE STRING "${AUTOPAS_AUTO4OMP_GIT_TAG_DOC}")
+option(AUTOPAS_AUTO4OMP_DEBUG "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
 set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}")
 set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC}")
 set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
@@ -187,7 +200,7 @@ else ()
     ## CUDA:
     # CMake's FindCUDA is deprecated, but necessary (I think) as Auto4OMP looks for CUDA in the system.
     # For now, use old policy. TODO: for future-proofing, is there a way to use the new policy?
-    cmake_policy(PUSH) # Use PUSH and POP instead of the new block() to preserve compatibility with older CMakes.
+    cmake_policy(PUSH) # Use PUSH and POP instead of the new block() to preserve compatibility with older CMake.
     if (POLICY CMP0146)
         cmake_policy(SET CMP0146 OLD)
     endif ()
@@ -347,21 +360,39 @@ else ()
     include(FetchContent)
 
     # If OMP 4.5 is to be used, use the custom Auto4OMP zip to fix resulting build errors.
-    if (${AUTOPAS_OMP_VERSION} LESS 50)
+    if (AUTOPAS_AUTO4OMP_DEBUG)
+        # Build the pre-packaged Auto4OMP that prints a message from kmp.h at runtime to confirm its use.
+        FetchContent_Declare(
+                auto4omp
+                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-debug.zip # [*] # TODO: change to LB4OMP-debug.zip
+                URL_HASH MD5=1909b2fc44aa6c8069eeae9db0de6450 # Calculated with the md5sum command.
+        )
+    elseif (${AUTOPAS_OMP_VERSION} LESS 50 AND NOT AUTOPAS_AUTO4OMP_GIT_FORCE)
         # Build the pre-packaged Auto4OMP including the fix for build errors when specifying an old OMP version.
         FetchContent_Declare(
                 auto4omp
                 URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-custom.zip # [*]
-                URL_HASH MD5=98a1eede80be95a2e93a3ccd2139ecac # Calculated with the md5sum command.
+                URL_HASH MD5=c62773279f8c73e72a6d1bcb36334fef # Calculated with the md5sum command.
         )
-    elseif (AUTOPAS_AUTO4OMP_GIT)
-        # Download Auto4OMP from GIT and make the CMake targets available. TODO: untested.
+    elseif (AUTOPAS_AUTO4OMP_GIT OR AUTOPAS_AUTO4OMP_GIT_FORCE)
+        # Download Auto4OMP from Git. TODO: untested.
         FetchContent_Declare(
                 auto4omp
                 GIT_REPOSITORY https://github.com/unibas-dmi-hpc/LB4OMP # [*]
+                GIT_TAG ${AUTOPAS_AUTO4OMP_GIT_TAG}
         )
+        # If the custom zip must be used, warn.
+        if (AUTOPAS_AUTO4OMP_GIT_FORCE AND ${AUTOPAS_OMP_VERSION} LESS 50)
+            message(
+                    WARNING
+                    "OpenMP <5 is used, which will potentially result in build errors with Auto4OMP."
+                    "Unless Auto4OMP releases a fix, it's not advised force a Git download."
+                    "The bundled libs/LB4OMP-custom.zip contains a fix for this issue."
+            )
+        endif ()
     else ()
         # Build the pre-packaged Auto4OMP and make the CMake targets available. [***]
+        # Targets include omp, omptarget, ...
         FetchContent_Declare(
                 auto4omp
                 URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-master.zip # [*]
@@ -422,7 +453,7 @@ else ()
             LIBOMPTARGET_NVPTX_DEBUG
     )
 
-    # Set the Auto4OMP target booleans.
+    # Set booleans to indicate which Auto4OMP targets are defined.
     set(AUTOPAS_TARGET_omp ON CACHE BOOL "Auto4OMP libomp target." FORCE)
     set(TARGET_omptarget ON CACHE BOOL "Auto4OMP libomptarget target." FORCE)
     if (TARGET omptarget.rtl.cuda)
@@ -436,6 +467,10 @@ else ()
     endif ()
 
     # TODO: prioritize Auto4OMP's libomp and other libs. Did linking the built libraries achieve this? [**]
+    # Prioritize Auto4OMP's libomp by prepending its path to the environment variable LD_LIBRARY_PATH.
+    set(AUTOPAS_LIBOMP_PATH "${auto4omp_BINARY_DIR}/runtime/src" CACHE INTERNAL "Auto4OMP's libomp.so path.")
+    list(PREPEND ENV{LD_LIBRARY_PATH} ${AUTOPAS_LIBOMP_PATH})
+    message(STATUS "LD_LIBRARY_PATH: $ENV{LD_LIBRARY_PATH}") # Debug.
 
 endif ()
 
@@ -638,6 +673,8 @@ function(printAuto4OMPCMakeTargets)
     list(REMOVE_DUPLICATES TARGETS)
     message(STATUS "Auto4OMP targets: ${TARGETS}")
 endfunction()
+
+# TODO: merge with AutoPas branch Dynamic-VL-Merge c060b02 to fix CooLMUC fallingdrop warnings.
 
 #[=====================================================================================================================[
 Sources:

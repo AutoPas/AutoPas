@@ -14,6 +14,9 @@ file(
 
 add_library(autopas STATIC ${MY_SRC})
 
+# TODO: exporting the variable may be too aggressive, is it possible to limit it to the build process?
+add_custom_command(TARGET autopas PRE_LINK COMMAND export LD_LIBRARY_PATH="${LIBOMP_LIBRARY_DIR}")
+
 target_link_libraries(
     autopas
     PUBLIC
@@ -50,8 +53,8 @@ target_compile_definitions(
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
+        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:AUTOPAS_LIBOMP_PATH="${AUTOPAS_LIBOMP_PATH}">
         _USE_MATH_DEFINES
-        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:AUTOPAS_USE_AUTO4OMP>
 )
 
 
