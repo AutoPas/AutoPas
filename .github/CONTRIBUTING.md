@@ -110,11 +110,10 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
   * Add a new enum in `TraversalOption::Value`.
   * Add a new string representation in the `map` of `TraversalOption::getOptionNames()`.
   * If the new traversal is a triwise traversal, add it to `TraversalOption::getAllTriwiseTraversals()`.
-* Add the enum to every compatible container in [`CompatibleTraversals`](/src/autopas/containers/CompatibleTraversals.h).
-  * If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals (E.g. `CompatibleTraversals::allTraversalsSupportingOnlySoA()`).
+* If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals in [`CompatibleTraversals`](/src/autopas/containers/CompatibleTraversals.h).
 * Add a case for the new traversal in [`TraversalSelector::generateTraversal()`](/src/autopas/tuning/selectors/TraversalSelector.h).
 * Check that the new option is working in the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp) and [`OptionTest::parseTraversalOptionsTest`](/tests/testAutopas/tests/options/OptionTest.h)).
+* Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp)).
 * Add new unit tests for your traversal.
 * Regenerate the [`RuleLanguage.g4`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4) via the [`generateRuleLanguage.sh`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh) script, both located in [`ruleBasedTuning`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning).
 
