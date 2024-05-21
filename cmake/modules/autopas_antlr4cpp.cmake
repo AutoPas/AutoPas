@@ -6,8 +6,6 @@ set(AUTOPAS_ENABLE_RULES_BASED_TUNING
 
 if (AUTOPAS_ENABLE_RULES_BASED_TUNING)
     message(STATUS "Rules-Based Tuning Enabled")
-
-
     message(STATUS "antlr4cpp - using bundled version")
 
     include(ExternalProject)
