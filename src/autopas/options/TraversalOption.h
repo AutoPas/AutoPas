@@ -8,6 +8,7 @@
 
 #include <set>
 
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/Option.h"
 
 namespace autopas {
@@ -270,6 +271,22 @@ class TraversalOption : public Option<TraversalOption> {
     std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
                         std::inserter(mostTriwiseOptions, mostTriwiseOptions.begin()));
     return mostTriwiseOptions;
+  }
+
+  /**
+   * Set of all options specific to an interaction type.
+   * @param interactionType
+   * @return
+   */
+  static std::set<TraversalOption> getAllOptionsOf(const autopas::InteractionTypeOption::Value interactionType) {
+    switch (interactionType) {
+      case autopas::InteractionTypeOption::pairwise:
+        return getAllPairwiseOptions();
+      case autopas::InteractionTypeOption::triwise:
+        return getAllTriwiseOptions();
+      default:
+        return {};
+    }
   }
 
   /**

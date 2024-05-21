@@ -25,8 +25,9 @@ namespace {
  * @param prefix
  * @return Set of all options that match the prefix.
  */
-std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
-  const auto allOpts = TraversalOption::getAllOptions();
+std::set<TraversalOption> filterAllOptions(const std::string &prefix,
+                                           const InteractionTypeOption::Value interactionType) {
+  const auto allOpts = TraversalOption::getAllOptionsOf(interactionType);
   std::set<TraversalOption> retSet;
   // If the lambda condition holds (=prefix matches) copy the option in the return set.
   std::copy_if(allOpts.begin(), allOpts.end(), std::inserter(retSet, retSet.begin()),
@@ -40,7 +41,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allDSCompatibleTraversals() {
-  static const auto s = filterAllOptions("ds_");
+  static const auto s = filterAllOptions("ds_", InteractionTypeOption::pairwise);
   return s;
 }
 
@@ -49,7 +50,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allDSCompatibleTraversals3B() {
-  static const std::set<TraversalOption> s{TraversalOption::ds_sequential_3b};
+  static const auto s = filterAllOptions("ds_", InteractionTypeOption::triwise);
   return s;
 }
 
@@ -58,7 +59,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allLCCompatibleTraversals() {
-  static const auto s = filterAllOptions("lc_");
+  static const auto s = filterAllOptions("lc_", InteractionTypeOption::pairwise);
   return s;
 }
 
@@ -67,7 +68,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allLCCompatibleTraversals3B() {
-  static const std::set<TraversalOption> s{TraversalOption::lc_c01_3b};
+  static const auto s = filterAllOptions("lc_", InteractionTypeOption::triwise);
   return s;
 }
 
@@ -85,7 +86,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
-  static const auto s = filterAllOptions("vcl_");
+  static const auto s = filterAllOptions("vcl_", InteractionTypeOption::pairwise);
   return s;
 }
 
@@ -94,7 +95,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVLCompatibleTraversals() {
-  static const auto s = filterAllOptions("vl_");
+  static const auto s = filterAllOptions("vl_", InteractionTypeOption::pairwise);
   return s;
 }
 
@@ -103,7 +104,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
-  static const auto s = filterAllOptions("vlc_");
+  static const auto s = filterAllOptions("vlc_", InteractionTypeOption::pairwise);
   return s;
 }
 
@@ -112,7 +113,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
-  static const auto s = filterAllOptions("vvl_");
+  static const auto s = filterAllOptions("vvl_", InteractionTypeOption::pairwise);
   return s;
 }
 
@@ -121,7 +122,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
-  static const auto s = filterAllOptions("vlp_");
+  static const auto s = filterAllOptions("vlp_", InteractionTypeOption::pairwise);
   return s;
 }
 
@@ -130,7 +131,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allOTCompatibleTraversals() {
-  static const auto s = filterAllOptions("ot_");
+  static const auto s = filterAllOptions("ot_", InteractionTypeOption::pairwise);
   return s;
 }
 
