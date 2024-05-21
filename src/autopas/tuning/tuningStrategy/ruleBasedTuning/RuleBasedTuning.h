@@ -86,7 +86,6 @@ class RuleBasedTuning : public TuningStrategyInterface {
   /**
    * A function type used to print errors found in verify mode.
    */
-
   using PrintTuningErrorFunType =
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
       std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
