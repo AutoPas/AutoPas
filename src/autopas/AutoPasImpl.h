@@ -57,9 +57,7 @@ AutoPas<Particle>::~AutoPas() {
 
 template <class Particle>
 AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
-  for (auto &[interactionType, tuner] : other._autoTuners) {
-    _autoTuners[interactionType] = std::move(tuner);
-  }
+  _autoTuners = std::move(other._autoTuners);
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }

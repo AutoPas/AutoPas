@@ -21,9 +21,10 @@ namespace autopas::compatibleTraversals {
  */
 namespace {
 /**
- * Helper function to filter all traversal options for a given prefix.
+ * Helper function to filter all traversal options for a given prefix and interaction type.
  * @param prefix
- * @return Set of all options that match the prefix.
+ * @param interactionType
+ * @return Set of all options that match the prefix and interaction type.
  */
 std::set<TraversalOption> filterAllOptions(const std::string &prefix,
                                            const InteractionTypeOption::Value interactionType) {
