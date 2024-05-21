@@ -72,6 +72,7 @@ class TraversalSelector {
    * @param traversalInfo
    * @param dataLayout
    * @param useNewton3
+   * @param interactionType
    * @return Smartpointer to the traversal.
    */
   template <class Functor>

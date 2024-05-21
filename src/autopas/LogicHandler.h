@@ -1423,6 +1423,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     const auto needsLiveInfo = autoTuner->prepareIteration();
 
     if (needsLiveInfo) {
+      //Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       autoTuner->receiveLiveInfo(info);

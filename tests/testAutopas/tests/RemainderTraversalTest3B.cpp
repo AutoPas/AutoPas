@@ -137,7 +137,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
           << "p1.f[" << dim << "] + p2.f[" << dim << "] + p3.f[" << dim << "] does not add up to zero!";
     }
   }
-  // if halo particles are involved only expect one or two thirds of Upot
+  // if halo particles are involved only expect one or two thirds of the potential energy
   const double energyFactor =
       (3.0 - static_cast<double>(numParticlesHaloBuffers + particlesContainerHalo.size())) / 3.0;
   const double expectedPotentialEnergy = energyFactor * (distSix - 3.0 * cosAll) * invdr5;
