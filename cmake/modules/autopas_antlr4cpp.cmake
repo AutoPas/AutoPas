@@ -1,7 +1,7 @@
 set(AUTOPAS_ENABLE_RULES_BASED_TUNING
         ON
         CACHE
-        BOOL "Enables rules-based tuning, which, if using the bundled version, will compile ANTLR and, if uuid is not installed already, will compile uuid which can cause errors."
+        BOOL "Enables rules-based tuning, which, if using the bundled version, will compile ANTLR and, if it is not installed uuid."
         )
 
 if (AUTOPAS_ENABLE_RULES_BASED_TUNING)
