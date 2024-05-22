@@ -294,10 +294,9 @@ namespace mdLib {
                         z1 = highway::ConcatLowerLower(tag_double, tmpZ1, z1);
 
                         const auto maskLong = restMasksLong[remainderJ ? restJ-1 : _vecLengthDouble/2-1];
-                        const auto maskDouble = restMasksDouble[remainderJ ? restJ : _vecLengthDouble/2-1];
+                        const auto maskDouble = restMasksDouble[remainderJ ? restJ-1 : _vecLengthDouble/2-1];
 
                         // lower part of registers is filled
-                        // TODO : figure out why LoadN does not work
                         ownedJ = highway::MaskedLoad(maskLong, tag_long, &ownedPtr2[j]);
                         x2 = highway::MaskedLoad(maskDouble, tag_double, &xPtr2[j]);
                         y2 = highway::MaskedLoad(maskDouble, tag_double, &yPtr2[j]);
@@ -386,6 +385,8 @@ namespace mdLib {
 
                     // TODO : handle different vectorization patterns
                     if constexpr (useMixing) {
+
+                        throw std::runtime_error("Should not be used!");
                         
                         double epsilon_buf[_vecLengthDouble] = {0.};
                         double sigma_buf[_vecLengthDouble] = {0.};
@@ -430,7 +431,7 @@ namespace mdLib {
                         fyPtr[i] += highway::ReduceSum(tag_double, lowerFyAcc);
                         fzPtr[i] += highway::ReduceSum(tag_double, lowerFzAcc);
 
-                        if constexpr (remainder) {
+                        if constexpr (!remainder) {
                             auto higherFxAcc = highway::UpperHalf(tag_double, fxAcc);
                             auto higherFyAcc = highway::UpperHalf(tag_double, fyAcc);
                             auto higherFzAcc = highway::UpperHalf(tag_double, fzAcc);
@@ -569,9 +570,9 @@ namespace mdLib {
                         auto lowerFy = highway::LowerHalf(fy);
                         auto lowerFz = highway::LowerHalf(fz);
 
-                        auto higherFx = highway::LowerHalf(fx);
-                        auto higherFy = highway::LowerHalf(fy);
-                        auto higherFz = highway::LowerHalf(fz);
+                        auto higherFx = highway::UpperHalf(tag_double, fx);
+                        auto higherFy = highway::UpperHalf(tag_double, fy);
+                        auto higherFz = highway::UpperHalf(tag_double, fz);
 
                         auto fxCombined = lowerFx + higherFx;
                         auto fyCombined = lowerFy + higherFy;
@@ -664,16 +665,16 @@ namespace mdLib {
 
                 template <bool reversed>
                 inline int obtainFirstLoopRest(const size_t i, const size_t size = 0) {
-                    return reversed ? (i == -1 ? 0 : i) : size-i;
+                    return reversed ? (long(i) < 0 ? 0 : i) : size-i;
                 }
 
-                inline int obtainSecondLoopRest(const size_t i, const size_t j) {
+                inline int obtainSecondLoopRest(const size_t i) {
                     
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         return (int)(i & (_vecLengthDouble - 1));
                     }
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-                        return i & ~(_vecLengthDouble / 2 - 1);
+                        return (int)(i & (_vecLengthDouble / 2 - 1));
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
                         return i & ~(1);
@@ -732,7 +733,9 @@ namespace mdLib {
                     for (; checkFirstLoopCondition<true>(i); decrementFirstLoop(i)) {
 
                         if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
-                            continue;
+
+                            // TODO : handle different vec patterns
+                            // continue;
                         }
 
                         static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
@@ -761,7 +764,7 @@ namespace mdLib {
                             handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
                         }
 
-                        const int restJ = obtainSecondLoopRest(i, j);
+                        const int restJ = obtainSecondLoopRest(i);
                         if (restJ > 0) {
                             fillVectorRegisters<false, true, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
                                 epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, xPtr, yPtr, zPtr,
@@ -778,12 +781,14 @@ namespace mdLib {
                             handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
                         }
 
-                        reduceAccumulatedForce<false>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i);
+                        reduceAccumulatedForce<false, true>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i);
                     }
 
+                    /*
                     for (; i >= 0 && ownedStatePtr[i] == autopas::OwnershipState::dummy; --i) {
                         // Skip all dummy particles at the end of the list
                     }
+                    */
                     const size_t restI = obtainFirstLoopRest<true>(i);
                     if (restI > 0) {
                         fxAcc = _zeroDouble;
@@ -812,7 +817,7 @@ namespace mdLib {
                             }
                         }
 
-                        const int restJ = obtainSecondLoopRest(i, j);
+                        const int restJ = obtainSecondLoopRest(i);
                         if (restJ > 0) {
 
                             fillVectorRegisters<true, true, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
@@ -833,7 +838,7 @@ namespace mdLib {
                             }
                         }
 
-                        reduceAccumulatedForce<true>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i, restI);
+                        reduceAccumulatedForce<true, true>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i, restI);
                     }
 
                     if constexpr (calculateGlobals) {
@@ -912,7 +917,9 @@ namespace mdLib {
                     for (; checkFirstLoopCondition<false>(i, soa1.size()); incrementFirstLoop(i)) {
 
                         if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
-                            continue;
+
+                            // TODO : handle different vec patterns
+                            // continue;
                         }
 
                         fxAcc = _zeroDouble;
@@ -937,11 +944,11 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j);
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
                             }
                         }
 
-                        const int restJ = obtainSecondLoopRest(soa2.size(), j);
+                        const int restJ = obtainSecondLoopRest(soa2.size());
                         if (restJ > 0) {
 
                             fillVectorRegisters<false, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
@@ -964,10 +971,11 @@ namespace mdLib {
 
                         reduceAccumulatedForce<false>(fxAcc, fyAcc, fzAcc, fx1Ptr, fy1Ptr, fz1Ptr, i);
                     }
-
+                    /*
                     for (; ownedStatePtr1[i] == autopas::OwnershipState::dummy && i < soa1.size()-1;) {
                         ++i;
                     }
+                    */
                     const size_t restI = obtainFirstLoopRest<false>(i, soa1.size());
                     if (restI > 0) {
                         fxAcc = _zeroDouble;
@@ -981,7 +989,7 @@ namespace mdLib {
                             fillVectorRegisters<true, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
                                 epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, x1Ptr, y1Ptr, z1Ptr,
                                 x2Ptr, y2Ptr, z2Ptr, reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                i, j, restI);
+                                i, j, restI, 0);
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -992,11 +1000,11 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j);
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
                             }
                         }
 
-                        const int restJ = obtainSecondLoopRest(soa2.size(), j);
+                        const int restJ = obtainSecondLoopRest(soa2.size());
                         if (restJ > 0) {
 
                             fillVectorRegisters<true, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
@@ -1061,13 +1069,18 @@ namespace mdLib {
                     auto dr2 = drX2 + drY2 + drZ2;
 
                     auto cutoffMask = highway::Le(dr2, _cutoffSquared);
+                    auto zeroMask = highway::Ne(dr2, _zeroDouble);
 
-                    auto dummyMask = highway::Ne(ownedStateJ, _ownedStateDummy);
+                    auto combinedCutoffMask = highway::And(cutoffMask, zeroMask);
+
+                    auto dummyMaskI = highway::Ne(ownedStateI, _ownedStateDummy);
+                    auto dummyMaskJ = highway::Ne(ownedStateJ, _ownedStateDummy);
+                    auto dummyMask = highway::And(dummyMaskI, dummyMaskJ);
                     // convert long mask to double mask
                     VectorLong dummyMaskVec = highway::VecFromMask(dummyMask);
                     VectorDouble dummyMaskVecDouble = highway::ConvertTo(tag_double, dummyMaskVec);
                     auto dummyMaskDouble = highway::MaskFromVec(dummyMaskVecDouble);
-                    auto cutoffDummyMask = highway::And(cutoffMask, dummyMaskDouble);
+                    auto cutoffDummyMask = highway::And(combinedCutoffMask, dummyMaskDouble);
 
                     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
                         return;

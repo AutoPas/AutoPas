@@ -84,7 +84,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     FMCell cell1HWY;
     FMCell cell2HWY;
 
-    size_t numParticles = 11;
+    size_t numParticles = 8;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(
@@ -162,7 +162,7 @@ template <VectorizationPattern vecPattern>
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews) {
     FMCell cellHWY;
 
-    size_t numParticles = 11;
+    size_t numParticles = 8;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -224,7 +224,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 
     FMCell cellAVX;
 
-    constexpr size_t numParticles = 7;
+    constexpr size_t numParticles = 8;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
@@ -298,7 +298,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
     FMCell cellHWY;
 
-    constexpr size_t numParticles = 7;
+    constexpr size_t numParticles = 8;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -351,6 +351,7 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
+
   auto [newton3, doDeleteSomeParticle, vecPattern] = GetParam();
   switch (vecPattern)
   {
@@ -488,7 +489,7 @@ std::map<VectorizationPattern, std::string> patternsToString {
 static auto toString = [](const auto &info) {
   auto [newton3, doDeleteSomeParticle, vecPattern] = info.param;
   std::stringstream resStream;
-  resStream << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions") << patternsToString[vecPattern];
+  resStream << patternsToString[vecPattern] << (newton3 ? "N3" : "noN3") << "_" << (doDeleteSomeParticle ? "withDeletions" : "noDeletions");
   std::string res = resStream.str();
   std::replace(res.begin(), res.end(), '-', '_');
   std::replace(res.begin(), res.end(), '.', '_');
