@@ -14,8 +14,22 @@ file(
 
 add_library(autopas STATIC ${MY_SRC})
 
-# TODO: exporting the variable may be too aggressive, is it possible to limit it to the build process?
-add_custom_command(TARGET autopas PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_LIBOMP_PATH}")
+# Prioritize Auto4OMP's libomp by setting the LD_LIBRARY_PATH environment variable.
+if (AUTOPAS_AUTO4OMP)
+    if (DEFINED ENV{LD_LIBRARY_PATH} AND NOT $ENV{LD_LIBRARY_PATH} STREQUAL "")
+        # If the variable's not empty, prepend Auto4OMP's libomp path.
+        add_custom_command(
+                TARGET autopas
+                PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_LIBOMP_PATH}:$ENV{LD_LIBRARY_PATH}"
+        )
+    else ()
+        # Else, set it to Auto4OMP's libomp path.
+        add_custom_command(
+                TARGET autopas
+                PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_LIBOMP_PATH}"
+        )
+    endif ()
+endif ()
 
 target_link_libraries(
     autopas
