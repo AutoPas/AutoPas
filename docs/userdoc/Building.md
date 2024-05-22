@@ -5,10 +5,10 @@
 * a CMake generator target (`make` is tested)
 * a C++17 compiler (gcc11, clang13, and ~~icpc 2019~~ are tested)
 * OpenMP (comes with GCC, for Clang you need `libomp`)
-* For rule based tuning: `pkg-config`
 
 Optional:
 * For `tuningLogToSQL`: `libsqlite3`
+* For rule based tuning: `pkg-config`. Rule based tuning can be disabled via the CMake (see below).
 
 There are a few more dependencies, however you don't need to install them because they come bundled with AutoPas.
 See [libs/](/libs) for a complete list.
@@ -35,6 +35,15 @@ The following CMake features are highly recommended to keep compile time and sys
 Here is an example of a parallel compilation of the md-flexible example:
 ```bash
 cmake --build . --target md-flexible --parallel 12
+```
+
+### Disabling Rule Based Tuning
+One of the possible tuning strategies of AutoPas, rule based tuning, requires dependencies `antlr4cpp` and `uuid`. These
+are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors.
+
+It is possible to disabled rule based tuning, avoiding the compilation of `antlr4cpp` and `uuid`, using a CMake option:
+```bash
+cmake -DAUTOPAS_ENABLE_RULE_BASED_TUNING=OFF .. 
 ```
 
 ### Select a Non-Default Compiler

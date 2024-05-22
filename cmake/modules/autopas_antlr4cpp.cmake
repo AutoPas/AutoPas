@@ -17,10 +17,6 @@ if (AUTOPAS_ENABLE_RULES_BASED_TUNING)
     # if uuid-dev was not found on system we install it locally
     if (NOT UUID_FOUND)
         message(STATUS "UUID not found - using bundled version")
-        message(WARNING "Compilation of the bundled UUID is known to fail. If it does either:
-                        1) Install UUID on your machine yourself.
-                        2) Disable rules-based tuning via the CMake option -DAUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
-                        3) (Untested!) Install automake 1.13.")
 
         set(LIBUUID_INSTALL_DIR "${CMAKE_CURRENT_BINARY_DIR}/uuid/install")
         set(LIBUUID_PKGCONFIG_DIR ${LIBUUID_INSTALL_DIR}/lib/pkgconfig:$ENV{PKG_CONFIG_PATH})
