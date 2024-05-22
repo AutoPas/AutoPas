@@ -351,28 +351,9 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
-
-  auto [newton3, doDeleteSomeParticle, vecPattern] = GetParam();
-  switch (vecPattern)
-  {
-  case VectorizationPattern::p1xVec:
-    testLJFunctorAVXvsLJFunctorHWYVerlet<VectorizationPattern::p1xVec>(newton3, doDeleteSomeParticle);
-    break;
-  case VectorizationPattern::p2xVecDiv2:
-    testLJFunctorAVXvsLJFunctorHWYVerlet<VectorizationPattern::p2xVecDiv2>(newton3, doDeleteSomeParticle);
-    break;
-  case VectorizationPattern::pVecDiv2x2:
-    testLJFunctorAVXvsLJFunctorHWYVerlet<VectorizationPattern::pVecDiv2x2>(newton3, doDeleteSomeParticle);
-    break;
-  case VectorizationPattern::pVecx1:
-    testLJFunctorAVXvsLJFunctorHWYVerlet<VectorizationPattern::pVecx1>(newton3, doDeleteSomeParticle);
-    break;
-  case VectorizationPattern::pVecxVec:
-    testLJFunctorAVXvsLJFunctorHWYVerlet<VectorizationPattern::pVecxVec>(newton3, doDeleteSomeParticle);
-    break;
-  default:
-    throw std::runtime_error("No vectorization pattern matched");
-  }
+  // different vectorization patterns are currently not supported for Verlet Functor
+  auto [newton3, doDeleteSomeParticle, _] = GetParam();
+  testLJFunctorAVXvsLJFunctorHWYVerlet<VectorizationPattern::p1xVec>(newton3, doDeleteSomeParticle);
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {

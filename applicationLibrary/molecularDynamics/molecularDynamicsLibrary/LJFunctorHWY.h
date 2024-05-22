@@ -1209,6 +1209,11 @@ namespace mdLib {
                                 x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
                                 y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
                                 z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
+                                if constexpr (newton3) {
+                                    fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
+                                    fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
+                                    fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
+                                }
                                 typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
@@ -1228,23 +1233,8 @@ namespace mdLib {
                                 virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
-                                    fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
-                                    fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
-                                    fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
-                                }
 
-                                auto fx2 = highway::LoadU(tag_double, fx2Tmp.data());
-                                auto fy2 = highway::LoadU(tag_double, fy2Tmp.data());
-                                auto fz2 = highway::LoadU(tag_double, fz2Tmp.data());
-
-                                auto fx2New = fx2 - fx;
-                                auto fy2New = fy2 - fy;
-                                auto fz2New = fz2 - fz;
-
-                                highway::StoreU(fx2New, tag_double, fx2Tmp.data());
-                                highway::StoreU(fy2New, tag_double, fy2Tmp.data());
-                                highway::StoreU(fz2New, tag_double, fz2Tmp.data());
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, 0);
 
                                 for (size_t vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
                                     fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
@@ -1254,13 +1244,18 @@ namespace mdLib {
                             }
                         }
 
-                        const size_t restJ = neighborList.size() & (_vecLengthDouble - 1);
+                        const size_t restJ = static_cast<int>(neighborList.size() & (_vecLengthDouble - 1));
 
                         if (restJ > 0) {
                             for (size_t vecIndex = 0; vecIndex < restJ; ++vecIndex) {
                                 x2Tmp[vecIndex] = xPtr[neighborList[j + vecIndex]];
                                 y2Tmp[vecIndex] = yPtr[neighborList[j + vecIndex]];
                                 z2Tmp[vecIndex] = zPtr[neighborList[j + vecIndex]];
+                                if constexpr (newton3) {
+                                    fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
+                                    fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
+                                    fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
+                                }
                                 typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
@@ -1269,7 +1264,7 @@ namespace mdLib {
                                 epsilon24s, sigmaSquareds, shift6s, &typeIDPtr[indexFirst], typeID2Tmp.data(),
                                 xPtr, yPtr, zPtr, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
                                 reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()),
-                                 indexFirst, j, 0, 0);
+                                 indexFirst, j, 0, restJ);
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1280,26 +1275,10 @@ namespace mdLib {
                                 virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                for (size_t vecIndex = 0; vecIndex < restJ; ++vecIndex) {
 
-                                    fx2Tmp[vecIndex] = fxPtr[neighborList[j + vecIndex]];
-                                    fy2Tmp[vecIndex] = fyPtr[neighborList[j + vecIndex]];
-                                    fz2Tmp[vecIndex] = fzPtr[neighborList[j + vecIndex]];
-                                }
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, restJ);
 
-                                auto fx2 = highway::LoadU(tag_double, fx2Tmp.data());
-                                auto fy2 = highway::LoadU(tag_double, fy2Tmp.data());
-                                auto fz2 = highway::LoadU(tag_double, fz2Tmp.data());
-
-                                auto fx2New = fx2 - fx;
-                                auto fy2New = fy2 - fy;
-                                auto fz2New = fz2 - fz;
-
-                                highway::StoreU(fx2New, tag_double, fx2Tmp.data());
-                                highway::StoreU(fy2New, tag_double, fy2Tmp.data());
-                                highway::StoreU(fz2New, tag_double, fz2Tmp.data());
-
-                                for (size_t vecIndex = 0; vecIndex < restJ; ++vecIndex) {
+                                for (size_t vecIndex = 0; vecIndex < _vecLengthDouble && vecIndex < restJ; ++vecIndex) {
                                     fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
                                     fyPtr[neighborList[j + vecIndex]] = fy2Tmp[vecIndex];
                                     fzPtr[neighborList[j + vecIndex]] = fz2Tmp[vecIndex];
