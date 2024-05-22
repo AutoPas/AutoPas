@@ -9,16 +9,6 @@ Ideally, "cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++" should wo
 If cuda's installed, a gcc compatible with NVCC should also be installed. E.g., gcc-12.
 #]=====================================================================================================================]
 
-# Version settings for convenience. If Auto4OMP supports new packages, update here.
-set(
-        AUTOPAS_NVCC_MAX_GCC 12
-        CACHE STRING "Newest gcc version supported by NVCC."
-)
-set(
-        AUTOPAS_OMP_VERSION 45
-        CACHE STRING "Newest OpenMP version supported by AutoPas."
-)
-
 # Variable descriptions:
 string(
         CONCAT AUTOPAS_AUTO4OMP_DOC
@@ -33,7 +23,7 @@ set(
 
 set(
         AUTOPAS_AUTO4OMP_GIT_FORCE_DOC
-        "Downloads Auto4OMP from Git despite potential incompatibility issues with AutoPas."
+        "Downloads Auto4OMP from Git despite potential incompatibility with AutoPas."
 )
 
 set(
@@ -66,8 +56,8 @@ set(
         "Path to gcc ${AUTOPAS_NVCC_MAX_GCC} or less, required by NVCC, in case system's gcc is newer."
 )
 
-string( CONCAT
-        AUTOPAS_pthread_LIBRARY
+string(
+        CONCAT AUTOPAS_pthread_LIBRARY
         "Path to pthread.a, required by OpenMP. E.g., \"/usr/lib/x86_64-linux-gnu/libpthread.a\". "
         "To find it, run the following command: \"find /usr -name libpthread.a\". "
         "By default, AutoPas looks for pthread with FindThreads and the command \"find /usr/lib -name FileCheck\"."
@@ -88,7 +78,21 @@ set(
         "Nvidia GPU's compute capability."
 )
 
-# AutoPas CMake variables for Auto4OMP:
+set(
+        AUTOPAS_NVCC_MAX_GCC_DOC
+        "Newest gcc version supported by NVCC."
+)
+
+set(
+        AUTOPAS_OMP_VERSION_DOC
+        "Newest OpenMP version supported by AutoPas."
+)
+
+macro(AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC target)
+    return("Boolean that specifies whether Auto4OMP's lib${target} target is defined.")
+endmacro()
+
+# AutoPas CMake variables for Auto4OMP.
 option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" ON)
 option(AUTOPAS_AUTO4OMP_GIT "${AUTOPAS_AUTO4OMP_GIT_DOC}" OFF)
 option(AUTOPAS_AUTO4OMP_GIT_FORCE "${AUTOPAS_AUTO4OMP_GIT_FORCE_DOC}" OFF)
@@ -99,12 +103,16 @@ set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_LLVM_LIT_EXECUTABL
 set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
 set(AUTOPAS_pthread_LIBRARY OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
 
+# Version settings. If AutoPas or Auto4OMP support new packages, update here.
+set(AUTOPAS_NVCC_MAX_GCC 12 CACHE STRING ${AUTOPAS_NVCC_MAX_GCC_DOC})
+set(AUTOPAS_OMP_VERSION 45 CACHE STRING ${AUTOPAS_OMP_VERSION_DOC})
+
 # Set boolean variables for Auto4OMP's targets, used in target_link_libraries's conditional generator expressions.
-set(AUTOPAS_TARGET_omp OFF CACHE BOOL "Auto4OMP libomp target.")
-set(AUTOPAS_TARGET_omptarget OFF CACHE BOOL "Auto4OMP libomptarget target.")
-set(AUTOPAS_TARGET_omptarget.rtl.cuda OFF CACHE BOOL "Auto4OMP libomptarget.rtl.cuda target.")
-set(AUTOPAS_TARGET_omptarget.rtl.x86_64 OFF CACHE BOOL "Auto4OMP libomptarget.rtl.x86_64 target.")
-set(AUTOPAS_TARGET_omptarget-nvptx OFF CACHE BOOL "Auto4OMP libomptarget-nvptx target.")
+set(AUTOPAS_TARGET_omp OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omp))
+set(AUTOPAS_TARGET_omptarget OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omptarget))
+set(AUTOPAS_TARGET_omptarget.rtl.cuda OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omptarget.rtl.cuda))
+set(AUTOPAS_TARGET_omptarget.rtl.x86_64 OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omptarget.rtl.x86_64))
+set(AUTOPAS_TARGET_omptarget-nvptx OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omptarget-nvptx))
 
 if (NOT AUTOPAS_AUTO4OMP)
     # If Auto4OMP disabled, notify.
@@ -198,8 +206,8 @@ else ()
     endif ()
 
     ## CUDA:
-    # CMake's FindCUDA is deprecated, but necessary (I think) as Auto4OMP looks for CUDA in the system.
-    # For now, use old policy. TODO: for future-proofing, is there a way to use the new policy?
+    ### CMake's FindCUDA is deprecated, but necessary (I think) as Auto4OMP looks for CUDA in the system.
+    ### For now, use old policy. TODO: for future-proofing, is there a way to use the new policy?
     cmake_policy(PUSH) # Use PUSH and POP instead of the new block() to preserve compatibility with older CMake.
     if (POLICY CMP0146)
         cmake_policy(SET CMP0146 OLD)
@@ -364,8 +372,8 @@ else ()
         # Build the pre-packaged Auto4OMP that prints a message from kmp.h at runtime to confirm its use.
         FetchContent_Declare(
                 auto4omp
-                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-debug.zip # [*] # TODO: change to LB4OMP-debug.zip
-                URL_HASH MD5=1909b2fc44aa6c8069eeae9db0de6450 # Calculated with the md5sum command.
+                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-debug.zip # [*]
+                URL_HASH MD5=b1e85a5851894f99e290864e1a35c614 # Calculated with the md5sum command.
         )
     elseif (${AUTOPAS_OMP_VERSION} LESS 50 AND NOT AUTOPAS_AUTO4OMP_GIT_FORCE)
         # Build the pre-packaged Auto4OMP including the fix for build errors when specifying an old OMP version.
@@ -375,7 +383,7 @@ else ()
                 URL_HASH MD5=c62773279f8c73e72a6d1bcb36334fef # Calculated with the md5sum command.
         )
     elseif (AUTOPAS_AUTO4OMP_GIT OR AUTOPAS_AUTO4OMP_GIT_FORCE)
-        # Download Auto4OMP from Git. TODO: untested.
+        # Download Auto4OMP from Git.
         FetchContent_Declare(
                 auto4omp
                 GIT_REPOSITORY https://github.com/unibas-dmi-hpc/LB4OMP # [*]
@@ -392,7 +400,7 @@ else ()
         endif ()
     else ()
         # Build the pre-packaged Auto4OMP and make the CMake targets available. [***]
-        # Targets include omp, omptarget, ...
+        ## Targets include omp, omptarget, ...
         FetchContent_Declare(
                 auto4omp
                 URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-master.zip # [*]
@@ -401,7 +409,7 @@ else ()
     endif ()
 
     # Use the following old policies to suppress Auto4OMP's CMake warnings.
-    # cmake_policy() doesn't work, likely because Auto4OMP isn't in a subdirectory of this module's directory.
+    ## cmake_policy() doesn't work, likely because Auto4OMP isn't in a subdirectory of this module's directory.
     set(CMAKE_POLICY_DEFAULT_CMP0146 OLD) # The FindCUDA module.
     set(CMAKE_POLICY_DEFAULT_CMP0148 OLD) # The FindPythonInterp and FindPythonLibs modules.
 
@@ -466,15 +474,13 @@ else ()
         set(AUTOPAS_TARGET_omptarget-nvptx ON CACHE BOOL "Auto4OMP libomptarget-nvptx target." FORCE)
     endif ()
 
-    # TODO: prioritize Auto4OMP's libomp and other libs. Did linking the built libraries achieve this? [**]
     # Prioritize Auto4OMP's libomp by prepending its path to the environment variable LD_LIBRARY_PATH.
+    ## src/autopas/CMakeLists.txt will prepend AUTOPAS_LIBOMP_PATH to LD_LIBRARY_PATH before AutoPas builds. [**]
     set(AUTOPAS_LIBOMP_PATH "${auto4omp_BINARY_DIR}/runtime/src/libomp.so" CACHE INTERNAL "Auto4OMP's libomp.so path.")
-    list(PREPEND ENV{LD_LIBRARY_PATH} ${AUTOPAS_LIBOMP_PATH})
-    message(STATUS "LD_LIBRARY_PATH: $ENV{LD_LIBRARY_PATH}") # Debug.
 
 endif ()
 
-# Function to simulate find_package(OpenMP), but finds to Auto4OMP instead.
+# Function to simulate find_package(OpenMP), finds Auto4OMP instead of standard OpenMP.
 function(auto4omp_FindOpenMP)
     if (AUTOPAS_AUTO4OMP)
         # If Auto4OMP is used, don't use for system's OMP. Instead, manually point OMP's variables to Auto4OMP.
@@ -633,47 +639,6 @@ function(auto4omp_FindOpenMP)
     endif ()
 endfunction()
 
-# Prints the variables set by FindOpenMP for debugging purposes.
-macro(printFindOpenMPVars)
-    message(STATUS "OpenMP_FOUND: ${OpenMP_FOUND}")
-    message(STATUS "OpenMP_VERSION: ${OpenMP_VERSION}")
-    message(STATUS "OpenMP_C_FOUND: ${OpenMP_C_FOUND}")
-    message(STATUS "OpenMP_CXX_FOUND: ${OpenMP_CXX_FOUND}")
-    message(STATUS "OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
-    message(STATUS "OpenMP_CXX_FLAGS: ${OpenMP_CXX_FLAGS}")
-    message(STATUS "OpenMP_C_INCLUDE_DIRS: ${OpenMP_C_INCLUDE_DIRS}")
-    message(STATUS "OpenMP_CXX_INCLUDE_DIRS: ${OpenMP_CXX_INCLUDE_DIRS}")
-    message(STATUS "OpenMP_C_LIBNAMES: ${OpenMP_C_LIBNAMES}")
-    message(STATUS "OpenMP_CXX_LIBNAMES: ${OpenMP_CXX_LIBNAMES}")
-    message(STATUS "OpenMP_omp_LIBRARY: ${OpenMP_omp_LIBRARY}")
-    message(STATUS "OpenMP_pthread_LIBRARY: ${OpenMP_pthread_LIBRARY}")
-    message(STATUS "OpenMP_omptarget_LIBRARY: ${OpenMP_omptarget_LIBRARY}")
-    message(STATUS "OpenMP_C_LIBRARIES: ${OpenMP_C_LIBRARIES}")
-    message(STATUS "OpenMP_CXX_LIBRARIES: ${OpenMP_CXX_LIBRARIES}")
-    message(STATUS "OpenMP_C_SPEC_DATE: ${OpenMP_C_SPEC_DATE}")
-    message(STATUS "OpenMP_CXX_SPEC_DATE: ${OpenMP_CXX_SPEC_DATE}")
-    message(STATUS "OpenMP_C_VERSION_MAJOR: ${OpenMP_C_VERSION_MAJOR}")
-    message(STATUS "OpenMP_CXX_VERSION_MAJOR: ${OpenMP_CXX_VERSION_MAJOR}")
-    message(STATUS "OpenMP_C_VERSION_MINOR: ${OpenMP_C_VERSION_MINOR}")
-    message(STATUS "OpenMP_CXX_VERSION_MINOR: ${OpenMP_CXX_VERSION_MINOR}")
-    message(STATUS "OpenMP_C_VERSION: ${OpenMP_C_VERSION}")
-    message(STATUS "OpenMP_CXX_VERSION: ${OpenMP_CXX_VERSION}")
-    message(STATUS "OpenMP_C_SPEC_DATE: ${OpenMP_C_SPEC_DATE}")
-    message(STATUS "OpenMP_CXX_SPEC_DATE: ${OpenMP_CXX_SPEC_DATE}")
-endmacro()
-
-# Function to print all of Auto4OMP's CMake targets. Beware, produces errors but still works. Use for debugging only.
-function(printAuto4OMPCMakeTargets)
-    execute_process(COMMAND find "${auto4omp_SOURCE_DIR}" -type d OUTPUT_VARIABLE auto4omp_PATHS)
-    string(REPLACE "\n" ";" auto4omp_PATHS "${auto4omp_PATHS}")
-    foreach (SUB_DIR ${auto4omp_PATHS})
-        get_property(SUB_TARGETS DIRECTORY "${SUB_DIR}" PROPERTY BUILDSYSTEM_TARGETS)
-        list(APPEND TARGETS ${SUB_TARGETS})
-    endforeach ()
-    list(REMOVE_DUPLICATES TARGETS)
-    message(STATUS "Auto4OMP targets: ${TARGETS}")
-endfunction()
-
 #[=====================================================================================================================[
 Sources:
 
@@ -706,6 +671,9 @@ Sources:
           omp.h, omp-tools.h at auto4omp-build/runtime/src; auto4omp-build/runtime/src/libomp.so;
           and the libomptargets at auto4omp-build/libomptarget. For now, no need to include ompt.h. It is a legacy
           renamed copy of omp-tools.h, included for compatibility purposes. However, AutoPas does not use it.
+
+          To make sure Auto4OMP's libraries are prioritized, run the terminal command "ldd <AutoPas-executable>".
+          E.g., "ldd md-flexible". libomp.so in auto4omp-build should be linked.
 
     [***] Some code was inspired from autopas_spdlog.cmake, autopas_eigen.cmake and other AutoPas CMake files.
 #]=====================================================================================================================]
