@@ -23,15 +23,13 @@ class TraversalOption : public Option<TraversalOption> {
    * Try to maintain lexicographic ordering.
    */
   enum Value {
+    /***** Pairwise Traversals *****/
+
     // DirectSum Traversals:
     /**
      * DSSequentialTraversal : Sequential double loop over all particles.
      */
     ds_sequential,
-    /**
-     * DSSequentialTraversal3B : Sequential triple loop over all particles.
-     */
-    ds_sequential_3b,
 
     // LinkedCell Traversals:
     /**
@@ -39,11 +37,6 @@ class TraversalOption : public Option<TraversalOption> {
      * parallel. Good load balancing and no overhead.
      */
     lc_c01,
-    /**
-     * LCC01Traversal3B : 3-body version of lc_c01. Every cell interacts with all neighbors. Is not compatible with
-     * Newton3 thus embarrassingly parallel. Good load balancing and no overhead.
-     */
-    lc_c01_3b,
     /**
      * LCC01CombinedSoATraversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain
      * is traversed line-wise.
@@ -201,6 +194,21 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
+
+    /***** Triwise Traversals *****/
+
+    // Direct Sum
+    /**
+     * DSSequentialTraversal3B : Sequential triple loop over all particles.
+     */
+    ds_sequential_3b,
+
+    // Linked Cells
+    /**
+     * LCC01Traversal3B : 3-body version of lc_c01. Every cell interacts with all neighbors. Is not compatible with
+     * Newton3 thus embarrassingly parallel. Good load balancing and no overhead.
+     */
+    lc_c01_3b,
   };
 
   /**
