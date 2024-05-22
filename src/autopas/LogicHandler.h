@@ -1395,7 +1395,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           auto traversalPtr =
               TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
                   configuration.traversal, functor, container.getTraversalSelectorInfo(), configuration.dataLayout,
-                  configuration.newton3, interactionType);
+                  configuration.newton3);
 
           // set sortingThreshold of the traversal if it can be casted to a CellTraversal and uses the CellFunctor
           if (auto *cellTraversalPtr =
@@ -1423,7 +1423,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     const auto needsLiveInfo = autoTuner->prepareIteration();
 
     if (needsLiveInfo) {
-      //Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
+      // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       autoTuner->receiveLiveInfo(info);
@@ -1577,7 +1577,7 @@ std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandle
         // Can't make this unique_ptr const otherwise we can't move it later.
         auto traversalPtr =
             TraversalSelector<std::decay_t<decltype(particleCellDummy)>>::template generateTraversal<Functor>(
-                conf.traversal, functor, traversalInfo, conf.dataLayout, conf.newton3, interactionType);
+                conf.traversal, functor, traversalInfo, conf.dataLayout, conf.newton3);
 
         // set sortingThreshold of the traversal if it can be cast to a CellTraversal and uses the CellFunctor
         if (auto *cellTraversalPtr =

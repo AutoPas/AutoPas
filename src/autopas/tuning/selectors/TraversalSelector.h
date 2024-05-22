@@ -78,8 +78,7 @@ class TraversalSelector {
   template <class Functor>
   static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType, Functor &functor,
                                                                const TraversalSelectorInfo &traversalInfo,
-                                                               DataLayoutOption dataLayout, bool useNewton3,
-                                                               InteractionTypeOption::Value interactionType);
+                                                               DataLayoutOption dataLayout, bool useNewton3);
 
   template <class PairwiseFunctor>
   static std::unique_ptr<TraversalInterface> generatePairwiseTraversal(TraversalOption traversalType,
@@ -316,7 +315,7 @@ template <class ParticleCell>
 template <class Functor>
 std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
     TraversalOption traversalType, Functor &functor, const TraversalSelectorInfo &traversalInfo,
-    DataLayoutOption dataLayout, bool useNewton3, InteractionTypeOption::Value interactionType) {
+    DataLayoutOption dataLayout, bool useNewton3) {
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
     auto pairTraversal =
         generatePairwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);

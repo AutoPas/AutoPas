@@ -486,8 +486,7 @@ TEST_P(AutoPasInterfaceTest, ConfighasCompatibleValuesVSTraversalIsApplicable) {
   auto traversalPtr = autopas::utils::withStaticCellType<Molecule>(
       containerSelector.getCurrentContainer().getParticleCellTypeEnum(), [&](auto particleCellDummy) {
         return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<LJFunctorGlobals>(
-            conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3,
-            autopas::InteractionTypeOption::pairwise);
+            conf.traversal, functor, traversalSelectorInfo, conf.dataLayout, conf.newton3);
       });
 
   EXPECT_EQ(conf.hasCompatibleValues(), traversalPtr->isApplicable())

@@ -21,8 +21,8 @@
  */
 class Newton3OnOffTest
     : public AutoPasTestBase,
-      public ::testing::WithParamInterface<
-          std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption, autopas::InteractionTypeOption>> {
+      public ::testing::WithParamInterface<std::tuple<autopas::ContainerOption, autopas::TraversalOption,
+                                                      autopas::DataLayoutOption, autopas::InteractionTypeOption>> {
  public:
   Newton3OnOffTest() {}
 
@@ -60,7 +60,7 @@ class Newton3OnOffTest
    */
   template <class Functor, class Container>
   std::tuple<size_t, size_t, size_t> eval(autopas::DataLayoutOption dataLayout, bool useNewton3, Container &container,
-                                 autopas::TraversalOption traversalOption, Functor &mockFunctor);
+                                          autopas::TraversalOption traversalOption, Functor &mockFunctor);
 
   struct PrintToStringParamName {
     template <class ParamType>
