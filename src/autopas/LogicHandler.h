@@ -532,6 +532,7 @@ class LogicHandler {
    * @tparam Functor
    * @param conf
    * @param functor
+   * @param interactionType
    * @return tuple<optional<Traversal>, rejectIndefinitely> The optional is empty if the configuration is not applicable
    * The bool rejectIndefinitely indicates if the configuration can be completely removed from the search space because
    * it will never be applicable.
@@ -597,6 +598,7 @@ class LogicHandler {
    * Gathers dynamic data from the domain if necessary and retrieves the next configuration to use.
    * @tparam Functor
    * @param functor
+   * @param interactionType
    * @return
    */
   template <class Functor>

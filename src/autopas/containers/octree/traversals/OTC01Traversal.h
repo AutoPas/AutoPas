@@ -68,7 +68,7 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
   }
 
   /**
-   * @copydoc TraversalInterface::traverseParticlePairs()
+   * @copydoc PairwiseTraversalInterface::traverseParticlePairs()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticlePairs() override {

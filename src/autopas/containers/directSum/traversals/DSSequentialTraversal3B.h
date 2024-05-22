@@ -61,7 +61,7 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>, public DSTri
   }
 
   /**
-   * @copydoc TraversalInterface::traverseParticleTriplets()
+   * @copydoc TriwiseTraversalInterface::traverseParticleTriplets()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
   void traverseParticleTriplets() override;

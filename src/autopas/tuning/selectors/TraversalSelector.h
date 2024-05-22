@@ -65,14 +65,12 @@ class TraversalSelector {
  public:
   /**
    * Generates a given Traversal for the given properties.
-   * Requires less templates but calls the templated version after a decision tree.
    * @tparam Functor
    * @param traversalType
    * @param functor
    * @param traversalInfo
    * @param dataLayout
    * @param useNewton3
-   * @param interactionType
    * @return Smartpointer to the traversal.
    */
   template <class Functor>
@@ -80,16 +78,36 @@ class TraversalSelector {
                                                                const TraversalSelectorInfo &traversalInfo,
                                                                DataLayoutOption dataLayout, bool useNewton3);
 
+  /**
+   * Generates a given pairwise Traversal for the given properties.
+   * @tparam PairwiseFunctor
+   * @param traversalType
+   * @param pairwiseFunctor
+   * @param traversalInfo
+   * @param dataLayout
+   * @param useNewton3
+   * @return Smartpointer to the traversal.
+   */
   template <class PairwiseFunctor>
   static std::unique_ptr<TraversalInterface> generatePairwiseTraversal(TraversalOption traversalType,
                                                                        PairwiseFunctor &pairwiseFunctor,
-                                                                       const TraversalSelectorInfo &info,
+                                                                       const TraversalSelectorInfo &traversalInfo,
                                                                        DataLayoutOption dataLayout, bool useNewton3);
 
+  /**
+   * Generates a given triwise Traversal for the given properties.
+   * @tparam TriwiseFunctor
+   * @param traversalType
+   * @param triwiseFunctor
+   * @param traversalInfo
+   * @param dataLayout
+   * @param useNewton3
+   * @return Smartpointer to the traversal.
+   */
   template <class TriwiseFunctor>
   static std::unique_ptr<TraversalInterface> generateTriwiseTraversal(TraversalOption traversalType,
                                                                       TriwiseFunctor &triwiseFunctor,
-                                                                      const TraversalSelectorInfo &info,
+                                                                      const TraversalSelectorInfo &traversalInfo,
                                                                       DataLayoutOption dataLayout, bool useNewton3);
 };
 

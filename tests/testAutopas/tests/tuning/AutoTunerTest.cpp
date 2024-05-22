@@ -153,8 +153,7 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
                                                                    defaultParticle, spacing, offset);
       }
     }
-    stillTuning =
-        logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
+    stillTuning = logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise);
     ++iterations;
     ++collectedSamples;
     const auto currentConfig = tunerMap[autopas::InteractionTypeOption::pairwise]->getCurrentConfig();
@@ -211,26 +210,26 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // DS NoN3
+                                           autopas::InteractionTypeOption::pairwise);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // DS NoN3
+                                           autopas::InteractionTypeOption::pairwise);  // DS NoN3
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // DS N3
+                                           autopas::InteractionTypeOption::pairwise);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // DS N3
+                                           autopas::InteractionTypeOption::pairwise);  // DS N3
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // LC NoN3
+                                           autopas::InteractionTypeOption::pairwise);  // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // LC NoN3
+                                           autopas::InteractionTypeOption::pairwise);  // LC NoN3
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // optimum
+                                           autopas::InteractionTypeOption::pairwise);  // optimum
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
@@ -275,19 +274,19 @@ TEST_F(AutoTunerTest, testWillRebuildDDLOneConfigKicked) {
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // DS N3
+                                           autopas::InteractionTypeOption::pairwise);  // DS N3
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // DS N3
+                                           autopas::InteractionTypeOption::pairwise);  // DS N3
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // LC N3
+                                           autopas::InteractionTypeOption::pairwise);  // LC N3
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // LC N3
+                                           autopas::InteractionTypeOption::pairwise);  // LC N3
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // optimum
+                                           autopas::InteractionTypeOption::pairwise);  // optimum
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
@@ -327,19 +326,19 @@ TEST_F(AutoTunerTest, testWillRebuildDL) {
   // Intended false positive
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // DS NoN3
+                                           autopas::InteractionTypeOption::pairwise);  // DS NoN3
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // DS NoN3
+                                           autopas::InteractionTypeOption::pairwise);  // DS NoN3
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because we change config.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // LC NoN3
+                                           autopas::InteractionTypeOption::pairwise);  // LC NoN3
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // LC NoN3
+                                           autopas::InteractionTypeOption::pairwise);  // LC NoN3
   EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild because reached end of tuning phase.";
   logicHandler.computeInteractionsPipeline(&functor,
-                                                              autopas::InteractionTypeOption::pairwise);  // optimum
+                                           autopas::InteractionTypeOption::pairwise);  // optimum
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because not tuning.";
 }
 
@@ -377,13 +376,11 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE((logicHandler.computeInteractionsPipeline(&functor,
-                                                                             autopas::InteractionTypeOption::pairwise)))
+    EXPECT_TRUE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
         << "Tuner should still be tuning in iteration " << i;
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(
-      (logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
+  EXPECT_FALSE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
       << "Tuner should be done be tuning in the first iteration after the tuning phase.";
 
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "No rebuilding expected here.";
@@ -394,13 +391,11 @@ TEST_F(AutoTunerTest, testForceRetuneBetweenPhases) {
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE((logicHandler.computeInteractionsPipeline(&functor,
-                                                                             autopas::InteractionTypeOption::pairwise)))
+    EXPECT_TRUE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
         << "Tuner should still be tuning.";
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(
-      (logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
+  EXPECT_FALSE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
       << "Tuner should be done be tuning.";
 }
 
@@ -438,8 +433,7 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   size_t iteration = 0;
   for (; iteration < autoTunerInfo.maxSamples + 1; ++iteration) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE((logicHandler.computeInteractionsPipeline(&functor,
-                                                                             autopas::InteractionTypeOption::pairwise)))
+    EXPECT_TRUE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
         << "Tuner should still be tuning.\n"
            "Phase 1\n"
            "Iteration "
@@ -452,16 +446,14 @@ TEST_F(AutoTunerTest, testForceRetuneInPhase) {
   // expect a full tuning phase
   for (size_t i = 0; i < numExpectedTuningIterations; ++i, ++iteration) {
     // since we don't actually do anything doRebuild can always be false.
-    EXPECT_TRUE((logicHandler.computeInteractionsPipeline(&functor,
-                                                                             autopas::InteractionTypeOption::pairwise)))
+    EXPECT_TRUE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
         << "Tuner should still be tuning.\n"
            "Phase 2\n"
            "Iteration "
         << iteration;
   }
   // first iteration after tuning phase
-  EXPECT_FALSE(
-      (logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
+  EXPECT_FALSE((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)))
       << "Tuner should be done be tuning.\n"
          "Iteration "
       << iteration;
@@ -530,7 +522,6 @@ TEST_F(AutoTunerTest, testOneConfig) {
  * Generates exactly one valid and one invalid configuration.
  */
 TEST_F(AutoTunerTest, testConfigSecondInvalid) {
-
   const double cellSizeFactor = 1.;
   const unsigned int verletRebuildFrequency = 20;
   const autopas::LogicHandlerInfo logicHandlerInfo{
@@ -596,9 +587,8 @@ TEST_F(AutoTunerTest, testLastConfigThrownOut) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(false));
 
-  EXPECT_THROW(
-      (logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)),
-      autopas::utils::ExceptionHandler::AutoPasException);
+  EXPECT_THROW((logicHandler.computeInteractionsPipeline(&functor, autopas::InteractionTypeOption::pairwise)),
+               autopas::utils::ExceptionHandler::AutoPasException);
 }
 
 /**
@@ -780,8 +770,12 @@ TEST_F(AutoTunerTest, testMultipleTuners) {
   const auto triwiseSearchSpace = {_confDs_3b_N3, _confLc_c01_3b_noN3};
 
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
-  tunerMap.emplace(autopas::InteractionTypeOption::pairwise, std::make_unique<autopas::AutoTuner>(tuningStrategies, pairwiseSearchSpace, autoTunerInfo, rebuildFrequency, "2B"));
-  tunerMap.emplace(autopas::InteractionTypeOption::triwise, std::make_unique<autopas::AutoTuner>(tuningStrategies, triwiseSearchSpace, autoTunerInfo, rebuildFrequency, "3B"));
+  tunerMap.emplace(autopas::InteractionTypeOption::pairwise,
+                   std::make_unique<autopas::AutoTuner>(tuningStrategies, pairwiseSearchSpace, autoTunerInfo,
+                                                        rebuildFrequency, "2B"));
+  tunerMap.emplace(autopas::InteractionTypeOption::triwise,
+                   std::make_unique<autopas::AutoTuner>(tuningStrategies, triwiseSearchSpace, autoTunerInfo,
+                                                        rebuildFrequency, "3B"));
 
   auto &pairAutoTuner = *tunerMap[autopas::InteractionTypeOption::pairwise];
   auto &triAutoTuner = *tunerMap[autopas::InteractionTypeOption::triwise];
@@ -803,10 +797,9 @@ TEST_F(AutoTunerTest, testMultipleTuners) {
   logicHandler.getContainer().addParticle((Molecule{{0.2, 0.1, 0.1}, {0., 0., 0.}, 1, 0}));
   logicHandler.getContainer().addParticle((Molecule{{0.1, 0.2, 0.1}, {0., 0., 0.}, 2, 0}));
 
-
   // Beginning of the first tuning phase. Both tuners are still tuning.
-  EXPECT_CALL(pairFunctor, AoSFunctor).Times(4 * 3); // 3 AoS functor calls per timestep (All configs with N3)
-  EXPECT_CALL(triFunctor, AoSFunctor).Times(4 * 3); // 3 AoS functor calls per timestep (All configs without N3)
+  EXPECT_CALL(pairFunctor, AoSFunctor).Times(4 * 3);  // 3 AoS functor calls per timestep (All configs with N3)
+  EXPECT_CALL(triFunctor, AoSFunctor).Times(4 * 3);   // 3 AoS functor calls per timestep (All configs without N3)
   for (int i = 0; i < 4; i++) {
     EXPECT_TRUE(logicHandler.computeInteractionsPipeline(&pairFunctor, autopas::InteractionTypeOption::pairwise));
     EXPECT_TRUE(logicHandler.computeInteractionsPipeline(&triFunctor, autopas::InteractionTypeOption::triwise));
