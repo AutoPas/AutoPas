@@ -78,7 +78,7 @@ namespace autopas {
  *
  *
  * Due to the compilation cost of ANTLR and issues with compiling the bundled dependency uuid on some machines, this
-* tuning strategy can be disabled with the CMake option AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
+ * tuning strategy can be disabled with the CMake option AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
  *
  */
 class RuleBasedTuning : public TuningStrategyInterface {
