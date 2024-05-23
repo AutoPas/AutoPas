@@ -16,6 +16,7 @@ add_library(autopas STATIC ${MY_SRC})
 
 # Prioritize Auto4OMP's libomp by setting the LD_LIBRARY_PATH environment variable.
 if (AUTOPAS_AUTO4OMP)
+    #[[ Try [*] instead.
     if (DEFINED ENV{LD_LIBRARY_PATH} AND NOT $ENV{LD_LIBRARY_PATH} STREQUAL "")
         # If the variable's not empty, prepend Auto4OMP's libomp path.
         add_custom_command(
@@ -29,6 +30,14 @@ if (AUTOPAS_AUTO4OMP)
                 PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_LIBOMP_PATH}"
         )
     endif ()
+    #]]
+
+    # [*] Prioritize Auto4OMP's libomp.so [https://www.hpc.dtu.dk/?page_id=1180]
+    target_compile_options(
+            autopas BEFORE PUBLIC
+            -Wl,-rpath="${AUTOPAS_LIBOMPTARGET_PATH}",-rpath="${AUTOPAS_LIBOMP_PATH}" \
+            -L"${AUTOPAS_LIBOMP_PATH}" -lomp -L"${AUTOPAS_LIBOMPTARGET_PATH}" -lomptarget
+    )
 endif ()
 
 target_link_libraries(
