@@ -657,8 +657,12 @@ class LJFunctor
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
     for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
-      _aosThreadDataGlobals[i].setZero();
-      _aosThreadDataFLOPs[i].setZero();
+      if constexpr (calculateGlobals) {
+        _aosThreadDataGlobals[i].setZero();
+      }
+      if constexpr (countFLOPs) {
+        _aosThreadDataFLOPs[i].setZero();
+      }
     }
   }
 
