@@ -531,13 +531,14 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
         Particle::AttributeNames::accY,    Particle::AttributeNames::accZ,   Particle::AttributeNames::ownershipState};
   }
 
-  /**
-   * Get the number of floating point operations used in one full kernel call
-   * @return the number of floating point operations
-   */
-  static uint64_t getNumFlopsPerKernelCall() {
-    ///@todo return correct flopcount
-    return 1ul;
+  size_t getNumFLOPs() {
+    autopas::utils::ExceptionHandler::exception("SPHCalcHydroForceFunctor::getNumFLOPs called but is not implemented");
+    return 0;
+  }
+
+  double getHitRate() {
+    autopas::utils::ExceptionHandler::exception("SPHCalcHydroForceFunctor::getNumFLOPs called but is not implemented");
+    return 0;
   }
 };
 
