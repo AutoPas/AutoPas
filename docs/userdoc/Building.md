@@ -8,7 +8,7 @@
 
 Optional:
 * For `tuningLogToSQL`: `libsqlite3`
-* For rule based tuning: `pkg-config`. Rule based tuning can be disabled via the CMake (see [below](#disabling-rule-based-tuning)).
+* For rule based tuning: `pkg-config`. By default, rule based tuning is disabled but can be enabled via the CMake (see [below](#disabling-rule-based-tuning)).
 
 There are a few more dependencies, however you don't need to install them because they come bundled with AutoPas.
 See [libs/](/libs) for a complete list.
@@ -37,13 +37,14 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
-### Disabling Rule Based Tuning
+### Enabling Rule Based Tuning
 One of the possible tuning strategies of AutoPas, rule based tuning, requires dependencies `antlr4cpp` and `uuid`. These
-are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors.
+are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors. 
+As such, by default, rule based tuning is disabled, and `antlr4cpp` and `uuid` are not compiled.
 
-It is possible to disabled rule based tuning, avoiding the compilation of `antlr4cpp` and `uuid`, using a CMake option:
+Rule based tuning can be enabled using a CMake option:
 ```bash
-cmake -DAUTOPAS_ENABLE_RULE_BASED_TUNING=OFF .. 
+cmake -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON .. 
 ```
 
 ### Select a Non-Default Compiler
