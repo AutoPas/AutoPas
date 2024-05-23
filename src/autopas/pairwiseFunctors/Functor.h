@@ -228,13 +228,13 @@ class Functor {
    * Get the number of FLOPs. Implementation required if FLOP logger used.
    * @return number of FLOPs
    */
-  virtual size_t getNumFLOPs() {return 0;}
+  virtual size_t getNumFLOPs() { return 0; }
 
   /**
    * Get the hit rate. Implementation required if FLOP logger used.
    * @return (number of kernel calls) / (number of distance calculations)
    */
-  virtual double getHitRate() {return 0;}
+  virtual double getHitRate() { return 0; }
 
  private:
   /**

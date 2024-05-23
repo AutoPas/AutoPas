@@ -16,7 +16,8 @@ extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
     mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false, /*countFLOPs*/ true, /*relevantForTuning*/ true> *);
 /**
- * Generates a square of four particles, iterates over it with the LJFunctor and checks the values of getNumFLOPs() and getHitRate()
+ * Generates a square of four particles, iterates over it with the LJFunctor and checks the values of getNumFLOPs() and
+ * getHitRate()
  * @tparam calculateGlobals
  * @tparam applyShift
  * @param dataLayoutOption
@@ -24,7 +25,8 @@ extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
  * @param isVerlet
  */
 template <bool calculateGlobals, bool applyShift>
-void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3, bool isVerlet) {
+void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3,
+                                               bool isVerlet) {
   autopas::AutoPas<Molecule> autoPas;
 
   autoPas.setBoxMin({0, 0, 0});
@@ -57,14 +59,17 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   }
 
   // update container -> build neighbor lists in case of Verlet
-  auto buffer = autoPas.updateContainer(); // buffer is meaningless here
+  auto buffer = autoPas.updateContainer();  // buffer is meaningless here
 
-  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(autoPas.getCutoff());
+  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
+      autoPas.getCutoff());
 
   autoPas.iteratePairwise(&ljFunctor);
 
-  // every particle checks the distance to all others. If newton3, only half of the calculations are made due to Newton 3.
-  const auto expectedDistanceCalculations = newton3 ? molVec.size() * (molVec.size() - 1) / 2 : molVec.size() * (molVec.size() - 1);
+  // every particle checks the distance to all others. If newton3, only half of the calculations are made due to
+  // Newton 3.
+  const auto expectedDistanceCalculations =
+      newton3 ? molVec.size() * (molVec.size() - 1) / 2 : molVec.size() * (molVec.size() - 1);
 
   // in theory each particle has two in range but only one kernel call because of Newton 3.
   // Each particle has two others in range -> 2 kernel calls. With newton3, only half of these kernel calls happen.
@@ -90,7 +95,8 @@ void LJFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
+  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
+      cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
@@ -120,7 +126,8 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP(bool newton3) 
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
+  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
+      cutoff);
 
   autopas::FullParticleCell<Molecule> cell1;
   cell1.addParticle(p1);
@@ -181,14 +188,15 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP(bool newton3) {
 
   // generate neighbor lists
   std::array<std::vector<size_t, autopas::AlignedAllocator<size_t>>, 4> neighborLists;
-  neighborLists[0].push_back(1); // p0 has neighbor p1
-  neighborLists[1].push_back(0); // p1 has neighbor p0
-  neighborLists[2].push_back(3); // p2 has neighbor p3
-  neighborLists[3].push_back(2); // p3 has neighbor p2
+  neighborLists[0].push_back(1);  // p0 has neighbor p1
+  neighborLists[1].push_back(0);  // p1 has neighbor p0
+  neighborLists[2].push_back(3);  // p2 has neighbor p3
+  neighborLists[3].push_back(2);  // p3 has neighbor p2
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
+  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
+      cutoff);
 
   autopas::FullParticleCell<Molecule> cell;
   cell.addParticle(p0);
@@ -226,8 +234,8 @@ TEST_P(LJFunctorFlopCounterTest, testFLOPCountingNoOMP) {
 }
 
 /**
- * Tests that FLOP counting has no data races by performing interactions in parallel. With thread sanitizer enabled, this
- * should produce errors. Without thread sanitizer enabled, this test will generally not throw errors.
+ * Tests that FLOP counting has no data races by performing interactions in parallel. With thread sanitizer enabled,
+ * this should produce errors. Without thread sanitizer enabled, this test will generally not throw errors.
  */
 TEST_P(LJFunctorFlopCounterTest, testFLOPCountingOMP) {
   const auto [dataLayout, newton3, calculateGlobals, applyShift, isVerlet] = GetParam();
@@ -272,29 +280,26 @@ TEST_P(LJFunctorFlopCounterTest, testFLOPCountingOMP) {
  *
  * @return
  */
-INSTANTIATE_TEST_SUITE_P(LJFunctorFlopTestSuite, LJFunctorFlopCounterTest,
-                         /*                               Data Layout              , newton3, calcGlobals, applyShift, isVerlet */
-                         testing::Values(std::make_tuple(autopas::DataLayoutOption::aos, false, false, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::aos, true, false, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, false, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, false, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, false, false, true),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, false, false, true),
+INSTANTIATE_TEST_SUITE_P(
+    LJFunctorFlopTestSuite, LJFunctorFlopCounterTest,
+    /*                               Data Layout                 , n3, calcGlob, appShift, isVerlet */
+    testing::Values(std::make_tuple(autopas::DataLayoutOption::aos, false, false, false, false),
+                    std::make_tuple(autopas::DataLayoutOption::aos, true, false, false, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, false, false, false, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, true, false, false, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, false, false, false, true),
+                    std::make_tuple(autopas::DataLayoutOption::soa, true, false, false, true),
 
-                                         std::make_tuple(autopas::DataLayoutOption::aos, false, true, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::aos, true, true, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, false, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, false, true),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, false, true),
+                    std::make_tuple(autopas::DataLayoutOption::aos, false, true, false, false),
+                    std::make_tuple(autopas::DataLayoutOption::aos, true, true, false, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, false, true, false, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, true, true, false, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, false, true, false, true),
+                    std::make_tuple(autopas::DataLayoutOption::soa, true, true, false, true),
 
-                                         std::make_tuple(autopas::DataLayoutOption::aos, false, true, true, false),
-                                         std::make_tuple(autopas::DataLayoutOption::aos, true, true, true, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, true, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, true, false),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, false, true, true, true),
-                                         std::make_tuple(autopas::DataLayoutOption::soa, true, true, true, true)));
-
-
-
-
+                    std::make_tuple(autopas::DataLayoutOption::aos, false, true, true, false),
+                    std::make_tuple(autopas::DataLayoutOption::aos, true, true, true, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, false, true, true, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, true, true, true, false),
+                    std::make_tuple(autopas::DataLayoutOption::soa, false, true, true, true),
+                    std::make_tuple(autopas::DataLayoutOption::soa, true, true, true, true)));

@@ -5,10 +5,10 @@
  */
 
 #include "FLOPLogger.h"
+
 #include "autopas/utils/Timer.h"
 
-autopas::FLOPLogger::FLOPLogger(const std::string &outputSuffix)
-    : _loggerName("FLOPLogger" + outputSuffix) {
+autopas::FLOPLogger::FLOPLogger(const std::string &outputSuffix) : _loggerName("FLOPLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_FLOPS
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
   const auto outputFileName("AutoPas_FLOPCount_" + outputSuffix + fillerAfterSuffix +
@@ -43,7 +43,6 @@ autopas::FLOPLogger::~FLOPLogger() {
 
 void autopas::FLOPLogger::logIteration(size_t iteration, size_t numFLOPs, double hitRate) {
 #ifdef AUTOPAS_LOG_FLOPS
-  spdlog::get(_loggerName)
-      ->info("{},{},{}", iteration, numFLOPs, hitRate);
+  spdlog::get(_loggerName)->info("{},{},{}", iteration, numFLOPs, hitRate);
 #endif
 }

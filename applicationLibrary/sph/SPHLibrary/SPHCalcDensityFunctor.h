@@ -70,7 +70,6 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
     return flops;
   }
 
-
   size_t getNumFLOPs() {
     autopas::utils::ExceptionHandler::exception("SPHCalcDensityFunctor::getNumFLOPs called but is not implemented");
     return 0;

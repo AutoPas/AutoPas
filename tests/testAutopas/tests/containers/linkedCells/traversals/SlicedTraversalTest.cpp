@@ -26,8 +26,9 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
 
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FMCell, mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true>> slicedTraversal(
-      edgeLength, &ljFunctor, 1., {1., 1., 1.}, autopas::DataLayoutOption::aos, true);
+  autopas::LCSlicedTraversal<FMCell,
+                             mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true>>
+      slicedTraversal(edgeLength, &ljFunctor, 1., {1., 1., 1.}, autopas::DataLayoutOption::aos, true);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
   slicedTraversal.setCellsToTraverse(cells);
@@ -61,7 +62,8 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
    *  This leads to
    *  (1 * 26) + (6 * 17) + (12 * 11) + (8 * 7) = 316 distances calculations and
    *  (1 * 6) + (6 * 5) + (12 * 4) + (8 * 3) = 108 interactions/kernel calls.
-   *  Newton3 is enabled, so there should be 316/2 = 158 distance calculations and 108/2 = 54 kernel calls (actually less, see below).
+   *  Newton3 is enabled, so there should be 316/2 = 158 distance calculations and 108/2 = 54 kernel calls (actually
+   *  less, see below).
    *
    *  But: the cells in the last layer (i.e. in [2,3] for x, y, z) are considered as halo cells.
    *  This means that interactions with them have to be calculated, but not in between them.
@@ -76,7 +78,8 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
    *  - There are a further 2 distance calculations that lead to kernel calls per shared edge (see dotted lines (:, ...)
    *    in visualization below)
    *  - => 3x2 = 6 distance calculations and kernel calls
-   *  - => A total of 54 distance calculations and 30 kernel calls are not calculated, as they are pure halo interactions.
+   *  - => A total of 54 distance calculations and 30 kernel calls are not calculated, as they are pure halo
+   *    interactions.
    *
    *                      o...o...o
    *                      | x | x :

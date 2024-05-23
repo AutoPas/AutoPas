@@ -36,8 +36,8 @@ namespace mdLib {
  * values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
- * @tparam countFLOPs counts FLOPs and hitrate. Currently not implemented as this functor is problematically bad and will be
- * replaced.
+ * @tparam countFLOPs counts FLOPs and hitrate. Currently not implemented as this functor is problematically bad and
+ * will be replaced.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,

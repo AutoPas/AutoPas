@@ -16,7 +16,8 @@
 namespace autopas {
 
 /**
- * Helper to log FLOP count and HitRate for AutoPas::iteratePairwise() calls with the functors in the molecular dynamics library to a csv file for easier analysis.
+ * Helper to log FLOP count and HitRate for AutoPas::iteratePairwise() calls with the functors in the molecular dynamics
+ * library to a csv file for easier analysis.
  *
  * It uses an asynchronous spd logger to write a csv file named "AutoPas_FLOPCount_<dateStamp>.csv".
  *

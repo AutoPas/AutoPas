@@ -53,10 +53,11 @@ using ParticleType = mdLib::MoleculeLJ;
 /**
  * If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
  */
+constexpr bool countFLOPs =
 #ifdef AUTOPAS_LOG_FLOPS
-constexpr bool countFLOPs = true;
+    true;
 #else
-constexpr bool countFLOPs = false;
+    false;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
@@ -66,12 +67,14 @@ constexpr bool countFLOPs = false;
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, countFLOPs>;
+using LJFunctorTypeAutovec =
+    mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, countFLOPs>;
 #ifdef AUTOPAS_LOG_FLOPS
 #error "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJMultisiteFunctor)!"
 #endif
 #else
-using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, countFLOPs>;
+using LJFunctorTypeAutovec =
+    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, countFLOPs>;
 #endif
 
 #endif
@@ -89,7 +92,8 @@ using LJFunctorTypeAutovecGlobals =
 #error "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJMultisiteFunctor)!"
 #endif
 #else
-using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, countFLOPs>;
+using LJFunctorTypeAutovecGlobals =
+    mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, countFLOPs>;
 #endif
 
 #endif
@@ -135,4 +139,3 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
  * Set to the same precision as ParticleType.
  */
 using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
-

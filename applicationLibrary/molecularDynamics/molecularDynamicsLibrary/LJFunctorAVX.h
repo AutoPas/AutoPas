@@ -42,9 +42,8 @@ namespace mdLib {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorAVX
-    : public autopas::Functor<
-          Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>> {
+class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
+                                                                    calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -61,9 +60,8 @@ class LJFunctorAVX
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : autopas::Functor<
-            Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
-            cutoff),
+      : autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -74,7 +72,8 @@ class LJFunctorAVX
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      autopas::utils::ExceptionHandler::exception("FLOP counting is not implemented for the AVX functor. Please use the AutoVec Functor.");
+      autopas::utils::ExceptionHandler::exception(
+          "FLOP counting is not implemented for the AVX functor. Please use the AutoVec Functor.");
     }
   }
 #else

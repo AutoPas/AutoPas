@@ -30,8 +30,8 @@
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/FLOPLogger.h"
+#include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
