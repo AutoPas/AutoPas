@@ -476,7 +476,14 @@ else ()
 
     # Prioritize Auto4OMP's libomp by prepending its path to the environment variable LD_LIBRARY_PATH.
     ## src/autopas/CMakeLists.txt will prepend AUTOPAS_LIBOMP_PATH to LD_LIBRARY_PATH before AutoPas builds. [**]
-    set(AUTOPAS_LIBOMP_PATH "${auto4omp_BINARY_DIR}/runtime/src/libomp.so" CACHE INTERNAL "Auto4OMP's libomp.so path.")
+    set(
+            AUTOPAS_LIBOMP_PATH "${auto4omp_BINARY_DIR}/runtime/src/libomp.so"
+            CACHE INTERNAL "Auto4OMP's libomp.so path."
+    )
+    set(
+            AUTOPAS_LIBOMPTARGET_PATH "${auto4omp_BINARY_DIR}/libomptarget/libomptarget.so"
+            CACHE INTERNAL "Auto4OMP's libomp.so path."
+    )
 
 endif ()
 
