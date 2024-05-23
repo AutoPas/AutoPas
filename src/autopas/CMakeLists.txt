@@ -35,7 +35,7 @@ if (AUTOPAS_AUTO4OMP)
     # [*] Prioritize Auto4OMP's libomp.so [https://www.hpc.dtu.dk/?page_id=1180]
     target_compile_options(
             autopas BEFORE PUBLIC
-            -Wl,-rpath="${AUTOPAS_LIBOMPTARGET_PATH}",-rpath="${AUTOPAS_LIBOMP_PATH}" \
+            -Wl,-rpath="${AUTOPAS_LIBOMPTARGET_PATH}",-rpath="${AUTOPAS_LIBOMP_PATH}"
             -L"${AUTOPAS_LIBOMP_PATH}" -lomp -L"${AUTOPAS_LIBOMPTARGET_PATH}" -lomptarget
     )
 endif ()
