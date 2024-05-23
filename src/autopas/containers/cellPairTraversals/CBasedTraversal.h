@@ -164,7 +164,7 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       // The schedule clause can't read the scheduling kind from a sched_t variable, hence the code duplication.
       // TODO: reduce code duplication.
       switch (TraversalInterface::_openMPConfigurator.getKind()) {
-        case OpenMPKindOption::omp_dynamic: {
+        case OpenMPKindOption::omp_dynamic:
           if (collapseDepth == 2) {
             AUTOPAS_OPENMP(for schedule(dynamic, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(2))
             for (unsigned long z = start_z; z < end_z; z += stride_z) {
@@ -186,9 +186,8 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
               }
             }
           }
-        }
-        break;
-        case OpenMPKindOption::omp_static: {
+          break;
+        case OpenMPKindOption::omp_static:
           if (collapseDepth == 2) {
             AUTOPAS_OPENMP(for schedule(static, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(2))
             for (unsigned long z = start_z; z < end_z; z += stride_z) {
@@ -210,9 +209,8 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
               }
             }
           }
-        }
-        break;
-        case OpenMPKindOption::omp_guided: {
+          break;
+        case OpenMPKindOption::omp_guided:
           if (collapseDepth == 2) {
             AUTOPAS_OPENMP(for schedule(guided, TraversalInterface::_openMPConfigurator.getOMPChunkSize()) collapse(2))
             for (unsigned long z = start_z; z < end_z; z += stride_z) {
@@ -234,9 +232,8 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
               }
             }
           }
-        }
-        break;
-        case OpenMPKindOption::omp_auto: {
+          break;
+        case OpenMPKindOption::omp_auto:
           if (collapseDepth == 2) {
             AUTOPAS_OPENMP(for schedule(auto) collapse(2))
             for (unsigned long z = start_z; z < end_z; z += stride_z) {
@@ -258,9 +255,8 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
               }
             }
           }
-        }
-        break;
-        default: {
+          break;
+        default:
           if (collapseDepth == 2) {
             AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
             for (unsigned long z = start_z; z < end_z; z += stride_z) {
@@ -282,14 +278,13 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
               }
             }
           }
-        }
-
       }
-
-      long time = timer.stop();
-      // std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
     }
+
+    long time = timer.stop();
+    // std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
   }
+}
 }
 
 }  // namespace autopas
