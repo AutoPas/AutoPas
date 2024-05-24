@@ -15,7 +15,7 @@ file(
 # If rules-based tuning is disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
 if (NOT AUTOPAS_ENABLE_RULES_BASED_TUNING)
-    list(FILTER MY_SRC EXCLUDE REGEX ".*parser-generated.*")
+    list(FILTER MY_SRC EXCLUDE REGEX ".*parser_generated.*")
     list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
 endif ()
 add_library(autopas STATIC ${MY_SRC})
