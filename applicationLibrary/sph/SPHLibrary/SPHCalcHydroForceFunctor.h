@@ -532,12 +532,12 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
 
   size_t getNumFLOPs() {
-    autopas::utils::ExceptionHandler::exception("SPHCalcHydroForceFunctor::getNumFLOPs called but is not implemented");
+    AutoPasLog(WARN, "SPHCalcHydroForceFunctor::getNumFLOPs called but is not implemented and will return 0.");
     return 0;
   }
 
   double getHitRate() {
-    autopas::utils::ExceptionHandler::exception("SPHCalcHydroForceFunctor::getNumFLOPs called but is not implemented");
+    AutoPasLog(WARN, "SPHCalcHydroForceFunctor::getHitRate called but is not implemented and will return 0.");
     return 0;
   }
 };

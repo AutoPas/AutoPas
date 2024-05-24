@@ -74,8 +74,7 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      autopas::utils::ExceptionHandler::exception(
-          "FLOP counting is not implemented for the AVX functor. Please use the AutoVec Functor.");
+      AutoPasLog(WARN, "FLOP counting is not implemented for the SVE functor and will return gibberish. Please use the AutoVec Functor or set -DAUTOPAS_LOG_FLOPS=OFF.");
     }
   }
 #else
@@ -885,12 +884,12 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
   }
 
   size_t getNumFLOPs() {
-    autopas::utils::ExceptionHandler::exception("LJFunctorSVE::getNumFLOPs called but is not implemented");
+    AutoPasLog(WARN, "LJFunctorSVE::getNumFLOPs called but is not implemented and will return 0.");
     return 0;
   }
 
   double getHitRate() {
-    autopas::utils::ExceptionHandler::exception("LJFunctorSVE::getNumFLOPs called but is not implemented");
+    AutoPasLog(WARN, "LJFunctorSVE::getHitRate called but is not implemented and will return 0.");
     return 0;
   }
 

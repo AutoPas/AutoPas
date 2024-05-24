@@ -71,12 +71,12 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
   }
 
   size_t getNumFLOPs() {
-    autopas::utils::ExceptionHandler::exception("SPHCalcDensityFunctor::getNumFLOPs called but is not implemented");
+    AutoPasLog(WARN, "SPHCalcDensityFunctor::getNumFLOPs called but is not implemented and will return 0.");
     return 0;
   }
 
   double getHitRate() {
-    autopas::utils::ExceptionHandler::exception("SPHCalcDensityFunctor::getNumFLOPs called but is not implemented");
+    AutoPasLog(WARN, "SPHCalcDensityFunctor::getHitRate called but is not implemented and will return 0.");
     return 0;
   }
 
