@@ -50,6 +50,7 @@ using ParticleType = mdLib::MultisiteMoleculeLJ;
 using ParticleType = mdLib::MoleculeLJ;
 #endif
 
+namespace {
 /**
  * If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
  */
@@ -59,6 +60,7 @@ constexpr bool countFLOPs =
 #else
     false;
 #endif
+}
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**

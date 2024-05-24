@@ -38,6 +38,7 @@ using FMCell = autopas::FullParticleCell<Molecule>;
  */
 using MFunctor = MockFunctor<autopas::Particle>;
 
+namespace {
 /**
  * If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
  */
@@ -47,6 +48,7 @@ constexpr bool countFLOPs =
 #else
     false;
 #endif
+}
 
 /**
  * Helper alias for LJFunctor, which specifies Particle as Molecule (as defined above) and countFLOPs as defined above.
