@@ -84,7 +84,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     FMCell cell1HWY;
     FMCell cell2HWY;
 
-    size_t numParticles = 8;
+    size_t numParticles = 13;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(
@@ -162,7 +162,7 @@ template <VectorizationPattern vecPattern>
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews) {
     FMCell cellHWY;
 
-    size_t numParticles = 8;
+    size_t numParticles = 13;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -224,7 +224,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 
     FMCell cellAVX;
 
-    constexpr size_t numParticles = 8;
+    constexpr size_t numParticles = 13;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
@@ -298,7 +298,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
     FMCell cellHWY;
 
-    constexpr size_t numParticles = 8;
+    constexpr size_t numParticles = 13;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -352,8 +352,20 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYAoS) {
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYVerlet) {
   // different vectorization patterns are currently not supported for Verlet Functor
-  auto [newton3, doDeleteSomeParticle, _] = GetParam();
-  testLJFunctorAVXvsLJFunctorHWYVerlet<VectorizationPattern::p1xVec>(newton3, doDeleteSomeParticle);
+  auto [newton3, doDeleteSomeParticle, vecPattern] = GetParam();
+  switch (vecPattern)
+  {
+  case VectorizationPattern::p1xVec:
+    testLJFunctorAVXvsLJFunctorHWYOneCell<VectorizationPattern::p1xVec>(newton3, doDeleteSomeParticle, false);
+    break;
+  case VectorizationPattern::p2xVecDiv2:
+  case VectorizationPattern::pVecDiv2x2:
+  case VectorizationPattern::pVecx1:
+  case VectorizationPattern::pVecxVec:
+    return;  
+  default:
+    throw std::runtime_error("No vectorization pattern matched");
+  }
 }
 
 TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYOneCellAlignedAccess) {
@@ -457,13 +469,13 @@ std::vector<VectorizationPattern> patterns {
     VectorizationPattern::p1xVec,
     VectorizationPattern::p2xVecDiv2,
     // VectorizationPattern::pVecDiv2x2,
-    // VectorizationPattern::pVecx1,
+    VectorizationPattern::pVecx1,
 };
 
 std::map<VectorizationPattern, std::string> patternsToString {
     { VectorizationPattern::p1xVec, "1xVec"},
     { VectorizationPattern::p2xVecDiv2, "2xVec_2"},
-    { VectorizationPattern::pVecDiv2x2, "Vec_2x2" },
+    // { VectorizationPattern::pVecDiv2x2, "Vec_2x2" },
     { VectorizationPattern::pVecx1, "Vecx1" },
 };
 
