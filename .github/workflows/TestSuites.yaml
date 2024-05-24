@@ -122,6 +122,7 @@ jobs:
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config[8] }} \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DAUTOPAS_ENABLE_ALLLBL=${UseMPI} \
+            -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON \
             ..
           entrypoint.sh cmake --build . --parallel 8 
       - name: Run tests ${{ matrix.part }}/2

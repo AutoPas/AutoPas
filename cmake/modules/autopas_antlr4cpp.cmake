@@ -1,5 +1,5 @@
 set(AUTOPAS_ENABLE_RULES_BASED_TUNING
-        ON
+        OFF
         CACHE
         BOOL "Enables rules-based tuning, which, if using the bundled version, will compile ANTLR and, if it is not installed uuid."
         )
