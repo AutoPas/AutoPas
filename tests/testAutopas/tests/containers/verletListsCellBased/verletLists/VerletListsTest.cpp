@@ -308,8 +308,8 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
   verletLists.addHaloParticle(p);
   LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal(
-      &ljFunctor, autopas::DataLayoutOption::soa, false);
+  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal(&ljFunctor, autopas::DataLayoutOption::soa,
+                                                                             false);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.iteratePairwise(&verletTraversal);
@@ -333,10 +333,10 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
                                                                verletLists2.getBoxMax(), 100);
   LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal1(
-      &ljFunctor, autopas::DataLayoutOption::aos, false);
-  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> soaTraversal(
-      &ljFunctor, autopas::DataLayoutOption::soa, false);
+  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal1(&ljFunctor,
+                                                                              autopas::DataLayoutOption::aos, false);
+  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> soaTraversal(&ljFunctor, autopas::DataLayoutOption::soa,
+                                                                          false);
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);
   verletLists1.iteratePairwise(&verletTraversal1);

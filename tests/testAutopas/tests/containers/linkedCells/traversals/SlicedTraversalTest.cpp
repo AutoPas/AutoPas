@@ -26,8 +26,7 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
 
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FMCell,
-                             LJFunctorType<false, false, autopas::FunctorN3Modes::Both, false, true>>
+  autopas::LCSlicedTraversal<FMCell, LJFunctorType<false, false, autopas::FunctorN3Modes::Both, false, true>>
       slicedTraversal(edgeLength, &ljFunctor, 1., {1., 1., 1.}, autopas::DataLayoutOption::aos, true);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());

@@ -262,10 +262,10 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
   LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
 
-  autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>>
-      verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
-                       verletLists1.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
-                       autopas::ContainerOption::Value::pairwiseVerletLists);
+  autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>> verletTraversal1(
+      verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
+      verletLists1.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
+      autopas::ContainerOption::Value::pairwiseVerletLists);
   autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>> soaTraversal(
       verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
       verletLists2.getCellLength(), autopas::DataLayoutOption::soa, useNewton3,

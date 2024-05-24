@@ -72,7 +72,9 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      AutoPasLog(WARN, "FLOP counting is not implemented for the AVX functor and will return gibberish. Please use the AutoVec Functor or set -DAUTOPAS_LOG_FLOPS=OFF.");
+      AutoPasLog(WARN,
+                 "FLOP counting is not implemented for the AVX functor and will return gibberish. Please use the "
+                 "AutoVec Functor or set -DAUTOPAS_LOG_FLOPS=OFF.");
     }
   }
 #else

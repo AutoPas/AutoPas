@@ -61,9 +61,8 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
    */
   explicit LJFunctorSVE(double cutoff, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
-      : autopas::Functor<
-            Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
-            cutoff),
+      : autopas::Functor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -74,7 +73,9 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      AutoPasLog(WARN, "FLOP counting is not implemented for the SVE functor and will return gibberish. Please use the AutoVec Functor or set -DAUTOPAS_LOG_FLOPS=OFF.");
+      AutoPasLog(WARN,
+                 "FLOP counting is not implemented for the SVE functor and will return gibberish. Please use the "
+                 "AutoVec Functor or set -DAUTOPAS_LOG_FLOPS=OFF.");
     }
   }
 #else

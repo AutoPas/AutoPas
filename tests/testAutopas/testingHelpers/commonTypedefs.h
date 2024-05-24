@@ -9,8 +9,8 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
 #include "mocks/MockFunctor.h"
-#include "molecularDynamicsLibrary/MoleculeLJ.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
+#include "molecularDynamicsLibrary/MoleculeLJ.h"
 
 // a place for usings that are commonly used in tests
 
@@ -53,6 +53,8 @@ constexpr bool countFLOPs =
  * Primarily, this is useful to avoid specifying out default template when we just want to change countFLOPs, which we
  * need to do to avoid warnings/exceptions when the tests are compiled with AUTOPAS_LOG_FLOPS=ON.
  */
-template<bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGlobals = false, bool relevantForTuning = true>
-using LJFunctorType = mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>;
+template <bool applyShift = false, bool useMixing = false,
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
+          bool relevantForTuning = true>
+using LJFunctorType =
+    mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>;
