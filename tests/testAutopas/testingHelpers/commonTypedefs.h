@@ -48,7 +48,7 @@ constexpr bool countFLOPs =
 #else
     false;
 #endif
-}
+}  // namespace
 
 /**
  * Helper alias for LJFunctor, which specifies Particle as Molecule (as defined above) and countFLOPs as defined above.

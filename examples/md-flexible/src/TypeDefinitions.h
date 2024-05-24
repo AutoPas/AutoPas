@@ -60,7 +60,7 @@ constexpr bool countFLOPs =
 #else
     false;
 #endif
-}
+}  // namespace
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**
