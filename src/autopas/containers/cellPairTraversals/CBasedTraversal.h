@@ -156,6 +156,29 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
+      if (collapseDepth == 2) {
+        AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
+        for (unsigned long z = start_z; z < end_z; z += stride_z) {
+          for (unsigned long y = start_y; y < end_y; y += stride_y) {
+            for (unsigned long x = start_x; x < end_x; x += stride_x) {
+              // Don't exchange order of execution (x must be last!), it would break other code
+              loopBody(x, y, z);
+            }
+          }
+        }
+      } else {
+        AUTOPAS_OPENMP(for schedule(runtime) collapse(3))
+        for (unsigned long z = start_z; z < end_z; z += stride_z) {
+          for (unsigned long y = start_y; y < end_y; y += stride_y) {
+            for (unsigned long x = start_x; x < end_x; x += stride_x) {
+              // Don't exchange order of execution (x must be last!), it would break other code
+              loopBody(x, y, z);
+            }
+          }
+        }
+      }
+
+      /* Experimental.
       // Track loop time
       utils::Timer timer;
       timer.start();
@@ -279,12 +302,11 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
             }
           }
       }
+      long time = timer.stop();
+      // std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
+       */
     }
-
-    long time = timer.stop();
-    // std::cout << "Loop " << std::to_string(++LoopID) << ": " << std::to_string(time) << " ms" << std::endl;
   }
-}
 }
 
 }  // namespace autopas
