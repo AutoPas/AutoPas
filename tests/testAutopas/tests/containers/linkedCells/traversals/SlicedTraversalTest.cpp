@@ -16,7 +16,7 @@ using ::testing::_;
 
 void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
   // Get LJ Functor with FLOP Counting enabled
-  mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true> ljFunctor(1.);
+  LJFunctorType<false, false, autopas::FunctorN3Modes::Both, false, true> ljFunctor(1.);
   std::vector<FMCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
@@ -27,7 +27,7 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
   NumThreadGuard numThreadGuard(4);
 
   autopas::LCSlicedTraversal<FMCell,
-                             mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true>>
+                             LJFunctorType<false, false, autopas::FunctorN3Modes::Both, false, true>>
       slicedTraversal(edgeLength, &ljFunctor, 1., {1., 1., 1.}, autopas::DataLayoutOption::aos, true);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
