@@ -25,7 +25,7 @@ class TuningStrategyInterface {
    * Get this object's associated TuningStrategyOption type.
    * @return TuningStrategyOption
    */
-  virtual TuningStrategyOption getOptionType() = 0;
+  virtual TuningStrategyOption getOptionType() const = 0;
 
   /**
    * Notifies the strategy about empirically collected information for the given configuration.

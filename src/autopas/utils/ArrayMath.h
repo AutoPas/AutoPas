@@ -247,7 +247,11 @@ template <class T, std::size_t SIZE>
  */
 template <class T>
 [[nodiscard]] constexpr std::array<T, 3> cross(const std::array<T, 3> &a, const std::array<T, 3> &b) {
-  return {a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]};
+  return {
+      a[1] * b[2] - a[2] * b[1],
+      a[2] * b[0] - a[0] * b[2],
+      a[0] * b[1] - a[1] * b[0],
+  };
 }
 
 /**

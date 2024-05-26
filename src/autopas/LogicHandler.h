@@ -717,7 +717,7 @@ class LogicHandler {
   size_t _sortingThreshold;
 
   /**
-   * Reference to the AutoTuner that owns the container, ...
+   * Reference to the AutoTuner which is managed by the AutoPas main interface.
    */
   autopas::AutoTuner &_autoTuner;
 
@@ -1180,14 +1180,20 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   // if this was a major iteration add measurements and bump counters
   if (functor->isRelevantForTuning()) {
     if (stillTuning) {
-      switch (_autoTuner.getTuningMetric()) {
-        case TuningMetricOption::time:
-          _autoTuner.addMeasurement(measurements.timeTotal, not neighborListsAreValid());
-          break;
-        case TuningMetricOption::energy:
-          _autoTuner.addMeasurement(measurements.energyTotal, not neighborListsAreValid());
-          break;
-      }
+      // choose the metric of interest
+      const auto measurement = [&]() {
+        switch (_autoTuner.getTuningMetric()) {
+          case TuningMetricOption::time:
+            return measurements.timeTotal;
+          case TuningMetricOption::energy:
+            return measurements.energyTotal;
+          default:
+            autopas::utils::ExceptionHandler::exception(
+                "LogicHandler::iteratePairwisePipeline(): Unknown tuning metric.");
+            return 0l;
+        }
+      }();
+      _autoTuner.addMeasurement(measurement, not neighborListsAreValid());
     } else {
       AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
     }
@@ -1200,6 +1206,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
       _stepsSinceLastListRebuild = 0;
     }
     ++_stepsSinceLastListRebuild;
+
+    _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
 
     _autoTuner.bumpIterationCounters();
     ++_iteration;
