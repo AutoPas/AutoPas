@@ -38,7 +38,7 @@ using FMCell = autopas::FullParticleCell<Molecule>;
  */
 using MFunctor = MockFunctor<autopas::Particle>;
 
-namespace autopasTestingTypeDefs{
+namespace autopasTestingTypeDefs {
 /**
  * If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
  */
@@ -48,7 +48,7 @@ constexpr bool countFLOPs =
 #else
     false;
 #endif
-}  // namespace
+}  // namespace autopasTestingTypeDefs
 
 /**
  * Helper alias for LJFunctor, which specifies Particle as Molecule (as defined above) and countFLOPs as defined above.
@@ -58,5 +58,5 @@ constexpr bool countFLOPs =
 template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-using LJFunctorType =
-    mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals, autopasTestingTypeDefs::countFLOPs, relevantForTuning>;
+using LJFunctorType = mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals,
+                                       autopasTestingTypeDefs::countFLOPs, relevantForTuning>;

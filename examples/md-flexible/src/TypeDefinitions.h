@@ -50,7 +50,7 @@ using ParticleType = mdLib::MultisiteMoleculeLJ;
 using ParticleType = mdLib::MoleculeLJ;
 #endif
 
-namespace mdFlexibleTypeDefs{
+namespace mdFlexibleTypeDefs {
 /**
  * If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
  */
@@ -60,7 +60,7 @@ constexpr bool countFLOPs =
 #else
     false;
 #endif
-}  // namespace
+}  // namespace mdFlexibleTypeDefs
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**
@@ -69,8 +69,8 @@ constexpr bool countFLOPs =
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovec =
-    mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false,
+                                                       mdFlexibleTypeDefs::countFLOPs>;
 #ifdef AUTOPAS_LOG_FLOPS
 #warning "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJMultisiteFunctor)!"
 #endif
@@ -88,8 +88,8 @@ using LJFunctorTypeAutovec =
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovecGlobals =
-    mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                                              true, mdFlexibleTypeDefs::countFLOPs>;
 #ifdef AUTOPAS_LOG_FLOPS
 #warning "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJMultisiteFunctor)!"
 #endif
@@ -110,7 +110,8 @@ using LJFunctorTypeAutovecGlobals =
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
-using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeAVX =
+    mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #ifdef AUTOPAS_LOG_FLOPS
 #warning "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJFunctorAVX)!"
 #endif
@@ -128,7 +129,8 @@ using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true, autopas::
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
-using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
+using LJFunctorTypeSVE =
+    mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #ifdef AUTOPAS_LOG_FLOPS
 #warning "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJFunctorSVE)!"
 #endif
