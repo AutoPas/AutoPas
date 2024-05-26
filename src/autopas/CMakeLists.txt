@@ -12,6 +12,22 @@ file(
     "*.cuh"
 )
 
+# If rules-based tuning is disabled, we must remove all files which link to antlr. As this includes generated files,
+# where we can't easily change the file, we disable the files here.
+if (NOT AUTOPAS_ENABLE_RULES_BASED_TUNING)
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageBaseVisitor.h")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageBaseVisitor.cpp")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageVisitor.h")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageVisitor.cpp")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageLexer.h")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageLexer.cpp")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageParser.h")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/parser_generated/autopas_generated_rule_syntax/RuleLanguageParser.cpp")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramParser.h")
+    list(REMOVE_ITEM MY_SRC "${AUTOPAS_SOURCE_DIR}/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramParser.cpp")
+endif ()
+
+
 add_library(autopas STATIC ${MY_SRC})
 
 target_link_libraries(
@@ -22,9 +38,9 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
-        antlr4cpp
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
+        $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_TUNING}>:antlr4cpp>
         Eigen3
     PRIVATE
         # harmony are only needed privately when building AutoPas.
@@ -40,6 +56,7 @@ target_compile_definitions(
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_TUNING>
         _USE_MATH_DEFINES
 )
 

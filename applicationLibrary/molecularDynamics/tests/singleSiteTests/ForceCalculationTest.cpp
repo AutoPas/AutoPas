@@ -14,7 +14,7 @@
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
     mdLib::LJFunctor</* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ false, /*relevantForTuning*/ true> *);
+                     /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true> *);
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {

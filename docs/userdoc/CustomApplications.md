@@ -42,6 +42,10 @@ The critical elements to implement are:
   Indicator functions that return a `std::array` of all `AttributeNames`, which the functor needs to load from the particle to perform the calculation, as well as which fields are written.
 - `isRelevantForTuning()`:
   Indicator function to tell the tuning mechanism if iterations using this functor should be considered or not.
+- `getNumFLOPs()` and `getHitRate()`:
+  These functions return the number of FLOPs per traversal of the container and the hit-rate (the ratio of distance calculations
+  that lead to functor interactions e.g. force contributions.) These functions are only needed if `AUTOPAS_LOG_FLOPS` is
+  set to `ON`, and can be set to return 0 if you are happy without these statistics.
 
 As an example see [`SPHCalcDensityFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary/SPHCalcDensityFunctor.h).
 

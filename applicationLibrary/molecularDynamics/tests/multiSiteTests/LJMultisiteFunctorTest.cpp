@@ -229,7 +229,7 @@ void LJMultisiteFunctorTest::singleSiteSanityCheck(mdLib::MultisiteMoleculeLJ mo
   mdLib::LJMultisiteFunctor<mdLib::MultisiteMoleculeLJ, applyShift, true, autopas::FunctorN3Modes::Both,
                             calculateGlobals, true>
       multiSiteFunctor(cutoff, PPL);
-  mdLib::LJFunctor<applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, true> singleSiteFunctor(cutoff);
+  mdLib::LJFunctor<applyShift, true, autopas::FunctorN3Modes::Both, calculateGlobals, false, true> singleSiteFunctor(cutoff);
 
   // create single site versions of the molecules
   mdLib::MoleculeLJ_NoPPL molASimple;
