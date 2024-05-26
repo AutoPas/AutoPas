@@ -38,7 +38,7 @@ using FMCell = autopas::FullParticleCell<Molecule>;
  */
 using MFunctor = MockFunctor<autopas::Particle>;
 
-namespace {
+namespace autopasTestingTypeDefs{
 /**
  * If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
  */
@@ -59,4 +59,4 @@ template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 using LJFunctorType =
-    mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>;
+    mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals, autopasTestingTypeDefs::countFLOPs, relevantForTuning>;
