@@ -7,7 +7,7 @@ traversal                        :  [vcl_cluster_iteration] # Single type. See A
 data-layout                      :  [SoA] # Use SoA only for OpenMP chunk size investigation.
 newton3                          :  [enabled] # Keep enabled for OpenMP chunk size investigation.
 verlet-rebuild-frequency         :  10
-verlet-skin-radius               :  0.2
+verlet-skin-radius-per-timestep  :  0.02
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
 tuning-strategies                :  []
