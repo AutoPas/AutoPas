@@ -31,7 +31,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
       : Functor<Particle, VLCAllCellsGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
-        _cutoffskinsquared(cutoffSkin * cutoffSkin) {}
+        _cutoffSkinSquared(cutoffSkin * cutoffSkin) {}
 
   bool isRelevantForTuning() override { return false; }
 
@@ -58,7 +58,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
     }
     const auto dist = i.getR() - j.getR();
     const double distSquare = utils::ArrayMath::dot(dist, dist);
-    if (distSquare < _cutoffskinsquared) {
+    if (distSquare < _cutoffSkinSquared) {
       // this is thread safe, only if particle i is accessed by only one
       // thread at a time. which is ensured, as particle i resides in a
       // specific cell and each cell is only accessed by one thread at a time
@@ -102,7 +102,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 < _cutoffskinsquared) {
+        if (dr2 < _cutoffSkinSquared) {
           currentList[i].second.push_back(ptrPtr[j]);
           if (not newton3) {
             // we need this here, as SoAFunctorSingle will only be called once for both newton3=true and false.
@@ -158,7 +158,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
 
         const double dr2 = drx2 + dry2 + drz2;
 
-        if (dr2 < _cutoffskinsquared) {
+        if (dr2 < _cutoffSkinSquared) {
           currentList[i].second.push_back(ptr2Ptr[j]);
         }
       }
@@ -194,7 +194,7 @@ class VLCAllCellsGeneratorFunctor : public Functor<Particle, VLCAllCellsGenerato
    */
   NeighborListsType &_neighborLists;
   std::unordered_map<Particle *, std::pair<size_t, size_t>> &_particleToCellMap;
-  double _cutoffskinsquared;
+  double _cutoffSkinSquared;
 };
 
 }  // namespace autopas
