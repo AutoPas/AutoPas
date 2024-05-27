@@ -1,7 +1,7 @@
 # Heterogeneous scenario using Linked Cells + lc_c04 for OpenMP chunk size performance impact investigation.
 container                            :  [LinkedCells] # Choose one single type.
 verlet-rebuild-frequency             :  10
-verlet-skin-radius                   :  0.05
+verlet-skin-radius                   :  0.5
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
 data-layout                          :  [SoA] # Choose one single layout.
