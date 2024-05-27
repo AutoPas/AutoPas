@@ -518,6 +518,8 @@ class LogicHandler {
    * @return bool whether other tuners are still tuning.
    */
   bool checkTuningStates(InteractionTypeOption::Value interactionType) {
+    // Goes over all pairs in _autoTunerRefs and returns true as soon as one is `inTuningPhase()`.
+    // The tuner associated with the given interaction type is ignored.
     return std::any_of(std::begin(_autoTunerRefs), std::end(_autoTunerRefs), [&](const auto &entry) {
       return entry.first == interactionType ? false : entry.second->inTuningPhase();
     });
