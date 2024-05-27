@@ -404,7 +404,7 @@ class LogicHandler {
    * @return True if this was a tuning iteration.
    */
   template <class Functor>
-  bool computeInteractionsPipeline(Functor *functor, InteractionTypeOption::Value interactionType);
+  bool computeInteractionsPipeline(Functor *functor, const InteractionTypeOption &interactionType);
 
   /**
    * Create the additional vectors vector for a given iterator behavior.
@@ -517,7 +517,7 @@ class LogicHandler {
    * @param interactionType
    * @return bool whether other tuners are still tuning.
    */
-  bool checkTuningStates(InteractionTypeOption::Value interactionType) {
+  bool checkTuningStates(const InteractionTypeOption &interactionType) {
     // Goes over all pairs in _autoTunerRefs and returns true as soon as one is `inTuningPhase()`.
     // The tuner associated with the given interaction type is ignored.
     return std::any_of(std::begin(_autoTunerRefs), std::end(_autoTunerRefs), [&](const auto &entry) {
@@ -541,7 +541,7 @@ class LogicHandler {
    */
   template <class Functor>
   [[nodiscard]] std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> isConfigurationApplicable(
-      const Configuration &conf, Functor &functor, InteractionTypeOption::Value interactionType);
+      const Configuration &conf, Functor &functor, const InteractionTypeOption &interactionType);
 
   /**
    * Directly exchange the internal particle and halo buffers with the given vectors and update particle counters.
@@ -605,7 +605,7 @@ class LogicHandler {
    */
   template <class Functor>
   std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(
-      Functor &functor, InteractionTypeOption::Value interactionType);
+      Functor &functor, const InteractionTypeOption &interactionType);
 
   /**
    * Helper struct collecting all sorts of measurements taken during the pairwise iteration.
@@ -1373,7 +1373,7 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
 template <typename Particle>
 template <class Functor>
 std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandler<Particle>::selectConfiguration(
-    Functor &functor, InteractionTypeOption::Value interactionType) {
+    Functor &functor, const InteractionTypeOption &interactionType) {
   bool stillTuning = false;
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
@@ -1455,7 +1455,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 template <typename Particle>
 template <class Functor>
 bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
-                                                         InteractionTypeOption::Value interactionType) {
+                                                         const InteractionTypeOption &interactionType) {
   if (not _interactionTypes.count(interactionType)) {
     autopas::utils::ExceptionHandler::exception(
         "LogicHandler::computeInteractionsPipeline(): AutPas was not initialized for the Functor's interactions type: "
@@ -1487,9 +1487,9 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   };
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
-  if (interactionType == InteractionTypeOption::Value::pairwise) {
+  if (interactionType == InteractionTypeOption::pairwise) {
     AutoPasLog(DEBUG, "Container::iteratePairwise   took {} ns", measurements.timeIteratePairwise);
-  } else if (interactionType == InteractionTypeOption::Value::triwise) {
+  } else if (interactionType == InteractionTypeOption::triwise) {
     AutoPasLog(DEBUG, "Container::iterateTriwise    took {} ns", measurements.timeIteratePairwise);
   }
   AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
@@ -1549,7 +1549,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
 template <typename Particle>
 template <class Functor>
 std::tuple<std::optional<std::unique_ptr<TraversalInterface>>, bool> LogicHandler<Particle>::isConfigurationApplicable(
-    const Configuration &conf, Functor &functor, InteractionTypeOption::Value interactionType) {
+    const Configuration &conf, Functor &functor, const InteractionTypeOption &interactionType) {
   // Check if the container supports the traversal
   const auto allContainerTraversals =
       compatibleTraversals::allCompatibleTraversals(conf.container, conf.interactionType);

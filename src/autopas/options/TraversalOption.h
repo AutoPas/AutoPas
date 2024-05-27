@@ -286,7 +286,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @param interactionType
    * @return
    */
-  static std::set<TraversalOption> getAllOptionsOf(const autopas::InteractionTypeOption::Value interactionType) {
+  static std::set<TraversalOption> getAllOptionsOf(const autopas::InteractionTypeOption &interactionType) {
     switch (interactionType) {
       case autopas::InteractionTypeOption::pairwise:
         return getAllPairwiseOptions();

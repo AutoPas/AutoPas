@@ -27,7 +27,7 @@ namespace {
  * @return Set of all options that match the prefix and interaction type.
  */
 std::set<TraversalOption> filterAllOptions(const std::string &prefix,
-                                           const InteractionTypeOption::Value interactionType) {
+                                           const InteractionTypeOption &interactionType) {
   const auto allOpts = TraversalOption::getAllOptionsOf(interactionType);
   std::set<TraversalOption> retSet;
   // If the lambda condition holds (=prefix matches) copy the option in the return set.
