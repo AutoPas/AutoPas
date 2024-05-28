@@ -48,7 +48,8 @@ class ParticlePropertiesLibrary {
   /**
    * Registers a new single site type to the library with a given mass.
    * @note New sites must be registered with consecutive siteIds.
-   * @note This only registers the site. Potential specific parameters must be added afterwards by calling e.g. `addLJParametersToSite()` for a Lennard-Jones Site.
+   * @note This only registers the site. Potential specific parameters must be added afterwards by calling e.g.
+   * `addLJParametersToSite()` for a Lennard-Jones Site.
    *
    * @param siteId
    * @param mass
@@ -357,10 +358,12 @@ void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, 
 }
 
 template <typename floatType, typename intType>
-void ParticlePropertiesLibrary<floatType, intType>::addLJParametersToSite(intType siteID, floatType epsilon, floatType sigma) {
+void ParticlePropertiesLibrary<floatType, intType>::addLJParametersToSite(intType siteID, floatType epsilon,
+                                                                          floatType sigma) {
   if (siteID >= _numRegisteredSiteTypes) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addLJParametersToSite(): Trying to set lennard-jones parameters for a site type with id {},"
+        "ParticlePropertiesLibrary::addLJParametersToSite(): Trying to set lennard-jones parameters for a site type "
+        "with id {},"
         " which has not been registered yet. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }
@@ -377,7 +380,8 @@ template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addATParametersToSite(intType siteID, floatType nu) {
   if (siteID >= _numRegisteredSiteTypes) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addATParametersToSite(): Trying to set the axilrod-teller parameter for a site type with id {},"
+        "ParticlePropertiesLibrary::addATParametersToSite(): Trying to set the axilrod-teller parameter for a site "
+        "type with id {},"
         " which has not been registered yet. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);
   }

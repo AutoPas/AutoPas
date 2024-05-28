@@ -336,20 +336,22 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
         size_t searchSpaceSizePairwise = 0;
         size_t searchSpaceSizeTriwise = 0;
         if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise) > 0) {
-          searchSpaceSizePairwise = autopas::SearchSpaceGenerators::cartesianProduct(
-                       _configuration.containerOptions.value, _configuration.traversalOptions.value,
-                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                       _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                       autopas::InteractionTypeOption::pairwise)
-                       .size();
+          searchSpaceSizePairwise =
+              autopas::SearchSpaceGenerators::cartesianProduct(
+                  _configuration.containerOptions.value, _configuration.traversalOptions.value,
+                  _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
+                  _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
+                  autopas::InteractionTypeOption::pairwise)
+                  .size();
         }
         if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) > 0) {
-          searchSpaceSizeTriwise = autopas::SearchSpaceGenerators::cartesianProduct(
-                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
-                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
-                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                       autopas::InteractionTypeOption::triwise)
-                       .size();
+          searchSpaceSizeTriwise =
+              autopas::SearchSpaceGenerators::cartesianProduct(
+                  _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
+                  _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
+                  _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
+                  autopas::InteractionTypeOption::triwise)
+                  .size();
         }
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
       }
