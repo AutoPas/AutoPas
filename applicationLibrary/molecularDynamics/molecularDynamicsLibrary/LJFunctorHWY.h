@@ -381,7 +381,7 @@ namespace mdLib {
                     // TODO : handle different vectorization patterns
                     if constexpr (useMixing) {
 
-                        throw std::runtime_error("Should not be used!");
+                        // throw std::runtime_error("Should not be used!");
                         
                         double epsilon_buf[_vecLengthDouble] = {0.};
                         double sigma_buf[_vecLengthDouble] = {0.};
