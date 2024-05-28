@@ -422,20 +422,31 @@ namespace mdLib {
                         auto lowerFxAcc = highway::LowerHalf(fxAcc);
                         auto lowerFyAcc = highway::LowerHalf(fyAcc);
                         auto lowerFzAcc = highway::LowerHalf(fzAcc);
-                        fxPtr[i] += highway::ReduceSum(tag_double, lowerFxAcc);
-                        fyPtr[i] += highway::ReduceSum(tag_double, lowerFyAcc);
-                        fzPtr[i] += highway::ReduceSum(tag_double, lowerFzAcc);
+
+                        // TODO : handle this better, unfortunately cluster needs that...
+                        auto extLowerFxAcc = highway::ZeroExtendVector(tag_double, lowerFxAcc);
+                        auto extLowerFyAcc = highway::ZeroExtendVector(tag_double, lowerFyAcc);
+                        auto extLowerFzAcc = highway::ZeroExtendVector(tag_double, lowerFzAcc);
+
+                        fxPtr[i] += highway::ReduceSum(tag_double, extLowerFxAcc);
+                        fyPtr[i] += highway::ReduceSum(tag_double, extLowerFyAcc);
+                        fzPtr[i] += highway::ReduceSum(tag_double, extLowerFzAcc);
 
                         if constexpr (!remainder) {
                             auto higherFxAcc = highway::UpperHalf(tag_double, fxAcc);
                             auto higherFyAcc = highway::UpperHalf(tag_double, fyAcc);
                             auto higherFzAcc = highway::UpperHalf(tag_double, fzAcc);
 
+                            // TODO : handle this better, unfortunately cluster needs that...
+                            auto extHigherFxAcc = highway::ZeroExtendVector(tag_double, higherFxAcc);
+                            auto extHigherFyAcc = highway::ZeroExtendVector(tag_double, higherFyAcc);
+                            auto extHigherFzAcc = highway::ZeroExtendVector(tag_double, higherFzAcc);
+
                             long index = reversed ? i-1 : i+1;
 
-                            fxPtr[index] += highway::ReduceSum(tag_double, higherFxAcc);
-                            fyPtr[index] += highway::ReduceSum(tag_double, higherFyAcc);
-                            fzPtr[index] += highway::ReduceSum(tag_double, higherFzAcc);
+                            fxPtr[index] += highway::ReduceSum(tag_double, extHigherFxAcc);
+                            fyPtr[index] += highway::ReduceSum(tag_double, extHigherFyAcc);
+                            fzPtr[index] += highway::ReduceSum(tag_double, extHigherFzAcc);
                         }
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
