@@ -339,7 +339,7 @@ auto TraversalComparison::getTestParams() {
             for (auto numParticles : params[interactionType].numParticles) {
               for (auto boxMax : params[interactionType].boxMax) {
                 for (double cellSizeFactor : params[interactionType].cellSizeFactors) {
-                  for (auto numHalo : params[interactionType].numParticles) {
+                  for (auto numHalo : params[interactionType].numHaloParticles) {
                     for (bool slightMove : {true, false}) {
                       for (bool globals : {true, /*false*/}) {
                         for (DeletionPosition particleDeletionPosition :
