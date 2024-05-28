@@ -644,33 +644,28 @@ class LogicHandler {
   /**
    * Rebuild the current container's 2-body or 3-body neighbor lists.
    *
-   * @tparam interactionType
    * @param traversal
    * @return
    */
-  template <InteractionTypeOption::Value interactionType>
   void rebuildNeighborLists(TraversalInterface &traversal);
 
   /**
    * Call the current container's iteratePairwise() or iterateTriwise() functions.
    *
-   * @tparam interactionType
    * @param traversal
    * @return
    */
-  template <InteractionTypeOption::Value interactionType>
   void iterateContainer(TraversalInterface &traversal);
 
   /**
    * Select the right Remainder function depending on the interaction type and newton3 setting.
    *
-   * @tparam interactionType
    * @tparam Functor
    * @param functor
    * @param newton3
    * @return
    */
-  template <InteractionTypeOption::Value interactionType, class Functor>
+  template <class Functor>
   void iterateRemainder(Functor &functor, bool newton3);
 
   /**
@@ -967,16 +962,16 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
 
   if (doListRebuild) {
     timerRebuild.start();
-    rebuildNeighborLists<interactionType>(traversal);
+    rebuildNeighborLists(traversal);
     timerRebuild.stop();
   }
 
   timerComputeInteractions.start();
-  iterateContainer<interactionType>(traversal);
+  iterateContainer(traversal);
   timerComputeInteractions.stop();
 
   timerRemainderTraversal.start();
-  iterateRemainder<interactionType>(functor, newton3);
+  iterateRemainder(functor, newton3);
   timerRemainderTraversal.stop();
 
   functor.endTraversal(newton3);
@@ -997,44 +992,45 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
 }
 
 template <typename Particle>
-template <InteractionTypeOption::Value interactionType>
 void LogicHandler<Particle>::rebuildNeighborLists(TraversalInterface &traversal) {
   auto &container = _containerSelector.getCurrentContainer();
-  if constexpr (interactionType == InteractionTypeOption::pairwise) {
-    auto &pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface &>(traversal);
-    container.rebuildNeighborLists(&pairwiseTraversal);
-  } else if constexpr (interactionType == InteractionTypeOption::triwise) {
-    auto &triwiseTraversal = dynamic_cast<TriwiseTraversalInterface &>(traversal);
-    container.rebuildNeighborLists(&triwiseTraversal);
+
+  auto *pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(&traversal);
+  if (pairwiseTraversal) {
+    container.rebuildNeighborLists(pairwiseTraversal);
+  }
+  auto *triwiseTraversal = dynamic_cast<TriwiseTraversalInterface *>(&traversal);
+  if (triwiseTraversal) {
+    container.rebuildNeighborLists(triwiseTraversal);
   }
 }
 
 template <typename Particle>
-template <InteractionTypeOption::Value interactionType>
 void LogicHandler<Particle>::iterateContainer(TraversalInterface &traversal) {
   auto &container = _containerSelector.getCurrentContainer();
-  if constexpr (interactionType == InteractionTypeOption::pairwise) {
-    auto &pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface &>(traversal);
-    container.iteratePairwise(&pairwiseTraversal);
-  } else if constexpr (interactionType == InteractionTypeOption::triwise) {
-    auto &triwiseTraversal = dynamic_cast<TriwiseTraversalInterface &>(traversal);
-    container.iterateTriwise(&triwiseTraversal);
+  auto *pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(&traversal);
+  if (pairwiseTraversal) {
+    container.iteratePairwise(pairwiseTraversal);
+  }
+  auto *triwiseTraversal = dynamic_cast<TriwiseTraversalInterface *>(&traversal);
+  if (triwiseTraversal) {
+    container.iterateTriwise(triwiseTraversal);
   }
 }
 
 template <typename Particle>
-template <InteractionTypeOption::Value interactionType, class Functor>
+template <class Functor>
 void LogicHandler<Particle>::iterateRemainder(Functor &functor, const bool newton3) {
   auto &container = _containerSelector.getCurrentContainer();
 
   withStaticContainerType(container, [&](auto &actualContainerType) {
-    if constexpr (interactionType == InteractionTypeOption::pairwise) {
+    if constexpr (utils::isPairwiseFunctor<Functor>()) {
       if (newton3) {
         doRemainderTraversal<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       } else {
         doRemainderTraversal<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       }
-    } else if constexpr (interactionType == InteractionTypeOption::triwise) {
+    } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
       if (newton3) {
         doRemainderTraversal3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       } else {
