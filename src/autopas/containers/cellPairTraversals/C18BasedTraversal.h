@@ -51,7 +51,7 @@ class C18BasedTraversal : public CBasedTraversal<ParticleCell, PairwiseFunctor> 
    * cells, use allCells=true. For the c18 step if allCells is false, iteration will not occur over the last layer of
    * cells (for overlap=1) (in x, y and z direction).
    */
-  template <bool allCells = false, typename LoopBody>
+  template <bool allCells, typename LoopBody>
   inline void c18Traversal(LoopBody &&loopBody);
 };
 
