@@ -457,7 +457,7 @@ namespace mdLib {
 
                         // either load full slice of vecLength / 2 or a shortened slice of rest particles
                         // for reversed order, the index must be adapted
-                        long index = reversed ? (remainder ? 2 : i-_vecLengthDouble/2+1) : i;
+                        long index = reversed ? (remainder ? 0 : i-_vecLengthDouble/2+1) : i;
                         auto mask = restMasksDouble[remainder ? rest-1 : _vecLengthDouble/2-1];
 
                         auto oldFx = highway::MaskedLoad(mask, tag_double, &fxPtr[index]);
@@ -474,7 +474,7 @@ namespace mdLib {
                         highway::BlendedStore(newFz, mask, tag_double, &fzPtr[index]);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        
+
                         if constexpr (reversed && remainder) {
 
                             fxPtr[rest-1] += highway::ExtractLane(fxAcc, rest-1);
@@ -489,8 +489,8 @@ namespace mdLib {
                             return;
                         }
 
-                        long index = reversed ? i-_vecLengthDouble+1 : i;
-                        auto mask = restMasksDouble[rest-1];
+                        long index = reversed ? (remainder ? 0 : i-_vecLengthDouble+1) : i;
+                        auto mask = restMasksDouble[remainder ? rest-1 : _vecLengthDouble-1];
 
                         VectorDouble oldFx = _zeroDouble;
                         VectorDouble oldFy = _zeroDouble;
@@ -536,7 +536,7 @@ namespace mdLib {
                         throw std::runtime_error("No vectorization pattern matched, error!");
                 }
 
-                template <bool remainder>
+                template <bool remainder, bool reversed>
                 inline void handleNewton3Accumulation(const VectorDouble& fx, const VectorDouble& fy, const VectorDouble& fz,
                     double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const long j, const long rest = 0) {
                     
@@ -608,18 +608,28 @@ namespace mdLib {
                         auto lowerFy = highway::LowerHalf(fy);
                         auto lowerFz = highway::LowerHalf(fz);
 
-                        fxPtr[j] -= highway::ReduceSum(tag_double, lowerFx);
-                        fyPtr[j] -= highway::ReduceSum(tag_double, lowerFy);
-                        fzPtr[j] -= highway::ReduceSum(tag_double, lowerFz);
+                        // TODO : handle this better, unfortunately cluster needs that...
+                        auto extLowerFx = highway::ZeroExtendVector(tag_double, lowerFx);
+                        auto extLowerFy = highway::ZeroExtendVector(tag_double, lowerFy);
+                        auto extLowerFz = highway::ZeroExtendVector(tag_double, lowerFz);
+
+                        fxPtr[j] -= highway::ReduceSum(tag_double, extLowerFx);
+                        fyPtr[j] -= highway::ReduceSum(tag_double, extLowerFy);
+                        fzPtr[j] -= highway::ReduceSum(tag_double, extLowerFz);
 
                         if constexpr (!remainder) {
                             auto higherFx = highway::UpperHalf(tag_double, fx);
                             auto higherFy = highway::UpperHalf(tag_double, fy);
                             auto higherFz = highway::UpperHalf(tag_double, fz);
 
-                            fxPtr[j+1] -= highway::ReduceSum(tag_double, higherFx);
-                            fyPtr[j+1] -= highway::ReduceSum(tag_double, higherFy);
-                            fzPtr[j+1] -= highway::ReduceSum(tag_double, higherFz);
+                            // TODO : handle this better, unfortunately cluster needs that...
+                            auto extHigherFx = highway::ZeroExtendVector(tag_double, higherFx);
+                            auto extHigherFy = highway::ZeroExtendVector(tag_double, higherFy);
+                            auto extHigherFz = highway::ZeroExtendVector(tag_double, higherFz);
+
+                            fxPtr[j+1] -= highway::ReduceSum(tag_double, extHigherFx);
+                            fyPtr[j+1] -= highway::ReduceSum(tag_double, extHigherFy);
+                            fzPtr[j+1] -= highway::ReduceSum(tag_double, extHigherFz);
                         }
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
@@ -771,7 +781,7 @@ namespace mdLib {
                                 x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
-                            handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
+                            handleNewton3Accumulation<false, true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
                         }
 
                         const int restJ = obtainSecondLoopRest<true>(i);
@@ -788,7 +798,7 @@ namespace mdLib {
                                 x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
-                            handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
+                            handleNewton3Accumulation<true, true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
                         }
 
                         reduceAccumulatedForce<false, true>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i);
@@ -822,7 +832,7 @@ namespace mdLib {
                                 x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
-                            handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
+                            handleNewton3Accumulation<false, true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
                         }
 
                         const int restJ = obtainSecondLoopRest<true>(i);
@@ -841,7 +851,7 @@ namespace mdLib {
                                 x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
-                            handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
+                            handleNewton3Accumulation<true, true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
                         }
 
                         reduceAccumulatedForce<true, true>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i, restI);
@@ -950,7 +960,7 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
+                                handleNewton3Accumulation<false, false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
                             }
                         }
 
@@ -971,7 +981,7 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
+                                handleNewton3Accumulation<true, false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
                             }
                         }
 
@@ -1006,7 +1016,7 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
+                                handleNewton3Accumulation<false, false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
                             }
                         }
 
@@ -1027,7 +1037,7 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
+                                handleNewton3Accumulation<true, false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
                             }
                         }
 
@@ -1240,7 +1250,7 @@ namespace mdLib {
 
                             if constexpr (newton3) {
 
-                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, 0);
+                                handleNewton3Accumulation<false, false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, 0);
 
                                 for (long vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
                                     fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
@@ -1282,7 +1292,7 @@ namespace mdLib {
 
                             if constexpr (newton3) {
 
-                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, restJ);
+                                handleNewton3Accumulation<false, false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, restJ);
 
                                 for (long vecIndex = 0; vecIndex < _vecLengthDouble && vecIndex < restJ; ++vecIndex) {
                                     fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];

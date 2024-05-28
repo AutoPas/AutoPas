@@ -72,9 +72,16 @@ bool LJFunctorTestHWY::AoSParticlesEqual(FMCell &cell1, FMCell &cell2) {
     EXPECT_EQ(cell1.size(), cell2.size());
 
     bool ret = true;
+
+    int counter {0};
+
     for (size_t i = 0; i < cell1.size(); ++i) {
-        ret = ret and particleEqual(cell1._particles[i], cell2._particles[i]);
+
+        if (!particleEqual(cell1._particles[i], cell2._particles[i]))
+          ++counter;
     }
+
+    return counter == 0;
 
     return ret;
 }
@@ -469,7 +476,7 @@ std::vector<VectorizationPattern> patterns {
     VectorizationPattern::p1xVec,
     VectorizationPattern::p2xVecDiv2,
     VectorizationPattern::pVecDiv2x2,
-    // VectorizationPattern::pVecx1,
+    VectorizationPattern::pVecx1,
 };
 
 std::map<VectorizationPattern, std::string> patternsToString {
