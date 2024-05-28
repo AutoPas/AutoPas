@@ -102,7 +102,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   config.subdivideDimension.value = {true, true, true};
   config.boundaryOption.value = boundaryConditions;
   config.addSiteType(0, 1.);
-  config.addLJSite(0, 1., sigma);
+  config.addLJParametersToSite(0, 1., sigma);
 
   const std::array<double, 3> boxLength = config.boxMax.value - config.boxMin.value;
   RegularGridDecomposition domainDecomposition(config);

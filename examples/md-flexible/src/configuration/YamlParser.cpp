@@ -605,12 +605,12 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
                                                                    siteErrors, false);
           const auto sigma = parseComplexTypeValueSingle<double>(siteIterator->second, config.sigmaMap.name.c_str(),
                                                                  siteErrors, false);
-          config.addLJSite(siteID, epsilon, sigma);
+          config.addLJParametersToSite(siteID, epsilon, sigma);
 
           // Check Axilrod-Teller parameter
           const auto nu =
               parseComplexTypeValueSingle<double>(siteIterator->second, config.nuMap.name.c_str(), siteErrors, false);
-          config.addATSite(siteID, nu);
+          config.addATParametersToSite(siteID, nu);
         }
       } else if (key == MDFlexConfig::moleculesStr) {
         // todo throw error if momentOfInertia with zero element is used (physically nonsense + breaks the quaternion

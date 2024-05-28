@@ -166,7 +166,7 @@ class MDFlexConfig {
    * @param epsilon
    * @param sigma
    */
-  void addLJSite(unsigned long siteId, double epsilon, double sigma);
+  void addLJParametersToSite(unsigned long siteId, double epsilon, double sigma);
 
   /**
    * Adds the Axilrod-Teller parameter nu to the specified site.
@@ -175,7 +175,7 @@ class MDFlexConfig {
    * @param siteId unique site type id
    * @param nu
    */
-  void addATSite(unsigned long siteId, double nu);
+  void addATParametersToSite(unsigned long siteId, double nu);
 
   /**
    * Adds site positions and types for a given molecule type and checks if the molId already exists

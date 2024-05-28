@@ -497,7 +497,7 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double mass) {
   }
 }
 
-void MDFlexConfig::addLJSite(unsigned long siteId, double epsilon, double sigma) {
+void MDFlexConfig::addLJParametersToSite(unsigned long siteId, double epsilon, double sigma) {
   // check if siteId was already declared and mass was specified
   if (massMap.value.count(siteId) == 1) {
     if (epsilonMap.value.count(siteId) == 1) {
@@ -516,7 +516,7 @@ void MDFlexConfig::addLJSite(unsigned long siteId, double epsilon, double sigma)
   }
 }
 
-void MDFlexConfig::addATSite(unsigned long siteId, double nu) {
+void MDFlexConfig::addATParametersToSite(unsigned long siteId, double nu) {
   // check if siteId was already declared and mass was specified
   if (massMap.value.count(siteId) == 1) {
     if (nuMap.value.count(siteId) == 1) {

@@ -130,8 +130,8 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
   // add two site types
   PPL->addSiteType(0, 1.);
   PPL->addSiteType(1, 1.2);
-  PPL->addLJSite(0, 1., 1.);
-  PPL->addLJSite(1, 0.2, 0.7);
+  PPL->addLJParametersToSite(0, 1., 1.);
+  PPL->addLJParametersToSite(1, 0.2, 0.7);
 
   // Check that PPL is empty of molecule types
   EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 0);
