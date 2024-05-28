@@ -16,30 +16,10 @@ add_library(autopas STATIC ${MY_SRC})
 
 # Prioritize Auto4OMP's libomp by setting the LD_LIBRARY_PATH environment variable.
 if (AUTOPAS_AUTO4OMP)
-    # TODO: Try [*] instead.
-    if (DEFINED ENV{LD_LIBRARY_PATH} AND NOT $ENV{LD_LIBRARY_PATH} STREQUAL "")
-        # If the variable's not empty, prepend Auto4OMP's libomp path.
-        add_custom_command(
-                TARGET autopas
-                PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_LIBOMP_PATH}:$ENV{LD_LIBRARY_PATH}"
-        )
-    else ()
-        # Else, set it to Auto4OMP's libomp path.
-        add_custom_command(
-                TARGET autopas
-                PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_LIBOMP_PATH}"
-        )
-    endif ()
-
-    #[[
-    # [*] Prioritize Auto4OMP's libomp.so [https://www.hpc.dtu.dk/?page_id=1180] TODO: options unused by Clang. Why?
-    target_compile_options(
-            autopas BEFORE PRIVATE
-            -I"${AUTOPAS_LIBOMP_DIR}" -I"${AUTOPAS_LIBOMPTARGET_DIR}"
-            -Wl,-rpath="${AUTOPAS_LIBOMPTARGET_DIR}",-rpath="${AUTOPAS_LIBOMP_DIR}"
-            -L"${AUTOPAS_LIBOMP_DIR}" -lomp -L"${AUTOPAS_LIBOMPTARGET_DIR}" -lomptarget
-    )
-    #]]
+    # Add the auto4omp target as a dependency to the AutoPas target.
+    add_dependencies(autopas auto4omp)
+    auto4omp_prioritize(autopas)
+    target_include_directories(autopas PUBLIC ${AUTOPAS_AUTO4OMP_INCLUDE_DIR})
 endif ()
 
 target_link_libraries(
@@ -52,11 +32,11 @@ target_link_libraries(
         $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${AUTOPAS_AUTO4OMP}>>>:OpenMP::OpenMP_CXX>
 
         # Auto4OMP targets, linked if they exist.
-        $<$<BOOL:${AUTOPAS_TARGET_omp}>:omp>
-        $<$<BOOL:${AUTOPAS_TARGET_omptarget}>:omptarget>
-        #$<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.cuda}>:omptarget.rtl.cuda>
-        #$<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.x86_64}>:omptarget.rtl.x86_64>
-        #$<$<BOOL:${AUTOPAS_TARGET_omptarget-nvptx}>:omptarget-nvptx>
+        $<$<BOOL:${AUTOPAS_TARGET_omp}>:autopas_auto4omp_omp>
+        $<$<BOOL:${AUTOPAS_TARGET_omptarget}>:autopas_auto4omp_omptarget>
+        #$<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.cuda}>:autopas_auto4omp_omptarget.rtl.cuda>
+        #$<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.x86_64}>:autopas_auto4omp_omptarget.rtl.x86_64>
+        #$<$<BOOL:${AUTOPAS_TARGET_omptarget-nvptx}>:autopas_auto4omp_omptarget-nvptx>
 
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
