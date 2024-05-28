@@ -242,6 +242,190 @@ namespace mdLib {
                         throw std::runtime_error("No vectorization pattern matched, error!");
                 }
 
+                template <bool remainder, bool reversed>
+                inline void fillIRegisters(VectorDouble& x1, VectorDouble& y1, VectorDouble& z1,
+                    VectorLong& ownedI, const int64_t *const __restrict ownedPtr1,
+                    const double *const __restrict xPtr1, const double *const __restrict yPtr1,
+                    const double *const __restrict zPtr1, const long i, const long rest) {
+
+                        ownedI = highway::Set(tag_long, ownedPtr1[i]);
+                        x1 = highway::Set(tag_double, xPtr1[i]);
+                        y1 = highway::Set(tag_double, yPtr1[i]);
+                        z1 = highway::Set(tag_double, zPtr1[i]);
+
+                        if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                            VectorLong tmpOwnedI = _zeroLong;
+                            VectorDouble tmpX1 = _zeroDouble;
+                            VectorDouble tmpY1 = _zeroDouble;
+                            VectorDouble tmpZ1 = _zeroDouble;
+
+                            if constexpr (!remainder) {
+                                tmpOwnedI = highway::Set(tag_long, reversed ? ownedPtr1[i-1] : ownedPtr1[i+1]);
+                                tmpX1 = highway::Set(tag_double, reversed ? xPtr1[i-1] : xPtr1[i+1]);
+                                tmpY1 = highway::Set(tag_double, reversed ? yPtr1[i-1] : yPtr1[i+1]);
+                                tmpZ1 = highway::Set(tag_double, reversed ? zPtr1[i-1] : zPtr1[i+1]);
+                            }
+
+                            ownedI = highway::ConcatLowerLower(tag_double, tmpOwnedI, ownedI);
+                            x1 = highway::ConcatLowerLower(tag_double, tmpX1, x1);
+                            y1 = highway::ConcatLowerLower(tag_double, tmpY1, y1);
+                            z1 = highway::ConcatLowerLower(tag_double, tmpZ1, z1);
+                        }
+                        else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                            const auto maskLong = restMasksLong[remainder ? rest-1 : _vecLengthDouble/2-1];
+                            const auto maskDouble = restMasksDouble[remainder ? rest-1 : _vecLengthDouble/2-1];
+
+                            long index = reversed ? (remainder ? 0 : i-_vecLengthDouble/2+1) : i;
+
+                            ownedI = highway::MaskedLoad(maskLong, tag_long, &ownedPtr1[index]);
+                            x1 = highway::MaskedLoad(maskDouble, tag_double, &xPtr1[index]);
+                            y1 = highway::MaskedLoad(maskDouble, tag_double, &yPtr1[index]);
+                            z1 = highway::MaskedLoad(maskDouble, tag_double, &zPtr1[index]);
+
+                            ownedI = highway::ConcatLowerLower(tag_long, ownedI, ownedI);
+                            x1 = highway::ConcatLowerLower(tag_double, x1, x1);
+                            y1 = highway::ConcatLowerLower(tag_double, y1, y1);
+                            z1 = highway::ConcatLowerLower(tag_double, z1, z1);
+                        }
+                        else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                            long index = reversed ? (remainder ? 0 : i-_vecLengthDouble+1) : i;
+
+                            if constexpr (remainder) {
+                                auto maskDouble = restMasksDouble[rest-1];
+                                auto maskLong = restMasksLong[rest-1];
+
+                                ownedI = highway::MaskedLoad(maskLong, tag_long, &ownedPtr1[index]);
+                                x1 = highway::MaskedLoad(maskDouble, tag_double, &xPtr1[index]);
+                                y1 = highway::MaskedLoad(maskDouble, tag_double, &yPtr1[index]);
+                                z1 = highway::MaskedLoad(maskDouble, tag_double, &zPtr1[index]);
+                            }
+                            else {
+                                ownedI = highway::LoadU(tag_long, &ownedPtr1[index]);
+                                x1 = highway::LoadU(tag_double, &xPtr1[index]);
+                                y1 = highway::LoadU(tag_double, &yPtr1[index]);
+                                z1 = highway::LoadU(tag_double, &zPtr1[index]);
+                            }
+                        }
+                        else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                            // TODO : implement
+                            throw std::runtime_error("Not yet implemented!");
+                        }
+
+                }
+
+                template <bool remainder>
+                inline void fillJRegisters(VectorDouble& x2, VectorDouble& y2, VectorDouble& z2,
+                    VectorLong& ownedJ, const int64_t *const __restrict ownedPtr2,
+                    const double *const __restrict xPtr2, const double *const __restrict yPtr2,
+                    const double *const __restrict zPtr2, const long j, const long rest) {
+
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        if constexpr(remainder) {
+                            const auto restMaskDouble = restMasksDouble[rest-1];
+                            const auto restMaskLong = restMasksLong[rest-1];
+
+                            ownedJ = highway::MaskedLoad(restMaskLong, tag_long, &ownedPtr2[j]);
+                            x2 = highway::MaskedLoad(restMaskDouble, tag_double, &xPtr2[j]);
+                            y2 = highway::MaskedLoad(restMaskDouble, tag_double, &yPtr2[j]);
+                            z2 = highway::MaskedLoad(restMaskDouble, tag_double, &zPtr2[j]);
+
+                        }
+                        else {
+                            ownedJ = highway::LoadU(tag_long, &ownedPtr2[j]);
+                            x2 = highway::LoadU(tag_double, &xPtr2[j]);
+                            y2 = highway::LoadU(tag_double, &yPtr2[j]);
+                            z2 = highway::LoadU(tag_double, &zPtr2[j]);
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+
+                        const auto maskLong = restMasksLong[remainder ? rest-1 : _vecLengthDouble/2-1];
+                        const auto maskDouble = restMasksDouble[remainder ? rest-1 : _vecLengthDouble/2-1];
+
+                        // lower part of registers is filled
+                        ownedJ = highway::MaskedLoad(maskLong, tag_long, &ownedPtr2[j]);
+                        x2 = highway::MaskedLoad(maskDouble, tag_double, &xPtr2[j]);
+                        y2 = highway::MaskedLoad(maskDouble, tag_double, &yPtr2[j]);
+                        z2 = highway::MaskedLoad(maskDouble, tag_double, &zPtr2[j]);
+
+                        // "broadcast" lower half to upper half
+                        ownedJ = highway::ConcatLowerLower(tag_long, ownedJ, ownedJ);
+                        x2 = highway::ConcatLowerLower(tag_double, x2, x2);
+                        y2 = highway::ConcatLowerLower(tag_double, y2, y2);
+                        z2 = highway::ConcatLowerLower(tag_double, z2, z2);
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+
+                        ownedJ = highway::Set(tag_long, ownedPtr2[j]);
+                        x2 = highway::Set(tag_double, xPtr2[j]);
+                        y2 = highway::Set(tag_double, yPtr2[j]);
+                        z2 = highway::Set(tag_double, zPtr2[j]);
+
+                        VectorLong ownedJTmp =_zeroLong;
+                        VectorDouble x2Tmp = _zeroDouble;
+                        VectorDouble y2Tmp = _zeroDouble;
+                        VectorDouble z2Tmp = _zeroDouble;
+
+                        if constexpr (!remainder) {
+                            ownedJTmp = highway::Set(tag_long, ownedPtr2[j+1]);
+                            x2Tmp = highway::Set(tag_double, xPtr2[j+1]);
+                            y2Tmp = highway::Set(tag_double, yPtr2[j+1]);
+                            z2Tmp = highway::Set(tag_double, zPtr2[j+1]);
+                        }
+
+                        ownedJ = highway::ConcatLowerLower(tag_double, ownedJTmp, ownedJ);
+                        x2 = highway::ConcatLowerLower(tag_double, x2Tmp, x2);
+                        y2 = highway::ConcatLowerLower(tag_double, y2Tmp, y2);
+                        z2 = highway::ConcatLowerLower(tag_double, z2Tmp, z2);
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        ownedJ = highway::Set(tag_long, ownedPtr2[j]);
+                        x2 = highway::Set(tag_double, xPtr2[j]);
+                        y2 = highway::Set(tag_double, yPtr2[j]);
+                        z2 = highway::Set(tag_double, zPtr2[j]);
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
+                        throw std::runtime_error("Not yet implemented!");
+                    }
+
+                }
+
+                template <bool remainderI, bool remainderJ, bool reversed>
+                inline void fillPhysicsRegisters(VectorDouble& epsilon24s, VectorDouble& sigmaSquaredDiv2s, VectorDouble& shift6s,
+                        const long unsigned *const __restrict typeID1ptr, const long unsigned *const __restrict typeID2ptr,
+                        const long restI, const long restJ) {
+
+                    // TODO : handle different vectorization patterns
+                    if constexpr (useMixing) {
+                        
+                        double epsilon_buf[_vecLengthDouble] = {0.};
+                        double sigma_buf[_vecLengthDouble] = {0.};
+                        double shift_buf[_vecLengthDouble] = {0.};
+
+                        for (long n = 0; (remainderJ ? n < restJ : n < _vecLengthDouble); ++n) {
+                            epsilon_buf[n] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + n));
+                            sigma_buf[n] =  _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + n));
+                            if constexpr (applyShift) {
+                                shift_buf[n] = _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + n));
+                            }
+                        }
+                        epsilon24s = highway::LoadU(tag_double, epsilon_buf);
+                        sigmaSquaredDiv2s = highway::LoadU(tag_double, sigma_buf);
+                        if constexpr (applyShift) {
+                            shift6s = highway::LoadU(tag_double, shift_buf);
+                        }
+                    }
+                    else {
+                        epsilon24s = _epsilon24;
+                        sigmaSquaredDiv2s = _sigmaSquared;
+                        if constexpr (applyShift) {
+                            shift6s = _shift6;
+                        }
+                    }
+
+                }
+
                 template <bool remainderI, bool remainderJ, bool reversedI>
                 inline void fillVectorRegisters(VectorDouble& x1, VectorDouble& y1, VectorDouble& z1,
                     VectorDouble& x2, VectorDouble& y2, VectorDouble& z2, VectorLong& ownedI, VectorLong& ownedJ,
@@ -763,11 +947,13 @@ namespace mdLib {
                     long i = soa.size() - 1;
                     for (; checkFirstLoopCondition<true>(i); decrementFirstLoop(i)) {
 
+                        /*
                         if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
 
                             // TODO : handle different vec patterns
                             // continue;
                         }
+                        */
 
                         static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                             "OwnershipStates underlying type should be int64_t!");
@@ -776,13 +962,17 @@ namespace mdLib {
                         fyAcc = _zeroDouble;
                         fzAcc = _zeroDouble;
 
+                        fillIRegisters<false, true>(x1, y1, z1, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                            xPtr, yPtr, zPtr, i, 0);
+
                         long j = 0;
 
                         for (; checkSecondLoopCondition<true>(i, j); incrementSecondLoop(j)) {
 
-                            fillVectorRegisters<false, false, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
-                                epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, xPtr, yPtr, zPtr,
-                                xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr), i, j, 0, 0);
+                            fillJRegisters<false>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                xPtr, yPtr, zPtr, j, 0);
+
+                            fillPhysicsRegisters<false, false, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, 0, 0);
                             
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -797,9 +987,11 @@ namespace mdLib {
 
                         const int restJ = obtainSecondLoopRest<true>(i);
                         if (restJ > 0) {
-                            fillVectorRegisters<false, true, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
-                                epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, xPtr, yPtr, zPtr,
-                                xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr), i, j, 0, restJ);
+                        
+                            fillJRegisters<true>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                xPtr, yPtr, zPtr, j, restJ);
+
+                            fillPhysicsRegisters<false, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, 0, restJ);
                             
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -826,14 +1018,17 @@ namespace mdLib {
                         fyAcc = _zeroDouble;
                         fzAcc = _zeroDouble;
 
+                        fillIRegisters<true, true>(x1, y1, z1, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                            xPtr, yPtr, zPtr, i, restI);
+
                         long j = 0;
 
                         for (; checkSecondLoopCondition<true>(i, j); incrementSecondLoop(j)) {
-                            
-                            fillVectorRegisters<true, false, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
-                                epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, xPtr, yPtr, zPtr,
-                                xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                i, j, restI);
+
+                            fillJRegisters<false>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                xPtr, yPtr, zPtr, j, 0);
+
+                            fillPhysicsRegisters<false, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, restI, 0);
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -849,10 +1044,10 @@ namespace mdLib {
                         const int restJ = obtainSecondLoopRest<true>(i);
                         if (restJ > 0) {
 
-                            fillVectorRegisters<true, true, true>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
-                                epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, xPtr, yPtr, zPtr,
-                                xPtr, yPtr, zPtr, reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                i, j, restI, restJ);
+                            fillJRegisters<true>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                xPtr, yPtr, zPtr, j, restJ);
+
+                            fillPhysicsRegisters<true, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, restI, restJ);
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -943,25 +1138,30 @@ namespace mdLib {
                     long i = 0;
                     for (; checkFirstLoopCondition<false>(i, soa1.size()); incrementFirstLoop(i)) {
 
+                        /*
                         if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
 
                             // TODO : handle different vec patterns
                             // continue;
                         }
+                        */
 
                         fxAcc = _zeroDouble;
                         fyAcc = _zeroDouble;
                         fzAcc = _zeroDouble;
 
+                        fillIRegisters<false, false>(x1, y1, z1, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr1),
+                            x1Ptr, y1Ptr, z1Ptr, i, 0);
+
                         long j = 0;
 
                         for (; checkSecondLoopCondition<false>(soa2.size(), j); incrementSecondLoop(j)) {
-                            
-                            fillVectorRegisters<false, false, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
-                                epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, x1Ptr, y1Ptr, z1Ptr,
-                                x2Ptr, y2Ptr, z2Ptr, reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                i, j, 0, 0);
 
+                            fillJRegisters<false>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x2Ptr, y2Ptr, z2Ptr, j, 0);
+
+                            fillPhysicsRegisters<false, false, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, 0, 0);
+                            
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
@@ -978,10 +1178,10 @@ namespace mdLib {
                         const int restJ = obtainSecondLoopRest<false>(soa2.size());
                         if (restJ > 0) {
 
-                            fillVectorRegisters<false, true, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
-                                epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, x1Ptr, y1Ptr, z1Ptr,
-                                x2Ptr, y2Ptr, z2Ptr, reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                i, j, 0, restJ);
+                            fillJRegisters<true>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x2Ptr, y2Ptr, z2Ptr, j, restJ);
+
+                            fillPhysicsRegisters<false, true, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, 0, restJ);
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1009,14 +1209,17 @@ namespace mdLib {
                         fyAcc = _zeroDouble;
                         fzAcc = _zeroDouble;
 
+                        fillIRegisters<true, false>(x1, y1, z1, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr1),
+                            x1Ptr, y1Ptr, z1Ptr, i, restI);
+
                         long j = 0;
 
                         for (; checkSecondLoopCondition<false>(soa2.size(), j); incrementSecondLoop(j)) {
-                            
-                            fillVectorRegisters<true, false, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
-                                epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, x1Ptr, y1Ptr, z1Ptr,
-                                x2Ptr, y2Ptr, z2Ptr, reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                i, j, restI, 0);
+
+                            fillJRegisters<false>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x2Ptr, y2Ptr, z2Ptr, j, 0);
+
+                            fillPhysicsRegisters<false, false, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, restI, 0);
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1034,10 +1237,10 @@ namespace mdLib {
                         const int restJ = obtainSecondLoopRest<false>(soa2.size());
                         if (restJ > 0) {
 
-                            fillVectorRegisters<true, true, false>(x1, y1, z1, x2, y2, z2, ownedStateI, ownedStateJ,
-                                epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, x1Ptr, y1Ptr, z1Ptr,
-                                x2Ptr, y2Ptr, z2Ptr, reinterpret_cast<const int64_t *>(ownedStatePtr1), reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                i, j, restI, restJ);
+                            fillJRegisters<true>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x2Ptr, y2Ptr, z2Ptr, j, restJ);
+
+                            fillPhysicsRegisters<true, true, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, restI, restJ);
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
