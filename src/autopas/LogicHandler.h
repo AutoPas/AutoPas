@@ -1379,7 +1379,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
     configuration = autoTuner->getCurrentConfig();
-    // This is needed to synchronize container types between multiple interaction types.
+    // In case of multiple active interaction types, the current container might be from another autoTuner's
+    // configuration (see https://github.com/AutoPas/AutoPas/issues/871).
     if (_containerSelector.getCurrentContainer().getContainerType() != configuration.container) {
       _containerSelector.selectContainer(
           configuration.container,

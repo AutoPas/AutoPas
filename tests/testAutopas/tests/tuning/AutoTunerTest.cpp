@@ -752,7 +752,9 @@ TEST_F(AutoTunerTest, testRestoreAfterWipe) {
 }
 
 /**
- * Test tuning with two autotuners together
+ * Test tuning with two autotuners in combination by checking the return value of `bool stillTuning =
+ * LogicHandler::computeInteractionsPipeline()`. The tuners have differently sized search spaces and therefore finish
+ * tuning at a different time step. Yet, they should start the second tuning phase in the same time step.
  */
 TEST_F(AutoTunerTest, testMultipleTuners) {
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};

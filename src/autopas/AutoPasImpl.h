@@ -109,9 +109,10 @@ void AutoPas<Particle>::init() {
     if (_useTuningStrategyLoggerProxy) {
       tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
     }
+    auto tunerOutputSuffix = _outputSuffix + "_" + interactionType.to_string();
     _autoTuners.emplace(interactionType,
                         std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                             _verletRebuildFrequency, _outputSuffix));
+                                                             _verletRebuildFrequency, tunerOutputSuffix));
   }
 
   // Create logic handler

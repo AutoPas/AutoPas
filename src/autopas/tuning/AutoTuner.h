@@ -281,12 +281,12 @@ class AutoTuner {
   /**
    * Number of iterations between two tuning phases.
    */
-  std::size_t _tuningInterval;
+  size_t _tuningInterval;
 
   /**
    * Number of iterations since the end of the last tuning phase.
    */
-  std::size_t _iterationsSinceTuning;
+  size_t _iterationsSinceTuning;
 
   /**
    * Saves this tuner's tuning state

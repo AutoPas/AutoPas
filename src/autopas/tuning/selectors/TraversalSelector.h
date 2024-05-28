@@ -11,7 +11,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal3B.h"
