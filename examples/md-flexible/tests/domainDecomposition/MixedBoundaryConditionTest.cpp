@@ -116,7 +116,7 @@ void MixedBoundaryConditionTest::testFunction(const std::vector<std::array<doubl
   autoPasContainer->init();
 
   particlePropertiesLibrary->addSiteType(0, 1.);
-  particlePropertiesLibrary->addLJSite(0, 1., sigma);
+  particlePropertiesLibrary->addLJParametersToSite(0, 1., sigma);
 #if MD_FLEXIBLE_MODE == MULTISITE
   particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
 #endif

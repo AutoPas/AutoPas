@@ -333,10 +333,10 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
 
         // This estimate is only valid for full search and no restrictions on the cartesian product.
         // add static to only evaluate this once
-        size_t space2 = 0;
-        size_t space3 = 0;
+        size_t searchSpaceSizePairwise = 0;
+        size_t searchSpaceSizeTriwise = 0;
         if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise) > 0) {
-          space2 = autopas::SearchSpaceGenerators::cartesianProduct(
+          searchSpaceSizePairwise = autopas::SearchSpaceGenerators::cartesianProduct(
                        _configuration.containerOptions.value, _configuration.traversalOptions.value,
                        _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
                        _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
@@ -344,14 +344,14 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
                        .size();
         }
         if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) > 0) {
-          space3 = autopas::SearchSpaceGenerators::cartesianProduct(
+          searchSpaceSizeTriwise = autopas::SearchSpaceGenerators::cartesianProduct(
                        _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
                        _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
                        _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
                        autopas::InteractionTypeOption::triwise)
                        .size();
         }
-        return std::max(space2, space3);
+        return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
       }
     }();
     // non-tuning iterations + tuning iterations + one iteration after last phase

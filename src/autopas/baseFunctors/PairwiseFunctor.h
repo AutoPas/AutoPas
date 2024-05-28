@@ -95,7 +95,7 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
    * between all particles of soa1 and soa2.
    * This should include a cutoff check if needed!
    *
-   * @param soa1 First structure of arrays.+ getName()
+   * @param soa1 First structure of arrays.
    * @param soa2 Second structure of arrays.
    * @param newton3 defines whether or whether not to use newton 3
    */

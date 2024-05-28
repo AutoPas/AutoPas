@@ -1,7 +1,7 @@
 /**
- * @file DSTraversalInterface.h
- * @author seckler
- * @date 09.01.19
+ * @file DSPairTraversalInterface.h
+ * @author muehlhaeusser
+ * @date 18.05.24
  */
 
 #pragma once
@@ -14,9 +14,9 @@
 namespace autopas {
 
 /**
- * Interface for traversals used by the DirectSum container.
+ * Interface for pairwise traversals used by the DirectSum container.
  *
- * The container only accepts traversals in its computeInteractions() method that implement this interface.
+ * The container only accepts pairwise traversals in its iteratePairwise() method that implement this interface.
  */
 class DSPairTraversalInterface : public DSTraversalInterface, public PairwiseTraversalInterface {};
 

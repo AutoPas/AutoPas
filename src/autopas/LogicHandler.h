@@ -612,7 +612,7 @@ class LogicHandler {
    */
   struct IterationMeasurements {
     /// Time
-    long timeIteratePairwise{};
+    long timeIterateContainer{};
     long timeRemainderTraversal{};
     long timeRebuild{};
     long timeTotal{};
@@ -815,7 +815,7 @@ class LogicHandler {
   unsigned int _stepsSinceLastListRebuild{std::numeric_limits<unsigned int>::max()};
 
   /**
-   * Total number of relevant functor calls of any interaction type.
+   * Total number of relevant functor calls of all interaction types.
    */
   unsigned int _relevantFunctorCalls{0};
   /**
@@ -949,7 +949,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
 
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
-  autopas::utils::Timer timerComputeInteractions;
+  autopas::utils::Timer timerIterateContainer;
   autopas::utils::Timer timerRemainderTraversal;
 
   const bool doListRebuild = not neighborListsAreValid();
@@ -966,9 +966,9 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
     timerRebuild.stop();
   }
 
-  timerComputeInteractions.start();
+  timerIterateContainer.start();
   iterateContainer(traversal);
-  timerComputeInteractions.stop();
+  timerIterateContainer.stop();
 
   timerRemainderTraversal.start();
   iterateRemainder(functor, newton3);
@@ -980,7 +980,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
-  return {timerComputeInteractions.getTotalTime(),
+  return {timerIterateContainer.getTotalTime(),
           timerRemainderTraversal.getTotalTime(),
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
@@ -1485,11 +1485,12 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
   if (interactionType == InteractionTypeOption::pairwise) {
-    AutoPasLog(DEBUG, "Container::iteratePairwise   took {} ns", measurements.timeIteratePairwise);
+    AutoPasLog(DEBUG, "Container::iteratePairwise   took {} ns", measurements.timeIterateContainer);
+    AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
   } else if (interactionType == InteractionTypeOption::triwise) {
-    AutoPasLog(DEBUG, "Container::iterateTriwise    took {} ns", measurements.timeIteratePairwise);
+    AutoPasLog(DEBUG, "Container::iterateTriwise    took {} ns", measurements.timeIterateContainer);
+    AutoPasLog(DEBUG, "RemainderTraversal3B         took {} ns", measurements.timeRemainderTraversal);
   }
-  AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
   AutoPasLog(DEBUG, "RebuildNeighborLists         took {} ns", measurements.timeRebuild);
   AutoPasLog(DEBUG, "AutoPas::computeInteractions took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {
@@ -1497,7 +1498,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
                measurements.energyPkg, measurements.energyRam);
   }
   _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning,
-                                measurements.timeIteratePairwise, measurements.timeRemainderTraversal,
+                                measurements.timeIterateContainer, measurements.timeRemainderTraversal,
                                 measurements.timeRebuild, measurements.timeTotal, tuningTimer.getTotalTime(),
                                 measurements.energyPsys, measurements.energyPkg, measurements.energyRam);
 

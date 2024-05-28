@@ -574,11 +574,6 @@ class AutoPas {
   [[nodiscard]] bool searchSpaceIsTrivial();
 
   /**
-   * Increments any iteration-based counters within AutoPas.
-   */
-  //  void incrementIterationCounters();
-
-  /**
    * Set coordinates of the lower corner of the domain.
    * @param boxMin
    */

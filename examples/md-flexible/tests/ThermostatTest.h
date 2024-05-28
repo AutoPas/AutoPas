@@ -19,9 +19,9 @@ class ThermostatTest : public AutoPasTestBase,
 
   ThermostatTest() : AutoPasTestBase(), _particlePropertiesLibrary(ParticlePropertiesLibrary<double, size_t>(1.)) {
     _particlePropertiesLibrary.addSiteType(0, 1.);
-    _particlePropertiesLibrary.addLJSite(0, 1., 1.);
+    _particlePropertiesLibrary.addLJParametersToSite(0, 1., 1.);
     _particlePropertiesLibrary.addSiteType(1, 2.);
-    _particlePropertiesLibrary.addLJSite(1, 1., 1.);
+    _particlePropertiesLibrary.addLJParametersToSite(1, 1., 1.);
 
 #if MD_FLEXIBLE_MODE == MULTISITE
     _particlePropertiesLibrary.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});

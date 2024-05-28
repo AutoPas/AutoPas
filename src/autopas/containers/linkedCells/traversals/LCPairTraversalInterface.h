@@ -14,9 +14,9 @@
 namespace autopas {
 
 /**
- * Interface for traversals used by the LinkedCell class.
+ * Interface for pairwise traversals used by the LinkedCell class.
  *
- * The container only accepts traversals in its iteratePairwise() method that implement this interface.
+ * The container only accepts pairwise traversals in its iteratePairwise() method that implement this interface.
  */
 template <class ParticleCell>
 class LCPairTraversalInterface : public PairwiseTraversalInterface, public LCTraversalInterface {};

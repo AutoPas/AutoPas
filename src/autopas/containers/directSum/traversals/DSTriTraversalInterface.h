@@ -14,9 +14,9 @@
 namespace autopas {
 
 /**
- * Interface for traversals used by the DirectSum container.
+ * Interface for triwise traversals used by the DirectSum container.
  *
- * The container only accepts traversals in its iterateTriwise() method that implement this interface.
+ * The container only accepts triwise traversals in its iterateTriwise() method that implement this interface.
  */
 class DSTriTraversalInterface : public DSTraversalInterface, public TriwiseTraversalInterface {};
 }  // namespace autopas

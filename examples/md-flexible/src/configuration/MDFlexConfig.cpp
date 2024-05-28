@@ -574,11 +574,11 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   }
   // initialize LJ parameters
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
-    _particlePropertiesLibrary->addLJSite(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId));
+    _particlePropertiesLibrary->addLJParametersToSite(siteTypeId, epsilon, sigmaMap.value.at(siteTypeId));
   }
   // initialize AT parameters
   for (auto [siteTypeId, nu] : nuMap.value) {
-    _particlePropertiesLibrary->addATSite(siteTypeId, nu);
+    _particlePropertiesLibrary->addATParametersToSite(siteTypeId, nu);
   }
 
   // if doing Multi-site MD simulation, also check molecule level vectors match and initialize at molecular level

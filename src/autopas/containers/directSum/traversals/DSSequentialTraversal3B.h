@@ -31,7 +31,7 @@ class DSSequentialTraversal3B : public CellTraversal<ParticleCell>, public DSTri
    * Constructor for the DirectSum traversal.
    * @param triwiseFunctor The functor that defines the interaction of three particles.
    * @param cutoff cutoff (this is enough for the directsum traversal, please don't use the interaction length here.)
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit DSSequentialTraversal3B(TriwiseFunctor *triwiseFunctor, double cutoff, DataLayoutOption dataLayout,

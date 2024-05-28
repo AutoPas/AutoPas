@@ -70,7 +70,7 @@ TEST_P(ReflectiveBoundaryConditionTest, simpleReflectionTest) {
   autoPasContainer->init();
 
   particlePropertiesLibrary->addSiteType(0, 1.);
-  particlePropertiesLibrary->addLJSite(0, 1., sigma);
+  particlePropertiesLibrary->addLJParametersToSite(0, 1., sigma);
 
 #if MD_FLEXIBLE_MODE == MULTISITE
   // Correct Moment of Inertia is irrelevant to test, so accept that they are wrong
@@ -342,9 +342,9 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
   autoPasContainer->init();
 
   particlePropertiesLibrary->addSiteType(0, 1.);
-  particlePropertiesLibrary->addLJSite(0, 1., sigmas[0]);
+  particlePropertiesLibrary->addLJParametersToSite(0, 1., sigmas[0]);
   particlePropertiesLibrary->addSiteType(1, 1.);
-  particlePropertiesLibrary->addLJSite(1, 1., sigmas[1]);
+  particlePropertiesLibrary->addLJParametersToSite(1, 1., sigmas[1]);
 
 #if MD_FLEXIBLE_MODE == MULTISITE
   particlePropertiesLibrary->addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});

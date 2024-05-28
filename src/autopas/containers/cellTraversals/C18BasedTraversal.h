@@ -29,7 +29,7 @@ class C18BasedTraversal : public ColorBasedTraversal<ParticleCell, Functor> {
    * @param functor The functor that defines the interaction between particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit C18BasedTraversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,

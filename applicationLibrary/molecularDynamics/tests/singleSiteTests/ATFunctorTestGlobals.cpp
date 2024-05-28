@@ -18,7 +18,7 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestG
   std::string where_str;
   bool owned1, owned2, owned3;
   switch (where) {
-    case inside:
+    case allInside:
       whereFactor = 1.;
       where_str = "inside";
       owned1 = owned2 = owned3 = true;
@@ -35,7 +35,7 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestG
       owned2 = true;
       owned1 = owned3 = false;
       break;
-    case outside:
+    case allOutside:
       whereFactor = 0.;
       where_str = "outside";
       owned1 = owned2 = owned3 = false;
@@ -163,8 +163,8 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobals) {
   using FuncType = TypeParam;
   using TestType = ATFunctorTestGlobals<FuncType>;
 
-  for (typename TestType::where_type where : {TestType::where_type::inside, TestType::where_type::ininout,
-                                              TestType::where_type::inoutout, TestType::where_type::outside}) {
+  for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
+                                              TestType::where_type::inoutout, TestType::where_type::allOutside}) {
     for (bool newton3 : {false, true}) {
       if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixing(where, newton3); });
           msg != "") {

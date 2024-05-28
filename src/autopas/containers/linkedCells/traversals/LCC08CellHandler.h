@@ -33,7 +33,7 @@ class LCC08CellHandler {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
