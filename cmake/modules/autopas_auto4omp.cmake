@@ -37,6 +37,11 @@ string(
         "to confirm that Auto4OMP is indeed being used instead of standard OpenMP."
 )
 
+set(
+        AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC
+        "Directory for Auto4OMP to install its libraries."
+)
+
 string(
         CONCAT AUTOPAS_LLVM_LIT_EXECUTABLE_DOC
         "Path to the LLVM-lit executable, required by Auto4OMP. E.g., \"/usr/lib/llvm-18/build/utils/lit/lit.py\". "
@@ -88,9 +93,14 @@ set(
         "Newest OpenMP version supported by AutoPas."
 )
 
-macro(AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC target)
-    return("Boolean that specifies whether Auto4OMP's lib${target} target is defined.")
-endmacro()
+function(set_autopas_auto4omp_target_boolean_doc bool_var target)
+    set(${bool_var} "Boolean that specifies whether Auto4OMP's target ${target} is defined." PARENT_SCOPE)
+endfunction()
+set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omp_DOC" "omp")
+set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget_DOC" "omptarget")
+set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget.rtl.cuda_DOC" "omptarget.rtl.cuda")
+set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget.rtl.x86_64_DOC" "omptarget.rtl.x86_64")
+set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget-nvptx_DOC" "omptarget-nvptx")
 
 # AutoPas CMake variables for Auto4OMP.
 option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" ON)
@@ -98,6 +108,7 @@ option(AUTOPAS_AUTO4OMP_GIT "${AUTOPAS_AUTO4OMP_GIT_DOC}" OFF)
 option(AUTOPAS_AUTO4OMP_GIT_FORCE "${AUTOPAS_AUTO4OMP_GIT_FORCE_DOC}" OFF)
 set(AUTOPAS_AUTO4OMP_GIT_TAG "master" CACHE STRING "${AUTOPAS_AUTO4OMP_GIT_TAG_DOC}")
 option(AUTOPAS_AUTO4OMP_DEBUG "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
+set(AUTOPAS_AUTO4OMP_INSTALL_DIR "" CACHE PATH ${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC})
 set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}")
 set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC}")
 set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
@@ -108,11 +119,11 @@ set(AUTOPAS_NVCC_MAX_GCC 12 CACHE STRING ${AUTOPAS_NVCC_MAX_GCC_DOC})
 set(AUTOPAS_OMP_VERSION 45 CACHE STRING ${AUTOPAS_OMP_VERSION_DOC})
 
 # Set boolean variables for Auto4OMP's targets, used in target_link_libraries's conditional generator expressions.
-set(AUTOPAS_TARGET_omp OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omp))
-set(AUTOPAS_TARGET_omptarget OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omptarget))
-set(AUTOPAS_TARGET_omptarget.rtl.cuda OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omptarget.rtl.cuda))
-set(AUTOPAS_TARGET_omptarget.rtl.x86_64 OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omptarget.rtl.x86_64))
-set(AUTOPAS_TARGET_omptarget-nvptx OFF CACHE BOOL AUTOPAS_AUTO4OMP_TARGET_BOOL_DOC(omptarget-nvptx))
+set(AUTOPAS_TARGET_omp OFF CACHE BOOL "${AUTOPAS_TARGET_omp_DOC}")
+set(AUTOPAS_TARGET_omptarget OFF CACHE BOOL "${AUTOPAS_TARGET_omptarget_DOC}")
+set(AUTOPAS_TARGET_omptarget.rtl.cuda OFF CACHE BOOL "${AUTOPAS_TARGET_omptarget.rtl.cuda_DOC}")
+set(AUTOPAS_TARGET_omptarget.rtl.x86_64 OFF CACHE BOOL "${AUTOPAS_TARGET_omptarget.rtl.x86_64_DOC}")
+set(AUTOPAS_TARGET_omptarget-nvptx OFF CACHE BOOL "${AUTOPAS_TARGET_omptarget-nvptx_DOC}")
 
 if (NOT AUTOPAS_AUTO4OMP)
     # If Auto4OMP disabled, notify.
@@ -461,17 +472,96 @@ else ()
             LIBOMPTARGET_NVPTX_DEBUG
     )
 
-    # Set booleans to indicate which Auto4OMP targets are defined.
-    set(AUTOPAS_TARGET_omp ON CACHE BOOL "Auto4OMP libomp target." FORCE)
-    set(AUTOPAS_TARGET_omptarget ON CACHE BOOL "Auto4OMP libomptarget target." FORCE)
+    # Build and install Auto4OMP with make install.
+
+    ## Add a target for Auto4OMP. It builds Auto4OMP by running make in its build directory.
+    add_custom_target(
+            auto4omp ALL
+            WORKING_DIRECTORY ${auto4omp_BINARY_DIR}
+            COMMAND ${CMAKE_MAKE_PROGRAM}
+            COMMENT "Building Auto4OMP"
+    )
+
+    ## Set Auto4OMP's install directory if not specified.
+    if (NOT AUTOPAS_AUTO4OMP_INSTALL_DIR)
+        set(
+                AUTOPAS_AUTO4OMP_INSTALL_DIR "${auto4omp_BINARY_DIR}/install"
+                CACHE STRING ${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC} FORCE
+        )
+    endif ()
+    set(AUTOPAS_AUTO4OMP_LIB_DIR "${AUTOPAS_AUTO4OMP_INSTALL_DIR}/lib")
+    set(AUTOPAS_AUTO4OMP_INCLUDE_DIR "${AUTOPAS_AUTO4OMP_INSTALL_DIR}/include")
+
+    ## Configure cmake install to use the local install directory.
+    install(DIRECTORY "${auto4omp_BINARY_DIR}/runtime/src" DESTINATION "${AUTOPAS_AUTO4OMP_INSTALL_DIR}")
+
+    ## Run cmake install post-build. Use a local directory instead of /usr, so no sudo privilege is required.
+    add_custom_command(
+            TARGET auto4omp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} --install "${auto4omp_BINARY_DIR}" --prefix "${AUTOPAS_AUTO4OMP_INSTALL_DIR}"
+    )
+
+    # Set booleans to indicate which Auto4OMP targets are defined, add custom targets for them. [11]
+
+    ## libomp.so
+    set(
+            AUTOPAS_TARGET_omp ON
+            CACHE BOOL "${AUTOPAS_TARGET_omp_DOC}" FORCE
+    )
+    add_library(autopas_auto4omp_omp SHARED IMPORTED)
+    set_property(
+            TARGET autopas_auto4omp_omp
+            PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomp.so"
+    )
+
+    ## libomptarget.so
+    set(
+            AUTOPAS_TARGET_omptarget ON
+            CACHE BOOL "${AUTOPAS_TARGET_omptarget_DOC}" FORCE
+    )
+    add_library(autopas_auto4omp_omptarget SHARED IMPORTED)
+    set_property(
+            TARGET autopas_auto4omp_omptarget
+            PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomptarget.so"
+    )
+
+    ## libomptarget.rtl.cuda.so
     if (TARGET omptarget.rtl.cuda)
-        set(AUTOPAS_TARGET_omptarget.rtl.cuda ON CACHE BOOL "Auto4OMP libomptarget.rtl.cuda target." FORCE)
+        set(
+                AUTOPAS_TARGET_omptarget.rtl.cuda ON
+                CACHE BOOL "${AUTOPAS_TARGET_omptarget.rtl.cuda_DOC}" FORCE
+        )
+        add_library(autopas_auto4omp_omptarget.rtl.cuda SHARED IMPORTED)
+        set_property(
+                TARGET autopas_auto4omp_omptarget.rtl.cuda
+                PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomptarget.rtl.cuda.so"
+        )
     endif ()
+
+    ## libomptarget.rtl.x86_64.so
     if (TARGET omptarget.rtl.x86_64)
-        set(AUTOPAS_TARGET_omptarget.rtl.x86_64 ON CACHE BOOL "Auto4OMP libomptarget.rtl.x86_64 target." FORCE)
+        set(
+                AUTOPAS_TARGET_omptarget.rtl.x86_64 ON
+                CACHE BOOL "${AUTOPAS_TARGET_mptarget.rtl.x86_64_DOC}" FORCE
+        )
+        add_library(autopas_auto4omp_omptarget.rtl.x86_64 SHARED IMPORTED)
+        set_property(
+                TARGET autopas_auto4omp_omptarget.rtl.x86_64
+                PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomptarget.rtl.x86_64.so"
+        )
     endif ()
+
+    ## libomptarget-nvptx.a
     if (TARGET omptarget-nvptx)
-        set(AUTOPAS_TARGET_omptarget-nvptx ON CACHE BOOL "Auto4OMP libomptarget-nvptx target." FORCE)
+        set(
+                AUTOPAS_TARGET_omptarget-nvptx ON
+                CACHE BOOL "${AUTOPAS_TARGET_omptarget-nvptx_DOC}" FORCE
+        )
+        add_library(autopas_auto4omp_omptarget-nvptx SHARED IMPORTED)
+        set_property(
+                TARGET autopas_auto4omp_omptarget-nvptx
+                PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomptarget-nvptx.a"
+        )
     endif ()
 
     # Prioritize Auto4OMP's libomp by prepending its path to the environment variable LD_LIBRARY_PATH.
@@ -494,6 +584,34 @@ else ()
     )
 
 endif ()
+
+# Macro to prioritize Auto4OMP's installed libraries. Prepends the install dir to LD_LIBRARY_PATH for a given target.
+function(auto4omp_prioritize target)
+    # TODO: Try [*] instead.
+    if (DEFINED ENV{LD_LIBRARY_PATH} AND NOT $ENV{LD_LIBRARY_PATH} STREQUAL "")
+        # If the variable's not empty, prepend Auto4OMP's install directory.
+        add_custom_command(
+                TARGET ${target}
+                PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_AUTO4OMP_LIB_DIR}:$ENV{LD_LIBRARY_PATH}"
+        )
+    else ()
+        # Else, set it to Auto4OMP's install directory.
+        add_custom_command(
+                TARGET ${target}
+                PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_AUTO4OMP_LIB_DIR}"
+        )
+    endif ()
+
+    #[[
+    # [*] Prioritize Auto4OMP's libomp.so [https://www.hpc.dtu.dk/?page_id=1180] TODO: options unused by Clang. Why?
+    target_compile_options(
+            ${target} BEFORE PRIVATE
+            -I"${AUTOPAS_LIBOMP_DIR}" -I"${AUTOPAS_LIBOMPTARGET_DIR}"
+            -Wl,-rpath="${AUTOPAS_LIBOMPTARGET_DIR}",-rpath="${AUTOPAS_LIBOMP_DIR}"
+            -L"${AUTOPAS_LIBOMP_DIR}" -lomp -L"${AUTOPAS_LIBOMPTARGET_DIR}" -lomptarget
+    )
+    #]]
+endfunction()
 
 # Function to simulate find_package(OpenMP), finds Auto4OMP instead of standard OpenMP.
 function(auto4omp_FindOpenMP)
@@ -667,6 +785,7 @@ Sources:
     [8]   https://packages.ubuntu.com/
     [9]   https://unix.stackexchange.com/a/294493
     [10]  https://stackoverflow.com/a/71817684
+    [11]  https://cmake.org/cmake/help/latest/guide/importing-exporting/index.html
 
     [*]   Don't use LB4OMP v0.1 (the Auto4OMP release). Clone the newer master branch instead.
           v0.1 initializes atomics as follows: atomic<int> i = 0;
