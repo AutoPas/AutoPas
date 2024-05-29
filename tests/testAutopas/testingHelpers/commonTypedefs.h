@@ -58,5 +58,4 @@ constexpr bool countFLOPs =
 template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-using LJFunctorType = mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals,
-                                       autopasTestingTypeDefs::countFLOPs, relevantForTuning>;
+using LJFunctorType = mdLib::LJFunctor<applyShift, useMixing, useNewton3, calculateGlobals, autopasTestingTypeDefs::countFLOPs, relevantForTuning>;

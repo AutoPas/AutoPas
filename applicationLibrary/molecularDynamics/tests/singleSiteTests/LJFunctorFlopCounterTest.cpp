@@ -13,8 +13,7 @@
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ false, /*countFLOPs*/ true, /*relevantForTuning*/ true> *);
+    mdLib::LJFunctor</* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false, /*countFLOPs*/ true, /*relevantForTuning*/ true> *);
 /**
  * Generates a square of four particles, iterates over it with the LJFunctor and checks the values of getNumFLOPs() and
  * getHitRate()
@@ -61,8 +60,7 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   // update container -> build neighbor lists in case of Verlet
   auto buffer = autoPas.updateContainer();  // buffer is meaningless here
 
-  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
-      autoPas.getCutoff());
+  mdLib::LJFunctor<applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(autoPas.getCutoff());
 
   autoPas.iteratePairwise(&ljFunctor);
 
@@ -95,8 +93,7 @@ void LJFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
-      cutoff);
+  mdLib::LJFunctor<applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
@@ -126,8 +123,7 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP(bool newton3) 
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
-      cutoff);
+  mdLib::LJFunctor<applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
 
   autopas::FullParticleCell<Molecule> cell1;
   cell1.addParticle(p1);
@@ -195,8 +191,7 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP(bool newton3) {
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<Molecule, applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
-      cutoff);
+  mdLib::LJFunctor<applyShift, false, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
 
   autopas::FullParticleCell<Molecule> cell;
   cell.addParticle(p0);
