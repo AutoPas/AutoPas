@@ -53,8 +53,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                    const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2,
                    const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
-                   typename VerletListsCellsHelpers<Particle>::VLCBuildType dataLayoutDuringListRebuild =
-                       VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)
+                   typename VerletListsCellsHelpers::VLCBuildType dataLayoutDuringListRebuild =
+                       VerletListsCellsHelpers::VLCBuildType::soaBuild)
       : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _loadEstimator(loadEstimator),
@@ -119,8 +119,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
-                                       this->getVerletSkin(), this->getInteractionLength(), TraversalOption::lc_c18,
-                                       _dataLayoutDuringListRebuild);
+                                       this->getVerletSkin(), this->getInteractionLength(),
+                                       traversal->getTraversalType(), _dataLayoutDuringListRebuild);
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
@@ -152,6 +152,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   /**
    * Data layout during the list generation. Has no influence on list layout.
    */
-  typename VerletListsCellsHelpers<Particle>::VLCBuildType _dataLayoutDuringListRebuild;
+  typename VerletListsCellsHelpers::VLCBuildType _dataLayoutDuringListRebuild;
 };
 }  // namespace autopas

@@ -40,7 +40,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Type of the data structure used to save the neighbor lists.
    */
-  using listType = typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType;
+  using listType = typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle>;
 
   /**
    * Helper type definition. Pair of particle and neighbor list for SoA layout.
@@ -62,8 +62,8 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    * @copydoc VLCNeighborListInterface::buildAoSNeighborList()
    */
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                            double interactionLength, const TraversalOption buildTraversalOption,
-                            typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType) override {
+                            double interactionLength, const TraversalOption vlcTraversalOpt,
+                            typename VerletListsCellsHelpers::VLCBuildType buildType) override {
     // Initialize a map of neighbor lists for each cell.
     _aosNeighborList.clear();
     this->_internalLinkedCells = &linkedCells;
@@ -85,7 +85,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       }
     }
 
-    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType);
+    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, vlcTraversalOpt, buildType);
   }
 
   /**
@@ -100,7 +100,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    */
-  typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType &getAoSNeighborList() {
+  typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle> &getAoSNeighborList() {
     return _aosNeighborList;
   }
 
@@ -169,30 +169,50 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
    * @copydoc VLCNeighborListInterface::applyBuildFunctor()
    */
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                         double interactionLength, const TraversalOption buildTraversalOption,
-                         typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType) override {
-    VLCAllCellsGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, cutoff + skin);
-
+                         double interactionLength, const TraversalOption &vlcTraversalOpt,
+                         typename VerletListsCellsHelpers::VLCBuildType buildType) override {
     // Generate the build traversal with the traversal selector and apply the build functor with it.
     TraversalSelector<FullParticleCell<Particle>> traversalSelector;
     // Argument "cluster size" does not matter here.
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
 
-    const auto dataLayout = buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild
-                                ? DataLayoutOption::aos
-                                : DataLayoutOption::soa;
+    const auto dataLayout =
+        buildType == VerletListsCellsHelpers::VLCBuildType::aosBuild ? DataLayoutOption::aos : DataLayoutOption::soa;
 
-    // Build the AoS list using the AoS or SoA functor depending on buildType
-    auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
-        buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
-    linkedCells.iteratePairwise(buildTraversal.get());
+    // LC traversal that will be used to build the List
+    const TraversalOption lcBuildTraversalOpt =
+        vlcTraversalOpt == TraversalOption::vlc_c08 ? TraversalOption::lc_c08 : TraversalOption::lc_c18;
+
+    using namespace utils::ArrayMath::literals;
+    const auto boxSizeWithHalo = linkedCells.getBoxMax() - linkedCells.getBoxMin() +
+                                 std::array<double, 3>{interactionLength, interactionLength, interactionLength} * 2.;
+    const auto listLengthEstimate = VerletListsCellsHelpers::estimateListLength(
+        linkedCells.getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo, interactionLength, 1.3);
+
+    if (vlcTraversalOpt == TraversalOption::vlc_c08) {
+      VLCAllCellsGeneratorFunctor<Particle, TraversalOption::vlc_c08> f(
+          _aosNeighborList, _particleToCellMap, cutoff + skin, listLengthEstimate,
+          linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+      // Build the AoS list using the AoS or SoA functor depending on buildType
+      auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
+          lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3);
+      linkedCells.iteratePairwise(buildTraversal.get());
+    } else {
+      VLCAllCellsGeneratorFunctor<Particle, TraversalOption::vlc_c18> f(
+          _aosNeighborList, _particleToCellMap, cutoff + skin, listLengthEstimate,
+          linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+      // Build the AoS list using the AoS or SoA functor depending on buildType
+      auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
+          lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3);
+      linkedCells.iteratePairwise(buildTraversal.get());
+    }
   }
 
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell.
    */
-  typename VerletListsCellsHelpers<Particle>::AllCellsNeighborListsType _aosNeighborList{};
+  typename VerletListsCellsHelpers::AllCellsNeighborListsType<Particle> _aosNeighborList{};
 
   /**
    * Mapping of each particle to its corresponding cell and id within this cell.

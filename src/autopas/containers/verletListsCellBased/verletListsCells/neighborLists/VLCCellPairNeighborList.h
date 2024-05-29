@@ -33,7 +33,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   /**
    * Type of the data structure used to save the neighbor lists.
    */
-  using listType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
+  using listType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle>;
 
   /**
    * Helper type definition. Pair of particle and neighbor list for SoA layout.
@@ -61,7 +61,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
    * Returns the neighbor list in AoS layout.
    * @return Neighbor list in AoS layout.
    */
-  typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType &getAoSNeighborList() {
+  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle> &getAoSNeighborList() {
     return _aosNeighborList;
   }
 
@@ -80,8 +80,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
   auto &getSoANeighborList() { return _soaNeighborList; }
 
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                            double interactionLength, const TraversalOption buildTraversalOption,
-                            typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType) override {
+                            double interactionLength, const TraversalOption vlcTraversalOpt,
+                            typename VerletListsCellsHelpers::VLCBuildType buildType) override {
     this->_internalLinkedCells = &linkedCells;
     _aosNeighborList.clear();
     _globalToLocalIndex.clear();
@@ -144,7 +144,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     }
 
     // fill the lists
-    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, buildTraversalOption, buildType);
+    applyBuildFunctor(linkedCells, useNewton3, cutoff, skin, interactionLength, vlcTraversalOpt, buildType);
   }
 
   void generateSoAFromAoS(LinkedCells<Particle> &linkedCells) override {
@@ -212,8 +212,8 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
 
  private:
   void applyBuildFunctor(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
-                         double interactionLength, const TraversalOption buildTraversalOption,
-                         typename VerletListsCellsHelpers<Particle>::VLCBuildType buildType) override {
+                         double interactionLength, const TraversalOption /*vlcTraversalOpt*/ &,
+                         typename VerletListsCellsHelpers::VLCBuildType buildType) override {
     VLCCellPairGeneratorFunctor<Particle> f(_aosNeighborList, _particleToCellMap, _globalToLocalIndex, cutoff + skin);
 
     // Generate the build traversal with the traversal selector and apply the build functor with it.
@@ -222,20 +222,19 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     TraversalSelectorInfo traversalSelectorInfo(linkedCells.getCellBlock().getCellsPerDimensionWithHalo(),
                                                 interactionLength, linkedCells.getCellBlock().getCellLength(), 0);
 
-    const auto dataLayout = buildType == VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild
-                                ? DataLayoutOption::aos
-                                : DataLayoutOption::soa;
+    const auto dataLayout =
+        buildType == VerletListsCellsHelpers::VLCBuildType::aosBuild ? DataLayoutOption::aos : DataLayoutOption::soa;
 
     // Build the AoS list using the AoS or SoA functor depending on buildType
     auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
-        buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
+        TraversalOption::lc_c18, f, traversalSelectorInfo, dataLayout, useNewton3);
     linkedCells.iteratePairwise(buildTraversal.get());
   }
 
   /**
    * Internal neighbor list structure in AoS format - Verlet lists for each particle for each cell pair.
    */
-  typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType _aosNeighborList =
+  typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle> _aosNeighborList =
       std::vector<std::vector<std::vector<std::pair<Particle *, std::vector<Particle *>>>>>();
 
   /**

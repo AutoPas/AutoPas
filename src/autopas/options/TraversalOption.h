@@ -258,6 +258,7 @@ class TraversalOption : public Option<TraversalOption> {
         {TraversalOption::vlc_sliced_c02, "vlc_sliced_c02"},
         {TraversalOption::vlc_c18, "vlc_c18"},
         {TraversalOption::vlc_c01, "vlc_c01"},
+        {TraversalOption::vlc_c08, "vlc_c08"},
         {TraversalOption::vlc_sliced_balanced, "vlc_sliced_balanced"},
 
         // VarVerlet Traversals:

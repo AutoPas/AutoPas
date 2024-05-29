@@ -100,7 +100,8 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   //                        vlc_sliced_colored          (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vlc_c18                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vlc_c01                     (AoS <=> SoA, noNewton3)                             = 2
-  configsPerContainer[autopas::ContainerOption::verletListsCells] = 26;
+  //                        vlc_c08                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
+  configsPerContainer[autopas::ContainerOption::verletListsCells] = 30;
   // VerletClusterLists:    vcl_cluster_iteration       (AoS <=> SoA, noNewton3)                             = 2
   //                        vcl_c06                     (AoS <=> SoA, newton3 <=> noNewton3)                 = 4
   //                        vcl_c01_balanced            (AoS <=> SoA, noNewton3)                             = 2

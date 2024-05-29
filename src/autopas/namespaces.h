@@ -101,4 +101,10 @@ namespace tuningLogEntry {}
  */
 namespace SearchSpaceGenerators {}
 
+/**
+ * Helper functions and type aliases for verlet lists cells.
+ * @tparam Particle
+ */
+namespace VerletListsCellsHelpers {}
+
 }  // namespace autopas
