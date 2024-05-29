@@ -158,7 +158,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
 
-  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
+  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders{};
 
 #endif
 
@@ -169,7 +169,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
   bool _verifyModeEnabled;
   std::string _ruleFileName;
 
-  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes{};
   /**
    * Sum of all evidence since the last reset. This, times the number of samples, is approximately the time spent
    * trying out configurations.

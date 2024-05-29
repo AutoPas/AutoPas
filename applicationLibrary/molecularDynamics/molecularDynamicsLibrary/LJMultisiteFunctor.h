@@ -124,7 +124,7 @@ class LJMultisiteFunctor
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      autopas::utils::ExceptionHandler::exception("FLOP counting is not supported for multi-site functors yet!");
+      AutoPasLog(WARN, "FLOP counting is not supported for multi-site functors yet!");
     }
   }
 
