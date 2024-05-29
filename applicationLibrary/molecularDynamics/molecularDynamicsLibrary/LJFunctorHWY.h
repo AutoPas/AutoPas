@@ -659,20 +659,6 @@ namespace mdLib {
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
 
-                        if constexpr (reversed && remainder) {
-
-                            fxPtr[rest-1] += highway::ExtractLane(fxAcc, rest-1);
-                            fyPtr[rest-1] += highway::ExtractLane(fyAcc, rest-1);
-                            fzPtr[rest-1] += highway::ExtractLane(fzAcc, rest-1);
-                            return;
-                        }
-                        else if constexpr (reversed) {
-                            fxPtr[i] += highway::ExtractLane(fxAcc, _vecLengthDouble-1);
-                            fyPtr[i] += highway::ExtractLane(fyAcc, _vecLengthDouble-1);
-                            fzPtr[i] += highway::ExtractLane(fzAcc, _vecLengthDouble-1);
-                            return;
-                        }
-
                         long index = reversed ? (remainder ? 0 : i-_vecLengthDouble+1) : i;
                         auto mask = restMasksDouble[remainder ? rest-1 : _vecLengthDouble-1];
 
@@ -720,7 +706,7 @@ namespace mdLib {
                         throw std::runtime_error("No vectorization pattern matched, error!");
                 }
 
-                template <bool remainder, bool reversed>
+                template <bool remainder>
                 inline void handleNewton3Accumulation(const VectorDouble& fx, const VectorDouble& fy, const VectorDouble& fz,
                     double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const long j, const long rest = 0) {
                     
@@ -866,6 +852,52 @@ namespace mdLib {
                     }
                 }
 
+                inline bool checkOverlap(const long i, const long j) {
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec ||
+                            vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        return j >= i-_vecLengthDouble/2;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        return j >= i-_vecLengthDouble+1;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        throw std::runtime_error("Not yet implemented");
+                    }
+                }
+
+                template <bool remainderI, bool remainderJ>
+                inline void handleOverlap(const long i, const long j, const VectorDouble& fx, const VectorDouble& fy, const VectorDouble& fz,
+                        double *const __restrict fxPtr, double *const __restrict fyPtr, double *const __restrict fzPtr, const long restI) {
+                    
+                    if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // determine if full overlap or half overlap
+                        if (j == i-_vecLengthDouble/2) {
+                            handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, 1);
+                        }
+                        else {
+                            fxPtr[j] -= highway::ExtractLane(fx, remainderI ? restI-1 : _vecLengthDouble/2-1);
+                            fyPtr[j] -= highway::ExtractLane(fy, remainderI ? restI-1 : _vecLengthDouble/2-1);
+                            fzPtr[j] -= highway::ExtractLane(fz, remainderI ? restI-1 : _vecLengthDouble/2-1);
+                        }
+                        if constexpr (!remainderJ) {
+                            fxPtr[j+1] -= highway::ExtractLane(fx, remainderI ? _vecLengthDouble/2+restI-1 : _vecLengthDouble-1);
+                            fyPtr[j+1] -= highway::ExtractLane(fy, remainderI ? _vecLengthDouble/2+restI-1 : _vecLengthDouble-1);
+                            fzPtr[j+1] -= highway::ExtractLane(fz, remainderI ? _vecLengthDouble/2+restI-1 : _vecLengthDouble-1);
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        fxPtr[j] -= highway::ExtractLane(fx, remainderI ? restI-1 : _vecLengthDouble-1);
+                        fyPtr[j] -= highway::ExtractLane(fy, remainderI ? restI-1 : _vecLengthDouble-1);
+                        fzPtr[j] -= highway::ExtractLane(fz, remainderI ? restI-1 : _vecLengthDouble-1);
+                    }
+                    else {
+                        throw std::runtime_error("This case should not happen");
+                    }
+                }
+
                 template <bool reversed>
                 inline int obtainFirstLoopRest(const long i, const long size = 0) {
                     return reversed ? (i < 0 ? 0 : i+1) : size-i;
@@ -972,7 +1004,12 @@ namespace mdLib {
                                 x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
-                            handleNewton3Accumulation<false, true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
+                            if (checkOverlap(i,j)) {
+                                handleOverlap<false, false>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
+                            }
+                            else {
+                                handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
+                            }
                         }
 
                         const int restJ = obtainSecondLoopRest<true>(i);
@@ -993,7 +1030,12 @@ namespace mdLib {
                                 x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
-                            handleNewton3Accumulation<true, true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
+                            if (checkOverlap(i,j)) {
+                                handleOverlap<false, true>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
+                            }
+                            else {
+                                handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
+                            }
                         }
 
                         reduceAccumulatedForce<false, true>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i);
@@ -1032,7 +1074,12 @@ namespace mdLib {
                                 x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
-                            handleNewton3Accumulation<false, true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
+                            if (checkOverlap(i,j)) {
+                                handleOverlap<true, false>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restI);
+                            }
+                            else {
+                                handleNewton3Accumulation<false>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j);
+                            }
                         }
 
                         const int restJ = obtainSecondLoopRest<true>(i);
@@ -1053,7 +1100,12 @@ namespace mdLib {
                                 x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
-                            handleNewton3Accumulation<true, true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
+                            if (checkOverlap(i,j)) {
+                                handleOverlap<true, true>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restI);
+                            }
+                            else {
+                                handleNewton3Accumulation<true>(fx, fy, fz, fxPtr, fyPtr, fzPtr, j, restJ);
+                            }
                         }
 
                         reduceAccumulatedForce<true, true>(fxAcc, fyAcc, fzAcc, fxPtr, fyPtr, fzPtr, i, restI);
@@ -1169,7 +1221,7 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<false, false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
                             }
                         }
 
@@ -1192,7 +1244,7 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<true, false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
+                                handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
                             }
                         }
 
@@ -1232,7 +1284,7 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<false, false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
                             }
                         }
 
@@ -1255,7 +1307,7 @@ namespace mdLib {
                                 fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
-                                handleNewton3Accumulation<true, false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
+                                handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
                             }
                         }
 
@@ -1342,7 +1394,7 @@ namespace mdLib {
                     fzAcc = fzAcc + fz;
 
                     if constexpr (calculateGlobals) {
-
+                        // TODO : handle case of overlap
                         auto virialX = fx * drX;
                         auto virialY = fy * drY;
                         auto virialZ = fz * drZ;
@@ -1468,7 +1520,7 @@ namespace mdLib {
 
                             if constexpr (newton3) {
 
-                                handleNewton3Accumulation<false, false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, 0);
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, 0);
 
                                 for (long vecIndex = 0; vecIndex < _vecLengthDouble; ++vecIndex) {
                                     fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
@@ -1510,7 +1562,7 @@ namespace mdLib {
 
                             if constexpr (newton3) {
 
-                                handleNewton3Accumulation<false, false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, restJ);
+                                handleNewton3Accumulation<false>(fx, fy, fz, fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(), 0, restJ);
 
                                 for (long vecIndex = 0; vecIndex < _vecLengthDouble && vecIndex < restJ; ++vecIndex) {
                                     fxPtr[neighborList[j + vecIndex]] = fx2Tmp[vecIndex];
