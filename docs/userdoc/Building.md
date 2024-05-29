@@ -38,9 +38,9 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
+### Enabling Rule Based Tuning
 <a id="rule-based-tuning"> </a>
 
-### Enabling Rule Based Tuning
 
 One of the possible tuning strategies of AutoPas, rule based tuning, requires dependencies `antlr4cpp` and `uuid`. These
 are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors. 
