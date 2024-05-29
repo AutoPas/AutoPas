@@ -396,34 +396,23 @@ namespace mdLib {
                         const long unsigned *const __restrict typeID1ptr, const long unsigned *const __restrict typeID2ptr,
                         const long restI, const long restJ) {
 
-                    // TODO : handle different vectorization patterns
-                    if constexpr (useMixing) {
-                        
-                        double epsilon_buf[_vecLengthDouble] = {0.};
-                        double sigma_buf[_vecLengthDouble] = {0.};
-                        double shift_buf[_vecLengthDouble] = {0.};
+                // TODO : handle different vectorization patterns
+                    double epsilon_buf[_vecLengthDouble] = {0.};
+                    double sigma_buf[_vecLengthDouble] = {0.};
+                    double shift_buf[_vecLengthDouble] = {0.};
 
-                        for (long n = 0; (remainderJ ? n < restJ : n < _vecLengthDouble); ++n) {
-                            epsilon_buf[n] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + n));
-                            sigma_buf[n] =  _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + n));
-                            if constexpr (applyShift) {
-                                shift_buf[n] = _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + n));
-                            }
-                        }
-                        epsilon24s = highway::LoadU(tag_double, epsilon_buf);
-                        sigmaSquaredDiv2s = highway::LoadU(tag_double, sigma_buf);
+                    for (long n = 0; (remainderJ ? n < restJ : n < _vecLengthDouble); ++n) {
+                        epsilon_buf[n] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + n));
+                        sigma_buf[n] =  _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + n));
                         if constexpr (applyShift) {
-                            shift6s = highway::LoadU(tag_double, shift_buf);
+                            shift_buf[n] = _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + n));
                         }
                     }
-                    else {
-                        epsilon24s = _epsilon24;
-                        sigmaSquaredDiv2s = _sigmaSquared;
-                        if constexpr (applyShift) {
-                            shift6s = _shift6;
-                        }
+                    epsilon24s = highway::LoadU(tag_double, epsilon_buf);
+                    sigmaSquaredDiv2s = highway::LoadU(tag_double, sigma_buf);
+                    if constexpr (applyShift) {
+                        shift6s = highway::LoadU(tag_double, shift_buf);
                     }
-
                 }
 
                 template <bool remainderI, bool remainderJ, bool reversedI>
@@ -940,9 +929,9 @@ namespace mdLib {
                     VectorDouble y2 = _zeroDouble;
                     VectorDouble z2 = _zeroDouble;
 
-                    VectorDouble epsilon24s = _zeroDouble;
-                    VectorDouble sigmaSquareds = _zeroDouble;
-                    VectorDouble shift6s = _zeroDouble;
+                    VectorDouble epsilon24s = _epsilon24;
+                    VectorDouble sigmaSquareds = _sigmaSquared;
+                    VectorDouble shift6s = _shift6;
 
                     long i = soa.size() - 1;
                     for (; checkFirstLoopCondition<true>(i); decrementFirstLoop(i)) {
@@ -971,8 +960,9 @@ namespace mdLib {
 
                             fillJRegisters<false>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
                                 xPtr, yPtr, zPtr, j, 0);
-
-                            fillPhysicsRegisters<false, false, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, 0, 0);
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, false, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, 0, 0);
+                            }
                             
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -990,8 +980,10 @@ namespace mdLib {
                         
                             fillJRegisters<true>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
                                 xPtr, yPtr, zPtr, j, restJ);
-
-                            fillPhysicsRegisters<false, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, 0, restJ);
+                            
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, 0, restJ);
+                            }
                             
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1028,7 +1020,9 @@ namespace mdLib {
                             fillJRegisters<false>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
                                 xPtr, yPtr, zPtr, j, 0);
 
-                            fillPhysicsRegisters<false, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, restI, 0);
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, restI, 0);
+                            }
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1047,7 +1041,9 @@ namespace mdLib {
                             fillJRegisters<true>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
                                 xPtr, yPtr, zPtr, j, restJ);
 
-                            fillPhysicsRegisters<true, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, restI, restJ);
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<true, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, restI, restJ);
+                            }
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1131,9 +1127,9 @@ namespace mdLib {
                     VectorDouble y2 = _zeroDouble;
                     VectorDouble z2 = _zeroDouble;
 
-                    VectorDouble epsilon24s = _zeroDouble;
-                    VectorDouble sigmaSquareds = _zeroDouble;
-                    VectorDouble shift6s = _zeroDouble;
+                    VectorDouble epsilon24s = _epsilon24;
+                    VectorDouble sigmaSquareds = _sigmaSquared;
+                    VectorDouble shift6s = _shift6;
 
                     long i = 0;
                     for (; checkFirstLoopCondition<false>(i, soa1.size()); incrementFirstLoop(i)) {
@@ -1160,7 +1156,9 @@ namespace mdLib {
                             fillJRegisters<false>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 x2Ptr, y2Ptr, z2Ptr, j, 0);
 
-                            fillPhysicsRegisters<false, false, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, 0, 0);
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, false, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, 0, 0);
+                            }
                             
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1181,7 +1179,9 @@ namespace mdLib {
                             fillJRegisters<true>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 x2Ptr, y2Ptr, z2Ptr, j, restJ);
 
-                            fillPhysicsRegisters<false, true, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, 0, restJ);
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, true, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, 0, restJ);
+                            }
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1219,7 +1219,9 @@ namespace mdLib {
                             fillJRegisters<false>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 x2Ptr, y2Ptr, z2Ptr, j, 0);
 
-                            fillPhysicsRegisters<false, false, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, restI, 0);
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, false, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, restI, 0);
+                            }
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1240,7 +1242,9 @@ namespace mdLib {
                             fillJRegisters<true>(x2, y2, z2, ownedStateJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 x2Ptr, y2Ptr, z2Ptr, j, restJ);
 
-                            fillPhysicsRegisters<true, true, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, restI, restJ);
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<true, true, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, restI, restJ);
+                            }
 
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
@@ -1417,9 +1421,9 @@ namespace mdLib {
                         VectorDouble z2 = _zeroDouble;
                         VectorLong ownedStateJ = _zeroLong;
 
-                        VectorDouble epsilon24s = _zeroDouble;
-                        VectorDouble sigmaSquareds = _zeroDouble;
-                        VectorDouble shift6s = _zeroDouble;
+                        VectorDouble epsilon24s = _epsilon24;
+                        VectorDouble sigmaSquareds = _sigmaSquared;
+                        VectorDouble shift6s = _shift6;
 
                         alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
                         alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
