@@ -21,7 +21,8 @@ find_program(MAKE_EXE NAMES gmake nmake make)
 ExternalProject_Add(
     harmony_bundled
     URL ${AUTOPAS_SOURCE_DIR}/libs/harmony.zip
-    URL_HASH MD5=6249e1899005238c608cd8a0c443fbba
+    # Hash is with deleted `example/` folder and removed `example` target from the local Makefile
+    URL_HASH MD5=6249e1899005238c608cd8a0c443fbba 
     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/harmony/include/lib/libharmony.a
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/harmony
     # since we only unpack a header lib src == include
