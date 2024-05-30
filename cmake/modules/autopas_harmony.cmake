@@ -1,3 +1,10 @@
+option(AUTOPAS_ENABLE_HARMONY "Enables Active Harmony which can be used as a tuning strategy" OFF)
+
+if (NOT AUTOPAS_ENABLE_HARMONY)
+    message(STATUS "harmony disabled")
+    return()
+endif ()
+
 message(STATUS "harmony - using bundled version")
 
 # Enable ExternalProject CMake module
@@ -55,5 +62,7 @@ target_include_directories(
 
 # Set macro needed to set environment variable for ActiveHarmony
 target_compile_definitions(
-    harmony INTERFACE HARMONY_HOME="HARMONY_HOME=${CMAKE_CURRENT_BINARY_DIR}/harmony/include"
+    harmony
+    INTERFACE
+    HARMONY_HOME="HARMONY_HOME=${CMAKE_CURRENT_BINARY_DIR}/harmony/include"
 )
