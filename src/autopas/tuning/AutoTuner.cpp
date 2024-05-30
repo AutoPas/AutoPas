@@ -75,7 +75,8 @@ bool AutoTuner::searchSpaceIsTrivial() const { return _searchSpace.size() == 1; 
 bool AutoTuner::searchSpaceIsEmpty() const { return _searchSpace.empty(); }
 
 void AutoTuner::forceRetune() {
-  _iterationsSinceTuning = _tuningInterval;
+  // Since iteration counters are updated at the beginning of a time step
+  _iterationsSinceTuning = _tuningInterval - 1;
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
   _stillTuning = true;
 }
@@ -291,11 +292,13 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  const bool inTuningPhase = _iterationsSinceTuning >= _tuningInterval;
+  const bool stillTuning = inTuningPhase();
   // How many iterations ago did the rhythm of rebuilds change?
-  const auto iterationBaseline = inTuningPhase ? (_iterationsSinceTuning - _tuningInterval) : _iterationsSinceTuning;
+  auto iterationBaseline = stillTuning ? (_iterationsSinceTuning - _tuningInterval) : _iterationsSinceTuning;
+  // Return whether we will need to rebuild in the next iteration.
+  ++iterationBaseline;
   // What is the rebuild rhythm?
-  const auto iterationsPerRebuild = inTuningPhase ? _maxSamples : _rebuildFrequency;
+  const auto iterationsPerRebuild = stillTuning ? _maxSamples : _rebuildFrequency;
   return (iterationBaseline % iterationsPerRebuild) == 0;
 }
 

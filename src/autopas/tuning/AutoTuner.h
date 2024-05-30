@@ -107,10 +107,10 @@ class AutoTuner {
   void bumpIterationCounters(bool needToWait = false);
 
   /**
-   * Returns whether rebuildNeighborLists() will be triggered in the next call to iteratePairwise().
+   * Returns whether rebuildNeighborLists() will be triggered in the next iteration.
    * This might also indicate a container change.
    *
-   * @return True if the the current iteration counters indicate a rebuild in the next iteration.
+   * @return True if the current iteration counters indicate a rebuild in the next iteration.
    */
   bool willRebuildNeighborLists() const;
 

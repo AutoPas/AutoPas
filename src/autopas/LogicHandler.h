@@ -155,9 +155,22 @@ class LogicHandler {
   [[nodiscard]] std::vector<Particle> updateContainer() {
     bool doDataStructureUpdate = not neighborListsAreValid();
 
-    if (doDataStructureUpdate) {
-      _neighborListsAreValid.store(false, std::memory_order_relaxed);
+    if (_functorCalls > 0) {
+      // Bump iteration counters for all autotuners
+      for (auto &[interactionType, autoTuner] : _autoTunerRefs) {
+        const bool needsToWait = checkTuningStates(interactionType);
+        autoTuner->bumpIterationCounters(needsToWait);
+      }
+
+      // We will do a rebuild in this timestep
+      if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+        _stepsSinceLastListRebuild = 0;
+      }
+      ++_stepsSinceLastListRebuild;
+      _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
+      ++_iteration;
     }
+
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
 
@@ -294,7 +307,7 @@ class LogicHandler {
           "{}",
           boxMin, boxMax, p.toString());
     }
-    if (not neighborListsAreValid()) {
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // Container has to (about to) be invalid to be able to add Particles!
       _containerSelector.getCurrentContainer().template addParticle<false>(p);
     } else {
@@ -319,7 +332,7 @@ class LogicHandler {
           "{}",
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
     }
-    if (not neighborListsAreValid()) {
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // If the neighbor lists are not valid, we can add the particle.
       container.template addHaloParticle</* checkInBox */ false>(haloParticle);
     } else {
@@ -812,12 +825,12 @@ class LogicHandler {
   /**
    * Steps since last rebuild
    */
-  unsigned int _stepsSinceLastListRebuild{std::numeric_limits<unsigned int>::max()};
+  unsigned int _stepsSinceLastListRebuild{0};
 
   /**
-   * Total number of relevant functor calls of all interaction types.
+   * Total number of functor calls of all interaction types.
    */
-  unsigned int _relevantFunctorCalls{0};
+  unsigned int _functorCalls{0};
   /**
    * The current iteration number.
    */
@@ -952,7 +965,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
   autopas::utils::Timer timerIterateContainer;
   autopas::utils::Timer timerRemainderTraversal;
 
-  const bool doListRebuild = not neighborListsAreValid();
+  const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
   auto &autoTuner = _autoTunerRefs[interactionType];
   const bool newton3 = autoTuner->getCurrentConfig().newton3;
   const bool energyMeasurementsPossible = autoTuner->resetEnergy();
@@ -1003,6 +1016,7 @@ void LogicHandler<Particle>::rebuildNeighborLists(TraversalInterface &traversal)
   if (triwiseTraversal) {
     container.rebuildNeighborLists(triwiseTraversal);
   }
+  _neighborListsAreValid.store(true, std::memory_order_relaxed);
 }
 
 template <typename Particle>
@@ -1466,6 +1480,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.stop();
   auto &autoTuner = _autoTunerRefs[interactionType];
   autoTuner->logTuningResult(stillTuning, tuningTimer.getTotalTime());
+  const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
@@ -1503,7 +1518,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
                                 measurements.energyPsys, measurements.energyPkg, measurements.energyRam);
 
   /// Pass on measurements
-  // if this was a major iteration add measurements and bump counters
+  // if this was a major iteration add measurements
   if (functor->isRelevantForTuning()) {
     if (stillTuning) {
       // choose the metric of interest
@@ -1519,28 +1534,12 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
             return 0l;
         }
       }();
-      autoTuner->addMeasurement(measurement, not neighborListsAreValid());
-    } else {
-      AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
+      autoTuner->addMeasurement(measurement, rebuildIteration);
     }
-
-    // this function depends on LogicHandler's and the AutoTuner's iteration counters,
-    // that should not have been updated yet.
-    if (not neighborListsAreValid() /*we have done a rebuild now*/) {
-      // list is now valid
-      _neighborListsAreValid.store(true, std::memory_order_relaxed);
-      _stepsSinceLastListRebuild = 0;
-    }
-    ++_relevantFunctorCalls;
-    // In case of pairwise plus triwise interactions, assume that each functor is called exactly once per timestep.
-    if (_relevantFunctorCalls % _interactionTypes.size() == 0) {
-      ++_stepsSinceLastListRebuild;
-      _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
-      ++_iteration;
-    }
-    bool needToWait = checkTuningStates(interactionType);
-    autoTuner->bumpIterationCounters(needToWait);
+  } else {
+    AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");
   }
+  ++_functorCalls;
   return stillTuning;
 }
 

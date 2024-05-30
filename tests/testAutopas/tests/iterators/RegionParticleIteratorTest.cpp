@@ -326,6 +326,7 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   };
 
   // Actual test section
+  auto leavingParticles = autoPas.updateContainer();
   // Ensure that particle is found with the given search region before it is moved out of the datastructure
   for (size_t i{0}; i < searchRegions.size(); ++i) {
     const auto startRegion = std::get<0>(searchRegions[i]);
@@ -338,6 +339,7 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   // correct data structure element and the purpose of this test would be lost
   EmptyPairwiseFunctor<Molecule> eFunctor;
   autoPas.computeInteractions(&eFunctor);
+  leavingParticles = autoPas.updateContainer();
 
   // Move the particles outside the simulations box and thus outside the data structure element (e.g: cell) where it is
   // currently stored
