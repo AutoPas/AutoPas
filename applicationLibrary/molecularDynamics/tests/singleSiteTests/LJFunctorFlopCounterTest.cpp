@@ -7,8 +7,8 @@
 #include "LJFunctorFlopCounterTest.h"
 
 #include "autopas/AutoPasDecl.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/WrapOpenMP.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -31,7 +31,8 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   const auto isSoA = dataLayoutOption == autopas::DataLayoutOption::soa;
 
   if (isVerlet and not isSoA) {
-    autopas::utils::ExceptionHandler::exception("LJFunctorFlopCounterTest::testFLOPCounter using isVerlet without SoA is not allowed!");
+    autopas::utils::ExceptionHandler::exception(
+        "LJFunctorFlopCounterTest::testFLOPCounter using isVerlet without SoA is not allowed!");
   }
 
   autopas::AutoPas<Molecule> autoPas;
@@ -61,9 +62,10 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   // Molecule positions are chosen such that SoAFunctorSingle, Pair, and Verlet all handle at least one molecule inside
   // the cutoff and one outside.
 
-  // For SoAFunctorSingle, mol 0 & mol 1 (same cell) are inside the cutoff and mol 2 & mol 3 (same cell) are outside the cutoff
-  // For SoAFunctorPair, mol 1 & mol 2 (neighboring cells) are inside the cutoff and mol 0 & mol 4 (likewise) are outside
-  // For SoAFunctorVerlet, mol 0 has mol 1 & 2 in its neighbor list but mol 1 lies inside the cutoff and mol 2 outside.
+  // For SoAFunctorSingle, mol 0 & mol 1 (same cell) are inside the cutoff and mol 2 & mol 3 (same cell) are outside the
+  // cutoff For SoAFunctorPair, mol 1 & mol 2 (neighboring cells) are inside the cutoff and mol 0 & mol 4 (likewise) are
+  // outside For SoAFunctorVerlet, mol 0 has mol 1 & 2 in its neighbor list but mol 1 lies inside the cutoff and mol 2
+  // outside.
   const std::vector<Molecule> molVec{Molecule({0.9, 0.3, 0.9}, {0, 0, 0}, 0), Molecule({0.9, 0.9, 0.9}, {0, 0, 0}, 1),
                                      Molecule({0.9, 1.5, 0.9}, {0, 0, 0}, 2), Molecule({0.1, 2.4, 0.1}, {0, 0, 0}, 3)};
 
@@ -99,7 +101,8 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
    * mol 3: Nothing
    * Similar, this tests inside cutoff (0 <-> 1, 1 <-> 2) and outside cutoff (0 <-> 3)
    *
-   * We have 3 distance calls, 2 kernel calls. Double this with N3=disabled. Kernel calls always match N3=enabled/disabled.
+   * We have 3 distance calls, 2 kernel calls. Double this with N3=disabled. Kernel calls always match
+   * N3=enabled/disabled.
    */
 
   for (auto &m : molVec) {
@@ -115,9 +118,8 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   autoPas.iteratePairwise(&ljFunctor);
 
   // See above for reasoning.
-  const auto expectedDistanceCalculations = isVerlet ?
-                                                     (newton3 ? 3 : 6) :
-                                                     (isSoA ? (newton3 ? 6 : 10) : (newton3 ? 6 : 12));
+  const auto expectedDistanceCalculations =
+      isVerlet ? (newton3 ? 3 : 6) : (isSoA ? (newton3 ? 6 : 10) : (newton3 ? 6 : 12));
 
   // See above for reasoning
   const auto expectedNoN3KernelCalls = newton3 ? 0 : (not isVerlet and isSoA ? 2 : 4);
@@ -130,12 +132,13 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   constexpr int numFLOPsPerNoN3KernelCall = 15;
   constexpr int numFLOPsPerN3KernelCall = 18;
   constexpr int numFLOPsPerGlobalsCall = applyShift ? 9 : 8;
-  const auto expectedFlops = expectedDistanceCalculations * numFLOPsPerDistanceCalc + expectedN3KernelCalls * numFLOPsPerN3KernelCall
-      + expectedNoN3KernelCalls * numFLOPsPerNoN3KernelCall + expectedGlobalsCalcs * numFLOPsPerGlobalsCall;
+  const auto expectedFlops =
+      expectedDistanceCalculations * numFLOPsPerDistanceCalc + expectedN3KernelCalls * numFLOPsPerN3KernelCall +
+      expectedNoN3KernelCalls * numFLOPsPerNoN3KernelCall + expectedGlobalsCalcs * numFLOPsPerGlobalsCall;
   ASSERT_EQ(expectedFlops, ljFunctor.getNumFLOPs());
 
-  // two out of three particles are in range
-  const auto expectedHitRate = ((double)expectedN3KernelCalls + (double)expectedNoN3KernelCalls) / (double)expectedDistanceCalculations;
+  const auto expectedHitRate =
+      ((double)expectedN3KernelCalls + (double)expectedNoN3KernelCalls) / (double)expectedDistanceCalculations;
   ASSERT_NEAR(expectedHitRate, ljFunctor.getHitRate(), 1e-14);
 }
 

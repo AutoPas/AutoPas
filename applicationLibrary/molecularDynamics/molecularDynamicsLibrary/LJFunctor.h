@@ -801,8 +801,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       constexpr size_t numFLOPsPerNoN3KernelCall = 15;
       constexpr size_t numFLOPsPerGlobalCalc = applyShift ? 9 : 8;
 
-      return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall
-             + numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsAcc * numFLOPsPerGlobalCalc;
+      return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
+             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsAcc * numFLOPsPerGlobalCalc;
     } else {
       autopas::utils::ExceptionHandler::exception("LJFunctor::getNumFLOPs called without countFLOPs enabled!");
       return 0;
