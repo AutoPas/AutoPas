@@ -65,7 +65,7 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   // For SoAFunctorPair, mol 1 & mol 2 (neighboring cells) are inside the cutoff and mol 0 & mol 4 (likewise) are outside
   // For SoAFunctorVerlet, mol 0 has mol 1 & 2 in its neighbor list but mol 1 lies inside the cutoff and mol 2 outside.
   const std::vector<Molecule> molVec{Molecule({0.9, 0.3, 0.9}, {0, 0, 0}, 0), Molecule({0.9, 0.9, 0.9}, {0, 0, 0}, 1),
-                                     Molecule({0.9, 1.5, 0.9}, {0, 0, 0}, 2), Molecule({0.1, 2.4, 0.9}, {0, 0, 0}, 3)};
+                                     Molecule({0.9, 1.5, 0.9}, {0, 0, 0}, 2), Molecule({0.1, 2.4, 0.1}, {0, 0, 0}, 3)};
 
   /**
    * Explanation of molVec choice and resulting numbers of distance calculations and kernel calls.
@@ -75,10 +75,10 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
    * This results in the following interactions:
    * mol 0 <-> 1: SoAFunctorSingle, inside cutoff (dist: 0.6)
    * mol 0 <-> 2: SoAFunctorPair, outside cutoff (dist: 1.2)
-   * mol 0 <-> 3: SoAFunctorPair, outside cutoff (dist: ~2.25)
+   * mol 0 <-> 3: SoAFunctorPair, outside cutoff (dist: ~2.36)
    * mol 1 <-> 2: SoAFunctorPair, inside cutoff (dist: 0.6)
-   * mol 1 <-> 3: SoAFunctorPair, outside cutoff (dist: 1.7)
-   * mol 2 <-> 3: SoAFunctorSingle, outside cutoff (dist: 1.45)
+   * mol 1 <-> 3: SoAFunctorPair, outside cutoff (dist: ~1.89)
+   * mol 2 <-> 3: SoAFunctorSingle, outside cutoff (dist: ~1.45)
    * This tests all possible combinations of SoAFunctorSingle/Pair with inside/outside cutoff
    *
    * SoAFunctorSingle: 2 distance calls, 1 N3 kernel call (regardless of newton3 enabled/disabled)
@@ -117,24 +117,25 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   // See above for reasoning.
   const auto expectedDistanceCalculations = isVerlet ?
                                                      (newton3 ? 3 : 6) :
-                                                     (isSoA ? (newton3 ? 6 : 10) : (newton3 ? 4 : 8));
+                                                     (isSoA ? (newton3 ? 6 : 10) : (newton3 ? 6 : 12));
 
   // See above for reasoning
   const auto expectedNoN3KernelCalls = newton3 ? 0 : (not isVerlet and isSoA ? 2 : 4);
   const auto expectedN3KernelCalls = newton3 ? 2 : (not isVerlet and isSoA ? 1 : 0);
 
-  // FLOPs caused by Globals calculations
-  // For AoS, each newton3=disabled kernel leads to 4 extra FLOPs (virial=3, potential=2
-  const auto num
+  const auto expectedGlobalsCalcs = calculateGlobals ? expectedN3KernelCalls + expectedNoN3KernelCalls : 0;
 
   // distance calculations cost 8 flops, LJ kernel calls without Newton3 cost 15 FLOPs, with Newton 3 cost 18 flops
+  constexpr int numFLOPsPerDistanceCalc = 8;
   constexpr int numFLOPsPerNoN3KernelCall = 15;
   constexpr int numFLOPsPerN3KernelCall = 18;
-  const auto expectedFlops = expectedDistanceCalculations * 8 + ;
+  constexpr int numFLOPsPerGlobalsCall = applyShift ? 9 : 8;
+  const auto expectedFlops = expectedDistanceCalculations * numFLOPsPerDistanceCalc + expectedN3KernelCalls * numFLOPsPerN3KernelCall
+      + expectedNoN3KernelCalls * numFLOPsPerNoN3KernelCall + expectedGlobalsCalcs * numFLOPsPerGlobalsCall;
   ASSERT_EQ(expectedFlops, ljFunctor.getNumFLOPs());
 
   // two out of three particles are in range
-  const auto expectedHitRate = 2. / 3.;
+  const auto expectedHitRate = ((double)expectedN3KernelCalls + (double)expectedNoN3KernelCalls) / (double)expectedDistanceCalculations;
   ASSERT_NEAR(expectedHitRate, ljFunctor.getHitRate(), 1e-14);
 }
 
