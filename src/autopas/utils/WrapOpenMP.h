@@ -16,7 +16,12 @@
 #pragma once
 
 #if defined(AUTOPAS_USE_OPENMP)
+
+#if defined(AUTOPAS_USE_AUTO4OMP)
+#include AUTOPAS_AUTO4OMP_OMP_H
+#else
 #include <omp.h>
+#endif
 
 #include <cstddef>  // for size_t
 #include <vector>
@@ -182,13 +187,13 @@ inline void autopas_set_num_threads(int /* n */) {}
  * @param kind the scheduling kind to use
  * @param chunkSize the chunk size to use
  */
-inline void autopas_set_schedule(OpenMPKindOption /* kind */, int /* chunkSize */) {}
+inline void autopas_set_schedule(omp_sched_t /* kind */, int /* chunkSize */) {}
 
 /**
  * Wrapper for omp_get_schedule().
  * Puts the values of OpenMP's scheduling runtime variables at the given pointers.
  */
-inline void autopas_get_schedule(omp_sched_t *kind, int *chunkSize) {}
+inline void autopas_get_schedule(omp_sched_t* /* kind */, int* /* chunkSize */) {}
 
 /**
  * AutoPasLock for the sequential case.
