@@ -91,7 +91,7 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     FMCell cell1HWY;
     FMCell cell2HWY;
 
-    size_t numParticles = 13;
+    size_t numParticles = 23;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(
@@ -101,10 +101,14 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
 
     if (doDeleteSomeParticles) {
         for (auto &particle : cell1HWY) {
-        if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
         }
         for (auto &particle : cell2HWY) {
-        if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 20) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 17) autopas::internal::markParticleAsDeleted(particle);
         }
     }
 
@@ -170,7 +174,7 @@ template <VectorizationPattern vecPattern>
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews) {
     FMCell cellHWY;
 
-    size_t numParticles = 13;
+    size_t numParticles = 23;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
@@ -178,7 +182,9 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
 
     if (doDeleteSomeParticles) {
         for (auto &particle : cellHWY) {
-            if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
         }
     }
 
@@ -233,16 +239,17 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 
     FMCell cellAVX;
 
-    constexpr size_t numParticles = 13;
+    constexpr size_t numParticles = 23;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
 
     if (doDeleteSomeParticles) {
-        // mark some particles as deleted to test if the functor handles them correctly
         for (auto &particle : cellAVX) {
-        if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
         }
     }
 
@@ -308,16 +315,17 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles) {
     FMCell cellHWY;
 
-    constexpr size_t numParticles = 13;
+    constexpr size_t numParticles = 23;
 
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
 
     if (doDeleteSomeParticles) {
-        // mark some particles as deleted to test if the functor handles them correctly
         for (auto &particle : cellHWY) {
-        if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 11) autopas::internal::markParticleAsDeleted(particle);
+          if (particle.getID() == 12) autopas::internal::markParticleAsDeleted(particle);
         }
     }
 
