@@ -18,6 +18,7 @@ if (NOT AUTOPAS_ENABLE_RULES_BASED_TUNING)
     list(FILTER MY_SRC EXCLUDE REGEX ".*parser_generated.*")
     list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
 endif ()
+
 add_library(autopas STATIC ${MY_SRC})
 
 target_link_libraries(
@@ -34,7 +35,7 @@ target_link_libraries(
         Eigen3
     PRIVATE
         # harmony are only needed privately when building AutoPas.
-        harmony
+        $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony>
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
@@ -46,6 +47,7 @@ target_compile_definitions(
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_TUNING>
         _USE_MATH_DEFINES
 )
