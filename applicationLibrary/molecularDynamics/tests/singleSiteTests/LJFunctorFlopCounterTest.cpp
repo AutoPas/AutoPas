@@ -59,13 +59,6 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
 
   autoPas.init();
 
-  // Molecule positions are chosen such that SoAFunctorSingle, Pair, and Verlet all handle at least one molecule inside
-  // the cutoff and one outside.
-
-  // For SoAFunctorSingle, mol 0 & mol 1 (same cell) are inside the cutoff and mol 2 & mol 3 (same cell) are outside the
-  // cutoff For SoAFunctorPair, mol 1 & mol 2 (neighboring cells) are inside the cutoff and mol 0 & mol 4 (likewise) are
-  // outside For SoAFunctorVerlet, mol 0 has mol 1 & 2 in its neighbor list but mol 1 lies inside the cutoff and mol 2
-  // outside.
   const std::vector<Molecule> molVec{Molecule({0.9, 0.3, 0.9}, {0, 0, 0}, 0), Molecule({0.9, 0.9, 0.9}, {0, 0, 0}, 1),
                                      Molecule({0.9, 1.5, 0.9}, {0, 0, 0}, 2), Molecule({0.1, 2.4, 0.1}, {0, 0, 0}, 3)};
 
@@ -127,7 +120,8 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
 
   const auto expectedGlobalsCalcs = calculateGlobals ? expectedN3KernelCalls + expectedNoN3KernelCalls : 0;
 
-  // distance calculations cost 8 flops, LJ kernel calls without Newton3 cost 15 FLOPs, with Newton 3 cost 18 flops
+  // distance calculations cost 8 FLOPs, LJ kernel calls without Newton3 cost 15 FLOPs, with Newton 3 cost 18 FLOPs
+  // globals calculations cost 8 FLOPs, 9 with shift
   constexpr int numFLOPsPerDistanceCalc = 8;
   constexpr int numFLOPsPerNoN3KernelCall = 15;
   constexpr int numFLOPsPerN3KernelCall = 18;
