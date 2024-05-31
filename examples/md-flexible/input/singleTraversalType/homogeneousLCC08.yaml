@@ -18,7 +18,7 @@ box-max                              :  [100.5, 100.5, 100.5]
 cell-size                            :  [1]
 deltaT                               :  0 # Try setting to 0.
 sorting-threshold                    :  8
-iterations                           :  100 # Default 10.
+iterations                           :  500 # Default 10.
 boundary-type                        :  [periodic, periodic, periodic]
 subdivide-dimension                  :  [true, true, true]
 load-balancing-interval              :  100
@@ -53,7 +53,7 @@ Sites:
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension        :  [100, 100, 100]
+      particles-per-dimension        :  [200, 200, 200]
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
@@ -71,7 +71,7 @@ Objects:
 log-level                            :  info
 no-flops                             :  false
 no-end-config                        :  false
-no-progress-bar                      :  true
+no-progress-bar                      :  false
 #vtk-filename                         :  homogeneousLCC08
 #vtk-output-folder                    :  vtkOutputFolder
 #vtk-write-frequency                  :  1000
