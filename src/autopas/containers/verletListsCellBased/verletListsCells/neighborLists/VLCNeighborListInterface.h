@@ -108,6 +108,12 @@ class VLCNeighborListInterface {
    */
   virtual void setUpTraversal(TraversalInterface *traversal) = 0;
 
+  /**
+   * Set the Linked Cells Pointer for this List.
+   * @param linkedCells
+   */
+  void setLinkedCells(LinkedCells<Particle> *linkedCells) { this->_internalLinkedCells = linkedCells; }
+
  protected:
   /**
    * Internal linked cells structure. Necessary for loading and extracting SoA.
