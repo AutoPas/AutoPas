@@ -93,6 +93,14 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
 
     size_t numParticles = 23;
 
+    ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+    PPL.addSiteType(0,1.,1.,1.);
+    PPL.addSiteType(1,1.5,2.,1.);
+    PPL.addSiteType(2,2.,1.,1.);
+    PPL.addSiteType(3,2.5,2.,1.);
+    PPL.addSiteType(4,3.,1.,1.);
+    PPL.calculateMixingCoefficients();
+
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(
         cell1HWY, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
@@ -117,11 +125,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     FMCell cell2NoHWY(cell2HWY);
 
     constexpr bool shifting = true;
-    constexpr bool mixing = false;
-    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
-    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false, vecPattern> ljFunctorHWY(_cutoff);
-    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    constexpr bool mixing = true;
+    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
+    // ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false, vecPattern> ljFunctorHWY(_cutoff, PPL);
+    // ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ljFunctorHWY.initTraversal();
     ljFunctorAVX.initTraversal();
@@ -176,6 +184,14 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
 
     size_t numParticles = 23;
 
+    ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+    PPL.addSiteType(0,1.,1.,1.);
+    PPL.addSiteType(1,1.5,2.,1.);
+    PPL.addSiteType(2,2.,1.,1.);
+    PPL.addSiteType(3,2.5,2.,1.);
+    PPL.addSiteType(4,3.,1.,1.);
+    PPL.calculateMixingCoefficients();
+
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
@@ -191,11 +207,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
     // copy cells
     FMCell cellNoHWY(cellHWY);
     constexpr bool shifting = true;
-    constexpr bool mixing = false;
-    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
-    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false, vecPattern> ljFunctorHWY(_cutoff);
-    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    constexpr bool mixing = true;
+    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
+    // ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false, vecPattern> ljFunctorHWY(_cutoff, PPL);
+    // ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
 
@@ -241,6 +257,14 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
 
     constexpr size_t numParticles = 23;
 
+    ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+    PPL.addSiteType(0,1.,1.,1.);
+    PPL.addSiteType(1,1.5,2.,1.);
+    PPL.addSiteType(2,2.,1.,1.);
+    PPL.addSiteType(3,2.5,2.,1.);
+    PPL.addSiteType(4,3.,1.,1.);
+    PPL.calculateMixingCoefficients();
+
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
@@ -271,13 +295,12 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
     // copy cells
     FMCell cellHWY(cellAVX);
     constexpr bool shifting = true;
-    constexpr bool mixing = false;
+    constexpr bool mixing = true;
     constexpr bool calculateGlobals = true;
-    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false, vecPattern> ljFunctorHWY(_cutoff);
-    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(
-        _cutoff);
-    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false, vecPattern> ljFunctorHWY(_cutoff, PPL);
+    // ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(_cutoff, PPL);
+    // ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellHWY)) << "Cells not equal after copy initialization.";
 
@@ -317,6 +340,14 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
 
     constexpr size_t numParticles = 23;
 
+    ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+    PPL.addSiteType(0,1.,1.,1.);
+    PPL.addSiteType(1,1.5,2.,1.);
+    PPL.addSiteType(2,2.,1.,1.);
+    PPL.addSiteType(3,2.5,2.,1.);
+    PPL.addSiteType(4,3.,1.,1.);
+    PPL.calculateMixingCoefficients();
+
     Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
     autopasTools::generators::RandomGenerator::fillWithParticles(cellHWY, defaultParticle, _lowCorner, _highCorner,
                                                                 numParticles);
@@ -332,11 +363,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
     // copy cells
     FMCell cellNoHWY(cellHWY);
     constexpr bool shifting = true;
-    constexpr bool mixing = false;
-    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
-    ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff);
-    ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    constexpr bool mixing = true;
+    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
+    // ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff, PPL);
+    // ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
 

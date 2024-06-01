@@ -8,6 +8,7 @@
 #include "VectorizationPatterns.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/AlignedAllocator.h"
 
 // #undef HWY_TARGET_INCLUDE
 // #define HWY_TARGET_INCLUDE "molecularDynamicsLibrary/LJFunctorHWY.h"
@@ -411,18 +412,57 @@ namespace mdLib {
                         const long unsigned *const __restrict typeID1ptr, const long unsigned *const __restrict typeID2ptr,
                         const long restI, const long restJ) {
 
-                // TODO : handle different vectorization patterns
                     double epsilon_buf[_vecLengthDouble] = {0.};
                     double sigma_buf[_vecLengthDouble] = {0.};
                     double shift_buf[_vecLengthDouble] = {0.};
 
-                    for (long n = 0; (remainderJ ? n < restJ : n < _vecLengthDouble); ++n) {
-                        epsilon_buf[n] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + n));
-                        sigma_buf[n] =  _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + n));
-                        if constexpr (applyShift) {
-                            shift_buf[n] = _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + n));
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        for (long j = 0; j < (remainderJ ? restJ : _vecLengthDouble); ++j) {
+                            epsilon_buf[j] = _PPLibrary->getMixing24Epsilon(*typeID1ptr, *(typeID2ptr + j));
+                            sigma_buf[j] =  _PPLibrary->getMixingSigmaSquared(*typeID1ptr, *(typeID2ptr + j));
+                            if constexpr (applyShift) {
+                                shift_buf[j] = _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + j));
+                            }
                         }
                     }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        for (long i = 0; i < (remainderI ? 1 : 2); ++i) {
+                            for (long j = 0; j < (remainderJ ? restJ : _vecLengthDouble/2); ++j) {
+                                epsilon_buf[i*_vecLengthDouble/2+j] = _PPLibrary->getMixing24Epsilon(*(typeID1ptr+i), *(typeID2ptr+j));
+                                sigma_buf[i*_vecLengthDouble/2+j] = _PPLibrary->getMixingSigmaSquared(*(typeID1ptr+i), *(typeID2ptr+j));
+                                if constexpr (applyShift) {
+                                    shift_buf[i*_vecLengthDouble/2+j] = _PPLibrary->getMixingShift6(*(typeID1ptr+i), *(typeID2ptr+j));
+                                }
+                            }
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        for (long i = 0; i < (remainderI ? restI : _vecLengthDouble/2); ++i) {
+                            for (long j = 0; j < (remainderJ ? 1 : 2); ++j) {
+                                epsilon_buf[j*_vecLengthDouble/2+i] = _PPLibrary->getMixing24Epsilon(*(typeID1ptr+i), *(typeID2ptr+j));
+                                sigma_buf[j*_vecLengthDouble/2+i] = _PPLibrary->getMixingSigmaSquared(*(typeID1ptr+i), *(typeID2ptr+j));
+                                if constexpr (applyShift) {
+                                    shift_buf[j*_vecLengthDouble/2+i] = _PPLibrary->getMixingShift6(*(typeID1ptr+i), *(typeID2ptr+j));
+                                }
+                            }
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        for (long i = 0; i < (remainderI ? restI : _vecLengthDouble); ++i) {
+                            epsilon_buf[i] = _PPLibrary->getMixing24Epsilon(*(typeID1ptr+i), *typeID2ptr);
+                            sigma_buf[i] =  _PPLibrary->getMixingSigmaSquared(*(typeID1ptr+i), *typeID2ptr);
+                            if constexpr (applyShift) {
+                                shift_buf[i] = _PPLibrary->getMixingShift6(*(typeID1ptr+i), *typeID2ptr);
+                            }
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        throw std::runtime_error("Not yet implemented");
+                    }
+                    else {
+                        throw std::runtime_error("No vectorization pattern matched");
+                    }
+
                     epsilon24s = highway::LoadU(tag_double, epsilon_buf);
                     sigmaSquaredDiv2s = highway::LoadU(tag_double, sigma_buf);
                     if constexpr (applyShift) {
@@ -460,12 +500,13 @@ namespace mdLib {
 
                         }
                         else {
-                            ownedJ = highway::LoadU(tag_long, &ownedPtr2[j]);
-                            x2 = highway::LoadU(tag_double, &xPtr2[j]);
-                            y2 = highway::LoadU(tag_double, &yPtr2[j]);
-                            z2 = highway::LoadU(tag_double, &zPtr2[j]);
+                            ownedJ = highway::Load(tag_long, &ownedPtr2[j]);
+                            x2 = highway::Load(tag_double, &xPtr2[j]);
+                            y2 = highway::Load(tag_double, &yPtr2[j]);
+                            z2 = highway::Load(tag_double, &zPtr2[j]);
                         }
                     }
+                    /*
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         VectorLong tmpOwnedI = _zeroLong;
                         VectorDouble tmpX1 = _zeroDouble;
@@ -567,6 +608,7 @@ namespace mdLib {
                     }
                     else
                         throw std::runtime_error("No vectorization pattern matched, error!");
+                    */
 
                     VectorDouble ownedIDouble = highway::ConvertTo(tag_double, ownedI);
                     dummyMaskI = highway::Ne(ownedIDouble, _ownedStateDummy);
@@ -711,15 +753,15 @@ namespace mdLib {
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : compare with previous approach regarding performance
                         // this approach is much more convenient to understand & maintain
-                        double tmpX [_vecLengthDouble] = {0.};
-                        double tmpY [_vecLengthDouble] = {0.};
-                        double tmpZ [_vecLengthDouble] = {0.};
-                        highway::StoreU(fxAcc, tag_double, tmpX);
-                        highway::StoreU(fyAcc, tag_double, tmpY);
-                        highway::StoreU(fzAcc, tag_double, tmpZ);
+                        alignas(64) double tmpX [_vecLengthDouble] = {0.};
+                        alignas(64) double tmpY [_vecLengthDouble] = {0.};
+                        alignas(64) double tmpZ [_vecLengthDouble] = {0.};
+                        highway::Store(fxAcc, tag_double, tmpX);
+                        highway::Store(fyAcc, tag_double, tmpY);
+                        highway::Store(fzAcc, tag_double, tmpZ);
 
-                        for (long n = 0; n < _vecLengthDouble; ++n) {
-                            long index = reversed ? i-n : i+n;
+                        for (long n = 0; remainder ? n < rest : n < _vecLengthDouble; ++n) {
+                            long index = reversed ? (remainder ? n : i-_vecLengthDouble+1+n) : i+n;
                             fxPtr[index] += tmpX[n];
                             fyPtr[index] += tmpY[n];
                             fzPtr[index] += tmpZ[n];
