@@ -157,7 +157,8 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
 
       if (collapseDepth == 2) {
-        AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
+        // AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
+#pragma omp parallel for schedule(runtime) collapse(2)
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {
@@ -167,7 +168,8 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
           }
         }
       } else {
-        AUTOPAS_OPENMP(for schedule(runtime) collapse(3))
+        // AUTOPAS_OPENMP(for schedule(runtime) collapse(3))
+#pragma omp parallel for schedule(runtime) collapse(3)
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
           for (unsigned long y = start_y; y < end_y; y += stride_y) {
             for (unsigned long x = start_x; x < end_x; x += stride_x) {

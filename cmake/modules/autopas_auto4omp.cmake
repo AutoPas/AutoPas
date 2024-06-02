@@ -375,6 +375,9 @@ else ()
     # Mark as standalone build to fix CMake's missing declaration errors.
     set(OPENMP_STANDALONE_BUILD ON)
 
+    # Set LIBOMP_HAVE_X86INTRIN_H
+    set(LIBOMP_HAVE_X86INTRIN_H ON CACHE INTERNAL "")
+
     # Enable the FetchContent CMake module.
     include(FetchContent)
 
