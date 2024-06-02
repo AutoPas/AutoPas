@@ -65,6 +65,12 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
     for (size_t i = 0; i < particleLocation.size(); i++) {
       index[i] = particleLocation[i] / cellLength;
     }
+
+    // ignore particles that are outside the domain
+    if (index[0] >= cellsPerDimension[0] || index[1] >= cellsPerDimension[1] || index[2] >= cellsPerDimension[2]) {
+      continue;
+    }
+
     const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
     particlesPerCell[cellIndex] += 1;
     // calculate the size of the current cell
