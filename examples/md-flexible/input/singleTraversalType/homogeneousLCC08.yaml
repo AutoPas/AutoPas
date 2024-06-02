@@ -71,7 +71,7 @@ Objects:
 log-level                            :  info
 no-flops                             :  false
 no-end-config                        :  false
-no-progress-bar                      :  false
+no-progress-bar                      :  true
 #vtk-filename                         :  homogeneousLCC08
 #vtk-output-folder                    :  vtkOutputFolder
 #vtk-write-frequency                  :  1000
