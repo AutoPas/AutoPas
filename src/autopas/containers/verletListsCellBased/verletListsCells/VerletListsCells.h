@@ -118,10 +118,10 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
-#define SILENCE
+#define VLC_SILENCE
     // TODO: REMOVE THIS
     const auto checkPushBackSafe = [](const auto &container, const std::string &name, size_t line) {
-#ifndef SILENCE
+#ifndef VLC_SILENCE
       if (container.capacity() < container.size() + 1) {
         std::cout << name << ".push_back() in line " << line << " triggers resize!"
                   << "\n";
@@ -145,8 +145,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 #define CELLHANDLER 2
 #define MANUALLY 3
 
-//#define BUILD_TECHNIQUE CELLHANDLER
-#define BUILD_TECHNIQUE MANUALLY
+      //#define BUILD_TECHNIQUE MANUALLY
 
 #ifdef BUILD_TECHNIQUE
       if (traversal->getTraversalType() == TraversalOption::vlc_c08) {
@@ -275,14 +274,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
         }
       }
 #endif
-#ifndef SILENCE
-      for (size_t i = 0; i < cells.size(); ++i) {
-        if (neighborLists[i].capacity() != 0) {
-          std::cout << "cell[" << i << "] size: " << cells[i].size() << " list length: " << neighborLists[i].size()
-                    << " list capacity: " << neighborLists[i].capacity() << "\n";
-        }
-      }
-#endif
 #ifdef BUILD_TECHNIQUE
       } else {
 #endif
@@ -293,6 +284,16 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       }
 #endif
     }
+
+#ifndef SILENCE
+    for (size_t i = 0; i < this->_linkedCells.getCells().size(); ++i) {
+      if (_neighborList.getAoSNeighborList()[i].capacity() != 0) {
+        std::cout << "cell[" << i << "] size: " << this->_linkedCells.getCells()[i].size()
+                  << " list length: " << _neighborList.getAoSNeighborList()[i].size()
+                  << " list capacity: " << _neighborList.getAoSNeighborList()[i].capacity() << "\n";
+      }
+    }
+#endif
 
     if (traversal->getDataLayout() == DataLayoutOption::soa) {
       _neighborList.generateSoAFromAoS(this->_linkedCells);
