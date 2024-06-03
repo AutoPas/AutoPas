@@ -100,4 +100,29 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
  * @return whether the scheduling chunk size should be overwritten
  */
 [[maybe_unused]] [[nodiscard]] bool autopas::OpenMPConfigurator::overrideChunkSize() const { return _kind >= 1; }
+
+/**
+ * Tells whether the scheduling kind is a manual LB4OMP scheduling technique.
+ * @return whether the scheduling kind is a manual LB4OMP scheduling technique
+ */
+// NOLINTNEXTLINE: the function can only be static if not AUTOPAS_USE_LB4OMP.
+[[maybe_unused]] [[nodiscard]] bool autopas::OpenMPConfigurator::manualSchedulingTechnique() const {
+#ifdef AUTOPAS_USE_LB4OMP
+  switch (_kind) {
+    case OpenMPKindOption::omp_auto:
+    case OpenMPKindOption::omp_dynamic:
+    case OpenMPKindOption::omp_guided:
+    case OpenMPKindOption::omp_runtime:
+    case OpenMPKindOption::omp_static:
+    case OpenMPKindOption::auto4omp_randomsel:
+    case OpenMPKindOption::auto4omp_exhaustivesel:
+    case OpenMPKindOption::auto4omp_expertsel:
+      return false;
+    default:
+      return true;
+  }
+#else
+  return false;
+#endif
+};
 }  // namespace autopas
