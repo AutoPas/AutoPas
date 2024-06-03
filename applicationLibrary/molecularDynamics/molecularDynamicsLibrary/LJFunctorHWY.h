@@ -500,10 +500,10 @@ namespace mdLib {
 
                         }
                         else {
-                            ownedJ = highway::Load(tag_long, &ownedPtr2[j]);
-                            x2 = highway::Load(tag_double, &xPtr2[j]);
-                            y2 = highway::Load(tag_double, &yPtr2[j]);
-                            z2 = highway::Load(tag_double, &zPtr2[j]);
+                            ownedJ = highway::LoadU(tag_long, &ownedPtr2[j]);
+                            x2 = highway::LoadU(tag_double, &xPtr2[j]);
+                            y2 = highway::LoadU(tag_double, &yPtr2[j]);
+                            z2 = highway::LoadU(tag_double, &zPtr2[j]);
                         }
                     }
                     /*
