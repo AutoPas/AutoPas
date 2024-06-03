@@ -17,11 +17,7 @@
 
 #if defined(AUTOPAS_USE_OPENMP)
 
-#if defined(AUTOPAS_USE_AUTO4OMP)
-#include AUTOPAS_AUTO4OMP_OMP_H
-#else
 #include <omp.h>
-#endif
 
 #include <cstddef>  // for size_t
 #include <vector>

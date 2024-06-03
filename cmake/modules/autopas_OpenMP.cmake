@@ -6,19 +6,11 @@ include(autopas_auto4omp)
 
 if (AUTOPAS_OPENMP)
     message(STATUS "OpenMP enabled.")
-
-    if (AUTOPAS_AUTO4OMP)
-        # If Auto4OMP is on, don't look for standard OpenMP with CMake's FindOpenMP.
-        ## Instead, use the fake FindOpenMP defined in the AutoPas Auto4OMP cmake module.
-        ## It simulate CMake's FindOpenMP and sets the concerned variables according to Auto4OMP's configuration.
-        auto4omp_FindOpenMP()
-    else ()
-        find_package(OpenMP REQUIRED)
-    endif ()
-
+    find_package(OpenMP REQUIRED)
     # OpenMP version 4.5 was specified in 11.2015
     if (
-        (OpenMP_CXX_SPEC_DATE LESS 201511)
+        NOT AUTOPAS_AUTO4OMP
+        AND (OpenMP_CXX_SPEC_DATE LESS 201511)
         AND
             NOT
             (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")

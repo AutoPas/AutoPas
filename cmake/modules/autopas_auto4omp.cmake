@@ -7,6 +7,7 @@ This CMake module loads Auto4OMP into the AutoPas project.
 It attempts to automatically handle its required CMake arguments, and warns if one must be manually entered.
 Ideally, "cmake -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++" should work without issues.
 If cuda's installed, a gcc compatible with NVCC should also be installed. E.g., gcc-12.
+After building, export LD_LIBRARY_PATH=path/to/autopas/build/_deps/auto4omp-build/runtime/src:$LD_LIBRARY_PATH
 #]=====================================================================================================================]
 
 # Variable descriptions:
@@ -62,7 +63,7 @@ set(
 )
 
 string(
-        CONCAT AUTOPAS_pthread_LIBRARY
+        CONCAT AUTOPAS_pthread_LIBRARY_DOC
         "Path to pthread.a, required by OpenMP. E.g., \"/usr/lib/x86_64-linux-gnu/libpthread.a\". "
         "To find it, run the following command: \"find /usr -name libpthread.a\". "
         "By default, AutoPas looks for pthread with FindThreads and the command \"find /usr/lib -name FileCheck\"."
@@ -112,7 +113,7 @@ set(AUTOPAS_AUTO4OMP_INSTALL_DIR "" CACHE PATH ${AUTOPAS_AUTO4OMP_INSTALL_DIR_DO
 set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}")
 set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC}")
 set(AUTOPAS_FILECHECK_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
-set(AUTOPAS_pthread_LIBRARY OFF CACHE FILEPATH "${AUTOPAS_FILECHECK_EXECUTABLE_DOC}")
+set(AUTOPAS_pthread_LIBRARY OFF CACHE FILEPATH "${AUTOPAS_pthread_LIBRARY_DOC}")
 
 # Version settings. If AutoPas or Auto4OMP support new packages, update here.
 set(AUTOPAS_NVCC_MAX_GCC 12 CACHE STRING ${AUTOPAS_NVCC_MAX_GCC_DOC})
@@ -434,7 +435,10 @@ else ()
     set(CMAKE_POLICY_DEFAULT_CMP0146 NEW) # The FindCUDA module.
     set(CMAKE_POLICY_DEFAULT_CMP0148 NEW) # The FindPythonInterp and FindPythonLibs modules.
 
-    # Mark Auto4OMP's variables advanced. [***]
+    # Define an alias to Auto4OMP's imported omp target.
+    add_library(auto4omp::omp ALIAS omp)
+
+        # Mark Auto4OMP's variables advanced. [***]
     mark_as_advanced(
             OPENMP_ENABLE_WERROR
             OPENMP_LIBDIR_SUFFIX
@@ -475,9 +479,9 @@ else ()
             LIBOMPTARGET_NVPTX_DEBUG
     )
 
-    # Build and install Auto4OMP with make install.
+    # Add a custom target to make install Auto4OMP:
 
-    ## Add a target for Auto4OMP. It builds Auto4OMP by running make in its build directory.
+    ## Define the target with the make command.
     add_custom_target(
             auto4omp ALL
             WORKING_DIRECTORY ${auto4omp_BINARY_DIR}
@@ -503,277 +507,7 @@ else ()
             TARGET auto4omp POST_BUILD
             COMMAND ${CMAKE_COMMAND} --install "${auto4omp_BINARY_DIR}" --prefix "${AUTOPAS_AUTO4OMP_INSTALL_DIR}"
     )
-
-    # Set booleans to indicate which Auto4OMP targets are defined, add custom targets for them. [11]
-
-    ## libomp.so
-    set(
-            AUTOPAS_TARGET_omp ON
-            CACHE BOOL "${AUTOPAS_TARGET_omp_DOC}" FORCE
-    )
-    add_library(autopas_auto4omp_omp SHARED IMPORTED)
-    set_property(
-            TARGET autopas_auto4omp_omp
-            PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomp.so"
-    )
-
-    ## libomptarget.so
-    set(
-            AUTOPAS_TARGET_omptarget ON
-            CACHE BOOL "${AUTOPAS_TARGET_omptarget_DOC}" FORCE
-    )
-    add_library(autopas_auto4omp_omptarget SHARED IMPORTED)
-    set_property(
-            TARGET autopas_auto4omp_omptarget
-            PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomptarget.so"
-    )
-
-    ## libomptarget.rtl.cuda.so
-    if (TARGET omptarget.rtl.cuda)
-        set(
-                AUTOPAS_TARGET_omptarget.rtl.cuda ON
-                CACHE BOOL "${AUTOPAS_TARGET_omptarget.rtl.cuda_DOC}" FORCE
-        )
-        add_library(autopas_auto4omp_omptarget.rtl.cuda SHARED IMPORTED)
-        set_property(
-                TARGET autopas_auto4omp_omptarget.rtl.cuda
-                PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomptarget.rtl.cuda.so"
-        )
-    endif ()
-
-    ## libomptarget.rtl.x86_64.so
-    if (TARGET omptarget.rtl.x86_64)
-        set(
-                AUTOPAS_TARGET_omptarget.rtl.x86_64 ON
-                CACHE BOOL "${AUTOPAS_TARGET_mptarget.rtl.x86_64_DOC}" FORCE
-        )
-        add_library(autopas_auto4omp_omptarget.rtl.x86_64 SHARED IMPORTED)
-        set_property(
-                TARGET autopas_auto4omp_omptarget.rtl.x86_64
-                PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomptarget.rtl.x86_64.so"
-        )
-    endif ()
-
-    ## libomptarget-nvptx.a
-    if (TARGET omptarget-nvptx)
-        set(
-                AUTOPAS_TARGET_omptarget-nvptx ON
-                CACHE BOOL "${AUTOPAS_TARGET_omptarget-nvptx_DOC}" FORCE
-        )
-        add_library(autopas_auto4omp_omptarget-nvptx SHARED IMPORTED)
-        set_property(
-                TARGET autopas_auto4omp_omptarget-nvptx
-                PROPERTY IMPORTED_LOCATION "${AUTOPAS_AUTO4OMP_LIB_DIR}/libomptarget-nvptx.a"
-        )
-    endif ()
-
-    # Prioritize Auto4OMP's libomp by prepending its path to the environment variable LD_LIBRARY_PATH.
-    ## src/autopas/CMakeLists.txt will prepend AUTOPAS_LIBOMP_PATH to LD_LIBRARY_PATH before AutoPas builds. [**]
-    set(
-            AUTOPAS_LIBOMP_DIR "${auto4omp_BINARY_DIR}/runtime/src"
-            CACHE INTERNAL "Auto4OMP's libomp.so path."
-    )
-    set(
-            AUTOPAS_LIBOMPTARGET_DIR "${auto4omp_BINARY_DIR}/libomptarget"
-            CACHE INTERNAL "Auto4OMP's libomp.so path."
-    )
-    set(
-            AUTOPAS_LIBOMP_PATH "${AUTOPAS_LIBOMP_DIR}/libomp.so"
-            CACHE INTERNAL "Auto4OMP's libomp.so path."
-    )
-    set(
-            AUTOPAS_LIBOMPTARGET_PATH "${AUTOPAS_LIBOMPTARGET_DIR}/libomptarget.so"
-            CACHE INTERNAL "Auto4OMP's libomp.so path."
-    )
-
 endif ()
-
-# Macro to prioritize Auto4OMP's installed libraries. Prepends the install dir to LD_LIBRARY_PATH for a given target.
-function(auto4omp_prioritize target)
-    # TODO: Try [*] instead.
-    if (DEFINED ENV{LD_LIBRARY_PATH} AND NOT $ENV{LD_LIBRARY_PATH} STREQUAL "")
-        # If the variable's not empty, prepend Auto4OMP's install directory.
-        add_custom_command(
-                TARGET ${target}
-                PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_AUTO4OMP_LIB_DIR}:$ENV{LD_LIBRARY_PATH}"
-        )
-    else ()
-        # Else, set it to Auto4OMP's install directory.
-        add_custom_command(
-                TARGET ${target}
-                PRE_LINK COMMAND export LD_LIBRARY_PATH="${AUTOPAS_AUTO4OMP_LIB_DIR}"
-        )
-    endif ()
-
-    #[[
-    # [*] Prioritize Auto4OMP's libomp.so [https://www.hpc.dtu.dk/?page_id=1180] TODO: options unused by Clang. Why?
-    target_compile_options(
-            ${target} BEFORE PRIVATE
-            -I"${AUTOPAS_LIBOMP_DIR}" -I"${AUTOPAS_LIBOMPTARGET_DIR}"
-            -Wl,-rpath="${AUTOPAS_LIBOMPTARGET_DIR}",-rpath="${AUTOPAS_LIBOMP_DIR}"
-            -L"${AUTOPAS_LIBOMP_DIR}" -lomp -L"${AUTOPAS_LIBOMPTARGET_DIR}" -lomptarget
-    )
-    #]]
-endfunction()
-
-# Function to simulate find_package(OpenMP), finds Auto4OMP instead of standard OpenMP.
-function(auto4omp_FindOpenMP)
-    if (AUTOPAS_AUTO4OMP)
-        # If Auto4OMP is used, don't use for system's OMP. Instead, manually point OMP's variables to Auto4OMP.
-
-        # Set the booleans.
-        set(
-                OpenMP_FOUND TRUE
-                CACHE INTERNAL "Variable indicating that OpenMP flags for all requested languages have been found."
-        )
-        set(
-                OpenMP_C_FOUND TRUE
-                CACHE INTERNAL "Variable indicating if OpenMP support for C was detected.")
-        set(
-                OpenMP_CXX_FOUND TRUE
-                CACHE INTERNAL "Variable indicating if OpenMP support for C++ was detected."
-        )
-
-        # Set the flags.
-        set(
-                OpenMP_C_FLAGS "-fopenmp=libomp -pthread"
-                CACHE INTERNAL "OpenMP compiler flags for C, separated by spaces."
-        )
-        set(
-                OpenMP_CXX_FLAGS "-fopenmp=libomp -pthread"
-                CACHE INTERNAL "OpenMP compiler flags for C++, separated by spaces."
-        )
-
-        # Get the needed library paths.
-
-        ## libomp.so
-        get_target_property(auto4omp_libomp_IMPORTED_LOCATION omp IMPORTED_LOCATION)
-
-        ## libomptarget.so
-        get_target_property(auto4omp_libomptarget_IMPORTED_LOCATION omptarget IMPORTED_LOCATION)
-
-        ## libpthread.a
-        find_package(Threads)
-        if (NOT AUTOPAS_pthread_LIBRARY AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT)
-            set(
-                    AUTOPAS_pthread_LIBRARY "${CMAKE_THREAD_LIBS_INIT}"
-                    CACHE FILEPATH "${AUTOPAS_pthread_LIBRARY_DOC}" FORCE
-            )
-        endif ()
-        if (NOT AUTOPAS_pthread_LIBRARY AND (NOT Threads_FOUND OR NOT CMAKE_USE_PTHREADS_INIT GREATER_EQUAL 0))
-            execute_process(
-                    COMMAND find /usr/lib -name libpthread.a
-                    COMMAND grep -m1 "" # Keeps first path only, inspired from [9].
-                    COMMAND tr -d '\n' # Truncates newlines.
-                    OUTPUT_VARIABLE AUTOPAS_pthread_LIBRARY_FIND_CMD
-            )
-            if (NOT ${AUTOPAS_pthread_LIBRARY_FIND_CMD} STREQUAL "")
-                set(
-                        AUTOPAS_pthread_LIBRARY "${AUTOPAS_pthread_LIBRARY_FIND_CMD}"
-                        CACHE FILEPATH "${AUTOPAS_pthread_LIBRARY_DOC}" FORCE
-                )
-            else ()
-                message(
-                        WARNING
-                        "No pthread found, Auto4OMP may warn. AutoPas attempted to look for pthread.a with FindThreads "
-                        "and the command \"find /usr/lib -name FileCheck\".\n"
-                        "To fix, specify the path with -DAUTOPAS_pthread_LIBRARY=\"path/to/pthread.a\""
-                )
-            endif ()
-        endif ()
-
-        # Set the library paths.
-        set(
-                OpenMP_omp_LIBRARY "${auto4omp_libomp_IMPORTED_LOCATION}"
-                CACHE INTERNAL "Location of libomp.so needed for OpenMP support."
-        )
-        set(
-                OpenMP_omptarget_LIBRARY "${auto4omp_libomptarget_IMPORTED_LOCATION}"
-                CACHE INTERNAL "Location of libomptarget.so needed for OpenMP support."
-        )
-        set(
-                OpenMP_pthread_LIBRARY "${AUTOPAS_pthread_LIBRARY}"
-                CACHE INTERNAL "Location of libpthread.a needed for OpenMP support."
-        )
-
-        ## Join the paths into a list and remove empty items.
-        string(
-                JOIN ";" AUTOPAS_OpenMP_LIBRARIES
-                "${OpenMP_omp_LIBRARY}" "${OpenMP_omptarget_LIBRARY}" "${OpenMP_pthread_LIBRARY}"
-        )
-        list(REMOVE_ITEM AUTOPAS_OpenMP_LIBRARIES "")
-
-        set(
-                OpenMP_C_LIBRARIES "${AUTOPAS_OpenMP_LIBRARIES}"
-                CACHE INTERNAL "A list of libraries needed to link with OpenMP code in C."
-        )
-        set(
-                OpenMP_CXX_LIBRARIES "${AUTOPAS_OpenMP_LIBRARIES}"
-                CACHE INTERNAL "A list of libraries needed to link with OpenMP code in C++."
-        )
-
-        # Figure out OMP's spec date based on the used version. The list is from CMake's FindOpenMP.cmake.
-        if (${AUTOPAS_OMP_VERSION} EQUAL 52)
-            set(OpenMP_C_SPEC_DATE_LOCAL "202111")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 51)
-            set(OpenMP_C_SPEC_DATE_LOCAL "202011")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 50)
-            set(OpenMP_C_SPEC_DATE_LOCAL "201811")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 45)
-            set(OpenMP_C_SPEC_DATE_LOCAL "201511")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 40)
-            set(OpenMP_C_SPEC_DATE_LOCAL "201307")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 31)
-            set(OpenMP_C_SPEC_DATE_LOCAL "201107")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 30)
-            set(OpenMP_C_SPEC_DATE_LOCAL "200805")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 25)
-            set(OpenMP_C_SPEC_DATE_LOCAL "200505")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 20)
-            set(OpenMP_C_SPEC_DATE_LOCAL "200203")
-        elseif (${AUTOPAS_OMP_VERSION} EQUAL 10)
-            set(OpenMP_C_SPEC_DATE_LOCAL "199810")
-        endif ()
-        set(
-                OpenMP_C_SPEC_DATE ${OpenMP_C_SPEC_DATE_LOCAL}
-                CACHE INTERNAL "Date of the OpenMP specification implemented by the C compiler."
-        )
-        set(
-                OpenMP_CXX_SPEC_DATE ${OpenMP_C_SPEC_DATE_LOCAL}
-                CACHE INTERNAL "Date of the OpenMP specification implemented by the C compiler."
-        )
-
-        # Get OMP's version major and minor.
-        string(SUBSTRING ${AUTOPAS_OMP_VERSION} 0 1 AUTOPAS_OMP_VERSION_MAJOR)
-        string(SUBSTRING ${AUTOPAS_OMP_VERSION} 1 1 AUTOPAS_OMP_VERSION_MINOR)
-
-        # Set the versions.
-        set(
-                OpenMP_C_VERSION "${AUTOPAS_OMP_VERSION_MAJOR}.${AUTOPAS_OMP_VERSION_MINOR}"
-                CACHE INTERNAL "OpenMP version implemented by the C compiler."
-        )
-        set(
-                OpenMP_CXX_VERSION "${AUTOPAS_OMP_VERSION_MAJOR}.${AUTOPAS_OMP_VERSION_MINOR}"
-                CACHE INTERNAL "OpenMP version implemented by the C++ compiler."
-        )
-        set(
-                OpenMP_C_VERSION_MAJOR ${AUTOPAS_OMP_VERSION_MAJOR}
-                CACHE INTERNAL "Major version of OpenMP implemented by the C compiler."
-        )
-        set(
-                OpenMP_CXX_VERSION_MAJOR ${AUTOPAS_OMP_VERSION_MAJOR}
-                CACHE INTERNAL "Major version of OpenMP implemented by the C++ compiler."
-        )
-        set(
-                OpenMP_C_VERSION_MINOR ${AUTOPAS_OMP_VERSION_MINOR}
-                CACHE INTERNAL "Major version of OpenMP implemented by the C compiler."
-        )
-        set(
-                OpenMP_CXX_VERSION_MINOR ${AUTOPAS_OMP_VERSION_MINOR}
-                CACHE INTERNAL "Major version of OpenMP implemented by the C++ compiler."
-        )
-    endif ()
-endfunction()
 
 #[=====================================================================================================================[
 Sources:
