@@ -139,8 +139,11 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
 
   // Set OpenMP's scheduling runtime variables from the configurator.
   // schedule(runtime) will then use them for the traversal in the concerned calling thread.
-  autopas_set_schedule(TraversalInterface::_openMPConfigurator.getOMPKind(),
-                       TraversalInterface::_openMPConfigurator.getOMPChunkSize());
+  // If the configurator was set to omp_runtime, do nothing. The user is then expected to set OMP_SCHEDULE themself.
+  if (TraversalInterface::_openMPConfigurator.getKind() != OpenMPKindOption::omp_runtime) {
+    autopas_set_schedule(TraversalInterface::_openMPConfigurator.getOMPKind(),
+                         TraversalInterface::_openMPConfigurator.getOMPChunkSize());
+  }
 
   AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
