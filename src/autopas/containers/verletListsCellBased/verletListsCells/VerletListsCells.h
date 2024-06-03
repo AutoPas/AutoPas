@@ -128,61 +128,13 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 // Switch to test two implementations for vlc_c08 list generation
 #define BUILD_WITHOUT_FUNCTOR
 #ifdef BUILD_WITHOUT_FUNCTOR
+      // Vector of offsets from the base cell for the c08 base step
+      // and respective factors for the fraction of particles per cell that need neighbor lists in the base cell.
+      const auto offsetsC08 = VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(
+          this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo()));
       if (traversal->getTraversalType() == TraversalOption::vlc_c08) {
         const auto &cellsPerDim = utils::ArrayUtils::static_cast_copy_array<int>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
-
-        // list of cell interaction pairs relative to the base cell
-        const auto offsets = [&]() {  // NOLINT(*-function-cognitive-complexity) TODO fix this
-          // cellOffset 1, cellOffset2, list estimation factor
-          std::vector<std::tuple<int, int, double>> offsets;
-          offsets.reserve(14);
-          // This is currently guaranteed by the constructor
-          const int interactionCellsPerDim = 1;
-          constexpr std::array<double, 4> estimatorFactors{1., 1., 1. / 4. * M_PI, 1. / 6. * M_PI};
-//          constexpr std::array<double, 4> estimatorFactors{1., 1. * 0.8, 1. / 4. * M_PI * 0.7, 1. / 6. * M_PI * 0.5};
-          for (int z = -interactionCellsPerDim; z <= interactionCellsPerDim; ++z) {
-            for (int y = -interactionCellsPerDim; y <= interactionCellsPerDim; ++y) {
-              for (int x = -interactionCellsPerDim; x <= interactionCellsPerDim; ++x) {
-                int baseCell = 0;
-                int partnerCell = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDim);
-                if (x < 0) {
-                  baseCell -= x;
-                  partnerCell -= x;
-                }
-                if (y < 0) {
-                  baseCell -= y * cellsPerDim[0];
-                  partnerCell -= y * cellsPerDim[0];
-                }
-                if (z < 0) {
-                  baseCell -= z * cellsPerDim[0] * cellsPerDim[1];
-                  partnerCell -= z * cellsPerDim[0] * cellsPerDim[1];
-                }
-                // Count number of non-aligned dimensions
-                const auto factor = estimatorFactors[std::abs(x) + std::abs(y) + std::abs(z)];
-                size_t smallerIndex, biggerIndex;
-                std::tie(smallerIndex, biggerIndex) = std::minmax(baseCell, partnerCell);
-                if (std::find_if(offsets.begin(), offsets.end(), [&](const auto &tuple) {
-                      return std::get<0>(tuple) == smallerIndex and std::get<1>(tuple) == biggerIndex;
-                    }) == offsets.end()) {
-                  offsets.emplace_back(smallerIndex, biggerIndex, factor);
-                }
-              }
-            }
-          }
-          // sort offsets to group processing of the same cells (-> better cache re-usage)
-          std::sort(offsets.begin(), offsets.end(), [](const auto &pair1, const auto &pair2) {
-            const auto &[a1, b1, f1] = pair1;
-            const auto &[a2, b2, f2] = pair2;
-
-            if (a1 == a2) {
-              return b1 < b2;
-            } else {
-              return a1 < a2;
-            }
-          });
-          return offsets;
-        }();
 
         using namespace utils::ArrayMath::literals;
         // Reset lists and define some aliases
@@ -231,7 +183,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
           size_t estimate = 0;
           std::map<int, double> offsetFactors{};
           std::map<int, double> offsetFactorsNoN3{};
-          for (const auto [offsetA, offsetB, factor] : offsets) {
+          for (const auto [offsetA, offsetB, factor] : offsetsC08) {
             offsetFactors[offsetA] = std::max(offsetFactors[offsetA], factor);
             offsetFactorsNoN3[offsetB] = std::max(offsetFactors[offsetB], factor);
           }
@@ -262,7 +214,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             }
 
             // Build c08 lists according to predefined cell pairs
-            for (const auto &[offset1, offset2, _] : offsets) {
+            for (const auto &[offset1, offset2, _] : offsetsC08) {
               const auto cellIndex1 = cellIndexBase + offset1;
               const auto cellIndex2 = cellIndexBase + offset2;
 

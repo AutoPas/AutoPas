@@ -45,6 +45,45 @@ enum class VLCBuildType {
 };
 
 /**
+ * Helper Struct to bundle all information about base step offsets.
+ */
+struct BaseStepOffsets {
+  /**
+   * Offset from the base cell for cell 1.
+   */
+  int offset1;
+  /**
+   * Offset from the base cell for cell 2.
+   */
+  int offset2;
+  /**
+   * Estimation factor on the fraction of particles that will end up needing a neighbor list in the base cell.
+   */
+  double listSizeEstimateFactor;
+
+  /**
+   * Equality operator.
+   * @param rhs
+   * @return Equality of all members.
+   */
+  bool operator==(const BaseStepOffsets &rhs) const;
+
+  /**
+   * Inequality operator.
+   * @param rhs
+   * @return Inequality of at least one member.
+   */
+  bool operator!=(const BaseStepOffsets &rhs) const;
+};
+
+/**
+ *
+ * @param cellsPerDim
+ * @return
+ */
+std::vector<BaseStepOffsets> buildC08BaseStep(const std::array<int, 3> &cellsPerDim);
+
+/**
  * Simple heuristic to calculate the average number of particles per verlet list
  * assuming particles are evenly distributed in the domain box.
  *
