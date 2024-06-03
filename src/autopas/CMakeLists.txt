@@ -14,30 +14,13 @@ file(
 
 add_library(autopas STATIC ${MY_SRC})
 
-# Prioritize Auto4OMP's libomp by setting the LD_LIBRARY_PATH environment variable.
-if (AUTOPAS_AUTO4OMP)
-    # Add the auto4omp target as a dependency to the AutoPas target.
-    add_dependencies(autopas auto4omp)
-    auto4omp_prioritize(autopas)
-    target_include_directories(autopas PUBLIC ${AUTOPAS_AUTO4OMP_INCLUDE_DIR})
-endif ()
-
 target_link_libraries(
     autopas
     PUBLIC
         rt # required for Time.h
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
-
-        # Standard OpenMP target, linked if (OpenMP AND NOT Auto4OMP).
-        $<$<AND:$<BOOL:${AUTOPAS_OPENMP}>,$<NOT:$<BOOL:${AUTOPAS_AUTO4OMP}>>>:OpenMP::OpenMP_CXX>
-
-        # Auto4OMP targets, linked if they exist.
-        $<$<BOOL:${AUTOPAS_TARGET_omp}>:autopas_auto4omp_omp>
-        $<$<BOOL:${AUTOPAS_TARGET_omptarget}>:autopas_auto4omp_omptarget>
-        #$<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.cuda}>:autopas_auto4omp_omptarget.rtl.cuda>
-        #$<$<BOOL:${AUTOPAS_TARGET_omptarget.rtl.x86_64}>:autopas_auto4omp_omptarget.rtl.x86_64>
-        #$<$<BOOL:${AUTOPAS_TARGET_omptarget-nvptx}>:autopas_auto4omp_omptarget-nvptx>
-
+        $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
+        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:auto4omp::omp>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
         antlr4cpp
@@ -56,11 +39,9 @@ target_compile_definitions(
     PUBLIC
         $<$<BOOL:${AUTOPAS_OPENMP}>:AUTOPAS_USE_OPENMP>
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
+        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:AUTOPAS_USE_AUTO4OMP>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
-        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:AUTOPAS_USE_AUTO4OMP>
-        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:AUTOPAS_AUTO4OMP_OMP_H="${AUTOPAS_AUTO4OMP_INCLUDE_DIR}/omp.h">
-        $<$<BOOL:${AUTOPAS_AUTO4OMP}>:AUTOPAS_LIBOMP_PATH="${AUTOPAS_LIBOMP_PATH}">
         _USE_MATH_DEFINES
 )
 
