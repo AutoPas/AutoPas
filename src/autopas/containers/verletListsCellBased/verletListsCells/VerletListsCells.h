@@ -203,7 +203,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
           }
         };
 
-        const auto estimateListSize = [&](size_t baseCellIndex) {
+        // Helper function to estimate the number of neighbor lists for one base step
+        const auto estimateNumLists = [&](size_t baseCellIndex) {
           size_t estimate = 0;
           std::map<int, double> offsetFactors{};
           std::map<int, double> offsetFactorsNoN3{};
@@ -231,7 +232,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             auto &baseCell = cells[cellIndexBase];
             auto &baseCellsLists = neighborLists[cellIndexBase];
             // Allocate space for ptr-list pairs for this cell
-            baseCellsLists.reserve(estimateListSize(cellIndexBase));
+            baseCellsLists.reserve(estimateNumLists(cellIndexBase));
             for (size_t i = 0; i < baseCell.size(); ++i) {
               checkPushBackSafe(baseCellsLists, "baseCellsLists", __LINE__ + 1);
               baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
