@@ -310,7 +310,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
   }
 
   void iterateAllCrossLevels() {
-    AUTOPAS_OPENMP(parallel)
+    // AUTOPAS_OPENMP(parallel)
     for (auto &levelPairs : _crossLevelInteractions) {
       size_t largerLevel, smallerLevel;
       std::tie(largerLevel, smallerLevel) = levelPairs;
@@ -324,7 +324,7 @@ class HierarchicalGrids : public ParticleContainerInterface<Particle> {
 
     // iterate over all particles in a given larger level
     //  @note Maybe parallelize iteration over second level?
-    // AUTOPAS_OPENMP(parallel firstprivate(functor))  // <- cannot parallelize here, since this leads to errors
+    // AUTOPAS_OPENMP(parallel)  // <- cannot parallelize here, since this leads to errors
     for (auto iterFirstLVLParticles = _hierarchyLevels[firstLevel].begin(); iterFirstLVLParticles.isValid();
          ++iterFirstLVLParticles) {
       // Get position and radius of larger particle
