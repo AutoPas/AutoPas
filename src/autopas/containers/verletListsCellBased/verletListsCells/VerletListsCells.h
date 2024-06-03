@@ -133,11 +133,14 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
 
         // list of cell interaction pairs relative to the base cell
-        const auto offsets = [&]() {
-          std::vector<std::pair<int, int>> offsets;
-          offsets.reserve(27);
+        const auto offsets = [&]() {  // NOLINT(*-function-cognitive-complexity) TODO fix this
+          // cellOffset 1, cellOffset2, list estimation factor
+          std::vector<std::tuple<int, int, double>> offsets;
+          offsets.reserve(14);
           // This is currently guaranteed by the constructor
           const int interactionCellsPerDim = 1;
+          constexpr std::array<double, 4> estimatorFactors{1., 1., 1. / 4. * M_PI, 1. / 6. * M_PI};
+//          constexpr std::array<double, 4> estimatorFactors{1., 1. * 0.8, 1. / 4. * M_PI * 0.7, 1. / 6. * M_PI * 0.5};
           for (int z = -interactionCellsPerDim; z <= interactionCellsPerDim; ++z) {
             for (int y = -interactionCellsPerDim; y <= interactionCellsPerDim; ++y) {
               for (int x = -interactionCellsPerDim; x <= interactionCellsPerDim; ++x) {
@@ -155,18 +158,22 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                   baseCell -= z * cellsPerDim[0] * cellsPerDim[1];
                   partnerCell -= z * cellsPerDim[0] * cellsPerDim[1];
                 }
-                const auto &[smallerIndex, biggerIndex] = std::minmax(baseCell, partnerCell);
-                if (std::find(offsets.begin(), offsets.end(), std::make_pair(smallerIndex, biggerIndex)) ==
-                    offsets.end()) {
-                  offsets.emplace_back(smallerIndex, biggerIndex);
+                // Count number of non-aligned dimensions
+                const auto factor = estimatorFactors[std::abs(x) + std::abs(y) + std::abs(z)];
+                size_t smallerIndex, biggerIndex;
+                std::tie(smallerIndex, biggerIndex) = std::minmax(baseCell, partnerCell);
+                if (std::find_if(offsets.begin(), offsets.end(), [&](const auto &tuple) {
+                      return std::get<0>(tuple) == smallerIndex and std::get<1>(tuple) == biggerIndex;
+                    }) == offsets.end()) {
+                  offsets.emplace_back(smallerIndex, biggerIndex, factor);
                 }
               }
             }
           }
           // sort offsets to group processing of the same cells (-> better cache re-usage)
           std::sort(offsets.begin(), offsets.end(), [](const auto &pair1, const auto &pair2) {
-            const auto &[a1, b1] = pair1;
-            const auto &[a2, b2] = pair2;
+            const auto &[a1, b1, f1] = pair1;
+            const auto &[a2, b2, f2] = pair2;
 
             if (a1 == a2) {
               return b1 < b2;
@@ -220,6 +227,25 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
           }
         };
 
+        const auto estimateListSize = [&](size_t baseCellIndex) {
+          size_t estimate = 0;
+          std::map<int, double> offsetFactors{};
+          std::map<int, double> offsetFactorsNoN3{};
+          for (const auto [offsetA, offsetB, factor] : offsets) {
+            offsetFactors[offsetA] = std::max(offsetFactors[offsetA], factor);
+            offsetFactorsNoN3[offsetB] = std::max(offsetFactors[offsetB], factor);
+          }
+          for (const auto &[offset, factor] : offsetFactors) {
+            estimate += cells[baseCellIndex + offset].size() * factor;
+          }
+          if (not this->_verletBuiltNewton3) {
+            for (const auto &[offset, factor] : offsetFactorsNoN3) {
+              estimate += cells[baseCellIndex + offset].size() * factor;
+            }
+          }
+          return estimate;
+        };
+
         // Go over all cells except the very last layer
       AUTOPAS_OPENMP(parallel for collapse(3))
       for (int z = 0; z < cellsPerDim[2] - 1; ++z) {
@@ -229,15 +255,14 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             auto &baseCell = cells[cellIndexBase];
             auto &baseCellsLists = neighborLists[cellIndexBase];
             // Allocate space for ptr-list pairs for this cell
-            baseCellsLists.reserve(
-                std::ceil(static_cast<double>(baseCell.size()) * 1.2));  // FIXME heuristic for number of lists??
+            baseCellsLists.reserve(estimateListSize(cellIndexBase));
             for (size_t i = 0; i < baseCell.size(); ++i) {
               baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
               baseCellsLists.back().second.reserve(listLengthEstimate);
             }
 
             // Build c08 lists according to predefined cell pairs
-            for (const auto &[offset1, offset2] : offsets) {
+            for (const auto &[offset1, offset2, _] : offsets) {
               const auto cellIndex1 = cellIndexBase + offset1;
               const auto cellIndex2 = cellIndexBase + offset2;
 
