@@ -17,7 +17,7 @@ int openMPDefaultChunkSize = 0;
  * OpenMP default chunk size for manual testing.
  * md-flexible: set via command-line option --openmp-chunk-size <long>
  */
-OpenMPKindOption openMPDefaultKind = OpenMPKindOption::auto4omp_expertsel;
+OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
 
 /**
  * OpenMP configurator default constructor.
