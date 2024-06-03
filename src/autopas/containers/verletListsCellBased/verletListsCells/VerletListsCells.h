@@ -118,6 +118,17 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
+#define SILENCE
+    // TODO: REMOVE THIS
+    const auto checkPushBackSafe = [](const auto &container, const std::string &name, size_t line) {
+#ifndef SILENCE
+      if (container.capacity() < container.size() + 1) {
+        std::cout << name << ".push_back() in line " << line << " triggers resize!"
+                  << "\n";
+      }
+#endif
+    };
+
     // VLP needs constexpr special case because the types and thus interfaces are slightly different
     if constexpr (std::is_same_v<NeighborList, VLCCellPairNeighborList<Particle>>) {
       _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
@@ -125,14 +136,22 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                                          traversal->getTraversalType(), _dataLayoutDuringListRebuild);
 
     } else {
-// Switch to test two implementations for vlc_c08 list generation
-#define BUILD_WITHOUT_FUNCTOR
-#ifdef BUILD_WITHOUT_FUNCTOR
       // Vector of offsets from the base cell for the c08 base step
       // and respective factors for the fraction of particles per cell that need neighbor lists in the base cell.
       const auto offsetsC08 = VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(
           this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo()));
+      // Switch to test different implementations for vlc_c08 list generation
+
+#define CELLHANDLER 2
+#define MANUALLY 3
+
+//#define BUILD_TECHNIQUE CELLHANDLER
+#define BUILD_TECHNIQUE MANUALLY
+
+#ifdef BUILD_TECHNIQUE
       if (traversal->getTraversalType() == TraversalOption::vlc_c08) {
+#endif
+#if (BUILD_TECHNIQUE == MANUALLY)
         const auto &cellsPerDim = utils::ArrayUtils::static_cast_copy_array<int>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
 
@@ -160,6 +179,8 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
         auto insert = [&](auto &p1, auto i, auto &p2, auto cellIndex1, auto cellIndexBase, auto &currentCellsLists) {
           // Easy case: cell1 is the base cell
           if (cellIndexBase == cellIndex1) {
+            checkPushBackSafe(currentCellsLists[i].second, "currentCellsLists[" + std::to_string(i) + "].second",
+                              __LINE__ + 1);
             currentCellsLists[i].second.push_back(&p2);
           } else {
             // Otherwise, check if the base cell already has a list for p1
@@ -169,11 +190,14 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             });
             // If yes, append p2 to it.
             if (iter != currentCellsLists.end()) {
+              checkPushBackSafe(iter->second, "iter->second", __LINE__ + 1);
               iter->second.push_back(&p2);
             } else {
               // If no, create one, reserve space and emplace p2
+              checkPushBackSafe(currentCellsLists, "currentCellsLists", __LINE__ + 1);
               currentCellsLists.emplace_back(&p1, std::vector<Particle *>{});
               currentCellsLists.back().second.reserve(listLengthEstimate);
+              checkPushBackSafe(currentCellsLists.back().second, "currentCellsLists.back().second", __LINE__ + 1);
               currentCellsLists.back().second.push_back(&p2);
             }
           }
@@ -209,6 +233,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             // Allocate space for ptr-list pairs for this cell
             baseCellsLists.reserve(estimateListSize(cellIndexBase));
             for (size_t i = 0; i < baseCell.size(); ++i) {
+              checkPushBackSafe(baseCellsLists, "baseCellsLists", __LINE__ + 1);
               baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
               baseCellsLists.back().second.reserve(listLengthEstimate);
             }
@@ -248,12 +273,22 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
           }
         }
       }
+#endif
+#ifndef SILENCE
+      for (size_t i = 0; i < cells.size(); ++i) {
+        if (neighborLists[i].capacity() != 0) {
+          std::cout << "cell[" << i << "] size: " << cells[i].size() << " list length: " << neighborLists[i].size()
+                    << " list capacity: " << neighborLists[i].capacity() << "\n";
+        }
+      }
+#endif
+#ifdef BUILD_TECHNIQUE
       } else {
 #endif
         _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
                                            this->getVerletSkin(), this->getInteractionLength(),
                                            traversal->getTraversalType(), _dataLayoutDuringListRebuild);
-#ifdef BUILD_WITHOUT_FUNCTOR
+#ifdef BUILD_TECHNIQUE
       }
 #endif
     }
