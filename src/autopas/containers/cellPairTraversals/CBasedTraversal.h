@@ -139,12 +139,20 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
 
   // Set OpenMP's scheduling runtime variables from the configurator.
   // schedule(runtime) will then use them for the traversal in the concerned calling thread.
-  // If the configurator was set to omp_runtime, do nothing. The user is then expected to set OMP_SCHEDULE themself.
+  // If the configurator is set to omp_runtime, users are assumed to have set OMP_SCHEDULE manually.
   if (TraversalInterface::_openMPConfigurator.getKind() != OpenMPKindOption::omp_runtime) {
-    autopas_set_schedule(TraversalInterface::_openMPConfigurator.getOMPKind(),
-                         TraversalInterface::_openMPConfigurator.getOMPChunkSize());
+    if (TraversalInterface::_openMPConfigurator.manualSchedulingTechnique()) {
+      // TODO: Set OpenMP's schedule to the corresponding LB4OMP scheduling technique.
+    } else {
+      autopas_set_schedule(TraversalInterface::_openMPConfigurator.getOMPKind(),
+                           TraversalInterface::_openMPConfigurator.getOMPChunkSize());
+    }
   }
 
+  // Suppress warnings caused by AUTOPAS_OPENMP().
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "LoopDoesntUseConditionVariableInspection"
+#pragma ide diagnostic ignored "openmp-use-default-none"
   AUTOPAS_OPENMP(parallel) {
     const unsigned long numColors = stride[0] * stride[1] * stride[2];
     for (unsigned long col = 0; col < numColors; ++col) {
@@ -184,6 +192,6 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       }
     }
   }
+#pragma clang diagnostic pop
 }
-
 }  // namespace autopas

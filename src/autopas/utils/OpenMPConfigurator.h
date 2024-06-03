@@ -23,6 +23,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    */
   enum Value {
     // Standard OpenMP's scheduling kinds:
+
     /**
      * auto: automatic scheduling decisions.
      */
@@ -56,6 +57,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
     omp_static,
 
     // Auto4OMP's automated selection methods:
+
     /**
      * RandomSel: may reselect a random scheduling algorithm at the end of each time-step.
      * The probability of reselection increases with greater load imbalance.
@@ -72,6 +74,39 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
      * ExpertSel: uses runtime performance info and fuzzy logic with expert rules to select scheduling algorithms.
      */
     auto4omp_expertsel,
+
+#ifdef AUTOPAS_USE_LB4OMP
+    // LB4OMP's scheduling techniques:
+
+    // Dynamic, non-adaptive OpenMP non-standard techniques:
+    lb4omp_trapezoid_self_scheduling, // TSS
+
+    // Dynamic, non-adaptive LB4OMP techniques:
+    lb4omp_fixed_size_chunk, // FSC
+    lb4omp_factoring, // FAC
+    lb4omp_improved_factoring, // mFAC
+    lb4omp_practical_factoring, // FAC2
+    lb4omp_practical_weighted_factoring, // WF2
+    lb4omp_tapering, // TAP
+    lb4omp_modified_fixed_size_chunk, // mFSC
+    lb4omp_trapezoid_factoring_self_scheduling, // TFSS
+    lb4omp_fixedIncrease_self_scheduling, // FISS
+    lb4omp_variable_increase_self_scheduling, // FISS
+    lb4omp_random, // RND
+
+    // Dynamic, adaptive LB4OMP techniques:
+    lb4omp_bold, // BOLD
+    lb4omp_adaptive_weighted_factoring, // AWF
+    lb4omp_adaptive_weighted_factoring_B, // AWF-B
+    lb4omp_adaptive_weighted_factoring_C, // AWF-C
+    lb4omp_adaptive_weighted_factoring_D, // AWF-D
+    lb4omp_adaptive_weighted_factoring_E, // AWF-E
+    lb4omp_adaptive_factoring, // AF
+    lb4omp_improved_adaptive_factoring, // mAF
+
+    // Performance measurement for FSC, FAC, TAP, BOLD.
+    lb4omp_profiling,
+#endif
   };
 
   /**
@@ -83,12 +118,14 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    * Constructor from value.
    * @param option
    */
+  // NOLINTNEXTLINE: marking explicit triggers errors elsewhere. Keep non-explicit for now.
   constexpr OpenMPKindOption(Value option) : _value(option) {}
 
   /**
    * Cast to value.
    * @return
    */
+  // NOLINTNEXTLINE: marking explicit triggers errors elsewhere. Keep non-explicit for now.
   constexpr operator Value() const { return _value; }
 
   /**
@@ -114,6 +151,38 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::auto4omp_randomsel, "randomSel"},
         {OpenMPKindOption::auto4omp_exhaustivesel, "exhaustiveSel"},
         {OpenMPKindOption::auto4omp_expertsel, "expertSel"},
+
+#ifdef AUTOPAS_USE_LB4OMP
+        // LB4OMP's scheduling techniques:
+        {OpenMPKindOption::lb4omp_trapezoid_self_scheduling, "Trapezoid self scheduling (TSS)"},
+        {OpenMPKindOption::lb4omp_fixed_size_chunk, "Fixed size chunk (FSC)"},
+        {OpenMPKindOption::lb4omp_factoring, "Factoring (FAC)"},
+        {OpenMPKindOption::lb4omp_improved_factoring, "Improved implementation of Factoring (mFAC)"},
+        {OpenMPKindOption::lb4omp_practical_factoring, "Practical variant of factoring (FAC2)"},
+        {OpenMPKindOption::lb4omp_practical_weighted_factoring, "Practical variant of weighted factoring (WF2)"},
+        {OpenMPKindOption::lb4omp_tapering, "Tapering (TAP)"},
+        {OpenMPKindOption::lb4omp_modified_fixed_size_chunk, "Modified Fixed size chunk (mFSC)"},
+        {OpenMPKindOption::lb4omp_trapezoid_factoring_self_scheduling, "Trapezoid factoring self scheduling "
+         "(TFSS)"},
+        {OpenMPKindOption::lb4omp_fixedIncrease_self_scheduling, "Fixed increase self scheduling (FISS)"},
+        {OpenMPKindOption::lb4omp_variable_increase_self_scheduling, "Variable increase self scheduling (FISS)"},
+        {OpenMPKindOption::lb4omp_random, "Random (RND)"},
+        {OpenMPKindOption::lb4omp_bold, "(BOLD)"},
+        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring, "Adaptive weighted factoring (AWF) "
+         "for time-stepping applications"},
+        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring_B, "Variant B of adaptive weighted factoring "
+         "(AWF-B)"},
+        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring_C, "Variant C of adaptive weighted factoring "
+         "(AWF-C)"},
+        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring_D, "Variant D of adaptive weighted factoring "
+         "(AWF-D)"},
+        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring_E, "Variant E of adaptive weighted factoring "
+         "(AWF-E)"},
+        {OpenMPKindOption::lb4omp_adaptive_factoring, "Adaptive factoring (AF)"},
+        {OpenMPKindOption::lb4omp_improved_adaptive_factoring, "Improved implementation of Adaptive factoring "
+         "(mAF)"},
+        {OpenMPKindOption::lb4omp_profiling, ""},
+#endif
     };
   };
 
@@ -219,5 +288,11 @@ class OpenMPConfigurator {
    * @return whether the scheduling chunk size should be overwritten
    */
   [[maybe_unused]] [[nodiscard]] bool overrideChunkSize() const;
+
+  /**
+   * Tells whether the scheduling kind is a manual LB4OMP scheduling technique.
+   * @return whether the scheduling kind is a manual LB4OMP scheduling technique
+   */
+  [[maybe_unused]] [[nodiscard]] bool manualSchedulingTechnique() const;
 };
 }  // namespace autopas
