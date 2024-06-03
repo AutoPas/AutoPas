@@ -119,13 +119,6 @@ set(AUTOPAS_pthread_LIBRARY OFF CACHE FILEPATH "${AUTOPAS_pthread_LIBRARY_DOC}")
 set(AUTOPAS_NVCC_MAX_GCC 12 CACHE STRING ${AUTOPAS_NVCC_MAX_GCC_DOC})
 set(AUTOPAS_OMP_VERSION 45 CACHE STRING ${AUTOPAS_OMP_VERSION_DOC})
 
-# Set boolean variables for Auto4OMP's targets, used in target_link_libraries's conditional generator expressions.
-set(AUTOPAS_TARGET_omp OFF CACHE BOOL "${AUTOPAS_TARGET_omp_DOC}")
-set(AUTOPAS_TARGET_omptarget OFF CACHE BOOL "${AUTOPAS_TARGET_omptarget_DOC}")
-set(AUTOPAS_TARGET_omptarget.rtl.cuda OFF CACHE BOOL "${AUTOPAS_TARGET_omptarget.rtl.cuda_DOC}")
-set(AUTOPAS_TARGET_omptarget.rtl.x86_64 OFF CACHE BOOL "${AUTOPAS_TARGET_omptarget.rtl.x86_64_DOC}")
-set(AUTOPAS_TARGET_omptarget-nvptx OFF CACHE BOOL "${AUTOPAS_TARGET_omptarget-nvptx_DOC}")
-
 if (NOT AUTOPAS_AUTO4OMP)
     # If Auto4OMP disabled, notify.
     message(STATUS "Auto4OMP disabled.")
@@ -479,9 +472,9 @@ else ()
             LIBOMPTARGET_NVPTX_DEBUG
     )
 
-    # Add a custom target to make install Auto4OMP:
+    # Add an optional target to make install Auto4OMP:
 
-    ## Define the target with the make command.
+    ## Define the custom target with the make command.
     add_custom_target(
             auto4omp ALL
             WORKING_DIRECTORY ${auto4omp_BINARY_DIR}
