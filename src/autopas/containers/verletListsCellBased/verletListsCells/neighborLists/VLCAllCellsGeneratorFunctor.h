@@ -55,6 +55,21 @@ class VLCAllCellsGeneratorFunctor
     return true;
   }
 
+  void setCells(std::vector<FullParticleCell<Particle>> *cells) { _cells = cells; }
+
+// TODO: REMOVE THIS
+#define FUN_SILENCE
+  template <class Container>
+  void checkPushBackSafe(const Container &container, const std::string &name, size_t line) {
+#ifndef FUN_SILENCE
+    if (container.capacity() < container.size() + 1) {
+      std::cout << __FILE__ << ":" << line << " - " << name << ".push_back() "
+                << " triggers resize!"
+                << "\n";
+    }
+#endif
+  };
+
   /**
    * @copydoc Functor::AoSFunctor()
    */
@@ -86,6 +101,10 @@ class VLCAllCellsGeneratorFunctor
         const auto cellIndexBaseCell = utils::ThreeDimensionalMapping::threeToOneD(cellIndex3DBaseCell, _cellsPerDim);
         // If the first cell is also the base cell insert regularly
         if (cellIndexBaseCell == cellIndexI) {
+          checkPushBackSafe(
+              _neighborLists[cellIndexI][particleIndexI].second,
+              "_neighborLists[" + std::to_string(cellIndexI) + "][" + std::to_string(particleIndexI) + "].second",
+              __LINE__ + 1);
           _neighborLists[cellIndexI][particleIndexI].second.push_back(&j);
         } else {
           // In the following two cases the list has to be in a different cell than cellIndex1:
@@ -100,16 +119,23 @@ class VLCAllCellsGeneratorFunctor
               });
           if (iterIandList != list.end()) {
             auto &[_, neighbors] = *iterIandList;
+            checkPushBackSafe(neighbors, "neighbors", __LINE__ + 1);
             neighbors.push_back(&j);
           } else {
+            checkPushBackSafe(list, "list", __LINE__ + 1);
             list.emplace_back(&i, std::vector<Particle *>{});
             list.back().second.reserve(_newListAllocationSize);
+            checkPushBackSafe(list.back().second, "list.back().second", __LINE__ + 1);
             list.back().second.push_back(&j);
           }
         }
       } else if constexpr (TraversalOptionEnum == TraversalOption::Value::vlc_c01 or
                            TraversalOptionEnum == TraversalOption::Value::vlc_c18) {
         const auto &[cellIndex, particleIndex] = _particleToCellMap[&i];
+        checkPushBackSafe(
+            _neighborLists[cellIndex][particleIndex].second,
+            "_neighborLists[" + std::to_string(cellIndex) + "][" + std::to_string(particleIndex) + "].second",
+            __LINE__ + 1);
         _neighborLists[cellIndex][particleIndex].second.push_back(&j);
       } else {
         utils::ExceptionHandler::exception(
@@ -290,6 +316,8 @@ class VLCAllCellsGeneratorFunctor
    * Needed to calculate the base cell for vlc_c08.
    */
   std::array<size_t, 3> _cellsPerDim;
+
+  std::vector<FullParticleCell<Particle>> *_cells = nullptr;
 
   /**
    * How many fields are reserved for newly inserted neighbor lists.

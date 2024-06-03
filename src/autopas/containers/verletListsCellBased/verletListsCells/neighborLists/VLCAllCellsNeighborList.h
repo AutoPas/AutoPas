@@ -64,23 +64,76 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
   void buildAoSNeighborList(LinkedCells<Particle> &linkedCells, bool useNewton3, double cutoff, double skin,
                             double interactionLength, const TraversalOption vlcTraversalOpt,
                             typename VerletListsCellsHelpers::VLCBuildType buildType) override {
-    // Initialize a map of neighbor lists for each cell.
-    _aosNeighborList.clear();
+    using namespace utils::ArrayMath::literals;
     this->_internalLinkedCells = &linkedCells;
     auto &cells = linkedCells.getCells();
+
+    const auto boxSizeWithHalo = this->_internalLinkedCells->getBoxMax() - this->_internalLinkedCells->getBoxMin() +
+                                 std::array<double, 3>{interactionLength, interactionLength, interactionLength} * 2.;
+    const auto listLengthEstimate = VerletListsCellsHelpers::estimateListLength(
+        this->_internalLinkedCells->getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo,
+        interactionLength, 1.3);
+
+    const auto offsetsC08 = VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(
+        this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo()));
+
+    // Helper function to estimate the number of neighbor lists for one base step
+    const auto estimateNumLists = [&](size_t baseCellIndex) {
+      size_t estimate = 0;
+      std::map<int, double> offsetFactors{};
+      std::map<int, double> offsetFactorsNoN3{};
+      for (const auto [offsetA, offsetB, factor] : offsetsC08) {
+        offsetFactors[offsetA] = std::max(offsetFactors[offsetA], factor);
+        offsetFactorsNoN3[offsetB] = std::max(offsetFactors[offsetB], factor);
+      }
+      for (const auto &[offset, factor] : offsetFactors) {
+        estimate += cells[baseCellIndex + offset].size() * factor;
+      }
+      if (not useNewton3) {
+        for (const auto &[offset, factor] : offsetFactorsNoN3) {
+          estimate += cells[baseCellIndex + offset].size() * factor;
+        }
+      }
+      return estimate;
+    };
+
+    const auto checkPushBackSafe = [&](const auto &container, const std::string &name, size_t line) {
+#define NL_SILENCE
+#ifndef NL_SILENCE
+      if (container.capacity() < container.size() + 1) {
+        std::cout << __FILE__ << ":" << line << " - " << name << ".push_back() "
+                  << " triggers resize!"
+                  << "\n";
+      }
+#endif
+    };
+    // Initialize a map of neighbor lists for each cell.
+    _aosNeighborList.clear();
     const size_t numCells = cells.size();
     _aosNeighborList.resize(numCells);
+    const auto cellsPerDim = this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo();
     for (size_t cellIndex = 0; cellIndex < numCells; ++cellIndex) {
+      const auto estimate = [&]() {
+        if (vlcTraversalOpt == TraversalOption::vlc_c08) {
+          const auto cellIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex, cellsPerDim);
+          if (cellIndex3D[0] == (cellsPerDim[0] - 1) or cellIndex3D[1] == (cellsPerDim[1] - 1) or
+              cellIndex3D[2] == (cellsPerDim[2] - 1)) {
+            return cells[cellIndex].size();
+          } else {
+            return estimateNumLists(cellIndex);
+          }
+        }
+        return cells[cellIndex].size();
+      }();
       auto &cell = cells[cellIndex];
-      const auto numParticlesInCell = cell.size();
-      _aosNeighborList[cellIndex].reserve(numParticlesInCell);
+      _aosNeighborList[cellIndex].reserve(estimate);
       size_t particleIndexWithinCell = 0;
       for (auto iter = cell.begin(); iter != cell.end(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
+        checkPushBackSafe(_aosNeighborList[cellIndex], "_aosNeighborList[" + std::to_string(cellIndex) + "]",
+                          __LINE__ + 1);
         _aosNeighborList[cellIndex].emplace_back(particle, std::vector<Particle *>());
-        // In a cell with N particles, reserve space for 5N neighbors.
-        // 5 is an empirically determined magic number that provides good speed.
-        _aosNeighborList[cellIndex].back().second.reserve(numParticlesInCell * 5);
+        _aosNeighborList[cellIndex].back().second.reserve(listLengthEstimate);
         _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
       }
     }
@@ -194,6 +247,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       VLCAllCellsGeneratorFunctor<Particle, TraversalOption::vlc_c08> f(
           _aosNeighborList, _particleToCellMap, cutoff + skin, listLengthEstimate,
           linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+      f.setCells(&this->_internalLinkedCells->getCells());
       // Build the AoS list using the AoS or SoA functor depending on buildType
       auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
           lcBuildTraversalOpt, f, traversalSelectorInfo, dataLayout, useNewton3);
