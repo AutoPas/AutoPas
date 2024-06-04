@@ -97,16 +97,6 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       return estimate;
     };
 
-    const auto checkPushBackSafe = [&](const auto &container, const std::string &name, size_t line) {
-#define NL_SILENCE
-#ifndef NL_SILENCE
-      if (container.capacity() < container.size() + 1) {
-        std::cout << __FILE__ << ":" << line << " - " << name << ".push_back() "
-                  << " triggers resize!"
-                  << "\n";
-      }
-#endif
-    };
     // Initialize a map of neighbor lists for each cell.
     _aosNeighborList.clear();
     const size_t numCells = cells.size();
@@ -130,8 +120,6 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
       size_t particleIndexWithinCell = 0;
       for (auto iter = cell.begin(); iter != cell.end(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
-        checkPushBackSafe(_aosNeighborList[cellIndex], "_aosNeighborList[" + std::to_string(cellIndex) + "]",
-                          __LINE__ + 1);
         _aosNeighborList[cellIndex].emplace_back(particle, std::vector<Particle *>());
         _aosNeighborList[cellIndex].back().second.reserve(listLengthEstimate);
         _particleToCellMap[particle] = std::make_pair(cellIndex, particleIndexWithinCell);
