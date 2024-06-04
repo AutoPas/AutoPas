@@ -55,12 +55,16 @@ class VLCAllCellsGeneratorFunctor
     return true;
   }
 
+  /**
+   * Set the cells pointer.
+   * @param cells
+   */
   void setCells(std::vector<FullParticleCell<Particle>> *cells) { _cells = cells; }
 
   /**
    * @copydoc Functor::AoSFunctor()
    */
-  void AoSFunctor(Particle &i, Particle &j, bool) override {
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {

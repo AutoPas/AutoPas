@@ -23,20 +23,6 @@ size_t estimateListLength(size_t numParticles, const std::array<double, 3> &boxS
   return static_cast<size_t>(std::ceil(numParticles * volumeFraction * correctionFactor));
 }
 
-/**
- * Builds the list of offsets from the base cell for the c08 base step.
- * A offset pair are two cell indices relative to the base cell index that have to interact.
- *
- * The third tuple entry is an estimation factor on the fraction of particles that will end up needing a neighbor list
- * in the base cell.
- * This depends on the relative position of the two cells: Whether they are the same, or share a face, edge, or corner.
- *
- * @note This is implemented for CSF>=1. The algorithm would work for CSF<1 but
- * the vector preallocation and factors would have to change. Factors are currently implemented for CSF== 1.
- *
- * @param cellsPerDim Number of cells per dimension including halo.
- * @return Vector of tuples<offset1, offset2, listEstimateFactor>
- */
 std::vector<BaseStepOffsets> buildC08BaseStep(const std::array<int, 3> &cellsPerDim) {
   // cellOffset 1, cellOffset2, list estimation factor
   std::vector<BaseStepOffsets> offsets{};
