@@ -18,6 +18,7 @@ if (NOT AUTOPAS_ENABLE_RULES_BASED_TUNING)
     list(FILTER MY_SRC EXCLUDE REGEX ".*parser_generated.*")
     list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
 endif ()
+
 add_library(autopas STATIC ${MY_SRC})
 
 target_link_libraries(
