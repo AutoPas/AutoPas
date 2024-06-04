@@ -157,7 +157,13 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
         using namespace utils::ArrayMath::literals;
         // Reset lists and define some aliases
         auto &neighborLists = _neighborList.getAoSNeighborList();
-        neighborLists.clear();
+        for (auto &cellLists : neighborLists) {
+          for (auto &[particlePtr, neighbors] : cellLists) {
+            particlePtr = nullptr;
+            neighbors.clear();
+          }
+        }
+
         _neighborList.setLinkedCells(&this->_linkedCells);
         auto &cells = this->_linkedCells.getCells();
         const auto interactionLength = this->getInteractionLength();
@@ -193,11 +199,23 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
               iter->second.push_back(&p2);
             } else {
               // If no, create one, reserve space and emplace p2
-              checkPushBackSafe(currentCellsLists, "currentCellsLists", __LINE__ + 1);
-              currentCellsLists.emplace_back(&p1, std::vector<Particle *>{});
-              currentCellsLists.back().second.reserve(listLengthEstimate);
-              checkPushBackSafe(currentCellsLists.back().second, "currentCellsLists.back().second", __LINE__ + 1);
-              currentCellsLists.back().second.push_back(&p2);
+              if (auto insertLoc = std::find_if(currentCellsLists.begin(), currentCellsLists.end(),
+                                                [&](const auto &pair) {
+                                                  const auto &[particlePtr, list] = pair;
+                                                  return particlePtr == nullptr;
+                                                });
+                  insertLoc != currentCellsLists.end()) {
+                auto &[particlePtr, neighbors] = *insertLoc;
+                particlePtr = &p1;
+                neighbors.reserve(listLengthEstimate);
+                neighbors.push_back(&p2);
+              } else {
+                checkPushBackSafe(currentCellsLists, "currentCellsLists", __LINE__ + 1);
+                currentCellsLists.emplace_back(&p1, std::vector<Particle *>{});
+                currentCellsLists.back().second.reserve(listLengthEstimate);
+                checkPushBackSafe(currentCellsLists.back().second, "currentCellsLists.back().second", __LINE__ + 1);
+                currentCellsLists.back().second.push_back(&p2);
+              }
             }
           }
         };
@@ -231,11 +249,17 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             auto &baseCell = cells[cellIndexBase];
             auto &baseCellsLists = neighborLists[cellIndexBase];
             // Allocate space for ptr-list pairs for this cell
-            baseCellsLists.reserve(estimateNumLists(cellIndexBase));
+            baseCellsLists.resize(estimateNumLists(cellIndexBase));
             for (size_t i = 0; i < baseCell.size(); ++i) {
-              checkPushBackSafe(baseCellsLists, "baseCellsLists", __LINE__ + 1);
-              baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
-              baseCellsLists.back().second.reserve(listLengthEstimate);
+              if (i < baseCellsLists.size()) {
+                auto &[particlePtr, neighbors] = baseCellsLists[i];
+                particlePtr = &baseCell[i];
+                neighbors.reserve(listLengthEstimate);
+              } else {
+                checkPushBackSafe(baseCellsLists, "baseCellsLists", __LINE__ + 1);
+                baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
+                baseCellsLists.back().second.reserve(listLengthEstimate);
+              }
             }
 
             // Build c08 lists according to predefined cell pairs
@@ -272,6 +296,15 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             }
           }
         }
+      }
+
+      for (auto &cellLists : neighborLists) {
+        cellLists.erase(std::remove_if(cellLists.begin(), cellLists.end(),
+                                       [](const auto &pair) {
+                                         const auto &[particlePtr, neighbors] = pair;
+                                         return particlePtr == nullptr;
+                                       }),
+                        cellLists.end());
       }
 #endif
 #ifdef BUILD_TECHNIQUE
