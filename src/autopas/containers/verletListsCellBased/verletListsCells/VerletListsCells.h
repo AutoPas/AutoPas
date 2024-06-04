@@ -115,6 +115,155 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    */
   size_t getNumberOfPartners(const Particle *particle) const { return _neighborList.getNumberOfPartners(particle); }
 
+  /**
+   * Special case of building the neighbor lists in c08 style where all lists that belong to one base step are stored
+   * together.
+   */
+  void rebuildNeighborListsC08() {
+    using namespace utils::ArrayMath::literals;
+    // Define some aliases
+    const auto &cellsPerDim = utils::ArrayUtils::static_cast_copy_array<int>(
+        this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
+    auto &neighborLists = _neighborList.getAoSNeighborList();
+    auto &cells = this->_linkedCells.getCells();
+    const auto interactionLength = this->getInteractionLength();
+    const auto interactionLengthSquared = interactionLength * interactionLength;
+    const auto boxSizeWithHalo = this->_linkedCells.getBoxMax() - this->_linkedCells.getBoxMin() +
+                                 std::array<double, 3>{interactionLength, interactionLength, interactionLength} * 2.;
+    // Create an estimate for the average length of a neighbor list.
+    // This assumes homogeneous distribution and some overestimation.
+    const auto listLengthEstimate = VerletListsCellsHelpers::estimateListLength(
+        this->_linkedCells.getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo, interactionLength,
+        1.3);
+
+    // Reset lists. Don't free any memory, only mark as unused.
+    _neighborList.setLinkedCells(&this->_linkedCells);
+    for (auto &cellLists : neighborLists) {
+      for (auto &[particlePtr, neighbors] : cellLists) {
+        particlePtr = nullptr;
+        neighbors.clear();
+      }
+    }
+    neighborLists.resize(cells.size());
+
+    // Helper function to insert a pointer into a list of the base cell.
+    // It considers the cases that neither particle is in the base cell
+    // and in that case finds or creates the appropriate list
+    auto insert = [&](auto &p1, auto indexOfP1sList, auto &p2, auto cellIndex1, auto cellIndexBase,
+                      auto &currentCellsLists) {
+      // Easy case: cell1 is the base cell
+      if (cellIndexBase == cellIndex1) {
+        currentCellsLists[indexOfP1sList].second.push_back(&p2);
+      } else {
+        // Otherwise, check if the base cell already has a list for p1
+        auto iter = std::find_if(currentCellsLists.begin(), currentCellsLists.end(), [&](const auto &pair) {
+          const auto &[particlePtr, list] = pair;
+          return particlePtr == &p1;
+        });
+        // If yes, append p2 to it.
+        if (iter != currentCellsLists.end()) {
+          iter->second.push_back(&p2);
+        } else {
+          // If no, create one, reserve space and emplace p2
+          if (auto insertLoc = std::find_if(currentCellsLists.begin(), currentCellsLists.end(),
+                                            [&](const auto &pair) {
+                                              const auto &[particlePtr, list] = pair;
+                                              return particlePtr == nullptr;
+                                            });
+              insertLoc != currentCellsLists.end()) {
+            auto &[particlePtr, neighbors] = *insertLoc;
+            particlePtr = &p1;
+            neighbors.reserve(listLengthEstimate);
+            neighbors.push_back(&p2);
+          } else {
+            currentCellsLists.emplace_back(&p1, std::vector<Particle *>{});
+            currentCellsLists.back().second.reserve(listLengthEstimate);
+            currentCellsLists.back().second.push_back(&p2);
+          }
+        }
+      }
+    };
+
+    // Vector of offsets from the base cell for the c08 base step
+    // and respective factors for the fraction of particles per cell that need neighbor lists in the base cell.
+    const auto offsetsC08 =
+        VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(cellsPerDim));
+
+    // Go over all cells except the very last layer and
+    // TODO tune chunk size
+    AUTOPAS_OPENMP(parallel for collapse(3))
+    for (int z = 0; z < cellsPerDim[2] - 1; ++z) {
+      for (int y = 0; y < cellsPerDim[1] - 1; ++y) {
+        for (int x = 0; x < cellsPerDim[0] - 1; ++x) {
+          // aliases
+          const auto cellIndexBase = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDim);
+          auto &baseCell = cells[cellIndexBase];
+          auto &baseCellsLists = neighborLists[cellIndexBase];
+
+          // Allocate space for ptr-list pairs for this cell
+          baseCellsLists.resize(
+              VerletListsCellsHelpers::estimateNumLists(cellIndexBase, this->_verletBuiltNewton3, cells, offsetsC08));
+          for (size_t i = 0; i < baseCell.size(); ++i) {
+            // if there is already an unused ptr-list pair use it, else emplace a new one.
+            if (i < baseCellsLists.size()) {
+              auto &[particlePtr, neighbors] = baseCellsLists[i];
+              particlePtr = &baseCell[i];
+              neighbors.reserve(listLengthEstimate);
+            } else {
+              baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
+              baseCellsLists.back().second.reserve(listLengthEstimate);
+            }
+          }
+
+          // Build c08 lists for this base step according to predefined cell pairs
+          for (const auto &[offset1, offset2, _] : offsetsC08) {
+            const auto cellIndex1 = cellIndexBase + offset1;
+            const auto cellIndex2 = cellIndexBase + offset2;
+
+            // Skip if both cells only contain halos
+            if (not(cells[cellIndex1].getPossibleParticleOwnerships() == OwnershipState::owned) and
+                not(cells[cellIndex2].getPossibleParticleOwnerships() == OwnershipState::owned)) {
+              continue;
+            }
+
+            // Go over all particle pairs in the two cells and insert close pairs into their respective lists
+            for (size_t i = 0; i < cells[cellIndex1].size(); ++i) {
+              auto &p1 = cells[cellIndex1][i];
+              for (size_t j = (cellIndex1 == cellIndex2) ? i + 1 : 0; j < cells[cellIndex2].size(); ++j) {
+                auto &p2 = cells[cellIndex2][j];
+                // Ignore dummies and self interaction
+                if (&p1 == &p2 or p1.isDummy() or p2.isDummy()) {
+                  continue;
+                }
+
+                // If the distance is less than interaction length add the pair to the list
+                const auto distVec = p2.getR() - p1.getR();
+                const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
+                if (distSquared < interactionLengthSquared) {
+                  insert(p1, i, p2, cellIndex1, cellIndexBase, baseCellsLists);
+                  // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's list
+                  if (not this->_verletBuiltNewton3) {
+                    insert(p2, j, p1, cellIndex2, cellIndexBase, baseCellsLists);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Cleanup: Remove any unused ptr-list pairs to avoid accessing nullptr
+    for (auto &cellLists : neighborLists) {
+      cellLists.erase(std::remove_if(cellLists.begin(), cellLists.end(),
+                                     [](const auto &pair) {
+                                       const auto &[particlePtr, neighbors] = pair;
+                                       return particlePtr == nullptr;
+                                     }),
+                      cellLists.end());
+    }
+  }
+
   void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
@@ -125,161 +274,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                                          traversal->getTraversalType(), _dataLayoutDuringListRebuild);
 
     } else {
-      // Vector of offsets from the base cell for the c08 base step
-      // and respective factors for the fraction of particles per cell that need neighbor lists in the base cell.
-      const auto offsetsC08 = VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(
-          this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo()));
       // Switch to test different implementations for vlc_c08 list generation
       if (traversal->getTraversalType() == TraversalOption::vlc_c08) {
-        const auto &cellsPerDim = utils::ArrayUtils::static_cast_copy_array<int>(
-            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
-
-        using namespace utils::ArrayMath::literals;
-        // Reset lists and define some aliases
-        auto &neighborLists = _neighborList.getAoSNeighborList();
-        for (auto &cellLists : neighborLists) {
-          for (auto &[particlePtr, neighbors] : cellLists) {
-            particlePtr = nullptr;
-            neighbors.clear();
-          }
-        }
-
-        _neighborList.setLinkedCells(&this->_linkedCells);
-        auto &cells = this->_linkedCells.getCells();
-        const auto interactionLength = this->getInteractionLength();
-        const auto interactionLengthSquared = interactionLength * interactionLength;
-        const auto boxSizeWithHalo =
-            this->_linkedCells.getBoxMax() - this->_linkedCells.getBoxMin() +
-            std::array<double, 3>{interactionLength, interactionLength, interactionLength} * 2.;
-
-        const auto listLengthEstimate = VerletListsCellsHelpers::estimateListLength(
-            this->_linkedCells.getNumberOfParticles(IteratorBehavior::ownedOrHalo), boxSizeWithHalo, interactionLength,
-            1.3);
-
-        neighborLists.resize(cells.size());
-
-        // Helper function to insert a pointer into a list of the base cell.
-        // It considers the cases that neither particle is in the base cell and in that case
-        // finds or creates the appropriate list
-        auto insert = [&](auto &p1, auto i, auto &p2, auto cellIndex1, auto cellIndexBase, auto &currentCellsLists) {
-          // Easy case: cell1 is the base cell
-          if (cellIndexBase == cellIndex1) {
-            currentCellsLists[i].second.push_back(&p2);
-          } else {
-            // Otherwise, check if the base cell already has a list for p1
-            auto iter = std::find_if(currentCellsLists.begin(), currentCellsLists.end(), [&](const auto &pair) {
-              const auto &[particlePtr, list] = pair;
-              return particlePtr == &p1;
-            });
-            // If yes, append p2 to it.
-            if (iter != currentCellsLists.end()) {
-              iter->second.push_back(&p2);
-            } else {
-              // If no, create one, reserve space and emplace p2
-              if (auto insertLoc = std::find_if(currentCellsLists.begin(), currentCellsLists.end(),
-                                                [&](const auto &pair) {
-                                                  const auto &[particlePtr, list] = pair;
-                                                  return particlePtr == nullptr;
-                                                });
-                  insertLoc != currentCellsLists.end()) {
-                auto &[particlePtr, neighbors] = *insertLoc;
-                particlePtr = &p1;
-                neighbors.reserve(listLengthEstimate);
-                neighbors.push_back(&p2);
-              } else {
-                currentCellsLists.emplace_back(&p1, std::vector<Particle *>{});
-                currentCellsLists.back().second.reserve(listLengthEstimate);
-                currentCellsLists.back().second.push_back(&p2);
-              }
-            }
-          }
-        };
-
-        // Helper function to estimate the number of neighbor lists for one base step
-        const auto estimateNumLists = [&](size_t baseCellIndex) {
-          size_t estimate = 0;
-          std::map<int, double> offsetFactors{};
-          std::map<int, double> offsetFactorsNoN3{};
-          for (const auto [offsetA, offsetB, factor] : offsetsC08) {
-            offsetFactors[offsetA] = std::max(offsetFactors[offsetA], factor);
-            offsetFactorsNoN3[offsetB] = std::max(offsetFactors[offsetB], factor);
-          }
-          for (const auto &[offset, factor] : offsetFactors) {
-            estimate += cells[baseCellIndex + offset].size() * factor;
-          }
-          if (not this->_verletBuiltNewton3) {
-            for (const auto &[offset, factor] : offsetFactorsNoN3) {
-              estimate += cells[baseCellIndex + offset].size() * factor;
-            }
-          }
-          return estimate;
-        };
-
-        // Go over all cells except the very last layer
-      AUTOPAS_OPENMP(parallel for collapse(3))
-      for (int z = 0; z < cellsPerDim[2] - 1; ++z) {
-        for (int y = 0; y < cellsPerDim[1] - 1; ++y) {
-          for (int x = 0; x < cellsPerDim[0] - 1; ++x) {
-            const auto cellIndexBase = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDim);
-            auto &baseCell = cells[cellIndexBase];
-            auto &baseCellsLists = neighborLists[cellIndexBase];
-            // Allocate space for ptr-list pairs for this cell
-            baseCellsLists.resize(estimateNumLists(cellIndexBase));
-            for (size_t i = 0; i < baseCell.size(); ++i) {
-              if (i < baseCellsLists.size()) {
-                auto &[particlePtr, neighbors] = baseCellsLists[i];
-                particlePtr = &baseCell[i];
-                neighbors.reserve(listLengthEstimate);
-              } else {
-                baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
-                baseCellsLists.back().second.reserve(listLengthEstimate);
-              }
-            }
-
-            // Build c08 lists according to predefined cell pairs
-            for (const auto &[offset1, offset2, _] : offsetsC08) {
-              const auto cellIndex1 = cellIndexBase + offset1;
-              const auto cellIndex2 = cellIndexBase + offset2;
-
-              // Skip if both cells only contain halos
-              if (not(cells[cellIndex1].getPossibleParticleOwnerships() == OwnershipState::owned) and
-                  not(cells[cellIndex2].getPossibleParticleOwnerships() == OwnershipState::owned)) {
-                continue;
-              }
-
-              // Go over all particle pairs in the two cells
-              for (size_t i = 0; i < cells[cellIndex1].size(); ++i) {
-                auto &p1 = cells[cellIndex1][i];
-                for (size_t j = (cellIndex1 == cellIndex2) ? i + 1 : 0; j < cells[cellIndex2].size(); ++j) {
-                  auto &p2 = cells[cellIndex2][j];
-                  if (&p1 == &p2 or p1.isDummy() or p2.isDummy()) {
-                    continue;
-                  }
-
-                  const auto distVec = p2.getR() - p1.getR();
-                  const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
-                  if (distSquared < interactionLengthSquared) {
-                    insert(p1, i, p2, cellIndex1, cellIndexBase, baseCellsLists);
-
-                    if (not this->_verletBuiltNewton3) {
-                      insert(p2, j, p1, cellIndex2, cellIndexBase, baseCellsLists);
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      for (auto &cellLists : neighborLists) {
-        cellLists.erase(std::remove_if(cellLists.begin(), cellLists.end(),
-                                       [](const auto &pair) {
-                                         const auto &[particlePtr, neighbors] = pair;
-                                         return particlePtr == nullptr;
-                                       }),
-                        cellLists.end());
-      }
+        rebuildNeighborListsC08();
       } else {
         _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
                                            this->getVerletSkin(), this->getInteractionLength(),

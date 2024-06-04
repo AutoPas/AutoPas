@@ -95,4 +95,35 @@ std::vector<BaseStepOffsets> buildC08BaseStep(const std::array<int, 3> &cellsPer
  */
 size_t estimateListLength(size_t numParticles, const std::array<double, 3> &boxSize, double interactionLength,
                           double correctionFactor);
+
+/**
+ * Function to estimate the number of neighbor lists for one base step.
+ *
+ * @tparam Cells
+ * @param baseCellIndex
+ * @param useNewton3
+ * @param cells
+ * @param offsetsC08
+ * @return
+ */
+template <class Cells>
+size_t estimateNumLists(size_t baseCellIndex, bool useNewton3, Cells &cells,
+                        const std::vector<BaseStepOffsets> &offsetsC08) {
+  size_t estimate = 0;
+  std::map<int, double> offsetFactors{};
+  std::map<int, double> offsetFactorsNoN3{};
+  for (const auto [offsetA, offsetB, factor] : offsetsC08) {
+    offsetFactors[offsetA] = std::max(offsetFactors[offsetA], factor);
+    offsetFactorsNoN3[offsetB] = std::max(offsetFactors[offsetB], factor);
+  }
+  for (const auto &[offset, factor] : offsetFactors) {
+    estimate += cells[baseCellIndex + offset].size() * factor;
+  }
+  if (not useNewton3) {
+    for (const auto &[offset, factor] : offsetFactorsNoN3) {
+      estimate += cells[baseCellIndex + offset].size() * factor;
+    }
+  }
+  return estimate;
+};
 }  // namespace autopas::VerletListsCellsHelpers
