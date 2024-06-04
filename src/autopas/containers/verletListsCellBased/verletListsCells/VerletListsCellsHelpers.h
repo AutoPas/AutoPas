@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstddef>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -100,25 +101,29 @@ size_t estimateListLength(size_t numParticles, const std::array<double, 3> &boxS
  * Function to estimate the number of neighbor lists for one base step.
  *
  * @tparam Cells
- * @param baseCellIndex
- * @param useNewton3
- * @param cells
- * @param offsetsC08
- * @return
+ * @param baseCellIndex Cell index for which the estimate is made.
+ * @param useNewton3 Whether or not the traversal that uses the lists employs Newton3.
+ * @param cells Reference to the vector of cells.
+ * @param offsetsC08 Vector of BaseStepOffsets.
+ * @return An estimate of the number of lists that will be needed in the base cell.
  */
 template <class Cells>
-size_t estimateNumLists(size_t baseCellIndex, bool useNewton3, Cells &cells,
+size_t estimateNumLists(size_t baseCellIndex, bool useNewton3, const Cells &cells,
                         const std::vector<BaseStepOffsets> &offsetsC08) {
-  size_t estimate = 0;
-  std::map<int, double> offsetFactors{};
-  std::map<int, double> offsetFactorsNoN3{};
+  // First for every cell, find its biggest factor.
+  // Meaning, find out what is the closest interaction type this cell is involved in.
+  std::unordered_map<int, double> offsetFactors{};
+  std::unordered_map<int, double> offsetFactorsNoN3{};
   for (const auto [offsetA, offsetB, factor] : offsetsC08) {
     offsetFactors[offsetA] = std::max(offsetFactors[offsetA], factor);
     offsetFactorsNoN3[offsetB] = std::max(offsetFactors[offsetB], factor);
   }
+  // The estimate is constructed by summing the involved cells' sizes weighted by their factors.
+  size_t estimate = 0;
   for (const auto &[offset, factor] : offsetFactors) {
     estimate += cells[baseCellIndex + offset].size() * factor;
   }
+  // For the non Newton3 case, lists have to be created for particles that otherwise would already be covered.
   if (not useNewton3) {
     for (const auto &[offset, factor] : offsetFactorsNoN3) {
       estimate += cells[baseCellIndex + offset].size() * factor;
