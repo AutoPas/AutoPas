@@ -285,7 +285,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 #endif
     }
 
-#ifndef SILENCE
+#ifndef VLC_SILENCE
     for (size_t i = 0; i < this->_linkedCells.getCells().size(); ++i) {
       if (_neighborList.getAoSNeighborList()[i].capacity() != 0) {
         std::cout << "cell[" << i << "] size: " << this->_linkedCells.getCells()[i].size()
