@@ -189,9 +189,9 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     const auto offsetsC08 =
         VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(cellsPerDim));
 
-    // Go over all cells except the very last layer and
-    // TODO tune chunk size
-    AUTOPAS_OPENMP(parallel for collapse(3))
+    // Go over all cells except the very last layer and create lists per base step.
+    // Since there are no loop dependencies merge all for loops and create 10 chunks per thread.
+    AUTOPAS_OPENMP(parallel for collapse(3) schedule(dynamic, std::max(cells.size() / (autopas::autopas_get_max_threads() * 10), 1ul)))
     for (int z = 0; z < cellsPerDim[2] - 1; ++z) {
       for (int y = 0; y < cellsPerDim[1] - 1; ++y) {
         for (int x = 0; x < cellsPerDim[0] - 1; ++x) {
