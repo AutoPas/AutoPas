@@ -92,7 +92,7 @@ class Simulation {
   size_t _numTuningPhasesCompleted = 0;
 
   /**
-   * Indicator if the previous iteration was used for tuning.
+   * Indicator if the current iteration was a tuning iteration.
    */
   bool _currentIterationIsTuningIteration = false;
 
