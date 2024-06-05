@@ -563,6 +563,34 @@ class LogicHandler {
     }
   }
 
+  /**
+   * getter function for _neighborListInvalidDoDynamicRebuild
+   * returns bool: _neighborListInvalidDoDynamicRebuild
+   */
+  bool getNeighborListsInvalidDoDynamicRebuild();
+
+  /**
+   * Checks if in the next iteration the neighbor lists have to be rebuilt.
+   *
+   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
+   * auto tuner tests a new configuration.
+   *
+   * @return True iff the neighbor lists will not be rebuild.
+   */
+  bool neighborListsAreValid();
+
+  /**
+   * Checks if any particle has moved more than skin/2.
+   * updates bool: _neighborListInvalidDoDynamicRebuild
+   */
+  void checkNeighborListsInvalidDoDynamicRebuild();
+
+  /**
+   * Checks if any particle has moved more than skin/2.
+   * resets bool: _neighborListInvalidDoDynamicRebuild to false
+   */
+  void resetNeighborListsInvalidDoDynamicRebuild();
+
  private:
   /**
    * Initialize or update the spacial locks used during the remainder traversal.
@@ -711,28 +739,6 @@ class LogicHandler {
   void checkMinimalSize() const;
 
   /**
-   * Checks if in the next iteration the neighbor lists have to be rebuilt.
-   *
-   * This can be the case either because we hit the rebuild frequency or the dynamic rebuild criteria or because the
-   * auto tuner tests a new configuration.
-   *
-   * @return True iff the neighbor lists will not be rebuild.
-   */
-  bool neighborListsAreValid();
-
-  /**
-   * Checks if any particle has moved more than skin/2.
-   * updates bool: _neighborListInvalidDoDynamicRebuild to true
-   */
-  void checkNeighborListsInvalidDynamicRebuild();
-
-  /**
-   * Checks if any particle has moved more than skin/2.
-   * resets bool: _neighborListInvalidDoDynamicRebuild to false
-   */
-  void resetNeighborListsInvalidDoDynamicRebuild();
-
-  /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
    */
   unsigned int _neighborListRebuildFrequency;
@@ -814,9 +820,10 @@ class LogicHandler {
   IterationLogger _iterationLogger;
 
   /**
-   * neighborListInvalid - true if a particle has moved more than skin/2
+   * Tells if dynamic rebuild is necessary currently
+   * neighborListInvalidDoDynamicRebuild - true if a particle has moved more than skin/2
    */
-  bool _neighborListInvalidDoDynamicRebuild{false};
+  std::atomic<bool> _neighborListInvalidDoDynamicRebuild{false};
 
   /**
    * updating position at rebuild for every particle
@@ -846,16 +853,21 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 }
 
 template <typename Particle>
+bool LogicHandler<Particle>::getNeighborListsInvalidDoDynamicRebuild() {
+  return _neighborListInvalidDoDynamicRebuild.load(std::memory_order_relaxed);
+}
+
+template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
   if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or _autoTuner.willRebuildNeighborLists() or
-      _neighborListInvalidDoDynamicRebuild) {
+      getNeighborListsInvalidDoDynamicRebuild()) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
   return _neighborListsAreValid.load(std::memory_order_relaxed);
 }
 
 template <typename Particle>
-void LogicHandler<Particle>::checkNeighborListsInvalidDynamicRebuild() {
+void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
@@ -864,14 +876,14 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDynamicRebuild() {
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
     if (distanceSquare >= halfSkinSquare) {
-      _neighborListInvalidDoDynamicRebuild = true;
+      _neighborListInvalidDoDynamicRebuild.store(true, std::memory_order_relaxed);
     }
   }
 }
 
 template <typename Particle>
 void LogicHandler<Particle>::resetNeighborListsInvalidDoDynamicRebuild() {
-  _neighborListInvalidDoDynamicRebuild = false;
+  _neighborListInvalidDoDynamicRebuild.store(false, std::memory_order_relaxed);
 }
 
 template <typename Particle>
@@ -918,7 +930,7 @@ template <typename Particle>
 template <class PairwiseFunctor>
 typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
     PairwiseFunctor &functor, TraversalInterface &traversal) {
-  this->checkNeighborListsInvalidDynamicRebuild();
+  this->checkNeighborListsInvalidDoDynamicRebuild();
   const bool doListRebuild = not neighborListsAreValid();
   const auto &configuration = _autoTuner.getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();

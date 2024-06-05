@@ -215,6 +215,15 @@ class ParticleBase {
   }
 
   /**
+   * Add a distance vector to the position of the particle
+   * @param r vector to be added
+   */
+  void addRAtRebuild(const std::array<double, 3> &r) {
+    using namespace autopas::utils::ArrayMath::literals;
+    _rAtRebuild += r;
+  }
+
+  /**
    * Add a distance vector to the position of the particle and check if the distance between the old and new position
    * is less than a given max distance.
    * This max distance usually should be the skin per timestep divided by two.
