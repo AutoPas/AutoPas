@@ -26,6 +26,7 @@ class IterationLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    * @param outputSuffix Suffix for all output files produced by this class.
+   * @param energyMeasurements Should the logger include energy measurements?
    */
   explicit IterationLogger(const std::string &outputSuffix = "", bool energyMeasurements = false);
 
