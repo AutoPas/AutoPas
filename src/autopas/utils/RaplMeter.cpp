@@ -173,8 +173,10 @@ std::string RaplMeter::init() {
   } else {
     close(fd);
   }
-#endif
   return std::string();
+#else
+  return "Trying to initialize RAPL but AUTOPAS_ENABLE_ENERGY_MEASUREMENTS is disabled.";
+#endif
 }
 
 RaplMeter::~RaplMeter() {
