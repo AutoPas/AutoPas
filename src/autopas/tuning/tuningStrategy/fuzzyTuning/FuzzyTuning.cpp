@@ -88,7 +88,7 @@ void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
   // std::copy(newSearchSpace.begin(), newSearchSpace.end(), std::back_inserter(configQueue));
 }
 
-TuningStrategyOption FuzzyTuning::getOptionType() { return TuningStrategyOption::fuzzyTuning; }
+TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
 
 std::pair<std::vector<std::shared_ptr<LinguisticVariable>>, std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
 FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {

@@ -21,7 +21,7 @@ class FuzzyTuning : public TuningStrategyInterface {
  public:
   explicit FuzzyTuning(std::string fuzzyRuleFileName);
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   bool needsLiveInfo() const override;
 
