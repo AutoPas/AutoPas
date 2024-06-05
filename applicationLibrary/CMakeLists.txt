@@ -82,6 +82,10 @@ if (AUTOPAS_BUILD_TESTS)
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
             "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
     )
+    if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
+        list(FILTER MY_SRC EXCLUDE REGEX ".*particlePropertiesLibraryTests.*")
+    endif ()
+
     add_executable(${TEST_EXE_NAME} ${TEST_SRC} mdLibTests.cpp)
 
     target_include_directories(

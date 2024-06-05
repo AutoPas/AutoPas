@@ -9,7 +9,6 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/SoA.h"
-#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 #include "testingHelpers/commonTypedefs.h"
 
 using LJFunctorAVXTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/>;
