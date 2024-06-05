@@ -180,7 +180,6 @@ std::string RaplMeter::init() {
 }
 
 RaplMeter::~RaplMeter() {
-
   for (int f : _psys_fd) {
     if (f != -1) {
       close(f);
@@ -202,8 +201,6 @@ RaplMeter::~RaplMeter() {
     }
   }
 }
-
-
 
 void RaplMeter::reset() {
 #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS

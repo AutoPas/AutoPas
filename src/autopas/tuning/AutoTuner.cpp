@@ -437,4 +437,6 @@ bool AutoTuner::inTuningPhase() const {
 }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
+
+bool AutoTuner::getEnergyMeasurementsPossible() const { return _energyMeasurementPossible; }
 }  // namespace autopas
