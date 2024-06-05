@@ -45,7 +45,7 @@ class FuzzySet {
   /**
    * Constructs a FuzzySet with a given linguistic term and base membership function.
    * @param linguisticTerm
-   * @param membershipFunction
+   * @param baseMembershipFunction
    */
   FuzzySet(std::string linguisticTerm, BaseMembershipFunction &&baseMembershipFunction);
 
@@ -67,12 +67,14 @@ class FuzzySet {
 
   /**
    * Calculates the x-coordinate of the centroid of this FuzzySet.
+   * @param numSamples The number of samples to use for the numerical centroid calculation.
    * @return The x-coordinate of the centroid of this FuzzySet.
    */
   [[nodiscard]] double centroid(size_t numSamples) const;
 
   /**
    * Returns a string representation of the BaseMembershipFunction.
+   * @return A string representation of the BaseMembershipFunction.
    */
   [[nodiscard]] std::string printBaseMembershipFunction() const;
 
@@ -114,7 +116,7 @@ class FuzzySet {
   /**
    * Make the Complement Operator a friend of the class.
    */
-  friend std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &lhs);
+  friend std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &fuzzySet);
 
  private:
   /**
@@ -148,9 +150,9 @@ std::shared_ptr<FuzzySet> operator&&(const std::shared_ptr<FuzzySet> &lhs, const
 
 /**
  * Returns the complement of a FuzzySet.
- * @param set
- * @return The complement of lhs.
+ * @param fuzzySet
+ * @return The complement of fuzzySet.
  */
-std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &set);
+std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &fuzzySet);
 
 }  // namespace autopas::fuzzy_logic

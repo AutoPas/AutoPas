@@ -13,6 +13,10 @@
 
 namespace autopas::fuzzy_logic {
 
+/**
+ * Used to represent a Fuzzy Rule. A Fuzzy Rule is a conditional statement of the form: IF antecedent THEN consequent.
+ * Where both the antecedent and the consequent are FuzzySets.
+ */
 class FuzzyRule {
  public:
   /**

@@ -11,12 +11,13 @@
 #include <numeric>
 #include <utility>
 
-#include "antlr4-runtime.h"
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/OutputMapper.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/FuzzyRuleErrorListener.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/TranslationVisitor.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageLexer.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageParser.h"
+#endif
 
 namespace autopas {
 
@@ -26,6 +27,8 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
   if (stat(_fuzzyRuleFileName.c_str(), &buffer) != 0) {
     utils::ExceptionHandler::exception("Rule file {} does not exist!", _fuzzyRuleFileName);
   }
+
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 
   auto [linguisticVariables, outputMappings, fuzzyControlSystems] = parse(_fuzzyRuleFileName);
 
@@ -54,6 +57,10 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
   AutoPasLog(INFO, "{}", fuzzyControlSystemsStr);
 
   _fuzzyControlSystems = fuzzyControlSystems;
+
+#else
+  autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
+#endif
 }
 
 bool FuzzyTuning::needsLiveInfo() const { return true; }
@@ -97,6 +104,8 @@ void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
 
 TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
 
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+
 std::tuple<std::vector<std::shared_ptr<LinguisticVariable>>, std::map<std::string, std::shared_ptr<OutputMapper>>,
            std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
 FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
@@ -137,5 +146,6 @@ FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
     throw std::runtime_error("This should never be reached");
   }
 }
+#endif
 
 }  // namespace autopas

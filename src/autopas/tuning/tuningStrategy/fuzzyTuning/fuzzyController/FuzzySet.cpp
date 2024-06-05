@@ -113,10 +113,10 @@ std::shared_ptr<FuzzySet> operator&&(const std::shared_ptr<FuzzySet> &lhs, const
   return std::make_shared<FuzzySet>(newLinguisticTerm, std::move(newMembershipFunction), newCrispSet);
 }
 
-std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &set) {
-  const std::string newLinguisticTerm = fmt::format("!({})", std::string(*set));
-  const auto newCrispSet = set->_crispSet;
-  auto newMembershipFunction = [set](auto data) { return 1 - (set->evaluate_membership(data)); };
+std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &fuzzySet) {
+  const std::string newLinguisticTerm = fmt::format("!({})", std::string(*fuzzySet));
+  const auto newCrispSet = fuzzySet->_crispSet;
+  auto newMembershipFunction = [fuzzySet](auto data) { return 1 - (fuzzySet->evaluate_membership(data)); };
   return std::make_shared<FuzzySet>(newLinguisticTerm, std::move(newMembershipFunction), newCrispSet);
 }
 }  // namespace autopas::fuzzy_logic

@@ -13,6 +13,9 @@
 
 namespace autopas::fuzzy_logic {
 
+/**
+ * A factory class that creates FuzzySets based on the given activation function.
+ */
 class FuzzySetFactory {
  public:
   /**
@@ -37,6 +40,7 @@ class FuzzySetFactory {
    * @param linguisticTerm The linguistic term of this FuzzySet.
    * @param functionName The name of the function to create.
    * @param params The parameters of the function.
+   * @return A shared pointer to the created FuzzySet.
    */
   static std::shared_ptr<FuzzySet> makeFuzzySet(const std::string &linguisticTerm, const std::string &functionName,
                                                 std::vector<double> &params);
@@ -44,7 +48,6 @@ class FuzzySetFactory {
  private:
   /**
    * Returns a function object that represents a triangular membership function.
-   * @param linguisticTerm The linguistic term of this FuzzySet.
    * @param min The left border of the triangle. The membership function will be 0 for values smaller than min.
    * @param mid The peak of the triangle. The membership function will be 1 for values equal to mid.
    * @param max The right border of the triangle. The membership function will be 0 for values greater than max.

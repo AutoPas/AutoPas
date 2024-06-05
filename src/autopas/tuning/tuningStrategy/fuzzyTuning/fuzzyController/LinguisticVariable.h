@@ -30,7 +30,7 @@ class LinguisticVariable {
   /**
    * Adds a new linguistic term to the LinguisticVariable.
    * Additionally updates the CrispSet of the linguistic term to the current CrispSet.
-   * @param fuzzySet
+   * @param linguisticTerm The linguistic term to add.
    */
   void addLinguisticTerm(const std::shared_ptr<FuzzySet> &linguisticTerm);
 
