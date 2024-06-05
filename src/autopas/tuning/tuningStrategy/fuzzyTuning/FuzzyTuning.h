@@ -81,7 +81,8 @@ using namespace autopas::fuzzy_logic;
  *      0.666 => [newton3="enabled"]
  *
  * # Define a bunch of rules connecting the input variables to the output variables
- * if ("threadCount" == "lower than 18.0") && ("threadCount" == "higher than 8.0") && ("homogeneity" == "lower than 0.041")
+ * if ("threadCount" == "lower than 18.0") && ("threadCount" == "higher than 8.0")
+ *     && ("homogeneity" == "lower than 0.041")
  *   then ("Newton 3" == "enabled")
  * if ("threadCount" == "higher than 26.0") && ("particlesPerCellStdDev" == "lower than 0.013")
  *   then ("Newton 3" == "disabled, enabled")
