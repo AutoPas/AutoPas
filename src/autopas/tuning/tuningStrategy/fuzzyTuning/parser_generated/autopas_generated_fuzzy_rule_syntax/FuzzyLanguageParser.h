@@ -1,6 +1,6 @@
 
 // Generated from
-// autopas/tuning/tuningStrategy/fuzzyTuning\FuzzyLanguage.g4 by
+// Autopas/tuning/tuningStrategy/fuzzyTuning\FuzzyLanguage.g4 by
 // ANTLR 4.9.1
 
 #pragma once
@@ -25,20 +25,32 @@ class FuzzyLanguageParser : public antlr4::Parser {
     T__10 = 11,
     T__11 = 12,
     T__12 = 13,
-    WS = 14,
-    COMMENT = 15,
-    STRING = 16,
-    NUMBER = 17,
-    IDENTIFIER = 18
+    T__13 = 14,
+    T__14 = 15,
+    T__15 = 16,
+    T__16 = 17,
+    T__17 = 18,
+    T__18 = 19,
+    T__19 = 20,
+    WS = 21,
+    COMMENT = 22,
+    STRING = 23,
+    NUMBER = 24,
+    IDENTIFIER = 25
   };
 
   enum {
     RuleRule_file = 0,
-    RuleLinguistic_variable = 1,
-    RuleFuzzy_term = 2,
-    RuleFunction = 3,
-    RuleFuzzy_rule = 4,
-    RuleFuzzy_set = 5
+    RuleSettings = 1,
+    RuleLinguistic_variable = 2,
+    RuleFuzzy_term = 3,
+    RuleFunction = 4,
+    RuleFuzzy_rule = 5,
+    RuleFuzzy_set = 6,
+    RuleOutput_mapping = 7,
+    RuleOutput_entry = 8,
+    RulePattern_mapping = 9,
+    RuleConfiguration_pattern = 10
   };
 
   explicit FuzzyLanguageParser(antlr4::TokenStream *input);
@@ -53,16 +65,23 @@ class FuzzyLanguageParser : public antlr4::Parser {
   virtual antlr4::dfa::Vocabulary &getVocabulary() const override;
 
   class Rule_fileContext;
+  class SettingsContext;
   class Linguistic_variableContext;
   class Fuzzy_termContext;
   class FunctionContext;
   class Fuzzy_ruleContext;
   class Fuzzy_setContext;
+  class Output_mappingContext;
+  class Output_entryContext;
+  class Pattern_mappingContext;
+  class Configuration_patternContext;
 
   class Rule_fileContext : public antlr4::ParserRuleContext {
    public:
     Rule_fileContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
+    SettingsContext *settings();
+    Output_mappingContext *output_mapping();
     antlr4::tree::TerminalNode *EOF();
     std::vector<Linguistic_variableContext *> linguistic_variable();
     Linguistic_variableContext *linguistic_variable(size_t i);
@@ -73,6 +92,18 @@ class FuzzyLanguageParser : public antlr4::Parser {
   };
 
   Rule_fileContext *rule_file();
+
+  class SettingsContext : public antlr4::ParserRuleContext {
+   public:
+    antlr4::Token *defuzzificationMethod = nullptr;
+    SettingsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *STRING();
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  SettingsContext *settings();
 
   class Linguistic_variableContext : public antlr4::ParserRuleContext {
    public:
@@ -187,6 +218,57 @@ class FuzzyLanguageParser : public antlr4::Parser {
 
   Fuzzy_setContext *fuzzy_set();
   Fuzzy_setContext *fuzzy_set(int precedence);
+  class Output_mappingContext : public antlr4::ParserRuleContext {
+   public:
+    Output_mappingContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<Output_entryContext *> output_entry();
+    Output_entryContext *output_entry(size_t i);
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  Output_mappingContext *output_mapping();
+
+  class Output_entryContext : public antlr4::ParserRuleContext {
+   public:
+    Output_entryContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *STRING();
+    std::vector<Pattern_mappingContext *> pattern_mapping();
+    Pattern_mappingContext *pattern_mapping(size_t i);
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  Output_entryContext *output_entry();
+
+  class Pattern_mappingContext : public antlr4::ParserRuleContext {
+   public:
+    Pattern_mappingContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *NUMBER();
+    std::vector<Configuration_patternContext *> configuration_pattern();
+    Configuration_patternContext *configuration_pattern(size_t i);
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  Pattern_mappingContext *pattern_mapping();
+
+  class Configuration_patternContext : public antlr4::ParserRuleContext {
+   public:
+    Configuration_patternContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    std::vector<antlr4::tree::TerminalNode *> IDENTIFIER();
+    antlr4::tree::TerminalNode *IDENTIFIER(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> STRING();
+    antlr4::tree::TerminalNode *STRING(size_t i);
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  Configuration_patternContext *configuration_pattern();
 
   virtual bool sempred(antlr4::RuleContext *_localctx, size_t ruleIndex, size_t predicateIndex) override;
   bool fuzzy_setSempred(Fuzzy_setContext *_localctx, size_t predicateIndex);

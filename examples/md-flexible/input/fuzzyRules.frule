@@ -1,108 +1,231 @@
-# Inputs
+# Setup
 
-FuzzyVariable: domain: "avgParticlesPerCell" range: (-3.719386508078468, 11.88265150807847)
-	"Very Low": Sigmoid(0.001, -1.4700000551250019)
-	"Low": Gaussian(0.1335, 0.1325)
-	"Medium": Gaussian(0.4455, 0.1795)
-	"High": Gaussian(3.1315, 2.5065)
-	"Very High": Sigmoid(5.638, 1.4700000551250019)
+# Here global settings for all fuzzy systems can be defined.
+# Currently it is not possible to define different settings for different fuzzy systems.
+FuzzySystemSettings:
+	defuzzificationMethod: "MeanOfMaximum"
 
-FuzzyVariable: domain: "particlesPerCellStdDev" range: (-0.08121759915812875, 0.25790459915812874)
-	"Very Low": Sigmoid(0.009, -67.91671147283049)
-	"Low": Gaussian(0.019, 0.010000000000000002)
-	"Medium": Gaussian(0.059, 0.03)
-	"High": Gaussian(0.104, 0.015)
-	"Very High": Sigmoid(0.119, 67.91671147283049)
 
-FuzzyVariable: domain: "numEmptyCells" range: (-197458.3362461571, 679039.3362461571)
-	"Very Low": Sigmoid(206.0, -2.4917926579329335e-05)
-	"Medium": Gaussian(10361.25, 10155.25)
-	"Very High": Sigmoid(20516.5, 2.4917926579329335e-05)
+# Fuzzy Variables
 
-FuzzyVariable: domain: "maxParticlesPerCell" range: (-16.35960878228321, 51.35960878228321)
-	"Very Low": Sigmoid(6.5, -0.34285714285714286)
-	"Low": Gaussian(11.25, 4.75)
-	"High": Gaussian(23.75, 7.75)
-	"Very High": Sigmoid(31.5, 0.34285714285714286)
+# Next all of the fuzzy variables are defined. Each fuzzy variable has a domain and a range.
+# The domain specifies the input for the fuzzy variable. At the moment it is only possible to use
+# values of the LiveInfoStruct as domain. The range of this variable also needs to be passed as it
+# is important for the defuzzification process.
+# Each fuzzy variable can have multiple fuzzy sets. Each fuzzy set is defined by a name and a membership function.
 
-FuzzyVariable: domain: "numParticles" range: (-102070.7090500033, 269393.7090500033)
-	"Very Low": Sigmoid(16.0, -7.171757618498353e-05)
-	"Low": Gaussian(2624.75, 2608.75)
-	"Medium": Gaussian(13060.75, 7827.25)
-	"High": Gaussian(77544.0, 56656.0)
-	"Very High": Sigmoid(134200.0, 7.171757618498353e-05)
+## Inputs
 
-# Outputs
+FuzzyVariable: domain: "homogeneity" range: (-0.009356649898708463, 0.14862964989870847)
+	"lower than 0.049":     SigmoidFinite(0.09149464989870847, 0.049, 0.006505350101291538)
+	"lower than 0.041":     SigmoidFinite(0.08349464989870847, 0.04100000000000001, -0.0014946498987084625)
+	"higher than 0.049":    SigmoidFinite(0.006505350101291538, 0.049, 0.09149464989870847)
+	"higher than 0.041":    SigmoidFinite(-0.0014946498987084625, 0.04100000000000001, 0.08349464989870847)
 
-FuzzyVariable: domain: "Container" range: (0, 3)
-	"LinkedCells": Gaussian(0.6, 0.15)
-	"VerletClusterLists": Gaussian(1.2, 0.15)
-	"VerletLists": Gaussian(1.7999999999999998, 0.15)
-	"VerletListsCells": Gaussian(2.4, 0.15)
+FuzzyVariable: domain: "threadCount" range: (-19.938962749166983, 48.93896274916698)
+	"lower than 18.0":      SigmoidFinite(38.93896274916698, 18.0, -2.9389627491669827)
+	"lower than 26.0":      SigmoidFinite(46.93896274916698, 26.0, 5.061037250833017)
+	"lower than 8.0":       SigmoidFinite(28.938962749166983, 8.0, -12.938962749166983)
+	"higher than 18.0":     SigmoidFinite(-2.9389627491669827, 18.0, 38.93896274916698)
+	"higher than 26.0":     SigmoidFinite(5.061037250833017, 26.0, 46.93896274916698)
+	"higher than 8.0":      SigmoidFinite(-12.938962749166983, 8.0, 28.938962749166983)
 
-FuzzyVariable: domain: "Traversal" range: (0, 13)
-	"lc_c01": Gaussian(0.8666666666666667, 0.06190476190476191)
-	"lc_c04": Gaussian(1.7333333333333334, 0.06190476190476191)
-	"lc_c08": Gaussian(2.6, 0.06190476190476191)
-	"lc_c18": Gaussian(3.466666666666667, 0.06190476190476191)
-	"lc_sliced": Gaussian(4.333333333333334, 0.06190476190476191)
-	"lc_sliced_balanced": Gaussian(5.2, 0.06190476190476191)
-	"lc_sliced_c02": Gaussian(6.066666666666666, 0.06190476190476191)
-	"vcl_c01_balanced": Gaussian(6.933333333333334, 0.06190476190476191)
-	"vcl_c06": Gaussian(7.800000000000001, 0.06190476190476191)
-	"vcl_cluster_iteration": Gaussian(8.666666666666668, 0.06190476190476191)
-	"vl_list_iteration": Gaussian(9.533333333333333, 0.06190476190476191)
-	"vlc_c01": Gaussian(10.4, 0.06190476190476191)
-	"vlc_c18": Gaussian(11.266666666666667, 0.06190476190476191)
-	"vlc_sliced_c02": Gaussian(12.133333333333333, 0.06190476190476191)
+FuzzyVariable: domain: "particlesPerCellStdDev" range: (-0.01736451380009326, 0.07296551380009327)
+	"lower than 0.038":     SigmoidFinite(0.06399251380009326, 0.038, 0.012007486199906738)
+	"lower than 0.014":     SigmoidFinite(0.03999251380009326, 0.014000000000000002, -0.01199251380009326)
+	"lower than 0.015":     SigmoidFinite(0.040992513800093264, 0.015000000000000001, -0.010992513800093261)
+	"lower than 0.041":     SigmoidFinite(0.06699251380009326, 0.041, 0.015007486199906741)
+	"lower than 0.013":     SigmoidFinite(0.03899251380009326, 0.013000000000000001, -0.012992513800093261)
+	"lower than 0.024":     SigmoidFinite(0.04999251380009326, 0.024, -0.0019925138000932603)
+	"higher than 0.038":    SigmoidFinite(0.012007486199906738, 0.038, 0.06399251380009326)
+	"higher than 0.014":    SigmoidFinite(-0.01199251380009326, 0.014000000000000002, 0.03999251380009326)
+	"higher than 0.015":    SigmoidFinite(-0.010992513800093261, 0.015000000000000001, 0.040992513800093264)
+	"higher than 0.041":    SigmoidFinite(0.015007486199906741, 0.041, 0.06699251380009326)
+	"higher than 0.013":    SigmoidFinite(-0.012992513800093261, 0.013000000000000001, 0.03899251380009326)
+	"higher than 0.024":    SigmoidFinite(-0.0019925138000932603, 0.024, 0.04999251380009326)
 
-FuzzyVariable: domain: "Data Layout" range: (0, 1)
-	"AoS": Gaussian(0.3333333333333333, 0.16666666666666666)
-	"SoA": Gaussian(0.6666666666666666, 0.16666666666666666)
+FuzzyVariable: domain: "avgParticlesPerCell" range: (0.5222676958208617, 2.943961304179138)
+	"lower than 1.553":     SigmoidFinite(1.936529304179138, 1.553, 1.1694706958208618)
+	"lower than 0.925":     SigmoidFinite(1.3085293041791384, 0.925, 0.5414706958208618)
+	"lower than 1.572":     SigmoidFinite(1.9555293041791382, 1.572, 1.188470695820862)
+	"higher than 1.553":    SigmoidFinite(1.1694706958208618, 1.553, 1.936529304179138)
+	"higher than 0.925":    SigmoidFinite(0.5414706958208618, 0.925, 1.3085293041791384)
+	"higher than 1.572":    SigmoidFinite(1.188470695820862, 1.572, 1.9555293041791382)
+
+## Outputs
+
+FuzzyVariable: domain: "Container_DataLayout" range: (0, 4)
+	"LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS":
+	                        Gaussian(0.6666666666666666, 0.13333333333333333)
+	"LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA":
+	                        Gaussian(1.3333333333333333, 0.13333333333333333)
+	"LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA, VerletLists_SoA":
+	                        Gaussian(2.0, 0.13333333333333333)
+    "VerletClusterLists_SoA, VerletListsCells_AoS":
+                            Gaussian(2.6666666666666665, 0.13333333333333333)
+	"VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA":
+                            Gaussian(3.333333333333333, 0.13333333333333333)
+
+FuzzyVariable: domain: "Traversal" range: (0, 10)
+	"lc_c01, lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(0.8333333333333334, 0.07575757575757576)
+	"lc_c04, lc_c04_HCP, lc_c08, lc_c18, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02":
+                            Gaussian(1.6666666666666667, 0.07575757575757576)
+	"lc_c04, lc_c08, lc_c18, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(2.5, 0.07575757575757576)
+	"lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(3.3333333333333335, 0.07575757575757576)
+	"lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vl_list_iteration, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(4.166666666666667, 0.07575757575757576)
+	"lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(5.0, 0.07575757575757576)
+	"lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(5.833333333333334, 0.07575757575757576)
+	"lc_sliced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(6.666666666666667, 0.07575757575757576)
+	"vcl_c06, vcl_cluster_iteration, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(7.5, 0.07575757575757576)
+	"vcl_c06, vlc_c01, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(8.333333333333334, 0.07575757575757576)
+	"vcl_c06, vlc_c18, vlc_sliced_c02":
+	                        Gaussian(9.166666666666668, 0.07575757575757576)
 
 FuzzyVariable: domain: "Newton 3" range: (0, 1)
-	"disabled": Gaussian(0.3333333333333333, 0.16666666666666666)
-	"enabled": Gaussian(0.6666666666666666, 0.16666666666666666)
+	"disabled, enabled":    Gaussian(0.3333333333333333, 0.16666666666666666)
+	"enabled":              Gaussian(0.6666666666666666, 0.16666666666666666)
+
+
+# Output Mapping
+
+# The OutputMapping specify how the results of the fuzzy system should be mapped to the actual configurations which should be tested.
+# For each OutputVariable a list of possible configurations is defined which should be tested if the defuzzified value is
+# close to the specified point.
+
+OutputMapping:
+    "Container_DataLayout":
+        0.666 => 	[container="LinkedCells", dataLayout="SoA"], [container="VerletClusterLists", dataLayout="SoA"],
+					[container="VerletListsCells", dataLayout="AoS"]
+		1.333 => 	[container="LinkedCells", dataLayout="SoA"], [container="VerletClusterLists", dataLayout="SoA"],
+					[container="VerletListsCells", dataLayout="AoS"], [container="VerletListsCells", dataLayout="SoA"]
+		2.0   =>    [container="LinkedCells", dataLayout="SoA"], [container="VerletClusterLists", dataLayout="SoA"],
+					[container="VerletListsCells", dataLayout="AoS"], [container="VerletListsCells", dataLayout="SoA"],
+					[container="VerletLists", dataLayout="SoA"]
+		2.666 => 	[container="VerletClusterLists", dataLayout="SoA"], [container="VerletListsCells", dataLayout="AoS"]
+		3.333 => 	[container="VerletClusterLists", dataLayout="SoA"], [container="VerletListsCells", dataLayout="AoS"],
+					[container="VerletListsCells", dataLayout="SoA"]
+
+	"Traversal":
+		0.833 => 	[traversal="lc_c01"], [traversal="lc_c04"], [traversal="lc_c08"], [traversal="lc_sliced"],
+					[traversal="lc_sliced_balanced"], [traversal="lc_sliced_c02"], [traversal="vcl_c06"],
+					[traversal="vl_list_iteration"], [traversal="vlc_c01"], [traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		1.666 => 	[traversal="lc_c04"], [traversal="lc_c04_HCP"], [traversal="lc_c08"], [traversal="lc_c18"],
+					[traversal="lc_sliced"], [traversal="lc_sliced_balanced"], [traversal="lc_sliced_c02"],
+					[traversal="vcl_c06"], [traversal="vcl_sliced"], [traversal="vcl_sliced_balanced"], [traversal="vcl_sliced_c02"],
+					[traversal="vlc_c18"], [traversal="vlc_sliced"], [traversal="vlc_sliced_balanced"], [traversal="vlc_sliced_c02"]
+		2.5   =>	[traversal="lc_c04"], [traversal="lc_c08"], [traversal="lc_c18"], [traversal="lc_sliced"],
+					[traversal="lc_sliced_balanced"], [traversal="lc_sliced_c02"], [traversal="vcl_c06"],
+					[traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		3.333 => 	[traversal="lc_c04"], [traversal="lc_c08"], [traversal="lc_sliced"], [traversal="lc_sliced_balanced"],
+					[traversal="lc_sliced_c02"], [traversal="vcl_c06"], [traversal="vl_list_iteration"],
+					[traversal="vlc_c01"], [traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		4.166 => 	[traversal="lc_c04"], [traversal="lc_c08"], [traversal="lc_sliced"], [traversal="lc_sliced_balanced"],
+					[traversal="lc_sliced_c02"], [traversal="vcl_c06"], [traversal="vl_list_iteration"],
+					[traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		5.0   =>	[traversal="lc_c04"], [traversal="lc_c08"], [traversal="lc_sliced"], [traversal="lc_sliced_balanced"],
+					[traversal="lc_sliced_c02"], [traversal="vcl_c06"], [traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		5.833 => 	[traversal="lc_sliced"], [traversal="lc_sliced_balanced"], [traversal="lc_sliced_c02"],
+					[traversal="vcl_c06"], [traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		6.666 => 	[traversal="lc_sliced"], [traversal="lc_sliced_c02"], [traversal="vcl_c06"],
+					[traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		7.5   =>	[traversal="vcl_c06"], [traversal="vcl_cluster_iteration"], [traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		8.333 => 	[traversal="vcl_c06"], [traversal="vlc_c01"], [traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+		9.166 => 	[traversal="vcl_c06"], [traversal="vlc_c18"], [traversal="vlc_sliced_c02"]
+
+	"Newton 3":
+		0.333 => 	[newton3="disabled"], [newton3="enabled"]
+		0.666 => 	[newton3="enabled"]
+
 
 # Rules
 
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) then ("Container" == "VerletListsCells")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) then ("Container" == "VerletClusterLists")
-if (("particlesPerCellStdDev" == "Very Low") || ("particlesPerCellStdDev" == "Low")) && (!("numEmptyCells" == "Very High")) then ("Container" == "VerletListsCells")
-if (!("particlesPerCellStdDev" == "Very Low")) && (!("particlesPerCellStdDev" == "Low")) then ("Container" == "VerletClusterLists")
-if (("particlesPerCellStdDev" == "Very Low") || ("particlesPerCellStdDev" == "Low")) && (("numEmptyCells" == "Very High")) then ("Container" == "VerletClusterLists")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (!("maxParticlesPerCell" == "Very Low")) && (!("numParticles" == "Very Low")) && (!("numParticles" == "Low")) then ("Traversal" == "vlc_c18")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (("numParticles" == "Very Low") || ("numParticles" == "Low")) && (!("avgParticlesPerCell" == "Very Low")) then ("Traversal" == "vcl_cluster_iteration")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (!("numParticles" == "Very Low")) && (!("numParticles" == "Low")) && (!("maxParticlesPerCell" == "High")) && (!("maxParticlesPerCell" == "Very High")) then ("Traversal" == "vcl_c06")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very Low")) && (("numParticles" == "High") || ("numParticles" == "Very High")) && (!("numParticles" == "Very High")) then ("Traversal" == "vlc_sliced_c02")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very Low")) && (!("numParticles" == "High")) && (!("numParticles" == "Very High")) && (!("avgParticlesPerCell" == "High")) && (!("avgParticlesPerCell" == "Very High")) then ("Traversal" == "vlc_c18")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (("avgParticlesPerCell" == "Very High")) && (!("maxParticlesPerCell" == "Very High")) then ("Traversal" == "lc_c08")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very Low")) && (!("numParticles" == "High")) && (!("numParticles" == "Very High")) && (("avgParticlesPerCell" == "High") || ("avgParticlesPerCell" == "Very High")) then ("Traversal" == "vcl_cluster_iteration")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (("numParticles" == "Very Low") || ("numParticles" == "Low")) && (("avgParticlesPerCell" == "Very Low")) && (!("numParticles" == "Very Low")) then ("Traversal" == "vcl_c06")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (("numParticles" == "Very Low") || ("numParticles" == "Low")) && (("avgParticlesPerCell" == "Very Low")) && (("numParticles" == "Very Low")) then ("Traversal" == "vcl_cluster_iteration")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very High")) then ("Traversal" == "lc_sliced_c02")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (!("maxParticlesPerCell" == "Very Low")) && (("numParticles" == "Very Low") || ("numParticles" == "Low")) then ("Traversal" == "lc_c01")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very Low")) && (("numParticles" == "High") || ("numParticles" == "Very High")) && (("numParticles" == "Very High")) then ("Traversal" == "vlc_c18")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (!("numParticles" == "Very Low")) && (!("numParticles" == "Low")) && (!("maxParticlesPerCell" == "Very Low")) && (!("maxParticlesPerCell" == "Low")) then ("Traversal" == "vlc_c01")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (!("maxParticlesPerCell" == "Very Low")) && (!("numParticles" == "Very Low")) && (!("numParticles" == "Low")) then ("Traversal" == "vlc_c18")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (("numParticles" == "Very Low") || ("numParticles" == "Low")) && (!("particlesPerCellStdDev" == "Very High")) then ("Traversal" == "vcl_cluster_iteration")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (!("numParticles" == "Very Low")) && (!("numParticles" == "Low")) && (!("maxParticlesPerCell" == "High")) && (!("maxParticlesPerCell" == "Very High")) then ("Traversal" == "vcl_c06")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very Low")) && (!("particlesPerCellStdDev" == "Very Low")) && (!("avgParticlesPerCell" == "High")) && (!("avgParticlesPerCell" == "Very High")) then ("Traversal" == "vlc_c18")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very Low")) && (("particlesPerCellStdDev" == "Very Low")) && (!("numParticles" == "Very High")) then ("Traversal" == "vlc_sliced_c02")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (("avgParticlesPerCell" == "Very High")) && (!("particlesPerCellStdDev" == "High")) && (!("particlesPerCellStdDev" == "Very High")) then ("Traversal" == "lc_c08")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very Low")) && (!("particlesPerCellStdDev" == "Very Low")) && (("avgParticlesPerCell" == "High") || ("avgParticlesPerCell" == "Very High")) then ("Traversal" == "vcl_cluster_iteration")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (("numParticles" == "Very Low") || ("numParticles" == "Low")) && (("particlesPerCellStdDev" == "Very High")) && (("avgParticlesPerCell" == "Very Low")) then ("Traversal" == "vcl_c06")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (("avgParticlesPerCell" == "Very High")) && (("particlesPerCellStdDev" == "High") || ("particlesPerCellStdDev" == "Very High")) then ("Traversal" == "lc_sliced_c02")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (!("maxParticlesPerCell" == "Very Low")) && (("numParticles" == "Very Low") || ("numParticles" == "Low")) then ("Traversal" == "lc_c01")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) && (!("avgParticlesPerCell" == "Very High")) && (("maxParticlesPerCell" == "Very Low")) && (("particlesPerCellStdDev" == "Very Low")) && (("numParticles" == "Very High")) then ("Traversal" == "vlc_c18")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (!("numParticles" == "Very Low")) && (!("numParticles" == "Low")) && (!("maxParticlesPerCell" == "Very Low")) && (!("maxParticlesPerCell" == "Low")) then ("Traversal" == "vlc_c01")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) && (("numParticles" == "Very Low") || ("numParticles" == "Low")) && (("particlesPerCellStdDev" == "Very High")) && (!("avgParticlesPerCell" == "Very Low")) then ("Traversal" == "vcl_cluster_iteration")
-if (!("numEmptyCells" == "Very Low")) && (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) then ("Data Layout" == "AoS")
-if (!("numEmptyCells" == "Very Low")) && (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) then ("Data Layout" == "SoA")
-if (("numEmptyCells" == "Very Low")) then ("Data Layout" == "SoA")
-if (!("numParticles" == "Very Low")) && (!("numParticles" == "Low")) then ("Data Layout" == "AoS")
-if (("numParticles" == "Very Low") || ("numParticles" == "Low")) then ("Data Layout" == "SoA")
-if (!("numParticles" == "Very Low")) then ("Newton 3" == "enabled")
-if (("numParticles" == "Very Low")) then ("Newton 3" == "disabled")
-if (!("avgParticlesPerCell" == "Very Low")) && (!("avgParticlesPerCell" == "Low")) then ("Newton 3" == "enabled")
-if (("avgParticlesPerCell" == "Very Low") || ("avgParticlesPerCell" == "Low")) then ("Newton 3" == "disabled")
+# The rules define how the input variables are combined to output variables and should encode the expert knowledge.
+# The rules are defined in a simple if-then format.
+
+## Container_DataLayout
+
+if ("homogeneity" == "lower than 0.049") && ("threadCount" == "lower than 18.0")
+	then ("Container_DataLayout" == "VerletClusterLists_SoA, VerletListsCells_AoS")
+if ("homogeneity" == "higher than 0.049") && ("particlesPerCellStdDev" == "higher than 0.038") && ("threadCount" == "lower than 18.0")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA")
+if ("homogeneity" == "lower than 0.049") && ("threadCount" == "higher than 18.0")
+	then ("Container_DataLayout" == "VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA")
+if ("homogeneity" == "higher than 0.049") && ("particlesPerCellStdDev" == "higher than 0.038") && ("threadCount" == "higher than 18.0")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA, VerletLists_SoA")
+if ("homogeneity" == "higher than 0.049") && ("particlesPerCellStdDev" == "lower than 0.038")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS")
+if ("particlesPerCellStdDev" == "lower than 0.014") && ("avgParticlesPerCell" == "lower than 1.553") && ("threadCount" == "lower than 18.0")
+	then ("Container_DataLayout" == "VerletClusterLists_SoA, VerletListsCells_AoS")
+if ("particlesPerCellStdDev" == "lower than 0.015") && ("avgParticlesPerCell" == "lower than 1.553") && ("threadCount" == "higher than 18.0")
+	then ("Container_DataLayout" == "VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA")
+if ("particlesPerCellStdDev" == "lower than 0.041") && ("particlesPerCellStdDev" == "higher than 0.038") && ("threadCount" == "lower than 18.0")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA")
+if ("particlesPerCellStdDev" == "higher than 0.015") && ("threadCount" == "higher than 18.0") && ("avgParticlesPerCell" == "higher than 0.925")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS, VerletListsCells_SoA, VerletLists_SoA")
+if ("particlesPerCellStdDev" == "higher than 0.015") && ("particlesPerCellStdDev" == "lower than 0.038") && ("threadCount" == "lower than 18.0")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS")
+if ("particlesPerCellStdDev" == "lower than 0.015") && ("particlesPerCellStdDev" == "higher than 0.014") && ("avgParticlesPerCell" == "lower than 1.553") && ("threadCount" == "lower than 18.0")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS")
+if ("particlesPerCellStdDev" == "higher than 0.015") && ("threadCount" == "higher than 18.0") && ("avgParticlesPerCell" == "lower than 0.925")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS")
+if ("particlesPerCellStdDev" == "lower than 0.015") && ("avgParticlesPerCell" == "higher than 1.553")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS")
+if ("particlesPerCellStdDev" == "higher than 0.041") && ("threadCount" == "lower than 18.0")
+	then ("Container_DataLayout" == "LinkedCells_SoA, VerletClusterLists_SoA, VerletListsCells_AoS")
+
+## Traversal
+
+if ("avgParticlesPerCell" == "lower than 0.925") && ("threadCount" == "lower than 26.0")
+	then ("Traversal" == "vcl_c06, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("avgParticlesPerCell" == "higher than 0.925") && ("threadCount" == "lower than 8.0")
+	then ("Traversal" == "lc_c04, lc_c08, lc_c18, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 0.925") && ("threadCount" == "higher than 26.0")
+	then ("Traversal" == "vcl_c06, vcl_cluster_iteration, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("avgParticlesPerCell" == "higher than 0.925") && ("threadCount" == "higher than 26.0")
+	then ("Traversal" == "lc_c01, lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("avgParticlesPerCell" == "higher than 0.925") && ("threadCount" == "higher than 8.0") && ("threadCount" == "lower than 18.0")
+	then ("Traversal" == "lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("avgParticlesPerCell" == "higher than 0.925") && ("threadCount" == "lower than 26.0") && ("threadCount" == "higher than 18.0")
+	then ("Traversal" == "lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "higher than 1.572")
+	then ("Traversal" == "lc_c04, lc_c04_HCP, lc_c08, lc_c18, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("particlesPerCellStdDev" == "higher than 0.013") && ("particlesPerCellStdDev" == "lower than 0.014") && ("threadCount" == "lower than 26.0")
+	then ("Traversal" == "vcl_c06, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("particlesPerCellStdDev" == "higher than 0.024") && ("threadCount" == "lower than 8.0")
+	then ("Traversal" == "lc_c04, lc_c08, lc_c18, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("particlesPerCellStdDev" == "lower than 0.024") && ("particlesPerCellStdDev" == "higher than 0.014")
+	then ("Traversal" == "lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("particlesPerCellStdDev" == "higher than 0.013") && ("particlesPerCellStdDev" == "lower than 0.014") && ("threadCount" == "higher than 26.0")
+	then ("Traversal" == "vcl_c06, vcl_cluster_iteration, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("particlesPerCellStdDev" == "higher than 0.024") && ("threadCount" == "higher than 26.0")
+	then ("Traversal" == "lc_c01, lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("particlesPerCellStdDev" == "higher than 0.024") && ("threadCount" == "higher than 8.0") && ("threadCount" == "lower than 18.0")
+	then ("Traversal" == "lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("particlesPerCellStdDev" == "higher than 0.024") && ("threadCount" == "lower than 26.0") && ("threadCount" == "higher than 18.0")
+	then ("Traversal" == "lc_c04, lc_c08, lc_sliced, lc_sliced_balanced, lc_sliced_c02, vcl_c06, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02")
+if ("avgParticlesPerCell" == "lower than 1.572") && ("particlesPerCellStdDev" == "lower than 0.013")
+	then ("Traversal" == "vcl_c06, vlc_c01, vlc_c18, vlc_sliced_c02")
+
+## Newton 3
+
+if ("threadCount" == "higher than 18.0") && ("particlesPerCellStdDev" == "higher than 0.024")
+	then ("Newton 3" == "disabled, enabled")
+if ("threadCount" == "higher than 26.0") && ("particlesPerCellStdDev" == "lower than 0.013")
+	then ("Newton 3" == "disabled, enabled")
+if ("threadCount" == "higher than 18.0") && ("threadCount" == "lower than 26.0") && ("particlesPerCellStdDev" == "higher than 0.013") && ("particlesPerCellStdDev" == "lower than 0.013")
+	then ("Newton 3" == "enabled")
+if ("threadCount" == "lower than 8.0")
+	then ("Newton 3" == "enabled")
+if ("threadCount" == "lower than 18.0") && ("threadCount" == "higher than 8.0") && ("homogeneity" == "higher than 0.041")
+	then ("Newton 3" == "enabled")
+if ("threadCount" == "lower than 18.0") && ("threadCount" == "higher than 8.0") && ("homogeneity" == "lower than 0.041")
+	then ("Newton 3" == "enabled")

@@ -14,12 +14,19 @@
 
 namespace autopas::fuzzy_logic {
 
+struct FuzzyControlSettings {
+  /**
+   * The defuzzification method to use. Default is "centroid".
+   */
+  std::string defuzzificationMethod = "centroid";
+};
+
 class FuzzyControlSystem {
  public:
   /**
-   * Constructs an empty FuzzyControlSystem.
+   * Constructs an empty FuzzyControlSystem with the given settings.
    */
-  FuzzyControlSystem() = default;
+  explicit FuzzyControlSystem(FuzzyControlSettings settings = {});
 
   /**
    * Adds a new FuzzyRule to the FuzzyControlSystem.
@@ -52,6 +59,11 @@ class FuzzyControlSystem {
   explicit operator std::string() const;
 
  private:
+  /**
+   * The settings of the FuzzyControlSystem.
+   */
+  FuzzyControlSettings _settings;
+
   /**
    * All rules of the FuzzyControlSystem.
    */

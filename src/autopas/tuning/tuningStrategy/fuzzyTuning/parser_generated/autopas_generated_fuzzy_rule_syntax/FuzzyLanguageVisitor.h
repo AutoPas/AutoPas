@@ -21,6 +21,8 @@ class FuzzyLanguageVisitor : public antlr4::tree::AbstractParseTreeVisitor {
    */
   virtual antlrcpp::Any visitRule_file(FuzzyLanguageParser::Rule_fileContext *context) = 0;
 
+  virtual antlrcpp::Any visitSettings(FuzzyLanguageParser::SettingsContext *context) = 0;
+
   virtual antlrcpp::Any visitLinguistic_variable(FuzzyLanguageParser::Linguistic_variableContext *context) = 0;
 
   virtual antlrcpp::Any visitFuzzy_term(FuzzyLanguageParser::Fuzzy_termContext *context) = 0;
@@ -38,6 +40,14 @@ class FuzzyLanguageVisitor : public antlr4::tree::AbstractParseTreeVisitor {
   virtual antlrcpp::Any visitSelect(FuzzyLanguageParser::SelectContext *context) = 0;
 
   virtual antlrcpp::Any visitNegate(FuzzyLanguageParser::NegateContext *context) = 0;
+
+  virtual antlrcpp::Any visitOutput_mapping(FuzzyLanguageParser::Output_mappingContext *context) = 0;
+
+  virtual antlrcpp::Any visitOutput_entry(FuzzyLanguageParser::Output_entryContext *context) = 0;
+
+  virtual antlrcpp::Any visitPattern_mapping(FuzzyLanguageParser::Pattern_mappingContext *context) = 0;
+
+  virtual antlrcpp::Any visitConfiguration_pattern(FuzzyLanguageParser::Configuration_patternContext *context) = 0;
 };
 
 }  // namespace autopas_generated_fuzzy_rule_syntax

@@ -20,6 +20,8 @@ class FuzzyLanguageBaseVisitor : public FuzzyLanguageVisitor {
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitSettings(FuzzyLanguageParser::SettingsContext *ctx) override { return visitChildren(ctx); }
+
   virtual antlrcpp::Any visitLinguistic_variable(FuzzyLanguageParser::Linguistic_variableContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -43,6 +45,22 @@ class FuzzyLanguageBaseVisitor : public FuzzyLanguageVisitor {
   virtual antlrcpp::Any visitSelect(FuzzyLanguageParser::SelectContext *ctx) override { return visitChildren(ctx); }
 
   virtual antlrcpp::Any visitNegate(FuzzyLanguageParser::NegateContext *ctx) override { return visitChildren(ctx); }
+
+  virtual antlrcpp::Any visitOutput_mapping(FuzzyLanguageParser::Output_mappingContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitOutput_entry(FuzzyLanguageParser::Output_entryContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitPattern_mapping(FuzzyLanguageParser::Pattern_mappingContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual antlrcpp::Any visitConfiguration_pattern(FuzzyLanguageParser::Configuration_patternContext *ctx) override {
+    return visitChildren(ctx);
+  }
 };
 
 }  // namespace autopas_generated_fuzzy_rule_syntax

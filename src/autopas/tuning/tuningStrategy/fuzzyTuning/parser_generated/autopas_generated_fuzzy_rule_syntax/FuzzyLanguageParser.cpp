@@ -28,6 +28,14 @@ dfa::Vocabulary &FuzzyLanguageParser::getVocabulary() const { return _vocabulary
 FuzzyLanguageParser::Rule_fileContext::Rule_fileContext(ParserRuleContext *parent, size_t invokingState)
     : ParserRuleContext(parent, invokingState) {}
 
+FuzzyLanguageParser::SettingsContext *FuzzyLanguageParser::Rule_fileContext::settings() {
+  return getRuleContext<FuzzyLanguageParser::SettingsContext>(0);
+}
+
+FuzzyLanguageParser::Output_mappingContext *FuzzyLanguageParser::Rule_fileContext::output_mapping() {
+  return getRuleContext<FuzzyLanguageParser::Output_mappingContext>(0);
+}
+
 tree::TerminalNode *FuzzyLanguageParser::Rule_fileContext::EOF() { return getToken(FuzzyLanguageParser::EOF, 0); }
 
 std::vector<FuzzyLanguageParser::Linguistic_variableContext *>
@@ -70,28 +78,81 @@ FuzzyLanguageParser::Rule_fileContext *FuzzyLanguageParser::rule_file() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(15);
+    setState(22);
+    settings();
+    setState(26);
     _errHandler->sync(this);
     _la = _input->LA(1);
-    while (_la == FuzzyLanguageParser::T__0) {
-      setState(12);
-      linguistic_variable();
-      setState(17);
-      _errHandler->sync(this);
-      _la = _input->LA(1);
-    }
-    setState(21);
-    _errHandler->sync(this);
-    _la = _input->LA(1);
-    while (_la == FuzzyLanguageParser::T__7) {
-      setState(18);
-      fuzzy_rule();
+    while (_la == FuzzyLanguageParser::T__3) {
       setState(23);
+      linguistic_variable();
+      setState(28);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
-    setState(24);
+    setState(29);
+    output_mapping();
+    setState(33);
+    _errHandler->sync(this);
+    _la = _input->LA(1);
+    while (_la == FuzzyLanguageParser::T__9) {
+      setState(30);
+      fuzzy_rule();
+      setState(35);
+      _errHandler->sync(this);
+      _la = _input->LA(1);
+    }
+    setState(36);
     match(FuzzyLanguageParser::EOF);
+
+  } catch (RecognitionException &e) {
+    _errHandler->reportError(this, e);
+    _localctx->exception = std::current_exception();
+    _errHandler->recover(this, _localctx->exception);
+  }
+
+  return _localctx;
+}
+
+//----------------- SettingsContext ------------------------------------------------------------------
+
+FuzzyLanguageParser::SettingsContext::SettingsContext(ParserRuleContext *parent, size_t invokingState)
+    : ParserRuleContext(parent, invokingState) {}
+
+tree::TerminalNode *FuzzyLanguageParser::SettingsContext::STRING() { return getToken(FuzzyLanguageParser::STRING, 0); }
+
+size_t FuzzyLanguageParser::SettingsContext::getRuleIndex() const { return FuzzyLanguageParser::RuleSettings; }
+
+antlrcpp::Any FuzzyLanguageParser::SettingsContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<FuzzyLanguageVisitor *>(visitor))
+    return parserVisitor->visitSettings(this);
+  else
+    return visitor->visitChildren(this);
+}
+
+FuzzyLanguageParser::SettingsContext *FuzzyLanguageParser::settings() {
+  SettingsContext *_localctx = _tracker.createInstance<SettingsContext>(_ctx, getState());
+  enterRule(_localctx, 2, FuzzyLanguageParser::RuleSettings);
+
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
+  auto onExit = finally([=] {
+#endif
+    exitRule();
+  });
+  try {
+    enterOuterAlt(_localctx, 1);
+    setState(38);
+    match(FuzzyLanguageParser::T__0);
+    setState(39);
+    match(FuzzyLanguageParser::T__1);
+    setState(40);
+    match(FuzzyLanguageParser::T__2);
+    setState(41);
+    match(FuzzyLanguageParser::T__1);
+    setState(42);
+    dynamic_cast<SettingsContext *>(_localctx)->defuzzificationMethod = match(FuzzyLanguageParser::STRING);
 
   } catch (RecognitionException &e) {
     _errHandler->reportError(this, e);
@@ -141,7 +202,7 @@ antlrcpp::Any FuzzyLanguageParser::Linguistic_variableContext::accept(tree::Pars
 
 FuzzyLanguageParser::Linguistic_variableContext *FuzzyLanguageParser::linguistic_variable() {
   Linguistic_variableContext *_localctx = _tracker.createInstance<Linguistic_variableContext>(_ctx, getState());
-  enterRule(_localctx, 2, FuzzyLanguageParser::RuleLinguistic_variable);
+  enterRule(_localctx, 4, FuzzyLanguageParser::RuleLinguistic_variable);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -153,37 +214,37 @@ FuzzyLanguageParser::Linguistic_variableContext *FuzzyLanguageParser::linguistic
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(26);
-    match(FuzzyLanguageParser::T__0);
-    setState(27);
-    match(FuzzyLanguageParser::T__1);
-    setState(28);
-    match(FuzzyLanguageParser::T__2);
-    setState(29);
-    match(FuzzyLanguageParser::T__1);
-    setState(30);
-    match(FuzzyLanguageParser::STRING);
-    setState(31);
+    setState(44);
     match(FuzzyLanguageParser::T__3);
-    setState(32);
+    setState(45);
     match(FuzzyLanguageParser::T__1);
-    setState(33);
+    setState(46);
     match(FuzzyLanguageParser::T__4);
-    setState(34);
-    match(FuzzyLanguageParser::NUMBER);
-    setState(35);
+    setState(47);
+    match(FuzzyLanguageParser::T__1);
+    setState(48);
+    match(FuzzyLanguageParser::STRING);
+    setState(49);
     match(FuzzyLanguageParser::T__5);
-    setState(36);
-    match(FuzzyLanguageParser::NUMBER);
-    setState(37);
+    setState(50);
+    match(FuzzyLanguageParser::T__1);
+    setState(51);
     match(FuzzyLanguageParser::T__6);
-    setState(39);
+    setState(52);
+    match(FuzzyLanguageParser::NUMBER);
+    setState(53);
+    match(FuzzyLanguageParser::T__7);
+    setState(54);
+    match(FuzzyLanguageParser::NUMBER);
+    setState(55);
+    match(FuzzyLanguageParser::T__8);
+    setState(57);
     _errHandler->sync(this);
     _la = _input->LA(1);
     do {
-      setState(38);
+      setState(56);
       fuzzy_term();
-      setState(41);
+      setState(59);
       _errHandler->sync(this);
       _la = _input->LA(1);
     } while (_la == FuzzyLanguageParser::STRING);
@@ -221,7 +282,7 @@ antlrcpp::Any FuzzyLanguageParser::Fuzzy_termContext::accept(tree::ParseTreeVisi
 
 FuzzyLanguageParser::Fuzzy_termContext *FuzzyLanguageParser::fuzzy_term() {
   Fuzzy_termContext *_localctx = _tracker.createInstance<Fuzzy_termContext>(_ctx, getState());
-  enterRule(_localctx, 4, FuzzyLanguageParser::RuleFuzzy_term);
+  enterRule(_localctx, 6, FuzzyLanguageParser::RuleFuzzy_term);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -232,11 +293,11 @@ FuzzyLanguageParser::Fuzzy_termContext *FuzzyLanguageParser::fuzzy_term() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(43);
+    setState(61);
     match(FuzzyLanguageParser::STRING);
-    setState(44);
+    setState(62);
     match(FuzzyLanguageParser::T__1);
-    setState(45);
+    setState(63);
     function();
 
   } catch (RecognitionException &e) {
@@ -276,7 +337,7 @@ antlrcpp::Any FuzzyLanguageParser::FunctionContext::accept(tree::ParseTreeVisito
 
 FuzzyLanguageParser::FunctionContext *FuzzyLanguageParser::function() {
   FunctionContext *_localctx = _tracker.createInstance<FunctionContext>(_ctx, getState());
-  enterRule(_localctx, 6, FuzzyLanguageParser::RuleFunction);
+  enterRule(_localctx, 8, FuzzyLanguageParser::RuleFunction);
   size_t _la = 0;
 
 #if __cplusplus > 201703L
@@ -288,26 +349,26 @@ FuzzyLanguageParser::FunctionContext *FuzzyLanguageParser::function() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(47);
+    setState(65);
     match(FuzzyLanguageParser::IDENTIFIER);
-    setState(48);
-    match(FuzzyLanguageParser::T__4);
-    setState(49);
+    setState(66);
+    match(FuzzyLanguageParser::T__6);
+    setState(67);
     match(FuzzyLanguageParser::NUMBER);
-    setState(54);
+    setState(72);
     _errHandler->sync(this);
     _la = _input->LA(1);
-    while (_la == FuzzyLanguageParser::T__5) {
-      setState(50);
-      match(FuzzyLanguageParser::T__5);
-      setState(51);
+    while (_la == FuzzyLanguageParser::T__7) {
+      setState(68);
+      match(FuzzyLanguageParser::T__7);
+      setState(69);
       match(FuzzyLanguageParser::NUMBER);
-      setState(56);
+      setState(74);
       _errHandler->sync(this);
       _la = _input->LA(1);
     }
-    setState(57);
-    match(FuzzyLanguageParser::T__6);
+    setState(75);
+    match(FuzzyLanguageParser::T__8);
 
   } catch (RecognitionException &e) {
     _errHandler->reportError(this, e);
@@ -342,7 +403,7 @@ antlrcpp::Any FuzzyLanguageParser::Fuzzy_ruleContext::accept(tree::ParseTreeVisi
 
 FuzzyLanguageParser::Fuzzy_ruleContext *FuzzyLanguageParser::fuzzy_rule() {
   Fuzzy_ruleContext *_localctx = _tracker.createInstance<Fuzzy_ruleContext>(_ctx, getState());
-  enterRule(_localctx, 8, FuzzyLanguageParser::RuleFuzzy_rule);
+  enterRule(_localctx, 10, FuzzyLanguageParser::RuleFuzzy_rule);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -353,13 +414,13 @@ FuzzyLanguageParser::Fuzzy_ruleContext *FuzzyLanguageParser::fuzzy_rule() {
   });
   try {
     enterOuterAlt(_localctx, 1);
-    setState(59);
-    match(FuzzyLanguageParser::T__7);
-    setState(60);
+    setState(77);
+    match(FuzzyLanguageParser::T__9);
+    setState(78);
     fuzzy_set(0);
-    setState(61);
-    match(FuzzyLanguageParser::T__8);
-    setState(62);
+    setState(79);
+    match(FuzzyLanguageParser::T__10);
+    setState(80);
     fuzzy_set(0);
 
   } catch (RecognitionException &e) {
@@ -471,8 +532,8 @@ FuzzyLanguageParser::Fuzzy_setContext *FuzzyLanguageParser::fuzzy_set(int preced
   FuzzyLanguageParser::Fuzzy_setContext *_localctx = _tracker.createInstance<Fuzzy_setContext>(_ctx, parentState);
   FuzzyLanguageParser::Fuzzy_setContext *previousContext = _localctx;
   (void)previousContext;  // Silence compiler, in case the context is not used by generated code.
-  size_t startState = 10;
-  enterRecursionRule(_localctx, 10, FuzzyLanguageParser::RuleFuzzy_set, precedence);
+  size_t startState = 12;
+  enterRecursionRule(_localctx, 12, FuzzyLanguageParser::RuleFuzzy_set, precedence);
 
 #if __cplusplus > 201703L
   auto onExit = finally([=, this] {
@@ -484,30 +545,30 @@ FuzzyLanguageParser::Fuzzy_setContext *FuzzyLanguageParser::fuzzy_set(int preced
   try {
     size_t alt;
     enterOuterAlt(_localctx, 1);
-    setState(74);
+    setState(92);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
-      case FuzzyLanguageParser::T__4: {
+      case FuzzyLanguageParser::T__6: {
         _localctx = _tracker.createInstance<BracketsContext>(_localctx);
         _ctx = _localctx;
         previousContext = _localctx;
 
-        setState(65);
-        match(FuzzyLanguageParser::T__4);
-        setState(66);
-        fuzzy_set(0);
-        setState(67);
+        setState(83);
         match(FuzzyLanguageParser::T__6);
+        setState(84);
+        fuzzy_set(0);
+        setState(85);
+        match(FuzzyLanguageParser::T__8);
         break;
       }
 
-      case FuzzyLanguageParser::T__11: {
+      case FuzzyLanguageParser::T__13: {
         _localctx = _tracker.createInstance<NegateContext>(_localctx);
         _ctx = _localctx;
         previousContext = _localctx;
-        setState(69);
-        match(FuzzyLanguageParser::T__11);
-        setState(70);
+        setState(87);
+        match(FuzzyLanguageParser::T__13);
+        setState(88);
         fuzzy_set(2);
         break;
       }
@@ -516,11 +577,11 @@ FuzzyLanguageParser::Fuzzy_setContext *FuzzyLanguageParser::fuzzy_set(int preced
         _localctx = _tracker.createInstance<SelectContext>(_localctx);
         _ctx = _localctx;
         previousContext = _localctx;
-        setState(71);
+        setState(89);
         match(FuzzyLanguageParser::STRING);
-        setState(72);
-        match(FuzzyLanguageParser::T__12);
-        setState(73);
+        setState(90);
+        match(FuzzyLanguageParser::T__14);
+        setState(91);
         match(FuzzyLanguageParser::STRING);
         break;
       }
@@ -529,14 +590,14 @@ FuzzyLanguageParser::Fuzzy_setContext *FuzzyLanguageParser::fuzzy_set(int preced
         throw NoViableAltException(this);
     }
     _ctx->stop = _input->LT(-1);
-    setState(84);
+    setState(102);
     _errHandler->sync(this);
     alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 6, _ctx);
     while (alt != 2 && alt != atn::ATN::INVALID_ALT_NUMBER) {
       if (alt == 1) {
         if (!_parseListeners.empty()) triggerExitRuleEvent();
         previousContext = _localctx;
-        setState(82);
+        setState(100);
         _errHandler->sync(this);
         switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 5, _ctx)) {
           case 1: {
@@ -544,12 +605,12 @@ FuzzyLanguageParser::Fuzzy_setContext *FuzzyLanguageParser::fuzzy_set(int preced
                 _tracker.createInstance<Fuzzy_setContext>(parentContext, parentState));
             _localctx = newContext;
             pushNewRecursionContext(newContext, startState, RuleFuzzy_set);
-            setState(76);
+            setState(94);
 
             if (!(precpred(_ctx, 4))) throw FailedPredicateException(this, "precpred(_ctx, 4)");
-            setState(77);
-            match(FuzzyLanguageParser::T__9);
-            setState(78);
+            setState(95);
+            match(FuzzyLanguageParser::T__11);
+            setState(96);
             fuzzy_set(5);
             break;
           }
@@ -559,12 +620,12 @@ FuzzyLanguageParser::Fuzzy_setContext *FuzzyLanguageParser::fuzzy_set(int preced
                 _tracker.createInstance<Fuzzy_setContext>(parentContext, parentState));
             _localctx = newContext;
             pushNewRecursionContext(newContext, startState, RuleFuzzy_set);
-            setState(79);
+            setState(97);
 
             if (!(precpred(_ctx, 3))) throw FailedPredicateException(this, "precpred(_ctx, 3)");
-            setState(80);
-            match(FuzzyLanguageParser::T__10);
-            setState(81);
+            setState(98);
+            match(FuzzyLanguageParser::T__12);
+            setState(99);
             fuzzy_set(4);
             break;
           }
@@ -573,7 +634,7 @@ FuzzyLanguageParser::Fuzzy_setContext *FuzzyLanguageParser::fuzzy_set(int preced
             break;
         }
       }
-      setState(86);
+      setState(104);
       _errHandler->sync(this);
       alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 6, _ctx);
     }
@@ -585,9 +646,291 @@ FuzzyLanguageParser::Fuzzy_setContext *FuzzyLanguageParser::fuzzy_set(int preced
   return _localctx;
 }
 
+//----------------- Output_mappingContext ------------------------------------------------------------------
+
+FuzzyLanguageParser::Output_mappingContext::Output_mappingContext(ParserRuleContext *parent, size_t invokingState)
+    : ParserRuleContext(parent, invokingState) {}
+
+std::vector<FuzzyLanguageParser::Output_entryContext *> FuzzyLanguageParser::Output_mappingContext::output_entry() {
+  return getRuleContexts<FuzzyLanguageParser::Output_entryContext>();
+}
+
+FuzzyLanguageParser::Output_entryContext *FuzzyLanguageParser::Output_mappingContext::output_entry(size_t i) {
+  return getRuleContext<FuzzyLanguageParser::Output_entryContext>(i);
+}
+
+size_t FuzzyLanguageParser::Output_mappingContext::getRuleIndex() const {
+  return FuzzyLanguageParser::RuleOutput_mapping;
+}
+
+antlrcpp::Any FuzzyLanguageParser::Output_mappingContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<FuzzyLanguageVisitor *>(visitor))
+    return parserVisitor->visitOutput_mapping(this);
+  else
+    return visitor->visitChildren(this);
+}
+
+FuzzyLanguageParser::Output_mappingContext *FuzzyLanguageParser::output_mapping() {
+  Output_mappingContext *_localctx = _tracker.createInstance<Output_mappingContext>(_ctx, getState());
+  enterRule(_localctx, 14, FuzzyLanguageParser::RuleOutput_mapping);
+  size_t _la = 0;
+
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
+  auto onExit = finally([=] {
+#endif
+    exitRule();
+  });
+  try {
+    enterOuterAlt(_localctx, 1);
+    setState(105);
+    match(FuzzyLanguageParser::T__15);
+    setState(106);
+    match(FuzzyLanguageParser::T__1);
+    setState(108);
+    _errHandler->sync(this);
+    _la = _input->LA(1);
+    do {
+      setState(107);
+      output_entry();
+      setState(110);
+      _errHandler->sync(this);
+      _la = _input->LA(1);
+    } while (_la == FuzzyLanguageParser::STRING);
+
+  } catch (RecognitionException &e) {
+    _errHandler->reportError(this, e);
+    _localctx->exception = std::current_exception();
+    _errHandler->recover(this, _localctx->exception);
+  }
+
+  return _localctx;
+}
+
+//----------------- Output_entryContext ------------------------------------------------------------------
+
+FuzzyLanguageParser::Output_entryContext::Output_entryContext(ParserRuleContext *parent, size_t invokingState)
+    : ParserRuleContext(parent, invokingState) {}
+
+tree::TerminalNode *FuzzyLanguageParser::Output_entryContext::STRING() {
+  return getToken(FuzzyLanguageParser::STRING, 0);
+}
+
+std::vector<FuzzyLanguageParser::Pattern_mappingContext *> FuzzyLanguageParser::Output_entryContext::pattern_mapping() {
+  return getRuleContexts<FuzzyLanguageParser::Pattern_mappingContext>();
+}
+
+FuzzyLanguageParser::Pattern_mappingContext *FuzzyLanguageParser::Output_entryContext::pattern_mapping(size_t i) {
+  return getRuleContext<FuzzyLanguageParser::Pattern_mappingContext>(i);
+}
+
+size_t FuzzyLanguageParser::Output_entryContext::getRuleIndex() const { return FuzzyLanguageParser::RuleOutput_entry; }
+
+antlrcpp::Any FuzzyLanguageParser::Output_entryContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<FuzzyLanguageVisitor *>(visitor))
+    return parserVisitor->visitOutput_entry(this);
+  else
+    return visitor->visitChildren(this);
+}
+
+FuzzyLanguageParser::Output_entryContext *FuzzyLanguageParser::output_entry() {
+  Output_entryContext *_localctx = _tracker.createInstance<Output_entryContext>(_ctx, getState());
+  enterRule(_localctx, 16, FuzzyLanguageParser::RuleOutput_entry);
+  size_t _la = 0;
+
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
+  auto onExit = finally([=] {
+#endif
+    exitRule();
+  });
+  try {
+    enterOuterAlt(_localctx, 1);
+    setState(112);
+    match(FuzzyLanguageParser::STRING);
+    setState(113);
+    match(FuzzyLanguageParser::T__1);
+    setState(115);
+    _errHandler->sync(this);
+    _la = _input->LA(1);
+    do {
+      setState(114);
+      pattern_mapping();
+      setState(117);
+      _errHandler->sync(this);
+      _la = _input->LA(1);
+    } while (_la == FuzzyLanguageParser::NUMBER);
+
+  } catch (RecognitionException &e) {
+    _errHandler->reportError(this, e);
+    _localctx->exception = std::current_exception();
+    _errHandler->recover(this, _localctx->exception);
+  }
+
+  return _localctx;
+}
+
+//----------------- Pattern_mappingContext ------------------------------------------------------------------
+
+FuzzyLanguageParser::Pattern_mappingContext::Pattern_mappingContext(ParserRuleContext *parent, size_t invokingState)
+    : ParserRuleContext(parent, invokingState) {}
+
+tree::TerminalNode *FuzzyLanguageParser::Pattern_mappingContext::NUMBER() {
+  return getToken(FuzzyLanguageParser::NUMBER, 0);
+}
+
+std::vector<FuzzyLanguageParser::Configuration_patternContext *>
+FuzzyLanguageParser::Pattern_mappingContext::configuration_pattern() {
+  return getRuleContexts<FuzzyLanguageParser::Configuration_patternContext>();
+}
+
+FuzzyLanguageParser::Configuration_patternContext *FuzzyLanguageParser::Pattern_mappingContext::configuration_pattern(
+    size_t i) {
+  return getRuleContext<FuzzyLanguageParser::Configuration_patternContext>(i);
+}
+
+size_t FuzzyLanguageParser::Pattern_mappingContext::getRuleIndex() const {
+  return FuzzyLanguageParser::RulePattern_mapping;
+}
+
+antlrcpp::Any FuzzyLanguageParser::Pattern_mappingContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<FuzzyLanguageVisitor *>(visitor))
+    return parserVisitor->visitPattern_mapping(this);
+  else
+    return visitor->visitChildren(this);
+}
+
+FuzzyLanguageParser::Pattern_mappingContext *FuzzyLanguageParser::pattern_mapping() {
+  Pattern_mappingContext *_localctx = _tracker.createInstance<Pattern_mappingContext>(_ctx, getState());
+  enterRule(_localctx, 18, FuzzyLanguageParser::RulePattern_mapping);
+  size_t _la = 0;
+
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
+  auto onExit = finally([=] {
+#endif
+    exitRule();
+  });
+  try {
+    enterOuterAlt(_localctx, 1);
+    setState(119);
+    match(FuzzyLanguageParser::NUMBER);
+    setState(120);
+    match(FuzzyLanguageParser::T__16);
+    setState(121);
+    configuration_pattern();
+    setState(126);
+    _errHandler->sync(this);
+    _la = _input->LA(1);
+    while (_la == FuzzyLanguageParser::T__7) {
+      setState(122);
+      match(FuzzyLanguageParser::T__7);
+      setState(123);
+      configuration_pattern();
+      setState(128);
+      _errHandler->sync(this);
+      _la = _input->LA(1);
+    }
+
+  } catch (RecognitionException &e) {
+    _errHandler->reportError(this, e);
+    _localctx->exception = std::current_exception();
+    _errHandler->recover(this, _localctx->exception);
+  }
+
+  return _localctx;
+}
+
+//----------------- Configuration_patternContext ------------------------------------------------------------------
+
+FuzzyLanguageParser::Configuration_patternContext::Configuration_patternContext(ParserRuleContext *parent,
+                                                                                size_t invokingState)
+    : ParserRuleContext(parent, invokingState) {}
+
+std::vector<tree::TerminalNode *> FuzzyLanguageParser::Configuration_patternContext::IDENTIFIER() {
+  return getTokens(FuzzyLanguageParser::IDENTIFIER);
+}
+
+tree::TerminalNode *FuzzyLanguageParser::Configuration_patternContext::IDENTIFIER(size_t i) {
+  return getToken(FuzzyLanguageParser::IDENTIFIER, i);
+}
+
+std::vector<tree::TerminalNode *> FuzzyLanguageParser::Configuration_patternContext::STRING() {
+  return getTokens(FuzzyLanguageParser::STRING);
+}
+
+tree::TerminalNode *FuzzyLanguageParser::Configuration_patternContext::STRING(size_t i) {
+  return getToken(FuzzyLanguageParser::STRING, i);
+}
+
+size_t FuzzyLanguageParser::Configuration_patternContext::getRuleIndex() const {
+  return FuzzyLanguageParser::RuleConfiguration_pattern;
+}
+
+antlrcpp::Any FuzzyLanguageParser::Configuration_patternContext::accept(tree::ParseTreeVisitor *visitor) {
+  if (auto parserVisitor = dynamic_cast<FuzzyLanguageVisitor *>(visitor))
+    return parserVisitor->visitConfiguration_pattern(this);
+  else
+    return visitor->visitChildren(this);
+}
+
+FuzzyLanguageParser::Configuration_patternContext *FuzzyLanguageParser::configuration_pattern() {
+  Configuration_patternContext *_localctx = _tracker.createInstance<Configuration_patternContext>(_ctx, getState());
+  enterRule(_localctx, 20, FuzzyLanguageParser::RuleConfiguration_pattern);
+  size_t _la = 0;
+
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
+  auto onExit = finally([=] {
+#endif
+    exitRule();
+  });
+  try {
+    enterOuterAlt(_localctx, 1);
+    setState(129);
+    match(FuzzyLanguageParser::T__17);
+
+    setState(130);
+    match(FuzzyLanguageParser::IDENTIFIER);
+    setState(131);
+    match(FuzzyLanguageParser::T__18);
+    setState(132);
+    match(FuzzyLanguageParser::STRING);
+    setState(140);
+    _errHandler->sync(this);
+    _la = _input->LA(1);
+    while (_la == FuzzyLanguageParser::T__7) {
+      setState(134);
+      match(FuzzyLanguageParser::T__7);
+      setState(135);
+      match(FuzzyLanguageParser::IDENTIFIER);
+      setState(136);
+      match(FuzzyLanguageParser::T__18);
+      setState(137);
+      match(FuzzyLanguageParser::STRING);
+      setState(142);
+      _errHandler->sync(this);
+      _la = _input->LA(1);
+    }
+    setState(143);
+    match(FuzzyLanguageParser::T__19);
+
+  } catch (RecognitionException &e) {
+    _errHandler->reportError(this, e);
+    _localctx->exception = std::current_exception();
+    _errHandler->recover(this, _localctx->exception);
+  }
+
+  return _localctx;
+}
+
 bool FuzzyLanguageParser::sempred(RuleContext *context, size_t ruleIndex, size_t predicateIndex) {
   switch (ruleIndex) {
-    case 5:
+    case 6:
       return fuzzy_setSempred(dynamic_cast<Fuzzy_setContext *>(context), predicateIndex);
 
     default:
@@ -617,15 +960,43 @@ atn::PredictionContextCache FuzzyLanguageParser::_sharedContextCache;
 atn::ATN FuzzyLanguageParser::_atn;
 std::vector<uint16_t> FuzzyLanguageParser::_serializedATN;
 
-std::vector<std::string> FuzzyLanguageParser::_ruleNames = {"rule_file", "linguistic_variable", "fuzzy_term",
-                                                            "function",  "fuzzy_rule",          "fuzzy_set"};
+std::vector<std::string> FuzzyLanguageParser::_ruleNames = {"rule_file",
+                                                            "settings",
+                                                            "linguistic_variable",
+                                                            "fuzzy_term",
+                                                            "function",
+                                                            "fuzzy_rule",
+                                                            "fuzzy_set",
+                                                            "output_mapping",
+                                                            "output_entry",
+                                                            "pattern_mapping",
+                                                            "configuration_pattern"};
 
-std::vector<std::string> FuzzyLanguageParser::_literalNames = {
-    "",     "'FuzzyVariable'", "':'",  "'domain'", "'range'", "'('", "','", "')'",
-    "'if'", "'then'",          "'&&'", "'||'",     "'!'",     "'=='"};
+std::vector<std::string> FuzzyLanguageParser::_literalNames = {"",
+                                                               "'FuzzySystemSettings'",
+                                                               "':'",
+                                                               "'defuzzificationMethod'",
+                                                               "'FuzzyVariable'",
+                                                               "'domain'",
+                                                               "'range'",
+                                                               "'('",
+                                                               "','",
+                                                               "')'",
+                                                               "'if'",
+                                                               "'then'",
+                                                               "'&&'",
+                                                               "'||'",
+                                                               "'!'",
+                                                               "'=='",
+                                                               "'OutputMapping'",
+                                                               "'=>'",
+                                                               "'['",
+                                                               "'='",
+                                                               "']'"};
 
 std::vector<std::string> FuzzyLanguageParser::_symbolicNames = {
-    "", "", "", "", "", "", "", "", "", "", "", "", "", "", "WS", "COMMENT", "STRING", "NUMBER", "IDENTIFIER"};
+    "", "", "", "", "", "", "", "", "",   "",        "",       "",       "",
+    "", "", "", "", "", "", "", "", "WS", "COMMENT", "STRING", "NUMBER", "IDENTIFIER"};
 
 dfa::Vocabulary FuzzyLanguageParser::_vocabulary(_literalNames, _symbolicNames);
 
@@ -646,54 +1017,83 @@ FuzzyLanguageParser::Initializer::Initializer() {
   }
 
   _serializedATN = {
-      0x3,  0x608b, 0xa72a, 0x8133, 0xb9ed, 0x417c, 0x3be7, 0x7786, 0x5964, 0x3,  0x14, 0x5a, 0x4,  0x2,  0x9,  0x2,
+      0x3,  0x608b, 0xa72a, 0x8133, 0xb9ed, 0x417c, 0x3be7, 0x7786, 0x5964, 0x3,  0x1b, 0x94, 0x4,  0x2,  0x9,  0x2,
       0x4,  0x3,    0x9,    0x3,    0x4,    0x4,    0x9,    0x4,    0x4,    0x5,  0x9,  0x5,  0x4,  0x6,  0x9,  0x6,
-      0x4,  0x7,    0x9,    0x7,    0x3,    0x2,    0x7,    0x2,    0x10,   0xa,  0x2,  0xc,  0x2,  0xe,  0x2,  0x13,
-      0xb,  0x2,    0x3,    0x2,    0x7,    0x2,    0x16,   0xa,    0x2,    0xc,  0x2,  0xe,  0x2,  0x19, 0xb,  0x2,
-      0x3,  0x2,    0x3,    0x2,    0x3,    0x3,    0x3,    0x3,    0x3,    0x3,  0x3,  0x3,  0x3,  0x3,  0x3,  0x3,
-      0x3,  0x3,    0x3,    0x3,    0x3,    0x3,    0x3,    0x3,    0x3,    0x3,  0x3,  0x3,  0x3,  0x3,  0x6,  0x3,
-      0x2a, 0xa,    0x3,    0xd,    0x3,    0xe,    0x3,    0x2b,   0x3,    0x4,  0x3,  0x4,  0x3,  0x4,  0x3,  0x4,
-      0x3,  0x5,    0x3,    0x5,    0x3,    0x5,    0x3,    0x5,    0x3,    0x5,  0x7,  0x5,  0x37, 0xa,  0x5,  0xc,
-      0x5,  0xe,    0x5,    0x3a,   0xb,    0x5,    0x3,    0x5,    0x3,    0x5,  0x3,  0x6,  0x3,  0x6,  0x3,  0x6,
-      0x3,  0x6,    0x3,    0x6,    0x3,    0x7,    0x3,    0x7,    0x3,    0x7,  0x3,  0x7,  0x3,  0x7,  0x3,  0x7,
-      0x3,  0x7,    0x3,    0x7,    0x3,    0x7,    0x3,    0x7,    0x5,    0x7,  0x4d, 0xa,  0x7,  0x3,  0x7,  0x3,
-      0x7,  0x3,    0x7,    0x3,    0x7,    0x3,    0x7,    0x3,    0x7,    0x7,  0x7,  0x55, 0xa,  0x7,  0xc,  0x7,
-      0xe,  0x7,    0x58,   0xb,    0x7,    0x3,    0x7,    0x2,    0x3,    0xc,  0x8,  0x2,  0x4,  0x6,  0x8,  0xa,
-      0xc,  0x2,    0x2,    0x2,    0x5b,   0x2,    0x11,   0x3,    0x2,    0x2,  0x2,  0x4,  0x1c, 0x3,  0x2,  0x2,
-      0x2,  0x6,    0x2d,   0x3,    0x2,    0x2,    0x2,    0x8,    0x31,   0x3,  0x2,  0x2,  0x2,  0xa,  0x3d, 0x3,
-      0x2,  0x2,    0x2,    0xc,    0x4c,   0x3,    0x2,    0x2,    0x2,    0xe,  0x10, 0x5,  0x4,  0x3,  0x2,  0xf,
-      0xe,  0x3,    0x2,    0x2,    0x2,    0x10,   0x13,   0x3,    0x2,    0x2,  0x2,  0x11, 0xf,  0x3,  0x2,  0x2,
-      0x2,  0x11,   0x12,   0x3,    0x2,    0x2,    0x2,    0x12,   0x17,   0x3,  0x2,  0x2,  0x2,  0x13, 0x11, 0x3,
-      0x2,  0x2,    0x2,    0x14,   0x16,   0x5,    0xa,    0x6,    0x2,    0x15, 0x14, 0x3,  0x2,  0x2,  0x2,  0x16,
-      0x19, 0x3,    0x2,    0x2,    0x2,    0x17,   0x15,   0x3,    0x2,    0x2,  0x2,  0x17, 0x18, 0x3,  0x2,  0x2,
-      0x2,  0x18,   0x1a,   0x3,    0x2,    0x2,    0x2,    0x19,   0x17,   0x3,  0x2,  0x2,  0x2,  0x1a, 0x1b, 0x7,
-      0x2,  0x2,    0x3,    0x1b,   0x3,    0x3,    0x2,    0x2,    0x2,    0x1c, 0x1d, 0x7,  0x3,  0x2,  0x2,  0x1d,
-      0x1e, 0x7,    0x4,    0x2,    0x2,    0x1e,   0x1f,   0x7,    0x5,    0x2,  0x2,  0x1f, 0x20, 0x7,  0x4,  0x2,
-      0x2,  0x20,   0x21,   0x7,    0x12,   0x2,    0x2,    0x21,   0x22,   0x7,  0x6,  0x2,  0x2,  0x22, 0x23, 0x7,
-      0x4,  0x2,    0x2,    0x23,   0x24,   0x7,    0x7,    0x2,    0x2,    0x24, 0x25, 0x7,  0x13, 0x2,  0x2,  0x25,
-      0x26, 0x7,    0x8,    0x2,    0x2,    0x26,   0x27,   0x7,    0x13,   0x2,  0x2,  0x27, 0x29, 0x7,  0x9,  0x2,
-      0x2,  0x28,   0x2a,   0x5,    0x6,    0x4,    0x2,    0x29,   0x28,   0x3,  0x2,  0x2,  0x2,  0x2a, 0x2b, 0x3,
-      0x2,  0x2,    0x2,    0x2b,   0x29,   0x3,    0x2,    0x2,    0x2,    0x2b, 0x2c, 0x3,  0x2,  0x2,  0x2,  0x2c,
-      0x5,  0x3,    0x2,    0x2,    0x2,    0x2d,   0x2e,   0x7,    0x12,   0x2,  0x2,  0x2e, 0x2f, 0x7,  0x4,  0x2,
-      0x2,  0x2f,   0x30,   0x5,    0x8,    0x5,    0x2,    0x30,   0x7,    0x3,  0x2,  0x2,  0x2,  0x31, 0x32, 0x7,
-      0x14, 0x2,    0x2,    0x32,   0x33,   0x7,    0x7,    0x2,    0x2,    0x33, 0x38, 0x7,  0x13, 0x2,  0x2,  0x34,
-      0x35, 0x7,    0x8,    0x2,    0x2,    0x35,   0x37,   0x7,    0x13,   0x2,  0x2,  0x36, 0x34, 0x3,  0x2,  0x2,
-      0x2,  0x37,   0x3a,   0x3,    0x2,    0x2,    0x2,    0x38,   0x36,   0x3,  0x2,  0x2,  0x2,  0x38, 0x39, 0x3,
-      0x2,  0x2,    0x2,    0x39,   0x3b,   0x3,    0x2,    0x2,    0x2,    0x3a, 0x38, 0x3,  0x2,  0x2,  0x2,  0x3b,
-      0x3c, 0x7,    0x9,    0x2,    0x2,    0x3c,   0x9,    0x3,    0x2,    0x2,  0x2,  0x3d, 0x3e, 0x7,  0xa,  0x2,
-      0x2,  0x3e,   0x3f,   0x5,    0xc,    0x7,    0x2,    0x3f,   0x40,   0x7,  0xb,  0x2,  0x2,  0x40, 0x41, 0x5,
-      0xc,  0x7,    0x2,    0x41,   0xb,    0x3,    0x2,    0x2,    0x2,    0x42, 0x43, 0x8,  0x7,  0x1,  0x2,  0x43,
-      0x44, 0x7,    0x7,    0x2,    0x2,    0x44,   0x45,   0x5,    0xc,    0x7,  0x2,  0x45, 0x46, 0x7,  0x9,  0x2,
-      0x2,  0x46,   0x4d,   0x3,    0x2,    0x2,    0x2,    0x47,   0x48,   0x7,  0xe,  0x2,  0x2,  0x48, 0x4d, 0x5,
-      0xc,  0x7,    0x4,    0x49,   0x4a,   0x7,    0x12,   0x2,    0x2,    0x4a, 0x4b, 0x7,  0xf,  0x2,  0x2,  0x4b,
-      0x4d, 0x7,    0x12,   0x2,    0x2,    0x4c,   0x42,   0x3,    0x2,    0x2,  0x2,  0x4c, 0x47, 0x3,  0x2,  0x2,
-      0x2,  0x4c,   0x49,   0x3,    0x2,    0x2,    0x2,    0x4d,   0x56,   0x3,  0x2,  0x2,  0x2,  0x4e, 0x4f, 0xc,
-      0x6,  0x2,    0x2,    0x4f,   0x50,   0x7,    0xc,    0x2,    0x2,    0x50, 0x55, 0x5,  0xc,  0x7,  0x7,  0x51,
-      0x52, 0xc,    0x5,    0x2,    0x2,    0x52,   0x53,   0x7,    0xd,    0x2,  0x2,  0x53, 0x55, 0x5,  0xc,  0x7,
-      0x6,  0x54,   0x4e,   0x3,    0x2,    0x2,    0x2,    0x54,   0x51,   0x3,  0x2,  0x2,  0x2,  0x55, 0x58, 0x3,
-      0x2,  0x2,    0x2,    0x56,   0x54,   0x3,    0x2,    0x2,    0x2,    0x56, 0x57, 0x3,  0x2,  0x2,  0x2,  0x57,
-      0xd,  0x3,    0x2,    0x2,    0x2,    0x58,   0x56,   0x3,    0x2,    0x2,  0x2,  0x9,  0x11, 0x17, 0x2b, 0x38,
-      0x4c, 0x54,   0x56,
+      0x4,  0x7,    0x9,    0x7,    0x4,    0x8,    0x9,    0x8,    0x4,    0x9,  0x9,  0x9,  0x4,  0xa,  0x9,  0xa,
+      0x4,  0xb,    0x9,    0xb,    0x4,    0xc,    0x9,    0xc,    0x3,    0x2,  0x3,  0x2,  0x7,  0x2,  0x1b, 0xa,
+      0x2,  0xc,    0x2,    0xe,    0x2,    0x1e,   0xb,    0x2,    0x3,    0x2,  0x3,  0x2,  0x7,  0x2,  0x22, 0xa,
+      0x2,  0xc,    0x2,    0xe,    0x2,    0x25,   0xb,    0x2,    0x3,    0x2,  0x3,  0x2,  0x3,  0x3,  0x3,  0x3,
+      0x3,  0x3,    0x3,    0x3,    0x3,    0x3,    0x3,    0x3,    0x3,    0x4,  0x3,  0x4,  0x3,  0x4,  0x3,  0x4,
+      0x3,  0x4,    0x3,    0x4,    0x3,    0x4,    0x3,    0x4,    0x3,    0x4,  0x3,  0x4,  0x3,  0x4,  0x3,  0x4,
+      0x3,  0x4,    0x6,    0x4,    0x3c,   0xa,    0x4,    0xd,    0x4,    0xe,  0x4,  0x3d, 0x3,  0x5,  0x3,  0x5,
+      0x3,  0x5,    0x3,    0x5,    0x3,    0x6,    0x3,    0x6,    0x3,    0x6,  0x3,  0x6,  0x3,  0x6,  0x7,  0x6,
+      0x49, 0xa,    0x6,    0xc,    0x6,    0xe,    0x6,    0x4c,   0xb,    0x6,  0x3,  0x6,  0x3,  0x6,  0x3,  0x7,
+      0x3,  0x7,    0x3,    0x7,    0x3,    0x7,    0x3,    0x7,    0x3,    0x8,  0x3,  0x8,  0x3,  0x8,  0x3,  0x8,
+      0x3,  0x8,    0x3,    0x8,    0x3,    0x8,    0x3,    0x8,    0x3,    0x8,  0x3,  0x8,  0x5,  0x8,  0x5f, 0xa,
+      0x8,  0x3,    0x8,    0x3,    0x8,    0x3,    0x8,    0x3,    0x8,    0x3,  0x8,  0x3,  0x8,  0x7,  0x8,  0x67,
+      0xa,  0x8,    0xc,    0x8,    0xe,    0x8,    0x6a,   0xb,    0x8,    0x3,  0x9,  0x3,  0x9,  0x3,  0x9,  0x6,
+      0x9,  0x6f,   0xa,    0x9,    0xd,    0x9,    0xe,    0x9,    0x70,   0x3,  0xa,  0x3,  0xa,  0x3,  0xa,  0x6,
+      0xa,  0x76,   0xa,    0xa,    0xd,    0xa,    0xe,    0xa,    0x77,   0x3,  0xb,  0x3,  0xb,  0x3,  0xb,  0x3,
+      0xb,  0x3,    0xb,    0x7,    0xb,    0x7f,   0xa,    0xb,    0xc,    0xb,  0xe,  0xb,  0x82, 0xb,  0xb,  0x3,
+      0xc,  0x3,    0xc,    0x3,    0xc,    0x3,    0xc,    0x3,    0xc,    0x3,  0xc,  0x3,  0xc,  0x3,  0xc,  0x3,
+      0xc,  0x7,    0xc,    0x8d,   0xa,    0xc,    0xc,    0xc,    0xe,    0xc,  0x90, 0xb,  0xc,  0x3,  0xc,  0x3,
+      0xc,  0x3,    0xc,    0x2,    0x3,    0xe,    0xd,    0x2,    0x4,    0x6,  0x8,  0xa,  0xc,  0xe,  0x10, 0x12,
+      0x14, 0x16,   0x2,    0x2,    0x2,    0x94,   0x2,    0x18,   0x3,    0x2,  0x2,  0x2,  0x4,  0x28, 0x3,  0x2,
+      0x2,  0x2,    0x6,    0x2e,   0x3,    0x2,    0x2,    0x2,    0x8,    0x3f, 0x3,  0x2,  0x2,  0x2,  0xa,  0x43,
+      0x3,  0x2,    0x2,    0x2,    0xc,    0x4f,   0x3,    0x2,    0x2,    0x2,  0xe,  0x5e, 0x3,  0x2,  0x2,  0x2,
+      0x10, 0x6b,   0x3,    0x2,    0x2,    0x2,    0x12,   0x72,   0x3,    0x2,  0x2,  0x2,  0x14, 0x79, 0x3,  0x2,
+      0x2,  0x2,    0x16,   0x83,   0x3,    0x2,    0x2,    0x2,    0x18,   0x1c, 0x5,  0x4,  0x3,  0x2,  0x19, 0x1b,
+      0x5,  0x6,    0x4,    0x2,    0x1a,   0x19,   0x3,    0x2,    0x2,    0x2,  0x1b, 0x1e, 0x3,  0x2,  0x2,  0x2,
+      0x1c, 0x1a,   0x3,    0x2,    0x2,    0x2,    0x1c,   0x1d,   0x3,    0x2,  0x2,  0x2,  0x1d, 0x1f, 0x3,  0x2,
+      0x2,  0x2,    0x1e,   0x1c,   0x3,    0x2,    0x2,    0x2,    0x1f,   0x23, 0x5,  0x10, 0x9,  0x2,  0x20, 0x22,
+      0x5,  0xc,    0x7,    0x2,    0x21,   0x20,   0x3,    0x2,    0x2,    0x2,  0x22, 0x25, 0x3,  0x2,  0x2,  0x2,
+      0x23, 0x21,   0x3,    0x2,    0x2,    0x2,    0x23,   0x24,   0x3,    0x2,  0x2,  0x2,  0x24, 0x26, 0x3,  0x2,
+      0x2,  0x2,    0x25,   0x23,   0x3,    0x2,    0x2,    0x2,    0x26,   0x27, 0x7,  0x2,  0x2,  0x3,  0x27, 0x3,
+      0x3,  0x2,    0x2,    0x2,    0x28,   0x29,   0x7,    0x3,    0x2,    0x2,  0x29, 0x2a, 0x7,  0x4,  0x2,  0x2,
+      0x2a, 0x2b,   0x7,    0x5,    0x2,    0x2,    0x2b,   0x2c,   0x7,    0x4,  0x2,  0x2,  0x2c, 0x2d, 0x7,  0x19,
+      0x2,  0x2,    0x2d,   0x5,    0x3,    0x2,    0x2,    0x2,    0x2e,   0x2f, 0x7,  0x6,  0x2,  0x2,  0x2f, 0x30,
+      0x7,  0x4,    0x2,    0x2,    0x30,   0x31,   0x7,    0x7,    0x2,    0x2,  0x31, 0x32, 0x7,  0x4,  0x2,  0x2,
+      0x32, 0x33,   0x7,    0x19,   0x2,    0x2,    0x33,   0x34,   0x7,    0x8,  0x2,  0x2,  0x34, 0x35, 0x7,  0x4,
+      0x2,  0x2,    0x35,   0x36,   0x7,    0x9,    0x2,    0x2,    0x36,   0x37, 0x7,  0x1a, 0x2,  0x2,  0x37, 0x38,
+      0x7,  0xa,    0x2,    0x2,    0x38,   0x39,   0x7,    0x1a,   0x2,    0x2,  0x39, 0x3b, 0x7,  0xb,  0x2,  0x2,
+      0x3a, 0x3c,   0x5,    0x8,    0x5,    0x2,    0x3b,   0x3a,   0x3,    0x2,  0x2,  0x2,  0x3c, 0x3d, 0x3,  0x2,
+      0x2,  0x2,    0x3d,   0x3b,   0x3,    0x2,    0x2,    0x2,    0x3d,   0x3e, 0x3,  0x2,  0x2,  0x2,  0x3e, 0x7,
+      0x3,  0x2,    0x2,    0x2,    0x3f,   0x40,   0x7,    0x19,   0x2,    0x2,  0x40, 0x41, 0x7,  0x4,  0x2,  0x2,
+      0x41, 0x42,   0x5,    0xa,    0x6,    0x2,    0x42,   0x9,    0x3,    0x2,  0x2,  0x2,  0x43, 0x44, 0x7,  0x1b,
+      0x2,  0x2,    0x44,   0x45,   0x7,    0x9,    0x2,    0x2,    0x45,   0x4a, 0x7,  0x1a, 0x2,  0x2,  0x46, 0x47,
+      0x7,  0xa,    0x2,    0x2,    0x47,   0x49,   0x7,    0x1a,   0x2,    0x2,  0x48, 0x46, 0x3,  0x2,  0x2,  0x2,
+      0x49, 0x4c,   0x3,    0x2,    0x2,    0x2,    0x4a,   0x48,   0x3,    0x2,  0x2,  0x2,  0x4a, 0x4b, 0x3,  0x2,
+      0x2,  0x2,    0x4b,   0x4d,   0x3,    0x2,    0x2,    0x2,    0x4c,   0x4a, 0x3,  0x2,  0x2,  0x2,  0x4d, 0x4e,
+      0x7,  0xb,    0x2,    0x2,    0x4e,   0xb,    0x3,    0x2,    0x2,    0x2,  0x4f, 0x50, 0x7,  0xc,  0x2,  0x2,
+      0x50, 0x51,   0x5,    0xe,    0x8,    0x2,    0x51,   0x52,   0x7,    0xd,  0x2,  0x2,  0x52, 0x53, 0x5,  0xe,
+      0x8,  0x2,    0x53,   0xd,    0x3,    0x2,    0x2,    0x2,    0x54,   0x55, 0x8,  0x8,  0x1,  0x2,  0x55, 0x56,
+      0x7,  0x9,    0x2,    0x2,    0x56,   0x57,   0x5,    0xe,    0x8,    0x2,  0x57, 0x58, 0x7,  0xb,  0x2,  0x2,
+      0x58, 0x5f,   0x3,    0x2,    0x2,    0x2,    0x59,   0x5a,   0x7,    0x10, 0x2,  0x2,  0x5a, 0x5f, 0x5,  0xe,
+      0x8,  0x4,    0x5b,   0x5c,   0x7,    0x19,   0x2,    0x2,    0x5c,   0x5d, 0x7,  0x11, 0x2,  0x2,  0x5d, 0x5f,
+      0x7,  0x19,   0x2,    0x2,    0x5e,   0x54,   0x3,    0x2,    0x2,    0x2,  0x5e, 0x59, 0x3,  0x2,  0x2,  0x2,
+      0x5e, 0x5b,   0x3,    0x2,    0x2,    0x2,    0x5f,   0x68,   0x3,    0x2,  0x2,  0x2,  0x60, 0x61, 0xc,  0x6,
+      0x2,  0x2,    0x61,   0x62,   0x7,    0xe,    0x2,    0x2,    0x62,   0x67, 0x5,  0xe,  0x8,  0x7,  0x63, 0x64,
+      0xc,  0x5,    0x2,    0x2,    0x64,   0x65,   0x7,    0xf,    0x2,    0x2,  0x65, 0x67, 0x5,  0xe,  0x8,  0x6,
+      0x66, 0x60,   0x3,    0x2,    0x2,    0x2,    0x66,   0x63,   0x3,    0x2,  0x2,  0x2,  0x67, 0x6a, 0x3,  0x2,
+      0x2,  0x2,    0x68,   0x66,   0x3,    0x2,    0x2,    0x2,    0x68,   0x69, 0x3,  0x2,  0x2,  0x2,  0x69, 0xf,
+      0x3,  0x2,    0x2,    0x2,    0x6a,   0x68,   0x3,    0x2,    0x2,    0x2,  0x6b, 0x6c, 0x7,  0x12, 0x2,  0x2,
+      0x6c, 0x6e,   0x7,    0x4,    0x2,    0x2,    0x6d,   0x6f,   0x5,    0x12, 0xa,  0x2,  0x6e, 0x6d, 0x3,  0x2,
+      0x2,  0x2,    0x6f,   0x70,   0x3,    0x2,    0x2,    0x2,    0x70,   0x6e, 0x3,  0x2,  0x2,  0x2,  0x70, 0x71,
+      0x3,  0x2,    0x2,    0x2,    0x71,   0x11,   0x3,    0x2,    0x2,    0x2,  0x72, 0x73, 0x7,  0x19, 0x2,  0x2,
+      0x73, 0x75,   0x7,    0x4,    0x2,    0x2,    0x74,   0x76,   0x5,    0x14, 0xb,  0x2,  0x75, 0x74, 0x3,  0x2,
+      0x2,  0x2,    0x76,   0x77,   0x3,    0x2,    0x2,    0x2,    0x77,   0x75, 0x3,  0x2,  0x2,  0x2,  0x77, 0x78,
+      0x3,  0x2,    0x2,    0x2,    0x78,   0x13,   0x3,    0x2,    0x2,    0x2,  0x79, 0x7a, 0x7,  0x1a, 0x2,  0x2,
+      0x7a, 0x7b,   0x7,    0x13,   0x2,    0x2,    0x7b,   0x80,   0x5,    0x16, 0xc,  0x2,  0x7c, 0x7d, 0x7,  0xa,
+      0x2,  0x2,    0x7d,   0x7f,   0x5,    0x16,   0xc,    0x2,    0x7e,   0x7c, 0x3,  0x2,  0x2,  0x2,  0x7f, 0x82,
+      0x3,  0x2,    0x2,    0x2,    0x80,   0x7e,   0x3,    0x2,    0x2,    0x2,  0x80, 0x81, 0x3,  0x2,  0x2,  0x2,
+      0x81, 0x15,   0x3,    0x2,    0x2,    0x2,    0x82,   0x80,   0x3,    0x2,  0x2,  0x2,  0x83, 0x84, 0x7,  0x14,
+      0x2,  0x2,    0x84,   0x85,   0x7,    0x1b,   0x2,    0x2,    0x85,   0x86, 0x7,  0x15, 0x2,  0x2,  0x86, 0x87,
+      0x7,  0x19,   0x2,    0x2,    0x87,   0x8e,   0x3,    0x2,    0x2,    0x2,  0x88, 0x89, 0x7,  0xa,  0x2,  0x2,
+      0x89, 0x8a,   0x7,    0x1b,   0x2,    0x2,    0x8a,   0x8b,   0x7,    0x15, 0x2,  0x2,  0x8b, 0x8d, 0x7,  0x19,
+      0x2,  0x2,    0x8c,   0x88,   0x3,    0x2,    0x2,    0x2,    0x8d,   0x90, 0x3,  0x2,  0x2,  0x2,  0x8e, 0x8c,
+      0x3,  0x2,    0x2,    0x2,    0x8e,   0x8f,   0x3,    0x2,    0x2,    0x2,  0x8f, 0x91, 0x3,  0x2,  0x2,  0x2,
+      0x90, 0x8e,   0x3,    0x2,    0x2,    0x2,    0x91,   0x92,   0x7,    0x16, 0x2,  0x2,  0x92, 0x17, 0x3,  0x2,
+      0x2,  0x2,    0xd,    0x1c,   0x23,   0x3d,   0x4a,   0x5e,   0x66,   0x68, 0x70, 0x77, 0x80, 0x8e,
   };
 
   atn::ATNDeserializer deserializer;

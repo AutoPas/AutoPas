@@ -11,10 +11,12 @@
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySet.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
-#include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageVisitor.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageBaseVisitor.h"
+#include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramParser.h"
 
 using namespace autopas_generated_fuzzy_rule_syntax;
 using namespace autopas::fuzzy_logic;
+using namespace autopas::rule_syntax;
 
 /**
  * This class implements a visitor for the fuzzy rule parser.
@@ -27,6 +29,11 @@ class TranslationVisitor : public FuzzyLanguageVisitor {
    * Visit parse trees produced by FuzzyLanguageParser.
    */
   antlrcpp::Any visitRule_file(FuzzyLanguageParser::Rule_fileContext *context) override;
+
+  /**
+   * Visit a parse tree produced by FuzzyLanguageParser::System_definitionsContext and create a FuzzyControlSystem.
+   */
+  antlrcpp::Any visitSettings(FuzzyLanguageParser::SettingsContext *ctx) override;
 
   /**
    * Visit a parse tree produced by FuzzyLanguageParser::Linguistic_variableContext and create a LinguisticVariable.
@@ -77,6 +84,28 @@ class TranslationVisitor : public FuzzyLanguageVisitor {
    * NOT operator of the fuzzy set.
    */
   antlrcpp::Any visitNegate(FuzzyLanguageParser::NegateContext *context) override;
+
+  /**
+   * Visit a configuration mapping produced by FuzzyLanguageParser::Configuration_mappingContext and create a
+   * configuration mapping.
+   */
+  antlrcpp::Any visitOutput_mapping(FuzzyLanguageParser::Output_mappingContext *context) override;
+
+  /**
+   * Visit a configuration entry produced by FuzzyLanguageParser::Configuration_entryContext and create a
+   * configuration entry.
+   */
+  antlrcpp::Any visitOutput_entry(FuzzyLanguageParser::Output_entryContext *context) override;
+  /**
+   * Visit a pattern mapping produced by FuzzyLanguageParser::Pattern_mappingContext and create a
+   * pattern mapping.
+   */
+  antlrcpp::Any visitPattern_mapping(FuzzyLanguageParser::Pattern_mappingContext *context) override;
+
+  /**
+   * Visit an assignment produced by FuzzyLanguageParser::AssignmentContext and create an assignment.
+   */
+  antlrcpp::Any visitConfiguration_pattern(FuzzyLanguageParser::Configuration_patternContext *context) override;
 
  private:
   /**

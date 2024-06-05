@@ -6,7 +6,11 @@
 grammar FuzzyLanguage;
 
 // Rule File
-rule_file           : linguistic_variable* fuzzy_rule* EOF
+rule_file           : settings linguistic_variable* output_mapping fuzzy_rule* EOF
+                    ;
+
+settings            : 'FuzzySystemSettings' ':'
+                    'defuzzificationMethod' ':' defuzzificationMethod=STRING
                     ;
 
 // Fuzzy Variable
@@ -34,6 +38,24 @@ fuzzy_set
                     | fuzzy_set '||' fuzzy_set # Or
                     | '!' fuzzy_set # Negate
                     | STRING '==' STRING # Select
+                    ;
+
+// Output Mapping
+
+output_mapping
+                    : 'OutputMapping' ':' output_entry+
+                    ;
+
+output_entry
+                    : STRING ':' pattern_mapping+
+                    ;
+
+pattern_mapping
+                    : NUMBER '=>' configuration_pattern (',' configuration_pattern)*
+                    ;
+
+configuration_pattern
+                    : '[' (IDENTIFIER '=' STRING) (',' IDENTIFIER '=' STRING)* ']'
                     ;
 
 // Lexer

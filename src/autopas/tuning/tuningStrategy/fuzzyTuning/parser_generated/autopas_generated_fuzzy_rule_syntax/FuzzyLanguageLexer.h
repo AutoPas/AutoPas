@@ -25,11 +25,18 @@ class FuzzyLanguageLexer : public antlr4::Lexer {
     T__10 = 11,
     T__11 = 12,
     T__12 = 13,
-    WS = 14,
-    COMMENT = 15,
-    STRING = 16,
-    NUMBER = 17,
-    IDENTIFIER = 18
+    T__13 = 14,
+    T__14 = 15,
+    T__15 = 16,
+    T__16 = 17,
+    T__17 = 18,
+    T__18 = 19,
+    T__19 = 20,
+    WS = 21,
+    COMMENT = 22,
+    STRING = 23,
+    NUMBER = 24,
+    IDENTIFIER = 25
   };
 
   explicit FuzzyLanguageLexer(antlr4::CharStream *input);

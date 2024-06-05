@@ -7,10 +7,13 @@
 #include "FuzzyControlSystem.h"
 
 #include <numeric>
+#include <utility>
 
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::fuzzy_logic {
+
+FuzzyControlSystem::FuzzyControlSystem(FuzzyControlSettings settings) : _settings(std::move(settings)) {}
 
 void FuzzyControlSystem::addRule(const FuzzyRule &rule) {
   auto dimensions = rule.getConsequent()->getCrispSet()->getDimensions();
@@ -18,6 +21,14 @@ void FuzzyControlSystem::addRule(const FuzzyRule &rule) {
     autopas::utils::ExceptionHandler::exception("The consequent of a rule must be a one-dimensional fuzzy set");
   }
   auto [dimensionName, _] = *dimensions.begin();
+
+  //@todo WTF Both of those cases fail...
+  if (_outputDomain.has_value()) {
+    std::cout << "Output domain: " << _outputDomain.value() << std::endl;
+  }
+  if (_outputDomain->empty()) {
+    std::cout << "Output domain empty" << std::endl;
+  }
 
   if (_outputDomain->empty()) {
     _outputDomain = dimensionName;
@@ -37,7 +48,13 @@ std::shared_ptr<FuzzySet> FuzzyControlSystem::applyRules(const FuzzySet::Data &d
 
 double FuzzyControlSystem::predict(const FuzzySet::Data &data, size_t numSamples) const {
   auto unionSet = applyRules(data);
-  return unionSet->centroid(numSamples);
+
+  if (_settings.defuzzificationMethod == "centroid") {
+    return unionSet->centroid(numSamples);
+  } else {
+    autopas::utils::ExceptionHandler::exception("Unknown defuzzification method: " + _settings.defuzzificationMethod);
+    throw std::runtime_error("Unkown defuzzification method");
+  }
 }
 
 FuzzyControlSystem::operator std::string() const {
