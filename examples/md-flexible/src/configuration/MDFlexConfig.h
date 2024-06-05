@@ -491,6 +491,9 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
 
+  /**
+   * pauseSimulationDuringTuning
+   */
   MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
                                                            "Pauses the update of the simulation during tuning phases."};
   /**
