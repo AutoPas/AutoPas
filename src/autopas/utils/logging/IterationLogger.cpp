@@ -30,11 +30,13 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
       "iteratePairwiseTotal[ns],"
-      "tuning[ns],"
-      "energyPsys[J],"
+      "tuning[ns]"
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+      ",energyPsys[J],"
       "energyPkg[J],"
-      "energyRam[J]",
-      Configuration().getCSVHeader());
+      "energyRam[J]"
+#endif
+      , Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);
   // End of workaround
 
@@ -56,9 +58,16 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             long timeRebuildNeighborLists, long timeIteratePairwiseTotal,
                                             long timeTuning, double energyPsys, double energyPkg, double energyRam) {
 #ifdef AUTOPAS_LOG_ITERATIONS
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
              configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuildNeighborLists,
              timeIteratePairwiseTotal, timeTuning, energyPsys, energyPkg, energyRam);
+#else
+  spdlog::get(_loggerName)
+      ->info("{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
+             configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuildNeighborLists,
+             timeIteratePairwiseTotal, timeTuning);
+#endif
 #endif
 }
