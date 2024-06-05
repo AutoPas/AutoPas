@@ -94,6 +94,16 @@ class Simulation {
   /**
    * Indicator if the previous iteration was used for tuning.
    */
+  bool _currentIterationIsTuningIteration = false;
+
+  /**
+   * Indicator if the simulation is paused due to the PauseDuringTuning option.
+   */
+  bool _simulationIsPaused = false;
+
+  /**
+   * Indicator if the previous iteration was used for tuning.
+   */
   bool _previousIterationWasTuningIteration = false;
 
   /**
@@ -105,17 +115,6 @@ class Simulation {
    * Homogeneity of the scenario, calculated by the standard deviation of the density.
    */
   double _homogeneity = 0;
-
-  /**
-   * The original deltaT used for the simulation. Supplied by the --yaml-filename argument.
-   */
-  double _originalDeltaT = 0;
-
-  /**
-   * The previous particle forces before the simulation was paused. This is needed to restore the correct state of the
-   * simulation after resuming, as the forces still accumulate during the pause.
-   */
-  std::vector<std::array<double, 3>> _particleForcesBeforePause;
 
   /**
    * Struct containing all timers used for the simulation.
@@ -307,6 +306,11 @@ class Simulation {
    * @return the accumulated time of all ranks.
    */
   [[nodiscard]] static long accumulateTime(const long &time);
+
+  /**
+   * Handles the pausing of the simulation and updates the _simulationIsPaused flag.
+   */
+  void updateSimulationPauseState();
 
   /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
