@@ -40,6 +40,6 @@ void autopas::SlowConfigFilter::reset(size_t /*iteration*/, size_t /*tuningPhase
   optimizeSuggestions(configQueue, evidenceCollection);
 }
 
-autopas::TuningStrategyOption autopas::SlowConfigFilter::getOptionType() {
+autopas::TuningStrategyOption autopas::SlowConfigFilter::getOptionType() const {
   return TuningStrategyOption::slowConfigFilter;
 }

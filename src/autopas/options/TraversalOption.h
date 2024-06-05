@@ -34,8 +34,8 @@ class TraversalOption : public Option<TraversalOption> {
      */
     lc_c01,
     /**
-     * LCC01Traversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain is traversed
-     * line-wise.
+     * LCC01CombinedSoATraversal : Same as LCC01Traversal but SoAs are combined into a circular buffer and the domain
+     * is traversed line-wise.
      */
     lc_c01_combined_SoA,
     /**
@@ -100,7 +100,8 @@ class TraversalOption : public Option<TraversalOption> {
      */
     vcl_c06,
     /**
-     * VCLClusterIterationTraversal : Schedule ClusterTower to threads.
+     * VCLClusterIterationTraversal : Dynamically schedule ClusterTower to threads.
+     * Does not support Newton3.
      */
     vcl_cluster_iteration,
     /**
@@ -152,31 +153,31 @@ class TraversalOption : public Option<TraversalOption> {
 
     // PairwiseVerletLists Traversals - same traversals as VLC but with a new name for the pairwise container
     /**
-     * VLCC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
+     * VLPC01Traversal : Equivalent to LCC01Traversal. Schedules all neighbor lists of one cell at once.
      * Does not support Newton3.
      */
     vlp_c01,
     /**
-     * VLCC18Traversal : Equivalent to LCC18Traversal. Neighbor lists contain only forward neighbors.
+     * VLPC18Traversal : Equivalent to LCC18Traversal. Neighbor lists contain only forward neighbors.
      */
     vlp_c18,
     /**
-     * VLCSlicedTraversal : Equivalent to LCSlicedTraversal.
+     * VLPSlicedTraversal : Equivalent to LCSlicedTraversal.
      */
     vlp_sliced,
     /**
-     * VLCSlicedBalancedTraversal : Equivalent to LCSlicedBalancedTraversal.
+     * VLPSlicedBalancedTraversal : Equivalent to LCSlicedBalancedTraversal.
      * Tries to balance slice thickness according to a given LoadEstimatorOption.
      */
     vlp_sliced_balanced,
     /**
-     * VLCSlicedC02Traversal : Equivalent to LCSlicedC02Traversal.
+     * VLPSlicedC02Traversal : Equivalent to LCSlicedC02Traversal.
      * 1D slicing with as many slices of minimal thickness as possible. No locks but two-way coloring of slices.
      */
     vlp_sliced_c02,
 
     /**
-     * VLCCellPairC08Traversal : based on LCC08Traversal.
+     * VLPCellPairC08Traversal : based on LCC08Traversal.
      * The pairwise neighbor list allows access to the relevant pairs of interacting particles for each pair of cells,
      * including the diagonal non-base pair of cells in the standard c08 step.
      */

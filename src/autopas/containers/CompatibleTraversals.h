@@ -16,11 +16,30 @@
 namespace autopas::compatibleTraversals {
 
 /**
+ * Anonymous namespace for internal helper functions.
+ */
+namespace {
+/**
+ * Helper function to filter all traversal options for a given prefix.
+ * @param prefix
+ * @return Set of all options that match the prefix.
+ */
+std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
+  const auto allOpts = TraversalOption::getAllOptions();
+  std::set<TraversalOption> retSet;
+  // If the lambda condition holds (=prefix matches) copy the option in the return set.
+  std::copy_if(allOpts.begin(), allOpts.end(), std::inserter(retSet, retSet.begin()),
+               [&](const auto &option) { return option.to_string().substr(0, prefix.length()) == prefix; });
+  return retSet;
+}
+}  // namespace
+
+/**
  * Lists all traversal options applicable for the Direct Sum container.
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allDSCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::ds_sequential};
+  static const auto s = filterAllOptions("ds_");
   return s;
 }
 
@@ -29,18 +48,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allLCCompatibleTraversals() {
-  static const std::set<TraversalOption> s{
-      TraversalOption::lc_c01,
-      TraversalOption::lc_c08,
-      TraversalOption::lc_c18,
-      TraversalOption::lc_sliced,
-      TraversalOption::lc_sliced_balanced,
-      TraversalOption::lc_c01_combined_SoA,
-      TraversalOption::lc_c04,
-      TraversalOption::lc_c04_combined_SoA,
-      TraversalOption::lc_c04_HCP,
-      TraversalOption::lc_sliced_c02,
-  };
+  static const auto s = filterAllOptions("lc_");
   return s;
 }
 
@@ -58,9 +66,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVCLCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vcl_cluster_iteration, TraversalOption::vcl_c06,
-                                           TraversalOption::vcl_c01_balanced,      TraversalOption::vcl_sliced,
-                                           TraversalOption::vcl_sliced_balanced,   TraversalOption::vcl_sliced_c02};
+  static const auto s = filterAllOptions("vcl_");
   return s;
 }
 
@@ -69,7 +75,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVLCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vl_list_iteration};
+  static const auto s = filterAllOptions("vl_");
   return s;
 }
 
@@ -78,9 +84,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVLCCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vlc_sliced, TraversalOption::vlc_c18,
-                                           TraversalOption::vlc_c01, TraversalOption::vlc_sliced_c02,
-                                           TraversalOption::vlc_sliced_balanced};
+  static const auto s = filterAllOptions("vlc_");
   return s;
 }
 
@@ -89,7 +93,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVarVLAsBuildCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vvl_as_built};
+  static const auto s = filterAllOptions("vvl_");
   return s;
 }
 
@@ -98,12 +102,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allVLPCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::vlp_sliced,
-                                           TraversalOption::vlp_c18,
-                                           TraversalOption::vlp_c01,
-                                           TraversalOption::vlp_sliced_c02,
-                                           TraversalOption::vlp_sliced_balanced,
-                                           TraversalOption::vlp_c08};
+  static const auto s = filterAllOptions("vlp_");
   return s;
 }
 
@@ -112,7 +111,7 @@ namespace autopas::compatibleTraversals {
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allOTCompatibleTraversals() {
-  static const std::set<TraversalOption> s{TraversalOption::ot_c18, TraversalOption::ot_c01};
+  static const auto s = filterAllOptions("ot_");
   return s;
 }
 
