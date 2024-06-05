@@ -6,6 +6,7 @@
 
 #include "TranslationVisitor.h"
 
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/OutputMapper.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramTree.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -14,7 +15,7 @@ using namespace autopas;
 
 antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileContext *context) {
   std::vector<std::shared_ptr<LinguisticVariable>> linguisticVariables;
-  std::map<std::string, std::vector<std::pair<double, std::vector<ConfigurationPattern>>>> outputMapping;
+  std::map<std::string, std::shared_ptr<OutputMapper>> outputMapping;
   std::vector<FuzzyRule> fuzzyRules;
 
   // get the settings
@@ -29,8 +30,7 @@ antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileC
   }
 
   // get the configuration mappings
-  outputMapping = visit(context->output_mapping())
-                      .as<std::map<std::string, std::vector<std::pair<double, std::vector<ConfigurationPattern>>>>>();
+  outputMapping = visit(context->output_mapping()).as<std::map<std::string, std::shared_ptr<OutputMapper>>>();
 
   // get the fuzzy rules
   for (auto *fuzzy_ruleContext : context->fuzzy_rule()) {
@@ -56,7 +56,7 @@ antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileC
     fuzzyControlSystems[output_domain]->addRule(rule);
   }
 
-  return std::make_pair(linguisticVariables, fuzzyControlSystems);
+  return std::make_tuple(linguisticVariables, outputMapping, fuzzyControlSystems);
 };
 
 antlrcpp::Any TranslationVisitor::visitSettings(FuzzyLanguageParser::SettingsContext *ctx) {
@@ -146,30 +146,28 @@ antlrcpp::Any TranslationVisitor::visitNegate(FuzzyLanguageParser::NegateContext
 };
 
 antlrcpp::Any TranslationVisitor::visitOutput_mapping(FuzzyLanguageParser::Output_mappingContext *context) {
-  std::map<std::string, std::vector<std::pair<double, std::vector<ConfigurationPattern>>>> configurationMappings;
+  std::map<std::string, std::shared_ptr<OutputMapper>> outputMappings;
 
   for (size_t i = 0; i < context->output_entry().size(); ++i) {
-    auto configurationEntry =
-        visit(context->output_entry(i))
-            .as<std::pair<std::string, std::vector<std::pair<double, std::vector<ConfigurationPattern>>>>>();
+    auto mapping = visit(context->output_entry(i)).as<std::shared_ptr<OutputMapper>>();
 
-    configurationMappings[configurationEntry.first] = configurationEntry.second;
+    outputMappings[mapping->getOutputDomain()] = mapping;
   }
 
-  return configurationMappings;
+  return outputMappings;
 }
+
 antlrcpp::Any TranslationVisitor::visitOutput_entry(FuzzyLanguageParser::Output_entryContext *context) {
   auto pattern = context->STRING()->getText();
 
-  std::vector<std::pair<double, std::vector<ConfigurationPattern>>> mapping;
+  std::vector<std::pair<double, std::vector<ConfigurationPattern>>> mappings;
 
   for (size_t i = 0; i < context->pattern_mapping().size(); ++i) {
-    auto *val = context->pattern_mapping(i);
-    auto patternMapping = visit(val).as<std::pair<double, std::vector<ConfigurationPattern>>>();
-    mapping.push_back(patternMapping);
+    auto mapping = visit(context->pattern_mapping(i)).as<std::pair<double, std::vector<ConfigurationPattern>>>();
+    mappings.push_back(mapping);
   }
 
-  return std::make_pair(pattern, mapping);
+  return std::make_shared<OutputMapper>(pattern, mappings);
 }
 antlrcpp::Any TranslationVisitor::visitPattern_mapping(FuzzyLanguageParser::Pattern_mappingContext *context) {
   double value = std::stod(context->NUMBER()->getText());

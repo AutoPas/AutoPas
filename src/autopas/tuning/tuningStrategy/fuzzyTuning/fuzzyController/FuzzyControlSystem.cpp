@@ -22,15 +22,7 @@ void FuzzyControlSystem::addRule(const FuzzyRule &rule) {
   }
   auto [dimensionName, _] = *dimensions.begin();
 
-  //@todo WTF Both of those cases fail...
-  if (_outputDomain.has_value()) {
-    std::cout << "Output domain: " << _outputDomain.value() << std::endl;
-  }
-  if (_outputDomain->empty()) {
-    std::cout << "Output domain empty" << std::endl;
-  }
-
-  if (_outputDomain->empty()) {
+  if (not _outputDomain.has_value()) {
     _outputDomain = dimensionName;
   } else if (_outputDomain.value() != dimensionName) {
     autopas::utils::ExceptionHandler::exception("All consequents of the FuzzyControlSystem must have the same domain");

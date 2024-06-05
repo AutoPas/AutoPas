@@ -10,6 +10,8 @@
 #include <memory>
 #include <string>
 
+#include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramTree.h"
+
 namespace autopas::fuzzy_logic {
 
 /**
@@ -19,9 +21,33 @@ namespace autopas::fuzzy_logic {
 class OutputMapper {
  public:
   /**
-   * Constructs a ConfigurationMapper with empty dimensions.
+   * Constructor of the OutputMapper.
+   * @param outputDomain The domain of the output variable.
+   * @param mappings A vector of pairs of the form {value, configurationPatterns}.
    */
-  OutputMapper() = default;
+  OutputMapper(std::string outputDomain, std::vector<std::pair<double, std::vector<ConfigurationPattern>>> mappings);
+
+  /**
+   * Returns a string representation of the OutputMapping
+   */
+  explicit operator std::string() const;
+
+  /**
+   * Getter for the output domain.
+   * @return The output domain.
+   */
+  [[nodiscard]] const std::string &getOutputDomain();
+
+ private:
+  /**
+   * The name of the domain which should be mapped.
+   */
+  std::string _outputDomain;
+
+  /**
+   * The mappings from the fuzzy output to the configuration patterns.
+   */
+  std::vector<std::pair<double, std::vector<ConfigurationPattern>>> _mappings;
 };
 
 }  // namespace autopas::fuzzy_logic

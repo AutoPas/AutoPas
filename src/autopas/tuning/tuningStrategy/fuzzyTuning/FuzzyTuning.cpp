@@ -12,7 +12,7 @@
 #include <utility>
 
 #include "antlr4-runtime.h"
-#include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyControlSystem.h"
+#include "autopas/tuning/tuningStrategy/fuzzyTuning/OutputMapper.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/FuzzyRuleErrorListener.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/TranslationVisitor.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageLexer.h"
@@ -27,7 +27,7 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
     utils::ExceptionHandler::exception("Rule file {} does not exist!", _fuzzyRuleFileName);
   }
 
-  auto [linguisticVariables, fuzzyControlSystems] = parse(_fuzzyRuleFileName);
+  auto [linguisticVariables, outputMappings, fuzzyControlSystems] = parse(_fuzzyRuleFileName);
 
   // By default, dump the rules for reproducibility reasons.
   std::string linguisticVariablesStr =
@@ -35,6 +35,12 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
                       [](const std::string &acc, const std::shared_ptr<fuzzy_logic::LinguisticVariable> &b) {
                         return acc + std::string(*b);
                       });
+
+  std::string outputMappingsStr = std::accumulate(
+      outputMappings.begin(), outputMappings.end(), std::string("\n"),
+      [](const std::string &acc, const std::pair<const std::string, std::shared_ptr<fuzzy_logic::OutputMapper>> &b) {
+        return acc + std::string(*b.second);
+      });
 
   std::string fuzzyControlSystemsStr =
       std::accumulate(fuzzyControlSystems.begin(), fuzzyControlSystems.end(), std::string("\n"),
@@ -44,6 +50,7 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
                       });
 
   AutoPasLog(INFO, "{}", linguisticVariablesStr);
+  AutoPasLog(INFO, "{}", outputMappingsStr);
   AutoPasLog(INFO, "{}", fuzzyControlSystemsStr);
 
   _fuzzyControlSystems = fuzzyControlSystems;
@@ -90,7 +97,8 @@ void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
 
 TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
 
-std::pair<std::vector<std::shared_ptr<LinguisticVariable>>, std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
+std::tuple<std::vector<std::shared_ptr<LinguisticVariable>>, std::map<std::string, std::shared_ptr<OutputMapper>>,
+           std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
 FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
   using namespace antlr4;
   using namespace autopas::fuzzy_logic;
@@ -117,10 +125,10 @@ FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
 
     // Translation
     TranslationVisitor visitor;
-    auto fuzzy_rule_program =
-        visitor.visit(tree)
-            .as<std::pair<std::vector<std::shared_ptr<LinguisticVariable>>,
-                          std::map<std::string, std::shared_ptr<fuzzy_logic::FuzzyControlSystem>>>>();
+    auto fuzzy_rule_program = visitor.visit(tree)
+                                  .as<std::tuple<std::vector<std::shared_ptr<LinguisticVariable>>,
+                                                 std::map<std::string, std::shared_ptr<OutputMapper>>,
+                                                 std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>>();
 
     return fuzzy_rule_program;
   } catch (const std::exception &e) {

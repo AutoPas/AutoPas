@@ -8,6 +8,7 @@
 
 #include <string>
 
+#include "OutputMapper.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyControlSystem.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
@@ -39,10 +40,11 @@ class FuzzyTuning : public TuningStrategyInterface {
   /**
    * Parses the given fuzzy rule file and returns a map of the form {consequent_domain: FuzzyControlSystem}.
    * @param fuzzyRuleFilename The name of the fuzzy rule file.
-   * @return A map of the form {consequent_domain: FuzzyControlSystem}.
+   * @return A tuple containing the linguistic variables, the output mappings and the fuzzy control systems.
    */
-  [[nodiscard]] static std::pair<std::vector<std::shared_ptr<LinguisticVariable>>,
-                                 std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
+  [[nodiscard]] static std::tuple<std::vector<std::shared_ptr<LinguisticVariable>>,
+                                  std::map<std::string, std::shared_ptr<OutputMapper>>,
+                                  std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
   parse(const std::string &fuzzyRuleFilename);
 
   /**
