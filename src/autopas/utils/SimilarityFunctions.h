@@ -50,10 +50,13 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   const auto domainVolume = domainDimensions[0] * domainDimensions[1] * domainDimensions[2];
 
   // We scale the dimensions of the domain to bins with volumes which give approximately 10 particles per bin.
-  const auto numberOfBins = std::ceil(numberOfParticles / 10.);
+  const auto targetNumberOfBins = std::ceil(numberOfParticles / 10.);
+  const auto targetNumberOfBinsPerDim = std::cbrt((double)targetNumberOfBins);
+  // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
+  const auto numberOfBinsPerDim = static_cast<int>(std::floor(targetNumberOfBinsPerDim));
+  const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
   const auto binVolume = domainVolume / (double)numberOfBins;
-  const auto scalingFactor = binVolume / domainVolume;
-  const auto binDimensions = domainDimensions * scalingFactor;
+  const auto binDimensions = domainDimensions / (double)numberOfBinsPerDim;
 
 
   // Calculate the actual number of bins per dimension. The rounding is needed in case the division slightly
