@@ -412,27 +412,27 @@ class LogicHandler {
   template <class Iterator>
   typename Iterator::ParticleVecType gatherAdditionalVectors(IteratorBehavior behavior) {
     typename Iterator::ParticleVecType additionalVectors;
-    // if (!(behavior & IteratorBehavior::containerOnly)) {
-    additionalVectors.reserve(static_cast<bool>(behavior & IteratorBehavior::owned) * _particleBuffer.size() +
-                              static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
-    if (behavior & IteratorBehavior::owned) {
-      for (auto &buffer : _particleBuffer) {
-        // Don't insert empty buffers. This also means that we won't pick up particles added during iterating if they
-        // go to the buffers. But since we wouldn't pick them up if they go into the container to a cell that the
-        // iterators already passed this is unsupported anyways.
-        if (not buffer.isEmpty()) {
-          additionalVectors.push_back(&(buffer._particles));
+    if (!(behavior & IteratorBehavior::containerOnly)) {
+      additionalVectors.reserve(static_cast<bool>(behavior & IteratorBehavior::owned) * _particleBuffer.size() +
+                                static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
+      if (behavior & IteratorBehavior::owned) {
+        for (auto &buffer : _particleBuffer) {
+          // Don't insert empty buffers. This also means that we won't pick up particles added during iterating if they
+          // go to the buffers. But since we wouldn't pick them up if they go into the container to a cell that the
+          // iterators already passed this is unsupported anyways.
+          if (not buffer.isEmpty()) {
+            additionalVectors.push_back(&(buffer._particles));
+          }
+        }
+      }
+      if (behavior & IteratorBehavior::halo) {
+        for (auto &buffer : _haloParticleBuffer) {
+          if (not buffer.isEmpty()) {
+            additionalVectors.push_back(&(buffer._particles));
+          }
         }
       }
     }
-    if (behavior & IteratorBehavior::halo) {
-      for (auto &buffer : _haloParticleBuffer) {
-        if (not buffer.isEmpty()) {
-          additionalVectors.push_back(&(buffer._particles));
-        }
-      }
-    }
-    //}
     return additionalVectors;
   }
 
@@ -873,7 +873,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
-  for (auto iter = this->begin(IteratorBehavior::owned /*| IteratorBehavior::containerOnly*/); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 

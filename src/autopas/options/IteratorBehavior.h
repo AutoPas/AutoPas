@@ -55,7 +55,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
     /**
      * Forced the iterator to iterate over Container only
      */
-    // containerOnly = 0b10000,
+    containerOnly = 0b10000,
   };
 
   // sanity checks
