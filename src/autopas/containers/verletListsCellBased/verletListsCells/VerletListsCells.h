@@ -137,7 +137,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
         1.3);
 
     // Reset lists. Don't free any memory, only mark as unused.
-    _neighborList.setLinkedCells(&this->_linkedCells);
+    _neighborList.setLinkedCellsPointer(&this->_linkedCells);
     for (auto &cellLists : neighborLists) {
       for (auto &[particlePtr, neighbors] : cellLists) {
         particlePtr = nullptr;

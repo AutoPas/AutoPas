@@ -112,7 +112,7 @@ class VLCNeighborListInterface {
    * Set the Linked Cells Pointer for this List.
    * @param linkedCells
    */
-  void setLinkedCells(LinkedCells<Particle> *linkedCells) { this->_internalLinkedCells = linkedCells; }
+  void setLinkedCellsPointer(LinkedCells<Particle> *linkedCells) { this->_internalLinkedCells = linkedCells; }
 
  protected:
   /**
