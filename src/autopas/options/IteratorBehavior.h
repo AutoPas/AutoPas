@@ -53,7 +53,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
      */
     forceSequential = 0b01000,
     /**
-     * Forced the iterator to iterate over Container only
+     * Force the iterator to iterate over Container only
      */
     containerOnly = 0b10000,
   };
@@ -65,6 +65,9 @@ class IteratorBehavior : public Option<IteratorBehavior> {
                 "Iterator behaviors are defined with non matching values!");
   // forceSequential must not overlap with anything else
   static_assert((ownedOrHaloOrDummy & forceSequential) == 0,
+                "Iterator behaviors are defined with non matching values!");
+  // containerOnly must not overlap with anything else
+  static_assert(((ownedOrHaloOrDummy | forceSequential) & containerOnly) == 0,
                 "Iterator behaviors are defined with non matching values!");
 
   /**
@@ -99,10 +102,10 @@ class IteratorBehavior : public Option<IteratorBehavior> {
    * @return
    */
   static std::set<IteratorBehavior> getDiscouragedOptions() {
-    return {IteratorBehavior::dummy, IteratorBehavior::ownedOrHaloOrDummy, IteratorBehavior::forceSequential};
+    return {IteratorBehavior::dummy, IteratorBehavior::ownedOrHaloOrDummy, IteratorBehavior::forceSequential, IteratorBehavior::containerOnly};
   }
 
-  /**
+    /**
    * Provides a way to iterate over the possible choices of AcquisitionFunction.
    * @return map option -> string representation
    */
@@ -111,7 +114,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
         {IteratorBehavior::owned, "owned"},
         {IteratorBehavior::halo, "halo"},
         {IteratorBehavior::ownedOrHalo, "ownedOrHalo"},
-        //  {IteratorBehavior::containerOnly, "containerOnly"},
+        {IteratorBehavior::containerOnly, "containerOnly"},
         {IteratorBehavior::dummy, "dummy"},
         {IteratorBehavior::ownedOrHaloOrDummy, "ownedOrHaloOrDummy"},
         {IteratorBehavior::forceSequential, "forceSequential"},
