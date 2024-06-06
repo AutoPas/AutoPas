@@ -15,10 +15,10 @@
 namespace autopas {
 
 /**
- * This class provides the lc_c08 traversal.
+ * This class provides the vlc_c08 traversal.
  *
  * The traversal uses the c08 base step performed on every single cell. Since
- * these steps overlap a domain coloring with eighteen colors is applied.
+ * these steps overlap a domain coloring with eight colors is applied.
  *
  * For each cell all neighbor lists are processed, so depending on whether lists
  * were built with newton3 the base step is c01 or c08
@@ -32,7 +32,7 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
                         public VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList> {
  public:
   /**
-   * Constructor of the lc_c08 traversal.
+   * Constructor of the vlc_c08 traversal.
    * @param dims The dimensions of the cellblock, i.e. the number of cells in x,
    * y and z direction.
    * @param interactionLength cutoff + skin

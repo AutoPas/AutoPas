@@ -90,7 +90,7 @@ class VLCAllCellsGeneratorFunctor
         // WARNING: This is probably only valid for CSF==1
         const std::array<size_t, 3> cellIndex3DBaseCell = utils::ArrayMath::min(cellIndex3DI, cellIndex3DJ);
         const auto cellIndexBaseCell = utils::ThreeDimensionalMapping::threeToOneD(cellIndex3DBaseCell, _cellsPerDim);
-        // If the first cell is also the base cell insert regularly
+        // If the first cell is also the base cell insert as normal
         if (cellIndexBaseCell == cellIndexI) {
           _neighborLists[cellIndexI][particleIndexI].second.push_back(&j);
         } else {
