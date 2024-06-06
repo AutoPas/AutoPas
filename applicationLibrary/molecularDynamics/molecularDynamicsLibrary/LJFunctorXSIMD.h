@@ -61,7 +61,7 @@ class LJFunctorXSIMD
        }
        initMask();
 
-       AutoPasLog(INFO, "XSIMD Wrapper initialized with a register size of ({}) with architecture {}.", xsimd::batch<double>::size, xsimd::best_arch::name());
+       // AutoPasLog(INFO, "XSIMD Wrapper initialized with a register size of ({}) with architecture {}.", xsimd::batch<double>::size, xsimd::best_arch::name());
 
      }
 
