@@ -29,7 +29,8 @@ std::vector<BaseStepOffsets> buildC08BaseStep(const std::array<int, 3> &cellsPer
   offsets.reserve(14);
   // This is currently guaranteed by the VerletListsCells constructor
   constexpr int interactionCellsPerDim = 1;
-  // Factors for: self, face, edge, corner
+  // We estimate factors for fraction of particles needing a neighbor in the base cell.
+  // Four cases: self (cell interacts with itself), and cells which share a face, edge, or corner with the base cell.
   // The factors are very conservative and express which portion of the cell could possibly have an interaction partner
   // in the other cell. Considerations for each factor are:
   // [0] self: Every particle could find a partner within the cell => 1
