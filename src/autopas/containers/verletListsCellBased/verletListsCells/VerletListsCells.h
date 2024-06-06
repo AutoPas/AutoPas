@@ -172,7 +172,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
         if (iter != neighborList.end()) {
           iter->second.push_back(&p2);
         } else {
-          // If no, create one, reserve space and emplace p2
+          // If no, create one (or reuse an empty pair), reserve space for the list and emplace p2
           if (auto insertLoc = std::find_if(neighborList.begin(), neighborList.end(),
                                             [&](const auto &pair) {
                                               const auto &[particlePtr, list] = pair;
