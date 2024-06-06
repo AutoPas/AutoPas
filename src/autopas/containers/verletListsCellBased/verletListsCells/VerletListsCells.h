@@ -235,10 +235,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
             }
 
             // Go over all particle pairs in the two cells and insert close pairs into their respective lists
-            for (size_t i = 0; i < cells[cellIndex1].size(); ++i) {
-              auto &p1 = cells[cellIndex1][i];
-              for (size_t j = (cellIndex1 == cellIndex2) ? i + 1 : 0; j < cells[cellIndex2].size(); ++j) {
-                auto &p2 = cells[cellIndex2][j];
+            for (size_t particleIndexCell1 = 0; particleIndexCell1 < cells[cellIndex1].size(); ++particleIndexCell1) {
+              auto &p1 = cells[cellIndex1][particleIndexCell1];
+              for (size_t particleIndexCell2 = (cellIndex1 == cellIndex2) ? particleIndexCell1 + 1 : 0;
+                   particleIndexCell2 < cells[cellIndex2].size(); ++particleIndexCell2) {
+                auto &p2 = cells[cellIndex2][particleIndexCell2];
                 // Ignore dummies and self interaction
                 if (&p1 == &p2 or p1.isDummy() or p2.isDummy()) {
                   continue;
@@ -248,10 +249,10 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
                 const auto distVec = p2.getR() - p1.getR();
                 const auto distSquared = utils::ArrayMath::dot(distVec, distVec);
                 if (distSquared < interactionLengthSquared) {
-                  insert(p1, i, p2, cellIndex1, cellIndexBase, baseCellsLists);
+                  insert(p1, particleIndexCell1, p2, cellIndex1, cellIndexBase, baseCellsLists);
                   // If the traversal does not use Newton3 the inverse interaction also needs to be stored in p2's list
                   if (not this->_verletBuiltNewton3) {
-                    insert(p2, j, p1, cellIndex2, cellIndexBase, baseCellsLists);
+                    insert(p2, particleIndexCell2, p1, cellIndex2, cellIndexBase, baseCellsLists);
                   }
                 }
               }
