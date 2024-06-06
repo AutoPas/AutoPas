@@ -29,7 +29,7 @@ std::string autopas::Configuration::getCSVRepresentation(bool returnHeaderOnly) 
                  std::regex("[{, ]+([^:]+):[^,]*")
                               :
                               // match any sequence after a colon and drop any spaces, comma or brackets around it
-                 std::regex(": ([^,]+)(?: ,|})");
+                 std::regex(": ([^,]+)(?: ,|\\})");
   auto searchString = toString();
   std::sregex_iterator matchIter(searchString.begin(), searchString.end(), rgx);
   std::sregex_iterator end;

@@ -128,7 +128,7 @@ class CellFunctor {
    */
   size_t _sortingThreshold{8};
 
-  DataLayoutOption _dataLayout;
+  DataLayoutOption::Value _dataLayout;
 
   bool _useNewton3;
 };
