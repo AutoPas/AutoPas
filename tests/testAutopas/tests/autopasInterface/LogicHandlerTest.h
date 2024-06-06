@@ -15,6 +15,7 @@
 
 class LogicHandlerTest : public AutoPasTestBase {
  public:
-  std::shared_ptr<autopas::LogicHandler<Molecule>> _logicHandler;
+  std::unique_ptr<autopas::LogicHandler<Molecule>> _logicHandler;
+  std::unique_ptr<autopas::AutoTuner> _autoTuner;
   void initLogicHandler();
 };

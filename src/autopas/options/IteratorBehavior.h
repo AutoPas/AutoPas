@@ -31,27 +31,31 @@ class IteratorBehavior : public Option<IteratorBehavior> {
     /**
      * Iterate only over owned particles.
      */
-    owned = 0b0001,
+    owned = 0b00001,
     /**
      * Iterate only over halo particles.
      */
-    halo = 0b0010,
+    halo = 0b00010,
     /**
      * Iterate over both halo and owned particles. Defined fore ease of access.
      */
-    ownedOrHalo = 0b0011,
+    ownedOrHalo = 0b00011,
     /**
      * Iterate only over dummy particles.
      */
-    dummy = 0b0100,
+    dummy = 0b00100,
     /**
      * Iterate over both halo and owned particles and also dummy particles. Defined fore ease of access.
      */
-    ownedOrHaloOrDummy = 0b0111,
+    ownedOrHaloOrDummy = 0b00111,
     /**
      * Force the iterator to behave like a sequential iterator even when created in a parallel region.
      */
-    forceSequential = 0b1000,
+    forceSequential = 0b01000,
+    /**
+     * Forced the iterator to iterate over Container only
+     */
+    // containerOnly = 0b10000,
   };
 
   // sanity checks
@@ -107,6 +111,7 @@ class IteratorBehavior : public Option<IteratorBehavior> {
         {IteratorBehavior::owned, "owned"},
         {IteratorBehavior::halo, "halo"},
         {IteratorBehavior::ownedOrHalo, "ownedOrHalo"},
+        //  {IteratorBehavior::containerOnly, "containerOnly"},
         {IteratorBehavior::dummy, "dummy"},
         {IteratorBehavior::ownedOrHaloOrDummy, "ownedOrHaloOrDummy"},
         {IteratorBehavior::forceSequential, "forceSequential"},

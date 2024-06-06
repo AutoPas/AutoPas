@@ -412,6 +412,7 @@ class LogicHandler {
   template <class Iterator>
   typename Iterator::ParticleVecType gatherAdditionalVectors(IteratorBehavior behavior) {
     typename Iterator::ParticleVecType additionalVectors;
+    // if (!(behavior & IteratorBehavior::containerOnly)) {
     additionalVectors.reserve(static_cast<bool>(behavior & IteratorBehavior::owned) * _particleBuffer.size() +
                               static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
     if (behavior & IteratorBehavior::owned) {
@@ -431,6 +432,7 @@ class LogicHandler {
         }
       }
     }
+    //}
     return additionalVectors;
   }
 
@@ -871,7 +873,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
-  for (auto iter = this->begin(IteratorBehavior::owned); iter.isValid(); ++iter) {
+  for (auto iter = this->begin(IteratorBehavior::owned /*| IteratorBehavior::containerOnly*/); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
