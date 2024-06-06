@@ -6,9 +6,10 @@
 
 #include "autopas/utils/RaplMeter.h"
 
+#include <unistd.h>
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
 #include <linux/perf_event.h>
 #include <sys/syscall.h>
-#include <unistd.h>
 
 #include <cmath>
 #include <cstring>
@@ -16,9 +17,11 @@
 
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/logging/Logger.h"
+#endif
 
 namespace autopas::utils {
 
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
 int RaplMeter::open_perf_event(int type, int config, int cpu) {
   struct perf_event_attr attr;
   memset(&attr, 0, sizeof(attr));
@@ -41,7 +44,21 @@ int RaplMeter::open_perf_event(int type, int config, int cpu) {
   return fd;
 }
 
+long RaplMeter::read_perf_event(int fd) {
+  if (fd == -1) {
+    return 0;
+  }
+  long value;
+  lseek(fd, 0, SEEK_SET);
+  if (read(fd, &value, 8) == -1) {
+    utils::ExceptionHandler::exception("Failed to read perf event:\n\t");
+  }
+  return value;
+}
+#endif
+
 std::string RaplMeter::init() {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   {
     FILE *fd;
     int i = 0;
@@ -156,8 +173,10 @@ std::string RaplMeter::init() {
   } else {
     close(fd);
   }
-
   return std::string();
+#else
+  return "Trying to initialize RAPL but AUTOPAS_ENABLE_ENERGY_MEASUREMENTS is disabled.";
+#endif
 }
 
 RaplMeter::~RaplMeter() {
@@ -183,19 +202,8 @@ RaplMeter::~RaplMeter() {
   }
 }
 
-long RaplMeter::read_perf_event(int fd) {
-  if (fd == -1) {
-    return 0;
-  }
-  long value;
-  lseek(fd, 0, SEEK_SET);
-  if (read(fd, &value, 8) == -1) {
-    utils::ExceptionHandler::exception("Failed to read perf event:\n\t");
-  }
-  return value;
-}
-
 void RaplMeter::reset() {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   for (int f : this->_psys_fd) {
     if (f != -1) {
       close(f);
@@ -236,9 +244,11 @@ void RaplMeter::reset() {
       this->_ram_fd.push_back(open_perf_event(this->_type, this->_ram_config, i));
     }
   }
+#endif
 }
 
 void RaplMeter::sample() {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   this->_psys_raw = 0;
   for (int f : this->_psys_fd) {
     if (f != -1) {
@@ -266,6 +276,7 @@ void RaplMeter::sample() {
       this->_ram_raw += read_perf_event(f);
     }
   }
+#endif
 }
 
 double RaplMeter::get_psys_energy() { return this->_psys_unit * this->_psys_raw; }

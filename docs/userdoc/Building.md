@@ -9,7 +9,7 @@
 Optional:
 * For `tuningLogToSQL`: `libsqlite3`
 * For rule based tuning: `pkg-config`. By default, rule based tuning is disabled but can be enabled via the CMake 
-(see [below](#enable-rule-based-tuning)).
+(see [below](#rule-based-tuning)).
 
 There are a few more dependencies, however you don't need to install them because they come bundled with AutoPas.
 See [libs/](/libs) for a complete list.
@@ -39,6 +39,9 @@ cmake --build . --target md-flexible --parallel 12
 ```
 
 ### Enabling Rule Based Tuning
+<a id="rule-based-tuning"> </a>
+
+
 One of the possible tuning strategies of AutoPas, rule based tuning, requires dependencies `antlr4cpp` and `uuid`. These
 are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors. 
 As such, by default, rule based tuning is disabled, and `antlr4cpp` and `uuid` are not compiled.
@@ -47,6 +50,18 @@ Rule based tuning can be enabled using a CMake option:
 ```bash
 cmake -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON .. 
 ```
+
+### Energy Measurements and Tuning
+
+By default, AutoPas tunes for the best configuration according to runtime. For some systems, it is also possible to tune
+for the algorithm that consumes the least energy. This is implemented via [Intel's RAPL](https://www.intel.com/content/www/us/en/developer/articles/technical/software-security-guidance/advisory-guidance/running-average-power-limit-energy-reporting.html) 
+(Running Average Power Limit) interface.
+
+Energy tuning can be enabled using a CMake option:
+```bash
+cmake -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON .. 
+```
+*Note: Energy measurements are only available for x86 processors running a Linux kernel.*
 
 ### Select a Non-Default Compiler
 If you want to use a different compiler than your system default, change the `CC` and `CXX` environment variables during initial configuration AND building:

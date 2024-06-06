@@ -311,7 +311,9 @@ bool AutoTuner::initEnergy() {
     if (_tuningMetric == TuningMetricOption::energy) {
       utils::ExceptionHandler::exception(errMsg);
     } else {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
       AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", errMsg);
+#endif
       return false;
     }
   }
@@ -435,4 +437,6 @@ bool AutoTuner::inTuningPhase() const {
 }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
+
+bool AutoTuner::getEnergyMeasurementsPossible() const { return _energyMeasurementPossible; }
 }  // namespace autopas
