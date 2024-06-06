@@ -67,6 +67,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     using namespace utils::ArrayMath::literals;
     this->_internalLinkedCells = &linkedCells;
     auto &cells = linkedCells.getCells();
+    const auto cellsPerDim = this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo();
 
     const auto boxSizeWithHalo = this->_internalLinkedCells->getBoxMax() - this->_internalLinkedCells->getBoxMin() +
                                  std::array<double, 3>{interactionLength, interactionLength, interactionLength} * 2.;
@@ -79,6 +80,25 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
 
     // Helper function to estimate the number of neighbor lists for one base step
     const auto estimateNumLists = [&](size_t baseCellIndex) {
+      // If the cell is near the end of any dimension we can reduce the estimate to the particles in the base cell,
+      // because all other cells' interactions would be from halos.
+      const auto cellIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(baseCellIndex, cellsPerDim);
+      const auto numTouchedBoundaries = [&]() {
+        int acc = 0;
+        for (size_t i = 0; i < 3; ++i) {
+          // false == 0 ; true == 1
+          acc += static_cast<int>(cellIndex3D[i] == (cellsPerDim[i] - 1));
+        }
+        return acc;
+      }();
+      if (numTouchedBoundaries > 0) {
+        if (useNewton3) {
+          return cells[baseCellIndex].size();
+        } else {
+          // In this case we have to accommodate the lists for the reverse interactions from all non-halo neighbors.
+          return cells[baseCellIndex].size() * (3 - numTouchedBoundaries);
+        }
+      }
       size_t estimate = 0;
       std::map<int, double> offsetFactors{};
       std::map<int, double> offsetFactorsNoN3{};
@@ -101,22 +121,18 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     _aosNeighborList.clear();
     const size_t numCells = cells.size();
     _aosNeighborList.resize(numCells);
-    const auto cellsPerDim = this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo();
     for (size_t cellIndex = 0; cellIndex < numCells; ++cellIndex) {
-      const auto estimate = [&]() {
+      const auto estimateForNumberOfLists = [&]() {
+        // Usually each cell holds one list per particle, except vlc_c08, which holds all lists of a base step,
+        // which involves also lists from other cells' particles.
         if (vlcTraversalOpt == TraversalOption::vlc_c08) {
-          const auto cellIndex3D = utils::ThreeDimensionalMapping::oneToThreeD(cellIndex, cellsPerDim);
-          if (cellIndex3D[0] == (cellsPerDim[0] - 1) or cellIndex3D[1] == (cellsPerDim[1] - 1) or
-              cellIndex3D[2] == (cellsPerDim[2] - 1)) {
-            return cells[cellIndex].size();
-          } else {
-            return estimateNumLists(cellIndex);
-          }
+          return estimateNumLists(cellIndex);
+        } else {
+          return cells[cellIndex].size();
         }
-        return cells[cellIndex].size();
       }();
       auto &cell = cells[cellIndex];
-      _aosNeighborList[cellIndex].reserve(estimate);
+      _aosNeighborList[cellIndex].reserve(estimateForNumberOfLists);
       size_t particleIndexWithinCell = 0;
       for (auto iter = cell.begin(); iter != cell.end(); ++iter, ++particleIndexWithinCell) {
         Particle *particle = &*iter;
