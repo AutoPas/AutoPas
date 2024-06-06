@@ -423,9 +423,9 @@ class LJFunctorXSIMD
                    shift_buf[i] = _PPLibrary->getMixingShift6(*typeID1ptr, *(typeID2ptr + i));
                }
            }
-           epsilon24s = xsimd::load_aligned(epsilon_buf);
-           sigmaSquares = xsimd::load_aligned(sigma_buf);
-           shift6s = xsimd::load_aligned(shift_buf);
+           epsilon24s = xsimd::load_unaligned(epsilon_buf);
+           sigmaSquares = xsimd::load_unaligned(sigma_buf);
+           shift6s = xsimd::load_unaligned(shift_buf);
        } else {
            epsilon24s = _epsilon24;
            sigmaSquares = _sigmaSquare;
