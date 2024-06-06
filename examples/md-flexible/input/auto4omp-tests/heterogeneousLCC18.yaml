@@ -18,7 +18,7 @@ box-max                              :  [100.5, 100.5, 100.5]
 cell-size                            :  [1]
 deltaT                               :  0 # Try setting to 0.
 sorting-threshold                    :  8
-iterations                           :  100 # Default 10.
+iterations                           :  500 # Default 10.
 boundary-type                        :  [periodic, periodic, periodic]
 subdivide-dimension                  :  [true, true, true]
 load-balancing-interval              :  100
@@ -55,7 +55,7 @@ Objects:
     0:
       distribution-mean              :  [2, 2, 2]
       distribution-stddeviation      :  [2, 2, 2]
-      numberOfParticles              :  1000000
+      numberOfParticles              :  30000
       box-length                     :  [100, 100, 100]
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
@@ -66,10 +66,10 @@ Objects:
 #   deltaTemperature                   :  0.1
 #   thermostatInterval                 :  10
 #   addBrownianMotion                  :  true
-log-level                            :  info
+#log-level                            :  info
 no-flops                             :  false
 no-end-config                        :  false
-no-progress-bar                      :  true
+#no-progress-bar                      :  true
 #vtk-filename                         :  heterogeneousLCC18
 #vtk-output-folder                    :  vtkOutputFolder
 #vtk-write-frequency                  :  1

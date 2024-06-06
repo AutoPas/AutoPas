@@ -53,7 +53,7 @@ Sites:
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension        :  [200, 200, 200]
+      particles-per-dimension        :  [150, 150, 150]
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
@@ -68,10 +68,10 @@ Objects:
 #   deltaTemperature                   :  0.1
 #   thermostatInterval                 :  10
 #   addBrownianMotion                  :  true
-log-level                            :  info
+#log-level                            :  info
 no-flops                             :  false
 no-end-config                        :  false
-no-progress-bar                      :  true
+#no-progress-bar                      :  true
 #vtk-filename                         :  homogeneousVCLClusterIteration
 #vtk-output-folder                    :  vtkOutputFolder
 #vtk-write-frequency                  :  1000

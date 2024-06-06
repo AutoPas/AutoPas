@@ -1,4 +1,4 @@
-# Falling drop modified to use Linked Cells + C04 only, for OpenMP chunk size performance impact investigation.
+# Falling drop modified to use Linked Cells + C01 only, for OpenMP chunk size performance impact investigation.
 
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 ## md-flexible compiled for multi-site molecules.
@@ -8,7 +8,7 @@ verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [SoA] # Use SoA only for OpenMP chunk size investigation.
-traversal                        :  [lc_c04] # Single type. See AllOptions.yaml for a list of possible traversals.
+traversal                        :  [lc_c01] # Single type. See AllOptions.yaml for a list of possible traversals.
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
@@ -56,10 +56,10 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-#vtk-filename                     :  fallingDropLCC04
+#vtk-filename                     :  fallingDropLCC01
 #vtk-write-frequency              :  1000
 #vtk-output-folder                :  vtkOutputFolder
 no-flops                         :  false
 no-end-config                    :  true
-no-progress-bar                  :  true
-log-level                        :  info
+#no-progress-bar                  :  true
+#log-level                        :  info

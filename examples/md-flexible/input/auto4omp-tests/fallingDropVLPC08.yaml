@@ -1,14 +1,14 @@
-# Falling drop modified to use Verlet Cluster Lists + vcl_cluster_iteration, for OpenMP chunk size performance impact investigation.
+# Falling drop modified to use Pairwise Verlet Lists + vlp_c08, for OpenMP chunk size performance impact investigation.
 
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 ## md-flexible compiled for multi-site molecules.
-container                        :  [VerletClusterLists] # Single type. See AllOptions.yaml for a list of possible containers.
+container                        :  [PairwiseVerletLists] # Single type. See AllOptions.yaml for a list of possible containers.
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [SoA] # Use SoA only for OpenMP chunk size investigation.
-traversal                        :  [vcl_cluster_iteration] # Single type. See AllOptions.yaml for a list of possible traversals.
+traversal                        :  [vlp_c08] # Single type. See AllOptions.yaml for a list of possible traversals.
 tuning-strategies                :  []
 tuning-interval                  :  2500
 tuning-samples                   :  3
@@ -56,10 +56,10 @@ Objects:
 #   deltaTemperature               :  0.1
 #   thermostatInterval             :  10
 #   addBrownianMotion              :  false
-#vtk-filename                     :  fallingDropVCLClusterIteration
+#vtk-filename                     :  fallingDropVLPC08
 #vtk-write-frequency              :  1000
 #vtk-output-folder                :  vtkOutputFolder
 no-flops                         :  false
 no-end-config                    :  true
-no-progress-bar                  :  true
-log-level                        :  info
+#no-progress-bar                  :  true
+#log-level                        :  info

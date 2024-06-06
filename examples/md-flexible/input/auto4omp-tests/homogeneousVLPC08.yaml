@@ -1,11 +1,11 @@
-# Homogeneous scenario using Linked Cells + lc_c08 for OpenMP chunk size performance impact investigation.
-container                            :  [LinkedCells] # Choose one single type.
+# Homogeneous scenario using Pairwise Verlet Lists + vlp_c08 for OpenMP chunk size performance impact investigation.
+container                            :  [PairwiseVerletLists] # Choose one single type.
 verlet-rebuild-frequency             :  10
 verlet-skin-radius                   :  0.5
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
 data-layout                          :  [SoA] # Choose one single layout.
-traversal                            :  [lc_c08]  # Choose one single type.
+traversal                            :  [vlp_c08]  # Choose one single type.
 tuning-strategies                    :  []
 tuning-interval                      :  5000
 tuning-samples                       :  3
@@ -53,7 +53,7 @@ Sites:
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension        :  [100, 100, 100]
+      particles-per-dimension        :  [150, 150, 150]
       particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
@@ -68,11 +68,11 @@ Objects:
 #   deltaTemperature                   :  0.1
 #   thermostatInterval                 :  10
 #   addBrownianMotion                  :  true
-log-level                            :  info
+#log-level                            :  info
 no-flops                             :  false
 no-end-config                        :  false
-no-progress-bar                      :  true
-#vtk-filename                         :  homogeneousLCC08Small
+#no-progress-bar                      :  true
+#vtk-filename                         :  homogeneousVLPC08
 #vtk-output-folder                    :  vtkOutputFolder
 #vtk-write-frequency                  :  1000
 #checkpoint                          : AllOptionsSim_10.vtk

@@ -1,16 +1,16 @@
-# Exploding liquid modified to use Linked Cells + C01 only, for OpenMP chunk size performance impact investigation.
+# Exploding Liquid input for Slurm Jobs.
 
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 # md-flexible compiled for multi-site molecules.
-container                        :  [LinkedCells] # Single type. See AllOptions.yaml for a list of possible containers.
-traversal                        :  [lc_c01] # Single type. See AllOptions.yaml for a list of possible traversals.
-data-layout                      :  [SoA] # Use SoA only for OpenMP chunk size investigation.
-newton3                          :  [enabled] # Keep enabled for OpenMP chunk size investigation.
+# container                        :  [LinkedCells, VarVerletListsAsBuild, VerletClusterLists, VerletLists, VerletListsCells, PairwiseVerletLists]
+# traversal                        :  [lc_sliced, lc_sliced_balanced, lc_sliced_c02, lc_c01, lc_c01_combined_SoA, lc_c04, lc_c04_HCP, lc_c04_combined_SoA, lc_c08, lc_c18, vcl_c06, vcl_c01_balanced, vcl_sliced, vcl_sliced_balanced, vcl_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced, vlc_sliced_balanced, vlc_sliced_c02, vvl_as_built, vlp_c01, vlp_c18, vlp_sliced, vlp_sliced_balanced, vlp_sliced_c02]
+# data-layout                      :  [AoS, SoA]
+# newton3                          :  [disabled, enabled]
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.2
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Mean-Value
-tuning-strategies                :  []
+tuning-strategies                :  [predictive-tuning]
 tuning-interval                  :  6000
 tuning-samples                   :  10
 functor                          :  Lennard-Jones-AVX2
@@ -41,8 +41,7 @@ Objects:
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
 no-flops                         :  false
-no-end-config                    :  true
-no-progress-bar                  :  true
-log-level                        :  info
-#vtk-filename                     :  explodingLiquidLCC01
+no-end-config                    :  false
+#no-progress-bar                  :  true
+#vtk-filename                     :  explodingLiquidCM
 #vtk-write-frequency              :  100

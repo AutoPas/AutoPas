@@ -1,9 +1,9 @@
-# Exploding liquid modified to use Linked Cells + C04 only, for OpenMP chunk size performance impact investigation.
+# Exploding liquid modified to use Verlet Cluster Lists + vcl_cluster_iteration, for OpenMP chunk size performance impact investigation.
 
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 # md-flexible compiled for multi-site molecules.
-container                        :  [LinkedCells] # Single type. See AllOptions.yaml for a list of possible containers.
-traversal                        :  [lc_c04] # Single type. See AllOptions.yaml for a list of possible traversals.
+container                        :  [VerletClusterLists] # Single type. See AllOptions.yaml for a list of possible containers.
+traversal                        :  [vcl_cluster_iteration] # Single type. See AllOptions.yaml for a list of possible traversals.
 data-layout                      :  [SoA] # Use SoA only for OpenMP chunk size investigation.
 newton3                          :  [enabled] # Keep enabled for OpenMP chunk size investigation.
 verlet-rebuild-frequency         :  10
@@ -42,7 +42,7 @@ Objects:
       velocity                   :  [0, 0, 0]
 no-flops                         :  false
 no-end-config                    :  true
-no-progress-bar                  :  true
-log-level                        :  info
-#vtk-filename                     :  explodingLiquidLCC04
+#no-progress-bar                  :  true
+#log-level                        :  info
+#vtk-filename                     :  explodingLiquidVCLClusterIteration
 #vtk-write-frequency              :  100

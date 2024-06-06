@@ -1,11 +1,11 @@
-# Heterogeneous scenario using Linked Cells + lc_c08 for OpenMP chunk size performance impact investigation.
+# Homogeneous scenario using Linked Cells + lc_c04 for OpenMP chunk size performance impact investigation.
 container                            :  [LinkedCells] # Choose one single type.
 verlet-rebuild-frequency             :  10
 verlet-skin-radius                   :  0.5
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
 data-layout                          :  [SoA] # Choose one single layout.
-traversal                            :  [lc_c08]  # Choose one single type.
+traversal                            :  [lc_c04]  # Choose one single type.
 tuning-strategies                    :  []
 tuning-interval                      :  5000
 tuning-samples                       :  3
@@ -14,11 +14,11 @@ functor                              :  Lennard-Jones (12-6) avx
 newton3                              :  [enabled]  # Keep enabled.
 cutoff                               :  2.5
 box-min                              :  [0, 0, 0]
-box-max                              :  [10.5, 10.5, 10.5]
+box-max                              :  [100.5, 100.5, 100.5]
 cell-size                            :  [1]
 deltaT                               :  0 # Try setting to 0.
 sorting-threshold                    :  8
-iterations                           :  1000 # Default 10.
+iterations                           :  500 # Default 10.
 boundary-type                        :  [periodic, periodic, periodic]
 subdivide-dimension                  :  [true, true, true]
 load-balancing-interval              :  100
@@ -51,14 +51,16 @@ Sites:
 #    relative-site-positions          : [ [ 0.74349607, 1.20300191, 0. ], [ 0.3249197, -1.37638192, 0. ], [-1.37638192, -0.3249197, 0. ] ]
 #    moment-of-inertia                : [ 5.23606798, 0.76393202, 6. ]
 Objects:
-  CubeGauss:
+  CubeGrid:
     0:
-      distribution-mean              :  [2, 2, 2]
-      distribution-stddeviation      :  [2, 2, 2]
-      numberOfParticles              :  1000
-      box-length                     :  [10, 10, 10]
+      particles-per-dimension        :  [150, 150, 150]
+      particle-spacing               :  1.1225
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
+      # For single-site simulations, particle-type-id fills the object with single-site LJ molecules with the LJ parameters
+      # given for site-0. For multi-site simulations, this fills the object with multi-site molecules with the multi-site
+      # parameters given above for Molecule-0. See particleTypeStr in the documentation for MDFlexConfig.h for more
+      # information.
       particle-type-id               :  0
 # thermostat:
 #   initialTemperature                 :  1
@@ -66,12 +68,12 @@ Objects:
 #   deltaTemperature                   :  0.1
 #   thermostatInterval                 :  10
 #   addBrownianMotion                  :  true
-log-level                            :  info
+#log-level                            :  info
 no-flops                             :  false
 no-end-config                        :  false
-no-progress-bar                      :  true
-#vtk-filename                         :  heterogeneousLCC08Small
+#no-progress-bar                      :  true
+#vtk-filename                         :  homogeneousLCC04
 #vtk-output-folder                    :  vtkOutputFolder
-#vtk-write-frequency                  :  1
+#vtk-write-frequency                  :  1000
 #checkpoint                          : AllOptionsSim_10.vtk
 #log-file                            : log.txt

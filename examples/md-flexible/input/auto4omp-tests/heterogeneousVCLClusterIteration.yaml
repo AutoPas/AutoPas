@@ -1,11 +1,11 @@
-# Heterogeneous scenario using Linked Cells + lc_c08 for OpenMP chunk size performance impact investigation.
-container                            :  [LinkedCells] # Choose one single type.
+# Heterogeneous scenario using Verlet Cluster Lists + vcl_cluster_iteration for OpenMP chunk size performance impact investigation.
+container                            :  [VerletClusterLists] # Choose one single type.
 verlet-rebuild-frequency             :  10
 verlet-skin-radius                   :  0.5
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
 data-layout                          :  [SoA] # Choose one single layout.
-traversal                            :  [lc_c08]  # Choose one single type.
+traversal                            :  [vcl_cluster_iteration]  # Choose one single type.
 tuning-strategies                    :  []
 tuning-interval                      :  5000
 tuning-samples                       :  3
@@ -14,11 +14,11 @@ functor                              :  Lennard-Jones (12-6) avx
 newton3                              :  [enabled]  # Keep enabled.
 cutoff                               :  2.5
 box-min                              :  [0, 0, 0]
-box-max                              :  [500.5, 500.5, 500.5]
+box-max                              :  [100.5, 100.5, 100.5]
 cell-size                            :  [1]
 deltaT                               :  0 # Try setting to 0.
 sorting-threshold                    :  8
-iterations                           :  10 # Default 10.
+iterations                           :  500 # Default 10.
 boundary-type                        :  [periodic, periodic, periodic]
 subdivide-dimension                  :  [true, true, true]
 load-balancing-interval              :  100
@@ -55,8 +55,8 @@ Objects:
     0:
       distribution-mean              :  [2, 2, 2]
       distribution-stddeviation      :  [2, 2, 2]
-      numberOfParticles              :  125000000
-      box-length                     :  [500, 500, 500]
+      numberOfParticles              :  30000
+      box-length                     :  [100, 100, 100]
       bottomLeftCorner               :  [0, 0, 0]
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
@@ -66,11 +66,11 @@ Objects:
 #   deltaTemperature                   :  0.1
 #   thermostatInterval                 :  10
 #   addBrownianMotion                  :  true
-log-level                            :  info
+#log-level                            :  info
 no-flops                             :  false
 no-end-config                        :  false
-no-progress-bar                      :  true
-#vtk-filename                         :  heterogeneousLCC08Large
+#no-progress-bar                      :  true
+#vtk-filename                         :  heterogeneousVCLClusterIteration
 #vtk-output-folder                    :  vtkOutputFolder
 #vtk-write-frequency                  :  1
 #checkpoint                          : AllOptionsSim_10.vtk
