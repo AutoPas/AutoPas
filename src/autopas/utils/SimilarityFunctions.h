@@ -16,7 +16,22 @@ namespace autopas::utils {
  * Calculates homogeneity and max density of given AutoPas simulation.
  * Both values are computed at once to avoid iterating over the same space twice.
  * homogeneity > 0.0, normally < 1.0, but for extreme scenarios > 1.0
- * maxDensity > 0.0, normally < 3.0, but for extreme scenarios >> 3.0
+ * maxDensity > 0.0, normally < 3.0, but for extreme scenarios > 3.0
+ *
+ * These values are calculated by dividing the domain into bins of perfectly equal cuboid shapes.
+ *
+ * @note The bin shapes between different AutoPas container will not match if the dimensions of their domains don't match.
+ * Bins with greater surface area are probably more likely to feature fluctuations in the density.
+ *
+ * Not a rigorous proof, but should give an idea:
+ * - Assume homogeneous distribution.
+ * - For every particle assume it could move in any direction with equal probability (not a terrible assumption).
+ * - So every particle near a bin face has a chance to more into the neighboring bin.
+ * - And this probability is independent of the bin (i.e. the bin shape)
+ * - With a larger surface area, there are more particles with a probability of moving into the neighboring bin.
+ * - On average, same density, but each individual bin has a greater probability of losing or gaining a lot of particles.
+ *
+ * This is probably still fine for MPI Parallelized Tuning purposes, but be careful with comparing homogeneities and densities.
  *
  * @tparam Particle
  * @param container container of current simulation
@@ -28,86 +43,65 @@ template <class Container>
 std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container,
                                                             const std::array<double, 3> &startCorner,
                                                             const std::array<double, 3> &endCorner) {
-  unsigned int numberOfParticles = static_cast<unsigned int>(container.getNumberOfParticles());
-  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_INT, AUTOPAS_MPI_SUM,
-                                 AUTOPAS_MPI_COMM_WORLD);
-  // approximately the resolution we want to get.
-  size_t numberOfCells = ceil(numberOfParticles / 10.);
-  std::array<double, 3> domainSizePerDimension = {};
-  for (int i = 0; i < 3; ++i) {
-    domainSizePerDimension[i] = endCorner[i] - startCorner[i];
-  }
+  using namespace autopas::utils::ArrayMath::literals;
 
-  // get cellLength which is equal in each direction, derived from the domainsize and the requested number of cells
-  const double volume = domainSizePerDimension[0] * domainSizePerDimension[1] * domainSizePerDimension[2];
-  const double cellVolume = volume / numberOfCells;
-  const double cellLength = cbrt(cellVolume);
+  const auto numberOfParticles = container.getNumberOfParticles();
+  const auto domainDimensions = endCorner - startCorner;
+  const auto domainVolume = domainDimensions[0] * domainDimensions[1] * domainDimensions[2];
 
-  // calculate the size of the boundary cells, which might be smaller then the other cells
-  std::array<size_t, 3> cellsPerDimension = {};
-  // size of the last cell layer per dimension. This cell might get truncated to fit in the domain.
-  std::array<double, 3> outerCellSizePerDimension = {};
-  for (int i = 0; i < 3; ++i) {
-    outerCellSizePerDimension[i] =
-        domainSizePerDimension[i] - (floor(domainSizePerDimension[i] / cellLength) * cellLength);
-    cellsPerDimension[i] = ceil(domainSizePerDimension[i] / cellLength);
-  }
-  // Actual number of cells we end up with
-  numberOfCells = cellsPerDimension[0] * cellsPerDimension[1] * cellsPerDimension[2];
+  // We scale the dimensions of the domain to bins with volumes which give approximately 10 particles per bin.
+  const auto numberOfBins = std::ceil(numberOfParticles / 10.);
+  const auto binVolume = domainVolume / (double)numberOfBins;
+  const auto scalingFactor = binVolume / domainVolume;
+  const auto binDimensions = domainDimensions * scalingFactor;
 
-  std::vector<size_t> particlesPerCell(numberOfCells, 0);
-  std::vector<double> allVolumes(numberOfCells, 0);
 
-  // add particles accordingly to their cell to get the amount of particles in each cell
+  // Calculate the actual number of bins per dimension. The rounding is needed in case the division slightly
+  // underestimates the division.
+  const int binsPerDimension = static_cast<int>(std::round(domainVolume / binVolume));
+
+  std::vector<size_t> particlesPerBin(numberOfBins, 0);
+
+  // add particles accordingly to their bin to get the amount of particles in each bin
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     const auto &particleLocation = particleItr->getR();
-    std::array<size_t, 3> index = {};
-    for (size_t i = 0; i < particleLocation.size(); i++) {
-      index[i] = particleLocation[i] / cellLength;
-    }
-    const size_t cellIndex = autopas::utils::ThreeDimensionalMapping::threeToOneD(index, cellsPerDimension);
-    particlesPerCell[cellIndex] += 1;
-    // calculate the size of the current cell
-    allVolumes[cellIndex] = 1;
-    for (size_t i = 0; i < cellsPerDimension.size(); ++i) {
-      // the last cell layer has a special size
-      if (index[i] == cellsPerDimension[i] - 1) {
-        allVolumes[cellIndex] *= outerCellSizePerDimension[i];
-      } else {
-        allVolumes[cellIndex] *= cellLength;
-      }
-    }
+
+    const auto binIndex3d = autopas::utils::ArrayMath::floorToInt((particleLocation-startCorner)/binDimensions);
+    const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(binIndex3d, binsPerDimension);
+
+    particlesPerBin[binIndex1d] += 1;
   }
 
-  // calculate density for each cell
+  // calculate density for each bin and track max density
   double maxDensity{0.};
-  std::vector<double> densityPerCell(numberOfCells, 0.0);
-  for (size_t i = 0; i < particlesPerCell.size(); i++) {
-    densityPerCell[i] =
-        (allVolumes[i] == 0) ? 0 : (particlesPerCell[i] / allVolumes[i]);  // make sure there is no division of zero
-    if (densityPerCell[i] > maxDensity) {
-      maxDensity = densityPerCell[i];
+  std::vector<double> densityPerBin;
+  densityPerBin.reserve(numberOfBins);
+  for (size_t i = 0; i < numberOfBins; i++) {
+    densityPerBin[i] = binVolume / (double)particlesPerBin[i];
+    if (densityPerBin[i] > maxDensity) {
+      maxDensity = densityPerBin[i];
     }
   }
 
-  if (maxDensity < 0.0)
+  if (maxDensity < 0.0) {
     throw std::runtime_error("maxDensity can never be smaller than 0.0, but is:" + std::to_string(maxDensity));
-
+  }
   // get mean and reserve variable for densityVariance
-  const double densityMean = numberOfParticles / volume;
+  const double densityMean = numberOfParticles / domainVolume;
   double densityVariance = 0.0;
 
   // calculate densityVariance
-  for (size_t r = 0; r < densityPerCell.size(); ++r) {
-    double distance = densityPerCell[r] - densityMean;
-    densityVariance += (distance * distance / densityPerCell.size());
+  for (size_t i = 0; i < numberOfBins; ++i) {
+    const double densityDifference = densityPerBin[i] - densityMean;
+    densityVariance += (densityDifference * densityDifference / densityPerBin[i]);
   }
 
   // finally calculate standard deviation
-  const double homogeneity = sqrt(densityVariance);
+  const double homogeneity = std::sqrt(densityVariance);
   // normally between 0.0 and 1.5
-  if (homogeneity < 0.0)
+  if (homogeneity < 0.0) {
     throw std::runtime_error("homogeneity can never be smaller than 0.0, but is:" + std::to_string(homogeneity));
+  }
   return {homogeneity, maxDensity};
 }
 
