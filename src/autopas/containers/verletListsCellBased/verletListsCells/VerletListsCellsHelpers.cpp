@@ -63,8 +63,6 @@ std::vector<BaseStepOffsets> buildC08BaseStep(const std::array<int, 3> &cellsPer
         }
         // Count number of non-aligned dimensions
         const auto factor = estimatorFactors[std::abs(x) + std::abs(y) + std::abs(z)];
-        //        size_t smallerIndex, biggerIndex;
-        //        std::tie(smallerIndex, biggerIndex) = std::minmax(baseCell, partnerCell);
         const auto &[smallerIndex, biggerIndex] = std::minmax(baseCell, partnerCell);
         // Check if this offset tuple is already in the offsets list and if not add it.
         if (auto tuple = BaseStepOffsets{smallerIndex, biggerIndex, factor};
