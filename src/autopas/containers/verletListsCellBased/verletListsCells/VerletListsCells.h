@@ -146,39 +146,47 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     }
     neighborLists.resize(cells.size());
 
-    // Helper function to insert a pointer into a list of the base cell.
-    // It considers the cases that neither particle is in the base cell
-    // and in that case finds or creates the appropriate list
-    auto insert = [&](auto &p1, auto indexOfP1sList, auto &p2, auto cellIndex1, auto cellIndexBase,
-                      auto &currentCellsLists) {
+    /**
+     * Helper function to insert a pointer into a list of the base cell.
+     * It considers the cases that neither particle is in the base cell
+     * and in that case finds or creates the appropriate list.
+     *
+     * @param p1 Reference to source particle.
+     * @param p1Index Index of p1 in its cell.
+     * @param p2 Reference to target particle.
+     * @param cellIndex1 Index of cell where p1 resides.
+     * @param cellIndexBase Index of the base cell of the c08 step.
+     * @param neighborList Reference to the list where the particle pair should be stored.
+     */
+    auto insert = [&](auto &p1, auto p1Index, auto &p2, auto cellIndex1, auto cellIndexBase, auto &neighborList) {
       // Easy case: cell1 is the base cell
       if (cellIndexBase == cellIndex1) {
-        currentCellsLists[indexOfP1sList].second.push_back(&p2);
+        neighborList[p1Index].second.push_back(&p2);
       } else {
         // Otherwise, check if the base cell already has a list for p1
-        auto iter = std::find_if(currentCellsLists.begin(), currentCellsLists.end(), [&](const auto &pair) {
+        auto iter = std::find_if(neighborList.begin(), neighborList.end(), [&](const auto &pair) {
           const auto &[particlePtr, list] = pair;
           return particlePtr == &p1;
         });
         // If yes, append p2 to it.
-        if (iter != currentCellsLists.end()) {
+        if (iter != neighborList.end()) {
           iter->second.push_back(&p2);
         } else {
           // If no, create one, reserve space and emplace p2
-          if (auto insertLoc = std::find_if(currentCellsLists.begin(), currentCellsLists.end(),
+          if (auto insertLoc = std::find_if(neighborList.begin(), neighborList.end(),
                                             [&](const auto &pair) {
                                               const auto &[particlePtr, list] = pair;
                                               return particlePtr == nullptr;
                                             });
-              insertLoc != currentCellsLists.end()) {
+              insertLoc != neighborList.end()) {
             auto &[particlePtr, neighbors] = *insertLoc;
             particlePtr = &p1;
             neighbors.reserve(listLengthEstimate);
             neighbors.push_back(&p2);
           } else {
-            currentCellsLists.emplace_back(&p1, std::vector<Particle *>{});
-            currentCellsLists.back().second.reserve(listLengthEstimate);
-            currentCellsLists.back().second.push_back(&p2);
+            neighborList.emplace_back(&p1, std::vector<Particle *>{});
+            neighborList.back().second.reserve(listLengthEstimate);
+            neighborList.back().second.push_back(&p2);
           }
         }
       }
