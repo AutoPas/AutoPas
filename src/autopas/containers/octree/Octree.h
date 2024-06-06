@@ -253,8 +253,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     if constexpr (regionIter) {
       // We extend the search box for cells here since particles might have moved
       boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-      boxMaxWithSafetyMargin +=
-          boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
     }
 
     std::vector<size_t> currentCellIndex{};
