@@ -146,7 +146,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     }
     neighborLists.resize(cells.size());
 
-    /**
+    /* This must not be a doc comment (with two **) to not confuse doxygen.
      * Helper function to insert a pointer into a list of the base cell.
      * It considers the cases that neither particle is in the base cell
      * and in that case finds or creates the appropriate list.
