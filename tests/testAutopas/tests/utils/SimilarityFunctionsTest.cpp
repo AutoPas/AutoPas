@@ -16,7 +16,8 @@
 
 /**
  * Test calculateHomogeneityAndMaxDensity by
- * - creating a container with 80 particles, such that there are 8 bins
+ * - creating a container with 88 particles, such that there are 8 bins
+ * - using 88 particles, gives 11 particles per bin, testing handling of non-perfectly-divisible-by-10 numbers of particles.
  * - the container has a cuboid shape to test handling of non cube shapes and is offset from the origin to test this
  *   scenario which is important e.g. if MPI is used.
  * - particles are placed evenly between bins
@@ -28,7 +29,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
   autopas::AutoPas<Molecule> autoPas;
 
   const std::array<double, 3> domainMin{1,1,0};
-  const std::array<double, 3> domainMax{9,9,8};
+  const std::array<double, 3> domainMax{9,9,4};
   const auto domainVol = (domainMax[0] - domainMin[0]) * (domainMax[1] - domainMin[1]) * (domainMax[2] - domainMin[2]);
 
   autoPas.setBoxMin(domainMin);
@@ -36,17 +37,17 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
 
   autoPas.init();
 
-  for (int i = 0; i < 80; ++i) {
-    const auto boxIndex1D = i / 10;
+  for (int i = 0; i < 88; ++i) {
+    const auto boxIndex1D = i / 11;
     const auto boxIndex3D = autopas::utils::ThreeDimensionalMapping::oneToThreeD(boxIndex1D, {2,2,2});
-    const std::array<double, 3> position = {3. + (double)boxIndex3D[0] * 4., 3. + (double)boxIndex3D[1] * 4., 2. + (double)boxIndex3D[2] * 4.};
+    const std::array<double, 3> position = {3. + (double)boxIndex3D[0] * 4., 3. + (double)boxIndex3D[1] * 4., 1. + (double)boxIndex3D[2] * 2.};
 
     Molecule m(position, {0,0,0}, i);
     autoPas.addParticle(m);
   }
 
-  const double binVol = 4. * 4. * 4.;
-  const double expectedMeanDensity = 80. / domainVol;
+  const double binVol = 4. * 4. * 2.;
+  const double expectedMeanDensity = 88. / domainVol;
   const int numBins = 8;
 
   {
@@ -63,7 +64,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
 
   for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 0) {
-      iter->setR({7,3,2}); // Shifted to neighboring bin
+      iter->setR({7,3,1}); // Shifted to neighboring bin
       break;
     }
   }
@@ -79,7 +80,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
     const auto densityVariance = 2. * varianceContributionOfDiffBins;
 
     const double expectedHomogeneity = std::sqrt(densityVariance);
-    const double expectedMaxDensity = 11. / binVol;
+    const double expectedMaxDensity = 12. / binVol;
 
     const auto [actualHomogeneity, actualMaxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(autoPas, autoPas.getBoxMin(), autoPas.getBoxMax());
 
