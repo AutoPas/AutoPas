@@ -203,7 +203,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
 
-    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
