@@ -102,10 +102,11 @@ class IteratorBehavior : public Option<IteratorBehavior> {
    * @return
    */
   static std::set<IteratorBehavior> getDiscouragedOptions() {
-    return {IteratorBehavior::dummy, IteratorBehavior::ownedOrHaloOrDummy, IteratorBehavior::forceSequential, IteratorBehavior::containerOnly};
+    return {IteratorBehavior::dummy, IteratorBehavior::ownedOrHaloOrDummy, IteratorBehavior::forceSequential,
+            IteratorBehavior::containerOnly};
   }
 
-    /**
+  /**
    * Provides a way to iterate over the possible choices of AcquisitionFunction.
    * @return map option -> string representation
    */
