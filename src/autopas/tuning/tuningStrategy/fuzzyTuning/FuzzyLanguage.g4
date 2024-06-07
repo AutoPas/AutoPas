@@ -10,7 +10,7 @@ rule_file           : settings linguistic_variable* output_mapping fuzzy_rule* E
                     ;
 
 settings            : 'FuzzySystemSettings' ':'
-                    'defuzzificationMethod' ':' defuzzificationMethod=STRING
+                    (IDENTIFIER ':' STRING)*
                     ;
 
 // Fuzzy Variable

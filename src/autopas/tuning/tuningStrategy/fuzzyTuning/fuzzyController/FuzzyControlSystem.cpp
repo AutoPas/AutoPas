@@ -13,7 +13,7 @@
 
 namespace autopas::fuzzy_logic {
 
-FuzzyControlSystem::FuzzyControlSystem(FuzzyControlSettings settings) : _settings(std::move(settings)) {}
+FuzzyControlSystem::FuzzyControlSystem(std::shared_ptr<FuzzyControlSettings> settings) : _settings(settings) {}
 
 void FuzzyControlSystem::addRule(const FuzzyRule &rule) {
   auto dimensions = rule.getConsequent()->getCrispSet()->getDimensions();
@@ -41,10 +41,17 @@ std::shared_ptr<FuzzySet> FuzzyControlSystem::applyRules(const FuzzySet::Data &d
 double FuzzyControlSystem::predict(const FuzzySet::Data &data, size_t numSamples) const {
   auto unionSet = applyRules(data);
 
-  if (_settings.defuzzificationMethod == "centroid") {
-    return unionSet->centroid(numSamples);
+  if (_settings->count("defuzzificationMethod") == 0) {
+    autopas::utils::ExceptionHandler::exception("No defuzzification method specified in the settings");
+  }
+  std::string method = _settings->at("defuzzificationMethod");
+
+  if (method == "CoG") {
+    return unionSet->CoG(numSamples);
+  } else if (method == "MoM") {
+    return unionSet->meanOfMaximum(numSamples);
   } else {
-    autopas::utils::ExceptionHandler::exception("Unknown defuzzification method: " + _settings.defuzzificationMethod);
+    autopas::utils::ExceptionHandler::exception("Unknown defuzzification method: " + method);
     throw std::runtime_error("Unkown defuzzification method");
   }
 }

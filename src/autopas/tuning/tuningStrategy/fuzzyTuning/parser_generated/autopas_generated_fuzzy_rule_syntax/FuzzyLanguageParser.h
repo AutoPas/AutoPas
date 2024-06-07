@@ -31,12 +31,11 @@ class FuzzyLanguageParser : public antlr4::Parser {
     T__16 = 17,
     T__17 = 18,
     T__18 = 19,
-    T__19 = 20,
-    WS = 21,
-    COMMENT = 22,
-    STRING = 23,
-    NUMBER = 24,
-    IDENTIFIER = 25
+    WS = 20,
+    COMMENT = 21,
+    STRING = 22,
+    NUMBER = 23,
+    IDENTIFIER = 24
   };
 
   enum {
@@ -95,10 +94,12 @@ class FuzzyLanguageParser : public antlr4::Parser {
 
   class SettingsContext : public antlr4::ParserRuleContext {
    public:
-    antlr4::Token *defuzzificationMethod = nullptr;
     SettingsContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *STRING();
+    std::vector<antlr4::tree::TerminalNode *> IDENTIFIER();
+    antlr4::tree::TerminalNode *IDENTIFIER(size_t i);
+    std::vector<antlr4::tree::TerminalNode *> STRING();
+    antlr4::tree::TerminalNode *STRING(size_t i);
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };

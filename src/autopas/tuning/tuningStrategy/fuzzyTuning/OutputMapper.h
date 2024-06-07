@@ -33,6 +33,13 @@ class OutputMapper {
   explicit operator std::string() const;
 
   /**
+   * Returns the closest configuration patterns to the given value.
+   * @param value The value to search for.
+   * @return The closest configuration patterns to the given value.
+   */
+  [[nodiscard]] std::vector<ConfigurationPattern> getClosestConfigurationPatterns(double value);
+
+  /**
    * Getter for the output domain.
    * @return The output domain.
    */

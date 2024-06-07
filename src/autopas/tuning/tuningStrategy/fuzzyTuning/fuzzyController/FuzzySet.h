@@ -66,11 +66,18 @@ class FuzzySet {
   [[nodiscard]] double evaluate_membership(const Data &data) const;
 
   /**
-   * Calculates the x-coordinate of the centroid of this FuzzySet.
-   * @param numSamples The number of samples to use for the numerical centroid calculation.
-   * @return The x-coordinate of the centroid of this FuzzySet.
+   * Calculates the x-coordinate of the center of gravity of this FuzzySet.
+   * @param numSamples The number of samples to use for the numerical CoG calculation.
+   * @return The x-coordinate of the CoG of this FuzzySet.
    */
-  [[nodiscard]] double centroid(size_t numSamples) const;
+  [[nodiscard]] double CoG(size_t numSamples) const;
+
+  /**
+   * Calculates the mean of the meanOfMaximum of this FuzzySet.
+   * @param numSamples The number of samples to use for the numerical mean of meanOfMaximum calculation.
+   * @return The mean of the meanOfMaximum of this FuzzySet.
+   */
+  [[nodiscard]] double meanOfMaximum(size_t numSamples) const;
 
   /**
    * Returns a string representation of the BaseMembershipFunction.

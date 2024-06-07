@@ -107,7 +107,7 @@ class FuzzyTuning : public TuningStrategyInterface {
 
   bool needsLiveInfo() const override;
 
-  void receiveLiveInfo(const LiveInfo &info) override;
+  void receiveLiveInfo(const LiveInfo &value) override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
@@ -123,10 +123,17 @@ class FuzzyTuning : public TuningStrategyInterface {
    * @param fuzzyRuleFilename The name of the fuzzy rule file.
    * @return A tuple containing the linguistic variables, the output mappings and the fuzzy control systems.
    */
-  [[nodiscard]] static std::tuple<std::vector<std::shared_ptr<LinguisticVariable>>,
-                                  std::map<std::string, std::shared_ptr<OutputMapper>>,
-                                  std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
+  [[nodiscard]] static std::tuple<
+      std::shared_ptr<FuzzyControlSettings>, std::vector<std::shared_ptr<LinguisticVariable>>,
+      std::map<std::string, std::shared_ptr<OutputMapper>>, std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
   parse(const std::string &fuzzyRuleFilename);
+
+  /**
+   * Interprets the output of the fuzzy control systems as individual systems and updates the config queue accordingly.
+   * This means that all configurations that are never predicted by any of the systems are removed from the queue.onfig
+   * @param configQueue The queue of configurations to be tested.
+   */
+  void updateQueueInterpretOutputAsIndividualSystems(std::vector<Configuration> &configQueue);
 
   /**
    * The name of the fuzzy rule file.
@@ -138,10 +145,22 @@ class FuzzyTuning : public TuningStrategyInterface {
    */
   std::map<std::string, double> _currentLiveInfo;
 
+  std::shared_ptr<FuzzyControlSettings> _fuzzyControlSettings;
+
   /**
    * The fuzzy control systems parsed from the fuzzy rule file.
    */
   std::map<std::string, std::shared_ptr<FuzzyControlSystem>> _fuzzyControlSystems;
+
+  /**
+   * The output mappings parsed from the fuzzy rule file.
+   */
+  std::map<std::string, std::shared_ptr<OutputMapper>> _outputMappings;
+
+  /**
+   * All available configurations.
+   */
+  std::vector<Configuration> _availableConfigurations;
 };
 
 };  // namespace autopas

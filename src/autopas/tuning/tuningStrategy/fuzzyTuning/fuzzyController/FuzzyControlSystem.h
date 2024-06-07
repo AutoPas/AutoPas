@@ -15,14 +15,10 @@
 namespace autopas::fuzzy_logic {
 
 /**
- * The settings of a FuzzyControlSystem.
+ * The settings of a FuzzyControlSystem are a map of key-value pairs. The key is the name of the setting and the value
+ * is the value of the setting.
  */
-struct FuzzyControlSettings {
-  /**
-   * The defuzzification method to use. Default is "centroid".
-   */
-  std::string defuzzificationMethod = "centroid";
-};
+using FuzzyControlSettings = std::map<std::string, std::string>;
 
 /**
  * Used to represent a Fuzzy Control System. A Fuzzy Control System is a collection of FuzzyRules that can be applied to
@@ -34,7 +30,7 @@ class FuzzyControlSystem {
    * Constructs an empty FuzzyControlSystem with the given settings.
    * @param settings The settings of the FuzzyControlSystem.
    */
-  explicit FuzzyControlSystem(FuzzyControlSettings settings = {});
+  explicit FuzzyControlSystem(std::shared_ptr<FuzzyControlSettings> settings);
 
   /**
    * Adds a new FuzzyRule to the FuzzyControlSystem.
@@ -56,10 +52,10 @@ class FuzzyControlSystem {
   /**
    * Predicts the output of the FuzzyControlSystem for the given data.
    * @param data A map of the form {dimension_name: value}.
-   * @param numSamples The number of samples to use for the numerical centroid calculation. Default is 100.
+   * @param numSamples The number of samples to use for the numerical CoG calculation. Default is 1000.
    * @return The predicted output of the FuzzyControlSystem for the given data.
    */
-  [[nodiscard]] double predict(const FuzzySet::Data &data, size_t numSamples = 100) const;
+  [[nodiscard]] double predict(const FuzzySet::Data &data, size_t numSamples = 1000) const;
 
   /**
    * Returns a string representation of the FuzzyControlSystem.
@@ -70,7 +66,7 @@ class FuzzyControlSystem {
   /**
    * The settings of the FuzzyControlSystem.
    */
-  FuzzyControlSettings _settings;
+  std::shared_ptr<FuzzyControlSettings> _settings;
 
   /**
    * All rules of the FuzzyControlSystem.

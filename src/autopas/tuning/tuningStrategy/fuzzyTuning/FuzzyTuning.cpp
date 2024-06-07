@@ -30,9 +30,13 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
 
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 
-  auto [linguisticVariables, outputMappings, fuzzyControlSystems] = parse(_fuzzyRuleFileName);
+  auto [fuzzyControlSettings, linguisticVariables, outputMappings, fuzzyControlSystems] = parse(_fuzzyRuleFileName);
 
   // By default, dump the rules for reproducibility reasons.
+  std::string settingsStr = std::accumulate(
+      fuzzyControlSettings->begin(), fuzzyControlSettings->end(), std::string("\nSettings:\n"),
+      [](const std::string &acc, const auto &b) { return acc + "\t" + b.first + ": " + b.second + "\n"; });
+
   std::string linguisticVariablesStr =
       std::accumulate(linguisticVariables.begin(), linguisticVariables.end(), std::string("\n"),
                       [](const std::string &acc, const std::shared_ptr<fuzzy_logic::LinguisticVariable> &b) {
@@ -52,11 +56,15 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
                         return acc + std::string(*b.second);
                       });
 
+  AutoPasLog(INFO, "FuzzyTuning initialized with the following Rules:");
+  AutoPasLog(INFO, "{}", settingsStr);
   AutoPasLog(INFO, "{}", linguisticVariablesStr);
   AutoPasLog(INFO, "{}", outputMappingsStr);
   AutoPasLog(INFO, "{}", fuzzyControlSystemsStr);
 
+  _fuzzyControlSettings = fuzzyControlSettings;
   _fuzzyControlSystems = fuzzyControlSystems;
+  _outputMappings = outputMappings;
 
 #else
   autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
@@ -72,41 +80,71 @@ void FuzzyTuning::receiveLiveInfo(const LiveInfo &info) {
   // only filter out the numeric values
   for (const auto &infoEntry : info.get()) {
     const auto &name = infoEntry.first;
-    const auto &value = infoEntry.second;
+    const auto &entry = infoEntry.second;
     std::visit(
-        [&](auto type) {
-          if constexpr (std::is_same_v<decltype(type), size_t> or std::is_same_v<decltype(type), double>) {
-            _currentLiveInfo[name] = type;
+        [&](auto value) {
+          if constexpr (std::is_arithmetic_v<decltype(value)>) {
+            _currentLiveInfo[name] = value;
           }
         },
-        value);
+        entry);
   }
 }
 
 void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {}
 
 void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                        const EvidenceCollection &evidenceCollection) {}
+                        const EvidenceCollection &evidenceCollection) {
+  _availableConfigurations = configQueue;
+}
 
 void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                       const EvidenceCollection &evidenceCollection) {
   using namespace autopas::fuzzy_logic;
 
-  for (const auto &[name, fcs] : _fuzzyControlSystems) {
-    auto prediction = fcs->predict(_currentLiveInfo);
+  std::string outputInterpretation = _fuzzyControlSettings->at("interpretOutputAs");
 
-    // std::cout << "Prediction for " << name << ": " << prediction << std::endl;
+  // Treat all fuzzy control systems as different systems and filter out configurations that are never predicted by any
+  // of the systems
+  if (outputInterpretation == "IndividualSystems") {
+    updateQueueInterpretOutputAsIndividualSystems(configQueue);
   }
 
-  // set new search space
-  // std::copy(newSearchSpace.begin(), newSearchSpace.end(), std::back_inserter(configQueue));
+  if (outputInterpretation == "Suitability") {
+  }
+}
+
+void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Configuration> &configQueue) {
+  using namespace autopas::fuzzy_logic;
+
+  std::list<Configuration> newSearchSpace{configQueue.begin(), configQueue.end()};
+
+  // For each fuzzy control system
+  for (const auto &[name, fcs] : _fuzzyControlSystems) {
+    // 1. Predict
+    auto prediction = fcs->predict(_currentLiveInfo);
+
+    // 2. Get closest configuration patterns
+    const auto &configuration_patterns = _outputMappings.at(name)->getClosestConfigurationPatterns(prediction);
+
+    // 3. Filter out all configurations that do not match the patterns
+    newSearchSpace.remove_if([&](const Configuration &configuration) {
+      return std::none_of(configuration_patterns.begin(), configuration_patterns.end(),
+                          [&configuration](const auto &pattern) { return pattern.matches(configuration); });
+    });
+  }
+
+  AutoPasLog(DEBUG, "Fuzzy tuning selected {} out of {} configurations", newSearchSpace.size(), configQueue.size());
+  configQueue.clear();
+  std::copy(newSearchSpace.rbegin(), newSearchSpace.rend(), std::back_inserter(configQueue));
 }
 
 TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
 
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 
-std::tuple<std::vector<std::shared_ptr<LinguisticVariable>>, std::map<std::string, std::shared_ptr<OutputMapper>>,
+std::tuple<std::shared_ptr<FuzzyControlSettings>, std::vector<std::shared_ptr<LinguisticVariable>>,
+           std::map<std::string, std::shared_ptr<OutputMapper>>,
            std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
 FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
   using namespace antlr4;
@@ -134,10 +172,11 @@ FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
 
     // Translation
     TranslationVisitor visitor;
-    auto fuzzy_rule_program = visitor.visit(tree)
-                                  .as<std::tuple<std::vector<std::shared_ptr<LinguisticVariable>>,
-                                                 std::map<std::string, std::shared_ptr<OutputMapper>>,
-                                                 std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>>();
+    auto fuzzy_rule_program =
+        visitor.visit(tree)
+            .as<std::tuple<std::shared_ptr<FuzzyControlSettings>, std::vector<std::shared_ptr<LinguisticVariable>>,
+                           std::map<std::string, std::shared_ptr<OutputMapper>>,
+                           std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>>();
 
     return fuzzy_rule_program;
   } catch (const std::exception &e) {
