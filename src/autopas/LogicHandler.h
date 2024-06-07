@@ -567,7 +567,7 @@ class LogicHandler {
 
   /**
    * getter function for _neighborListInvalidDoDynamicRebuild
-   * returns bool: _neighborListInvalidDoDynamicRebuild
+   * @return bool stored in _neighborListInvalidDoDynamicRebuild
    */
   bool getNeighborListsInvalidDoDynamicRebuild();
 

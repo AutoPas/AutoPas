@@ -1,6 +1,7 @@
 # Container Interface Model
 
-The behavior described in this section is completely hidden from AutoPas users. This was initially implemented in [PR 642](https://github.com/AutoPas/AutoPas/pull/642), so more details can be found there.
+The behavior described in this section is completely hidden from AutoPas users. 
+This was initially implemented in [PR 642](https://github.com/AutoPas/AutoPas/pull/642), so more details can be found there.
 
 ## External Black-Box Interface
 For an AutoPas user from the outside, it appears that the particle container is fully updated every time they call `AutoPas::updateContainer`.
