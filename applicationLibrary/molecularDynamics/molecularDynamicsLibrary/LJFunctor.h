@@ -122,7 +122,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       return;
     }
 
-    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     if constexpr (countFLOPs) {
       ++_aosThreadDataFLOPs[threadnum].numDistCalls;
