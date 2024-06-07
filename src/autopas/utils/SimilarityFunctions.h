@@ -9,6 +9,7 @@
 #include "ThreeDimensionalMapping.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/utils/ArrayMath.h"
 
 namespace autopas::utils {
 
@@ -60,8 +61,8 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
 
 
   // Calculate the actual number of bins per dimension. The rounding is needed in case the division slightly
-  // underestimates the division.
-  const int binsPerDimension = static_cast<int>(std::round(domainVolume / binVolume));
+  // underestimates the division. The choice of dimension 0 is arbitrary.
+  const int binsPerDimension = static_cast<int>(std::round(domainDimensions[0] / binDimensions[0]));
 
   std::vector<size_t> particlesPerBin(numberOfBins, 0);
 
@@ -70,7 +71,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
     const auto &particleLocation = particleItr->getR();
 
     const auto binIndex3d = autopas::utils::ArrayMath::floorToInt((particleLocation-startCorner)/binDimensions);
-    const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(binIndex3d, binsPerDimension);
+    const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(binIndex3d, {binsPerDimension, binsPerDimension, binsPerDimension});
 
     particlesPerBin[binIndex1d] += 1;
   }
@@ -80,7 +81,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   std::vector<double> densityPerBin;
   densityPerBin.reserve(numberOfBins);
   for (size_t i = 0; i < numberOfBins; i++) {
-    densityPerBin[i] = binVolume / (double)particlesPerBin[i];
+    densityPerBin[i] = (double)particlesPerBin[i] / binVolume;
     if (densityPerBin[i] > maxDensity) {
       maxDensity = densityPerBin[i];
     }
@@ -96,7 +97,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   // calculate densityVariance
   for (size_t i = 0; i < numberOfBins; ++i) {
     const double densityDifference = densityPerBin[i] - densityMean;
-    densityVariance += (densityDifference * densityDifference / densityPerBin[i]);
+    densityVariance += (densityDifference * densityDifference / numberOfBins);
   }
 
   // finally calculate standard deviation
