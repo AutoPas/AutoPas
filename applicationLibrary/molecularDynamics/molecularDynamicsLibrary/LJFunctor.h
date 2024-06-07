@@ -679,12 +679,11 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       // Non-newton3 calls are accumulated temporarily and later divided by 2.
       double potentialEnergySumNoN3Acc = 0;
       std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
-      for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
-        potentialEnergySumNoN3Acc += _aosThreadDataGlobals[i].potentialEnergySumNoN3;
-        _potentialEnergySum += _aosThreadDataGlobals[i].potentialEnergySumN3;
-
-        virialSumNoN3Acc += _aosThreadDataGlobals[i].virialSumNoN3;
-        _virialSum += _aosThreadDataGlobals[i].virialSumN3;
+      for (const auto &data : _aosThreadDataGlobals) {
+        potentialEnergySumNoN3Acc += data.potentialEnergySumNoN3;
+        _potentialEnergySum += data.potentialEnergySumN3;
+        virialSumNoN3Acc += data.virialSumNoN3;
+        _virialSum += data.virialSumN3;
       }
       // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
       // here.
@@ -780,17 +779,14 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    */
   size_t getNumFLOPs() {
     if constexpr (countFLOPs) {
-      size_t numDistCallsAcc = 0;
-      size_t numKernelCallsN3Acc = 0;
-      size_t numKernelCallsNoN3Acc = 0;
-      size_t numGlobalCalcsAcc = 0;
-
-      for (int i = 0; i < _aosThreadDataFLOPs.size(); ++i) {
-        numDistCallsAcc += _aosThreadDataFLOPs[i].numDistCalls;
-        numKernelCallsN3Acc += _aosThreadDataFLOPs[i].numKernelCallsN3;
-        numKernelCallsNoN3Acc += _aosThreadDataFLOPs[i].numKernelCallsNoN3;
-        numGlobalCalcsAcc += _aosThreadDataFLOPs[i].numGlobalCalcs;
-      }
+      size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                                               [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      size_t numKernelCallsN3Acc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                                               [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      size_t numKernelCallsNoN3Acc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                                               [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+      size_t numGlobalCalcsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                                               [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
 
       AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
       AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
@@ -812,20 +808,17 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
   double getHitRate() {
     if constexpr (countFLOPs) {
-      size_t numDistCallsAcc = 0;
-      size_t numKernelCallsN3Acc = 0;
-      size_t numKernelCallsNoN3Acc = 0;
-
-      for (int i = 0; i < _aosThreadDataFLOPs.size(); ++i) {
-        numDistCallsAcc += _aosThreadDataFLOPs[i].numDistCalls;
-        numKernelCallsN3Acc += _aosThreadDataFLOPs[i].numKernelCallsN3;
-        numKernelCallsNoN3Acc += _aosThreadDataFLOPs[i].numKernelCallsNoN3;
-      }
+      size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                                               [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      size_t numKernelCallsN3Acc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                                                   [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      size_t numKernelCallsNoN3Acc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                                                     [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
 
       AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
       AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
       AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", numKernelCallsNoN3Acc);
-      return ((double)numKernelCallsNoN3Acc + (double)numKernelCallsN3Acc) / ((double)numDistCallsAcc);
+      return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) / (static_cast<double>(numDistCallsAcc));
     } else {
       autopas::utils::ExceptionHandler::exception("LJFunctor::getHitRate called without countFLOPs enabled!");
       return 0;
@@ -1169,6 +1162,9 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   /**
    * This class stores internal data for FLOP counters for each thread. Make sure that this data has proper size, i.e.
    * k*64 Bytes!
+   * The FLOP count and HitRate are not counted/calculated directly, but through helper counters (numKernelCallsNoN3,
+   * numKernelCallsN3, numDistCalls, numGlobalCalcs) to reduce computational cost in the functors themselves and to
+   * improve maintainability (e.g. if the cost of a kernel call changes).
    */
   class AoSThreadDataFLOPs {
    public:
@@ -1187,22 +1183,19 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
     /**
      * Number of calls to Lennard-Jones Kernel with newton3 disabled.
-     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-     * cheaper.
+     * Used for calculating number of FLOPs and hit rate.
      */
     size_t numKernelCallsNoN3 = 0;
 
     /**
      * Number of calls to Lennard-Jones Kernel with newton3 enabled.
-     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-     * cheaper.
+     * Used for calculating number of FLOPs and hit rate.
      */
     size_t numKernelCallsN3 = 0;
 
     /**
      * Number of distance calculations.
-     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-     * cheaper.
+     * Used for calculating number of FLOPs and hit rate.
      */
     size_t numDistCalls = 0;
 
