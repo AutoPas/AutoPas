@@ -303,7 +303,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+        const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -320,14 +320,14 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
         if constexpr (countFLOPs) {
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
-          numKernelCallsN3Sum += mask ? 1 : 0;
+          numKernelCallsN3Sum += mask;
         }
 
         if (calculateGlobals) {
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
+          const SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
@@ -340,7 +340,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           virialSumZ += virialz * energyFactor;
 
           if constexpr (countFLOPs) {
-            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask ? 1 : 0;
+            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask;
           }
         }
       }
@@ -501,7 +501,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+        const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -519,9 +519,9 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         if constexpr (countFLOPs) {
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
           if constexpr (newton3) {
-            numKernelCallsN3Sum += mask ? 1 : 0;
+            numKernelCallsN3Sum += mask;
           } else {
-            numKernelCallsNoN3Sum += mask ? 1 : 0;
+            numKernelCallsNoN3Sum += mask;
           }
         }
 
@@ -529,7 +529,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           SoAFloatPrecision virialx = drx * fx;
           SoAFloatPrecision virialy = dry * fy;
           SoAFloatPrecision virialz = drz * fz;
-          SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0;
+          SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
@@ -542,7 +542,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           virialSumZ += virialz * energyFactor;
 
           if constexpr (countFLOPs) {
-            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask ? 1 : 0;
+            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask;
           }
         }
       }
@@ -965,7 +965,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
           const SoAFloatPrecision lj12 = lj6 * lj6;
           const SoAFloatPrecision lj12m6 = lj12 - lj6;
-          const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+          const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
           const SoAFloatPrecision fx = drx * fac;
           const SoAFloatPrecision fy = dry * fac;
@@ -983,9 +983,9 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           if constexpr (countFLOPs) {
             numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
             if constexpr (newton3) {
-              numKernelCallsN3Sum += mask ? 1 : 0;
+              numKernelCallsN3Sum += mask;
             } else {
-              numKernelCallsNoN3Sum += mask ? 1 : 0;
+              numKernelCallsNoN3Sum += mask;
             }
           }
 
@@ -993,7 +993,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
             SoAFloatPrecision virialx = drx * fx;
             SoAFloatPrecision virialy = dry * fy;
             SoAFloatPrecision virialz = drz * fz;
-            SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
+            SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
             const SoAFloatPrecision energyFactor =
                 (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
