@@ -103,6 +103,23 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     _outputStream = &(*_logFile);
   }
 
+#ifdef AUTOPAS_LOG_FLOPS
+  {
+    // Throw warnings if user is using a functor which doesn't support FLOP counting
+    const std::vector<MDFlexConfig::FunctorOption> functorsThatDontSupportFLOPCounting =
+#if MD_FLEXIBLE_MODE == SINGLESITE
+        {MDFlexConfig::FunctorOption::lj12_6_AVX, MDFlexConfig::FunctorOption::lj12_6_SVE};
+#else
+        {MDFlexConfig::FunctorOption::lj12_6, MDFlexConfig::FunctorOption::lj12_6_Globals, MDFlexConfig::FunctorOption::lj12_6_AVX, MDFlexConfig::FunctorOption::lj12_6_SVE};
+#endif
+    for (auto fun : functorsThatDontSupportFLOPCounting) {
+      if (_configuration.functorOption.value == fun) {
+        AutoPasLog(WARN, "FLOP counting is not implemented for the chosen functor and will return 0 for numFLOPs and hit rate. Please set -DAUTOPAS_LOG_FLOPS=OFF or use a supported functor.");
+      }
+    }
+  }
+#endif
+
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
