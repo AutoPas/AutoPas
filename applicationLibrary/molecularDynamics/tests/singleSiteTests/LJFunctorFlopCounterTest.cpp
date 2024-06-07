@@ -205,27 +205,23 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP(bool newton3) 
   // parallel. If interactions are dangerous, archer will complain.
 
   // first functors on one soa
-  AUTOPAS_OPENMP(parallel) {
-    AUTOPAS_OPENMP(sections) {
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
-    }
+  AUTOPAS_OPENMP(parallel sections) {
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
   }
 
   // functors on two soas
-  AUTOPAS_OPENMP(parallel) {
-    AUTOPAS_OPENMP(sections) {
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
-    }
+  AUTOPAS_OPENMP(parallel sectons) {
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
   }
 }
 

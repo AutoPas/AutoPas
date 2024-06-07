@@ -781,7 +781,7 @@ class LogicHandler {
   /**
    * Logger for FLOP count and hit rate.
    */
-  FLOPLogger _FLOPLogger;
+  FLOPLogger _flopLogger;
 };
 
 template <typename Particle>
