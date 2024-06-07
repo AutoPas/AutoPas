@@ -8,8 +8,8 @@
 
 #include "ThreeDimensionalMapping.h"
 #include "autopas/containers/ParticleContainerInterface.h"
-#include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopas/utils/WrapMPI.h"
 
 namespace autopas::utils {
 
@@ -21,8 +21,8 @@ namespace autopas::utils {
  *
  * These values are calculated by dividing the domain into bins of perfectly equal cuboid shapes.
  *
- * @note The bin shapes between different AutoPas container will not match if the dimensions of their domains don't match.
- * Bins with greater surface area are probably more likely to feature fluctuations in the density.
+ * @note The bin shapes between different AutoPas container will not match if the dimensions of their domains don't
+ * match. Bins with greater surface area are probably more likely to feature fluctuations in the density.
  *
  * Not a rigorous proof, but should give an idea:
  * - Assume homogeneous distribution.
@@ -30,9 +30,11 @@ namespace autopas::utils {
  * - So every particle near a bin face has a chance to more into the neighboring bin.
  * - And this probability is independent of the bin (i.e. the bin shape)
  * - With a larger surface area, there are more particles with a probability of moving into the neighboring bin.
- * - On average, same density, but each individual bin has a greater probability of losing or gaining a lot of particles.
+ * - On average, same density, but each individual bin has a greater probability of losing or gaining a lot of
+ * particles.
  *
- * This is probably still fine for MPI Parallelized Tuning purposes, but be careful with comparing homogeneities and densities.
+ * This is probably still fine for MPI Parallelized Tuning purposes, but be careful with comparing homogeneities and
+ * densities.
  *
  * @tparam Particle
  * @param container container of current simulation
@@ -59,7 +61,6 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   const auto binVolume = domainVolume / (double)numberOfBins;
   const auto binDimensions = domainDimensions / (double)numberOfBinsPerDim;
 
-
   // Calculate the actual number of bins per dimension. The rounding is needed in case the division slightly
   // underestimates the division. The choice of dimension 0 is arbitrary.
   const int binsPerDimension = static_cast<int>(std::round(domainDimensions[0] / binDimensions[0]));
@@ -70,8 +71,9 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     const auto &particleLocation = particleItr->getR();
 
-    const auto binIndex3d = autopas::utils::ArrayMath::floorToInt((particleLocation-startCorner)/binDimensions);
-    const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(binIndex3d, {binsPerDimension, binsPerDimension, binsPerDimension});
+    const auto binIndex3d = autopas::utils::ArrayMath::floorToInt((particleLocation - startCorner) / binDimensions);
+    const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(
+        binIndex3d, {binsPerDimension, binsPerDimension, binsPerDimension});
 
     particlesPerBin[binIndex1d] += 1;
   }
