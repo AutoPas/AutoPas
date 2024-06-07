@@ -66,7 +66,6 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
-        _aosThreadDataGlobals(),
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
       _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
@@ -399,7 +398,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
@@ -652,12 +651,14 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
-    for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
-      if constexpr (calculateGlobals) {
-        _aosThreadDataGlobals[i].setZero();
+    if constexpr (calculateGlobals) {
+      for (auto &data : _aosThreadDataGlobals) {
+        data.setZero();
       }
-      if constexpr (countFLOPs) {
-        _aosThreadDataFLOPs[i].setZero();
+    }
+    if constexpr (countFLOPs) {
+      for (auto &data : _aosThreadDataFLOPs) {
+        data.setZero();
       }
     }
   }
@@ -874,7 +875,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       return;
     }
 
-    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     // this is a magic number, that should correspond to at least
     // vectorization width*N have testet multiple sizes:
@@ -1172,7 +1173,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   class AoSThreadDataFLOPs {
    public:
     AoSThreadDataFLOPs()
-        : numKernelCallsNoN3{0}, numKernelCallsN3{0}, numDistCalls{0}, numGlobalCalcs{0}, __remainingTo64{} {}
+        : __remainingTo64{} {}
 
     /**
      * Set all counters to zero.
@@ -1235,8 +1236,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   std::array<double, 3> _virialSum;
 
   // thread buffer for aos
-  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals;
-  std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs;
+  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals{};
+  std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs{};
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
