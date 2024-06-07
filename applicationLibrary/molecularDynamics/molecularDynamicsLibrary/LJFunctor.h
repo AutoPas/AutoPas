@@ -166,7 +166,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       }
     }
 
-    if (calculateGlobals) {
+    if constexpr (calculateGlobals) {
       auto virial = dr * f;
       // Here we calculate either the potential energy * 6.
       // For newton3, this potential energy contribution is distributed evenly to the two molecules.
