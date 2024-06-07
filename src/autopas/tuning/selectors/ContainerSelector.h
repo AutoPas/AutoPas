@@ -128,7 +128,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       container = std::make_unique<VerletListsCells<Particle, VLCAllCellsNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator,
-          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+          VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild);
       break;
     }
     case ContainerOption::verletClusterLists: {
@@ -148,7 +148,7 @@ std::unique_ptr<autopas::ParticleContainerInterface<Particle>> ContainerSelector
       container = std::make_unique<VerletListsCells<Particle, VLCCellPairNeighborList<Particle>>>(
           _boxMin, _boxMax, _cutoff, containerInfo.verletSkin, containerInfo.verletRebuildFrequency,
           containerInfo.cellSizeFactor, containerInfo.loadEstimator,
-          VerletListsCellsHelpers<Particle>::VLCBuildType::Value::soaBuild);
+          VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild);
       break;
     }
     case ContainerOption::octree: {
