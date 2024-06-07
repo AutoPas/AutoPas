@@ -7,6 +7,7 @@ This was initially implemented in [PR 642](https://github.com/AutoPas/AutoPas/pu
 For an AutoPas user from the outside, it appears that the particle container is fully updated every time they call `AutoPas::updateContainer`.
 Particles leaving the domain are always returned, and particles can be added and deleted at any time.
 Historically this interface behavior was also called 'Linked-Cells-like'.
+For periodic boundary conditions or in an MPI-parallel simulation, the user is responsible for inserting the appropriate halo particles.
 
 ### Dynamic Rebuilding
 The particle neighbor lists are updated when a particle moves more than `verletSkin / 2` or at the rebuild frequency. 
