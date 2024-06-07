@@ -1298,6 +1298,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     if (not neighborListsAreValid() /*we have done a rebuild now*/) {
       // list is now valid
       _neighborListsAreValid.store(true, std::memory_order_relaxed);
+      _rebuildIntervals.push_back(_stepsSinceLastListRebuild);
       _stepsSinceLastListRebuild = 0;
     }
     ++_stepsSinceLastListRebuild;
