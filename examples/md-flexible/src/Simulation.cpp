@@ -125,6 +125,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setNumSamples(_configuration.tuningSamples.value);
   _autoPasContainer->setMaxEvidence(_configuration.tuningMaxEvidence.value);
   _autoPasContainer->setRuleFileName(_configuration.ruleFilename.value);
+  _autoPasContainer->setFuzzyRuleFileName(_configuration.fuzzyRuleFilename.value);
   _autoPasContainer->setSelectorStrategy(_configuration.selectorStrategy.value);
   _autoPasContainer->setTuningInterval(_configuration.tuningInterval.value);
   _autoPasContainer->setTuningStrategyOption(_configuration.tuningStrategyOptions.value);

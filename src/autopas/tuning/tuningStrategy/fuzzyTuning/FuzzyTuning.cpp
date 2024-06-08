@@ -95,12 +95,11 @@ void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence
 
 void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                         const EvidenceCollection &evidenceCollection) {
-  _availableConfigurations = configQueue;
-}
-
-void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                      const EvidenceCollection &evidenceCollection) {
   using namespace autopas::fuzzy_logic;
+
+  // Runs the FuzzyTuning strategy for the first time. Since the decision of the Fuzzy Tuner doesn't depend on the
+  // evidence, and it is expected that the LiveInfo doesn't change that much during a tuning phase. We can run the
+  // FuzzyTuning strategy ONLY once at the beginning of a tuning phase.
 
   std::string outputInterpretation = _fuzzyControlSettings->at("interpretOutputAs");
 
@@ -108,10 +107,16 @@ void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
   // of the systems
   if (outputInterpretation == "IndividualSystems") {
     updateQueueInterpretOutputAsIndividualSystems(configQueue);
+  } else if (outputInterpretation == "Suitability") {
+    updateQueueInterpretOutputAsSuitability(configQueue);
+  } else {
+    utils::ExceptionHandler::exception("FuzzyTuning: Unknown output interpretation: {}", outputInterpretation);
   }
+}
 
-  if (outputInterpretation == "Suitability") {
-  }
+void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                      const EvidenceCollection &evidenceCollection) {
+  // This is left empty because the FuzzyTuning strategy is only run once at the beginning of a tuning phase.
 }
 
 void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Configuration> &configQueue) {
@@ -127,6 +132,14 @@ void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Conf
     // 2. Get closest configuration patterns
     const auto &configuration_patterns = _outputMappings.at(name)->getClosestConfigurationPatterns(prediction);
 
+    AutoPasLog(DEBUG, "FuzzySystem '{}' predicted {}. Mapping to: {}", name, prediction, [&configuration_patterns]() {
+      std::string result;
+      for (const auto &pattern : configuration_patterns) {
+        result += "[" + pattern.toString() + "] ";
+      }
+      return result;
+    }());
+
     // 3. Filter out all configurations that do not match the patterns
     newSearchSpace.remove_if([&](const Configuration &configuration) {
       return std::none_of(configuration_patterns.begin(), configuration_patterns.end(),
@@ -134,7 +147,69 @@ void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Conf
     });
   }
 
-  AutoPasLog(DEBUG, "Fuzzy tuning selected {} out of {} configurations", newSearchSpace.size(), configQueue.size());
+  AutoPasLog(DEBUG, "Fuzzy tuning selected {} out of {} possible configurations", newSearchSpace.size(),
+             configQueue.size());
+  configQueue.clear();
+  std::copy(newSearchSpace.rbegin(), newSearchSpace.rend(), std::back_inserter(configQueue));
+}
+
+void FuzzyTuning::updateQueueInterpretOutputAsSuitability(std::vector<Configuration> &configQueue) {
+  using namespace autopas::fuzzy_logic;
+
+  std::list<Configuration> newSearchSpace{configQueue.begin(), configQueue.end()};
+
+  std::vector<std::pair<ConfigurationPattern, double>> configSuitabilities;
+
+  // For each fuzzy control system
+  for (const auto &[name, fcs] : _fuzzyControlSystems) {
+    // 1. Predict
+    auto prediction = fcs->predict(_currentLiveInfo);
+
+    // 2. Get single configuration pattern for each system
+    const auto &configurations = _outputMappings.at(name)->getClosestConfigurationPatterns(prediction);
+    if (configurations.size() != 1) {
+      utils::ExceptionHandler::exception(
+          "FuzzyTuning: Expected exactly one configuration pattern for suitability "
+          "value, but got {}. In system {} with prediction {}",
+          configurations.size(), name, prediction);
+    }
+
+    // 3. Insert suitability values
+    configSuitabilities.emplace_back(configurations[0], prediction);
+
+    AutoPasLog(DEBUG, "FuzzySystem predicted suitability {} for pattern {}", prediction, configurations[0].toString());
+  }
+
+  // Sort the suitability values
+  std::sort(configSuitabilities.begin(), configSuitabilities.end(),
+            [](const auto &a, const auto &b) { return a.second > b.second; });
+
+  // get the best configurations and everything that is within 10% of the best
+  const double THRESHOLD = 0.1;
+
+  const auto bestSuitability = configSuitabilities.front().second;
+  std::vector<ConfigurationPattern> bestConfigurations;
+  for (const auto &[pattern, suitability] : configSuitabilities) {
+    if (suitability < bestSuitability * (1 - THRESHOLD)) {
+      break;
+    }
+
+    AutoPasLog(DEBUG,
+               "FuzzyTuning: Adding configuration pattern {} with suitability {} since its within {}% of the "
+               "best suitability {}",
+               pattern.toString(), suitability, THRESHOLD * 100, bestSuitability);
+    bestConfigurations.push_back(pattern);
+  }
+
+  // 4. Only keep configurations that are in the best configurations
+  newSearchSpace.remove_if([&bestConfigurations](const Configuration &configuration) {
+    return std::none_of(bestConfigurations.begin(), bestConfigurations.end(),
+                        [&configuration](const auto &pattern) { return pattern.matches(configuration); });
+  });
+
+  AutoPasLog(DEBUG, "Fuzzy tuning selected {} out of {} possible configurations", newSearchSpace.size(),
+             configQueue.size());
+
   configQueue.clear();
   std::copy(newSearchSpace.rbegin(), newSearchSpace.rend(), std::back_inserter(configQueue));
 }

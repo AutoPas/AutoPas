@@ -19,6 +19,10 @@ std::vector<autopas::ConfigurationPattern> OutputMapper::getClosestConfiguration
                                return std::abs(a.first - value) < std::abs(b.first - value);
                              });
 
+  if (it == _mappings.end()) {
+    autopas::utils::ExceptionHandler::exception("No mapping found for value {} in output domain {}", value,
+                                                _outputDomain);
+  }
   return it->second;
 }
 

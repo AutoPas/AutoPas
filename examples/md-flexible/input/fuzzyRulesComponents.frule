@@ -1,3 +1,10 @@
+# NOTE: These rules have been automatically generated using a data centric approach seen in
+# https://github.com/ManuelLerchner/AutoPas-FuzzyTuning-Bachelor-Thesis/tree/main/data-analysis/cluster-examples-pause
+
+# The file describes different Fuzzy Systems each one trying to optimize a different component of the configuration.
+# For example one Fuzzy System tries to optimize the Container and DataLayout, another one the Traversal another whether
+# Newton 3 should be enabled or not.
+
 # Setup
 
 # Here global settings for all fuzzy systems can be defined.

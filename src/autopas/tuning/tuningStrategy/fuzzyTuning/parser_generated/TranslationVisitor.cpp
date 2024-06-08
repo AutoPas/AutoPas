@@ -19,7 +19,8 @@ antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileC
   std::vector<FuzzyRule> fuzzyRules;
 
   // get the settings
-  FuzzyControlSettings settings = visit(context->settings()).as<FuzzyControlSettings>();
+  std::shared_ptr<FuzzyControlSettings> settings =
+      visit(context->settings()).as<std::shared_ptr<FuzzyControlSettings>>();
 
   // get the linguistic variables
   for (auto *fuzzy_variableContext : context->linguistic_variable()) {
@@ -56,13 +57,18 @@ antlrcpp::Any TranslationVisitor::visitRule_file(FuzzyLanguageParser::Rule_fileC
     fuzzyControlSystems[output_domain]->addRule(rule);
   }
 
-  return std::make_tuple(linguisticVariables, outputMapping, fuzzyControlSystems);
+  return std::make_tuple(settings, linguisticVariables, outputMapping, fuzzyControlSystems);
 };
 
 antlrcpp::Any TranslationVisitor::visitSettings(FuzzyLanguageParser::SettingsContext *ctx) {
-  FuzzyControlSettings settings;
+  std::shared_ptr<FuzzyControlSettings> settings = std::make_shared<FuzzyControlSettings>();
 
-  settings.defuzzificationMethod = ctx->defuzzificationMethod->getText();
+  for (size_t i = 0; i < ctx->STRING().size(); ++i) {
+    const auto key = ctx->IDENTIFIER(i)->getText();
+    const auto value = ctx->STRING(i)->getText();
+
+    settings->insert({key, value});
+  }
 
   return settings;
 }

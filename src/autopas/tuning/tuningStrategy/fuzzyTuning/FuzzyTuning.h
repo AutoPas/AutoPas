@@ -136,6 +136,12 @@ class FuzzyTuning : public TuningStrategyInterface {
   void updateQueueInterpretOutputAsIndividualSystems(std::vector<Configuration> &configQueue);
 
   /**
+   * Interprets the output of the fuzzy control systems as a bunch of suitability values for each configuration and
+   * updates the config queue accordingly. T
+   */
+  void updateQueueInterpretOutputAsSuitability(std::vector<Configuration> &configQueue);
+
+  /**
    * The name of the fuzzy rule file.
    */
   std::string _fuzzyRuleFileName;
@@ -145,6 +151,9 @@ class FuzzyTuning : public TuningStrategyInterface {
    */
   std::map<std::string, double> _currentLiveInfo;
 
+  /**
+   * The settings for the Fuzzy System
+   */
   std::shared_ptr<FuzzyControlSettings> _fuzzyControlSettings;
 
   /**
@@ -156,11 +165,6 @@ class FuzzyTuning : public TuningStrategyInterface {
    * The output mappings parsed from the fuzzy rule file.
    */
   std::map<std::string, std::shared_ptr<OutputMapper>> _outputMappings;
-
-  /**
-   * All available configurations.
-   */
-  std::vector<Configuration> _availableConfigurations;
 };
 
 };  // namespace autopas
