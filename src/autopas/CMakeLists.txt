@@ -13,7 +13,6 @@ file(
 )
 
 option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
-        # Default is OFF just for faster default compilation time.
         "Enables energy measurements and tuning using Intel's RAPL (Running Average Power Limit) interface for x86 processors
         running on Linux kernels."
         OFF

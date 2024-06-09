@@ -57,11 +57,10 @@ By default, AutoPas tunes for the best configuration according to runtime. For a
 for the algorithm that consumes the least energy. This is implemented via [Intel's RAPL](https://www.intel.com/content/www/us/en/developer/articles/technical/software-security-guidance/advisory-guidance/running-average-power-limit-energy-reporting.html) 
 (Running Average Power Limit) interface.
 
-Energy tuning can be enabled using a CMake option:
+To use energy tuning, energy measurements must be enabled using the CMake option:
 ```bash
 cmake -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON .. 
 ```
-*Note: Energy measurements are only available for x86 processors running a Linux kernel.*
 
 ### Select a Non-Default Compiler
 If you want to use a different compiler than your system default, change the `CC` and `CXX` environment variables during initial configuration AND building:

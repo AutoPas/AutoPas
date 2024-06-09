@@ -11,7 +11,6 @@
 #include <linux/perf_event.h>
 #include <sys/syscall.h>
 
-#include <cmath>
 #include <cstring>
 #include <sstream>
 

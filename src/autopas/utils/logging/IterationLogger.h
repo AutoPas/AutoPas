@@ -8,8 +8,8 @@
 
 #include <spdlog/async.h>
 
+#include "IterationMeasurements.h"
 #include "autopas/tuning/Configuration.h"
-#include "autopas/utils/IterationMeasurements.h"
 
 namespace autopas {
 
