@@ -523,6 +523,11 @@ class LJFunctorAVX512_Mask
       return;
     }
 
+    __m512d epsilon24;
+    __m512d sigmaSquared;
+    __m512d shift6;
+
+    if constexpr (useMixing) {
     // gather mixing parameters.
     // Uses base address of mixingPtr (+0/1/2), gathered data is offset by siteTypeIndicesScaled x 64 bits x 8.
     // We need scaled site-types due to the way the mixing data is stored - todo change this
@@ -535,10 +540,18 @@ class LJFunctorAVX512_Mask
 
     const __m512i typeIndicesScaled = _mm512_mullox_epi64(typeIndices, _threeI);
 
-    const __m512d epsilon24 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr, 8);
-    const __m512d sigmaSquared = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+1, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+1, 8);
-    const __m512d shift6 = applyShift ? (remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8))
+    epsilon24 = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr, 8);
+    sigmaSquared = remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+1, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+1, 8);
+    shift6 = applyShift ? (remainderCase ? _mm512_mask_i64gather_pd(_zeroD, remainderMask, typeIndicesScaled, mixingPtr+2, 8) : _mm512_i64gather_pd(typeIndicesScaled, mixingPtr+2, 8))
         : _zeroD;
+    }
+    else {
+      epsilon24 = _mm512_set1_pd(_epsilon24AoS);
+      sigmaSquared = _mm512_set1_pd(_sigmaSquaredAoS);
+      if constexpr (applyShift) {
+        shift6 = _mm512_set1_pd(_shift6AoS);
+      }
+    }
 
     const __m512d lj2 = _mm512_mul_pd(sigmaSquared, invDistSquared); // = (sigma/dist)^2
     const __m512d lj6 = _mm512_mul_pd(_mm512_mul_pd(lj2, lj2), lj2); // = (sigma/dist)^6
