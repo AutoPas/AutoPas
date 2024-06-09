@@ -1,4 +1,4 @@
-# NOTE: These rules have been automatically generated using a data centric approach seen in
+# NOTE: These rules have been automatically generated using a data centric approach developed in
 # https://github.com/ManuelLerchner/AutoPas-FuzzyTuning-Bachelor-Thesis/tree/main/data-analysis/cluster-examples-pause-suitability
 
 # The file describes a unique fuzzy system for each possible configuration. Each fuzzy system then tries to predict the
@@ -993,8 +993,7 @@ OutputMapping:
 # Rules
 
 # The rules define how the input variables are combined to output variables and should encode the expert knowledge.
-# The rules are defined in a simple if-
-	then format.
+# The rules are defined in a simple if-then format.
 
 if ("threadCount" == "higher than 18.0") && ("particlesPerCellStdDev" == "lower than 0.029")
 	then ("Suitability LinkedCells_AoS_lc_c01_disabled" == "bad")
