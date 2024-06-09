@@ -9,8 +9,33 @@ add_executable(runTests ${MY_SRC})
 
 target_compile_definitions(runTests PRIVATE)
 
+if(AUTOPAS_ENABLE_COVERAGE)
+  target_compile_options(runTests PRIVATE -O0 --coverage)
+
+  # find required tools
+  if(LCOV STREQUAL "LCOV-NOTFOUND")
+    message(FATAL_ERROR "lcov not found! Please install lcov.")
+  endif()
+  
+  find_program(GENHTML genhtml REQUIRED)
+  if(GENHTML STREQUAL "GENHTML-NOTFOUND")
+    message(FATAL_ERROR "genhtml not found! Please install genhtml.")
+  endif()
+
+  # add coverage target
+  add_custom_target(
+    coverage
+    # gather data
+    COMMAND
+      ${LCOV} --rc lcov_branch_coverage=1 --directory . --capture --exclude */tests/* --exclude */build/* --exclude '/usr/*' --output-file coverage.info
+    # generate report
+    COMMAND ${GENHTML} --branch-coverage --demangle-cpp -o coverage coverage.info
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
+
 target_link_libraries(
     runTests
+    gcov
     autopas
     autopasTools
     molecularDynamicsLibrary
