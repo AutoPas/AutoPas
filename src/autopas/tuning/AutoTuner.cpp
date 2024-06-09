@@ -293,31 +293,8 @@ bool AutoTuner::willRebuildNeighborLists() const {
 }
 
 bool AutoTuner::initEnergy() {
-  // Check if energy measurement is possible.
-  std::string errMsg(_raplMeter.init());
-  if (errMsg.empty()) {
-    try {
-      _raplMeter.reset();
-      _raplMeter.sample();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      if (_tuningMetric == TuningMetricOption::energy) {
-        utils::ExceptionHandler::exception(e);
-      } else {
-        AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
-        return false;
-      }
-    }
-  } else {
-    if (_tuningMetric == TuningMetricOption::energy) {
-      utils::ExceptionHandler::exception(errMsg);
-    } else {
-#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
-      AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", errMsg);
-#endif
-      return false;
-    }
-  }
-  return true;
+  // Try to initialize the raplMeter
+  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy);
 }
 
 bool AutoTuner::resetEnergy() {

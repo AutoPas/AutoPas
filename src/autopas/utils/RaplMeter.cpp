@@ -13,10 +13,10 @@
 
 #include <cstring>
 #include <sstream>
+#endif
 
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/logging/Logger.h"
-#endif
 
 namespace autopas::utils {
 
@@ -56,8 +56,16 @@ long RaplMeter::read_perf_event(int fd) {
 }
 #endif
 
-std::string RaplMeter::init() {
+bool RaplMeter::init(const bool mustSucceed) {
 #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  auto throwIfRequired = [&](const std::string &errMsg) {
+    if (mustSucceed) {
+      utils::ExceptionHandler::exception(errMsg);
+    } else {
+      AutoPasLog(WARN, errMsg);
+    }
+  };
+
   {
     FILE *fd;
     int i = 0;
@@ -71,7 +79,8 @@ std::string RaplMeter::init() {
         break;
       }
       if (fscanf(fd, "%d", &package) == 0) {
-        return "RaplMeter::init(): failed to read cpu topology";
+        throwIfRequired("RaplMeter::init(): failed to read cpu topology");
+        return false;
       }
       fclose(fd);
       if (this->_cpus.size() == 0 or last_package < package) {
@@ -82,13 +91,16 @@ std::string RaplMeter::init() {
       i++;
     } while (fd);
   }
+
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r")) {
     if (fscanf(fff, "%d", &this->_type) != 1) {
-      return "RaplMeter::init(): Failed to parse /sys/bus/event_source/devices/power/type";
+      throwIfRequired("RaplMeter::init(): Failed to parse /sys/bus/event_source/devices/power/type");
+      return false;
     }
     fclose(fff);
   } else {
-    return "RaplMeter::init(): No support for energy measurements detected.";
+    throwIfRequired("RaplMeter::init(): No support for energy measurements detected.");
+    return false;
   }
 
   this->_psys_config = 0;
@@ -167,14 +179,28 @@ std::string RaplMeter::init() {
   int fd = syscall(__NR_perf_event_open);
   if (fd < 0) {
     if (errno == EACCES) {
-      return "Failed to open perf event: Permission denied";
+      throwIfRequired("Failed to open perf event: Permission denied");
+      return false;
     }
   } else {
     close(fd);
   }
-  return std::string();
+
+  // First initialization was successful, try to reset and sample
+  try {
+    reset();
+    sample();
+  } catch (const utils::ExceptionHandler::AutoPasException &e) {
+    throwIfRequired("Energy Measurement not possible:\n\t" + std::string(e.what()));
+    return false;
+  }
+  return true;
 #else
-  return "Trying to initialize RAPL but AUTOPAS_ENABLE_ENERGY_MEASUREMENTS is disabled.";
+  if (mustSucceed) {
+    utils::ExceptionHandler::exception(
+        "Trying to initialize RAPLMeter but AUTOPAS_ENABLE_ENERGY_MEASUREMENTS is disabled.");
+  }
+  return false;
 #endif
 }
 

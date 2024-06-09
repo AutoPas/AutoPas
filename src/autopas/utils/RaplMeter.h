@@ -24,9 +24,10 @@ class RaplMeter {
    * Note: This function returns an error message instead of throwing an exception if initialization is not possible.
    * This way debuggers don't break on the start of every autopas initialization if we are not interested in energy
    * measurement.
+   * @param mustSucced Bool indicating whether this method should throw on failure.
    * @return Error message. The error is message is empty on success
    */
-  std::string init();
+  bool init(const bool mustSucceed);
 
   /**
    * Reset perf file descriptors to start new measurement.
