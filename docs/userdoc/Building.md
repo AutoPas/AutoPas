@@ -53,7 +53,7 @@ cmake -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON ..
 
 ### Energy Measurements and Tuning
 
-By default, AutoPas tunes for the best configuration according to runtime. For some systems, it is also possible to tune
+By default, AutoPas tunes for the best configuration according to runtime. For all Linux based systems, it is also possible to tune
 for the algorithm that consumes the least energy. This is implemented via [Intel's RAPL](https://www.intel.com/content/www/us/en/developer/articles/technical/software-security-guidance/advisory-guidance/running-average-power-limit-energy-reporting.html) 
 (Running Average Power Limit) interface.
 
