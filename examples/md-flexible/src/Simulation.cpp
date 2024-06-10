@@ -87,8 +87,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr),
-      _originalDeltaT(configuration.deltaT.value) {
+      _vtkWriter(nullptr) {
   _timers.total.start();
   _timers.initialization.start();
 
@@ -201,7 +200,7 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    if (_configuration.deltaT.value != 0) {
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updatePositions();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
@@ -259,7 +258,12 @@ void Simulation::run() {
 
     updateForces();
 
-    if (_configuration.deltaT.value != 0) {
+    if (_configuration.pauseSimulationDuringTuning.value) {
+      // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
+      updateSimulationPauseState();
+    }
+
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateAngularVelocities();
@@ -268,7 +272,9 @@ void Simulation::run() {
     }
     _timers.computationalLoad.stop();
 
-    ++_iteration;
+    if (not _simulationIsPaused) {
+      ++_iteration;
+    }
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
@@ -409,55 +415,12 @@ void Simulation::updateForces() {
   _timers.forceUpdateTotal.start();
 
   _timers.forceUpdatePairwise.start();
-  const bool isTuningIteration = calculatePairwiseForces();
-
-#ifdef MD_FLEXIBLE_PAUSE_SIMULATION_DURING_TUNING
-  // If we are at the beginning of a tuning phase, we need to freeze the simulation
-  if (isTuningIteration && (!_previousIterationWasTuningIteration)) {
-    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase." << std::endl;
-
-    // Save the forces before the pause so that we can restore them after the pause.
-    // This is necessary because the forces still accumulate during the pause. Which would cause an explosion of the
-    // particles when the simulation is resumed.
-    _particleForcesBeforePause.clear();
-    _particleForcesBeforePause.reserve(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned));
-
-    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      _particleForcesBeforePause.push_back(particle->getF());
-    }
-
-    _configuration.deltaT.value = 0;
-  }
-
-  // If we are at the end of a tuning phase, we need to resume the simulation
-  if (_previousIterationWasTuningIteration && (!isTuningIteration)) {
-    std::cout << "Iteration " << _iteration << ": Unfreezing simulation." << std::endl;
-
-    // Restore the forces that were saved before the pause.
-    if (_particleForcesBeforePause.size() !=
-        _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned)) {
-      throw std::runtime_error("Number of particles changed during pause. This is not supported.");
-    }
-    size_t i = 0;
-    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setF(_particleForcesBeforePause[i]);
-      ++i;
-    }
-
-    _configuration.deltaT.value = _originalDeltaT;
-  }
-
-  // Prevent the iteration from being incremented during tuning phases
-  if (isTuningIteration) {
-    _iteration--;
-  }
-
-#endif
-
+  _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
+  _currentIterationIsTuningIteration = calculatePairwiseForces();
   const auto timeIteration = _timers.forceUpdatePairwise.stop();
 
   // count time spent for tuning
-  if (isTuningIteration) {
+  if (_currentIterationIsTuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
     ++_numTuningIterations;
   } else {
@@ -468,7 +431,6 @@ void Simulation::updateForces() {
       ++_numTuningPhasesCompleted;
     }
   }
-  _previousIterationWasTuningIteration = isTuningIteration;
 
   _timers.forceUpdateGlobal.start();
   if (not _configuration.globalForceIsZero()) {
@@ -555,6 +517,33 @@ void Simulation::logSimulationState() {
               << "Owned: " << ownedParticles << "\n"
               << "Halo : " << haloParticles << "\n"
               << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+  }
+}
+
+void Simulation::updateSimulationPauseState() {
+  // If we are at the beginning of a tuning phase, we need to freeze the simulation
+  if (_currentIterationIsTuningIteration && (!_previousIterationWasTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase..."
+              << std::endl;
+    _simulationIsPaused = true;
+  }
+
+  // If we are at the end of a tuning phase, we need to resume the simulation
+  if (_previousIterationWasTuningIteration && (!_currentIterationIsTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase." << std::endl;
+
+    // reset the forces to zero and apply the global forces again
+    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      particle->setF({0., 0., 0.});
+    }
+
+    _timers.forceUpdateGlobal.start();
+    if (not _configuration.globalForceIsZero()) {
+      calculateGlobalForces(_configuration.globalForce.value);
+    }
+    _timers.forceUpdateGlobal.stop();
+
+    _simulationIsPaused = false;
   }
 }
 
