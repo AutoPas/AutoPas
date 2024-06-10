@@ -560,8 +560,8 @@ class LogicHandler {
     if (_rebuildIntervals.empty()) {
       return 0.;
     } else {
-      return std::accumulate(_rebuildIntervals.begin()+1, _rebuildIntervals.end(), 0.) /
-             static_cast<double>(_rebuildIntervals.size()-1);
+      return std::accumulate(_rebuildIntervals.begin() + 1, _rebuildIntervals.end(), 0.) /
+             static_cast<double>(_rebuildIntervals.size() - 1);
     }
   }
 
