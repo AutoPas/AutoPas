@@ -43,7 +43,7 @@ class FuzzySetFactory {
    * @return A shared pointer to the created FuzzySet.
    */
   static std::shared_ptr<FuzzySet> makeFuzzySet(const std::string &linguisticTerm, const std::string &functionName,
-                                                std::vector<double> &params);
+                                                const std::vector<double> &params);
 
  private:
   /**

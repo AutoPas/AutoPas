@@ -218,6 +218,16 @@ TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyO
 
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 
+std::shared_ptr<FuzzyControlSettings> FuzzyTuning::getFuzzyControlSettings() const { return _fuzzyControlSettings; }
+
+const std::map<std::string, std::shared_ptr<FuzzyControlSystem>> &FuzzyTuning::getFuzzyControlSystems() const {
+  return _fuzzyControlSystems;
+}
+
+const std::map<std::string, std::shared_ptr<OutputMapper>> &FuzzyTuning::getOutputMappings() const {
+  return _outputMappings;
+}
+
 std::tuple<std::shared_ptr<FuzzyControlSettings>, std::vector<std::shared_ptr<LinguisticVariable>>,
            std::map<std::string, std::shared_ptr<OutputMapper>>,
            std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>

@@ -12,7 +12,6 @@
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzyControlSystem.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
-#include "tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
 
 namespace autopas {
 
@@ -116,6 +115,24 @@ class FuzzyTuning : public TuningStrategyInterface {
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
+
+  /**
+   * Getter for the fuzzy control settings.
+   * @return The fuzzy control settings.
+   */
+  [[nodiscard]] std::shared_ptr<FuzzyControlSettings> getFuzzyControlSettings() const;
+
+  /**
+   * Getter for the fuzzy control systems.
+   * @return The fuzzy control systems.
+   */
+  [[nodiscard]] const std::map<std::string, std::shared_ptr<FuzzyControlSystem>> &getFuzzyControlSystems() const;
+
+  /**
+   * Getter for the output mappings.
+   * @return The output mappings.
+   */
+  [[nodiscard]] const std::map<std::string, std::shared_ptr<OutputMapper>> &getOutputMappings() const;
 
  private:
   /**

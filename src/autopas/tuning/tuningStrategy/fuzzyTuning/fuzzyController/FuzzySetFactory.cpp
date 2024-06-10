@@ -21,7 +21,8 @@ std::map<std::string, FuzzySetFactory::AvailableFunctions> FuzzySetFactory::avai
     {"SigmoidFinite", FuzzySetFactory::AvailableFunctions::SigmoidFinite}};
 
 std::shared_ptr<FuzzySet> FuzzySetFactory::makeFuzzySet(const std::string &linguisticTerm,
-                                                        const std::string &functionName, std::vector<double> &params) {
+                                                        const std::string &functionName,
+                                                        const std::vector<double> &params) {
   // Check if the function name is supported.
   if (availableFunctionMap.find(functionName) == availableFunctionMap.end()) {
     std::string supportedFunctions =

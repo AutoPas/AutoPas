@@ -45,6 +45,14 @@ class OutputMapper {
    */
   [[nodiscard]] const std::string &getOutputDomain();
 
+  /**
+   * Getter for the mappings.
+   * @return The mappings.
+   */
+  [[nodiscard]] const std::vector<std::pair<double, std::vector<ConfigurationPattern>>> &getMappings() const {
+    return _mappings;
+  }
+
  private:
   /**
    * The name of the domain which should be mapped.
