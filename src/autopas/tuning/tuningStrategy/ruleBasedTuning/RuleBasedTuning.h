@@ -160,31 +160,33 @@ class RuleBasedTuning : public TuningStrategyInterface {
 
   std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders{};
 
-#endif
+  // The following member variables are only conditionally compiled to avoid warnings about unused variables.
 
-  std::set<Configuration> _searchSpace;
-  const std::list<Configuration> _originalSearchSpace;
-  std::set<Configuration> _removedConfigurations;
-
-  bool _verifyModeEnabled;
-  std::string _ruleFileName;
-
-  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes{};
+  bool _verifyModeEnabled{};
   /**
    * Sum of all evidence since the last reset. This, times the number of samples, is approximately the time spent
    * trying out configurations.
    */
   long _tuningTime{0};
   long _wouldHaveSkippedTuningTime{0};
-  long _tuningTimeLifetime{0};
-  long _wouldHaveSkippedTuningTimeLifetime{0};
   /**
    * If the rules would immediately remove all options deactivate the whole strategy until the next reset.
    */
   bool _rulesTooHarsh{false};
+  PrintTuningErrorFunType _tuningErrorPrinter{};
+#endif
 
-  PrintTuningErrorFunType _tuningErrorPrinter;
+  std::set<Configuration> _searchSpace{};
+  std::list<Configuration> _originalSearchSpace{};
+  std::set<Configuration> _removedConfigurations{};
 
-  LiveInfo _currentLiveInfo;
+  std::string _ruleFileName{};
+
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes{};
+
+  long _tuningTimeLifetime{0};
+  long _wouldHaveSkippedTuningTimeLifetime{0};
+
+  LiveInfo _currentLiveInfo{};
 };
 }  // namespace autopas
