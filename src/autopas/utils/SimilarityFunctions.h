@@ -27,7 +27,7 @@ namespace autopas::utils {
  * Not a rigorous proof, but should give an idea:
  * - Assume homogeneous distribution.
  * - For every particle assume it could move in any direction with equal probability (not a terrible assumption).
- * - So every particle near a bin face has a chance to more into the neighboring bin.
+ * - So every particle near a bin face has a chance to move into the neighboring bin.
  * - And this probability is independent of the bin (i.e. the bin shape)
  * - With a larger surface area, there are more particles with a probability of moving into the neighboring bin.
  * - On average, same density, but each individual bin has a greater probability of losing or gaining a lot of
@@ -54,12 +54,12 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
 
   // We scale the dimensions of the domain to bins with volumes which give approximately 10 particles per bin.
   const auto targetNumberOfBins = std::ceil(numberOfParticles / 10.);
-  const auto targetNumberOfBinsPerDim = std::cbrt((double)targetNumberOfBins);
+  const auto targetNumberOfBinsPerDim = std::cbrt(static_cast<double>(targetNumberOfBins));
   // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
   const auto numberOfBinsPerDim = static_cast<int>(std::floor(targetNumberOfBinsPerDim));
   const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
-  const auto binVolume = domainVolume / (double)numberOfBins;
-  const auto binDimensions = domainDimensions / (double)numberOfBinsPerDim;
+  const auto binVolume = domainVolume / static_cast<double>(numberOfBins);
+  const auto binDimensions = domainDimensions / static_cast<double>(numberOfBinsPerDim);
 
   // Calculate the actual number of bins per dimension. The rounding is needed in case the division slightly
   // underestimates the division. The choice of dimension 0 is arbitrary.
@@ -80,10 +80,10 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
 
   // calculate density for each bin and track max density
   double maxDensity{0.};
-  std::vector<double> densityPerBin;
+  std::vector<double> densityPerBin{};
   densityPerBin.reserve(numberOfBins);
   for (size_t i = 0; i < numberOfBins; i++) {
-    densityPerBin[i] = (double)particlesPerBin[i] / binVolume;
+    densityPerBin[i] = static_cast<double>(particlesPerBin[i]) / binVolume;
     if (densityPerBin[i] > maxDensity) {
       maxDensity = densityPerBin[i];
     }
