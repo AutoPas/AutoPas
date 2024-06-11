@@ -210,17 +210,18 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
           // Allocate memory for ptr-list pairs for this cell.
           baseCellsLists.resize(
               VerletListsCellsHelpers::estimateNumLists(cellIndexBase, this->_verletBuiltNewton3, cells, offsetsC08));
-          // Initialize and allocate memory for actual neighbor lists.
-          for (size_t i = 0; i < baseCell.size(); ++i) {
-            // if there is already an unused ptr-list pair use it, else emplace a new one.
-            if (i < baseCellsLists.size()) {
-              auto &[particlePtr, neighbors] = baseCellsLists[i];
-              particlePtr = &baseCell[i];
-              neighbors.reserve(listLengthEstimate);
-            } else {
-              baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
-              baseCellsLists.back().second.reserve(listLengthEstimate);
-            }
+          // Re-initialize a neighbor list for all particles in the cell but at most for as many as there are lists
+          const size_t minCellSizeVsNumLists = std::min(baseCell.size(), baseCellsLists.size());
+          for (size_t i = 0; i < minCellSizeVsNumLists; ++i) {
+            auto &[particlePtr, neighbors] = baseCellsLists[i];
+            particlePtr = &baseCell[i];
+            neighbors.reserve(listLengthEstimate);
+          }
+          // For any remaining particles create a new list.
+          // This case can only happen if estimateNumLists can return values smaller than baseCell.size()
+          for (size_t i = minCellSizeVsNumLists; i < baseCell.size(); ++i) {
+            baseCellsLists.emplace_back(&baseCell[i], std::vector<Particle *>{});
+            baseCellsLists.back().second.reserve(listLengthEstimate);
           }
 
           // Build c08 lists for this base step according to predefined cell pairs
