@@ -58,8 +58,8 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const AutoPas<Partic
   const auto binVolume = domainVolume / static_cast<double>(numberOfBins);
   const auto binDimensions = domainDimensions / static_cast<double>(numberOfBinsPerDim);
 
-  // Calculate the actual number of bins per dimension. The rounding is needed in case the division (due to floating point errors) slightly
-  // underestimates the division. The choice of dimension 0 is arbitrary.
+  // Calculate the actual number of bins per dimension. The rounding is needed in case the division (due to floating
+  // point errors) slightly underestimates the division. The choice of dimension 0 is arbitrary.
   const int binsPerDimension = static_cast<int>(std::round(domainDimensions[0] / binDimensions[0]));
 
   std::vector<size_t> particlesPerBin(numberOfBins, 0);
@@ -68,7 +68,8 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const AutoPas<Partic
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     const auto &particleLocation = particleItr->getR();
 
-    const auto binIndex3d = autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);
+    const auto binIndex3d =
+        autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);
     const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(
         binIndex3d, {binsPerDimension, binsPerDimension, binsPerDimension});
 
@@ -85,17 +86,17 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const AutoPas<Partic
   }
 
   if (maxDensity < 0.0) {
-    utils::ExceptionHandler::exception("calculateHomogeneityAndMaxDensity(): maxDensity can never be smaller than 0.0, but is: {}", maxDensity);
+    utils::ExceptionHandler::exception(
+        "calculateHomogeneityAndMaxDensity(): maxDensity can never be smaller than 0.0, but is: {}", maxDensity);
   }
   // get mean and reserve variable for densityVariance
   const double densityMean = numberOfParticles / domainVolume;
 
-  const auto densityDifferenceSquaredSum =
-      std::transform_reduce(densityPerBin.cbegin(), densityPerBin.cend(), 0l, std::plus{},
-                            [&densityMean](auto binDensity) {
-                              const auto densityDifference = binDensity - densityMean;
-                              return densityDifference * densityDifference;
-                            });
+  const auto densityDifferenceSquaredSum = std::transform_reduce(
+      densityPerBin.cbegin(), densityPerBin.cend(), 0l, std::plus{}, [&densityMean](auto binDensity) {
+        const auto densityDifference = binDensity - densityMean;
+        return densityDifference * densityDifference;
+      });
   const auto densityVariance = densityDifferenceSquaredSum / numberOfBins;
 
   // finally calculate standard deviation
