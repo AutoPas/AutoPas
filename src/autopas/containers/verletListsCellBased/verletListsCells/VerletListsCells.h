@@ -122,8 +122,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   void rebuildNeighborListsC08() {
     using namespace utils::ArrayMath::literals;
     // Define some aliases
-    const auto &cellsPerDim = utils::ArrayUtils::static_cast_copy_array<int>(
-        this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
     auto &neighborLists = _neighborList.getAoSNeighborList();
     auto &cells = this->_linkedCells.getCells();
     const auto interactionLength = this->getInteractionLength();
@@ -192,10 +190,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
       }
     };
 
+    const auto &cellsPerDim = utils::ArrayUtils::static_cast_copy_array<int>(
+        this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo());
     // Vector of offsets from the base cell for the c08 base step
     // and respective factors for the fraction of particles per cell that need neighbor lists in the base cell.
-    const auto offsetsC08 =
-        VerletListsCellsHelpers::buildC08BaseStep(utils::ArrayUtils::static_cast_copy_array<int>(cellsPerDim));
+    const auto offsetsC08 = VerletListsCellsHelpers::buildC08BaseStep(cellsPerDim);
 
     // Go over all cells except the very last layer and create lists per base step.
     // Since there are no loop dependencies merge all for loops and create 10 chunks per thread.
