@@ -207,9 +207,10 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
           auto &baseCell = cells[cellIndexBase];
           auto &baseCellsLists = neighborLists[cellIndexBase];
 
-          // Allocate space for ptr-list pairs for this cell
+          // Allocate memory for ptr-list pairs for this cell.
           baseCellsLists.resize(
               VerletListsCellsHelpers::estimateNumLists(cellIndexBase, this->_verletBuiltNewton3, cells, offsetsC08));
+          // Initialize and allocate memory for actual neighbor lists.
           for (size_t i = 0; i < baseCell.size(); ++i) {
             // if there is already an unused ptr-list pair use it, else emplace a new one.
             if (i < baseCellsLists.size()) {
