@@ -24,7 +24,7 @@ size_t estimateListLength(size_t numParticles, const std::array<double, 3> &boxS
 }
 
 std::vector<BaseStepOffsets> buildC08BaseStep(const std::array<int, 3> &cellsPerDim) {
-  // cellOffset 1, cellOffset2, list estimation factor
+  // cellOffset1, cellOffset2, list estimation factor
   std::vector<BaseStepOffsets> offsets{};
   offsets.reserve(14);
   // This is currently guaranteed by the VerletListsCells constructor
