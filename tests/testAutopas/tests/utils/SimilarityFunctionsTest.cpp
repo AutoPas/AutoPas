@@ -57,8 +57,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
     const double expectedHomogeneity = 0.;
     const double expectedMaxDensity = expectedMeanDensity;
 
-    const auto [actualHomogeneity, actualMaxDensity] =
-        autopas::utils::calculateHomogeneityAndMaxDensity(autoPas, autoPas.getBoxMin(), autoPas.getBoxMax());
+    const auto [actualHomogeneity, actualMaxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(autoPas);
 
     EXPECT_NEAR(actualHomogeneity, expectedHomogeneity, 1e-12);
     EXPECT_NEAR(actualMaxDensity, expectedMaxDensity, 1e-12);
@@ -86,8 +85,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
     const double expectedHomogeneity = std::sqrt(densityVariance);
     const double expectedMaxDensity = 12. / binVol;
 
-    const auto [actualHomogeneity, actualMaxDensity] =
-        autopas::utils::calculateHomogeneityAndMaxDensity(autoPas, autoPas.getBoxMin(), autoPas.getBoxMax());
+    const auto [actualHomogeneity, actualMaxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(autoPas);
 
     EXPECT_NEAR(actualHomogeneity, expectedHomogeneity, 1e-12);
     EXPECT_NEAR(actualMaxDensity, expectedMaxDensity, 1e-12);

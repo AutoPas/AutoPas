@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ThreeDimensionalMapping.h"
+#include "autopas/AutoPasDecl.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
@@ -14,14 +15,14 @@
 namespace autopas::utils {
 
 /**
- * Calculates homogeneity and max density of given AutoPas simulation.
+ * Calculates homogeneity and max density of given AutoPas container.
  * Both values are computed at once to avoid iterating over the same space twice.
  * homogeneity > 0.0, normally < 1.0, but for extreme scenarios > 1.0
  * maxDensity > 0.0, normally < 3.0, but for extreme scenarios > 3.0
  *
- * These values are calculated by dividing the domain into bins of perfectly equal cuboid shapes.
+ * These values are calculated by dividing the container's domain into bins of perfectly equal cuboid shapes.
  *
- * @note The bin shapes between different AutoPas container will not match if the dimensions of their domains don't
+ * @note The bin shapes between different AutoPas containers will not match if the dimensions of their domains don't
  * match. Bins with greater surface area are probably more likely to feature fluctuations in the density.
  *
  * Not a rigorous proof, but should give an idea:
@@ -38,18 +39,14 @@ namespace autopas::utils {
  *
  * @tparam Particle
  * @param container container of current simulation
- * @param startCorner lower left front corner of the box where the homogeneity shall be calculated.
- * @param endCorner upper right back corner of the box where the homogeneity shall be calculated.
  * @return {homogeneity, maxDensity}
  */
-template <class Container>
-std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container,
-                                                            const std::array<double, 3> &startCorner,
-                                                            const std::array<double, 3> &endCorner) {
+template <typename Particle>
+std::pair<double, double> calculateHomogeneityAndMaxDensity(const AutoPas<Particle> &container) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto numberOfParticles = container.getNumberOfParticles();
-  const auto domainDimensions = endCorner - startCorner;
+  const auto domainDimensions = container.getBoxMax() - container.getBoxMax();
   const auto domainVolume = domainDimensions[0] * domainDimensions[1] * domainDimensions[2];
 
   // We scale the dimensions of the domain to bins with volumes which give approximately 10 particles per bin.
@@ -71,7 +68,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     const auto &particleLocation = particleItr->getR();
 
-    const auto binIndex3d = autopas::utils::ArrayMath::floorToInt((particleLocation - startCorner) / binDimensions);
+    const auto binIndex3d = autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);
     const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(
         binIndex3d, {binsPerDimension, binsPerDimension, binsPerDimension});
 
