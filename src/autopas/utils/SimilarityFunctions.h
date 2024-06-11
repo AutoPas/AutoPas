@@ -61,7 +61,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   const auto binVolume = domainVolume / static_cast<double>(numberOfBins);
   const auto binDimensions = domainDimensions / static_cast<double>(numberOfBinsPerDim);
 
-  // Calculate the actual number of bins per dimension. The rounding is needed in case the division slightly
+  // Calculate the actual number of bins per dimension. The rounding is needed in case the division (due to floating point errors) slightly
   // underestimates the division. The choice of dimension 0 is arbitrary.
   const int binsPerDimension = static_cast<int>(std::round(domainDimensions[0] / binDimensions[0]));
 
@@ -84,23 +84,22 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   densityPerBin.reserve(numberOfBins);
   for (size_t i = 0; i < numberOfBins; i++) {
     densityPerBin[i] = static_cast<double>(particlesPerBin[i]) / binVolume;
-    if (densityPerBin[i] > maxDensity) {
-      maxDensity = densityPerBin[i];
-    }
+    maxDensity = std::max(maxDensity, densityPerBin[i]);
   }
 
   if (maxDensity < 0.0) {
-    throw std::runtime_error("maxDensity can never be smaller than 0.0, but is:" + std::to_string(maxDensity));
+    utils::ExceptionHandler::exception("calculateHomogeneityAndMaxDensity(): maxDensity can never be smaller than 0.0, but is: {}", maxDensity);
   }
   // get mean and reserve variable for densityVariance
   const double densityMean = numberOfParticles / domainVolume;
-  double densityVariance = 0.0;
 
-  // calculate densityVariance
-  for (size_t i = 0; i < numberOfBins; ++i) {
-    const double densityDifference = densityPerBin[i] - densityMean;
-    densityVariance += (densityDifference * densityDifference / numberOfBins);
-  }
+  const auto densityDifferenceSquaredSum =
+      std::transform_reduce(densityPerBin.cbegin(), densityPerBin.cend(), 0l, std::plus{},
+                            [&densityMean](auto binDensity) {
+                              const auto densityDifference = binDensity - densityMean;
+                              return densityDifference * densityDifference;
+                            });
+  const auto densityVariance = densityDifferenceSquaredSum / numberOfBins;
 
   // finally calculate standard deviation
   const double homogeneity = std::sqrt(densityVariance);
