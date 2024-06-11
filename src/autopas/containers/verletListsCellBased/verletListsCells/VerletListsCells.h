@@ -121,6 +121,11 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    */
   void rebuildNeighborListsC08() {
     using namespace utils::ArrayMath::literals;
+    // Sanity check.
+    if (this->_linkedCells.getCellBlock().getCellsPerInteractionLength() > 1) {
+      utils::ExceptionHandler::exception(
+          "VerletListsCells::rebuildNeighborListsC08() was called with a CSF < 1 but it only supports CSF>=1.");
+    }
     // Define some aliases
     auto &neighborLists = _neighborList.getAoSNeighborList();
     auto &cells = this->_linkedCells.getCells();
