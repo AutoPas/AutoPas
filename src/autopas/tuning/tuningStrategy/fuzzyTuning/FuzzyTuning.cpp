@@ -25,7 +25,10 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
   // Check if the given rule file exists and throw if not
   struct stat buffer {};
   if (stat(_fuzzyRuleFileName.c_str(), &buffer) != 0) {
-    utils::ExceptionHandler::exception("Rule file {} does not exist!", _fuzzyRuleFileName);
+    utils::ExceptionHandler::exception(
+        "Rule file '{}' does not exist! Please provide a valid rule file using the "
+        "command line option '--fuzzy-rule-file'.",
+        _fuzzyRuleFileName);
   }
 
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
@@ -95,6 +98,7 @@ void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence
 
 void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                         const EvidenceCollection &evidenceCollection) {
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   using namespace autopas::fuzzy_logic;
 
   // Runs the FuzzyTuning strategy for the first time. Since the decision of the Fuzzy Tuner doesn't depend on the
@@ -112,6 +116,9 @@ void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Config
   } else {
     utils::ExceptionHandler::exception("FuzzyTuning: Unknown output interpretation: {}", outputInterpretation);
   }
+#else
+  autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
+#endif
 }
 
 void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
@@ -119,6 +126,9 @@ void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
   // This is left empty because the FuzzyTuning strategy is only run once at the beginning of a tuning phase.
 }
 
+TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
+
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Configuration> &configQueue) {
   using namespace autopas::fuzzy_logic;
 
@@ -214,20 +224,6 @@ void FuzzyTuning::updateQueueInterpretOutputAsSuitability(std::vector<Configurat
   std::copy(newSearchSpace.rbegin(), newSearchSpace.rend(), std::back_inserter(configQueue));
 }
 
-TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
-
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
-
-std::shared_ptr<FuzzyControlSettings> FuzzyTuning::getFuzzyControlSettings() const { return _fuzzyControlSettings; }
-
-const std::map<std::string, std::shared_ptr<FuzzyControlSystem>> &FuzzyTuning::getFuzzyControlSystems() const {
-  return _fuzzyControlSystems;
-}
-
-const std::map<std::string, std::shared_ptr<OutputMapper>> &FuzzyTuning::getOutputMappings() const {
-  return _outputMappings;
-}
-
 std::tuple<std::shared_ptr<FuzzyControlSettings>, std::vector<std::shared_ptr<LinguisticVariable>>,
            std::map<std::string, std::shared_ptr<OutputMapper>>,
            std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
@@ -270,6 +266,17 @@ FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
     throw std::runtime_error("This should never be reached");
   }
 }
+
+std::shared_ptr<FuzzyControlSettings> FuzzyTuning::getFuzzyControlSettings() const { return _fuzzyControlSettings; }
+
+const std::map<std::string, std::shared_ptr<FuzzyControlSystem>> &FuzzyTuning::getFuzzyControlSystems() const {
+  return _fuzzyControlSystems;
+}
+
+const std::map<std::string, std::shared_ptr<OutputMapper>> &FuzzyTuning::getOutputMappings() const {
+  return _outputMappings;
+}
+
 #endif
 
 }  // namespace autopas
