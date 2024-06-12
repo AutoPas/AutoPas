@@ -156,7 +156,6 @@ void LJFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
     ljFunctor.AoSFunctor(p1, p2, newton3);
     AUTOPAS_OPENMP(section)
     ljFunctor.AoSFunctor(p3, p4, newton3);
-    }
   }
 }
 
