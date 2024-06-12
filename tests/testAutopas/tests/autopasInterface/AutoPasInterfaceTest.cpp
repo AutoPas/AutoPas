@@ -20,8 +20,6 @@
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-using LJFunctorGlobals = LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                                       /*globals*/ true>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(LJFunctorGlobals *);
 
 constexpr double cutoff = 1.1;

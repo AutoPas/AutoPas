@@ -60,3 +60,9 @@ template <bool applyShift = false, bool useMixing = false,
           bool relevantForTuning = true>
 using LJFunctorType = mdLib::LJFunctor<Molecule, applyShift, useMixing, useNewton3, calculateGlobals,
                                        autopasTestingTypeDefs::countFLOPs, relevantForTuning>;
+
+/**
+ * Helper alias for specialization of LJFunctorType with globals and shift enabled but mixing disabled.
+ */
+using LJFunctorGlobals = LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                                       /*globals*/ true>;
