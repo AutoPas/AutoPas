@@ -151,12 +151,11 @@ void LJFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
-  AUTOPAS_OPENMP(parallel) {
-    AUTOPAS_OPENMP(sections) {
-      AUTOPAS_OPENMP(section)
-      ljFunctor.AoSFunctor(p1, p2, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.AoSFunctor(p3, p4, newton3);
+  AUTOPAS_OPENMP(parallel sections) {
+    AUTOPAS_OPENMP(section)
+    ljFunctor.AoSFunctor(p1, p2, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.AoSFunctor(p3, p4, newton3);
     }
   }
 }
@@ -217,7 +216,7 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP(bool newton3) 
   }
 
   // functors on two soas
-  AUTOPAS_OPENMP(parallel sectons) {
+  AUTOPAS_OPENMP(parallel sections) {
     AUTOPAS_OPENMP(section)
     ljFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
     AUTOPAS_OPENMP(section)
