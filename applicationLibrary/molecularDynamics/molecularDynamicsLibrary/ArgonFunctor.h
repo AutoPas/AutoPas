@@ -104,19 +104,6 @@ class ArgonFunctor
                   "mixing to false.");
   }
 
-  /**
-   * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
-   * properties like nu.
-   * @param cutoff
-   * @param particlePropertiesLibrary
-   */
-  explicit ArgonFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : ArgonFunctor(cutoff, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-  }
-
   std::string getName() final { return "ArgonFunctorAutoVec"; }
 
   bool isRelevantForTuning() final { return true; }
