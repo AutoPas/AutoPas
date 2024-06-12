@@ -531,16 +531,13 @@ void Simulation::updateSimulationPauseState() {
   if (_previousIterationWasTuningIteration && (!_currentIterationIsTuningIteration)) {
     std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase." << std::endl;
 
-    // reset the forces to zero and apply the global forces again
+    // reset the forces which accumulated during the tuning phase
     for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
       particle->setF({0., 0., 0.});
     }
 
-    _timers.forceUpdateGlobal.start();
-    if (not _configuration.globalForceIsZero()) {
-      calculateGlobalForces(_configuration.globalForce.value);
-    }
-    _timers.forceUpdateGlobal.stop();
+    // calculate the forces of the latest iteration again
+    updateForces();
 
     _simulationIsPaused = false;
   }
