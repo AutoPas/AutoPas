@@ -11,6 +11,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "ArgonHelper.h"
 
 namespace mdLib {
 
@@ -69,7 +70,33 @@ class ArgonFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {}
+  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    if (i.isDummy() or j.isDummy() or k.isDummy()) {
+      return;
+    }
+
+    const auto displacementIJ = j.getR() - i.getR();
+    const auto displacementJK = k.getR() - j.getR();
+    const auto displacementKI = i.getR() - k.getR();
+
+    const double distSquaredIJ = autopas::utils::ArrayMath::dot(displacementIJ, displacementIJ);
+    const double distSquaredJK = autopas::utils::ArrayMath::dot(displacementJK, displacementJK);
+    const double distSquaredKI = autopas::utils::ArrayMath::dot(displacementKI, displacementKI);
+
+    // Check cutoff for every distance
+    if (distSquaredIJ > _cutoffSquared or distSquaredJK > _cutoffSquared or distSquaredKI > _cutoffSquared) {
+      return;
+    }
+
+    // Cosine
+    const double CosI{autopas::utils::ArgonMath::cosine(displacementIJ, -displacementKI)};
+    const double CosJ{autopas::utils::ArgonMath::cosine(-displacementIJ, displacementJK)};
+    const double CosK{autopas::utils::ArgonMath::cosine(-displacementJK, displacementKI)};
+
+
+  }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
