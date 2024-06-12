@@ -75,11 +75,11 @@ namespace {
 
 } // namespace
 
-template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false>
 class ArgonFunctor
     : public autopas::TriwiseFunctor<Particle,
-                                     ArgonFunctor<Particle, useMixing, useNewton3, calculateGlobals>> {
+                                     ArgonFunctor<Particle, useNewton3, calculateGlobals>> {
 
   using SoAArraysType = typename Particle::SoAArraysType;
   using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
@@ -91,18 +91,10 @@ class ArgonFunctor
   ArgonFunctor() = delete;
 
   /**
-   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
-   * setParticleProperties() to set internal constants because it does not use a particle properties library.
-   *
-   * @note Only to be used with mixing == false.
-   *
+   * Constructor of ArgonFunctor
    * @param cutoff
    */
-  explicit ArgonFunctor(double cutoff) : ArgonFunctor(cutoff, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
-                  "mixing to false.");
-  }
+  explicit ArgonFunctor(double cutoff) : ArgonFunctor(cutoff, nullptr) {}
 
   std::string getName() final { return "ArgonFunctorAutoVec"; }
 
@@ -144,11 +136,6 @@ class ArgonFunctor
     return std::array<typename Particle::AttributeNames, 3>{
         Particle::AttributeNames::forceX, Particle::AttributeNames::forceY, Particle::AttributeNames::forceZ};
   }
-
-  /**
-   * @return useMixing
-   */
-  constexpr static bool getMixing() { return useMixing; }
 
   /**
    * Get the number of flops used per kernel call for a given particle pair. This should count the
@@ -247,7 +234,7 @@ class ArgonFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit ArgonFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle, ArgonFunctor<Particle, useMixing, useNewton3, calculateGlobals>>(
+      : autopas::TriwiseFunctor<Particle, ArgonFunctor<Particle, useNewton3, calculateGlobals>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
