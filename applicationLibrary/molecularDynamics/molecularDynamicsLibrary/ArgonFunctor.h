@@ -115,7 +115,6 @@ class ArgonFunctor
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
   }
 
   std::string getName() final { return "ArgonFunctorAutoVec"; }
@@ -364,8 +363,6 @@ class ArgonFunctor
                                                0.208199482789E+01, //222
                                                0.179870559008E+01} //113
   };
-
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
