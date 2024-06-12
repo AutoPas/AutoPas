@@ -64,7 +64,6 @@ add_subdirectory(tests)
 # cmake-format: off
 
 # randomly generated imbalanced scenario tested with LC only
-# also tests the flop functor
 add_test(
         NAME md-flexible.test-static
         COMMAND
@@ -156,7 +155,6 @@ add_test(
         --boundary-type periodic
         --deltaT 0.005
         --no-end-config
-        --no-flops
         --no-progress-bar
         CONFIGURATIONS checkExamples
 )
