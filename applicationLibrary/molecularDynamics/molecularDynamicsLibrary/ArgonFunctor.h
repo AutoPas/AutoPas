@@ -90,12 +90,6 @@ class ArgonFunctor
       return;
     }
 
-    // Cosine
-    const double CosI{autopas::utils::ArgonMath::cosine(displacementIJ, -displacementKI)};
-    const double CosJ{autopas::utils::ArgonMath::cosine(-displacementIJ, displacementJK)};
-    const double CosK{autopas::utils::ArgonMath::cosine(-displacementJK, displacementKI)};
-
-
   }
 
   /**
