@@ -9,7 +9,7 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas::utils::ArgonMath {
+namespace autopas::utils::ArrayMath::ArgonMath {
 
 /**
  *
@@ -55,10 +55,11 @@ class Displacement {
   explicit Displacement(const std::array<double, 3>& positionStartVertex, const std::array<double, 3>& positionEndVertex,
                const size_t& idStartVertex, const size_t& idEndVertex) : positionStartVertex_(positionStartVertex), positionEndVertex_(positionEndVertex),
                                                                        idStartVertex_(idStartVertex), idEndVertex_(idEndVertex) {};
-  [[nodiscard]] std::array<double, 3> getPositionStartVertex() const { return positionStartVertex_; }
-  [[nodiscard]] std::array<double, 3> getPositionEndVertex() const { return positionEndVertex_; }
+
   [[nodiscard]] size_t getIdStartVertex() const { return idStartVertex_; }
   [[nodiscard]] size_t getIdEndVertex() const { return idEndVertex_; }
+  [[nodiscard]] std::array<double, 3> getR() const { return  positionEndVertex_ - positionStartVertex_; }
+  [[nodiscard]] Displacement getInv() const { return Displacement(positionEndVertex_, positionStartVertex_, idEndVertex_, idStartVertex_); }
 
  private:
   std::array<double, 3> positionStartVertex_;
@@ -75,16 +76,42 @@ class Cosine {
     }
     displacementAB_ = displacementAB;
     displacementAC_ = displacementAC;
+    AB_ = displacementAB_.getR();
+    AC_ = displacementAC_.getR();
+    cos_ = ArrayMath::dot(AB_, AC_) / (ArrayMath::L2Norm(AB_) * ArrayMath::L2Norm(AC_));
     id_ = displacementAB.getIdStartVertex();
   };
 
-  [[nodiscard]] Displacement getDisplacementAB() const { return displacementAB_; }
-  [[nodiscard]] Displacement getDisplacementAC() const { return displacementAC_; }
-  [[nodiscard]] size_t getId() const { return id_; }
+  [[nodiscard]] double getCos() const { return cos_; }
+
+  template<size_t wrt>
+  [[nodiscard]] std::array<double, 3> derive_wrt() {
+    if(id_ != wrt && displacementAB_.getIdEndVertex() != wrt && displacementAC_.getIdEndVertex() != wrt) {
+      return std::array<double, 3>{{0, 0, 0}};
+    }
+    else if (wrt == id_) {
+      auto firstTerm{cos_ / ArrayMath::dot(AB_, AB_) - 1. / ArrayMath::dot(AB_, AC_)};
+      auto secondTerm{cos_ / ArrayMath::dot(AC_, AC_) - 1. / ArrayMath::dot(AB_, AC_)};
+      return AB_ * firstTerm + AC_ * secondTerm;
+    }
+    else if (wrt == displacementAB_.getIdEndVertex()) {
+      auto firstTerm{-cos_ / ArrayMath::dot(AB_, AB_)};
+      auto secondTerm{1./ ArrayMath::dot(AB_, AC_)};
+      return AB_ * firstTerm + AC_ * secondTerm;
+    }
+    else if (wrt == displacementAC_.getIdEndVertex()) {
+      auto firstTerm{-cos_ / ArrayMath::dot(AC_, AC_)};
+      auto secondTerm{1./ ArrayMath::dot(AB_, AC_)};
+      return AC_ * firstTerm + AB_ * secondTerm;
+    }
+  }
 
  private:
   Displacement displacementAB_;
   Displacement displacementAC_;
+  std::array<double, 3> AB_;
+  std::array<double, 3> AC_;
+  double cos_;
   size_t id_;
 };
 

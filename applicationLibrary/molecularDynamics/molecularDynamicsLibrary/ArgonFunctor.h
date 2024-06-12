@@ -77,7 +77,7 @@ class ArgonFunctor
       return;
     }
 
-    const auto displacementIJ = j.getR() - i.getR();
+/*    const auto displacementIJ = j.getR() - i.getR();
     const auto displacementJK = k.getR() - j.getR();
     const auto displacementKI = i.getR() - k.getR();
 
@@ -88,8 +88,27 @@ class ArgonFunctor
     // Check cutoff for every distance
     if (distSquaredIJ > _cutoffSquared or distSquaredJK > _cutoffSquared or distSquaredKI > _cutoffSquared) {
       return;
-    }
+    }*/
+    enum IJK{I, J, K};
+    const auto displacementIJ{autopas::utils::ArrayMath::ArgonMath::Displacement(i.getR(), j.getR(), I, J)};
+    const auto displacementJK{autopas::utils::ArrayMath::ArgonMath::Displacement(j.getR(), k.getR(), J, K)};
+    const auto displacementKI{autopas::utils::ArrayMath::ArgonMath::Displacement(k.getR(), i.getR(), K, I)};
 
+    const auto IJ = displacementIJ.getR();
+    const auto JK = displacementJK.getR();
+    const auto KI = displacementKI.getR();
+
+    const auto cosineI = autopas::utils::ArrayMath::ArgonMath::Cosine(displacementIJ, displacementKI.getInv());
+    const auto cosineJ = autopas::utils::ArrayMath::ArgonMath::Cosine(displacementIJ.getInv(), displacementJK);
+    const auto cosineK = autopas::utils::ArrayMath::ArgonMath::Cosine(displacementKI, displacementJK.getInv());
+
+    const auto cosI = cosineI.getCos();
+    const auto cosJ = cosineJ.getCos();
+    const auto cosK = cosineK.getCos();
+
+    const auto dcosIdI = cosineI.template derive_wrt<I>();
+    const auto dcosIdJ = cosineI.template derive_wrt<J>();
+    const auto dcosIdK = cosineI.template derive_wrt<K>();
   }
 
   /**
