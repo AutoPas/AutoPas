@@ -7,7 +7,6 @@
 #pragma once
 
 #include "ThreeDimensionalMapping.h"
-#include "autopas/AutoPasDecl.h"
 #include "autopas/containers/ParticleContainerInterface.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/WrapMPI.h"
@@ -42,7 +41,7 @@ namespace autopas::utils {
  * @return {homogeneity, maxDensity}
  */
 template <typename Particle>
-std::pair<double, double> calculateHomogeneityAndMaxDensity(const AutoPas<Particle> &container) {
+std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContainerInterface<Particle> &container) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto numberOfParticles = container.getNumberOfParticles();

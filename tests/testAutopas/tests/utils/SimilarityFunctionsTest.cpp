@@ -10,7 +10,7 @@
 #include <iterator>
 #include <vector>
 
-#include "autopas/AutoPasDecl.h"
+#include "autopas/containers/directSum/DirectSum.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -28,16 +28,14 @@
  * - contiane
  */
 TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
-  autopas::AutoPas<Molecule> autoPas;
-
   const std::array<double, 3> domainMin{1, 1, 0};
   const std::array<double, 3> domainMax{9, 9, 4};
+
+  // We arbitrarily use direct sum. Any container that implements ParticleContainerInterface should work.
+  // cutoff = 3., skinPerTimestep = 0.1, verletRebuildFrequency = 10 are all abitrary
+  autopas::DirectSum<Molecule> dsContainer{domainMin, domainMax, 3., 0.1, 10};
+
   const auto domainVol = (domainMax[0] - domainMin[0]) * (domainMax[1] - domainMin[1]) * (domainMax[2] - domainMin[2]);
-
-  autoPas.setBoxMin(domainMin);
-  autoPas.setBoxMax(domainMax);
-
-  autoPas.init();
 
   for (int i = 0; i < 88; ++i) {
     const auto boxIndex1D = i / 11;
@@ -46,7 +44,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
                                             1. + (double)boxIndex3D[2] * 2.};
 
     Molecule m(position, {0, 0, 0}, i);
-    autoPas.addParticle(m);
+    dsContainer.addParticle(m);
   }
 
   const double binVol = 4. * 4. * 2.;
@@ -57,7 +55,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
     const double expectedHomogeneity = 0.;
     const double expectedMaxDensity = expectedMeanDensity;
 
-    const auto [actualHomogeneity, actualMaxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(autoPas);
+    const auto [actualHomogeneity, actualMaxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(dsContainer);
 
     EXPECT_NEAR(actualHomogeneity, expectedHomogeneity, 1e-12);
     EXPECT_NEAR(actualMaxDensity, expectedMaxDensity, 1e-12);
@@ -65,7 +63,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
 
   // Move particle 0
 
-  for (auto iter = autoPas.begin(); iter.isValid(); ++iter) {
+  for (auto iter = dsContainer.begin(); iter.isValid(); ++iter) {
     if (iter->getID() == 0) {
       iter->setR({7, 3, 1});  // Shifted to neighboring bin
       break;
@@ -85,7 +83,7 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
     const double expectedHomogeneity = std::sqrt(densityVariance);
     const double expectedMaxDensity = 12. / binVol;
 
-    const auto [actualHomogeneity, actualMaxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(autoPas);
+    const auto [actualHomogeneity, actualMaxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(dsContainer);
 
     EXPECT_NEAR(actualHomogeneity, expectedHomogeneity, 1e-12);
     EXPECT_NEAR(actualMaxDensity, expectedMaxDensity, 1e-12);
