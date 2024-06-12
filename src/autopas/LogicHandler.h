@@ -62,7 +62,7 @@ class LogicHandler {
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix),
-        _FLOPLogger(outputSuffix),
+        _flopLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -1186,9 +1186,7 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
                                 tuningTimer.getTotalTime(), measurements.energyPsys, measurements.energyPkg,
                                 measurements.energyRam);
 
-#ifdef AUTOPAS_LOG_FLOPS
-  _FLOPLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
-#endif
+  _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
   /// Pass on measurements
   // if this was a major iteration add measurements and bump counters
