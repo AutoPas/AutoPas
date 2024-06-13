@@ -6,12 +6,15 @@
 
 #pragma once
 
+#include "ArgonInclude/CosineHandle.h"
+#include "ArgonInclude/DisplacementHandle.h"
+#include "ArgonInclude/Legendre.h"
+#include "ArgonInclude/Parameters.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "ArgonInclude/Parameters.h"
 
 namespace mdLib::Argon {
 
@@ -55,6 +58,26 @@ class ArgonFunctor: public autopas::TriwiseFunctor<Particle,ArgonFunctor<Particl
    */
   void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
     const auto A_000{A[index<param::A>(0, 0, 0)]};
+
+    if (i.isDummy() or j.isDummy() or k.isDummy()) {
+      return;
+    }
+
+    enum IJK{ I, J, K };
+
+    const auto displacementIJ = DisplacementHandle(i.getR(), j.getR(), I, J);
+    const auto displacementJK = DisplacementHandle(j.getR(), k.getR(), J, K);
+    const auto displacementKI = DisplacementHandle(k.getR(), i.getR(), K, I);
+
+    const auto IJ = displacementIJ.getDisplacement();
+    const auto JK = displacementJK.getDisplacement();
+    const auto KI = displacementKI.getDisplacement();
+
+    const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
+    const auto cosineJ = CosineHandle(displacementIJ.getInv(), displacementJK);
+    const auto cosineK = Cosinehandle(displacementKI, displacementJK.getInv());
+
+
   }
 
   /**
