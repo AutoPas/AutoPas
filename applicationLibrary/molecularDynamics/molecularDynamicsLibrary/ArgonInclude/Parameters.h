@@ -11,12 +11,12 @@
 namespace mdLib::Argon {
 
 /**
-   *
-   * @param i first index
-   * @param j second index
-   * @param k third index
-   * @return returns the position of the element in the parameter array corresponding to the triplet (i, j, k), to be
-   * used for parameters A and alpha (repulsive part)
+ *
+ * @param i first index
+ * @param j second index
+ * @param k third index
+ * @return returns the position of the element in the parameter array corresponding to the triplet (i, j, k), to be
+ * used for parameters A and alpha (repulsive part)
  */
 constexpr size_t indexRepulsivePart(const size_t i, const size_t j, const size_t k) {
   if (i == 0 && j == 0 && k == 0) {
@@ -92,12 +92,12 @@ constexpr size_t indexRepulsivePart(const size_t i, const size_t j, const size_t
 }
 
 /**
-   *
-   * @param i first index
-   * @param j second index
-   * @param k third index
-   * @return returns the position of the element in the parameter array corresponding to the triplet (i, j, k), to be
-   * used for parameters Z and beta (dispersion part)
+ *
+ * @param i first index
+ * @param j second index
+ * @param k third index
+ * @return returns the position of the element in the parameter array corresponding to the triplet (i, j, k), to be
+ * used for parameters Z and beta (dispersion part)
  */
 constexpr size_t indexDispersionPart(const size_t i, const size_t j, const size_t k) {
   if (i == 1 && j == 1 && k == 1) {
@@ -118,7 +118,7 @@ constexpr size_t indexDispersionPart(const size_t i, const size_t j, const size_
   throw autopas::utils::ExceptionHandler::AutoPasException("Parameter cannot be accessed");
 }
 
-enum param{A, alpha, Z, beta};
+enum param{ A, alpha, Z, beta };
 
 /**
  *
@@ -128,27 +128,27 @@ enum param{A, alpha, Z, beta};
  * @param k third index
  * @return returns the position of the element in the parameter array corresponding to the triplet (i, j, k)
  */
-template<param P>
+template <param P>
 constexpr size_t index(const size_t i, const size_t j, const size_t k);
 
-template<>
+template <>
 constexpr size_t index<A>(const size_t i, const size_t j, const size_t k) {
   return indexRepulsivePart(i, j, k);
 }
 
-template<>
+template <>
 constexpr size_t index<alpha>(const size_t i, const size_t j, const size_t k) {
   return indexRepulsivePart(i, j, k);
 }
 
-template<>
+template <>
 constexpr size_t index<Z>(const size_t i, const size_t j, const size_t k) {
   return indexDispersionPart(i, j, k);
 }
 
-template<>
+template <>
 constexpr size_t index<beta>(const size_t i, const size_t j, const size_t k) {
   return indexDispersionPart(i, j, k);
 }
 
-} //mdLib::Argon
+} // namespace mdLib::Argon
