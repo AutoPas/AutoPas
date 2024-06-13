@@ -15,6 +15,14 @@
 namespace mdLib {
 
 namespace {
+  /**
+   *
+   * @param i first index
+   * @param j second index
+   * @param k third index
+   * @return returns the position of the element in the parameter array corresponding to the triplet (i, j, k), to be
+   * used for parameters A and alpha (repulsive part)
+   */
   constexpr size_t indexRepulsivePart(const size_t i, const size_t j, const size_t k) {
     if (i == 0 && j == 0 && k == 0) {
       return 0;
@@ -85,9 +93,17 @@ namespace {
     if (i == 0 && j == 0 && k == 6) {
       return 22;
     }
-    throw autopas::utils::ExceptionHandler::AutoPasException({});
+    throw autopas::utils::ExceptionHandler::AutoPasException("Parameter cannot be accessed");
   }
 
+  /**
+   *
+   * @param i first index
+   * @param j second index
+   * @param k third index
+   * @return returns the position of the element in the parameter array corresponding to the triplet (i, j, k), to be
+   * used for parameters Z and beta (dispersion part)
+   */
   constexpr size_t indexDispersionPart(const size_t i, const size_t j, const size_t k) {
     if (i == 1 && j == 1 && k == 1) {
       return 0;
@@ -104,29 +120,40 @@ namespace {
     if (i == 1 && j == 1 && k == 3) {
       return 4;
     }
-    throw autopas::utils::ExceptionHandler::AutoPasException({});
+    throw autopas::utils::ExceptionHandler::AutoPasException("Parameter cannot be accessed");
   }
 
   enum param{A, alpha, Z, beta};
 
+/**
+ *
+ * @tparam P the parameter : either A, alpha, Z or beta
+ * @param i first index
+ * @param j second index
+ * @param k third index
+ * @return returns the position of the element in the parameter array corresponding to the triplet (i, j, k)
+ */
   template<param P>
-  size_t getIndex(const size_t i, const size_t j, const size_t k) {
-    size_t index{};
-    try {
-      if (P == A || P == alpha) {
-        index = indexRepulsivePart(i, j, k);
-      }
-      else if (P == Z || P == beta) {
-        index = indexDispersionPart(i, j, k);
-      }
-    }
-    catch (autopas::utils::ExceptionHandler::AutoPasException exception) {
-      std::stringstream message;
-      message << "Parameter " << P << ": " << "trying to access parameter value at index (i, j, k) = (" << i << ", "
-              << j << ", " << k << ").";
-      throw autopas::utils::ExceptionHandler::AutoPasException(message.str());
-    }
-    return index;
+  constexpr size_t index(const size_t i, const size_t j, const size_t k);
+
+  template<>
+  constexpr size_t index<A>(const size_t i, const size_t j, const size_t k) {
+    return indexRepulsivePart(i, j, k);
+  }
+
+  template<>
+  constexpr size_t index<alpha>(const size_t i, const size_t j, const size_t k) {
+    return indexRepulsivePart(i, j, k);
+  }
+
+  template<>
+  constexpr size_t index<Z>(const size_t i, const size_t j, const size_t k) {
+    return indexDispersionPart(i, j, k);
+  }
+
+  template<>
+  constexpr size_t index<beta>(const size_t i, const size_t j, const size_t k) {
+    return indexDispersionPart(i, j, k);
   }
 
 } // namespace
