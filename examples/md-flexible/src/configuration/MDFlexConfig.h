@@ -498,11 +498,6 @@ class MDFlexConfig {
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
 
   /**
-   * pauseSimulationDuringTuning
-   */
-  MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
-                                                           "Pauses the update of the simulation during tuning phases."};
-  /**
    * sortingThreshold
    * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is
    * greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid unnecessary

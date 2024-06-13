@@ -92,16 +92,6 @@ class Simulation {
   size_t _numTuningPhasesCompleted = 0;
 
   /**
-   * Indicator if the current iteration was a tuning iteration.
-   */
-  bool _currentIterationIsTuningIteration = false;
-
-  /**
-   * Indicator if the simulation is paused due to the PauseDuringTuning option.
-   */
-  bool _simulationIsPaused = false;
-
-  /**
    * Indicator if the previous iteration was used for tuning.
    */
   bool _previousIterationWasTuningIteration = false;
@@ -317,11 +307,6 @@ class Simulation {
    * @return the accumulated time of all ranks.
    */
   [[nodiscard]] static long accumulateTime(const long &time);
-
-  /**
-   * Handles the pausing of the simulation and updates the _simulationIsPaused flag.
-   */
-  void updateSimulationPauseState();
 
   /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
