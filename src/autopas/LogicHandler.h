@@ -1099,6 +1099,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       _autoTuner.receiveLiveInfo(info);
+      _liveInfoLogger.logLiveInfo(info, _iteration);
     }
 
     std::tie(configuration, stillTuning) = _autoTuner.getNextConfig();

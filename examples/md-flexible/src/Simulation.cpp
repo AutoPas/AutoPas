@@ -87,8 +87,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
     : _configuration(configuration),
       _domainDecomposition(domainDecomposition),
       _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr),
-      _originalDeltaT(configuration.deltaT.value) {
+      _vtkWriter(nullptr) {
   _timers.total.start();
   _timers.initialization.start();
 
@@ -410,49 +409,6 @@ void Simulation::updateForces() {
 
   _timers.forceUpdatePairwise.start();
   const bool isTuningIteration = calculatePairwiseForces();
-
-#ifdef MD_FLEXIBLE_PAUSE_SIMULATION_DURING_TUNING
-  // If we are at the beginning of a tuning phase, we need to freeze the simulation
-  if (isTuningIteration && (!_previousIterationWasTuningIteration)) {
-    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase." << std::endl;
-
-    // Save the forces before the pause so that we can restore them after the pause.
-    // This is necessary because the forces still accumulate during the pause. Which would cause an explosion of the
-    // particles when the simulation is resumed.
-    _particleForcesBeforePause.clear();
-    _particleForcesBeforePause.reserve(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned));
-
-    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      _particleForcesBeforePause.push_back(particle->getF());
-    }
-
-    _configuration.deltaT.value = 0;
-  }
-
-  // If we are at the end of a tuning phase, we need to resume the simulation
-  if (_previousIterationWasTuningIteration && (!isTuningIteration)) {
-    std::cout << "Iteration " << _iteration << ": Unfreezing simulation." << std::endl;
-
-    // Restore the forces that were saved before the pause.
-    if (_particleForcesBeforePause.size() !=
-        _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned)) {
-      throw std::runtime_error("Number of particles changed during pause. This is not supported.");
-    }
-    size_t i = 0;
-    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setF(_particleForcesBeforePause[i]);
-      ++i;
-    }
-
-    _configuration.deltaT.value = _originalDeltaT;
-  }
-
-  // Prevent the iteration from being incremented during tuning phases
-  if (isTuningIteration) {
-    _iteration--;
-  }
-
-#endif
 
   const auto timeIteration = _timers.forceUpdatePairwise.stop();
 

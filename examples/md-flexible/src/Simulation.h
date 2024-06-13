@@ -107,17 +107,6 @@ class Simulation {
   double _homogeneity = 0;
 
   /**
-   * The original deltaT used for the simulation. Supplied by the --yaml-filename argument.
-   */
-  double _originalDeltaT = 0;
-
-  /**
-   * The previous particle forces before the simulation was paused. This is needed to restore the correct state of the
-   * simulation after resuming, as the forces still accumulate during the pause.
-   */
-  std::vector<std::array<double, 3>> _particleForcesBeforePause;
-
-  /**
    * Struct containing all timers used for the simulation.
    */
   struct Timers {
