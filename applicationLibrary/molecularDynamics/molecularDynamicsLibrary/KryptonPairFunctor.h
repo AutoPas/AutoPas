@@ -98,89 +98,89 @@ class KryptonPairFunctor
       return;
     }
 
-    auto displacement = i.getR() - j.getR();
-    double dist2 = autopas::utils::ArrayMath::dot(displacement, displacement);
+    const auto displacement = i.getR() - j.getR();
+    const double dist2 = autopas::utils::ArrayMath::dot(displacement, displacement);
 
     if (dist2 > _cutoffSquared) {
       return;
     }
 
     // Pre calculations
-    double dist = std::sqrt(dist2);
-    double distNeg = 1. / dist;
-    double distNeg2 = 1. / dist2;
-    double distNeg6 = distNeg2 * distNeg2 * distNeg2;
-    double distNeg8 = distNeg6 * distNeg2;
-    double distNeg10 = distNeg8 * distNeg2;
-    double distNeg12 = distNeg10 * distNeg2;
-    double distNeg14 = distNeg12 * distNeg2;
-    double distNeg16 = distNeg14 * distNeg2;
+    const double dist = std::sqrt(dist2);
+    const double distNeg = 1. / dist;
+    const double distNeg2 = 1. / dist2;
+    const double distNeg6 = distNeg2 * distNeg2 * distNeg2;
+    const double distNeg8 = distNeg6 * distNeg2;
+    const double distNeg10 = distNeg8 * distNeg2;
+    const double distNeg12 = distNeg10 * distNeg2;
+    const double distNeg14 = distNeg12 * distNeg2;
+    const double distNeg16 = distNeg14 * distNeg2;
 
-    double expAlphaTerm = std::exp(_alpha1 * dist + _alpha2 * dist2 + _alphaneg1 * distNeg);
-    double alphaTerm = _alpha1 + 2 * _alpha2 * dist - _alphaneg1 * distNeg2;
+    const double expAlphaTerm = std::exp(_alpha1 * dist + _alpha2 * dist2 + _alphaneg1 * distNeg);
+    const double alphaTerm = _alpha1 + 2 * _alpha2 * dist - _alphaneg1 * distNeg2;
 
-    double firstTerm = (- _A * alphaTerm * expAlphaTerm) * distNeg;
+    const double firstTerm = (- _A * alphaTerm * expAlphaTerm) * distNeg;
 
-    double bdist = _b * dist;
-    double bdist2 = bdist * bdist;
-    double bdist3 = bdist2 * bdist;
-    double bdist4 = bdist3 * bdist;
-    double bdist5 = bdist4 * bdist;
-    double bdist6 = bdist5 * bdist;
-    double bdist7 = bdist6 * bdist;
-    double bdist8 = bdist7 * bdist;
-    double bdist9 = bdist8 * bdist;
-    double bdist10 = bdist9 * bdist;
-    double bdist11 = bdist10 * bdist;
-    double bdist12 = bdist11 * bdist;
-    double bdist13 = bdist12 * bdist;
-    double bdist14 = bdist13 * bdist;
-    double bdist15 = bdist14 * bdist;
-    double bdist16 = bdist15 * bdist;
+    const double bdist = _b * dist;
+    const double bdist2 = bdist * bdist;
+    const double bdist3 = bdist2 * bdist;
+    const double bdist4 = bdist3 * bdist;
+    const double bdist5 = bdist4 * bdist;
+    const double bdist6 = bdist5 * bdist;
+    const double bdist7 = bdist6 * bdist;
+    const double bdist8 = bdist7 * bdist;
+    const double bdist9 = bdist8 * bdist;
+    const double bdist10 = bdist9 * bdist;
+    const double bdist11 = bdist10 * bdist;
+    const double bdist12 = bdist11 * bdist;
+    const double bdist13 = bdist12 * bdist;
+    const double bdist14 = bdist13 * bdist;
+    const double bdist15 = bdist14 * bdist;
+    const double bdist16 = bdist15 * bdist;
 
-    double ksum0 = 1.0;
-    double ksum1 = bdist;
-    double ksum2 = bdist2 * 0.5;
-    double ksum3 = bdist3 * _fac3Inv;
-    double ksum4 = bdist4 * _fac4Inv;
-    double ksum5 = bdist5 * _fac5Inv;
-    double ksum6 = bdist6 * _fac6Inv;
-    double ksum7 = bdist7 * _fac7Inv;
-    double ksum8 = bdist8 * _fac8Inv;
-    double ksum9 = bdist9 * _fac9Inv;
-    double ksum10 = bdist10 * _fac10Inv;
-    double ksum11 = bdist11 * _fac11Inv;
-    double ksum12 = bdist12 * _fac12Inv;
-    double ksum13 = bdist13 * _fac13Inv;
-    double ksum14 = bdist14 * _fac14Inv;
-    double ksum15 = bdist15 * _fac15Inv;
-    double ksum16 = bdist16 * _fac16Inv;
+    const double ksum0 = 1.0;
+    const double ksum1 = bdist;
+    const double ksum2 = bdist2 * 0.5;
+    const double ksum3 = bdist3 * _fac3Inv;
+    const double ksum4 = bdist4 * _fac4Inv;
+    const double ksum5 = bdist5 * _fac5Inv;
+    const double ksum6 = bdist6 * _fac6Inv;
+    const double ksum7 = bdist7 * _fac7Inv;
+    const double ksum8 = bdist8 * _fac8Inv;
+    const double ksum9 = bdist9 * _fac9Inv;
+    const double ksum10 = bdist10 * _fac10Inv;
+    const double ksum11 = bdist11 * _fac11Inv;
+    const double ksum12 = bdist12 * _fac12Inv;
+    const double ksum13 = bdist13 * _fac13Inv;
+    const double ksum14 = bdist14 * _fac14Inv;
+    const double ksum15 = bdist15 * _fac15Inv;
+    const double ksum16 = bdist16 * _fac16Inv;
 
-    double ksumacc6 = ksum0 + ksum1 + ksum2 + ksum3 + ksum4 + ksum5 + ksum6;
-    double ksumacc8 = ksumacc6 + ksum7 + ksum8;
-    double ksumacc10 = ksumacc8 + ksum9 + ksum10;
-    double ksumacc12 = ksumacc10 + ksum11 + ksum12;
-    double ksumacc14 = ksumacc12 + ksum13 + ksum14;
-    double ksumacc16 = ksumacc14 + ksum15 + ksum16;
+    const double ksumacc6 = ksum0 + ksum1 + ksum2 + ksum3 + ksum4 + ksum5 + ksum6;
+    const double ksumacc8 = ksumacc6 + ksum7 + ksum8;
+    const double ksumacc10 = ksumacc8 + ksum9 + ksum10;
+    const double ksumacc12 = ksumacc10 + ksum11 + ksum12;
+    const double ksumacc14 = ksumacc12 + ksum13 + ksum14;
+    const double ksumacc16 = ksumacc14 + ksum15 + ksum16;
 
-    double kksumacc6 = ksum1 + ksum2 * 2. + ksum3 * 3. + ksum4 * 4. + ksum5 * 5. + ksum6 * 6.;
-    double kksumacc8 = kksumacc6 + ksum7 * 7. + ksum8 * 8.;
-    double kksumacc10 = kksumacc8 + ksum9 * 9. + ksum10 * 10.;
-    double kksumacc12 = kksumacc10 + ksum11 * 11. + ksum12 * 12.;
-    double kksumacc14 = kksumacc12 + ksum13 * 13. + ksum14 * 14.;
-    double kksumacc16 = kksumacc14 + ksum15 * 15. + ksum16 * 16.;
+    const double kksumacc6 = ksum1 + ksum2 * 2. + ksum3 * 3. + ksum4 * 4. + ksum5 * 5. + ksum6 * 6.;
+    const double kksumacc8 = kksumacc6 + ksum7 * 7. + ksum8 * 8.;
+    const double kksumacc10 = kksumacc8 + ksum9 * 9. + ksum10 * 10.;
+    const double kksumacc12 = kksumacc10 + ksum11 * 11. + ksum12 * 12.;
+    const double kksumacc14 = kksumacc12 + ksum13 * 13. + ksum14 * 14.;
+    const double kksumacc16 = kksumacc14 + ksum15 * 15. + ksum16 * 16.;
 
-    double expbr = std::exp(-_b * dist);
+    const double expbr = std::exp(-_b * dist);
 
-    double term6 = _C6 * distNeg6 * (-6.0 + expbr * ((6.0 + bdist) * ksumacc6 - kksumacc6));
-    double term8 = _C8 * distNeg8 * (-8.0 + expbr * ((8.0 + bdist) * ksumacc8 - kksumacc8));
-    double term10 = _C10 * distNeg10 * (-10.0 + expbr * ((10.0 + bdist) * ksumacc10 - kksumacc10));
-    double term12 = _C12 * distNeg12 * (-12.0 + expbr * ((12.0 + bdist) * ksumacc12 - kksumacc12));
-    double term14 = _C14 * distNeg14 * (-14.0 + expbr * ((14.0 + bdist) * ksumacc14 - kksumacc14));
-    double term16 = _C16 * distNeg16 * (-16.0 + expbr * ((16.0 + bdist) * ksumacc16 - kksumacc16));
+    const double term6 = _C6 * distNeg6 * (-6.0 + expbr * ((6.0 + bdist) * ksumacc6 - kksumacc6));
+    const double term8 = _C8 * distNeg8 * (-8.0 + expbr * ((8.0 + bdist) * ksumacc8 - kksumacc8));
+    const double term10 = _C10 * distNeg10 * (-10.0 + expbr * ((10.0 + bdist) * ksumacc10 - kksumacc10));
+    const double term12 = _C12 * distNeg12 * (-12.0 + expbr * ((12.0 + bdist) * ksumacc12 - kksumacc12));
+    const double term14 = _C14 * distNeg14 * (-14.0 + expbr * ((14.0 + bdist) * ksumacc14 - kksumacc14));
+    const double term16 = _C16 * distNeg16 * (-16.0 + expbr * ((16.0 + bdist) * ksumacc16 - kksumacc16));
 
-    double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16) * distNeg2;
-    auto f = displacement * (firstTerm + secondTerm);
+    const double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16) * distNeg2;
+    const auto f = displacement * (firstTerm + secondTerm);
 
     i.addF(f);
     if (newton3) {
