@@ -193,6 +193,50 @@ namespace mdLib {
                     }
                 }
 
+                inline void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
+                        const double *const __restrict zPtr, const autopas::OwnershipState *const __restrict ownedStatePtr,
+                        VectorDouble& x1, VectorDouble& y1, VectorDouble& z1, VectorDouble& ownedStateIDouble) {
+
+                    int64_t owned = static_cast<int64_t>(ownedStatePtr[i]);
+
+                    ownedStateIDouble = highway::Set(tag_double, static_cast<double>(owned));
+
+                    x1 = highway::Set(tag_double, xPtr[i]);
+                    y1 = highway::Set(tag_double, yPtr[i]);
+                    z1 = highway::Set(tag_double, zPtr[i]);
+                }
+
+                inline void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
+                        double *const __restrict fzPtr, const VectorDouble& fxAcc, const VectorDouble& fyAcc, const VectorDouble& fzAcc) {
+
+                    fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
+                    fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
+                    fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+                }
+
+                template <bool newton3>
+                inline void computeGlobals(const VectorDouble& virialSumX, const VectorDouble& virialSumY,
+                        const VectorDouble& virialSumZ, const VectorDouble& uPotSum) {
+                    const int threadnum = autopas::autopas_get_thread_num();
+
+                    double globals[4] {
+                        highway::ReduceSum(tag_double, virialSumX),
+                        highway::ReduceSum(tag_double, virialSumY),
+                        highway::ReduceSum(tag_double, virialSumZ),
+                        highway::ReduceSum(tag_double, uPotSum)
+                    };
+
+                    double factor = 1.;
+                    if constexpr (newton3) {
+                        factor = 0.5;
+                    }
+
+                    _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
+                    _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
+                    _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
+                    _aosThreadData[threadnum].uPotSum += globals[3] * factor;
+                }
+
                 template <bool newton3>
                 inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 
@@ -230,13 +274,13 @@ namespace mdLib {
                         VectorDouble fyAcc = _zeroDouble;
                         VectorDouble fzAcc = _zeroDouble;
 
-                        int64_t owned = static_cast<int64_t>(ownedStatePtr[i]);
+                        VectorDouble ownedStateI;
 
-                        VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(owned));
+                        VectorDouble x1;
+                        VectorDouble y1;
+                        VectorDouble z1;
 
-                        const VectorDouble x1 = highway::Set(tag_double, xPtr[i]);
-                        const VectorDouble y1 = highway::Set(tag_double, yPtr[i]);
-                        const VectorDouble z1 = highway::Set(tag_double, zPtr[i]);
+                        fillIRegisters(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedStateI);
 
                         size_t j = 0;
                         for (; j < (i & ~(_vecLengthDouble - 1)); j+=_vecLengthDouble) {
@@ -254,30 +298,11 @@ namespace mdLib {
                                virialSumY, virialSumZ, uPotSum, rest);
                         }
 
-                        fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
-                        fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
-                        fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
-                    }
+                        reduceAccumulatedForce(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc);
+                    }   
 
                     if constexpr (calculateGlobals) {
-                        const int threadnum = autopas::autopas_get_thread_num();
-
-                        double globals[4] {
-                            highway::ReduceSum(tag_double, virialSumX),
-                            highway::ReduceSum(tag_double, virialSumY),
-                            highway::ReduceSum(tag_double, virialSumZ),
-                            highway::ReduceSum(tag_double, uPotSum)
-                        };
-
-                        double factor = 1.;
-                        if constexpr (newton3) {
-                            factor = 0.5;
-                        }
-
-                        _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-                        _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-                        _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-                        _aosThreadData[threadnum].uPotSum += globals[3] * factor;
+                        computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
                     }
                 }
 
@@ -323,11 +348,12 @@ namespace mdLib {
                         VectorDouble fyAcc = _zeroDouble;
                         VectorDouble fzAcc = _zeroDouble;
 
-                        int64_t owned = static_cast<int64_t>(ownedStatePtr1[1]);
-                        VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(owned));
-                        const VectorDouble x1 = highway::Set(tag_double, x1Ptr[i]);
-                        const VectorDouble y1 = highway::Set(tag_double, y1Ptr[i]);
-                        const VectorDouble z1 = highway::Set(tag_double, z1Ptr[i]);
+                        VectorDouble ownedStateI;
+                        VectorDouble x1;
+                        VectorDouble y1;
+                        VectorDouble z1;
+
+                        fillIRegisters(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x1, y1, z1, ownedStateI);
 
                         unsigned int j = 0;
 
@@ -345,30 +371,50 @@ namespace mdLib {
                                   virialSumX, virialSumY, virialSumZ, uPotSum, rest);
                         }
 
-                        fx1Ptr[i] += highway::ReduceSum(tag_double, fxAcc);
-                        fy1Ptr[i] += highway::ReduceSum(tag_double, fyAcc);
-                        fz1Ptr[i] += highway::ReduceSum(tag_double, fzAcc);
+                        reduceAccumulatedForce(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc);
                     }
 
                     if constexpr (calculateGlobals) {
-                        const int threadnum = autopas::autopas_get_thread_num();
+                        computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
+                    }
+                }
 
-                        double globals[4] {
-                            highway::ReduceSum(tag_double, virialSumX),
-                            highway::ReduceSum(tag_double, virialSumY),
-                            highway::ReduceSum(tag_double, virialSumZ),
-                            highway::ReduceSum(tag_double, uPotSum)
-                        };
+                template <bool remainder>
+                inline void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
+                        const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
+                        VectorDouble& x2, VectorDouble& y2, VectorDouble& z2, VectorDouble& ownedStateJDouble, const unsigned int rest) {
 
-                        double factor = 1.;
-                        if constexpr (newton3) {
-                            factor = 0.5;
+                    x2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &x2Ptr[j])
+                        : highway::LoadU(tag_double, &x2Ptr[j]);
+                    y2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &y2Ptr[j])
+                            : highway::LoadU(tag_double, &y2Ptr[j]);
+                    z2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &z2Ptr[j])
+                            : highway::LoadU(tag_double, &z2Ptr[j]);
+
+                    const VectorLong ownedStateJ = remainder ? highway::MaskedLoad(restMasksLong[rest-1], tag_long, &ownedStatePtr2[j])
+                        : highway::LoadU(tag_long, &ownedStatePtr2[j]);
+                    ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
+                }
+
+                template <bool remainder>
+                inline void fillPhysicsRegisters(const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
+                        VectorDouble& epsilon24s, VectorDouble& sigmaSquareds, VectorDouble& shift6s, const unsigned int rest) {
+                    double epsilons[_vecLengthDouble] = {0.};
+                    double sigmas[_vecLengthDouble] = {0.};
+                    double shifts[_vecLengthDouble] = {0.};
+
+                    for (int n = 0; n < (remainder ? rest : _vecLengthDouble); ++n) {
+                        epsilons[n] = _PPLibrary->getMixing24Epsilon(*typeID1Ptr, *(typeID2Ptr + n));
+                        sigmas[n] = _PPLibrary->getMixingSigmaSquared(*typeID1Ptr, *(typeID2Ptr + n));
+                        if constexpr (applyShift) {
+                            shifts[n] = _PPLibrary->getMixingShift6(*typeID1Ptr, *(typeID2Ptr + n));
                         }
+                    }
 
-                        _aosThreadData[threadnum].virialSum[0] += globals[0] * factor;
-                        _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
-                        _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
-                        _aosThreadData[threadnum].uPotSum += globals[3] * factor;
+                    epsilon24s = highway::LoadU(tag_double, epsilons);
+                    sigmaSquareds = highway::LoadU(tag_double, sigmas);
+                    if constexpr (applyShift) {
+                        shift6s = highway::LoadU(tag_double, shifts);
                     }
                 }
 
@@ -385,32 +431,16 @@ namespace mdLib {
                     VectorDouble sigmaSquareds = _sigmaSquared;
                     VectorDouble shift6s = _shift6;
 
-                    if (useMixing) {
-                        double epsilons[_vecLengthDouble] = {0.};
-                        double sigmas[_vecLengthDouble] = {0.};
-                        double shifts[_vecLengthDouble] = {0.};
-
-                        for (int n = 0; n < (remainder ? rest : _vecLengthDouble); ++n) {
-                            epsilons[n] = _PPLibrary->getMixing24Epsilon(*typeID1Ptr, *(typeID2Ptr + n));
-                            sigmas[n] = _PPLibrary->getMixingSigmaSquared(*typeID1Ptr, *(typeID2Ptr + n));
-                            if constexpr (applyShift) {
-                                shifts[n] = _PPLibrary->getMixingShift6(*typeID1Ptr, *(typeID2Ptr + n));
-                            }
-                        }
-
-                        epsilon24s = highway::LoadU(tag_double, epsilons);
-                        sigmaSquareds = highway::LoadU(tag_double, sigmas);
-                        if constexpr (applyShift) {
-                            shift6s = highway::LoadU(tag_double, shifts);
-                        }
+                    if constexpr (useMixing) {
+                        fillPhysicsRegisters<remainder>(typeID1Ptr, typeID2Ptr, epsilon24s, sigmaSquareds, shift6s, rest);
                     }
 
-                    const VectorDouble x2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &x2Ptr[j])
-                        : highway::LoadU(tag_double, &x2Ptr[j]);
-                    const VectorDouble y2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &y2Ptr[j])
-                        : highway::LoadU(tag_double, &y2Ptr[j]);
-                    const VectorDouble z2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &z2Ptr[j])
-                        : highway::LoadU(tag_double, &z2Ptr[j]);
+                    VectorDouble x2;
+                    VectorDouble y2;
+                    VectorDouble z2;
+                    VectorDouble ownedStateJDouble;
+
+                    fillJRegisters<remainder>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJDouble, rest);
 
                     // distance calculations
                     const auto drX = x1 - x2;
@@ -424,9 +454,6 @@ namespace mdLib {
                     const auto dr2 = drX2 + drY2 + drZ2;
 
                     const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
-                    const VectorLong ownedStateJ = remainder ? highway::MaskedLoad(restMasksLong[rest-1], tag_long, &ownedStatePtr2[j])
-                        : highway::LoadU(tag_long, &ownedStatePtr2[j]);
-                    const VectorDouble ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
                     const auto dummyMask = highway::Ne(ownedStateJDouble, _ownedStateDummy);
                     const auto cutoffDummyMask = highway::And(cutoffMask, dummyMask);
 
