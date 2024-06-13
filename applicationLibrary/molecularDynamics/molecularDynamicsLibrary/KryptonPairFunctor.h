@@ -19,6 +19,21 @@
 
 namespace mdLib {
 
+// Helper to compute power at compile time
+constexpr double pow(double base, int exp) {
+  return exp == 0 ? 1 : base * pow(base, exp - 1);
+}
+
+// Generate an array of powers of b
+template<std::size_t... Is>
+constexpr std::array<double, sizeof...(Is)> generate_powers(std::index_sequence<Is...>, const double b) {
+  return {pow(b, Is + 1)...};
+}
+
+constexpr std::array<double, 16> generatePowersArray(const double b) {
+  return generate_powers(std::make_index_sequence<16>{}, b);
+}
+
 /**
  * A functor to handle interactions between two krypton atoms.
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
@@ -68,6 +83,7 @@ class KryptonPairFunctor
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
+
   }
 
  public:
@@ -163,21 +179,14 @@ class KryptonPairFunctor
     const double ksumacc14 = ksumacc12 + ksum13 + ksum14;
     const double ksumacc16 = ksumacc14 + ksum15 + ksum16;
 
-    const double kksumacc6 = ksum1 + ksum2 * 2. + ksum3 * 3. + ksum4 * 4. + ksum5 * 5. + ksum6 * 6.;
-    const double kksumacc8 = kksumacc6 + ksum7 * 7. + ksum8 * 8.;
-    const double kksumacc10 = kksumacc8 + ksum9 * 9. + ksum10 * 10.;
-    const double kksumacc12 = kksumacc10 + ksum11 * 11. + ksum12 * 12.;
-    const double kksumacc14 = kksumacc12 + ksum13 * 13. + ksum14 * 14.;
-    const double kksumacc16 = kksumacc14 + ksum15 * 15. + ksum16 * 16.;
-
     const double expbr = std::exp(-bdist);
 
-    const double term6 = _C6 * distNeg6 * (-6.0 + expbr * ((6.0 + bdist) * ksumacc6 - kksumacc6));
-    const double term8 = _C8 * distNeg8 * (-8.0 + expbr * ((8.0 + bdist) * ksumacc8 - kksumacc8));
-    const double term10 = _C10 * distNeg10 * (-10.0 + expbr * ((10.0 + bdist) * ksumacc10 - kksumacc10));
-    const double term12 = _C12 * distNeg12 * (-12.0 + expbr * ((12.0 + bdist) * ksumacc12 - kksumacc12));
-    const double term14 = _C14 * distNeg14 * (-14.0 + expbr * ((14.0 + bdist) * ksumacc14 - kksumacc14));
-    const double term16 = _C16 * distNeg16 * (-16.0 + expbr * ((16.0 + bdist) * ksumacc16 - kksumacc16));
+    const double term6 = _C6 * distNeg6 * (-6.0 + expbr * (6.0 * ksumacc6 - bdist * ksum6));
+    const double term8 = _C8 * distNeg8 * (-8.0 + expbr * (8.0 * ksumacc8 - bdist * ksum8));
+    const double term10 = _C10 * distNeg10 * (-10.0 + expbr * (10.0 * ksumacc10 - bdist * ksum10));
+    const double term12 = _C12 * distNeg12 * (-12.0 + expbr * (12.0 * ksumacc12 - bdist * ksum12));
+    const double term14 = _C14 * distNeg14 * (-14.0 + expbr * (14.0 * ksumacc14 - bdist * ksum14));
+    const double term16 = _C16 * distNeg16 * (-16.0 + expbr * (16.0 * ksumacc16 - bdist * ksum16));
 
     const double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16) * distNeg2;
     const auto f = displacement * (firstTerm + secondTerm);
@@ -407,6 +416,8 @@ class KryptonPairFunctor
   const double _C12 = 1.1043747590e-3;
   const double _C14 = 2.0486474980e-4;
   const double _C16 = 5.0017084700e-5;
+
+  const std::array<double, 17> _bPowers = generatePowersArray(_b);
 
   const std::array<double, 17> _invFactorials = {
     1., 1., 0.5, 1. / 6., 1. / 24., 1. / 120., 1. / 720., 1. / 5040., 1. / 40320., 1. / 362880., 1. / 3628800.,
