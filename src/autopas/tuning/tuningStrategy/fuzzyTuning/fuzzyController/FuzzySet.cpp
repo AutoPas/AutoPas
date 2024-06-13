@@ -15,7 +15,7 @@
 namespace autopas::fuzzy_logic {
 
 FuzzySet::FuzzySet(std::string linguisticTerm, BaseMembershipFunction &&baseMembershipFunction)
-    : _linguisticTerm(std::move(linguisticTerm)), _baseMembershipFunction(std::move(baseMembershipFunction)) {}
+    : _linguisticTerm(std::move(linguisticTerm)), _membershipFunction(std::move(baseMembershipFunction)) {}
 
 FuzzySet::FuzzySet(std::string linguisticTerm, ComposedMembershipFunction &&membershipFunction,
                    const std::shared_ptr<CrispSet> &crispSet)
@@ -24,7 +24,7 @@ FuzzySet::FuzzySet(std::string linguisticTerm, ComposedMembershipFunction &&memb
       _crispSet(crispSet) {}
 
 double FuzzySet::evaluate_membership(const Data &data) const {
-  if (_baseMembershipFunction.has_value()) {
+  if (std::holds_alternative<BaseMembershipFunction>(_membershipFunction)) {
     // The current fuzzy set is a base set and has therefore a membership function which can be evaluated with a
     // single value.
     const auto crisp_dimensions = _crispSet->getDimensions();
@@ -38,10 +38,13 @@ double FuzzySet::evaluate_membership(const Data &data) const {
       autopas::utils::ExceptionHandler::exception("The data does not contain a value for the dimension " +
                                                   dimension_name);
     }
-    return std::get<2>(*_baseMembershipFunction)(data.at(dimension_name));
-  } else {
+    return std::get<2>(std::get<BaseMembershipFunction>(_membershipFunction))(data.at(dimension_name));
+  } else if (std::holds_alternative<ComposedMembershipFunction>(_membershipFunction)) {
     // The current fuzzy set is a derived set and has needs to delegate the evaluation recursively to its base sets.
-    return _membershipFunction(data);
+    return std::get<ComposedMembershipFunction>(_membershipFunction)(data);
+  } else {
+    autopas::utils::ExceptionHandler::exception("Unknown membership function type");
+    throw std::runtime_error("Unknown membership function type");
   }
 }
 
@@ -102,16 +105,17 @@ double FuzzySet::meanOfMaximum(size_t numSamples) const {
 }
 
 std::string FuzzySet::printBaseMembershipFunction() const {
+  auto baseMembershipFunction = std::get<BaseMembershipFunction>(_membershipFunction);
   std::string parameters = std::accumulate(
-      std::get<1>(*_baseMembershipFunction).begin(), std::get<1>(*_baseMembershipFunction).end(), std::string(""),
+      std::get<1>(baseMembershipFunction).begin(), std::get<1>(baseMembershipFunction).end(), std::string(""),
       [](const std::string &acc, const double &b) { return acc + std::to_string(b) + ", "; });
 
-  return fmt::format(R"("{}": {}({}))", _linguisticTerm, std::get<0>(*_baseMembershipFunction),
+  return fmt::format(R"("{}": {}({}))", _linguisticTerm, std::get<0>(baseMembershipFunction),
                      parameters.substr(0, parameters.size() - 2));
 }
 
 FuzzySet::operator std::string() const {
-  if (_baseMembershipFunction.has_value()) {
+  if (std::holds_alternative<BaseMembershipFunction>(_membershipFunction)) {
     // If the fuzzy set is a base set, the membership function is printed in the form "dimension == value".
     const auto [dimensionName, _] = *_crispSet->getDimensions().begin();
     return fmt::format(R"("{}" == "{}")", dimensionName, _linguisticTerm);

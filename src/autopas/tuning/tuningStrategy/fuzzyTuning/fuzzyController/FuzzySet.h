@@ -132,10 +132,13 @@ class FuzzySet {
   std::string _linguisticTerm;
 
   /**
-   * The membership function of the FuzzySet.
+   * The membership function of the FuzzySet. Can be a base or composed membership function.
    */
-  ComposedMembershipFunction _membershipFunction;
-  std::optional<BaseMembershipFunction> _baseMembershipFunction;
+  std::variant<BaseMembershipFunction, ComposedMembershipFunction> _membershipFunction;
+
+  /**
+   * The crisp set on which the FuzzySet is defined.
+   */
   std::shared_ptr<CrispSet> _crispSet;
 };
 
