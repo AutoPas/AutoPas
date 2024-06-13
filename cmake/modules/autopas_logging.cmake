@@ -39,10 +39,3 @@ if (AUTOPAS_LOG_TUNINGDATA OR AUTOPAS_LOG_ALL)
     target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_TUNINGDATA)
     message(STATUS "TuningDataLogger enabled.")
 endif ()
-
-# option for LiveInfoLogger
-option(AUTOPAS_LOG_LIVEINFO "Generate a csv tracking the live information of the autopas object." OFF)
-if (AUTOPAS_LOG_LIVEINFO OR AUTOPAS_LOG_ALL)
-    target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_LIVEINFO)
-    message(STATUS "LiveInfoLogger enabled.")
-endif ()

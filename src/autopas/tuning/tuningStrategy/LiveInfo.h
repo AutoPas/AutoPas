@@ -284,47 +284,6 @@ class LiveInfo {
     return in;
   }
 
-  /**
-   * Generate a csv representation containing all values from the toString() method.
-   * Since the keys are not necessarily known in advance, this method generates a CSV header and a CSV line.
-   * @return A pair of strings in the form of (header, line).
-   */
-  [[nodiscard]] std::pair<std::string, std::string> getCSVLine() const {
-    // match all words that are followed by a '='
-    auto keyRegex = std::regex("([^=]+)=[^ ]*");
-    // match all words that are preceded by a '='
-    auto valueRegex = std::regex("=([^ ]+)");
-
-    auto searchString = toString();
-    // remove leading Live Info:
-    searchString = searchString.substr(std::string("Live Info: ").size());
-
-    std::sregex_iterator keyIter(searchString.begin(), searchString.end(), keyRegex);
-    std::sregex_iterator valueIter(searchString.begin(), searchString.end(), valueRegex);
-    std::sregex_iterator end;
-
-    std::stringstream header;
-    std::stringstream line;
-
-    while (keyIter != end) {
-      // first submatch is the match of the capture group
-      header << keyIter->str(1) << ",";
-      ++keyIter;
-    }
-    while (valueIter != end) {
-      // first submatch is the match of the capture group
-      line << valueIter->str(1) << ",";
-      ++valueIter;
-    }
-
-    auto headerStr = header.str();
-    auto lineStr = line.str();
-    // drop trailing ','
-    headerStr.pop_back();
-    lineStr.pop_back();
-
-    return std::make_pair(headerStr, lineStr);
-  }
 
  private:
   /**
