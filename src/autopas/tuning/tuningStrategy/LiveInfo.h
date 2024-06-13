@@ -284,7 +284,6 @@ class LiveInfo {
     return in;
   }
 
-
  private:
   /**
    * Private helper to calculate the particle size needed by a functor. This is the sum of the size of the type of all
