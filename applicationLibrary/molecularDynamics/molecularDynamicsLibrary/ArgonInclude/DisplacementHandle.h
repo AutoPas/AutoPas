@@ -10,6 +10,7 @@
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::utils::ArrayMath::Argon {
+using nabla = std::array<double, 3>;
 
 class DisplacementHandle {
  public:
@@ -21,6 +22,10 @@ class DisplacementHandle {
   [[nodiscard]] size_t getIdEndVertex() const { return idEndVertex_; }
   [[nodiscard]] std::array<double, 3> getDisplacement() const { return  displacement_; }
   [[nodiscard]] DisplacementHandle getInv() const;
+
+  template<size_t wrt>
+  [[nodiscard]] nabla derive_wrt();
+
  private:
   std::array<double, 3> positionStartVertex_;
   std::array<double, 3> positionEndVertex_;

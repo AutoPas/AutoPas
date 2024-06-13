@@ -1,7 +1,7 @@
 /**
-* @file ArgonFunctor.h
-* @author I. Angelucci
-* @date 13/06/24
+ * @file ArgonFunctor.h
+ * @author I. Angelucci
+ * @date 13/06/24
  */
 
 #pragma once

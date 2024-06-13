@@ -19,7 +19,7 @@ class CosineHandle {
   [[nodiscard]] double getCos() const { return cos_; }
 
   template<size_t wrt>
-  [[nodiscard]] std::array<double, 3> derive_wrt();
+  [[nodiscard]] nabla derive_wrt();
 
  private:
   DisplacementHandle displacementAB_;

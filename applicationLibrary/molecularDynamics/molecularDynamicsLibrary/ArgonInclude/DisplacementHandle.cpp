@@ -21,5 +21,22 @@ DisplacementHandle::DisplacementHandle(const std::array<double, 3>& positionStar
   [[nodiscard]] DisplacementHandle DisplacementHandle::getInv() const { return DisplacementHandle(positionEndVertex_,
       positionStartVertex_, idEndVertex_, idStartVertex_); }
 
-
+  /**
+   *
+   * @tparam wrt particle with respect to which we are computing the derivative
+   * @return Derivative of displacement_ with respect to particle wrt
+   */
+  template<size_t wrt>
+  [[nodiscard]] nabla DisplacementHandle::derive_wrt() {
+    auto moduloDisplacement{ L2Norm(displacement_)};
+    if ( wrt!= idStartVertex_ && wrt!= idEndVertex_) {
+      return std::array<double, 3>{{0, 0, 0}};
+    }
+    else if ( wrt == idStartVertex_ ) {
+      return std::array<double, 3>{0, 0, 0}-displacement_ / moduloDisplacement;
+    }
+    else if ( wrt == idEndVertex_ ) {
+      return displacement_ / moduloDisplacement;
+    }
+  }
 }   // namespace autopas::utils::ArrayMath::Argon
