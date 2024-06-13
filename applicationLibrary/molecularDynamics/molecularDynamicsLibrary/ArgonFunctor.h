@@ -11,14 +11,13 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "ArgonInclude/Parameters.h"
 
-namespace mdLib {
+namespace mdLib::Argon {
 
-template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false>
-class ArgonFunctor
-    : public autopas::TriwiseFunctor<Particle,
-                                     ArgonFunctor<Particle, useMixing, useNewton3, calculateGlobals>> {
+class ArgonFunctor: public autopas::TriwiseFunctor<Particle,ArgonFunctor<Particle, useNewton3, calculateGlobals>> {
 
   using SoAArraysType = typename Particle::SoAArraysType;
   using SoAFloatPrecision = typename Particle::ParticleSoAFloatPrecision;
@@ -30,32 +29,10 @@ class ArgonFunctor
   ArgonFunctor() = delete;
 
   /**
-   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
-   * setParticleProperties() to set internal constants because it does not use a particle properties library.
-   *
-   * @note Only to be used with mixing == false.
-   *
+   * Constructor of ArgonFunctor
    * @param cutoff
    */
-  explicit ArgonFunctor(double cutoff) : ArgonFunctor(cutoff, nullptr) {
-    static_assert(not useMixing,
-                  "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
-                  "mixing to false.");
-  }
-
-  /**
-   * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
-   * properties like nu.
-   * @param cutoff
-   * @param particlePropertiesLibrary
-   */
-  explicit ArgonFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : ArgonFunctor(cutoff, nullptr) {
-    static_assert(useMixing,
-                  "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
-                  "or set mixing to true.");
-    _PPLibrary = &particlePropertiesLibrary;
-  }
+  explicit ArgonFunctor(double cutoff) : ArgonFunctor(cutoff, nullptr) {}
 
   std::string getName() final { return "ArgonFunctorAutoVec"; }
 
@@ -69,7 +46,16 @@ class ArgonFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {}
+  /**
+   *
+   * @param i particle i
+   * @param j particle j
+   * @param k paritcle k
+   * @param newton3
+   */
+  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
+    const auto A_000{A[index<param::A>(0, 0, 0)]};
+  }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
@@ -99,11 +85,6 @@ class ArgonFunctor
   }
 
   /**
-   * @return useMixing
-   */
-  constexpr static bool getMixing() { return useMixing; }
-
-  /**
    * Get the number of flops used per kernel call for a given particle pair. This should count the
    * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
    * distance.
@@ -115,7 +96,7 @@ class ArgonFunctor
    * for other functors where they may.
    * @return the number of floating point operations
    */
-   //TODO @ireneangelucci compute number of flops needed per kernel call, once Functor implementation is completed
+  // TODO @ireneangelucci compute number of flops needed per kernel call, once Functor implementation is completed
   static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, size_t molCType, bool newton3) {
     return 0;
   }
@@ -200,8 +181,7 @@ class ArgonFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit ArgonFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle, ArgonFunctor<Particle, useMixing, useNewton3, calculateGlobals>>(
-            cutoff),
+      : autopas::TriwiseFunctor<Particle, ArgonFunctor<Particle, useNewton3, calculateGlobals>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -221,7 +201,8 @@ class ArgonFunctor
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
-   //TODO @ireneangelucci Why do we want it to be k*64 Bytes by using __remainingTo64? And not just checking it has k*32 Bytes without storing __remainingTo64?
+  // TODO @ireneangelucci Why do we want it to be k*64 Bytes by using __remainingTo64? And not just checking it has k*32
+  // Bytes without storing __remainingTo64?
   class AoSThreadData {
    public:
     AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
@@ -240,7 +221,73 @@ class ArgonFunctor
 
   const double _cutoffSquared;
 
-  ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+  static constexpr std::array<double, 23> A {
+      {-0.170806873130E+01, //000
+       -0.316818997395E+02, //001
+       -0.571545817498E+05, //011
+       0.848780677578E+02, //111
+       0.163923794220E+07, //002
+       0.380809830366E+02, //012
+       -0.217403993198E+03, //112
+       0.244997545538E+03, //022
+       0.128926029735E+03, //122
+       0.815601247450E+02, //222
+       0.409987725022E+02, //003
+       -0.978512983041E+06, //013
+       0.104383189893E+07, //113
+       -0.383820796134E+02, //023
+       0.143934125087E+03, //123
+       0.102161665959E+04, //033
+       -0.569593762549E+02, //004
+       0.178356269769E+04, //014
+       0.242202158097E+02, //114
+       -0.279617357863E+01, //024
+       -0.324585542907E+02, //005
+       -0.963264559888E-01, //015
+       -0.898942588279E+05} //006
+  };
+
+  static constexpr std::array<double, 23> alpha{
+      {0.428132039316E+00, //000
+       0.503934786518E+00, //001
+       0.104706730543E+01, //011
+       0.456769339560E+00, //111
+       0.131047310452E+01, //002
+       0.444052360076E+00, //012
+       0.480469535570E+00, //112
+       0.737327026170E+00, //022
+       0.496177745527E+00, //122
+       0.424365319847E+00, //222
+       0.428946186456E+00, //003
+       0.117979281352E+01, //013
+       0.119534448663E+01, //113
+       0.416753172892E+00, //023
+       0.507114743788E+00, //123
+       0.764351644551E+00, //033
+       0.422619330972E+00, //004
+       0.757543022081E+00, //014
+       0.482734248672E+00, //114
+       0.419340374650E+00, //024
+       0.635761316281E+00, //005
+       0.375600311119E+00, //015
+       0.130334333132E+01} //006
+  };
+
+  static constexpr std::array<double, 5> Z{
+      {0.273486414323E+03, //111
+       -0.213475877256E+05, //112
+       0.108226781130E+07, //122
+       -0.213710093072E+07, //222
+       0.364515182541E+06} //113
+  };
+
+  static constexpr std::array<double, 5> beta{
+      {0.211602562917E+02, //111
+       0.149623190559E+01, //112
+       0.132161541056E+01, //122
+       0.208199482789E+01, //222
+       0.179870559008E+01} //113
+  };
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;
@@ -254,4 +301,4 @@ class ArgonFunctor
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
 };
-}  // namespace mdLib
+}  // namespace mdLib::Argon
