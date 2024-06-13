@@ -140,21 +140,21 @@ class KryptonPairFunctor
 
     const double ksum0 = 1.0;
     const double ksum1 = bdist;
-    const double ksum2 = bdist2 * 0.5;
-    const double ksum3 = bdist3 * _fac3Inv;
-    const double ksum4 = bdist4 * _fac4Inv;
-    const double ksum5 = bdist5 * _fac5Inv;
-    const double ksum6 = bdist6 * _fac6Inv;
-    const double ksum7 = bdist7 * _fac7Inv;
-    const double ksum8 = bdist8 * _fac8Inv;
-    const double ksum9 = bdist9 * _fac9Inv;
-    const double ksum10 = bdist10 * _fac10Inv;
-    const double ksum11 = bdist11 * _fac11Inv;
-    const double ksum12 = bdist12 * _fac12Inv;
-    const double ksum13 = bdist13 * _fac13Inv;
-    const double ksum14 = bdist14 * _fac14Inv;
-    const double ksum15 = bdist15 * _fac15Inv;
-    const double ksum16 = bdist16 * _fac16Inv;
+    const double ksum2 = bdist2 * _invFactorials[2];
+    const double ksum3 = bdist3 * _invFactorials[3];
+    const double ksum4 = bdist4 * _invFactorials[4];
+    const double ksum5 = bdist5 * _invFactorials[5];
+    const double ksum6 = bdist6 * _invFactorials[6];
+    const double ksum7 = bdist7 * _invFactorials[7];
+    const double ksum8 = bdist8 * _invFactorials[8];
+    const double ksum9 = bdist9 * _invFactorials[9];
+    const double ksum10 = bdist10 * _invFactorials[10];
+    const double ksum11 = bdist11 * _invFactorials[11];
+    const double ksum12 = bdist12 * _invFactorials[12];
+    const double ksum13 = bdist13 * _invFactorials[13];
+    const double ksum14 = bdist14 * _invFactorials[14];
+    const double ksum15 = bdist15 * _invFactorials[15];
+    const double ksum16 = bdist16 * _invFactorials[16];
 
     const double ksumacc6 = ksum0 + ksum1 + ksum2 + ksum3 + ksum4 + ksum5 + ksum6;
     const double ksumacc8 = ksumacc6 + ksum7 + ksum8;
@@ -170,7 +170,7 @@ class KryptonPairFunctor
     const double kksumacc14 = kksumacc12 + ksum13 * 13. + ksum14 * 14.;
     const double kksumacc16 = kksumacc14 + ksum15 * 15. + ksum16 * 16.;
 
-    const double expbr = std::exp(-_b * dist);
+    const double expbr = std::exp(-bdist);
 
     const double term6 = _C6 * distNeg6 * (-6.0 + expbr * ((6.0 + bdist) * ksumacc6 - kksumacc6));
     const double term8 = _C8 * distNeg8 * (-8.0 + expbr * ((8.0 + bdist) * ksumacc8 - kksumacc8));
@@ -408,22 +408,10 @@ class KryptonPairFunctor
   const double _C14 = 2.0486474980e-4;
   const double _C16 = 5.0017084700e-5;
 
-  const double _fac0Inv = 1.;
-  const double _fac1Inv = 1.;
-  const double _fac2Inv = 0.5;
-  const double _fac3Inv = 1. / 6.;
-  const double _fac4Inv = 1. / 24.;
-  const double _fac5Inv = 1. / 120.;
-  const double _fac6Inv = 1. / 720.;
-  const double _fac7Inv = 1. / 5040.;
-  const double _fac8Inv = 1. / 40320.;
-  const double _fac9Inv = 1. / 362880.;
-  const double _fac10Inv = 1. / 3628800.;
-  const double _fac11Inv = 1. / 39916800.;
-  const double _fac12Inv = 1. / 479001600.;
-  const double _fac13Inv = 1. / 6227020800.;
-  const double _fac14Inv = 1. / 87178291200.;
-  const double _fac15Inv = 1. / 1307674368000.;
-  const double _fac16Inv = 1. / 20922789888000.;
+  const std::array<double, 17> _invFactorials = {
+    1., 1., 0.5, 1. / 6., 1. / 24., 1. / 120., 1. / 720., 1. / 5040., 1. / 40320., 1. / 362880., 1. / 3628800.,
+    1. / 39916800., 1. / 479001600., 1. / 6227020800., 1. / 87178291200., 1. / 1307674368000., 1. / 20922789888000.
+  };
+
 };
 }  // namespace mdLib
