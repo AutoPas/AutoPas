@@ -41,7 +41,7 @@ constexpr T threeToOneD(T x, T y, T z, const std::array<T, 3> &dims) {
 template <typename T>
 constexpr T threeToOneD(const std::array<T, 3> &index3d, const std::array<T, 3> &dims) {
   static_assert(std::is_integral<T>::value, "threeToOneD requires integral types");
-  return (index3d[2] * dims[1] + index3d[1]) * dims[0] + index3d[0];
+  return index3d[2] * dims[1] * dims[0] + index3d[1] * dims[0] + index3d[0];
 }
 
 /**
@@ -52,12 +52,12 @@ constexpr T threeToOneD(const std::array<T, 3> &index3d, const std::array<T, 3> 
  * @return The 3d index.
  */
 template <typename T>
-constexpr std::array<T, 3> oneToThreeD(T ind, const std::array<T, 3> &dims) {
+constexpr std::array<size_t, 3> oneToThreeD(T ind, const std::array<T, 3> &dims) {
   static_assert(std::is_integral<T>::value, "oneToThreeD requires integral types");
   std::array<T, 3> pos{};
-  pos[2] = ind / (dims[0] * dims[1]);
-  pos[1] = (ind - pos[2] * dims[0] * dims[1]) / dims[0];
-  pos[0] = ind - dims[0] * (pos[1] + dims[1] * pos[2]);
+  pos[2] = static_cast<size_t>(ind / (dims[0] * dims[1]));
+  pos[1] = static_cast<size_t>((ind % (dims[0] * dims[1])) / dims[0]);
+  pos[0] = static_cast<size_t>(ind % dims[0]);
   return pos;
 }
 

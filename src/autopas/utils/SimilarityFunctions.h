@@ -45,7 +45,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto numberOfParticles = container.getNumberOfParticles();
-  const auto domainDimensions = container.getBoxMax() - container.getBoxMax();
+  const auto domainDimensions = container.getBoxMax() - container.getBoxMin();
   const auto domainVolume = domainDimensions[0] * domainDimensions[1] * domainDimensions[2];
 
   // We scale the dimensions of the domain to bins with volumes which give approximately 10 particles per bin.
@@ -53,13 +53,10 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   const auto targetNumberOfBinsPerDim = std::cbrt(static_cast<double>(targetNumberOfBins));
   // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
   const auto numberOfBinsPerDim = static_cast<int>(std::floor(targetNumberOfBinsPerDim));
-  const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
-  const auto binVolume = domainVolume / static_cast<double>(numberOfBins);
   const auto binDimensions = domainDimensions / static_cast<double>(numberOfBinsPerDim);
 
-  // Calculate the actual number of bins per dimension. The rounding is needed in case the division (due to floating
-  // point errors) slightly underestimates the division. The choice of dimension 0 is arbitrary.
-  const int binsPerDimension = static_cast<int>(std::round(domainDimensions[0] / binDimensions[0]));
+  const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
+  const auto binVolume = domainVolume / static_cast<double>(numberOfBins);
 
   std::vector<size_t> particlesPerBin(numberOfBins, 0);
 
@@ -70,7 +67,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
     const auto binIndex3d =
         autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);
     const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(
-        binIndex3d, {binsPerDimension, binsPerDimension, binsPerDimension});
+        binIndex3d, {numberOfBinsPerDim, numberOfBinsPerDim, numberOfBinsPerDim});
 
     particlesPerBin[binIndex1d] += 1;
   }
@@ -91,12 +88,24 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   // get mean and reserve variable for densityVariance
   const double densityMean = numberOfParticles / domainVolume;
 
-  const auto densityDifferenceSquaredSum = std::transform_reduce(
-      densityPerBin.cbegin(), densityPerBin.cend(), 0l, std::plus{}, [&densityMean](auto binDensity) {
-        const auto densityDifference = binDensity - densityMean;
-        return densityDifference * densityDifference;
-      });
-  const auto densityVariance = densityDifferenceSquaredSum / numberOfBins;
+  double densityVariance{0.};
+  for (size_t i = 0; i < numberOfBins; ++i) {
+    const double densityDifference = densityPerBin[i] - densityMean;
+    densityVariance += (densityDifference * densityDifference);
+  }
+
+  /*
+    double densityVariance = std::transform_reduce(
+          densityPerBin.begin(), densityPerBin.end(), 0.0,
+          std::plus<>(),
+          [densityMean](double density) {
+              double densityDifference = density - densityMean;
+              return densityDifference * densityDifference;
+          }
+      );
+  */
+  densityVariance = densityVariance / numberOfBins;
+  std::cout << densityVariance << "\n";
 
   // finally calculate standard deviation
   const double homogeneity = std::sqrt(densityVariance);

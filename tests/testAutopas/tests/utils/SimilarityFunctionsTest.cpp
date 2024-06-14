@@ -38,10 +38,14 @@ TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
   const auto domainVol = (domainMax[0] - domainMin[0]) * (domainMax[1] - domainMin[1]) * (domainMax[2] - domainMin[2]);
 
   for (int i = 0; i < 88; ++i) {
-    const auto boxIndex1D = i / 11;
+    const size_t boxIndex1D = i / 11;
     const auto boxIndex3D = autopas::utils::ThreeDimensionalMapping::oneToThreeD(boxIndex1D, {2, 2, 2});
     const std::array<double, 3> position = {3. + (double)boxIndex3D[0] * 4., 3. + (double)boxIndex3D[1] * 4.,
                                             1. + (double)boxIndex3D[2] * 2.};
+
+    ASSERT_LT(boxIndex3D[0], 2) << "Only two bins per direction expected\n";
+    ASSERT_LT(boxIndex3D[1], 2) << "Only two bins per direction expected\n";
+    ASSERT_LT(boxIndex3D[2], 2) << "Only two bins per direction expected\n";
 
     Molecule m(position, {0, 0, 0}, i);
     dsContainer.addParticle(m);
