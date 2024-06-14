@@ -12,6 +12,12 @@ file(
     "*.cuh"
 )
 
+option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+        "Enables energy measurements and tuning using Intel's RAPL (Running Average Power Limit) interface for x86 processors
+        running on Linux kernels."
+        OFF
+)
+
 # If rules-based tuning is disabled, we must remove all files which link to antlr. As this includes generated files,
 # where we can't easily change the file, we disable the files here.
 if (NOT AUTOPAS_ENABLE_RULES_BASED_TUNING)
@@ -49,6 +55,7 @@ target_compile_definitions(
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
         $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
         $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         _USE_MATH_DEFINES
 )
 
