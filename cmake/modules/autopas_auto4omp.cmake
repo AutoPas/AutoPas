@@ -172,9 +172,6 @@ else ()
             PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/scripts"
     )
 
-    #### TODO: when building target with a cmake command, cmake fails to load its cache as it's not done generating.
-    ####execute_process(COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target has_builtin_readcyclecounter)
-
     #### For now, build manually.
     execute_process(
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/scripts
