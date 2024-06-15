@@ -34,16 +34,16 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
 }
 
 /**
- * OpenMP chunk size getter.
+ * AutoPas OpenMP configurator chunk size getter.
  * @return the current OpenMP chunk size
  */
 [[maybe_unused]] [[nodiscard]] int autopas::OpenMPConfigurator::getChunkSize() const {
-  return _kind;
+  return _chunkSize;
 }
 
 /**
  * OpenMP chunk size getter for setting OpenMP's scheduling runtime variables.
- * @return the current OpenMP chunk size
+ * @return the current OpenMP chunk size, directly usable in OpenMP's schedule setter
  */
 [[maybe_unused]] [[nodiscard]] int autopas::OpenMPConfigurator::getOMPChunkSize() const {
   switch (_kind) {
@@ -61,20 +61,20 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
 }
 
 /**
- * OpenMP chunk size setter.
- * @param s the new chunk size to use
+ * AutoPas OpenMP configurator chunk size setter.
+ * @param chunkSize the new chunk size to use
  */
 [[maybe_unused]] void autopas::OpenMPConfigurator::setChunkSize(int chunkSize) { _chunkSize = chunkSize; }
 
 /**
- * OpenMP scheduling kind getter.
- * @return the current OpenMP scheduling kind, directly usable as an argument for OpenMP's schedule-clause
+ * AutoPas OpenMP configurator scheduling kind getter.
+ * @return the current OpenMP scheduling kind
  */
 [[maybe_unused]] [[nodiscard]] OpenMPKindOption autopas::OpenMPConfigurator::getKind() const { return _kind; }
 
 /**
- * OpenMP standard scheduling kind getter.
- * @return the current OpenMP scheduling kind, directly usable as an argument for OpenMP's schedule-clause
+ * OpenMP scheduling kind getter for setting OpenMP's scheduling runtime variables.
+ * @return the current OpenMP kind, directly usable in OpenMP's schedule setter
  */
 [[maybe_unused]] [[nodiscard]] omp_sched_t autopas::OpenMPConfigurator::getOMPKind() const {
   switch (_kind) {
@@ -90,8 +90,8 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
 }
 
 /**
- * OpenMP chunk size setter.
- * @param k the new scheduling kind to use
+ * AutoPas OpenMP configurator scheduling kind setter.
+ * @param kind the new scheduling kind to use
  */
 [[maybe_unused]] void autopas::OpenMPConfigurator::setKind(OpenMPKindOption kind) { _kind = kind; }
 

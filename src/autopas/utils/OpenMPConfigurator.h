@@ -153,35 +153,32 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         {OpenMPKindOption::auto4omp_expertsel, "expertSel"},
 
 #ifdef AUTOPAS_USE_LB4OMP
-        // LB4OMP's scheduling techniques:
-        {OpenMPKindOption::lb4omp_trapezoid_self_scheduling, "Trapezoid self scheduling (TSS)"},
-        {OpenMPKindOption::lb4omp_fixed_size_chunk, "Fixed size chunk (FSC)"},
-        {OpenMPKindOption::lb4omp_factoring, "Factoring (FAC)"},
-        {OpenMPKindOption::lb4omp_improved_factoring, "Improved implementation of Factoring (mFAC)"},
-        {OpenMPKindOption::lb4omp_practical_factoring, "Practical variant of factoring (FAC2)"},
-        {OpenMPKindOption::lb4omp_practical_weighted_factoring, "Practical variant of weighted factoring (WF2)"},
-        {OpenMPKindOption::lb4omp_tapering, "Tapering (TAP)"},
-        {OpenMPKindOption::lb4omp_modified_fixed_size_chunk, "Modified Fixed size chunk (mFSC)"},
-        {OpenMPKindOption::lb4omp_trapezoid_factoring_self_scheduling, "Trapezoid factoring self scheduling "
-         "(TFSS)"},
-        {OpenMPKindOption::lb4omp_fixedIncrease_self_scheduling, "Fixed increase self scheduling (FISS)"},
-        {OpenMPKindOption::lb4omp_variable_increase_self_scheduling, "Variable increase self scheduling (FISS)"},
-        {OpenMPKindOption::lb4omp_random, "Random (RND)"},
-        {OpenMPKindOption::lb4omp_bold, "(BOLD)"},
-        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring, "Adaptive weighted factoring (AWF) "
-         "for time-stepping applications"},
-        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring_B, "Variant B of adaptive weighted factoring "
-         "(AWF-B)"},
-        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring_C, "Variant C of adaptive weighted factoring "
-         "(AWF-C)"},
-        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring_D, "Variant D of adaptive weighted factoring "
-         "(AWF-D)"},
-        {OpenMPKindOption::lb4omp_adaptive_weighted_factoring_E, "Variant E of adaptive weighted factoring "
-         "(AWF-E)"},
-        {OpenMPKindOption::lb4omp_adaptive_factoring, "Adaptive factoring (AF)"},
-        {OpenMPKindOption::lb4omp_improved_adaptive_factoring, "Improved implementation of Adaptive factoring "
-         "(mAF)"},
-        {OpenMPKindOption::lb4omp_profiling, ""},
+        // LB4OMP's scheduling techniques (beware, technique names in LB4OMP's README are outdated):
+        {OpenMPKindOption::lb4omp_profiling, "profiling"},        // Profiling
+        {OpenMPKindOption::lb4omp_fsc, "fsc"},                    // Fixed Size Chunk             // Requires profiling
+        {OpenMPKindOption::lb4omp_mfsc, "mfsc"},                  // Modified Fixed Size Chunk
+        {OpenMPKindOption::lb4omp_tap, "tap"},                    // Tapering                     // Requires profiling
+        {OpenMPKindOption::lb4omp_fac, "fac"},                    // Factoring                    // Requires profiling
+        {OpenMPKindOption::lb4omp_faca, "faca"},                  // Improved Factoring           // Requires profiling
+        {OpenMPKindOption::lb4omp_bold, "bold"},                  // Bold                         // Requires profiling
+        {OpenMPKindOption::lb4omp_fac2, "fac2"},                  // Practical Factoring
+        {OpenMPKindOption::lb4omp_wf, "wf"},                      // Weighted Factoring
+        {OpenMPKindOption::lb4omp_af, "af"},                      // Adaptive Factoring
+        {OpenMPKindOption::lb4omp_awf, "awf"},                    // Adaptive Weighted Factoring
+        {OpenMPKindOption::lb4omp_tfss, "tfss"},                  // Trapezoid Factoring Self Scheduling
+        {OpenMPKindOption::lb4omp_fiss, "fiss"},                  // Fixed Increase Self Scheduling
+        {OpenMPKindOption::lb4omp_viss, "viss"},                  // Variable Increase Self Scheduling
+        {OpenMPKindOption::lb4omp_rnd, "rnd"},                    // Random
+
+        // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
+        {OpenMPKindOption::lb4omp_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling (from standard OpenMP)
+        {OpenMPKindOption::lb4omp_fac2a, "fac2a"},                // Improved Practical Factoring
+        {OpenMPKindOption::lb4omp_static_steal, "static_steal"},  // Static with KMP_STATIC_STEAL_ENABLED
+        {OpenMPKindOption::lb4omp_awf_b, "awf_b"},                // Adaptive Weighted Factoring Variant B
+        {OpenMPKindOption::lb4omp_awf_c, "awf_c"},                // Adaptive Weighted Factoring Variant C
+        {OpenMPKindOption::lb4omp_awf_d, "awf_d"},                // Adaptive Weighted Factoring Variant D
+        {OpenMPKindOption::lb4omp_awf_e, "awf_e"},                // Adaptive Weighted Factoring Variant E
+        {OpenMPKindOption::lb4omp_af_a, "af_a"},                  // Improved Adaptive Factoring
 #endif
     };
   };
@@ -232,56 +229,40 @@ class OpenMPConfigurator {
   [[maybe_unused]] explicit OpenMPConfigurator(OpenMPKindOption kind, int chunkSize);
 
   /**
-   * OpenMP chunk size getter.
+   * AutoPas OpenMP configurator chunk size getter.
    * @return the current OpenMP chunk size
    */
   [[maybe_unused]] [[nodiscard]] int getChunkSize() const;
 
   /**
    * OpenMP chunk size getter for setting OpenMP's scheduling runtime variables.
-   * @return the current OpenMP chunk size
+   * @return the current OpenMP chunk size, directly usable in OpenMP's schedule setter
    */
   [[maybe_unused]] [[nodiscard]] int getOMPChunkSize() const;
 
   /**
-   * OpenMP chunk size setter.
-   * @param s the new chunk size to use
+   * AutoPas OpenMP configurator chunk size setter.
+   * @param chunkSize the new chunk size to use
    */
   [[maybe_unused]] void setChunkSize(int chunkSize);
 
   /**
-   * OpenMP scheduling kind getter.
-   * @return the current OpenMP scheduling kind, directly usable as an argument for OpenMP's schedule-clause
+   * AutoPas OpenMP configurator scheduling kind getter.
+   * @return the current OpenMP scheduling kind
    */
   [[maybe_unused]] [[nodiscard]] OpenMPKindOption getKind() const;
 
   /**
-   * OpenMP standard scheduling kind getter.
-   * @return the current OpenMP chunk size
+   * OpenMP scheduling kind getter for setting OpenMP's scheduling runtime variables.
+   * @return the current OpenMP kind, directly usable in OpenMP's schedule setter
    */
   [[maybe_unused]] [[nodiscard]] omp_sched_t getOMPKind() const;
 
   /**
-   * OpenMP scheduling kind setter.
-   * @param k the new scheduling kind to use
+   * AutoPas OpenMP configurator scheduling kind setter.
+   * @param kind the new scheduling kind to use
    */
   [[maybe_unused]] void setKind(OpenMPKindOption kind);
-
-  /**
-   * Sets OpenMP's scheduling runtime variables.
-   */
-  [[maybe_unused]] inline void setSchedule() const { autopas_set_schedule(getOMPKind(), getOMPChunkSize()); }
-
-  /**
-   * Sets OpenMP's scheduling runtime variables.
-   * @param k the new scheduling kind
-   * @param s the new chunk size
-   */
-  [[maybe_unused]] inline void setSchedule(OpenMPKindOption kind, int chunkSize) {
-    setKind(kind);
-    setChunkSize(chunkSize);
-    setSchedule();
-  }
 
   /**
    * Tells whether the scheduling chunk size should be overwritten.
@@ -294,5 +275,20 @@ class OpenMPConfigurator {
    * @return whether the scheduling kind is a manual LB4OMP scheduling technique
    */
   [[maybe_unused]] [[nodiscard]] bool manualSchedulingTechnique() const;
-};
-}  // namespace autopas
+}; // class OpenMPConfigurator
+
+/**
+ * Sets OpenMP's runtime schedule from a given OpenMP configurator.
+ * schedule(runtime) will then use them for the traversal in the concerned calling thread.
+ * @param ompConfig the OpenMP configurator
+ */
+inline void autopas_set_schedule(autopas::OpenMPConfigurator ompConfig) {
+  if (ompConfig.getKind() != OpenMPKindOption::omp_runtime) {
+    if (ompConfig.manualSchedulingTechnique()) {
+      // TODO: Set OpenMP's schedule to the corresponding LB4OMP scheduling technique.
+    } else {
+      autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
+    }
+  } // If the configurator is set to omp_runtime, users are assumed to have set OMP_SCHEDULE manually.
+}
+} // namespace autopas
