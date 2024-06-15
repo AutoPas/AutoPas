@@ -11,6 +11,9 @@
 
 #include "autopas/options/Option.h"
 #include "autopas/utils/WrapOpenMP.h"
+#ifdef AUTOPAS_USE_LB4OMP
+#include "kmp.h"
+#endif
 
 namespace autopas {
 /**
@@ -76,36 +79,32 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
     auto4omp_expertsel,
 
 #ifdef AUTOPAS_USE_LB4OMP
-    // LB4OMP's scheduling techniques:
+    // LB4OMP's scheduling techniques (beware, technique names in LB4OMP's README are outdated) [1, 3]:
+    lb4omp_profiling,     // Profiling                    // Point KMP_PROFILE_DATA to where to store the data
+    lb4omp_fsc,           // Fixed Size Chunk             // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_mfsc,          // Modified Fixed Size Chunk
+    lb4omp_tap,           // Tapering                     // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_fac,           // Factoring                    // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_faca,          // Improved Factoring           // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_bold,          // Bold                         // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_fac2,          // Practical Factoring
+    lb4omp_wf,            // Weighted Factoring
+    lb4omp_af,            // Adaptive Factoring
+    lb4omp_awf,           // Adaptive Weighted Factoring
+    lb4omp_tfss,          // Trapezoid Factoring Self Scheduling
+    lb4omp_fiss,          // Fixed Increase Self Scheduling
+    lb4omp_viss,          // Variable Increase Self Scheduling
+    lb4omp_rnd,           // Random
 
-    // Dynamic, non-adaptive OpenMP non-standard techniques:
-    lb4omp_trapezoid_self_scheduling, // TSS
-
-    // Dynamic, non-adaptive LB4OMP techniques:
-    lb4omp_fixed_size_chunk, // FSC
-    lb4omp_factoring, // FAC
-    lb4omp_improved_factoring, // mFAC
-    lb4omp_practical_factoring, // FAC2
-    lb4omp_practical_weighted_factoring, // WF2
-    lb4omp_tapering, // TAP
-    lb4omp_modified_fixed_size_chunk, // mFSC
-    lb4omp_trapezoid_factoring_self_scheduling, // TFSS
-    lb4omp_fixedIncrease_self_scheduling, // FISS
-    lb4omp_variable_increase_self_scheduling, // FISS
-    lb4omp_random, // RND
-
-    // Dynamic, adaptive LB4OMP techniques:
-    lb4omp_bold, // BOLD
-    lb4omp_adaptive_weighted_factoring, // AWF
-    lb4omp_adaptive_weighted_factoring_B, // AWF-B
-    lb4omp_adaptive_weighted_factoring_C, // AWF-C
-    lb4omp_adaptive_weighted_factoring_D, // AWF-D
-    lb4omp_adaptive_weighted_factoring_E, // AWF-E
-    lb4omp_adaptive_factoring, // AF
-    lb4omp_improved_adaptive_factoring, // mAF
-
-    // Performance measurement for FSC, FAC, TAP, BOLD.
-    lb4omp_profiling,
+    // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds) [1, 2, 3]:
+    lb4omp_trapezoidal,   // Trapezoid Self Scheduling (from standard OpenMP)
+    lb4omp_fac2a,         // Improved Practical Factoring
+    lb4omp_static_steal,  // Static with Steal enabled (from standard OpenMP)
+    lb4omp_awf_b,         // Adaptive Weighted Factoring Variant B
+    lb4omp_awf_c,         // Adaptive Weighted Factoring Variant C
+    lb4omp_awf_d,         // Adaptive Weighted Factoring Variant D
+    lb4omp_awf_e,         // Adaptive Weighted Factoring Variant E
+    lb4omp_af_a,          // Improved Adaptive Factoring
 #endif
   };
 
@@ -173,7 +172,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
         {OpenMPKindOption::lb4omp_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling (from standard OpenMP)
         {OpenMPKindOption::lb4omp_fac2a, "fac2a"},                // Improved Practical Factoring
-        {OpenMPKindOption::lb4omp_static_steal, "static_steal"},  // Static with KMP_STATIC_STEAL_ENABLED
+        {OpenMPKindOption::lb4omp_static_steal, "static_steal"},  // Static with Steal enabled (from standard OpenMP)
         {OpenMPKindOption::lb4omp_awf_b, "awf_b"},                // Adaptive Weighted Factoring Variant B
         {OpenMPKindOption::lb4omp_awf_c, "awf_c"},                // Adaptive Weighted Factoring Variant C
         {OpenMPKindOption::lb4omp_awf_d, "awf_d"},                // Adaptive Weighted Factoring Variant D
@@ -258,6 +257,14 @@ class OpenMPConfigurator {
    */
   [[maybe_unused]] [[nodiscard]] omp_sched_t getOMPKind() const;
 
+#ifdef AUTOPAS_USE_LB4OMP
+  /**
+   * LB4OMP scheduling technique getter sor setting OpenMP's scheduling runtime variables.
+   * @return the current OpenMP scheduling technique, directly usable in OpenMP's schedule setter.
+   */
+  [[maybe_unused]] [[nodiscard]] kmp_sched_t getKMPKind() const;
+#endif
+
   /**
    * AutoPas OpenMP configurator scheduling kind setter.
    * @param kind the new scheduling kind to use
@@ -285,10 +292,22 @@ class OpenMPConfigurator {
 inline void autopas_set_schedule(autopas::OpenMPConfigurator ompConfig) {
   if (ompConfig.getKind() != OpenMPKindOption::omp_runtime) {
     if (ompConfig.manualSchedulingTechnique()) {
-      // TODO: Set OpenMP's schedule to the corresponding LB4OMP scheduling technique.
+#ifdef AUTOPAS_USE_LB4OMP
+      // TODO: untested.
+      autopas_set_schedule(static_cast<omp_sched_t>(ompConfig.getKMPKind()), ompConfig.getOMPChunkSize());
+#else
+      autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
+#endif
     } else {
       autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
     }
   } // If the configurator is set to omp_runtime, users are assumed to have set OMP_SCHEDULE manually.
 }
 } // namespace autopas
+
+/*
+ * Sources:
+ * [1] https://www.computer.org/csdl/journal/td/2022/04/09524500/1wpqIcNI6YM
+ * [2] https://ieeexplore.ieee.org/document/9825675
+ * [3] https://github.com/unibas-dmi-hpc/LB4OMP/blob/master/runtime/src/kmp.h#L324
+ */
