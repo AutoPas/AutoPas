@@ -82,7 +82,7 @@ class TraversalInterface {
   /**
    * The OpenMP configurator.
    */
-  OpenMPConfigurator _openMPConfigurator;
+  OpenMPConfigurator _ompConfig;
 };
 
 }  // namespace autopas
