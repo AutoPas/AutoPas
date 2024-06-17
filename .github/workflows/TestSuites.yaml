@@ -127,7 +127,7 @@ jobs:
             -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
-            -DAUTOPAS_ENABLE_COVERAGE=${{ matrix.config[9] }}
+            -DAUTOPAS_ENABLE_COVERAGE=${{ matrix.config[9] }} \
             ..
           entrypoint.sh cmake --build . --parallel 8 
       - name: Run tests ${{ matrix.part }}/2
