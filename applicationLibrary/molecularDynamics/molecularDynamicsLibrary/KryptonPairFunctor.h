@@ -20,19 +20,19 @@
 namespace mdLib {
 
 //// Helper to compute power at compile time
-//constexpr double pow(double base, int exp) {
-//  return exp == 0 ? 1 : base * pow(base, exp - 1);
-//}
+// constexpr double pow(double base, int exp) {
+//   return exp == 0 ? 1 : base * pow(base, exp - 1);
+// }
 //
 //// Generate an array of powers of b
-//template<std::size_t... Is>
-//constexpr std::array<double, sizeof...(Is)> generate_powers(std::index_sequence<Is...>, const double b) {
-//  return {pow(b, Is + 1)...};
-//}
+// template<std::size_t... Is>
+// constexpr std::array<double, sizeof...(Is)> generate_powers(std::index_sequence<Is...>, const double b) {
+//   return {pow(b, Is + 1)...};
+// }
 //
-//constexpr std::array<double, 16> generatePowersArray(const double b) {
-//  return generate_powers(std::make_index_sequence<16>{}, b);
-//}
+// constexpr std::array<double, 16> generatePowersArray(const double b) {
+//   return generate_powers(std::make_index_sequence<16>{}, b);
+// }
 
 /**
  * A functor to handle interactions between two krypton atoms.
@@ -43,9 +43,8 @@ namespace mdLib {
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
-template <class Particle, bool preCompute,
-          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
+template <class Particle, bool preCompute, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
+          bool calculateGlobals = false, bool relevantForTuning = true>
 class KryptonPairFunctor
     : public autopas::Functor<
           Particle, KryptonPairFunctor<Particle, preCompute, useNewton3, calculateGlobals, relevantForTuning>> {
@@ -123,13 +122,13 @@ class KryptonPairFunctor
     // Last factor is slightly special
     double factor = 0.0;
     for (size_t n = 6; n < 17; n += 2) {
-      factor += _cConstants[(n / 2) - 3] * _bPots[n] * _invFactorials[n];
+      factor += _cConstants[(n / 2) - 3] * _bPots[n] * _b * _invFactorials[n];
     }
-    _rInvFactors[17] = - factor;
+    _rInvFactors[17] = -factor;
 
     // Outer factors
-    for (size_t n = 0; n < 6; n ++) {
-      _rInvFactorsOuter[n] = - (n + 3.0) * 2.0 * _cConstants[n];
+    for (size_t n = 0; n < 6; n++) {
+      _rInvFactorsOuter[n] = -(n + 3.0) * 2.0 * _cConstants[n];
     }
   }
 
@@ -152,7 +151,7 @@ class KryptonPairFunctor
     if constexpr (preCompute) {
       const double dist = std::sqrt(dist2);
       const double distInv = 1. / dist;
-      const double distInv2 = 1. / dist2;
+      const double distInv2 = distInv * distInv;
       const double distInv3 = distInv2 * distInv;
       const double distInv4 = distInv2 * distInv2;
       const double distInv5 = distInv4 * distInv;
@@ -168,32 +167,35 @@ class KryptonPairFunctor
       const double distInv15 = distInv14 * distInv;
       const double distInv16 = distInv8 * distInv8;
 
-      const double expAlphaTerm = std::exp(_alpha1 * dist + _alpha2 * dist2 + _alphaneg1 * distInv);
-      const double alphaTerm = _alpha1 + 2 * _alpha2 * dist - _alphaneg1 * distInv2;
+      const double alphaDist = _alpha1 * dist;
+      const double alpha2Dist = _alpha2 * dist2;
+      const double alphaInvDist = _alphaneg1 * distInv;
+      const double expAlphaTerm = std::exp(alphaDist + alpha2Dist + alphaInvDist);
+      const double alphaTerm = alphaDist + 2 * alpha2Dist - alphaInvDist;
 
-      const double firstTerm = (- _A * alphaTerm * expAlphaTerm) * distInv;
+      const double firstTerm = -_A * alphaTerm * expAlphaTerm;
 
       const double expbr = std::exp(-_b * dist);
 
-      const double rInvSumOuter = _rInvFactorsOuter[0] * distInv6 + _rInvFactorsOuter[1] * distInv8
-                             + _rInvFactorsOuter[2] * distInv10 + _rInvFactorsOuter[3] * distInv12
-                             + _rInvFactorsOuter[4] * distInv14 + _rInvFactorsOuter[5] * distInv16;
+      const double rInvSumOuter = _rInvFactorsOuter[0] * distInv6 + _rInvFactorsOuter[1] * distInv8 +
+                                  _rInvFactorsOuter[2] * distInv10 + _rInvFactorsOuter[3] * distInv12 +
+                                  _rInvFactorsOuter[4] * distInv14 + _rInvFactorsOuter[5] * distInv16;
 
-      const double rInvSum = _rInvFactors[0] + distInv * _rInvFactors[1] + distInv2 * _rInvFactors[2]
-                                + distInv3 * _rInvFactors[3] + distInv4 * _rInvFactors[4] + distInv5 * _rInvFactors[5]
-                                + distInv6 * _rInvFactors[6] + distInv7 * _rInvFactors[7] + distInv8 * _rInvFactors[8]
-                                + distInv9 * _rInvFactors[9] + distInv10 * _rInvFactors[10] + distInv11 * _rInvFactors[11]
-                                + distInv12 * _rInvFactors[12] + distInv13 * _rInvFactors[13] + distInv14 * _rInvFactors[14]
-                                + distInv15 * _rInvFactors[15] + distInv16 * _rInvFactors[16] + dist * _rInvFactors[17];
+      const double rInvSum = _rInvFactors[0] + distInv * _rInvFactors[1] + distInv2 * _rInvFactors[2] +
+                             distInv3 * _rInvFactors[3] + distInv4 * _rInvFactors[4] + distInv5 * _rInvFactors[5] +
+                             distInv6 * _rInvFactors[6] + distInv7 * _rInvFactors[7] + distInv8 * _rInvFactors[8] +
+                             distInv9 * _rInvFactors[9] + distInv10 * _rInvFactors[10] + distInv11 * _rInvFactors[11] +
+                             distInv12 * _rInvFactors[12] + distInv13 * _rInvFactors[13] +
+                             distInv14 * _rInvFactors[14] + distInv15 * _rInvFactors[15] +
+                             distInv16 * _rInvFactors[16] + dist * _rInvFactors[17];
 
-      const double secondTerm = (rInvSumOuter + expbr * rInvSum) * distInv2;
-      f = displacement * (firstTerm + secondTerm);
-    }
-    else {
+      const double secondTerm = rInvSumOuter + expbr * rInvSum;
+      f = displacement * (firstTerm + secondTerm) * distInv2;
+    } else {
       // Pre calculations
       const double dist = std::sqrt(dist2);
       const double distInv = 1. / dist;
-      const double distInv2 = 1. / dist2;
+      const double distInv2 = distInv * distInv;
       const double distInv6 = distInv2 * distInv2 * distInv2;
       const double distNeg8 = distInv6 * distInv2;
       const double distNeg10 = distNeg8 * distInv2;
@@ -250,42 +252,48 @@ class KryptonPairFunctor
 
       const double expbr = std::exp(-bdist);
 
-      const double term6 = _C6 * distInv6 * (-6.0 + expbr * (6.0 * ksumacc6 - bdist * ksum6));
-      const double term8 = _C8 * distNeg8 * (-8.0 + expbr * (8.0 * ksumacc8 - bdist * ksum8));
-      const double term10 = _C10 * distNeg10 * (-10.0 + expbr * (10.0 * ksumacc10 - bdist * ksum10));
-      const double term12 = _C12 * distNeg12 * (-12.0 + expbr * (12.0 * ksumacc12 - bdist * ksum12));
-      const double term14 = _C14 * distNeg14 * (-14.0 + expbr * (14.0 * ksumacc14 - bdist * ksum14));
-      const double term16 = _C16 * distNeg16 * (-16.0 + expbr * (16.0 * ksumacc16 - bdist * ksum16));
+      const double term6 = _C6 * distInv6 * (-6.0 + expbr * (6.0 * ksumacc6 + bdist * ksum6));
+      const double term8 = _C8 * distNeg8 * (-8.0 + expbr * (8.0 * ksumacc8 + bdist * ksum8));
+      const double term10 = _C10 * distNeg10 * (-10.0 + expbr * (10.0 * ksumacc10 + bdist * ksum10));
+      const double term12 = _C12 * distNeg12 * (-12.0 + expbr * (12.0 * ksumacc12 + bdist * ksum12));
+      const double term14 = _C14 * distNeg14 * (-14.0 + expbr * (14.0 * ksumacc14 + bdist * ksum14));
+      const double term16 = _C16 * distNeg16 * (-16.0 + expbr * (16.0 * ksumacc16 + bdist * ksum16));
 
       const double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16) * distInv2;
       f = displacement * (firstTerm + secondTerm);
+
+      if (calculateGlobals) {
+        double potentialEnergy =
+            _A * expAlphaTerm - _C6 * distInv6 * (1 - expbr * ksumacc6) - _C8 * distNeg8 * (1 - expbr * ksumacc8) -
+            _C10 * distNeg10 * (1 - expbr * ksumacc10) - _C12 * distNeg12 * (1 - expbr * ksumacc12) -
+            _C14 * distNeg14 * (1 - expbr * ksumacc14) - _C16 * distNeg16 * (1 - expbr * ksumacc16);
+
+        const int threadnum = autopas::autopas_get_thread_num();
+        if (i.isOwned()) {
+          _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+        }
+        // for non-newton3 the second particle will be considered in a separate calculation
+        if (newton3 and j.isOwned()) {
+          _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+        }
+      }
     }
 
-      i.addF(f);
-      if (newton3) {
-        // only if we use newton 3 here, we want to
-        j.subF(f);
-      }
-
+    i.addF(f);
+    if (newton3) {
+      // only if we use newton 3 here, we want to
+      j.subF(f);
+    }
 
     if (calculateGlobals) {
       auto virial = displacement * f;
-//      double potentialEnergy = _A * expAlphaTerm
-//                               - _C6 * distInv6 * (1 - expbr * ksumacc6)
-//                               - _C8 * distNeg8 * (1 - expbr * ksumacc8)
-//                               - _C10 * distNeg10 * (1 - expbr * ksumacc10)
-//                               - _C12 * distNeg12 * (1 - expbr * ksumacc12)
-//                               - _C14 * distNeg14 * (1 - expbr * ksumacc14)
-//                               - _C16 * distNeg16 * (1 - expbr * ksumacc16);
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-//        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-//        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadData[threadnum].virialSum += virial;
       }
     }
@@ -352,8 +360,8 @@ class KryptonPairFunctor
    * @param molAType molecule A's type id
    * @param molBType molecule B's type id
    * @param newton3 is newton3 applied.
-   * @note molAType and molBType should always be the same for KryptonPairFunctor (i.e. Krypton atoms), but the method is kept to have a consistent interface with other
-   * functors.
+   * @note molAType and molBType should always be the same for KryptonPairFunctor (i.e. Krypton atoms), but the method
+   * is kept to have a consistent interface with other functors.
    * @return the number of floating point operations
    */
   static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
@@ -440,10 +448,7 @@ class KryptonPairFunctor
    */
   class AoSThreadData {
    public:
-    AoSThreadData()
-        : virialSum{0., 0., 0.},
-          potentialEnergySum{0.},
-          __remainingTo64{} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;
@@ -493,19 +498,31 @@ class KryptonPairFunctor
     for (size_t k = 1; k < 17; k++) {
       pots[k] = pots[k - 1] * _b;
     }
+    return pots;
   }();
 
-  const std::array<double, 6> _cConstants = {
-      0.8992209265, 0.7316713603e-1, 0.7835488511e-2, 1.1043747590e-3, 2.0486474980e-4, 5.0017084700e-5
-  };
+  const std::array<double, 6> _cConstants = {0.8992209265,    0.7316713603e-1, 0.7835488511e-2,
+                                             1.1043747590e-3, 2.0486474980e-4, 5.0017084700e-5};
 
-  const std::array<double, 17> _invFactorials = {
-    1., 1., 0.5, 1. / 6., 1. / 24., 1. / 120., 1. / 720., 1. / 5040., 1. / 40320., 1. / 362880., 1. / 3628800.,
-    1. / 39916800., 1. / 479001600., 1. / 6227020800., 1. / 87178291200., 1. / 1307674368000., 1. / 20922789888000.
-  };
+  const std::array<double, 17> _invFactorials = {1.,
+                                                 1.,
+                                                 0.5,
+                                                 1. / 6.,
+                                                 1. / 24.,
+                                                 1. / 120.,
+                                                 1. / 720.,
+                                                 1. / 5040.,
+                                                 1. / 40320.,
+                                                 1. / 362880.,
+                                                 1. / 3628800.,
+                                                 1. / 39916800.,
+                                                 1. / 479001600.,
+                                                 1. / 6227020800.,
+                                                 1. / 87178291200.,
+                                                 1. / 1307674368000.,
+                                                 1. / 20922789888000.};
 
   std::array<double, 18> _rInvFactors{};
   std::array<double, 6> _rInvFactorsOuter{};
-
 };
 }  // namespace mdLib
