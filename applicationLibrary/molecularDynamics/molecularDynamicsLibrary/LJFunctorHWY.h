@@ -193,6 +193,19 @@ namespace mdLib {
                     }
                 }
 
+                template <bool reversed>
+                inline bool checkFirstLoopCondition(const size_t i, const size_t stop) {
+                    return reversed ? (long)i >= 0 : (i < stop);
+                }
+
+                inline bool checkSecondLoopCondition(const size_t i, const size_t j) {
+                    return j < (i & ~(_vecLengthDouble - 1));
+                }
+
+                inline int obtainSecondLoopRest(const size_t i) {
+                    return (int)(i & (_vecLengthDouble - 1));
+                }
+
                 inline void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
                         const double *const __restrict zPtr, const autopas::OwnershipState *const __restrict ownedStatePtr,
                         VectorDouble& x1, VectorDouble& y1, VectorDouble& z1, VectorDouble& ownedStateIDouble) {
@@ -261,7 +274,7 @@ namespace mdLib {
                     auto virialSumZ = _zeroDouble;
                     auto uPotSum = _zeroDouble;
 
-                    for (size_t i = soa.size() - 1; (long)i >= 0; --i) {
+                    for (size_t i = soa.size() - 1; checkFirstLoopCondition<true>(i, 0); --i) {
 
                         if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
                             continue;
@@ -283,14 +296,14 @@ namespace mdLib {
                         fillIRegisters(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedStateI);
 
                         size_t j = 0;
-                        for (; j < (i & ~(_vecLengthDouble - 1)); j+=_vecLengthDouble) {
+                        for (; checkSecondLoopCondition(i, j); j+=_vecLengthDouble) {
 
                             SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xPtr, yPtr,
                                zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr, fxAcc, fyAcc, fzAcc, virialSumX,
                                virialSumY, virialSumZ, uPotSum, 0);
                         }
 
-                        const int rest = (int)(i & (_vecLengthDouble - 1));
+                        const int rest = obtainSecondLoopRest(i);
                         if (rest > 0) {
                         
                             SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xPtr, yPtr,
@@ -338,7 +351,7 @@ namespace mdLib {
                     VectorDouble virialSumZ = _zeroDouble;
                     VectorDouble uPotSum = _zeroDouble;
 
-                    for (unsigned int i = 0; i < soa1.size(); ++i) {
+                    for (unsigned int i = 0; checkFirstLoopCondition<false>(i, soa1.size()); ++i) {
 
                         if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
                             continue;
@@ -357,14 +370,14 @@ namespace mdLib {
 
                         unsigned int j = 0;
 
-                        for (; j < (soa2.size() & ~(_vecLengthDouble - 1)); j += _vecLengthDouble) {
+                        for (; checkSecondLoopCondition(soa2.size(), j); j += _vecLengthDouble) {
 
                             SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2Ptr,
                                   y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, fxAcc, fyAcc, fzAcc,
                                   virialSumX, virialSumY, virialSumZ, uPotSum, 0);
                         }
 
-                        const int rest = (int)(soa2.size() & (_vecLengthDouble - 1));
+                        const int rest = obtainSecondLoopRest(soa2.size());
                         if (rest > 0) {
                             SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2Ptr,
                                   y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, fxAcc, fyAcc, fzAcc,
@@ -462,17 +475,17 @@ namespace mdLib {
                     }
 
                     // compute LJ Potential
-                    auto invDr2 = _oneDouble / dr2;
-                    auto lj2 = sigmaSquareds * invDr2;
-                    auto lj4 = lj2 * lj2;
-                    auto lj6 = lj2 * lj4;
-                    auto lj12 = lj6 * lj6;
-                    auto lj12m6 = lj12 - lj6;
-                    auto lj12m6alj12 = lj12m6 + lj12;
-                    auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
-                    VectorDouble fac = lj12m6alj12e * invDr2;
+                    const auto invDr2 = _oneDouble / dr2;
+                    const auto lj2 = sigmaSquareds * invDr2;
+                    const auto lj4 = lj2 * lj2;
+                    const auto lj6 = lj2 * lj4;
+                    const auto lj12 = lj6 * lj6;
+                    const auto lj12m6 = lj12 - lj6;
+                    const auto lj12m6alj12 = lj12m6 + lj12;
+                    const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
+                    const auto fac = lj12m6alj12e * invDr2;
 
-                    VectorDouble facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
+                    const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
                     const VectorDouble fx = drX * facMasked;
                     const VectorDouble fy = drY * facMasked;
