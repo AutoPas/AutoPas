@@ -14,20 +14,20 @@
 namespace autopas::utils {
 
 /**
- * Calculates homogeneity and max density of given AutoPas simulation.
+ * Calculates homogeneity and max density of given AutoPas container.
  * Both values are computed at once to avoid iterating over the same space twice.
  * homogeneity > 0.0, normally < 1.0, but for extreme scenarios > 1.0
  * maxDensity > 0.0, normally < 3.0, but for extreme scenarios > 3.0
  *
- * These values are calculated by dividing the domain into bins of perfectly equal cuboid shapes.
+ * These values are calculated by dividing the container's domain into bins of perfectly equal cuboid shapes.
  *
- * @note The bin shapes between different AutoPas container will not match if the dimensions of their domains don't
+ * @note The bin shapes between different AutoPas containers will not match if the dimensions of their domains don't
  * match. Bins with greater surface area are probably more likely to feature fluctuations in the density.
  *
  * Not a rigorous proof, but should give an idea:
  * - Assume homogeneous distribution.
  * - For every particle assume it could move in any direction with equal probability (not a terrible assumption).
- * - So every particle near a bin face has a chance to more into the neighboring bin.
+ * - So every particle near a bin face has a chance to move into the neighboring bin.
  * - And this probability is independent of the bin (i.e. the bin shape)
  * - With a larger surface area, there are more particles with a probability of moving into the neighboring bin.
  * - On average, same density, but each individual bin has a greater probability of losing or gaining a lot of
@@ -38,32 +38,25 @@ namespace autopas::utils {
  *
  * @tparam Particle
  * @param container container of current simulation
- * @param startCorner lower left front corner of the box where the homogeneity shall be calculated.
- * @param endCorner upper right back corner of the box where the homogeneity shall be calculated.
  * @return {homogeneity, maxDensity}
  */
-template <class Container>
-std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &container,
-                                                            const std::array<double, 3> &startCorner,
-                                                            const std::array<double, 3> &endCorner) {
+template <typename Particle>
+std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContainerInterface<Particle> &container) {
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto numberOfParticles = container.getNumberOfParticles();
-  const auto domainDimensions = endCorner - startCorner;
+  const auto domainDimensions = container.getBoxMax() - container.getBoxMin();
   const auto domainVolume = domainDimensions[0] * domainDimensions[1] * domainDimensions[2];
 
   // We scale the dimensions of the domain to bins with volumes which give approximately 10 particles per bin.
   const auto targetNumberOfBins = std::ceil(numberOfParticles / 10.);
-  const auto targetNumberOfBinsPerDim = std::cbrt((double)targetNumberOfBins);
+  const auto targetNumberOfBinsPerDim = std::cbrt(static_cast<double>(targetNumberOfBins));
   // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
   const auto numberOfBinsPerDim = static_cast<int>(std::floor(targetNumberOfBinsPerDim));
-  const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
-  const auto binVolume = domainVolume / (double)numberOfBins;
-  const auto binDimensions = domainDimensions / (double)numberOfBinsPerDim;
+  const auto binDimensions = domainDimensions / static_cast<double>(numberOfBinsPerDim);
 
-  // Calculate the actual number of bins per dimension. The rounding is needed in case the division slightly
-  // underestimates the division. The choice of dimension 0 is arbitrary.
-  const int binsPerDimension = static_cast<int>(std::round(domainDimensions[0] / binDimensions[0]));
+  const auto numberOfBins = numberOfBinsPerDim * numberOfBinsPerDim * numberOfBinsPerDim;
+  const auto binVolume = domainVolume / static_cast<double>(numberOfBins);
 
   std::vector<size_t> particlesPerBin(numberOfBins, 0);
 
@@ -71,36 +64,48 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const Container &con
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     const auto &particleLocation = particleItr->getR();
 
-    const auto binIndex3d = autopas::utils::ArrayMath::floorToInt((particleLocation - startCorner) / binDimensions);
+    const auto binIndex3d =
+        autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);
     const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(
-        binIndex3d, {binsPerDimension, binsPerDimension, binsPerDimension});
+        binIndex3d, {numberOfBinsPerDim, numberOfBinsPerDim, numberOfBinsPerDim});
 
     particlesPerBin[binIndex1d] += 1;
   }
 
   // calculate density for each bin and track max density
   double maxDensity{0.};
-  std::vector<double> densityPerBin;
+  std::vector<double> densityPerBin{};
   densityPerBin.reserve(numberOfBins);
   for (size_t i = 0; i < numberOfBins; i++) {
-    densityPerBin[i] = (double)particlesPerBin[i] / binVolume;
-    if (densityPerBin[i] > maxDensity) {
-      maxDensity = densityPerBin[i];
-    }
+    densityPerBin[i] = static_cast<double>(particlesPerBin[i]) / binVolume;
+    maxDensity = std::max(maxDensity, densityPerBin[i]);
   }
 
   if (maxDensity < 0.0) {
-    throw std::runtime_error("maxDensity can never be smaller than 0.0, but is:" + std::to_string(maxDensity));
+    utils::ExceptionHandler::exception(
+        "calculateHomogeneityAndMaxDensity(): maxDensity can never be smaller than 0.0, but is: {}", maxDensity);
   }
   // get mean and reserve variable for densityVariance
   const double densityMean = numberOfParticles / domainVolume;
-  double densityVariance = 0.0;
 
-  // calculate densityVariance
+  double densityVariance{0.};
   for (size_t i = 0; i < numberOfBins; ++i) {
     const double densityDifference = densityPerBin[i] - densityMean;
-    densityVariance += (densityDifference * densityDifference / numberOfBins);
+    densityVariance += (densityDifference * densityDifference);
   }
+
+  /*
+    double densityVariance = std::transform_reduce(
+          densityPerBin.begin(), densityPerBin.end(), 0.0,
+          std::plus<>(),
+          [densityMean](double density) {
+              double densityDifference = density - densityMean;
+              return densityDifference * densityDifference;
+          }
+      );
+  */
+  densityVariance = densityVariance / numberOfBins;
+  std::cout << densityVariance << "\n";
 
   // finally calculate standard deviation
   const double homogeneity = std::sqrt(densityVariance);
