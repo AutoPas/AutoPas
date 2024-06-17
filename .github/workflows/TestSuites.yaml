@@ -63,14 +63,15 @@ jobs:
         part: [1, 2] # Split tests into two parts, to be run by separate runners
         md-flex-mode: [singlesite, multisite]
         config: [
-            #    0              1       2       3                   4        5       6     7      8
-            # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan,  AVX
-        [autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ,  ON],
-        [autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ,  ON],
-        [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ,  ON],
-        [autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ,  ON],
-        [autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Release, ON     , OFF , OFF ,  ON],
-        [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,  ON],
+            #    0              1       2       3                   4        5       6     7      8      9
+            # container      , CC   , CXX    , builder          , mode   , OpenMP , ASan, TSan,  AVX, Coverage
+        [autopas-build-clang , clang, clang++, Ninja            , Debug  , ON     , ON  , OFF ,  ON  ,  OFF],
+        [autopas-build-clang , clang, clang++, Ninja            , Release, OFF    , ON  , OFF ,  ON  ,  OFF],
+        [autopas-build-archer, clang, clang++, Ninja            , Release, ON     , OFF , ON  ,  ON  ,  OFF],
+        [autopas-build-clang , clang, clang++, Ninja            , Release, ON     , ON  , OFF ,  ON  ,  OFF],
+        [autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Release, ON     , OFF , OFF ,  ON  ,  OFF],
+        [autopas-build-gcc   , mpicc, mpic++ ,"'Unix Makefiles'", Release, ON     , ON  , OFF ,  ON  ,  OFF],
+        [autopas-build-gcc   , gcc  , g++    ,"'Unix Makefiles'", Debug  , ON     , ON  , OFF ,  ON  ,  ON],
         ]
         exclude:
           # Exclude multisite tests (to later be re-added for some configurations)
@@ -125,6 +126,8 @@ jobs:
             -DAUTOPAS_ENABLE_HARMONY=ON \
             -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON \
             -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
+            -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
+            -DAUTOPAS_ENABLE_COVERAGE=${{ matrix.config[9] }}
             ..
           entrypoint.sh cmake --build . --parallel 8 
       - name: Run tests ${{ matrix.part }}/2
