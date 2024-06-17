@@ -89,6 +89,10 @@ add_subdirectory(libs)
 
 include(autopas_antlr4cpp)
 
+if(AUTOPAS_ENABLE_COVERAGE)
+    include(autopas_lcov)
+endif()
+
 # autopas
 add_subdirectory(src)
 # autopasTools
