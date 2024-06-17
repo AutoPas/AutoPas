@@ -188,8 +188,7 @@ class LiveInfo {
                           : std::sqrt(sumStddev) / static_cast<double>(particleBins.size() - 1) / avgParticlesPerCell;
     infos["avgParticlesPerCell"] = avgParticlesPerCell;
 
-    const auto [homogeneity, maxDensity] =
-        autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
+    const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
 
     infos["homogeneity"] = homogeneity;
     infos["maxDensity"] = maxDensity;
