@@ -195,36 +195,54 @@ namespace mdLib {
 
                 template <bool reversed>
                 inline bool checkFirstLoopCondition(const size_t i, const size_t stop) {
-                    return reversed ? (long)i >= 0 : (i < stop);
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return reversed ? (long)i >= 0 : (i < stop);
+                    }
+                    else {
+                        return false;
+                    }
                 }
 
                 inline bool checkSecondLoopCondition(const size_t i, const size_t j) {
-                    return j < (i & ~(_vecLengthDouble - 1));
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return j < (i & ~(_vecLengthDouble - 1));
+                    }
+                    else {
+                        return false;
+                    }
                 }
 
                 inline int obtainSecondLoopRest(const size_t i) {
-                    return (int)(i & (_vecLengthDouble - 1));
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return (int)(i & (_vecLengthDouble - 1));
+                    }
+                    else {
+                        return -1;
+                    }
                 }
 
                 inline void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
                         const double *const __restrict zPtr, const autopas::OwnershipState *const __restrict ownedStatePtr,
                         VectorDouble& x1, VectorDouble& y1, VectorDouble& z1, VectorDouble& ownedStateIDouble) {
 
-                    int64_t owned = static_cast<int64_t>(ownedStatePtr[i]);
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        int64_t owned = static_cast<int64_t>(ownedStatePtr[i]);
+                        ownedStateIDouble = highway::Set(tag_double, static_cast<double>(owned));
 
-                    ownedStateIDouble = highway::Set(tag_double, static_cast<double>(owned));
-
-                    x1 = highway::Set(tag_double, xPtr[i]);
-                    y1 = highway::Set(tag_double, yPtr[i]);
-                    z1 = highway::Set(tag_double, zPtr[i]);
+                        x1 = highway::Set(tag_double, xPtr[i]);
+                        y1 = highway::Set(tag_double, yPtr[i]);
+                        z1 = highway::Set(tag_double, zPtr[i]);
+                    }
                 }
 
                 inline void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
                         double *const __restrict fzPtr, const VectorDouble& fxAcc, const VectorDouble& fyAcc, const VectorDouble& fzAcc) {
 
-                    fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
-                    fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
-                    fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
+                        fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
+                        fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
+                    }
                 }
 
                 template <bool newton3>
@@ -397,16 +415,18 @@ namespace mdLib {
                         const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
                         VectorDouble& x2, VectorDouble& y2, VectorDouble& z2, VectorDouble& ownedStateJDouble, const unsigned int rest) {
 
-                    x2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &x2Ptr[j])
-                        : highway::LoadU(tag_double, &x2Ptr[j]);
-                    y2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &y2Ptr[j])
-                            : highway::LoadU(tag_double, &y2Ptr[j]);
-                    z2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &z2Ptr[j])
-                            : highway::LoadU(tag_double, &z2Ptr[j]);
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        x2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &x2Ptr[j])
+                            : highway::LoadU(tag_double, &x2Ptr[j]);
+                        y2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &y2Ptr[j])
+                                : highway::LoadU(tag_double, &y2Ptr[j]);
+                        z2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &z2Ptr[j])
+                                : highway::LoadU(tag_double, &z2Ptr[j]);
 
-                    const VectorLong ownedStateJ = remainder ? highway::MaskedLoad(restMasksLong[rest-1], tag_long, &ownedStatePtr2[j])
-                        : highway::LoadU(tag_long, &ownedStatePtr2[j]);
-                    ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
+                        const VectorLong ownedStateJ = remainder ? highway::MaskedLoad(restMasksLong[rest-1], tag_long, &ownedStatePtr2[j])
+                            : highway::LoadU(tag_long, &ownedStatePtr2[j]);
+                        ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
+                    }
                 }
 
                 template <bool remainder>
@@ -416,11 +436,13 @@ namespace mdLib {
                     double sigmas[_vecLengthDouble] = {0.};
                     double shifts[_vecLengthDouble] = {0.};
 
-                    for (int n = 0; n < (remainder ? rest : _vecLengthDouble); ++n) {
-                        epsilons[n] = _PPLibrary->getMixing24Epsilon(*typeID1Ptr, *(typeID2Ptr + n));
-                        sigmas[n] = _PPLibrary->getMixingSigmaSquared(*typeID1Ptr, *(typeID2Ptr + n));
-                        if constexpr (applyShift) {
-                            shifts[n] = _PPLibrary->getMixingShift6(*typeID1Ptr, *(typeID2Ptr + n));
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        for (int n = 0; n < (remainder ? rest : _vecLengthDouble); ++n) {
+                            epsilons[n] = _PPLibrary->getMixing24Epsilon(*typeID1Ptr, *(typeID2Ptr + n));
+                            sigmas[n] = _PPLibrary->getMixingSigmaSquared(*typeID1Ptr, *(typeID2Ptr + n));
+                            if constexpr (applyShift) {
+                                shifts[n] = _PPLibrary->getMixingShift6(*typeID1Ptr, *(typeID2Ptr + n));
+                            }
                         }
                     }
 
