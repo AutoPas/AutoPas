@@ -251,8 +251,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     if constexpr (regionIter) {
       // We extend the search box for cells here since particles might have moved
       boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-      boxMaxWithSafetyMargin +=
-          boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
     }
 
     // first and last relevant cell index
