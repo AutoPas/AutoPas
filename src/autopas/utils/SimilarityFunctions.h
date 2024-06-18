@@ -77,7 +77,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   std::vector<double> densityPerBin{};
   densityPerBin.reserve(numberOfBins);
   for (size_t i = 0; i < numberOfBins; i++) {
-    densityPerBin[i] = static_cast<double>(particlesPerBin[i]) / binVolume;
+    densityPerBin.push_back(static_cast<double>(particlesPerBin[i]) / binVolume);
     maxDensity = std::max(maxDensity, densityPerBin[i]);
   }
 
