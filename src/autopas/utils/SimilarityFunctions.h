@@ -88,24 +88,17 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   // get mean and reserve variable for densityVariance
   const double densityMean = numberOfParticles / domainVolume;
 
-  double densityVariance{0.};
-  for (size_t i = 0; i < numberOfBins; ++i) {
-    const double densityDifference = densityPerBin[i] - densityMean;
-    densityVariance += (densityDifference * densityDifference);
-  }
 
-  /*
-    double densityVariance = std::transform_reduce(
-          densityPerBin.begin(), densityPerBin.end(), 0.0,
-          std::plus<>(),
-          [densityMean](double density) {
-              double densityDifference = density - densityMean;
-              return densityDifference * densityDifference;
-          }
-      );
-  */
-  densityVariance = densityVariance / numberOfBins;
-  std::cout << densityVariance << "\n";
+  const double densityDifferenceSquaredSum = std::transform_reduce(
+        densityPerBin.begin(), densityPerBin.end(), 0.0,
+        std::plus<>(),
+        [densityMean](double density) {
+            double densityDifference = density - densityMean;
+            return densityDifference * densityDifference;
+        }
+    );
+
+  const auto densityVariance = densityDifferenceSquaredSum / numberOfBins;
 
   // finally calculate standard deviation
   const double homogeneity = std::sqrt(densityVariance);

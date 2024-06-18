@@ -6,8 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include <algorithm>
-#include <iterator>
 #include <vector>
 
 #include "autopas/containers/directSum/DirectSum.h"
