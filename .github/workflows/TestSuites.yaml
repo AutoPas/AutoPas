@@ -181,4 +181,15 @@ jobs:
             cd ..
             make coverage
           fi
-              
+      - name: Deploy Coverage
+        uses: peaceiris/actions-gh-pages@v3.7.2
+        if: ${{ matrix.config[9] }} == 'ON'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          publish_dir: ./${{ env.BUILD_DIR }}/coverage/ # from dir
+          destination_dir: coverage/ # to dir
+          external_repository: AutoPas/AutoPas.github.io
+          publish_branch: main
+          user_name: github-actions[bot]
+          user_email: github-actions[bot]@users.noreply.github.com
