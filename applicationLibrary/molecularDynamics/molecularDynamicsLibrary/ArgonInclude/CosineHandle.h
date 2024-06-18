@@ -14,11 +14,11 @@ namespace autopas::utils::ArrayMath::Argon {
 
 class CosineHandle {
  public:
-  explicit CosineHandle(const DisplacementHandle& displacementAB, const DisplacementHandle& displacementAC);
+  explicit CosineHandle(const DisplacementHandle &displacementAB, const DisplacementHandle &displacementAC);
 
   [[nodiscard]] double getCos() const { return cos_; }
 
-  template<size_t wrt>
+  template <size_t wrt>
   [[nodiscard]] nabla derive_wrt();
 
  private:

@@ -15,15 +15,16 @@ using nabla = std::array<double, 3>;
 class DisplacementHandle {
  public:
   DisplacementHandle() = default;
-  explicit DisplacementHandle(const std::array<double, 3>& positionStartVertex, const std::array<double, 3>& positionEndVertex,
-                        const size_t& idStartVertex, const size_t& idEndVertex);
+  explicit DisplacementHandle(const std::array<double, 3> &positionStartVertex,
+                              const std::array<double, 3> &positionEndVertex, const size_t &idStartVertex,
+                              const size_t &idEndVertex);
 
   [[nodiscard]] size_t getIdStartVertex() const { return idStartVertex_; }
   [[nodiscard]] size_t getIdEndVertex() const { return idEndVertex_; }
-  [[nodiscard]] std::array<double, 3> getDisplacement() const { return  displacement_; }
+  [[nodiscard]] std::array<double, 3> getDisplacement() const { return displacement_; }
   [[nodiscard]] DisplacementHandle getInv() const;
 
-  template<size_t wrt>
+  template <size_t wrt>
   [[nodiscard]] nabla derive_wrt();
 
  private:
@@ -34,4 +35,4 @@ class DisplacementHandle {
   size_t idEndVertex_;
 };
 
-}   // namespace autopas::utils::ArrayMath::Argon
+}  // namespace autopas::utils::ArrayMath::Argon

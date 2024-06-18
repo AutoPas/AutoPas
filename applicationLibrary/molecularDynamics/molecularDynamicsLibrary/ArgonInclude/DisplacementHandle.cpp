@@ -1,8 +1,8 @@
 /**
-* @file ArgonFunctor.h
-* @author I. Angelucci
-* @date 13/06/24
-*/
+ * @file ArgonFunctor.h
+ * @author I. Angelucci
+ * @date 13/06/24
+ */
 
 #pragma once
 
@@ -10,33 +10,33 @@
 
 namespace autopas::utils::ArrayMath::Argon {
 
-DisplacementHandle::DisplacementHandle(const std::array<double, 3>& positionStartVertex, const std::array<double, 3>&
-      positionEndVertex, const size_t& idStartVertex, const size_t& idEndVertex) :
-                     positionStartVertex_(positionStartVertex),
-                     positionEndVertex_(positionEndVertex),
-                     displacement_(positionEndVertex - positionStartVertex),
-                     idStartVertex_(idStartVertex),
-                     idEndVertex_(idEndVertex) {}
+DisplacementHandle::DisplacementHandle(const std::array<double, 3> &positionStartVertex,
+                                       const std::array<double, 3> &positionEndVertex, const size_t &idStartVertex,
+                                       const size_t &idEndVertex)
+    : positionStartVertex_(positionStartVertex),
+      positionEndVertex_(positionEndVertex),
+      displacement_(positionEndVertex - positionStartVertex),
+      idStartVertex_(idStartVertex),
+      idEndVertex_(idEndVertex) {}
 
-  [[nodiscard]] DisplacementHandle DisplacementHandle::getInv() const { return DisplacementHandle(positionEndVertex_,
-      positionStartVertex_, idEndVertex_, idStartVertex_); }
+[[nodiscard]] DisplacementHandle DisplacementHandle::getInv() const {
+  return DisplacementHandle(positionEndVertex_, positionStartVertex_, idEndVertex_, idStartVertex_);
+}
 
-  /**
-   *
-   * @tparam wrt particle with respect to which we are computing the derivative
-   * @return Derivative of displacement_ with respect to particle wrt
-   */
-  template<size_t wrt>
-  [[nodiscard]] nabla DisplacementHandle::derive_wrt() {
-    auto moduloDisplacement{ L2Norm(displacement_)};
-    if ( wrt!= idStartVertex_ && wrt!= idEndVertex_) {
-      return std::array<double, 3>{{0, 0, 0}};
-    }
-    else if ( wrt == idStartVertex_ ) {
-      return std::array<double, 3>{0, 0, 0}-displacement_ / moduloDisplacement;
-    }
-    else if ( wrt == idEndVertex_ ) {
-      return displacement_ / moduloDisplacement;
-    }
+/**
+ *
+ * @tparam wrt particle with respect to which we are computing the derivative
+ * @return Derivative of displacement_ with respect to particle wrt
+ */
+template <size_t wrt>
+[[nodiscard]] nabla DisplacementHandle::derive_wrt() {
+  auto moduloDisplacement{L2Norm(displacement_)};
+  if (wrt != idStartVertex_ && wrt != idEndVertex_) {
+    return std::array<double, 3>{{0, 0, 0}};
+  } else if (wrt == idStartVertex_) {
+    return std::array<double, 3>{0, 0, 0} - displacement_ / moduloDisplacement;
+  } else if (wrt == idEndVertex_) {
+    return displacement_ / moduloDisplacement;
   }
-}   // namespace autopas::utils::ArrayMath::Argon
+}
+}  // namespace autopas::utils::ArrayMath::Argon
