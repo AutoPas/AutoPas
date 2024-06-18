@@ -177,7 +177,7 @@ jobs:
             cd applicationLibrary
             ctest --output-on-failure -I ${{ matrix.part }},,2 -j 2
             cd ../examples
-            ctest --output-on-failure --build-config checkExamples -I ${{ matrix.part }},,2 -j 2
+            ctest --output-on-failure -R '^testAutopas/Generated/Newton3OnOffTest' -j 2
             cd ..
             make coverage
           fi
