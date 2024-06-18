@@ -32,9 +32,9 @@ template <size_t ID>
 [[nodiscard]] nabla F_repulsive_abc(const size_t &a, const size_t &b, const size_t &c, const std::array<double, 23> &A,
                                     const std::array<double, 23> &alpha, DisplacementHandle displacementIJ,
                                     DisplacementHandle displacementJK, DisplacementHandle displacementKI) {
-  const auto IJ = displacementIJ.getDisplacement();
-  const auto JK = displacementJK.getDisplacement();
-  const auto KI = displacementKI.getDisplacement();
+  const auto IJ = L2Norm(displacementIJ.getDisplacement());
+  const auto JK = L2Norm(displacementJK.getDisplacement());
+  const auto KI = L2Norm(displacementKI.getDisplacement());
 
   const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
   const auto cosineJ = CosineHandle(displacementIJ.getInv(), displacementJK);
@@ -43,7 +43,7 @@ template <size_t ID>
   const auto A_abc = A[mdLib::Argon::index<mdLib::Argon::param::A>(a, b, c)];
   const auto alpha_abc = alpha[mdLib::Argon::index<mdLib::Argon::param::A>(a, b, c)];
 
-  const auto multiplyingFactor{-A_abc * std::exp(-alpha_abc * (L2Norm(IJ) + L2Norm(JK) + L2Norm(KI)))};
+  const auto multiplyingFactor{-A_abc * std::exp(-alpha_abc * (IJ + JK + KI))};
 
   const auto firstTerm{-alpha_abc * (displacementIJ.derive_wrt<ID>() + displacementJK.derive_wrt<ID>() +
                                      displacementKI.derive_wrt<ID>())};
