@@ -14,11 +14,25 @@ namespace autopas::utils::ArrayMath::Argon {
 
 class CosineHandle {
  public:
+  /**
+   * constructor for the CosineHandle. Constructs the CosineHandle if displacementAB.idStartVertex == displacementAC.idStartVertex
+   * @param displacementAB
+   * @param displacementAC
+   */
   explicit CosineHandle(const DisplacementHandle &displacementAB, const DisplacementHandle &displacementAC);
 
+  /**
+   *
+   * @return cosine of the angle between displacementAB.displacement_ and displacementAC.displacement_
+   */
   [[nodiscard]] double getCos() const { return cos_; }
 
-  template <size_t wrt>
+  /**
+   *
+   * @tparam ID id of the particle with respect to which we are computing the derivative
+   * @return derivative of the cosine cos_ w.r.t. ID
+   */
+  template <size_t ID>
   [[nodiscard]] nabla derive_wrt();
 
  private:

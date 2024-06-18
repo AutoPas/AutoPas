@@ -22,24 +22,19 @@ CosineHandle::CosineHandle(const DisplacementHandle &displacementAB, const Displ
   id_ = displacementAB.getIdStartVertex();
 }
 
-/**
- *
- * @tparam wrt particle with respect to which we are computing the derivative
- * @return Derivative of cos_ with respect to particle wrt
- */
-template <size_t wrt>
+template <size_t ID>
 [[nodiscard]] nabla CosineHandle::derive_wrt() {
-  if (id_ != wrt && displacementAB_.getIdEndVertex() != wrt && displacementAC_.getIdEndVertex() != wrt) {
+  if (id_ != ID && displacementAB_.getIdEndVertex() != ID && displacementAC_.getIdEndVertex() != ID) {
     return std::array<double, 3>{{0, 0, 0}};
-  } else if (wrt == id_) {
+  } else if (ID == id_) {
     auto firstTerm{cos_ / ArrayMath::dot(AB_, AB_) - 1. / ArrayMath::dot(AB_, AC_)};
     auto secondTerm{cos_ / ArrayMath::dot(AC_, AC_) - 1. / ArrayMath::dot(AB_, AC_)};
     return AB_ * firstTerm + AC_ * secondTerm;
-  } else if (wrt == displacementAB_.getIdEndVertex()) {
+  } else if (ID == displacementAB_.getIdEndVertex()) {
     auto firstTerm{-cos_ / ArrayMath::dot(AB_, AB_)};
     auto secondTerm{1. / ArrayMath::dot(AB_, AC_)};
     return AB_ * firstTerm + AC_ * secondTerm;
-  } else if (wrt == displacementAC_.getIdEndVertex()) {
+  } else if (ID == displacementAC_.getIdEndVertex()) {
     auto firstTerm{-cos_ / ArrayMath::dot(AC_, AC_)};
     auto secondTerm{1. / ArrayMath::dot(AB_, AC_)};
     return AC_ * firstTerm + AB_ * secondTerm;

@@ -23,11 +23,6 @@ DisplacementHandle::DisplacementHandle(const std::array<double, 3> &positionStar
   return DisplacementHandle(positionEndVertex_, positionStartVertex_, idEndVertex_, idStartVertex_);
 }
 
-/**
- *
- * @tparam wrt particle with respect to which we are computing the derivative
- * @return Derivative of displacement_ with respect to particle wrt
- */
 template <size_t wrt>
 [[nodiscard]] nabla DisplacementHandle::derive_wrt() {
   auto moduloDisplacement{L2Norm(displacement_)};
