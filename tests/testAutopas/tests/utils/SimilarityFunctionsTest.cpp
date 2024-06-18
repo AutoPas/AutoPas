@@ -23,7 +23,6 @@
  * - particles are placed evenly between bins
  * - tests density is correct and homogeneity is 0
  * - moves a particle between bins and tests again
- * - contiane
  */
 TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
   const std::array<double, 3> domainMin{1, 1, 0};
