@@ -270,11 +270,11 @@ class KryptonPairFunctor
 
         const int threadnum = autopas::autopas_get_thread_num();
         if (i.isOwned()) {
-          _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+          _aosThreadData[threadnum].potentialEnergySum += potentialEnergy * 0.5;
         }
         // for non-newton3 the second particle will be considered in a separate calculation
         if (newton3 and j.isOwned()) {
-          _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+          _aosThreadData[threadnum].potentialEnergySum += potentialEnergy * 0.5;
         }
       }
     }
@@ -290,11 +290,11 @@ class KryptonPairFunctor
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-        _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadnum].virialSum += virial * 0.5;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadnum].virialSum += virial * 0.5;
       }
     }
   }
@@ -482,16 +482,16 @@ class KryptonPairFunctor
   // helper constants
 
   const double _A = 0.3200711798e8;
-  const double _alpha1 = -0.2430565544e2;
-  const double _alpha2 = -0.1435536209e2;
-  const double _alphaneg1 = -0.4532273868e-1;
-  const double _b = 0.2786344368e2;
-  const double _C6 = 0.8992209265;
-  const double _C8 = 0.7316713603e-1;
-  const double _C10 = 0.7835488511e-2;
-  const double _C12 = 1.1043747590e-3;
-  const double _C14 = 2.0486474980e-4;
-  const double _C16 = 5.0017084700e-5;
+  const double _alpha1 = -0.2430565544e1;
+  const double _alpha2 = -0.1435536209;
+  const double _alphaneg1 = -0.4532273868;
+  const double _b = 0.2786344368e1;
+  const double _C6 = 0.8992209265e6;
+  const double _C8 = 0.7316713603e7;
+  const double _C10 = 0.7835488511e8;
+  const double _C12 = 1.1043747590e9;
+  const double _C14 = 2.0486474980e10;
+  const double _C16 = 5.0017084700e11;
 
   const std::array<double, 17> _bPots = [&] {
     std::array<double, 17> pots{1.0};
@@ -501,8 +501,8 @@ class KryptonPairFunctor
     return pots;
   }();
 
-  const std::array<double, 6> _cConstants = {0.8992209265,    0.7316713603e-1, 0.7835488511e-2,
-                                             1.1043747590e-3, 2.0486474980e-4, 5.0017084700e-5};
+  const std::array<double, 6> _cConstants = {0.8992209265e6,    0.7316713603e7, 0.7835488511e8,
+                                             1.1043747590e9, 2.0486474980e10, 5.0017084700e11};
 
   const std::array<double, 17> _invFactorials = {1.,
                                                  1.,
