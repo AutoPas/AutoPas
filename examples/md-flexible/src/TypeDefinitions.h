@@ -38,6 +38,10 @@
 #include "molecularDynamicsLibrary/KryptonExtendedATMFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+#include "molecularDynamicsLibrary/KryptonPairFunctor.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -126,6 +130,10 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true, autopas::
                                              mdFlexibleTypeDefs::calcGlobals, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+  using KryptonFunctorType = mdLib::KryptonPairFunctor<ParticleType, false, autopas::FunctorN3Modes::Both, mdFlexibleTypeDefs::calcGlobals>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)

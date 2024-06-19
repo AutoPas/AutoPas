@@ -314,6 +314,10 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
         break;
       }
+      case FunctorOption::kr: {
+        os << "Krypton Pair Potential" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions, -indentWidth);
@@ -337,6 +341,10 @@ std::string MDFlexConfig::to_string() const {
       }
       case FunctorOption3B::at: {
         os << "Axilrod-Teller" << endl;
+        break;
+      }
+      case FunctorOption::kr: {
+        os << "Krypton Pair Potential" << endl;
         break;
       }
     }
