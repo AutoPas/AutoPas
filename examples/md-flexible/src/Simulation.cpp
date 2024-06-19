@@ -522,13 +522,22 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
-  return wasTuningIteration;
+    applyWithChosenFunctor<bool>([&](auto &&functor) {
+      auto stilltuning =  _autoPasContainer->computeInteractions(&functor);
+      _ePot += functor.getPotentialEnergy();
+      _virialSum += functor.getVirial();
+      return stilltuning;
+    });  return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
+      applyWithChosenFunctor3B<bool>([&](auto &&functor) {
+        auto stilltuning =  _autoPasContainer->computeInteractions(&functor);
+        _ePot += functor.getPotentialEnergy();
+        _virialSum += functor.getVirial();
+        return stilltuning;
+      });
   return wasTuningIteration;
 }
 
@@ -658,6 +667,10 @@ void Simulation::logMeasurements() {
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
     std::cout << "MFUPs/sec                          : " << mfups << "\n";
+
+    std::cout << "Global statistics at the end of simulation:" << std::endl;
+    std::cout << "  Potential Energy                             : " << _ePot << std::endl;
+    std::cout << "  Virial Sum                                   : " << _virialSum << std::endl;
   }
 }
 
