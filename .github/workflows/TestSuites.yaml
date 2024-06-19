@@ -139,6 +139,7 @@ jobs:
             ctest --output-on-failure -R '^testAutopas/Generated/Newton3OnOffTest' -j 2
             cpan Capture::Tiny
             cpan DateTime
+            cpan Date::Parse
             make coverage
           fi
 
