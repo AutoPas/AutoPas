@@ -270,7 +270,6 @@ void getSendLeaving(double boxMin, double boxMax, int diff, double &sendMin, dou
  */
 void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::array<double, 3> &globalBoxMin,
                          const std::array<double, 3> &globalBoxMax) {
-  using namespace autopas::utils::ArrayMath::literals;
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
   std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
@@ -298,7 +297,6 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
              iterator.isValid(); ++iterator) {
           Particle p = *iterator;  // copies Particle
           p.addR(shift);
-          p.setRAtRebuild(p.getRAtRebuild() + shift);
           sendParticles.push_back(p);
         }
         MPI_Request sendRequest;
@@ -318,7 +316,6 @@ void updateHaloParticles(AutoPasContainer &sphSystem, MPI_Comm &comm, const std:
 
 void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const std::vector<Particle> &invalidParticles,
                             std::array<double, 3> globalBoxMin, std::array<double, 3> globalBoxMax) {
-  using namespace autopas::utils::ArrayMath::literals;
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
   std::array<double, 3> requiredHaloMin{0, 0, 0}, requiredHaloMax{0, 0, 0};
@@ -346,7 +343,6 @@ void periodicBoundaryUpdate(AutoPasContainer &sphSystem, MPI_Comm &comm, const s
             //          << p.getR()[1] << ", " << p.getR()[2] << ")" << std::endl;
             auto pCopy = p;
             pCopy.addR(shift);
-            pCopy.setRAtRebuild(pCopy.getRAtRebuild() + shift);
             sendParticles.push_back(pCopy);
           }
         }

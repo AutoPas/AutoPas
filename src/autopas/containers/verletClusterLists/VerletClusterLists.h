@@ -291,8 +291,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
 
-    const auto boxMinWithSafetyMargin = boxMin - (this->getVerletSkin());
-    const auto boxMaxWithSafetyMargin = boxMax + (this->getVerletSkin());
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= this->getVerletSkin();
+      boxMaxWithSafetyMargin += this->getVerletSkin();
+    }
 
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
@@ -935,7 +940,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   [[nodiscard]] double getVerletSkin() const override { return this->_skin; }
 
   /**
-   * Set the verlet skin length per timestep for the container.
+   * Set the verlet skin length for the container.
    * @param skin
    */
   void setSkin(double skin) { this->_skin = skin; }

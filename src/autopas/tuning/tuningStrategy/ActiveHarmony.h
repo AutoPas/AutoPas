@@ -21,7 +21,10 @@
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/utils/AutoPasConfigurationCommunicator.h"
 #include "autopas/utils/WrapMPI.h"
+
+#ifdef AUTOPAS_ENABLE_HARMONY
 #include "hclient.h"
+#endif
 
 namespace autopas {
 
@@ -77,6 +80,7 @@ class ActiveHarmony : public TuningStrategyInterface {
              const autopas::EvidenceCollection &evidenceCollection) override;
 
  private:
+#ifdef AUTOPAS_ENABLE_HARMONY
   /**
    * Pointer for the connection to the ActiveHarmony server.
    */
@@ -85,6 +89,9 @@ class ActiveHarmony : public TuningStrategyInterface {
    * Pointer to the ActiveHarmony tuning task defining the tuning parameters and tuning process.
    */
   htask_t *htask = nullptr;
+#else
+  using hdef_t = void *;
+#endif
 
   std::set<ContainerOption> _allowedContainerOptions;
   std::unique_ptr<NumberSet<double>> _allowedCellSizeFactors;

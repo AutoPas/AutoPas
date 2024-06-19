@@ -226,8 +226,13 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                const std::array<double, 3> &boxMax) const {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const auto boxMinWithSafetyMargin = boxMin - (this->getVerletSkin());
-    const auto boxMaxWithSafetyMargin = boxMax + (this->getVerletSkin());
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= this->getVerletSkin();
+      boxMaxWithSafetyMargin += this->getVerletSkin();
+    }
 
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {

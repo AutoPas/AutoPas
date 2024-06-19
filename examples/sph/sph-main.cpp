@@ -118,15 +118,12 @@ void setPressure(AutoPasContainer &sphSystem) {
 }
 
 void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<Particle> &invalidParticles) {
-  using namespace autopas::utils::ArrayMath::literals;
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
 
   for (auto &p : invalidParticles) {
     // first we have to correct the position of the particles, s.t. they lie inside of the box.
     auto pos = p.getR();
-    auto rebuildPos = p.getRAtRebuild();
-    auto displacement = pos - rebuildPos;
     for (auto dim = 0; dim < 3; dim++) {
       if (pos[dim] < boxMin[dim]) {
         // has to be smaller than boxMax
@@ -137,8 +134,6 @@ void addEnteringParticles(AutoPasContainer &sphSystem, std::vector<Particle> &in
       }
     }
     p.setR(pos);
-    // correcting last rebuild position so that particle displacement since rebuild remains same
-    p.setRAtRebuild(pos - displacement);
     // add moved particles again
     sphSystem.addParticle(p);
   }
@@ -178,7 +173,6 @@ void getRequiredHalo(double boxMin, double boxMax, int diff, double &reqMin, dou
  * @param sphSystem
  */
 void updateHaloParticles(AutoPasContainer &sphSystem) {
-  using namespace autopas::utils::ArrayMath::literals;
   std::array<double, 3> boxMin = sphSystem.getBoxMin();
   std::array<double, 3> boxMax = sphSystem.getBoxMax();
   std::array<double, 3> requiredHaloMin{0., 0., 0.}, requiredHaloMax{0., 0., 0.};
@@ -202,7 +196,6 @@ void updateHaloParticles(AutoPasContainer &sphSystem) {
              iterator.isValid(); ++iterator) {
           Particle p = *iterator;
           p.addR(shift);
-          p.setRAtRebuild(p.getRAtRebuild() + shift);
           sphSystem.addHaloParticle(p);
         }
       }
