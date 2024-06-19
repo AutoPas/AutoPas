@@ -264,9 +264,9 @@ class KryptonPairFunctor
 
       if (calculateGlobals) {
         double potentialEnergy =
-            _A * expAlphaTerm - _C6 * distInv6 * (1 - expbr * ksumacc6) - _C8 * distNeg8 * (1 - expbr * ksumacc8) -
-            _C10 * distNeg10 * (1 - expbr * ksumacc10) - _C12 * distNeg12 * (1 - expbr * ksumacc12) -
-            _C14 * distNeg14 * (1 - expbr * ksumacc14) - _C16 * distNeg16 * (1 - expbr * ksumacc16);
+            _A * expAlphaTerm - _C6 * distInv6 * (1. - expbr * ksumacc6) - _C8 * distNeg8 * (1. - expbr * ksumacc8) -
+            _C10 * distNeg10 * (1. - expbr * ksumacc10) - _C12 * distNeg12 * (1. - expbr * ksumacc12) -
+            _C14 * distNeg14 * (1. - expbr * ksumacc14) - _C16 * distNeg16 * (1. - expbr * ksumacc16);
 
         const int threadnum = autopas::autopas_get_thread_num();
         if (i.isOwned()) {
@@ -396,7 +396,7 @@ class KryptonPairFunctor
     }
     if (calculateGlobals) {
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _virialSum += _aosThreadData[i].potentialEnergySum;
+        _virialSum += _aosThreadData[i].virialSum;
         _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
       }
 
