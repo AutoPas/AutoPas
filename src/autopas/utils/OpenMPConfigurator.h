@@ -11,8 +11,8 @@
 
 #include "autopas/options/Option.h"
 #include "autopas/utils/WrapOpenMP.h"
-#ifdef AUTOPAS_USE_LB4OMP
-#include "kmp.h"
+#ifdef AUTOPAS_USE_AUTO4OMP
+#include <kmp.h>
 #endif
 
 namespace autopas {
@@ -292,9 +292,10 @@ class OpenMPConfigurator {
 inline void autopas_set_schedule(autopas::OpenMPConfigurator ompConfig) {
   if (ompConfig.getKind() != OpenMPKindOption::omp_runtime) {
     if (ompConfig.manualSchedulingTechnique()) {
-#ifdef AUTOPAS_USE_LB4OMP
+#ifdef AUTOPAS_USE_AUTO4OMP
       // TODO: untested.
-      autopas_set_schedule(static_cast<omp_sched_t>(ompConfig.getKMPKind()), ompConfig.getOMPChunkSize());
+      int gid = __kmpc_global_thread_num(nullptr);
+      __kmp_set_schedule(gid, ompConfig.getKMPKind(), ompConfig.getOMPChunkSize());
 #else
       autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
 #endif
