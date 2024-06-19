@@ -106,6 +106,9 @@ class Simulation {
    */
   double _homogeneity = 0;
 
+  double _ePot = 0.0;
+
+  double _virialSum = 0.0;
   /**
    * Struct containing all timers used for the simulation.
    */

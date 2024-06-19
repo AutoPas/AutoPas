@@ -186,10 +186,10 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-  _homogeneity =
-      autopas::utils::calculateHomogeneityAndMaxDensity(*_autoPasContainer, _domainDecomposition->getGlobalBoxMin(),
-                                                        _domainDecomposition->getGlobalBoxMax())
-          .first;
+//  _homogeneity =
+//      autopas::utils::calculateHomogeneityAndMaxDensity(*_autoPasContainer, _domainDecomposition->getGlobalBoxMin(),
+//                                                        _domainDecomposition->getGlobalBoxMax())
+//          .first;
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -468,7 +468,12 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->template iteratePairwise(&functor); });
+      applyWithChosenFunctor<bool>([&](auto functor) {
+        auto stilltuning = _autoPasContainer->template iteratePairwise(&functor);
+        _ePot = functor.getPotentialEnergy();
+        _virialSum = functor.getVirial();
+        return stilltuning;
+      });
   return wasTuningIteration;
 }
 
@@ -598,6 +603,11 @@ void Simulation::logMeasurements() {
                 << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
       std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
     }
+
+    std::cout << "Global statistics at the end of simulation:" << std::endl;
+    std::cout << "  Potential Energy                             : " << _ePot << std::endl;
+    std::cout << "  Virial Sum                                   : " << _virialSum << std::endl;
+
   }
 }
 
