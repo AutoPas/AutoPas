@@ -11,7 +11,7 @@ tuning-interval                      :  5000
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
 functor                              :  Lennard-Jones (12-6) avx
-newton3                              :  [enabled]  # Keep enabled.
+newton3                              :  [disabled]  # Keep disabled.
 cutoff                               :  2.5
 box-min                              :  [0, 0, 0]
 box-max                              :  [100.5, 100.5, 100.5]

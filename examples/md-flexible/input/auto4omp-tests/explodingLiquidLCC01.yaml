@@ -5,7 +5,7 @@
 container                        :  [LinkedCells] # Single type. See AllOptions.yaml for a list of possible containers.
 traversal                        :  [lc_c01] # Single type. See AllOptions.yaml for a list of possible traversals.
 data-layout                      :  [SoA] # Use SoA only for OpenMP chunk size investigation.
-newton3                          :  [enabled] # Keep enabled for OpenMP chunk size investigation.
+newton3                          :  [disabled] # Keep disabled.
 verlet-rebuild-frequency         :  10
 verlet-skin-radius               :  0.2
 verlet-cluster-size              :  4

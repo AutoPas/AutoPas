@@ -286,7 +286,7 @@ class OpenMPConfigurator {
 
 /**
  * Sets OpenMP's runtime schedule from a given OpenMP configurator.
- * schedule(runtime) will then use them for the traversal in the concerned calling thread.
+ * OpenMP loops with schedule(runtime) will then use it.
  * @param ompConfig the OpenMP configurator
  */
 inline void autopas_set_schedule(autopas::OpenMPConfigurator ompConfig) {
