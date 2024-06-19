@@ -693,15 +693,15 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.openMPKind)::getoptChar: {
-        if (contains(strArg, "aut"))
+        if (contains(strArg, "aut") || contains(strArg, "GAC"))
           config.openMPKind.value = autopas::OpenMPKindOption::omp_auto;
-        else if (contains(strArg, "dyn"))
+        else if (contains(strArg, "dyn") || contains(strArg, "SS"))
           config.openMPKind.value = autopas::OpenMPKindOption::omp_dynamic;
-        else if (contains(strArg, "guid"))
+        else if (contains(strArg, "guid") || contains(strArg, "GSS"))
           config.openMPKind.value = autopas::OpenMPKindOption::omp_guided;
         else if (contains(strArg, "run"))
           config.openMPKind.value = autopas::OpenMPKindOption::omp_runtime;
-        else if (contains(strArg, "sta"))
+        else if (contains(strArg, "sta") || contains(strArg, "STATIC"))
           config.openMPKind.value = autopas::OpenMPKindOption::omp_static;
         else if (contains(strArg, "rand"))
           config.openMPKind.value = autopas::OpenMPKindOption::auto4omp_randomsel;
@@ -709,6 +709,52 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.openMPKind.value = autopas::OpenMPKindOption::auto4omp_exhaustivesel;
         else if (contains(strArg, "exp"))
           config.openMPKind.value = autopas::OpenMPKindOption::auto4omp_expertsel;
+        else if(contains(strArg, "prof"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_profiling;
+        else if(contains(strArg, "mfsc") || contains(strArg, "mFSC"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_mfsc;
+        else if(contains(strArg, "fsc") || contains(strArg, "FSC"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_fsc;
+        else if(contains(strArg, "tap") || contains(strArg, "TAP"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_tap;
+        else if(contains(strArg, "fac2a") || contains(strArg, "mFAC2"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_fac2a;
+        else if(contains(strArg, "fac2") || contains(strArg, "FAC2"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_fac2;
+        else if(contains(strArg, "faca") || contains(strArg, "mFAC"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_faca;
+        else if(contains(strArg, "fac") || contains(strArg, "FAC"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_fac;
+        else if(contains(strArg, "bold") || contains(strArg, "BOLD"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_bold;
+        else if(contains(strArg, "awf_b") || contains(strArg, "AWF-B"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_awf_b;
+        else if(contains(strArg, "awf_c") || contains(strArg, "AWF-C"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_awf_c;
+        else if(contains(strArg, "awf_d") || contains(strArg, "AWF-D"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_awf_d;
+        else if(contains(strArg, "awf_e") || contains(strArg, "AWF-E"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_awf_e;
+        else if(contains(strArg, "awf") || contains(strArg, "AWF"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_awf;
+        else if(contains(strArg, "wf") || contains(strArg, "WF"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_wf;
+        else if(contains(strArg, "tfss") || contains(strArg, "TFSS"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_tfss;
+        else if(contains(strArg, "fiss") || contains(strArg, "FISS"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_fiss;
+        else if(contains(strArg, "viss") || contains(strArg, "VISS"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_viss;
+        else if(contains(strArg, "rnd") || contains(strArg, "RND"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_rnd;
+        else if(contains(strArg, "trap") || contains(strArg, "TSS"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_trapezoidal;
+        else if(contains(strArg, "steal") || contains(strArg, "Steal"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_static_steal;
+        else if(contains(strArg, "af_a") || contains(strArg, "mAF"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_af_a;
+        else if(contains(strArg, "af") || contains(strArg, "AF"))
+          config.openMPKind.value = autopas::OpenMPKindOption::lb4omp_af;
         else {
           cerr << "Error parsing OpenMP kind: " << strArg << endl;
           displayHelp = true;
