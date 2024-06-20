@@ -863,6 +863,9 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   const auto skin = getContainer().getVerletSkin();
   // (skin/2)^2
   const auto halfSkinSquare = skin * skin * 0.25;
+  // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
+  // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
+  // require a rebuild of neighbor lists.
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
@@ -921,18 +924,22 @@ LogicHandler<Particle>::getParticleBuffers() const {
 template <typename Particle>
 template <class PairwiseFunctor>
 IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &functor, TraversalInterface &traversal) {
-  this->checkNeighborListsInvalidDoDynamicRebuild();
-  const bool doListRebuild = not neighborListsAreValid();
-  const auto &configuration = _autoTuner.getCurrentConfig();
-  auto &container = _containerSelector.getCurrentContainer();
-
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerIteratePairwise;
   autopas::utils::Timer timerRemainderTraversal;
+  autopas::utils::Timer timerCheckForDynamicRebuild;
+
+  timerTotal.start();
+  timerCheckForDynamicRebuild.start();
+  this->checkNeighborListsInvalidDoDynamicRebuild();
+  timerCheckForDynamicRebuild.stop();
+
+  const bool doListRebuild = not neighborListsAreValid();
+  const auto &configuration = _autoTuner.getCurrentConfig();
+  auto &container = _containerSelector.getCurrentContainer();
 
   const bool energyMeasurementsPossible = _autoTuner.resetEnergy();
-  timerTotal.start();
 
   functor.initTraversal();
   if (doListRebuild) {
@@ -963,7 +970,8 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
-  return {timerIteratePairwise.getTotalTime(),
+  return {timerCheckForDynamicRebuild.getTotalTime(),
+          timerIteratePairwise.getTotalTime(),
           timerRemainderTraversal.getTotalTime(),
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
@@ -1247,10 +1255,12 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   };
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
+  AutoPasLog(DEBUG, "CheckForDynamicRebuild took {} ns", measurements.timerCheckForDynamicRebuild);
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeIteratePairwise);
   AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", measurements.timeRemainderTraversal);
   AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", measurements.timeRebuild);
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeTotal);
+
   if (measurements.energyMeasurementsPossible) {
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
                measurements.energyPkg, measurements.energyRam);

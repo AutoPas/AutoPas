@@ -26,6 +26,7 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "Iteration,"
       "inTuningPhase,"
       "{},"
+      "checkForDynamicRebuild[ns],"
       "iteratePairwise[ns],"
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
@@ -58,17 +59,18 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                                             bool inTuningPhase, long timeTuning,
                                             const IterationMeasurements &measurements) {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
-               energyPsys, energyPkg, energyRam, energyTotal] = measurements;
+  const auto &[timerCheckForDynamicRebuild, timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
+               energyMeasurementsPossible, energyPsys, energyPkg, energyRam, energyTotal] = measurements;
   if (energyMeasurementsPossible) {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
-               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
-               timeTuning, energyPsys, energyPkg, energyRam);
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false",
+               configuration.getCSVLine(), timerCheckForDynamicRebuild, timeIteratePairwise, timeRemainderTraversal,
+               timeRebuild, timeTotal, timeTuning, energyPsys, energyPkg, energyRam);
   } else {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
-               timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, timeTuning);
+        ->info("{},{},{},{},{},{},{},{},{}", iteration, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
+               timerCheckForDynamicRebuild, timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
+               timeTuning);
   }
 #endif
 }
