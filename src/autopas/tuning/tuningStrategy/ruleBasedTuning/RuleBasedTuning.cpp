@@ -12,20 +12,21 @@ namespace autopas {
 
 RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, bool verifyModeEnabled,
                                  std::string ruleFileName, RuleBasedTuning::PrintTuningErrorFunType tuningErrorPrinter)
-    : _searchSpace(searchSpace),
-      _originalSearchSpace(searchSpace.begin(), searchSpace.end()),
-      _verifyModeEnabled(verifyModeEnabled),
-      _ruleFileName(std::move(ruleFileName)),
-      _tuningErrorPrinter(std::move(tuningErrorPrinter)) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+    : _verifyModeEnabled(verifyModeEnabled),
+      _tuningErrorPrinter(std::move(tuningErrorPrinter)),
+      _searchSpace(searchSpace),
+      _originalSearchSpace(searchSpace.begin(), searchSpace.end()),
+      _ruleFileName(std::move(ruleFileName)) {
   // Check if the given rule file exists and throw if not
-  struct stat buffer;
+  struct stat buffer {};
   if (stat(_ruleFileName.c_str(), &buffer) != 0) {
     utils::ExceptionHandler::exception("Rule file {} does not exist!", _ruleFileName);
   }
   // By default, dump the rules for reproducibility reasons.
   AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
 #else
+{
   autopas::utils::ExceptionHandler::exception(
       "RuleBasedTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
 #endif
