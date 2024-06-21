@@ -11,8 +11,13 @@
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+using forceCalculationTestLJFunctor = mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                                                       /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true>;
+
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(LJFunctorType<> *);
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                     /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true> *);
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
@@ -34,10 +39,10 @@ void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas
   autopasTools::generators::GridGenerator::fillWithParticles(autoPas, {2, 2, 1}, defaultParticle,
                                                              {particleSpacing, particleSpacing, particleSpacing});
 
-  LJFunctorType<> functor(cutoff);
+  forceCalculationTestLJFunctor functor(cutoff);
   functor.setParticleProperties(24, 1);
 
-  autoPas.iteratePairwise(&functor);
+  autoPas.iteratePairwise<forceCalculationTestLJFunctor>(&functor);
 
   for (auto p = autoPas.begin(); p.isValid(); ++p) {
     auto id = p->getID();

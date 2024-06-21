@@ -7,15 +7,17 @@
 #include "LJFunctorFlopCounterTest.h"
 
 #include "autopas/AutoPasDecl.h"
+#include "autopas/AutoPasImpl.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ false, /*countFLOPs*/ true, /*relevantForTuning*/ true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true, true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, true, true, true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true, true, true> *);
+
 /**
  * Generates a square of four particles, iterates over it with the LJFunctor and checks the values of getNumFLOPs() and
  * getHitRate()

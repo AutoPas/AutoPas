@@ -14,13 +14,4 @@ template class autopas::AutoPas<Molecule>;
 template bool autopas::AutoPas<Molecule>::iteratePairwise(
     mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ false, /*countFLOPs*/ true, /*relevantForTuning*/ true> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ true, /*countFLOPs*/ true, /*relevantForTuning*/ true> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ true, /*countFLOPs*/ true, /*relevantForTuning*/ true> *);
 //! @endcond
