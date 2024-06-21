@@ -14,8 +14,72 @@
 #include <variant>
 
 #include "CrispSet.h"
+#include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::fuzzy_logic {
+
+/**
+ * Used to represent the different defuzzification methods.
+ */
+class DefuzzificationMethodOption {
+ public:
+  /**
+   * Enum for the different defuzzification methods.
+   */
+  enum Value {
+    /**
+     * Center of Gravity
+     */
+    CoG,
+    /**
+     * Mean of Maximum
+     */
+    MoM
+  };
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
+  constexpr DefuzzificationMethodOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
+  constexpr operator Value() const { return _value; }
+
+  /**
+   * Provides a way to iterate over the possible choices of DefuzzificationMethod.
+   * @return map option -> string representation
+   */
+  static std::map<DefuzzificationMethodOption, std::string> getOptionNames() {
+    return {
+        {DefuzzificationMethodOption::CoG, "centerOfGravity"},
+        {DefuzzificationMethodOption::MoM, "MoM"},
+    };
+  };
+
+  /**
+   * Parses a string to a DefuzzificationMethodOption.
+   * @param str The exact string representation of the DefuzzificationMethodOption.
+   * @return The DefuzzificationMethodOption.
+   */
+  static DefuzzificationMethodOption parse(const std::string &str) {
+    auto option = std::find_if(DefuzzificationMethodOption::getOptionNames().begin(),
+                               DefuzzificationMethodOption::getOptionNames().end(),
+                               [&str](const auto &pair) { return pair.second == str; });
+
+    if (option == DefuzzificationMethodOption::getOptionNames().end()) {
+      autopas::utils::ExceptionHandler::exception("Unknown DefuzzificationMethodOption: {}", str);
+    }
+
+    return option->first;
+  }
+
+ private:
+  Value _value{Value(-1)};
+};
 
 /**
  * Used to represent a mathematical Fuzzy-Set.
@@ -66,18 +130,12 @@ class FuzzySet {
   [[nodiscard]] double evaluate_membership(const Data &data) const;
 
   /**
-   * Calculates the x-coordinate of the center of gravity of this FuzzySet.
-   * @param numSamples The number of samples to use for the numerical CoG calculation.
-   * @return The x-coordinate of the CoG of this FuzzySet.
+   * Defuzzifies the FuzzySet using the given data and method.
+   * @param method The defuzzification method to use.
+   * @param numSamples The number of samples to use for the numerical defuzzification.
+   * @return The defuzzified value of this FuzzySet.
    */
-  [[nodiscard]] double CoG(size_t numSamples) const;
-
-  /**
-   * Calculates the mean of the meanOfMaximum of this FuzzySet.
-   * @param numSamples The number of samples to use for the numerical mean of meanOfMaximum calculation.
-   * @return The mean of the meanOfMaximum of this FuzzySet.
-   */
-  [[nodiscard]] double meanOfMaximum(size_t numSamples) const;
+  [[nodiscard]] double defuzzify(DefuzzificationMethodOption method, size_t numSamples) const;
 
   /**
    * Returns a string representation of the BaseMembershipFunction.
@@ -140,6 +198,22 @@ class FuzzySet {
    * The crisp set on which the FuzzySet is defined.
    */
   std::shared_ptr<CrispSet> _crispSet;
+
+  /**
+   * Calculates the x-coordinate of the center of gravity of this FuzzySet.
+   * @param numSamples The number of samples to use for the numerical centerOfGravity calculation.
+   * @return The x-coordinate of the centerOfGravity of this FuzzySet.
+   */
+  [[nodiscard]] double centerOfGravity(size_t numSamples) const;
+
+  /**
+   * Calculates the mean of the maximum of this FuzzySet.
+   * The mean of the maximum is the average value of all x-coordinates where the membership function reaches its
+   * maximum.
+   * @param numSamples The number of samples to use for the numerical mean of meanOfMaximum calculation.
+   * @return The mean of the meanOfMaximum of this FuzzySet.
+   */
+  [[nodiscard]] double meanOfMaximum(size_t numSamples) const;
 };
 
 /**

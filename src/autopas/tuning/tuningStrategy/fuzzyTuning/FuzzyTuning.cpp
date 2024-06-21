@@ -157,8 +157,14 @@ void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Conf
     });
   }
 
-  AutoPasLog(DEBUG, "Fuzzy tuning selected {} out of {} possible configurations", newSearchSpace.size(),
-             configQueue.size());
+  AutoPasLog(DEBUG, "Fuzzy tuning selected {} out of {} possible configurations: {}", newSearchSpace.size(),
+             configQueue.size(), [&newSearchSpace]() {
+               std::string result;
+               for (const auto &config : newSearchSpace) {
+                 result += config.toString() + ", ";
+               }
+               return result;
+             }());
   configQueue.clear();
   std::copy(newSearchSpace.rbegin(), newSearchSpace.rend(), std::back_inserter(configQueue));
 }
@@ -195,7 +201,7 @@ void FuzzyTuning::updateQueueInterpretOutputAsSuitability(std::vector<Configurat
             [](const auto &a, const auto &b) { return a.second > b.second; });
 
   // get the best configurations and everything that is within 10% of the best
-  const double THRESHOLD = 0.1;
+  const double THRESHOLD = std::stod(_fuzzyControlSettings->at("suitabilityThreshold"));
 
   const auto bestSuitability = configSuitabilities.front().second;
   std::vector<ConfigurationPattern> bestConfigurations;

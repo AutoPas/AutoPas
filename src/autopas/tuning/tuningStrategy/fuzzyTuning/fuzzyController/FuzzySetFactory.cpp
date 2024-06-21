@@ -77,29 +77,30 @@ std::shared_ptr<FuzzySet> FuzzySetFactory::makeFuzzySet(const std::string &lingu
   return std::make_shared<FuzzySet>(linguisticTerm, std::move(baseMembershipFunction));
 }
 
-std::function<double(double)> FuzzySetFactory::triangleFunction(double min, double mid, double max) {
-  auto triangular = [min, mid, max](double value) {
+std::function<double(double)> FuzzySetFactory::triangleFunction(double min, double peak, double max) {
+  auto triangular = [min, peak, max](double value) {
     if (value <= min or value >= max) {
       return 0.0;
-    } else if (value <= mid) {
-      return (value - min) / (mid - min);
+    } else if (value <= peak) {
+      return (value - min) / (peak - min);
     } else {
-      return (max - value) / (max - mid);
+      return (max - value) / (max - peak);
     }
   };
   return triangular;
 }
 
-std::function<double(double)> FuzzySetFactory::trapezoidFunction(double min, double mid1, double mid2, double max) {
-  auto trapezoidal = [min, mid1, mid2, max](double value) {
+std::function<double(double)> FuzzySetFactory::trapezoidFunction(double min, double leftPeak, double rightPeak,
+                                                                 double max) {
+  auto trapezoidal = [min, leftPeak, rightPeak, max](double value) {
     if (value <= min or value >= max) {
       return 0.0;
-    } else if (value <= mid1) {
-      return (value - min) / (mid1 - min);
-    } else if (value <= mid2) {
+    } else if (value <= leftPeak) {
+      return (value - min) / (leftPeak - min);
+    } else if (value <= rightPeak) {
       return 1.0;
     } else {
-      return (max - value) / (max - mid2);
+      return (max - value) / (max - rightPeak);
     }
   };
   return trapezoidal;

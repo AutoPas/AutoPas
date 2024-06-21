@@ -18,7 +18,7 @@ using namespace autopas;
 using namespace autopas::fuzzy_logic;
 
 /**
- * Tests whether the triangle fuzzy set behaves as expected.
+ * Tests whether the triangle fuzzy set has the correct membership values at certain key points.
  */
 TEST(FuzzyTuningTest, testTriangleFuzzySet) {
   // creates the (continuous) crisp set over which the fuzzy set is defined. It has the name "x" and the range [-5, 30]
@@ -55,7 +55,7 @@ TEST(FuzzyTuningTest, testTriangleFuzzySet) {
 }
 
 /**
- * Tests whether the gaussian fuzzy set behaves as expected.
+ * Tests whether the gaussian fuzzy set takes the correct values at certain key points.
  */
 TEST(FuzzyTuningTest, testGaussianFuzzySet) {
   // creates the (continuous) crisp set over which the fuzzy set is defined. It has the name "x" and the range [-5, 30]
@@ -85,30 +85,32 @@ TEST(FuzzyTuningTest, testGaussianFuzzySet) {
 }
 
 /**
- * Tests whether the sigmoid finite fuzzy set behaves as expected (increasing).
+ * Tests whether the sigmoid finite fuzzy set (increasing) takes the correct values at certain key points.
+ * Since the sigmoid finite fuzzy set is setup with the left<mid<right its membership function should be increasing.
  */
 TEST(FuzzyTuningTest, testSigmoidFiniteFuzzySetIncreasing) {
   // creates the (continuous) crisp set over which the fuzzy set is defined. It has the name "x" and the range [-5, 30]
   std::shared_ptr<CrispSet> crispSet = std::make_shared<CrispSet>("x", std::pair(-5, 30));
 
   // creates a fuzzy set with a sigmoid finite membership function inbetween 0 and 10 with a center at 5
-  auto triangle = FuzzySetFactory::makeFuzzySet("low", "SigmoidFinite", {0, 5, 10});
-  triangle->setCrispSet(crispSet);
+  auto sigmoidFinite = FuzzySetFactory::makeFuzzySet("low", "SigmoidFinite", {0, 5, 10});
+  sigmoidFinite->setCrispSet(crispSet);
 
   const auto epsilon = 1e-10;
 
   // test the membership function
-  EXPECT_NEAR(triangle->evaluate_membership({{"x", -10}}), 0, epsilon);
+  EXPECT_NEAR(sigmoidFinite->evaluate_membership({{"x", -10}}), 0, epsilon);
 
-  EXPECT_NEAR(triangle->evaluate_membership({{"x", 0}}), 0, epsilon);
+  EXPECT_NEAR(sigmoidFinite->evaluate_membership({{"x", 0}}), 0, epsilon);
 
-  EXPECT_NEAR(triangle->evaluate_membership({{"x", 5}}), 0.5, epsilon);
+  EXPECT_NEAR(sigmoidFinite->evaluate_membership({{"x", 5}}), 0.5, epsilon);
 
-  EXPECT_NEAR(triangle->evaluate_membership({{"x", 10}}), 1, epsilon);
+  EXPECT_NEAR(sigmoidFinite->evaluate_membership({{"x", 10}}), 1, epsilon);
 }
 
 /**
- * Tests whether the sigmoid fuzzy set behaves as expected (decreasing).
+ * Tests whether the sigmoid fuzzy set (decreasing) takes the correct values at certain key points.
+ * Since the sigmoid finite fuzzy set is setup with the left>mid>right its membership function should be decreasing.
  */
 TEST(FuzzyTuningTest, testSigmoidFiniteFuzzySetDecreasing) {
   // creates the (continuous) crisp set over which the fuzzy set is defined. It has the name "x" and the range [-5, 30]
@@ -116,23 +118,24 @@ TEST(FuzzyTuningTest, testSigmoidFiniteFuzzySetDecreasing) {
 
   // creates a fuzzy set with a sigmoid finite membership function with a center at 5 compared to the one before the
   // left and right border are switched
-  auto triangle = FuzzySetFactory::makeFuzzySet("low", "SigmoidFinite", {10, 5, 0});
-  triangle->setCrispSet(crispSet);
+  auto sigmoidFinite = FuzzySetFactory::makeFuzzySet("low", "SigmoidFinite", {10, 5, 0});
+  sigmoidFinite->setCrispSet(crispSet);
 
   const auto epsilon = 1e-10;
 
   // test the membership function
-  EXPECT_NEAR(triangle->evaluate_membership({{"x", -10}}), 1, epsilon);
+  EXPECT_NEAR(sigmoidFinite->evaluate_membership({{"x", -10}}), 1, epsilon);
 
-  EXPECT_NEAR(triangle->evaluate_membership({{"x", 0}}), 1, epsilon);
+  EXPECT_NEAR(sigmoidFinite->evaluate_membership({{"x", 0}}), 1, epsilon);
 
-  EXPECT_NEAR(triangle->evaluate_membership({{"x", 5}}), 0.5, epsilon);
+  EXPECT_NEAR(sigmoidFinite->evaluate_membership({{"x", 5}}), 0.5, epsilon);
 
-  EXPECT_NEAR(triangle->evaluate_membership({{"x", 10}}), 0, epsilon);
+  EXPECT_NEAR(sigmoidFinite->evaluate_membership({{"x", 10}}), 0, epsilon);
 }
 
 /**
- * Tests whether the negation operation on a fuzzy set behaves as expected.
+ * Tests whether the negation operation on a fuzzy sets calculates the correct membership values.
+ * The negation of a fuzzy set is defined as 1 - membership.
  */
 TEST(FuzzyTuningTest, testNegationOfFuzzySet) {
   // creates the (continuous) crisp set over which the fuzzy set is defined. It has the name "x" and the range [-5, 30]
@@ -149,7 +152,8 @@ TEST(FuzzyTuningTest, testNegationOfFuzzySet) {
 }
 
 /**
- * Tests whether the intersection operation on two fuzzy sets behaves as expected.
+ * Tests whether the intersection operation on two fuzzy calculates the correct membership values.
+ * The intersection of two fuzzy sets is defined as the minimum of the membership values of the two fuzzy sets.
  */
 TEST(FuzzyTuningTest, testIntersectionOfFuzzySets) {
   // creates the (continuous) crisp set over which the fuzzy set is defined. It has the name "x" and the range [-5, 30]
@@ -171,7 +175,8 @@ TEST(FuzzyTuningTest, testIntersectionOfFuzzySets) {
 }
 
 /**
- * Tests whether the union operation on two fuzzy sets behaves as expected.
+ * Tests whether the union operation on two fuzzy sets calculates the correct membership values.
+ * The union of two fuzzy sets is defined as the maximum of the membership values of the two fuzzy sets.
  */
 TEST(FuzzyTuningTest, testUnionOfFuzzySets) {
   // creates the (continuous) crisp set over which the fuzzy set is defined. It has the name "x" and the range [-5, 30]
@@ -193,7 +198,9 @@ TEST(FuzzyTuningTest, testUnionOfFuzzySets) {
 }
 
 /**
- * Tests whether a fuzzy rule behaves as expected.
+ * Tests whether applying a fuzzy rule correctly applies the cut operator on the consequent fuzzy set.
+ * Evaluating the antecedent fuzzy set at x = 5 should yield 0.5 and therfore the consequent fuzzy set should also be
+ * cut at 0.5.
  */
 TEST(FuzzyTuningTest, testFuzzyRule) {
   std::shared_ptr<CrispSet> crispSetAntecedent = std::make_shared<CrispSet>("x", std::pair(-5, 30));
@@ -226,7 +233,9 @@ TEST(FuzzyTuningTest, testFuzzyRule) {
 }
 
 /**
- * Tests whether LinguisticVariables behave as expected.
+ * Tests whether the operator== of the LinguisticVariable class and the operator&& of the FuzzySet class work as
+ * expected. The operator== of the LinguisticVariable should select the fuzzy set with the given name and the operator&&
+ * of the FuzzySet class should return the intersection of the two fuzzy sets.
  */
 TEST(FuzzyTuningTest, testLinguisticVariable) {
   auto X1 = LinguisticVariable("x1", std::pair(-5, 30));
@@ -258,7 +267,9 @@ TEST(FuzzyTuningTest, testLinguisticVariable) {
 }
 
 /**
- * Tests whether Rules behave as expected.
+ * This test is similar to the `testFuzzyRule` test but uses linguistic variables instead of fuzzy sets.
+ * The test checks whether the overloaded operators behave as expected.
+ * The example uses the example rule:  IF X1 == "low" && X2 == "high" THEN Y == "low"
  */
 TEST(FuzzyTuningTest, testFuzzyRuleWithLinguisticVariables) {
   auto X1 = LinguisticVariable("x1", std::pair(-5, 30));
@@ -292,11 +303,11 @@ TEST(FuzzyTuningTest, testFuzzyRuleWithLinguisticVariables) {
         double antecedentMembership =
             std::min(x1Low->evaluate_membership({{"x1", x1}}), x2High->evaluate_membership({{"x2", x2}}));
 
-        double expectedMembership = std::min(antecedentMembership, yLow->evaluate_membership({{"y", x1}}));
+        double expectedMembership = std::min(antecedentMembership, yLow->evaluate_membership({{"y", y}}));
 
         auto cutConsequent = rule1.apply({{"x1", x1}, {"x2", x2}});
 
-        double actualMembership = cutConsequent->evaluate_membership({{"y", x1}});
+        double actualMembership = cutConsequent->evaluate_membership({{"y", y}});
         EXPECT_NEAR(actualMembership, expectedMembership, epsilon);
       }
     }
@@ -304,7 +315,16 @@ TEST(FuzzyTuningTest, testFuzzyRuleWithLinguisticVariables) {
 }
 
 /**
- * Tests whether the fuzzy controller behaves as expected.
+ * Tests whether the fuzzy controller correctly applies the fuzzy rules.
+ * The test uses two fuzzy rules:
+ * 1. IF X1 == "low" && X2 == "high" THEN Y == "low"
+ * 2. IF X1 == "high" && X2 == "low" THEN Y == "high"
+ *
+ * Both rules get combined in a fuzzy controller and the controller is tested for different input values.
+ * Both antecedents are evaluated and the consequent is cut at the minimum of the antecedent memberships.
+ *
+ * Then the consequents are combined using the Fuzzy-OR operator and the resulting fuzzy set should therefore correspond
+ * to the maximum of the two cut consequents when evualated.
  */
 TEST(FuzzyTuningTest, testFuzzyController) {
   auto X1 = LinguisticVariable("x1", std::pair(-5, 30));
@@ -346,19 +366,22 @@ TEST(FuzzyTuningTest, testFuzzyController) {
         double antecedent2Membership =
             std::min(x1High->evaluate_membership({{"x1", x1}}), x2Low->evaluate_membership({{"x2", x2}}));
 
-        double expectedMembership = std::max(antecedent1Membership, antecedent2Membership);
+        double expectedMembership1 = std::min(antecedent1Membership, yLow->evaluate_membership({{"y", y}}));
+        double expectedMembership2 = std::min(antecedent2Membership, yHigh->evaluate_membership({{"y", y}}));
 
         auto cutConsequent = fuzzyController.applyRules({{"x1", x1}, {"x2", x2}});
-        double actualMembership = cutConsequent->evaluate_membership({{"y", x1}});
+        double actualMembership = cutConsequent->evaluate_membership({{"y", y}});
 
-        EXPECT_NEAR(actualMembership, expectedMembership, epsilon);
+        EXPECT_NEAR(actualMembership, std::max(expectedMembership1, expectedMembership2), epsilon);
       }
     }
   }
 }
 
 /**
- * Tests COG defuzzification.
+ * Tests if the center of gravity defuzzification method works as expected.
+ * The test uses different triangular and gaussian fuzzy sets and checks if the center of gravity of combinations of
+ * these fuzzy sets is calculated correctly.
  */
 TEST(FuzzyTuningTest, testCOGDefuzzification) {
   auto crispSet = std::make_shared<CrispSet>("x", std::pair(0, 40));
@@ -377,18 +400,20 @@ TEST(FuzzyTuningTest, testCOGDefuzzification) {
 
   size_t numSamples = 1000;
   // the center position of a triangle should be below the peak if the triangle is symmetric
-  EXPECT_NEAR(t1->CoG(numSamples), 10, 1e-1);
+  EXPECT_NEAR(t1->defuzzify(DefuzzificationMethodOption::CoG, numSamples), 10, 1e-1);
 
   // the center position of a gaussian should be at the peak
-  EXPECT_NEAR(g1->CoG(numSamples), 15, 1e-1);
+  EXPECT_NEAR(g1->defuzzify(DefuzzificationMethodOption::CoG, numSamples), 15, 1e-1);
 
   // center of gravity of the union of the low and the high fuzzy set should be at 20 since its the perfect center
   auto unionSet = t1 || t3;
-  EXPECT_NEAR(unionSet->CoG(numSamples), 20, 1e-1);
+  EXPECT_NEAR(unionSet->defuzzify(DefuzzificationMethodOption::CoG, numSamples), 20, 1e-1);
 }
 
 /**
- * Tests MeanOfMax defuzzification
+ * Tests if the mean of maximum defuzzification method works as expected.
+ * The test uses different triangular and gaussian fuzzy sets and checks if the mean of maximum of combinations of
+ * these fuzzy sets is calculated correctly.
  */
 TEST(FuzzyTuningTest, testMaxDefuzzification) {
   auto crispSet = std::make_shared<CrispSet>("x", std::pair(0, 40));
@@ -407,10 +432,10 @@ TEST(FuzzyTuningTest, testMaxDefuzzification) {
 
   size_t numSamples = 1000;
   // the max position of a triangle should be at the peak
-  EXPECT_NEAR(t1->meanOfMaximum(numSamples), 10, 1e-1);
+  EXPECT_NEAR(t1->defuzzify(DefuzzificationMethodOption::MoM, numSamples), 10, 1e-1);
 
   // the max position of a gaussian should be at the peak
-  EXPECT_NEAR(g1->meanOfMaximum(numSamples), 15, 1e-1);
+  EXPECT_NEAR(g1->defuzzify(DefuzzificationMethodOption::MoM, numSamples), 15, 1e-1);
 
   // cutted t2
   auto rule1 = FuzzyRule(t1, t2);
@@ -422,11 +447,12 @@ TEST(FuzzyTuningTest, testMaxDefuzzification) {
 
   // the max position of the union of the low and the cutted other fuzzy sets should be close to the peak of t1
   auto unionSet = t1 || cuttedT2 || cuttedT3;
-  EXPECT_NEAR(unionSet->meanOfMaximum(numSamples), 10, 1e-1);
+  EXPECT_NEAR(unionSet->defuzzify(DefuzzificationMethodOption::MoM, numSamples), 10, 1e-1);
 }
 
 /**
- * Tests the paring of the FuzzyTuner
+ * Tests if the fuzzy tuning class can parse a rule file and create the correct fuzzy control system.
+ * The test uses a simple rule file with one rule and checks if the rule file can be parsed and interpreted correctly.
  */
 TEST(FuzzyTuningTest, testParseRuleFile) {
   autopas::Logger::create();

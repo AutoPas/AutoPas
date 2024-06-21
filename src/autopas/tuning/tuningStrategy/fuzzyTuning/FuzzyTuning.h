@@ -146,15 +146,62 @@ class FuzzyTuning : public TuningStrategyInterface {
   parse(const std::string &fuzzyRuleFilename);
 
   /**
-   * Interprets the output of the fuzzy control systems as individual systems and updates the config queue accordingly.
-   * This means that all configurations that are never predicted by any of the systems are removed from the queue.onfig
+   * Interprets the output of the fuzzy control systems as individual predictors and sets the configuration queue to the
+   * cartesian product of all the predictions.
+   *
+   * This mode is intended for rule-bases designed to predicting individual parameters of the configuration and combines
+   * the predictions of all the fuzzy control systems to a configuration queue adhering to the constraints of the
+   * systems.
+   *
+   * Lets say we have 3 FuzzyControlSystems which resulted in the the following configuration patterns:
+   * System 1:
+   *   [container="LinkedCells", dataLayout="SoA"], [container="VerletClusterLists", dataLayout="SoA"],
+   *   [container="VerletListsCells", dataLayout="AoS"]
+   * System 2:
+   *   [traversal="lc_c04"], [traversal="lc_c04_HCP"], [traversal="lc_c08"]
+   * System 3:
+   *   [newton3="enabled"]
+   *
+   * This method combines all the configurations similar to a cartesian product and would result in a configuration
+   * queue with 3*3*1=9 configurations. However, as there are some invalid parameter combinations the resulting queue is
+   * generally smaller. In every case however, all elements of the resulting queue fulfill the constraints of *all* the
+   * fuzzy control systems.
+   *
+   * The resulting configuration queue could therefore include configurations like:
+   * [ {Container: LinkedCells , CellSizeFactor: 1.000000 , Traversal: lc_c08 , Load Estimator: none , Data Layout: SoA
+   * , Newton 3: enabled}, ... ]
+   *
+   * If there is no constraint about certain parameters all possible values for those parameters are allowed.
+   *
    * @param configQueue The queue of configurations to be tested.
    */
   void updateQueueInterpretOutputAsIndividualSystems(std::vector<Configuration> &configQueue);
 
   /**
    * Interprets the output of the fuzzy control systems as a bunch of suitability values for each configuration and
-   * updates the config queue accordingly. T
+   * updates the configuration queue to contain only the configurations that are most suitable according to the
+   * predictions.
+   *
+   * This mode is intended for rule-bases designed to predict the suitability of **every** possible configuration.
+   *
+   * This mode assumes there is a LinguisticVariable for each configuration that can be applied. Such variables could
+   * look like:
+   *
+   * FuzzyVariable: domain: "Suitability LinkedCells_AoS_lc_c01_disabled" range: (0, 1)
+   *   "terrible":    Gaussian(0.125, 0.017)
+   *   "medium":      Gaussian(0.5, 0.017)
+   *   "excellent":   Gaussian(0.875, 0.017)
+   *  ...
+   *
+   * The FuzzyControlSystem will then predict the suitability of each configuration and sorts them according to the
+   * predicted suitability (the higher the better). The resulting configuration-queue will then consist of the
+   * configurations with the highest suitability values.
+   *
+   * It is possible to specify a band around the highest value such that more good configurations are included.
+   * The width of this band can be chosen with the "suitabilityThreshold" parameter of the FuzzyControlSettings. (A
+   * value of 0.1 means that all configurations within 10% of the highest suitability value are picked)
+   *
+   * @param configQueue The queue of configurations to be tested.
    */
   void updateQueueInterpretOutputAsSuitability(std::vector<Configuration> &configQueue);
 

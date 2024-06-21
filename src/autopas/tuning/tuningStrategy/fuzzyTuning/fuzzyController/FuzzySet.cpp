@@ -48,7 +48,19 @@ double FuzzySet::evaluate_membership(const Data &data) const {
   }
 }
 
-double FuzzySet::CoG(size_t numSamples) const {
+double FuzzySet::defuzzify(DefuzzificationMethodOption method, size_t numSamples) const {
+  switch (method) {
+    case DefuzzificationMethodOption::CoG:
+      return centerOfGravity(numSamples);
+    case DefuzzificationMethodOption::MoM:
+      return meanOfMaximum(numSamples);
+    default:
+      autopas::utils::ExceptionHandler::exception("Unknown defuzzification method");
+      throw std::runtime_error("Unknown defuzzification method");
+  }
+}
+
+double FuzzySet::centerOfGravity(size_t numSamples) const {
   const auto crisp_dimensions = _crispSet->getDimensions();
 
   if (crisp_dimensions.size() != 1) {
@@ -85,23 +97,25 @@ double FuzzySet::meanOfMaximum(size_t numSamples) const {
 
   // finds the x-coordinate of the maximum of the fuzzy set numerically.
   double maxMembershipValue = 0;
-  double minMembershipX = 0;
-  double maxMembershipX = 0;
+
+  std::vector<double> maxMembershipXs;
+
   std::map<std::string, double> data = {{dimensionName, 0.0}};
   for (double x = minBoundary; x <= maxBoundary; x += (maxBoundary - minBoundary) / (numSamples - 1)) {
     data[dimensionName] = x;
     const double membership = evaluate_membership(data);
     if (membership > maxMembershipValue) {
       maxMembershipValue = membership;
-      minMembershipX = x;
-      maxMembershipX = x;
+      maxMembershipXs.clear();
     }
     if (membership == maxMembershipValue) {
-      maxMembershipX = x;
+      maxMembershipXs.push_back(x);
     }
   }
 
-  return (minMembershipX + maxMembershipX) / 2;
+  return maxMembershipXs.empty() ? 0
+                                 : std::accumulate(maxMembershipXs.begin(), maxMembershipXs.end(), 0.0) /
+                                       static_cast<double>(maxMembershipXs.size());
 }
 
 std::string FuzzySet::printBaseMembershipFunction() const {

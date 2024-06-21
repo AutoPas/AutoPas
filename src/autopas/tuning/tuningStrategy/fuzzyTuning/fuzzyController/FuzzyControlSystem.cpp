@@ -7,7 +7,6 @@
 #include "FuzzyControlSystem.h"
 
 #include <numeric>
-#include <utility>
 
 #include "autopas/utils/ExceptionHandler.h"
 
@@ -44,16 +43,17 @@ double FuzzyControlSystem::predict(const FuzzySet::Data &data, size_t numSamples
   if (_settings->count("defuzzificationMethod") == 0) {
     autopas::utils::ExceptionHandler::exception("No defuzzification method specified in the settings");
   }
-  std::string method = _settings->at("defuzzificationMethod");
 
-  if (method == "CoG") {
-    return unionSet->CoG(numSamples);
-  } else if (method == "MoM") {
-    return unionSet->meanOfMaximum(numSamples);
-  } else {
-    autopas::utils::ExceptionHandler::exception("Unknown defuzzification method: " + method);
-    throw std::runtime_error("Unkown defuzzification method");
+  if (_settings->count("numSamples") != 0) {
+    numSamples = std::stoul(_settings->at("numSamples"));
   }
+
+  auto defuzzificationMethodString = _settings->at("defuzzificationMethod");
+  auto defuzzificationMethod = DefuzzificationMethodOption::parse(defuzzificationMethodString);
+
+  AutoPasLog(DEBUG, "Defuzzifying with method: {} and numSamples: {}", defuzzificationMethodString, numSamples);
+
+  return unionSet->defuzzify(defuzzificationMethod, numSamples);
 }
 
 FuzzyControlSystem::operator std::string() const {

@@ -49,19 +49,21 @@ class FuzzySetFactory {
   /**
    * Returns a function object that represents a triangular membership function.
    * @param min The left border of the triangle. The membership function will be 0 for values smaller than min.
-   * @param mid The peak of the triangle. The membership function will be 1 for values equal to mid.
+   * @param peak The peak of the triangle. The membership function will be 1 for values equal to peak.
    * @param max The right border of the triangle. The membership function will be 0 for values greater than max.
    */
-  static std::function<double(double)> triangleFunction(double min, double mid, double max);
+  static std::function<double(double)> triangleFunction(double min, double peak, double max);
 
   /**
    * Returns a function object that represents a trapezoidal membership function.
    * @param min The left border of the trapezoid. The membership function will be 0 for values smaller than min.
-   * @param mid1 The left peak of the trapezoid. The membership function will be 1 for values equal to mid1.
-   * @param mid2 The right peak of the trapezoid. The membership function will be 1 for values equal to mid2.
+   * @param leftPeak The left peak of the trapezoid. The membership function will be 1 for values in between leftPeak
+   * and rightPeak.
+   * @param rightPeak The right peak of the trapezoid. The membership function will be 1 for values in between leftPeak
+   * and rightPeak.
    * @param max The right border of the trapezoid. The membership function will be 0 for values greater than max.
    */
-  static std::function<double(double)> trapezoidFunction(double min, double mid1, double mid2, double max);
+  static std::function<double(double)> trapezoidFunction(double min, double leftPeak, double rightPeak, double max);
 
   /**
    * Returns a function object that represents a Gaussian membership function.
@@ -74,6 +76,11 @@ class FuzzySetFactory {
    * Returns a function object that represents a sigmoid membership function.
    * @param center The center of the sigmoid. The membership function will be 0.5 for values equal to center.
    * @param slope The slope of the sigmoid.
+   *
+   * The sigmoid function is defined as 1 / (1 + exp(-slope * (x - center))).
+   *
+   * The slope determines how steep the sigmoid is around the center. The derivative of the sigmoid at x=center is
+   * given by slope / 4.
    */
   static std::function<double(double)> sigmoidFunction(double center, double slope);
 
@@ -82,6 +89,9 @@ class FuzzySetFactory {
    * @param lower The lower border of the sigmoid. The membership function will be 0 for values smaller than lower.
    * @param center The center of the sigmoid. The membership function will be 0.5 for values equal to center.
    * @param upper The upper border of the sigmoid. The membership function will be 1 for values greater than upper.
+   *
+   * Note: this is not an actual sigmoid function, but has an s-like shape. It is built using two parabolas and forms a
+   * kind of cubic-shaped function.
    */
   static std::function<double(double)> sigmoidFiniteFunction(double lower, double center, double upper);
 

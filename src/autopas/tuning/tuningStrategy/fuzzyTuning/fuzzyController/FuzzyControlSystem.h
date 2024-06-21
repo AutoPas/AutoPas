@@ -52,8 +52,15 @@ class FuzzyControlSystem {
   /**
    * Predicts the output of the FuzzyControlSystem for the given data.
    * @param data A map of the form {dimension_name: value}.
-   * @param numSamples The number of samples to use for the numerical CoG calculation. Default is 1000.
+   * @param numSamples The number of samples to use for the numerical defuzzification. Default is 1000.
    * @return The predicted output of the FuzzyControlSystem for the given data.
+   *
+   * This method performs the full prediction process of the FuzzyControlSystem. It first applies all the rules of the
+   * FuzzyControlSystem to the data and unites all the cut-consequents. The resulting FuzzySet is then defuzzified and
+   * the calculated value is returned.
+   *
+   * The method reads the "defuzzificationMethod" and "numSamples" settings from the provided settings and performs the
+   * defuzzification accordingly.
    */
   [[nodiscard]] double predict(const FuzzySet::Data &data, size_t numSamples = 1000) const;
 
