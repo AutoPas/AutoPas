@@ -110,11 +110,14 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 #if MD_FLEXIBLE_MODE == SINGLESITE
         {MDFlexConfig::FunctorOption::lj12_6_AVX, MDFlexConfig::FunctorOption::lj12_6_SVE};
 #else
-        {MDFlexConfig::FunctorOption::lj12_6, MDFlexConfig::FunctorOption::lj12_6_Globals, MDFlexConfig::FunctorOption::lj12_6_AVX, MDFlexConfig::FunctorOption::lj12_6_SVE};
+        {MDFlexConfig::FunctorOption::lj12_6, MDFlexConfig::FunctorOption::lj12_6_Globals,
+         MDFlexConfig::FunctorOption::lj12_6_AVX, MDFlexConfig::FunctorOption::lj12_6_SVE};
 #endif
     for (auto fun : functorsThatDontSupportFLOPCounting) {
       if (_configuration.functorOption.value == fun) {
-        AutoPasLog(WARN, "FLOP counting is not implemented for the chosen functor and will return 0 for numFLOPs and hit rate. Please set -DAUTOPAS_LOG_FLOPS=OFF or use a supported functor.");
+        AutoPasLog(WARN,
+                   "FLOP counting is not implemented for the chosen functor and will return 0 for numFLOPs and hit "
+                   "rate. Please set -DAUTOPAS_LOG_FLOPS=OFF or use a supported functor.");
       }
     }
   }

@@ -11,8 +11,9 @@
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
-using forceCalculationTestLJFunctor = mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                                                       /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true>;
+using forceCalculationTestLJFunctor =
+    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+                     /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true>;
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(

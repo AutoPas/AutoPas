@@ -781,12 +781,15 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     if constexpr (countFLOPs) {
       size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                                                [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
-      size_t numKernelCallsN3Acc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                                               [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
-      size_t numKernelCallsNoN3Acc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                                               [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
-      size_t numGlobalCalcsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                                               [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
+      size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+      size_t numGlobalCalcsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
 
       AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
       AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
@@ -810,15 +813,18 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     if constexpr (countFLOPs) {
       size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                                                [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
-      size_t numKernelCallsN3Acc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                                                   [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
-      size_t numKernelCallsNoN3Acc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                                                     [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+      size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
 
       AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
       AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
       AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", numKernelCallsNoN3Acc);
-      return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) / (static_cast<double>(numDistCallsAcc));
+      return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
+             (static_cast<double>(numDistCallsAcc));
     } else {
       autopas::utils::ExceptionHandler::exception("LJFunctor::getHitRate called without countFLOPs enabled!");
       return 0;
@@ -1168,8 +1174,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    */
   class AoSThreadDataFLOPs {
    public:
-    AoSThreadDataFLOPs()
-        : __remainingTo64{} {}
+    AoSThreadDataFLOPs() : __remainingTo64{} {}
 
     /**
      * Set all counters to zero.

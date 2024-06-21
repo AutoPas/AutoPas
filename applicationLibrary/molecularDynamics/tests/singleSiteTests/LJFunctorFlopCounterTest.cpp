@@ -14,9 +14,12 @@
 #include "testingHelpers/commonTypedefs.h"
 
 extern template class autopas::AutoPas<Molecule>;
-template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true, true> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, true, true, true> *);
-template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true, true, true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true, true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, true, true, true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true, true, true> *);
 
 /**
  * Generates a square of four particles, iterates over it with the LJFunctor and checks the values of getNumFLOPs() and
