@@ -49,6 +49,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   const auto domainVolume = domainDimensions[0] * domainDimensions[1] * domainDimensions[2];
 
   // We scale the dimensions of the domain to bins with volumes which give approximately 10 particles per bin.
+  // Todo The choice of 10 is arbitrary and probably can be optimized
   const auto targetNumberOfBins = std::ceil(numberOfParticles / 10.);
   const auto targetNumberOfBinsPerDim = std::cbrt(static_cast<double>(targetNumberOfBins));
   // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
@@ -100,7 +101,8 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   const double homogeneity = std::sqrt(densityVariance);
   // normally between 0.0 and 1.5
   if (homogeneity < 0.0) {
-    throw std::runtime_error("homogeneity can never be smaller than 0.0, but is:" + std::to_string(homogeneity));
+    utils::ExceptionHandler::exception(
+        "calculateHomogeneityAndMaxDensity(): homogeneity can never be smaller than 0.0, but is: {}", homogeneity);
   }
   return {homogeneity, maxDensity};
 }
