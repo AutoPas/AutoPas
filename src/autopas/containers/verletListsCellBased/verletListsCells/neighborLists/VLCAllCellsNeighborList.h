@@ -79,6 +79,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
         this->_internalLinkedCells->getCellBlock().getCellsPerDimensionWithHalo()));
 
     // Helper function to estimate the number of neighbor lists for one base step
+    // TODO: This is a generous and rough estimate and can probably be improved!
     const auto estimateNumLists = [&](size_t baseCellIndex) {
       // If the cell is near the end of any dimension we can reduce the estimate to the particles in the base cell,
       // because all other cells' interactions would be from halos.
@@ -96,7 +97,8 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
           return cells[baseCellIndex].size();
         } else {
           // In this case we have to accommodate the lists for the reverse interactions from all non-halo neighbors.
-          return cells[baseCellIndex].size() * (3 - numTouchedBoundaries);
+          // 1x for lists from the cell itself and once more per untouched border.
+          return cells[baseCellIndex].size() * (4 - numTouchedBoundaries);
         }
       }
       size_t estimate = 0;
