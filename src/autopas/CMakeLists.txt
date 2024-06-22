@@ -52,24 +52,9 @@ target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
 
 if (AUTOPAS_AUTO4OMP)
     #add_dependencies(autopas auto4omp)
-    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src) # For kmp.h, kmp_runtime.cpp
+    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src) # For kmp.h
     target_include_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src) # For kmp_config.h
-    target_link_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src/CMakeFiles/omp.dir) # For kmp_runtime.cpp
-    target_link_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src) # For kmp_runtime.cpp
-    target_link_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src) # For kmp_runtime.cpp
     # Provide libomp.sp.5 for systems with modern OpenMP.
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp.h kmp.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_platform.h kmp_platform.h @ONLY)
-    #configure_file(${auto4omp_BINARY_DIR}/runtime/src/kmp_config.h kmp_config.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_os.h kmp_os.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_safe_c_api.h kmp_safe_c_api.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_debug.h kmp_debug.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_lock.h kmp_lock.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_version.h kmp_version.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_i18n.h i18n.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_safe_c_api.h kmp_safe_c_api.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_safe_c_api.h kmp_safe_c_api.h @ONLY)
-    #configure_file(${auto4omp_SOURCE_DIR}/runtime/src/kmp_safe_c_api.h kmp_safe_c_api.h @ONLY)
     add_custom_command(
             TARGET autopas PRE_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink libomp.so libomp.so.5
             WORKING_DIRECTORY "${auto4omp_BINARY_DIR}/runtime/src"

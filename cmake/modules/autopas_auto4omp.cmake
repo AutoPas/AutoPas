@@ -18,13 +18,13 @@ string(
 )
 
 set(
-        AUTOPAS_AUTO4OMP_GIT_DOC
-        "Downloads Auto4OMP from Git instead of the bundled zip."
+        AUTOPAS_AUTO4OMP_MASTER_FORCE_DOC
+        "Uses the master branch Auto4OMP bundled with AutoPas, despite potential incompatibility with AutoPas."
 )
 
 set(
         AUTOPAS_AUTO4OMP_GIT_FORCE_DOC
-        "Downloads Auto4OMP from Git despite potential incompatibility with AutoPas."
+        "Downloads Auto4OMP from Git instead of the bundled zip, despite potential incompatibility with AutoPas."
 )
 
 set(
@@ -32,10 +32,9 @@ set(
         "The Auto4OMP Git branch or commit to use."
 )
 
-string(
-        CONCAT AUTOPAS_AUTO4OMP_DEBUG_DOC
-        "Uses a custom bundled Auto4OMP that prints a message "
-        "to confirm that Auto4OMP is indeed being used instead of standard OpenMP."
+set(
+        AUTOPAS_AUTO4OMP_DEBUG_DOC
+        "Uses a bundled Auto4OMP that prints messages to confirm its presence."
 )
 
 set(
@@ -45,7 +44,7 @@ set(
 
 set(
         AUTOPAS_LB4OMP_DOC
-        "Provides LB4OMP's individual scheduling techniques for users. This is a work in progress, keep off for now."
+        "Provides LB4OMP's individual scheduling techniques for users."
 )
 
 string(
@@ -110,7 +109,6 @@ set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget-nvptx_DOC" "om
 
 # AutoPas CMake variables for Auto4OMP.
 option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" ON)
-option(AUTOPAS_AUTO4OMP_GIT "${AUTOPAS_AUTO4OMP_GIT_DOC}" OFF)
 option(AUTOPAS_AUTO4OMP_GIT_FORCE "${AUTOPAS_AUTO4OMP_GIT_FORCE_DOC}" OFF)
 set(AUTOPAS_AUTO4OMP_GIT_TAG "master" CACHE STRING "${AUTOPAS_AUTO4OMP_GIT_TAG_DOC}")
 option(AUTOPAS_AUTO4OMP_DEBUG "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
@@ -378,44 +376,69 @@ else ()
     # Enable the FetchContent CMake module.
     include(FetchContent)
 
-    # If OMP 4.5 is to be used, use the custom Auto4OMP zip to fix resulting build errors.
-    if (AUTOPAS_AUTO4OMP_DEBUG)
-        # Build the pre-packaged Auto4OMP that prints a message from kmp.h at runtime to confirm its use.
-        FetchContent_Declare(
-                auto4omp
-                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-debug.zip # [*]
-                URL_HASH MD5=b1e85a5851894f99e290864e1a35c614 # Calculated with the md5sum command.
-        )
-    elseif (${AUTOPAS_OMP_VERSION} LESS 50 AND NOT AUTOPAS_AUTO4OMP_GIT_FORCE)
-        # Build the pre-packaged Auto4OMP including the fix for build errors when specifying an old OMP version.
-        FetchContent_Declare(
-                auto4omp
-                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-custom.zip # [*]
-                URL_HASH MD5=c62773279f8c73e72a6d1bcb36334fef # Calculated with the md5sum command.
-        )
-    elseif (AUTOPAS_AUTO4OMP_GIT OR AUTOPAS_AUTO4OMP_GIT_FORCE)
+    if (AUTOPAS_AUTO4OMP_GIT_FORCE)
         # Download Auto4OMP from Git.
         FetchContent_Declare(
                 auto4omp
                 GIT_REPOSITORY https://github.com/unibas-dmi-hpc/LB4OMP # [*]
                 GIT_TAG ${AUTOPAS_AUTO4OMP_GIT_TAG}
         )
-        # If the custom zip must be used, warn.
-        if (AUTOPAS_AUTO4OMP_GIT_FORCE AND ${AUTOPAS_OMP_VERSION} LESS 50)
+
+        # Warn about master branch issues.
+        message(
+                WARNING
+                "Master branch Auto4OMP does not set the runtime schedule correctly to its scheduling techniques."
+                "Unless Auto4OMP releases a fix, please use the runtime scheduling kind and set OMP_SCHEDULE manually."
+                "The bundled libs/LB4OMP-custom.zip contains a fix for this issue."
+        )
+
+        # If OMP <5 was specified, warn about potential build errors.
+        if (${AUTOPAS_OMP_VERSION} LESS 50)
             message(
                     WARNING
-                    "OpenMP <5 is used, which will potentially result in build errors with Auto4OMP."
+                    "OpenMP <5 is used, which will potentially result in build errors with master branch Auto4OMP."
                     "Unless Auto4OMP releases a fix, it's not advised force a Git download."
                     "The bundled libs/LB4OMP-custom.zip contains a fix for this issue."
             )
         endif ()
-    else ()
-        # Build the pre-packaged Auto4OMP and make the CMake targets available. [***]
-        ## Targets include omp, omptarget, ...
+    elseif (AUTOPAS_AUTO4OMP_MASTER_FORCE)
+        # Load the pre-packaged master branch Auto4OMP. [***]
         FetchContent_Declare(
                 auto4omp
                 URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-master.zip # [*]
                 URL_HASH MD5=b8090fa162eb2232870916271f36650f # Calculated with the md5sum command.
+        )
+
+        # Warn about master branch issues.
+        message(
+                WARNING
+                "Master branch Auto4OMP does not set the runtime schedule correctly to its scheduling techniques."
+                "Unless Auto4OMP releases a fix, please use the runtime scheduling kind and set OMP_SCHEDULE manually."
+                "The bundled libs/LB4OMP-custom.zip contains a fix for this issue."
+        )
+
+        # If OMP <5 was specified, warn about potential build errors.
+        if (${AUTOPAS_OMP_VERSION} LESS 50)
+            message(
+                    WARNING
+                    "OpenMP <5 is used, which will potentially result in build errors with master branch Auto4OMP."
+                    "Unless Auto4OMP releases a fix, it's not advised force use the master branch."
+                    "The bundled libs/LB4OMP-custom.zip contains a fix for this issue."
+            )
+        endif ()
+    elseif (AUTOPAS_AUTO4OMP_DEBUG)
+        # Load the pre-packaged Auto4OMP that prints a message from kmp.h at runtime to confirm its use.
+        FetchContent_Declare(
+                auto4omp
+                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-debug.zip # [*]
+                URL_HASH MD5=cc15b6be16c0bcd9e95fd08069c32381 # Calculated with the md5sum command.
+        )
+    else ()
+        # Load the pre-packaged Auto4OMP including the fix for build errors when specifying OMP <5.
+        FetchContent_Declare(
+                auto4omp
+                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-custom.zip # [*]
+                URL_HASH MD5=7e187b82e83f073bb91038854309846e # Calculated with the md5sum command.
         )
     endif ()
 
@@ -424,15 +447,16 @@ else ()
     set(CMAKE_POLICY_DEFAULT_CMP0146 OLD) # The FindCUDA module.
     set(CMAKE_POLICY_DEFAULT_CMP0148 OLD) # The FindPythonInterp and FindPythonLibs modules.
 
-    # Integrate Auto4OMP into the project.
+    # Integrate Auto4OMP into the project and import its CMake targets (omp, omptarget, ...).
     FetchContent_MakeAvailable(auto4omp)
 
     # Reset Policies.
     set(CMAKE_POLICY_DEFAULT_CMP0146 NEW) # The FindCUDA module.
     set(CMAKE_POLICY_DEFAULT_CMP0148 NEW) # The FindPythonInterp and FindPythonLibs modules.
 
-    # Define an alias to Auto4OMP's imported omp target.
+    # Define an alias to Auto4OMP's imported targets.
     add_library(auto4omp::omp ALIAS omp)
+    add_library(auto4omp::omptarget ALIAS omptarget)
 
         # Mark Auto4OMP's variables advanced. [***]
     mark_as_advanced(
