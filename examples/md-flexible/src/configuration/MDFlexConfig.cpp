@@ -243,6 +243,8 @@ std::string MDFlexConfig::to_string() const {
   printOption(dataLayoutOptions);
   printOption(traversalOptions);
   printOption(tuningStrategyOptions);
+  printOption(openMPChunkSize);
+  printOption(openMPKind);
 
   // helper function to check if any options of a given list is in the tuningStrategyOptions.
   auto tuningStrategyOptionsContainAnyOf = [&](const std::vector<autopas::TuningStrategyOption> &needles) {

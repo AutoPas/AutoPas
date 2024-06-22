@@ -8,13 +8,18 @@
 
 namespace autopas {
 /**
- * OpenMP default chunk size for manual testing.
+ * OpenMP default chunk size.
  * md-flexible: set via command-line option --openmp-chunk-size <int>
  */
 int openMPDefaultChunkSize = 0;
 
 /**
- * OpenMP default chunk size for manual testing.
+ * Global OpenMP chunk size for AutoPas auto-tuning.
+ */
+[[maybe_unused]] int openMPTunedChunkSize = 1;
+
+/**
+ * OpenMP default chunk size.
  * md-flexible: set via command-line option --openmp-kind <kind>
  */
 OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;

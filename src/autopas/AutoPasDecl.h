@@ -996,13 +996,19 @@ class AutoPas {
   void setSortingThreshold(size_t sortingThreshold) { _sortingThreshold = sortingThreshold; }
 
   /**
-   * OpenMP default chunk size setter for manual testing.
+   * OpenMP default chunk size setter.
    * @param s OpenMP default chunk size
    */
   void setOpenMPDefaultChunkSize(int s) { openMPDefaultChunkSize = s; }
 
   /**
-    * OpenMP default scheduling kind setter for manual testing.
+   * OpenMP global chunk size tuner.
+   * @param s the new OpenMP global chunk size
+   */
+  void setOpenMPTunedChunkSize(int s) { openMPTunedChunkSize = s; }
+
+  /**
+    * OpenMP default scheduling kind setter.
     * @param k OpenMP default kind
     */
   void setOpenMPDefaultKind(OpenMPKindOption k) { openMPDefaultKind = k; }
