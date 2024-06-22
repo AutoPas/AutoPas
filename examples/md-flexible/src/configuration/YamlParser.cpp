@@ -269,6 +269,20 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.newton3Options.value.empty()) {
           throw std::runtime_error("Unknown Newton3 option!");
         }
+      } else if (key == config.openMPChunkSize.name) {
+        expected = "Integer >= 0.";
+        description = config.openMPChunkSize.description;
+
+        config.openMPChunkSize.value = node[key].as<int>();
+      } else if (key == config.openMPKind.name) {
+        expected = "Name of an OpenMP scheduling kind, LB4OMP scheduling technique, or Auto4OMP selection method.";
+        description = config.openMPKind.description;
+
+        auto name = node[key].as<std::string>();
+        if (autopas::OpenMPKindOption::valid(name))
+          config.openMPKind.value = autopas::OpenMPKindOption::parse(node[key].as<std::string>());
+        else
+          throw std::runtime_error("Unknown OpenMP kind option!");
       } else if (key == config.deltaT.name) {
         expected = "Positive floating point value.";
         description = config.deltaT.description;
