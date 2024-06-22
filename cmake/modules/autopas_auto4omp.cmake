@@ -430,14 +430,14 @@ else ()
         # Load the pre-packaged Auto4OMP that prints a message from kmp.h at runtime to confirm its use.
         FetchContent_Declare(
                 auto4omp
-                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-debug.zip # [*]
+                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-debug.zip
                 URL_HASH MD5=cc15b6be16c0bcd9e95fd08069c32381 # Calculated with the md5sum command.
         )
     else ()
         # Load the pre-packaged Auto4OMP including the fix for build errors when specifying OMP <5.
         FetchContent_Declare(
                 auto4omp
-                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-custom.zip # [*]
+                URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-custom.zip
                 URL_HASH MD5=7e187b82e83f073bb91038854309846e # Calculated with the md5sum command.
         )
     endif ()
@@ -458,7 +458,7 @@ else ()
     add_library(auto4omp::omp ALIAS omp)
     add_library(auto4omp::omptarget ALIAS omptarget)
 
-        # Mark Auto4OMP's variables advanced. [***]
+    # Mark Auto4OMP's variables advanced. [***]
     mark_as_advanced(
             OPENMP_ENABLE_WERROR
             OPENMP_LIBDIR_SUFFIX
@@ -519,7 +519,7 @@ else ()
     set(AUTOPAS_AUTO4OMP_LIB_DIR "${AUTOPAS_AUTO4OMP_INSTALL_DIR}/lib")
     set(AUTOPAS_AUTO4OMP_INCLUDE_DIR "${AUTOPAS_AUTO4OMP_INSTALL_DIR}/include")
 
-    ## Configure cmake install to use the local install directory.
+    ## Configure cmake install to use the local install directory [**].
     install(DIRECTORY "${auto4omp_BINARY_DIR}/runtime/src" DESTINATION "${AUTOPAS_AUTO4OMP_INSTALL_DIR}")
 
     ## Run cmake install post-build. Use a local directory instead of /usr, so no sudo privilege is required.
