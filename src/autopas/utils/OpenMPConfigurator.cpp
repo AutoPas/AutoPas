@@ -53,10 +53,12 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
       return 2;
     case OpenMPKindOption::auto4omp_exhaustivesel:
       return 3;
-    case OpenMPKindOption::auto4omp_expertsel:
+    case OpenMPKindOption::auto4omp_binarySearch:
       return 4;
+    case OpenMPKindOption::auto4omp_expertsel:
+      return 5;
     default:
-      return std::max(1, _chunkSize);
+      return _chunkSize;
   }
 }
 
@@ -84,75 +86,58 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
       return omp_sched_guided;
     case OpenMPKindOption::omp_static:
       return omp_sched_static;
-    default:
-      return omp_sched_auto;
-  }
-}
-
-#ifdef AUTOPAS_USE_LB4OMP
-/**
-   * LB4OMP scheduling technique getter sor setting OpenMP's scheduling runtime variables.
-   * @return the current OpenMP scheduling technique, directly usable in OpenMP's schedule setter.
- */
-[[maybe_unused]] [[nodiscard]] kmp_sched_t autopas::OpenMPConfigurator::getKMPKind() const {
-  switch (_kind) {
-    case OpenMPKindOption::omp_static:
-      return kmp_sched_static;
-    case OpenMPKindOption::omp_dynamic:
-      return kmp_sched_dynamic;
-    case OpenMPKindOption::omp_guided:
-      return kmp_sched_guided;
+#ifdef AUTOPAS_USE_LB4OMP // LB4OMP's scheduling techniques.
     case OpenMPKindOption::lb4omp_profiling:
-      return kmp_sched_profiling;
+      return omp_sched_profiling;
     case OpenMPKindOption::lb4omp_fsc:
-      return kmp_sched_fsc;
+      return omp_sched_fsc;
     case OpenMPKindOption::lb4omp_mfsc:
-      return kmp_sched_mfsc;
+      return omp_sched_mfsc;
     case OpenMPKindOption::lb4omp_tap:
-      return kmp_sched_tap;
+      return omp_sched_tap;
     case OpenMPKindOption::lb4omp_fac:
-      return kmp_sched_fac;
+      return omp_sched_fac;
     case OpenMPKindOption::lb4omp_faca:
-      return kmp_sched_faca;
+      return omp_sched_faca;
     case OpenMPKindOption::lb4omp_bold:
-      return kmp_sched_bold;
+      return omp_sched_bold;
     case OpenMPKindOption::lb4omp_fac2:
-      return kmp_sched_fac2;
+      return omp_sched_fac2;
     case OpenMPKindOption::lb4omp_wf:
-      return kmp_sched_wf;
+      return omp_sched_wf;
     case OpenMPKindOption::lb4omp_af:
-      return kmp_sched_af;
+      return omp_sched_af;
     case OpenMPKindOption::lb4omp_awf:
-      return kmp_sched_awf;
+      return omp_sched_awf;
     case OpenMPKindOption::lb4omp_tfss:
-      return kmp_sched_tfss;
+      return omp_sched_tfss;
     case OpenMPKindOption::lb4omp_fiss:
-      return kmp_sched_fiss;
+      return omp_sched_fiss;
     case OpenMPKindOption::lb4omp_viss:
-      return kmp_sched_viss;
+      return omp_sched_viss;
     case OpenMPKindOption::lb4omp_rnd:
-      return kmp_sched_rnd;
+      return omp_sched_rnd;
     case OpenMPKindOption::lb4omp_trapezoidal:
-      return kmp_sched_trapezoidal;
+      return omp_sched_trapezoidal;
     case OpenMPKindOption::lb4omp_fac2a:
-      return kmp_sched_fac2a;
+      return omp_sched_fac2a;
     case OpenMPKindOption::lb4omp_static_steal:
-      return kmp_sched_static_steal;
+      return omp_sched_static_steal;
     case OpenMPKindOption::lb4omp_awf_b:
-      return kmp_sched_awf_b;
+      return omp_sched_awf_b;
     case OpenMPKindOption::lb4omp_awf_c:
-      return kmp_sched_awf_c;
+      return omp_sched_awf_c;
     case OpenMPKindOption::lb4omp_awf_d:
-      return kmp_sched_awf_d;
+      return omp_sched_awf_d;
     case OpenMPKindOption::lb4omp_awf_e:
-      return kmp_sched_awf_e;
+      return omp_sched_awf_e;
     case OpenMPKindOption::lb4omp_af_a:
-      return kmp_sched_af_a;
+      return omp_sched_af_a;
+#endif
     default:
-      return kmp_sched_auto;
+      return omp_sched_auto; // Standard auto and Auto4OMP's selection methods.
   }
 }
-#endif
 
 /**
  * AutoPas OpenMP configurator scheduling kind setter.
@@ -171,23 +156,16 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
  * @return whether the scheduling kind is a manual LB4OMP scheduling technique
  */
 // NOLINTNEXTLINE: the function can only be static if not AUTOPAS_USE_LB4OMP.
-[[maybe_unused]] [[nodiscard]] bool autopas::OpenMPConfigurator::manualSchedulingTechnique() const {
-#ifdef AUTOPAS_USE_LB4OMP
+[[maybe_unused]] [[nodiscard]] bool autopas::OpenMPConfigurator::standard() const {
   switch (_kind) {
     case OpenMPKindOption::omp_auto:
     case OpenMPKindOption::omp_dynamic:
     case OpenMPKindOption::omp_guided:
     case OpenMPKindOption::omp_runtime:
     case OpenMPKindOption::omp_static:
-    case OpenMPKindOption::auto4omp_randomsel:
-    case OpenMPKindOption::auto4omp_exhaustivesel:
-    case OpenMPKindOption::auto4omp_expertsel:
-      return false;
-    default:
       return true;
+    default:
+      return false;
   }
-#else
-  return false;
-#endif
 };
 }  // namespace autopas

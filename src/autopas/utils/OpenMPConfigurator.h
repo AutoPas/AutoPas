@@ -11,9 +11,6 @@
 
 #include "autopas/options/Option.h"
 #include "autopas/utils/WrapOpenMP.h"
-#ifdef AUTOPAS_USE_AUTO4OMP
-#include <kmp.h>
-#endif
 
 namespace autopas {
 /**
@@ -74,27 +71,32 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
     auto4omp_exhaustivesel,
 
     /**
+     * Binary Search
+     */
+    auto4omp_binarySearch,
+
+    /**
      * ExpertSel: uses runtime performance info and fuzzy logic with expert rules to select scheduling algorithms.
      */
     auto4omp_expertsel,
 
 #ifdef AUTOPAS_USE_LB4OMP
     // LB4OMP's scheduling techniques (beware, technique names in LB4OMP's README are outdated) [1, 3]:
-    lb4omp_profiling,     // Profiling                    // Point KMP_PROFILE_DATA to where to store the data
-    lb4omp_fsc,           // Fixed Size Chunk             // Requires profiling, set KMP_PROFILE_DATA
-    lb4omp_mfsc,          // Modified Fixed Size Chunk
-    lb4omp_tap,           // Tapering                     // Requires profiling, set KMP_PROFILE_DATA
-    lb4omp_fac,           // Factoring                    // Requires profiling, set KMP_PROFILE_DATA
-    lb4omp_faca,          // Improved Factoring           // Requires profiling, set KMP_PROFILE_DATA
-    lb4omp_bold,          // Bold                         // Requires profiling, set KMP_PROFILE_DATA
-    lb4omp_fac2,          // Practical Factoring
-    lb4omp_wf,            // Weighted Factoring
-    lb4omp_af,            // Adaptive Factoring
-    lb4omp_awf,           // Adaptive Weighted Factoring
-    lb4omp_tfss,          // Trapezoid Factoring Self Scheduling
-    lb4omp_fiss,          // Fixed Increase Self Scheduling
-    lb4omp_viss,          // Variable Increase Self Scheduling
-    lb4omp_rnd,           // Random
+    lb4omp_profiling,  // Profiling                    // Point KMP_PROFILE_DATA to where to store the data
+    lb4omp_fsc,        // Fixed Size Chunk             // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_mfsc,       // Modified Fixed Size Chunk
+    lb4omp_tap,        // Tapering                     // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_fac,        // Factoring                    // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_faca,       // Improved Factoring           // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_bold,       // Bold                         // Requires profiling, set KMP_PROFILE_DATA
+    lb4omp_fac2,       // Practical Factoring
+    lb4omp_wf,         // Weighted Factoring
+    lb4omp_af,         // Adaptive Factoring
+    lb4omp_awf,        // Adaptive Weighted Factoring
+    lb4omp_tfss,       // Trapezoid Factoring Self Scheduling
+    lb4omp_fiss,       // Fixed Increase Self Scheduling
+    lb4omp_viss,       // Variable Increase Self Scheduling
+    lb4omp_rnd,        // Random
 
     // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds) [1, 2, 3]:
     lb4omp_trapezoidal,   // Trapezoid Self Scheduling (from standard OpenMP)
@@ -149,25 +151,26 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
         // Auto4OMP's automated selection methods:
         {OpenMPKindOption::auto4omp_randomsel, "randomSel"},
         {OpenMPKindOption::auto4omp_exhaustivesel, "exhaustiveSel"},
+        {OpenMPKindOption::auto4omp_binarySearch, "binarySearch"},
         {OpenMPKindOption::auto4omp_expertsel, "expertSel"},
 
 #ifdef AUTOPAS_USE_LB4OMP
         // LB4OMP's scheduling techniques (beware, technique names in LB4OMP's README are outdated):
-        {OpenMPKindOption::lb4omp_profiling, "profiling"},        // Profiling
-        {OpenMPKindOption::lb4omp_fsc, "fsc"},                    // Fixed Size Chunk             // Requires profiling
-        {OpenMPKindOption::lb4omp_mfsc, "mfsc"},                  // Modified Fixed Size Chunk
-        {OpenMPKindOption::lb4omp_tap, "tap"},                    // Tapering                     // Requires profiling
-        {OpenMPKindOption::lb4omp_fac, "fac"},                    // Factoring                    // Requires profiling
-        {OpenMPKindOption::lb4omp_faca, "faca"},                  // Improved Factoring           // Requires profiling
-        {OpenMPKindOption::lb4omp_bold, "bold"},                  // Bold                         // Requires profiling
-        {OpenMPKindOption::lb4omp_fac2, "fac2"},                  // Practical Factoring
-        {OpenMPKindOption::lb4omp_wf, "wf"},                      // Weighted Factoring
-        {OpenMPKindOption::lb4omp_af, "af"},                      // Adaptive Factoring
-        {OpenMPKindOption::lb4omp_awf, "awf"},                    // Adaptive Weighted Factoring
-        {OpenMPKindOption::lb4omp_tfss, "tfss"},                  // Trapezoid Factoring Self Scheduling
-        {OpenMPKindOption::lb4omp_fiss, "fiss"},                  // Fixed Increase Self Scheduling
-        {OpenMPKindOption::lb4omp_viss, "viss"},                  // Variable Increase Self Scheduling
-        {OpenMPKindOption::lb4omp_rnd, "rnd"},                    // Random
+        {OpenMPKindOption::lb4omp_profiling, "profiling"},  // Profiling
+        {OpenMPKindOption::lb4omp_fsc, "fsc"},              // Fixed Size Chunk             // Requires profiling
+        {OpenMPKindOption::lb4omp_mfsc, "mfsc"},            // Modified Fixed Size Chunk
+        {OpenMPKindOption::lb4omp_tap, "tap"},              // Tapering                     // Requires profiling
+        {OpenMPKindOption::lb4omp_fac, "fac"},              // Factoring                    // Requires profiling
+        {OpenMPKindOption::lb4omp_faca, "faca"},            // Improved Factoring           // Requires profiling
+        {OpenMPKindOption::lb4omp_bold, "bold"},            // Bold                         // Requires profiling
+        {OpenMPKindOption::lb4omp_fac2, "fac2"},            // Practical Factoring
+        {OpenMPKindOption::lb4omp_wf, "wf"},                // Weighted Factoring
+        {OpenMPKindOption::lb4omp_af, "af"},                // Adaptive Factoring
+        {OpenMPKindOption::lb4omp_awf, "awf"},              // Adaptive Weighted Factoring
+        {OpenMPKindOption::lb4omp_tfss, "tfss"},            // Trapezoid Factoring Self Scheduling
+        {OpenMPKindOption::lb4omp_fiss, "fiss"},            // Fixed Increase Self Scheduling
+        {OpenMPKindOption::lb4omp_viss, "viss"},            // Variable Increase Self Scheduling
+        {OpenMPKindOption::lb4omp_rnd, "rnd"},              // Random
 
         // LB4OMP's scheduling techniques used by Auto4OMP (in addition to the standard scheduling kinds):
         {OpenMPKindOption::lb4omp_trapezoidal, "trapezoidal"},    // Trapezoid Self Scheduling (from standard OpenMP)
@@ -257,14 +260,6 @@ class OpenMPConfigurator {
    */
   [[maybe_unused]] [[nodiscard]] omp_sched_t getOMPKind() const;
 
-#ifdef AUTOPAS_USE_LB4OMP
-  /**
-   * LB4OMP scheduling technique getter sor setting OpenMP's scheduling runtime variables.
-   * @return the current OpenMP scheduling technique, directly usable in OpenMP's schedule setter.
-   */
-  [[maybe_unused]] [[nodiscard]] kmp_sched_t getKMPKind() const;
-#endif
-
   /**
    * AutoPas OpenMP configurator scheduling kind setter.
    * @param kind the new scheduling kind to use
@@ -278,11 +273,11 @@ class OpenMPConfigurator {
   [[maybe_unused]] [[nodiscard]] bool overrideChunkSize() const;
 
   /**
-   * Tells whether the scheduling kind is a manual LB4OMP scheduling technique.
-   * @return whether the scheduling kind is a manual LB4OMP scheduling technique
+   * Tells whether the scheduling kind is a standard OpenMP kind.
+   * @return whether the scheduling kind is a standard OpenMP kind
    */
-  [[maybe_unused]] [[nodiscard]] bool manualSchedulingTechnique() const;
-}; // class OpenMPConfigurator
+  [[maybe_unused]] [[nodiscard]] bool standard() const;
+};  // class OpenMPConfigurator
 
 /**
  * Sets OpenMP's runtime schedule from a given OpenMP configurator.
@@ -290,25 +285,19 @@ class OpenMPConfigurator {
  * @param ompConfig the OpenMP configurator
  */
 inline void autopas_set_schedule(autopas::OpenMPConfigurator ompConfig) {
-  if (ompConfig.getKind() != OpenMPKindOption::omp_runtime) {
-    if (ompConfig.manualSchedulingTechnique()) {
-#ifdef AUTOPAS_USE_AUTO4OMP
-      // TODO: untested.
-      int gid = __kmpc_global_thread_num(nullptr);
-      __kmp_set_schedule(gid, ompConfig.getKMPKind(), ompConfig.getOMPChunkSize());
-#else
-      autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
-#endif
-    } else {
-      autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
-    }
-  } // If the configurator is set to omp_runtime, users are assumed to have set OMP_SCHEDULE manually.
-}
-} // namespace autopas
+  // If the configurator is set to omp_runtime, users are assumed to have set OMP_SCHEDULE manually.
+  if (ompConfig.getKind() == OpenMPKindOption::omp_runtime) return;
+
+  if (ompConfig.standard()) {
+    autopas_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
+  } else {
+    autopas_auto4omp_set_schedule(ompConfig.getOMPKind(), ompConfig.getOMPChunkSize());
+  }
+}  // void autopas_set_schedule
+}  // namespace autopas
 
 /*
  * Sources:
  * [1] https://www.computer.org/csdl/journal/td/2022/04/09524500/1wpqIcNI6YM
  * [2] https://ieeexplore.ieee.org/document/9825675
- * [3] https://github.com/unibas-dmi-hpc/LB4OMP/blob/master/runtime/src/kmp.h#L324
  */
