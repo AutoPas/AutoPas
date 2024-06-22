@@ -66,11 +66,12 @@ class DefuzzificationMethodOption {
    * @return The DefuzzificationMethodOption.
    */
   static DefuzzificationMethodOption parse(const std::string &str) {
-    auto option = std::find_if(DefuzzificationMethodOption::getOptionNames().begin(),
-                               DefuzzificationMethodOption::getOptionNames().end(),
-                               [&str](const auto &pair) { return pair.second == str; });
+    const auto &optionNames = DefuzzificationMethodOption::getOptionNames();
 
-    if (option == DefuzzificationMethodOption::getOptionNames().end()) {
+    auto option =
+        std::find_if(optionNames.begin(), optionNames.end(), [&str](const auto &pair) { return pair.second == str; });
+
+    if (option == optionNames.end()) {
       autopas::utils::ExceptionHandler::exception("Unknown DefuzzificationMethodOption: {}", str);
     }
 
