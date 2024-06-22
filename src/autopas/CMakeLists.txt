@@ -52,8 +52,9 @@ target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
 
 if (AUTOPAS_AUTO4OMP)
     #add_dependencies(autopas auto4omp)
-    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src) # For kmp.h
-    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src) # For kmp_config.h
+    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src) # For kmp.h, etc.
+    target_include_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src) # For kmp_config.h.
+
     # Provide libomp.sp.5 for systems with modern OpenMP.
     add_custom_command(
             TARGET autopas PRE_BUILD COMMAND ${CMAKE_COMMAND} -E create_symlink libomp.so libomp.so.5
