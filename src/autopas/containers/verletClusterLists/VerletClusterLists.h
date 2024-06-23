@@ -878,8 +878,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   template <class Functor>
   void loadParticlesIntoSoAs(Functor *functor) {
     const auto numTowers = _towerBlock.size();
+
+    // Sets OpenMP's runtime schedule using the OpenMP configurator.
+    autopas_set_schedule(TraversalInterface::_ompConfig);
+
     /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    AUTOPAS_OPENMP(parallel for schedule(runtime))
     for (size_t index = 0; index < numTowers; index++) {
       _towerBlock[index].loadSoA(functor);
     }
@@ -893,8 +897,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   template <class Functor>
   void extractParticlesFromSoAs(Functor *functor) {
     const auto numTowers = _towerBlock.size();
+
+    // Sets OpenMP's runtime schedule using the OpenMP configurator.
+    autopas_set_schedule(TraversalInterface::_ompConfig);
+
     /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic))
+    AUTOPAS_OPENMP(parallel for schedule(runtime))
     for (size_t index = 0; index < numTowers; index++) {
       _towerBlock[index].extractSoA(functor);
     }
@@ -1034,8 +1042,12 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void traverseClustersParallel(LoopBody &&loopBody) {
     const auto towersPerDimX = _towerBlock.getTowersPerDim()[0];
     const auto towersPerDimY = _towerBlock.getTowersPerDim()[1];
+
+    // Sets OpenMP's runtime schedule using the OpenMP configurator.
+    autopas_set_schedule(TraversalInterface::_ompConfig);
+
     /// @todo: find sensible chunksize
-    AUTOPAS_OPENMP(parallel for schedule(dynamic) collapse(2))
+    AUTOPAS_OPENMP(parallel for schedule(runtime) collapse(2))
     for (size_t x = 0; x < towersPerDimX; x++) {
       for (size_t y = 0; y < towersPerDimY; y++) {
         auto &tower = _towerBlock.getTowerByIndex2D(x, y);
