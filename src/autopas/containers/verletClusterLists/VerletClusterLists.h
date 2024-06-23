@@ -880,7 +880,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     const auto numTowers = _towerBlock.size();
 
     // Sets OpenMP's runtime schedule using the OpenMP configurator.
-    autopas_set_schedule(TraversalInterface::_ompConfig);
+    autopas_set_schedule(*(ParticleContainerInterface<Particle>::_ompConfig));
 
     /// @todo: find sensible chunksize
     AUTOPAS_OPENMP(parallel for schedule(runtime))
@@ -899,7 +899,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     const auto numTowers = _towerBlock.size();
 
     // Sets OpenMP's runtime schedule using the OpenMP configurator.
-    autopas_set_schedule(TraversalInterface::_ompConfig);
+    autopas_set_schedule(*(ParticleContainerInterface<Particle>::_ompConfig));
 
     /// @todo: find sensible chunksize
     AUTOPAS_OPENMP(parallel for schedule(runtime))
@@ -1044,7 +1044,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     const auto towersPerDimY = _towerBlock.getTowersPerDim()[1];
 
     // Sets OpenMP's runtime schedule using the OpenMP configurator.
-    autopas_set_schedule(TraversalInterface::_ompConfig);
+    autopas_set_schedule(*(ParticleContainerInterface<Particle>::_ompConfig));
 
     /// @todo: find sensible chunksize
     AUTOPAS_OPENMP(parallel for schedule(runtime) collapse(2))

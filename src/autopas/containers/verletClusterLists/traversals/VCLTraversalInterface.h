@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/containers/verletClusterLists/ClusterTower.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 
 namespace autopas {
 
@@ -30,6 +31,13 @@ class VCLTraversalInterface {
    */
   virtual void setClusterLists(VerletClusterLists<Particle> &verletClusterLists) {
     _verletClusterLists = &verletClusterLists;
+  }
+
+  /**
+   * OpenMP configurator setter.
+   */
+  virtual void setOmpConfig(OpenMPConfigurator &ompConfig) {
+    _verletClusterLists->setOmpConfig(ompConfig);
   }
 
   /**
