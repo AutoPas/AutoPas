@@ -999,12 +999,6 @@ class AutoPas {
   void setOpenMPDefaultChunkSize(int s) { openMPDefaultChunkSize = s; }
 
   /**
-   * OpenMP global chunk size tuner.
-   * @param s the new OpenMP global chunk size
-   */
-  void setOpenMPTunedChunkSize(int s) { openMPTunedChunkSize = s; }
-
-  /**
     * OpenMP default scheduling kind setter.
     * @param k OpenMP default kind
     */
