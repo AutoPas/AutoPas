@@ -10,6 +10,26 @@
 
 namespace autopas {
 inline namespace options {
+
+/**
+ * Tests if string s contains sub-string sub.
+ * @param s the string
+ * @param sub the sub-string
+ * @return whether s contains sub
+ */
+static bool contains(const std::string &s, const std::string &sub) { return s.find(sub) != std::string::npos; }
+
+/**
+ * List of valid scheduling kind abbreviations.
+ */
+static const std::array<std::string, 36> validNameAbbreviations{
+    "dyn",  "SS",   "guid", "GSS",  "run", "sta", "STATIC", "rand", "exh",   "bin",   "exp",
+#ifdef AUTOPAS_USE_LB4OMP
+    "prof", "fsc",  "FSC",  "tap",  "TAP", "fac", "FAC",    "bold", "BOLD",  "wf",    "WF",  "tfss", "TFSS",
+    "fiss", "FISS", "viss", "VISS", "rnd", "RND", "trap",   "TSS",  "steal", "Steal", "af",  "AF"
+#endif
+};
+
 /**
  * Class representing OpenMP's scheduling kind choices.
  */
@@ -286,25 +306,6 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
   static bool in(OpenMPKindOption k, KindList... list) {
     return (... || (k == list));
   }
-
-  /**
-   * Tests if string s contains sub-string sub.
-   * @param s the string
-   * @param sub the sub-string
-   * @return whether s contains sub
-   */
-  static bool contains(const std::string &s, const std::string &sub) { return s.find(sub) != std::string::npos; }
-
-  /**
-   * List of valid scheduling kind abbreviations.
-   */
-  static const std::tuple<std::string> validNameAbbreviations{
-      "dyn",  "SS",   "guid", "GSS",  "run", "sta", "STATIC", "rand", "exh",   "bin",   "exp",
-#ifdef AUTOPAS_USE_LB4OMP
-      "prof", "fsc",  "FSC",  "tap",  "TAP", "fac", "FAC",    "bold", "BOLD",  "wf",    "WF",  "tfss", "TFSS",
-      "fiss", "FISS", "viss", "VISS", "rnd", "RND", "trap",   "TSS",  "steal", "Steal", "af",  "AF"
-#endif
-  };
 
   /**
    * Tells whether a given kind name is valid.

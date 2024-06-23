@@ -20,12 +20,6 @@ namespace autopas {
 extern int openMPDefaultChunkSize;
 
 /**
- * Global OpenMP chunk size for AutoPas auto-tuning.
- */
-[[maybe_unused]] extern int openMPTunedChunkSize;
-
-
-/**
  * OpenMP default scheduling kind.
  * md-flexible: set via command-line option --openmp-kind <OpenMPKindOption>
  */
