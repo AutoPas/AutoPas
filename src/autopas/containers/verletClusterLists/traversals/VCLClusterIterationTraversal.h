@@ -35,7 +35,9 @@ class VCLClusterIterationTraversal : public TraversalInterface,
                                         DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
         _functor(pairwiseFunctor),
-        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
+        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {
+    this->setOmpConfig(TraversalInterface::_ompConfig);
+  }
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }
 

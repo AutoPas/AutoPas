@@ -19,6 +19,7 @@
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
 #include "autopas/utils/inBox.h"
+#include "autopas/utils/OpenMPConfigurator.h"
 
 namespace autopas {
 
@@ -433,6 +434,19 @@ class ParticleContainerInterface {
    * Skin distance a particle is allowed to move in one time-step.
    */
   double _skinPerTimestep;
+
+  /**
+   * The OpenMP configurator.
+   */
+  OpenMPConfigurator *_ompConfig;
+
+ public:
+  /**
+   * OpenMP configurator setter.
+   */
+  void setOmpConfig(OpenMPConfigurator &ompConfig) {
+    _ompConfig = &ompConfig;
+  }
 };
 
 }  // namespace autopas
