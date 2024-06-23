@@ -23,11 +23,13 @@ static bool contains(const std::string &s, const std::string &sub) { return s.fi
  * List of valid scheduling kind abbreviations.
  */
 static const std::array<std::string, 36> validNameAbbreviations{
+    // clang-format off
     "dyn",  "SS",   "guid", "GSS",  "run", "sta", "STATIC", "rand", "exh",   "bin",   "exp",
 #ifdef AUTOPAS_USE_LB4OMP
     "prof", "fsc",  "FSC",  "tap",  "TAP", "fac", "FAC",    "bold", "BOLD",  "wf",    "WF",  "tfss", "TFSS",
     "fiss", "FISS", "viss", "VISS", "rnd", "RND", "trap",   "TSS",  "steal", "Steal", "af",  "AF"
 #endif
+    // clang-format on
 };
 
 /**
@@ -313,9 +315,8 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
    * @return whether the name is a valid scheduling kind option
    */
   static bool valid(const std::string &name) {
-    for (std::string abbreviation : validNameAbbreviations)
-      if (contains(name, abbreviation)) return true;
-    return false;
+    return std::any_of(validNameAbbreviations.begin(), validNameAbbreviations.end(),
+                       [=](const std::string &abbreviation) { return contains(name, abbreviation); });
   }
 
   /**
