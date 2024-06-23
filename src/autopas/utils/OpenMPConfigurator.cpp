@@ -167,5 +167,5 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
     default:
       return false;
   }
-};
+}
 }  // namespace autopas
