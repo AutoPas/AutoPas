@@ -37,9 +37,7 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
  * AutoPas OpenMP configurator chunk size getter.
  * @return the current OpenMP chunk size
  */
-[[maybe_unused]] [[nodiscard]] int autopas::OpenMPConfigurator::getChunkSize() const {
-  return _chunkSize;
-}
+[[maybe_unused]] [[nodiscard]] int autopas::OpenMPConfigurator::getChunkSize() const { return _chunkSize; }
 
 /**
  * OpenMP chunk size getter for setting OpenMP's scheduling runtime variables.
@@ -86,7 +84,7 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
       return omp_sched_guided;
     case OpenMPKindOption::omp_static:
       return omp_sched_static;
-#ifdef AUTOPAS_USE_LB4OMP // LB4OMP's scheduling techniques.
+#ifdef AUTOPAS_USE_LB4OMP  // LB4OMP's scheduling techniques.
     case OpenMPKindOption::lb4omp_profiling:
       return omp_sched_profiling;
     case OpenMPKindOption::lb4omp_fsc:
@@ -135,7 +133,7 @@ OpenMPKindOption openMPDefaultKind = OpenMPKindOption::omp_runtime;
       return omp_sched_af_a;
 #endif
     default:
-      return omp_sched_auto; // Standard auto and Auto4OMP's selection methods.
+      return omp_sched_auto;  // Standard auto and Auto4OMP's selection methods.
   }
 }
 
