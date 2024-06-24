@@ -102,11 +102,6 @@ class Simulation {
   constexpr static auto _floatStringPrecision = 3;
 
   /**
-   * Homogeneity of the scenario, calculated by the standard deviation of the density.
-   */
-  double _homogeneity = 0;
-
-  /**
    * Struct containing all timers used for the simulation.
    */
   struct Timers {
