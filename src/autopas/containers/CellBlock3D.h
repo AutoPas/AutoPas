@@ -202,7 +202,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     closeHaloCells.reserve(interestingCellsBlockSize);
 
     // always add the cell the particle is currently in first, for that we test if it is a halo cell.
-    if (_cells[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
+    if ((*_cells)[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
       closeHaloCells.push_back(&getCell(index3D));
     }
 
@@ -220,7 +220,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
           }
           // we need to return the cell is it is a halo cell.
           const auto currentIndex1D = threeToOneD(currentIndex3D);
-          if (_cells[currentIndex1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
+          if ((*_cells)[currentIndex1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
             closeHaloCells.push_back(&getCell(currentIndex3D));
           }
         }
