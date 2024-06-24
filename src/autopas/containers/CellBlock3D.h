@@ -196,6 +196,14 @@ class CellBlock3D : public CellBorderAndFlagManager {
     const auto index1D = threeToOneD(index3D);
 
     std::vector<ParticleCell *> closeHaloCells;
+    // x2 for left and right of the cell; +1 for the cell itself
+    const auto interestingCellsPerDim = (2. * allowedDistance / _cellLength) + 1.;
+    const auto interestingCellsBlockSize =
+        interestingCellsPerDim[0] * interestingCellsPerDim[1] * interestingCellsPerDim[2];
+    // This is an overestimation with the upper bound of possible number of cells in the vicinity.
+    // An overestimate is cheaper than many reallocations.
+    // If the size of the overallocation ever becomes a problem we can use vector::shrink_to_fit() before return.
+    closeHaloCells.reserve(interestingCellsBlockSize);
 
     // always add the cell the particle is currently in first, for that we test if it is a halo cell.
     if (_cells[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
