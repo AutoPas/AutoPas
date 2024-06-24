@@ -436,13 +436,13 @@ class ParticleContainerInterface {
   /**
    * The OpenMP configurator.
    */
-  OpenMPConfigurator *_ompConfig;
+  OpenMPConfigurator *_ompConfig = nullptr;
 
  public:
   /**
-   * OpenMP configurator setter.
+   * OpenMP configurator setter. The ompConfig member is meant to reference the TraversalInterface's OMP configurator.
    */
-  void setOmpConfig(OpenMPConfigurator &ompConfig) {
+  virtual void setOmpConfig(OpenMPConfigurator &ompConfig) {
     _ompConfig = &ompConfig;
   }
 };
