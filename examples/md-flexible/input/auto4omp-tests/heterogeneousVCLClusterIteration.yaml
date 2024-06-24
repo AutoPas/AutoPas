@@ -1,0 +1,77 @@
+# Heterogeneous scenario using Verlet Cluster Lists + vcl_cluster_iteration for OpenMP chunk size performance impact investigation.
+container                            :  [VerletClusterLists] # Choose one single type.
+verlet-rebuild-frequency             :  10
+verlet-skin-radius-per-timestep      :  0.05
+verlet-cluster-size                  :  4
+selector-strategy                    :  Fastest-Absolute-Value
+data-layout                          :  [SoA] # Choose one single layout.
+traversal                            :  [vcl_cluster_iteration]  # Choose one single type.
+tuning-strategies                    :  []
+tuning-interval                      :  5000
+tuning-samples                       :  3
+tuning-max-evidence                  :  10
+functor                              :  Lennard-Jones (12-6) avx
+newton3                              :  [disabled]  # Keep disabled.
+cutoff                               :  2.5
+box-min                              :  [0, 0, 0]
+box-max                              :  [100.5, 100.5, 100.5]
+cell-size                            :  [1]
+deltaT                               :  0 # Try setting to 0.
+sorting-threshold                    :  8
+iterations                           :  500 # Default 10.
+boundary-type                        :  [periodic, periodic, periodic]
+subdivide-dimension                  :  [true, true, true]
+load-balancing-interval              :  100
+tuning-phases                        :  0
+load-estimator                       :  [none, squared-particles-per-cell, neighbor-list-length]
+relative-optimum-range               :  1.2
+max-tuning-phases-without-test       :  5
+relative-blacklist-range             :  0
+evidence-for-prediction              :  3
+extrapolation-method                 :  linear-regression
+mpi-tuning-max-difference-for-bucket :  0.2
+mpi-tuning-weight-for-max-density    :  0.1
+tuning-acquisition-function          :  upper-confidence-bound
+fastParticlesThrow                   :  false # Deprecated.
+globalForce                          :  [0, 0, 0]
+load-balancer                        :  InvertedPressure
+Sites:
+  0:
+    epsilon                          :  1.
+    sigma                            :  1.
+    mass                             :  1
+# Uncomment below to run a multi-site simulation.
+#Molecules:
+#  0:
+#    # Multi-site molecules have LJ sites, with site-types that correspond to specific site LJ information given above
+#    # and respective relative unrotated site positions. Moment-of-inertia is given as the 3 non-zero elements of a diagonal
+#    # 3x3 Moment-of-inertia matrix. It is the user's responsibility that the site masses, positions, and Moment of Inertia
+#    # match.
+#    site-types                       : [ 0, 0, 0 ]
+#    relative-site-positions          : [ [ 0.74349607, 1.20300191, 0. ], [ 0.3249197, -1.37638192, 0. ], [-1.37638192, -0.3249197, 0. ] ]
+#    moment-of-inertia                : [ 5.23606798, 0.76393202, 6. ]
+Objects:
+  CubeGauss:
+    0:
+      distribution-mean              :  [2, 2, 2]
+      distribution-stddeviation      :  [2, 2, 2]
+      numberOfParticles              :  30000
+      box-length                     :  [100, 100, 100]
+      bottomLeftCorner               :  [0, 0, 0]
+      velocity                       :  [0, 0, 0]
+      particle-type-id               :  0
+# thermostat:
+#   initialTemperature                 :  1
+#   targetTemperature                  :  4
+#   deltaTemperature                   :  0.1
+#   thermostatInterval                 :  10
+#   addBrownianMotion                  :  true
+#log-level                            :  info
+no-flops                             :  false
+no-end-config                        :  false
+#no-progress-bar                      :  true
+#vtk-filename                         :  heterogeneousVCLClusterIteration
+#vtk-output-folder                    :  vtkOutputFolder
+#vtk-write-frequency                  :  1
+#checkpoint                          : AllOptionsSim_10.vtk
+#log-file                            : log.txt
