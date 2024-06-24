@@ -310,8 +310,10 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   std::array<double, 3> _cellLength{};
 
-  // 1 over above. Since this value is needed for sorting particles in cells, it
-  // is computed quite often
+  /**
+   * 1/_cellLength
+   * Since this value is needed for sorting particles in cells, it is computed quite often.
+   */
   std::array<double, 3> _cellLengthReciprocal{};
 };
 
