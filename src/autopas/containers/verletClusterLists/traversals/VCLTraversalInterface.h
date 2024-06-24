@@ -34,13 +34,6 @@ class VCLTraversalInterface {
   }
 
   /**
-   * OpenMP configurator setter.
-   */
-  virtual void setOmpConfig(OpenMPConfigurator &ompConfig) {
-    _verletClusterLists->setOmpConfig(ompConfig);
-  }
-
-  /**
    * Sets the towers of the cluster list for the traversal to iterate over.
    * @param towers towers of the cluster list for the traversal to iterate over.
    */

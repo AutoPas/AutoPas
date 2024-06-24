@@ -35,9 +35,7 @@ class VCLClusterIterationTraversal : public TraversalInterface,
                                         DataLayoutOption dataLayout, bool useNewton3)
       : TraversalInterface(dataLayout, useNewton3),
         _functor(pairwiseFunctor),
-        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {
-    this->setOmpConfig(TraversalInterface::_ompConfig);
-  }
+        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_cluster_iteration; }
 
@@ -46,6 +44,9 @@ class VCLClusterIterationTraversal : public TraversalInterface,
   }
 
   void initTraversal() override {
+    // Pass the OpenMP configurator to the VCL container.
+    VCLTraversalInterface<Particle>::_verletClusterLists->setOmpConfig(TraversalInterface::_ompConfig);
+
     if (_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
