@@ -69,7 +69,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     if (index1d < _firstOwnedCellIndex or index1d > _lastOwnedCellIndex) {
       return true;
     }
-    const auto index3d = index3D(index1d);
+    const auto index3d = oneToThreeD(index1d);
     bool isHaloCell = false;
     for (size_t i = 0; i < index3d.size(); ++i) {
       if (index3d[i] < _cellsPerInteractionLength or
@@ -278,9 +278,19 @@ class CellBlock3D : public CellBorderAndFlagManager {
   index_t getLastOwnedCellIndex() const;
 
  private:
-  [[nodiscard]] std::array<index_t, 3> index3D(index_t index1d) const;
+  /**
+   * Transform a 1D index to a 3D index in the context of this cell block.
+   * @param index1D
+   * @return 3D cell index
+   */
+  [[nodiscard]] std::array<index_t, 3> oneToThreeD(index_t index1D) const;
 
-  [[nodiscard]] index_t index1D(const std::array<index_t, 3> &index3d) const;
+  /**
+   * Transform a 3D index to a 1D index in the context of this cell block.
+   * @param index3D
+   * @return 1D cell index
+   */
+  [[nodiscard]] index_t threeToOneD(const std::array<index_t, 3> &index3D) const;
 
   /**
    * Number of cells to be checked in each direction where we can find valid interaction partners.
@@ -308,7 +318,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
 template <class ParticleCell>
 inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::get1DIndexOfPosition(
     const std::array<double, 3> &pos) const {
-  return index1D(get3DIndexOfPosition(pos));
+  return threeToOneD(get3DIndexOfPosition(pos));
 }
 
 template <class ParticleCell>
@@ -437,7 +447,7 @@ typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::getLastOw
 template <class ParticleCell>
 inline std::pair<std::array<double, 3>, std::array<double, 3>> CellBlock3D<ParticleCell>::getCellBoundingBox(
     const index_t index1d) const {
-  return this->getCellBoundingBox(this->index3D(index1d));
+  return this->getCellBoundingBox(this->oneToThreeD(index1d));
 }
 
 template <class ParticleCell>
@@ -483,19 +493,19 @@ inline ParticleCell &CellBlock3D<ParticleCell>::getCell(index_t index1d) const {
 
 template <class ParticleCell>
 inline ParticleCell &CellBlock3D<ParticleCell>::getCell(const std::array<index_t, 3> &index3d) const {
-  return (*_cells)[index1D(index3d)];
+  return (*_cells)[threeToOneD(index3d)];
 }
 
 template <class ParticleCell>
-inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::index3D(
-    index_t index1d) const {
-  return utils::ThreeDimensionalMapping::oneToThreeD(index1d, _cellsPerDimensionWithHalo);
+inline std::array<typename CellBlock3D<ParticleCell>::index_t, 3> CellBlock3D<ParticleCell>::oneToThreeD(
+    index_t index1D) const {
+  return utils::ThreeDimensionalMapping::oneToThreeD(index1D, _cellsPerDimensionWithHalo);
 }
 
 template <class ParticleCell>
-inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::index1D(
-    const std::array<index_t, 3> &index3d) const {
-  return utils::ThreeDimensionalMapping::threeToOneD(index3d, _cellsPerDimensionWithHalo);
+inline typename CellBlock3D<ParticleCell>::index_t CellBlock3D<ParticleCell>::threeToOneD(
+    const std::array<index_t, 3> &index3D) const {
+  return utils::ThreeDimensionalMapping::threeToOneD(index3D, _cellsPerDimensionWithHalo);
 }
 
 template <class ParticleCell>
@@ -515,7 +525,7 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
   for (index_t i : haloSlices) {
     for (index_t j = 0; j < _cellsPerDimensionWithHalo[1]; j++) {
       for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
-        index_t index = index1D({i, j, k});
+        index_t index = threeToOneD({i, j, k});
         (*_cells)[index].clear();
       }
     }
@@ -525,7 +535,7 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
   for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {  // 0 and cells-1 already done in previous loop
     for (index_t j : haloSlices) {
       for (index_t k = 0; k < _cellsPerDimensionWithHalo[2]; k++) {
-        index_t index = index1D({i, j, k});
+        index_t index = threeToOneD({i, j, k});
         (*_cells)[index].clear();
       }
     }
@@ -535,7 +545,7 @@ void CellBlock3D<ParticleCell>::clearHaloCells() {
   for (index_t i = 1; i < _cellsPerDimensionWithHalo[0] - 1; i++) {    // 0 and cells-1 already done in previous loop
     for (index_t j = 1; j < _cellsPerDimensionWithHalo[1] - 1; j++) {  // 0 and cells-1 already done in previous loop
       for (index_t k : haloSlices) {
-        index_t index = index1D({i, j, k});
+        index_t index = threeToOneD({i, j, k});
         (*_cells)[index].clear();
       }
     }
