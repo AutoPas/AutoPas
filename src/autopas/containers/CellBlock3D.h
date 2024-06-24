@@ -192,41 +192,32 @@ class CellBlock3D : public CellBorderAndFlagManager {
   std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) const {
     using namespace autopas::utils::ArrayMath::literals;
 
-    auto index3d = get3DIndexOfPosition(position);
+    const auto index3D = get3DIndexOfPosition(position);
+    const auto index1D = threeToOneD(index3D);
 
     std::vector<ParticleCell *> closeHaloCells;
 
-    auto isHaloCell = [&](const auto &index) {
-      for (size_t i = 0; i < 3; ++i) {
-        if (index[i] < _cellsPerInteractionLength or
-            index[i] >= _cellsPerDimensionWithHalo[i] - _cellsPerInteractionLength) {
-          return true;
-        }
-      }
-      return false;
-    };
-
     // always add the cell the particle is currently in first, for that we test if it is a halo cell.
-    if (isHaloCell(index3d)) {
-      closeHaloCells.push_back(&getCell(index3d));
+    if (_cells[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
+      closeHaloCells.push_back(&getCell(index3D));
     }
 
+    // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
     const auto lowIndex3D = get3DIndexOfPosition(position - allowedDistance);
     const auto highIndex3D = get3DIndexOfPosition(position + allowedDistance);
-    // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
 
-    auto currentIndex = lowIndex3D;
-
-    for (currentIndex[0] = lowIndex3D[0]; currentIndex[0] <= highIndex3D[0]; ++currentIndex[0]) {
-      for (currentIndex[1] = lowIndex3D[1]; currentIndex[1] <= highIndex3D[1]; ++currentIndex[1]) {
-        for (currentIndex[2] = lowIndex3D[2]; currentIndex[2] <= highIndex3D[2]; ++currentIndex[2]) {
+    auto currentIndex3D = lowIndex3D;
+    for (currentIndex3D[0] = lowIndex3D[0]; currentIndex3D[0] <= highIndex3D[0]; ++currentIndex3D[0]) {
+      for (currentIndex3D[1] = lowIndex3D[1]; currentIndex3D[1] <= highIndex3D[1]; ++currentIndex3D[1]) {
+        for (currentIndex3D[2] = lowIndex3D[2]; currentIndex3D[2] <= highIndex3D[2]; ++currentIndex3D[2]) {
           // we have already added the cell which normally would belong to the particle, so skip here:
-          if (currentIndex == index3d) {
+          if (currentIndex3D == index3D) {
             continue;
           }
           // we need to return the cell is it is a halo cell.
-          if (isHaloCell(currentIndex)) {
-            closeHaloCells.push_back(&getCell(currentIndex));
+          const auto currentIndex1D = threeToOneD(currentIndex3D);
+          if (_cells[currentIndex1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
+            closeHaloCells.push_back(&getCell(currentIndex3D));
           }
         }
       }
