@@ -1,12 +1,16 @@
-file(
-        GLOB_RECURSE
-        ruleChecker_SRC
-        "*.cpp"
-        "*.h"
-)
+if(AUTOPAS_ENABLE_RULES_BASED_TUNING)
 
-add_executable(ruleChecker ${ruleChecker_SRC})
+    file(
+            GLOB_RECURSE
+            ruleChecker_SRC
+            "*.cpp"
+            "*.h"
+    )
 
-target_include_directories(ruleChecker PUBLIC .)
+    add_executable(ruleChecker ${ruleChecker_SRC})
 
-target_link_libraries(ruleChecker PUBLIC autopas autopasTools)
+    target_include_directories(ruleChecker PUBLIC .)
+
+    target_link_libraries(ruleChecker PUBLIC autopas autopasTools)
+
+endif()

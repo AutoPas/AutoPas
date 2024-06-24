@@ -13,7 +13,6 @@
 
 #include "autopas/tuning/selectors/OptimumSelector.h"
 #include "autopas/tuning/tuningStrategy/MPIParallelizedStrategy.h"
-#include "autopas/tuning/tuningStrategy/TuningStrategyLogger.h"
 #include "autopas/tuning/utils/Smoothing.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
@@ -24,7 +23,6 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
                      const AutoTunerInfo &autoTunerInfo, unsigned int rebuildFrequency, const std::string &outputSuffix)
     : _selectorStrategy(autoTunerInfo.selectorStrategy),
       _tuningStrategies(std::move(tuningStrategies)),
-      _iteration(0),
       _tuningInterval(autoTunerInfo.tuningInterval),
       _iterationsSinceTuning(autoTunerInfo.tuningInterval),  // init to max so that tuning happens in first iteration
       _tuningMetric(autoTunerInfo.tuningMetric),
@@ -93,6 +91,17 @@ bool AutoTuner::tuneConfiguration() {
   _samplesNotRebuildingNeighborLists.clear();
   _samplesRebuildingNeighborLists.clear();
 
+  // Helper function to reset the ConfigQueue if something wipes it.
+  auto restoreConfigQueueIfEmpty = [&](const auto &configQueueBackup, const TuningStrategyOption &stratOpt) {
+    if (_configQueue.empty()) {
+      _configQueue = configQueueBackup;
+    }
+    AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}", stratOpt.to_string(),
+               _configQueue.size(), utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"}, [](const auto &conf) {
+                 return conf.toShortString(false);
+               }));
+  };
+
   // Determine where in a tuning phase we are
   if (_iterationsSinceTuning == _tuningInterval) {
     // CASE: Start of a tuning phase
@@ -107,11 +116,13 @@ bool AutoTuner::tuneConfiguration() {
                                             [](const auto &conf) { return conf.toShortString(false); }));
     // then let the strategies filter and sort it
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
+      const auto configQueueBackup = _configQueue;
       tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::reset(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
+      restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
     });
   } else {
     // CASE: somewhere in a tuning phase
@@ -119,11 +130,13 @@ bool AutoTuner::tuneConfiguration() {
                utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                             [](const auto &conf) { return conf.toShortString(false); }));
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
+      const auto configQueueBackup = _configQueue;
       tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
+      restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
     });
   }
 
@@ -199,9 +212,10 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   const auto &currentConfig = _configQueue.back();
   // sanity check
   if (getCurrentNumSamples() >= _maxSamples) {
-    throw utils::ExceptionHandler::AutoPasException(
-        "Trying to add a measurement to the AutoTuner but for this configuration already enough samples were "
-        "collected!");
+    utils::ExceptionHandler::exception(
+        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough"
+        "for this configuration!\n"
+        "tuneConfiguration() should have been called before to process and flush samples.");
   }
   AutoPasLog(TRACE, "Adding sample {} to configuration {}.", sample, currentConfig.toShortString());
   if (neighborListRebuilt) {
@@ -279,29 +293,8 @@ bool AutoTuner::willRebuildNeighborLists() const {
 }
 
 bool AutoTuner::initEnergy() {
-  // Check if energy measurement is possible.
-  std::string errMsg(_raplMeter.init());
-  if (errMsg.empty()) {
-    try {
-      _raplMeter.reset();
-      _raplMeter.sample();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
-      } else {
-        AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
-        return false;
-      }
-    }
-  } else {
-    if (_tuningMetric == TuningMetricOption::energy) {
-      throw utils::ExceptionHandler::AutoPasException(errMsg);
-    } else {
-      AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", errMsg);
-      return false;
-    }
-  }
-  return true;
+  // Try to initialize the raplMeter
+  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy);
 }
 
 bool AutoTuner::resetEnergy() {
@@ -316,7 +309,7 @@ bool AutoTuner::resetEnergy() {
       AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
       _energyMeasurementPossible = false;
       if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
+        utils::ExceptionHandler::exception(e);
       }
     }
   }
@@ -331,7 +324,7 @@ std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
       AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
       _energyMeasurementPossible = false;
       if (_tuningMetric == TuningMetricOption::energy) {
-        throw e;
+        utils::ExceptionHandler::exception(e);
       }
     }
   }
@@ -421,4 +414,6 @@ bool AutoTuner::inTuningPhase() const {
 }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
+
+bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 }  // namespace autopas

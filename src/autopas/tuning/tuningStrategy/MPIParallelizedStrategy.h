@@ -48,7 +48,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   MPIParallelizedStrategy(const Configuration &fallbackConfiguration, const AutoPas_MPI_Comm &comm,
                           double mpiTuningMaxDifferenceForBucket, double mpiTuningWeightForMaxDensity);
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;

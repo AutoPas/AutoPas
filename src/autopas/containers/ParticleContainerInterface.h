@@ -243,9 +243,7 @@ class ParticleContainerInterface {
       typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors = nullptr) const = 0;
 
   /**
-   * End expression for all containers, this simply returns false.
-   * Allows range-based for loops.
-   * @return false
+   * @copydoc autopas::AutoPas::end()
    */
   [[nodiscard]] constexpr bool end() const { return false; }
 
@@ -380,8 +378,8 @@ class ParticleContainerInterface {
                                                      IteratorBehavior iteratorBehavior,
                                                      const std::array<double, 3> &boxMin,
                                                      const std::array<double, 3> &boxMax) {
-    const Particle *ptr;
-    size_t nextCellIndex, nextParticleIndex;
+    const Particle *ptr{};
+    size_t nextCellIndex{}, nextParticleIndex{};
     std::tie(ptr, nextCellIndex, nextParticleIndex) =
         const_cast<const ParticleContainerInterface<Particle> *>(this)->getParticle(cellIndex, particleIndex,
                                                                                     iteratorBehavior, boxMin, boxMax);
@@ -395,8 +393,8 @@ class ParticleContainerInterface {
    */
   std::tuple<Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                      IteratorBehavior iteratorBehavior) {
-    const Particle *ptr;
-    size_t nextCellIndex, nextParticleIndex;
+    const Particle *ptr{};
+    size_t nextCellIndex{}, nextParticleIndex{};
     std::tie(ptr, nextCellIndex, nextParticleIndex) =
         const_cast<const ParticleContainerInterface<Particle> *>(this)->getParticle(cellIndex, particleIndex,
                                                                                     iteratorBehavior);
