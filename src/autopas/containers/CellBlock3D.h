@@ -201,7 +201,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     // If the size of the overallocation ever becomes a problem we can use vector::shrink_to_fit() before return.
     const auto blockLength = highIndex3D - lowIndex3D;
     const auto numInterestingCells = std::max(1, blockLength[0] * blockLength[1] * blockLength[2]);
-    closeHaloCells.reserve(interestingCellsBlockSize);
+    closeHaloCells.reserve(numInterestingCells);
 
     // always add the cell the particle is currently in first if it is a halo cell.
     if ((*_cells)[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
