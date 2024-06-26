@@ -107,11 +107,11 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   /**
    * Rebuild the cell block. This resizes the cell block and sets the appropriate internal variables.
-   * @param vec new vector of ParticleCells to which the internal pointer is set.
-   * @param bMin new lower corner of the cell block.
-   * @param bMax new higher corner of the cell block.
-   * @param interactionLength max. radius of interaction between particles.
-   * @param cellSizeFactor cell size factor relative to interactionLength.
+   * @param vec New vector of ParticleCells to which the internal pointer is set.
+   * @param bMin New lower corner of the cell block.
+   * @param bMax New higher corner of the cell block.
+   * @param interactionLength Max. radius of interaction between particles.
+   * @param cellSizeFactor Cell size factor relative to interactionLength.
    */
   void rebuild(std::vector<ParticleCell> &vec, const std::array<double, 3> &bMin, const std::array<double, 3> &bMax,
                double interactionLength, double cellSizeFactor);
@@ -166,7 +166,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   /**
    * Checks whether a given position is inside the halo region of the managed cell block.
-   * @param position the given position.
+   * @param position The given position.
    * @return true if the position is inside the halo region.
    */
   [[nodiscard]] bool checkInHalo(const std::array<double, 3> &position) const;
@@ -182,8 +182,8 @@ class CellBlock3D : public CellBorderAndFlagManager {
    * If position is inside a halo cell that cell is also returned.
    * @note The 1 norm is used, i.e. the distance is computed for each dimension separately, aka. Manhattan distance)
    *
-   * @param position cells close to this position are to be returned.
-   * @param allowedDistance the maximal distance to the position.
+   * @param position Cells close to this position are to be returned.
+   * @param allowedDistance The maximal distance to the position.
    * @return A vector of references to nearby halo cells.
    */
   std::vector<ParticleCell *> getNearbyHaloCells(const std::array<double, 3> &position, double allowedDistance) const {
@@ -305,7 +305,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
   std::array<double, 3> _cellLength{};
 
   /**
-   * 1/_cellLength
+   * 1.0 / _cellLength
    * Since this value is often needed for sorting particles in cells, we precompute it.
    */
   std::array<double, 3> _cellLengthReciprocal{};
