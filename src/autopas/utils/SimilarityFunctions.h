@@ -49,6 +49,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   const auto domainVolume = domainDimensions[0] * domainDimensions[1] * domainDimensions[2];
 
   // We scale the dimensions of the domain to bins with volumes which give approximately 10 particles per bin.
+  // Todo The choice of 10 is arbitrary and probably can be optimized
   const auto targetNumberOfBins = std::ceil(numberOfParticles / 10.);
   const auto targetNumberOfBinsPerDim = std::cbrt(static_cast<double>(targetNumberOfBins));
   // This is probably not an integer, so we floor to get more than 10 particles per bin than too small bins
@@ -77,7 +78,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   std::vector<double> densityPerBin{};
   densityPerBin.reserve(numberOfBins);
   for (size_t i = 0; i < numberOfBins; i++) {
-    densityPerBin[i] = static_cast<double>(particlesPerBin[i]) / binVolume;
+    densityPerBin.push_back(static_cast<double>(particlesPerBin[i]) / binVolume);
     maxDensity = std::max(maxDensity, densityPerBin[i]);
   }
 
@@ -88,30 +89,20 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   // get mean and reserve variable for densityVariance
   const double densityMean = numberOfParticles / domainVolume;
 
-  double densityVariance{0.};
-  for (size_t i = 0; i < numberOfBins; ++i) {
-    const double densityDifference = densityPerBin[i] - densityMean;
-    densityVariance += (densityDifference * densityDifference);
-  }
+  const double densityDifferenceSquaredSum = std::transform_reduce(densityPerBin.begin(), densityPerBin.end(), 0.0,
+                                                                   std::plus<>(), [densityMean](double density) {
+                                                                     double densityDifference = density - densityMean;
+                                                                     return densityDifference * densityDifference;
+                                                                   });
 
-  /*
-    double densityVariance = std::transform_reduce(
-          densityPerBin.begin(), densityPerBin.end(), 0.0,
-          std::plus<>(),
-          [densityMean](double density) {
-              double densityDifference = density - densityMean;
-              return densityDifference * densityDifference;
-          }
-      );
-  */
-  densityVariance = densityVariance / numberOfBins;
-  std::cout << densityVariance << "\n";
+  const auto densityVariance = densityDifferenceSquaredSum / numberOfBins;
 
   // finally calculate standard deviation
   const double homogeneity = std::sqrt(densityVariance);
   // normally between 0.0 and 1.5
   if (homogeneity < 0.0) {
-    throw std::runtime_error("homogeneity can never be smaller than 0.0, but is:" + std::to_string(homogeneity));
+    utils::ExceptionHandler::exception(
+        "calculateHomogeneityAndMaxDensity(): homogeneity can never be smaller than 0.0, but is: {}", homogeneity);
   }
   return {homogeneity, maxDensity};
 }

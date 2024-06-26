@@ -6,8 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include <algorithm>
-#include <iterator>
 #include <vector>
 
 #include "autopas/containers/directSum/DirectSum.h"
@@ -25,7 +23,6 @@
  * - particles are placed evenly between bins
  * - tests density is correct and homogeneity is 0
  * - moves a particle between bins and tests again
- * - contiane
  */
 TEST(SimilarityFunctionsTest, testCalculateHomogeneityAndMaxDensity) {
   const std::array<double, 3> domainMin{1, 1, 0};
