@@ -177,9 +177,9 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   /**
    * Get the halo cells around a given point.
-   * A list of halo cells is returned whose distance to position is at most allowedDistance.
+   * Returns a list of halo cells that are at least partially within allowedDistance of the given position.
    * If position is inside a halo cell that cell is also returned.
-   * @note 1 norm is used, i.e. the distance is computed for each dimension separately, aka. Manhattan distance)
+   * @note The 1 norm is used, i.e. the distance is computed for each dimension separately, aka. Manhattan distance)
    *
    * @param position cells close to this position are to be returned.
    * @param allowedDistance the maximal distance to the position.
@@ -201,7 +201,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     // If the size of the overallocation ever becomes a problem we can use vector::shrink_to_fit() before return.
     closeHaloCells.reserve(interestingCellsBlockSize);
 
-    // always add the cell the particle is currently in first, for that we test if it is a halo cell.
+    // always add the cell the particle is currently in first if it is a halo cell.
     if ((*_cells)[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
       closeHaloCells.push_back(&getCell(index3D));
     }
@@ -307,7 +307,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
 
   /**
    * 1/_cellLength
-   * Since this value is needed for sorting particles in cells, it is computed quite often.
+   * Since this value is often needed for sorting particles in cells, we precompute it.
    */
   std::array<double, 3> _cellLengthReciprocal{};
 };
