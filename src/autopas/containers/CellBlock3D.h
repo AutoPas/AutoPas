@@ -191,24 +191,22 @@ class CellBlock3D : public CellBorderAndFlagManager {
     const auto index3D = get3DIndexOfPosition(position);
     const auto index1D = threeToOneD(index3D);
 
+    // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
+    const auto lowIndex3D = get3DIndexOfPosition(position - allowedDistance);
+    const auto highIndex3D = get3DIndexOfPosition(position + allowedDistance);
+
     std::vector<ParticleCell *> closeHaloCells;
-    // x2 for left and right of the cell; +1 for the cell itself
-    const auto interestingCellsPerDim = utils::ArrayMath::ceilToInt((2. * allowedDistance / _cellLength)) + 1;
-    const auto interestingCellsBlockSize =
-        interestingCellsPerDim[0] * interestingCellsPerDim[1] * interestingCellsPerDim[2];
     // This is an overestimation with the upper bound of possible number of cells in the vicinity.
     // An overestimate is cheaper than many reallocations.
     // If the size of the overallocation ever becomes a problem we can use vector::shrink_to_fit() before return.
+    const auto blockLength = highIndex3D - lowIndex3D;
+    const auto numInterestingCells = std::max(1, blockLength[0] * blockLength[1] * blockLength[2]);
     closeHaloCells.reserve(interestingCellsBlockSize);
 
     // always add the cell the particle is currently in first if it is a halo cell.
     if ((*_cells)[index1D].getPossibleParticleOwnerships() == OwnershipState::halo) {
       closeHaloCells.push_back(&getCell(index3D));
     }
-
-    // these indices are (already) at least 0 and at most _cellsPerDimensionWithHalo[i]-1
-    const auto lowIndex3D = get3DIndexOfPosition(position - allowedDistance);
-    const auto highIndex3D = get3DIndexOfPosition(position + allowedDistance);
 
     auto currentIndex3D = lowIndex3D;
     for (currentIndex3D[0] = lowIndex3D[0]; currentIndex3D[0] <= highIndex3D[0]; ++currentIndex3D[0]) {
