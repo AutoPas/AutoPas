@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <numeric>
@@ -200,7 +201,7 @@ class CellBlock3D : public CellBorderAndFlagManager {
     // An overestimate is cheaper than many reallocations.
     // If the size of the overallocation ever becomes a problem we can use vector::shrink_to_fit() before return.
     const auto blockLength = highIndex3D - lowIndex3D;
-    const auto numInterestingCells = std::max(1, blockLength[0] * blockLength[1] * blockLength[2]);
+    const auto numInterestingCells = std::max(1ul, blockLength[0] * blockLength[1] * blockLength[2]);
     closeHaloCells.reserve(numInterestingCells);
 
     // always add the cell the particle is currently in first if it is a halo cell.
