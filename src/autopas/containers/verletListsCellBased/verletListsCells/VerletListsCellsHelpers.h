@@ -85,8 +85,9 @@ struct BaseStepOffsets {
  * in the base cell.
  * This depends on the relative position of the two cells: Whether they are the same, or share a face, edge, or corner.
  *
- * @note This is implemented for CSF>=1. The algorithm would work for CSF<1 but
- * the vector preallocation and factors would have to change. Factors are currently implemented for CSF== 1.
+ * @note This function is implemented for CSF==1, meaning preallocation weight factors are intended for CSF==1.
+ *       For CSF > 1 the implementation works but the factors might be suboptimal.
+ *       For CSF < 1 more factors (and different) are needed if more neighbor cells interact with the base cell.
  *
  * @param cellsPerDim Number of cells per dimension including halo.
  * @return Vector of tuples<offset1, offset2, listEstimateFactor>
