@@ -10,7 +10,7 @@
 
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 LinguisticVariable::LinguisticVariable(const std::string &name, std::pair<double, double> range) {
   _name = name;
@@ -52,4 +52,4 @@ LinguisticVariable::operator std::string() const {
                      linguisticTermsStr);
 }
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

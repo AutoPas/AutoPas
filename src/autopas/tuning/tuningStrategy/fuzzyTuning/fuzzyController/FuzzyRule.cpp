@@ -6,7 +6,7 @@
 
 #include "FuzzyRule.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 FuzzyRule::FuzzyRule(const std::shared_ptr<FuzzySet> &antecedent, const std::shared_ptr<FuzzySet> &consequent)
     : _antecedent(antecedent), _consequent(consequent) {}
@@ -33,4 +33,4 @@ FuzzyRule::operator std::string() const {
   return "\tFuzzyRule: " + std::string(*_antecedent) + "  ==>  " + std::string(*_consequent);
 }
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

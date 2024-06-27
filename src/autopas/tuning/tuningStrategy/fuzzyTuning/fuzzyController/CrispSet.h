@@ -10,7 +10,7 @@
 #include <memory>
 #include <string>
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 /**
  * Used to represent arbitrary Crisp-Sets, on which Fuzzy-Sets can be defined.
@@ -58,4 +58,4 @@ class CrispSet {
   std::map<std::string, std::pair<double, double>> _dimensions;
 };
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

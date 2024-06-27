@@ -88,7 +88,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   using PrintTuningErrorFunType =
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
-      std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
+      std::function<void(const RuleSyntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
 #else
@@ -156,9 +156,9 @@ class RuleBasedTuning : public TuningStrategyInterface {
    * Executes the rule file for the current simulation state.
    * Puts all known live info as "defines" (=definition of variables) in front of the program.
    */
-  std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
+  std::vector<RuleSyntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
 
-  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders{};
+  std::vector<RuleSyntax::ConfigurationOrder> _lastApplicableConfigurationOrders{};
 
   // The following member variables are only conditionally compiled to avoid warnings about unused variables.
 

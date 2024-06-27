@@ -10,7 +10,7 @@
 
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 FuzzyControlSystem::FuzzyControlSystem(std::shared_ptr<FuzzyControlSettings> settings) : _settings(settings) {}
 
@@ -62,4 +62,4 @@ FuzzyControlSystem::operator std::string() const {
                          [](const std::string &acc, const FuzzyRule &rule) { return acc + std::string(rule) + "\n"; });
 }
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

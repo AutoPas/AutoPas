@@ -8,7 +8,7 @@
 
 #include <numeric>
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 CrispSet::CrispSet(const std::string &name, const std::pair<double, double> &range) : _dimensions({{name, range}}) {}
 
@@ -32,4 +32,4 @@ CrispSet::operator std::string() const {
          "}";
 }
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

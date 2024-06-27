@@ -149,21 +149,20 @@ void RuleBasedTuning::verifyCurrentConfigTime(const Configuration &configuration
   }
 }
 
-std::vector<rule_syntax::ConfigurationOrder> RuleBasedTuning::applyRules(
-    const std::vector<Configuration> &searchSpace) {
+std::vector<RuleSyntax::ConfigurationOrder> RuleBasedTuning::applyRules(const std::vector<Configuration> &searchSpace) {
   AutoPasLog(DEBUG, _currentLiveInfo.toString());
 
   std::vector<RuleVM::MemoryCell> initialStack;
-  std::vector<std::pair<std::string, rule_syntax::Define>> defines{};
+  std::vector<std::pair<std::string, RuleSyntax::Define>> defines{};
   for (const auto &[name, value] : _currentLiveInfo.get()) {
     initialStack.emplace_back(value);
-    defines.push_back({name, {name, std::make_shared<rule_syntax::Literal>(value)}});
+    defines.push_back({name, {name, std::make_shared<RuleSyntax::Literal>(value)}});
   }
 
   std::ifstream ifs{_ruleFileName};
   const std::string content((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
 
-  rule_syntax::RuleBasedProgramParser parser{defines};
+  RuleSyntax::RuleBasedProgramParser parser{defines};
   auto [programTree, context] = parser.parse(content);
 
   const auto generatedProgram = programTree.generateCode(context);
@@ -173,7 +172,7 @@ std::vector<rule_syntax::ConfigurationOrder> RuleBasedTuning::applyRules(
 
   AutoPasLog(DEBUG, "Remove patterns (Count {}):", removePatterns.size());
   std::vector<ConfigurationPattern> toRemovePatterns{};
-  std::vector<rule_syntax::ConfigurationOrder> applicableConfigurationOrders{};
+  std::vector<RuleSyntax::ConfigurationOrder> applicableConfigurationOrders{};
   for (const auto &patternIdx : removePatterns) {
     const auto pattern = context.smallerConfigurationPatternByIndex(patternIdx);
     toRemovePatterns.push_back(pattern);

@@ -101,4 +101,24 @@ namespace tuningLogEntry {}
  */
 namespace SearchSpaceGenerators {}
 
+/**
+ * Namespace that contains the fuzzy logic framework used by the FuzzyTuning-strategy.
+ */
+namespace FuzzyLogic {}
+
+/**
+ * Namespace that contains the generated parser for FuzzyRuleFiles.
+ */
+namespace AutopasGeneratedFuzzyRuleSyntax {}
+
+/**
+ * Namespace that contains code for evaluating the RuleBasedTuning-Strategy.
+ */
+namespace RuleSyntax {}
+
+/**
+ * Namespace that contains the generated parser for RuleFiles.
+ */
+namespace AutopasGeneratedRuleSyntax {}
+
 }  // namespace autopas

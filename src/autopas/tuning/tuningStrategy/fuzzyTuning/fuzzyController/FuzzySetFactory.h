@@ -11,7 +11,7 @@
 
 #include "FuzzySet.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 /**
  * A factory class that creates FuzzySets based on the given activation function.
@@ -86,9 +86,11 @@ class FuzzySetFactory {
 
   /**
    * Returns a function object that represents a finite sigmoid membership function.
-   * @param lower The lower border of the sigmoid. The membership function will be 0 for values smaller than lower.
+   * @param lower The border of the sigmoid beyond which the membership function is 0. Does not necessarily mean the
+   * border with the lowest x value.
    * @param center The center of the sigmoid. The membership function will be 0.5 for values equal to center.
-   * @param upper The upper border of the sigmoid. The membership function will be 1 for values greater than upper.
+   * @param upper The border of the sigmoid beyond which the membership function is 1. Does not necessarily mean the
+   * border with the highest x value.
    *
    * Note: this is not an actual sigmoid function, but has an s-like shape. It is built using two parabolas and forms a
    * kind of cubic-shaped function.
@@ -106,4 +108,4 @@ class FuzzySetFactory {
                                             size_t expected, size_t actual);
 };
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

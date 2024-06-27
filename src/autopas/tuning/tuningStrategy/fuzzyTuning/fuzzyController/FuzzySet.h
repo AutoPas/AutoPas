@@ -16,7 +16,7 @@
 #include "CrispSet.h"
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 /**
  * Used to represent the different defuzzification methods.
@@ -240,4 +240,4 @@ std::shared_ptr<FuzzySet> operator&&(const std::shared_ptr<FuzzySet> &lhs, const
  */
 std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &fuzzySet);
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

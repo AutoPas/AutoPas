@@ -11,7 +11,7 @@
 
 #include "autopas/utils/ExceptionHandler.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 std::map<std::string, FuzzySetFactory::AvailableFunctions> FuzzySetFactory::availableFunctionMap = {
     {"Triangle", FuzzySetFactory::AvailableFunctions::Triangle},
@@ -148,4 +148,4 @@ void FuzzySetFactory::throwInvalidNumberOfArguments(const std::string &linguisti
       functionName, expected, actual);
 }
 
-}  //   namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

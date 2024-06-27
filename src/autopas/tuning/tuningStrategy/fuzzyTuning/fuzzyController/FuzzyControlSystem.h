@@ -12,7 +12,7 @@
 #include "FuzzyRule.h"
 #include "FuzzySet.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 /**
  * The settings of a FuzzyControlSystem are a map of key-value pairs. The key is the name of the setting and the value
@@ -86,4 +86,4 @@ class FuzzyControlSystem {
   std::optional<std::string> _outputDomain;
 };
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

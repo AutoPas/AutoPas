@@ -8,7 +8,7 @@
 
 #include "antlr4-runtime.h"
 
-namespace autopas_generated_fuzzy_rule_syntax {
+namespace AutopasGeneratedFuzzyRuleSyntax {
 
 using namespace antlr4;
 
@@ -32,4 +32,4 @@ class FuzzyRuleErrorListener : public antlr4::BaseErrorListener {
                                 size_t stopIndex, size_t prediction, antlr4::atn::ATNConfigSet *configs) override;
 };
 
-}  // namespace autopas_generated_fuzzy_rule_syntax
+}  // namespace AutopasGeneratedFuzzyRuleSyntax

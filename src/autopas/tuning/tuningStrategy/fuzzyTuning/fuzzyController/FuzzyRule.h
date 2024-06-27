@@ -11,7 +11,7 @@
 
 #include "FuzzySet.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 /**
  * Used to represent a Fuzzy Rule. A Fuzzy Rule is a conditional statement of the form: IF antecedent THEN consequent.
@@ -62,4 +62,4 @@ class FuzzyRule {
   const std::shared_ptr<FuzzySet> _consequent;
 };
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

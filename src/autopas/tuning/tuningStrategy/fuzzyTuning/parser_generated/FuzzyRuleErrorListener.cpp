@@ -6,7 +6,7 @@
 
 #include "FuzzyRuleErrorListener.h"
 
-namespace autopas_generated_fuzzy_rule_syntax {
+namespace AutopasGeneratedFuzzyRuleSyntax {
 
 void FuzzyRuleErrorListener::syntaxError(antlr4::Recognizer *recognizer, antlr4::Token *offendingSymbol, size_t line,
                                          size_t charPositionInLine, const std::string &msg, std::exception_ptr e) {
@@ -34,4 +34,4 @@ void FuzzyRuleErrorListener::reportContextSensitivity(antlr4::Parser *recognizer
   throw std::runtime_error("Context sensitivity in fuzzy rule");
 }
 
-}  // namespace autopas_generated_fuzzy_rule_syntax
+}  // namespace AutopasGeneratedFuzzyRuleSyntax

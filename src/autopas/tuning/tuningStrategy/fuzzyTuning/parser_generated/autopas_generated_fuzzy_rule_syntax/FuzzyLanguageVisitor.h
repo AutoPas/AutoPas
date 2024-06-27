@@ -8,7 +8,7 @@
 #include "FuzzyLanguageParser.h"
 #include "antlr4-runtime.h"
 
-namespace autopas_generated_fuzzy_rule_syntax {
+namespace AutopasGeneratedFuzzyRuleSyntax {
 
 /**
  * This class defines an abstract visitor for a parse tree
@@ -50,4 +50,4 @@ class FuzzyLanguageVisitor : public antlr4::tree::AbstractParseTreeVisitor {
   virtual antlrcpp::Any visitConfiguration_pattern(FuzzyLanguageParser::Configuration_patternContext *context) = 0;
 };
 
-}  // namespace autopas_generated_fuzzy_rule_syntax
+}  // namespace AutopasGeneratedFuzzyRuleSyntax

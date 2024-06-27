@@ -11,8 +11,9 @@
 #include <utility>
 
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/Math.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 FuzzySet::FuzzySet(std::string linguisticTerm, BaseMembershipFunction &&baseMembershipFunction)
     : _linguisticTerm(std::move(linguisticTerm)), _membershipFunction(std::move(baseMembershipFunction)) {}
@@ -108,7 +109,8 @@ double FuzzySet::meanOfMaximum(size_t numSamples) const {
       maxMembershipValue = membership;
       maxMembershipXs.clear();
     }
-    if (membership == maxMembershipValue) {
+    // To avoid missing a maximum due to numerical inaccuracies, we use a small tolerance to compare the two values.
+    if (utils::Math::isNear(membership, maxMembershipValue, 1e-5)) {
       maxMembershipXs.push_back(x);
     }
   }
@@ -169,4 +171,4 @@ std::shared_ptr<FuzzySet> operator!(const std::shared_ptr<FuzzySet> &fuzzySet) {
   auto newMembershipFunction = [fuzzySet](auto data) { return 1 - (fuzzySet->evaluate_membership(data)); };
   return std::make_shared<FuzzySet>(newLinguisticTerm, std::move(newMembershipFunction), newCrispSet);
 }
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

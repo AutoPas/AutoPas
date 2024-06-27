@@ -8,7 +8,7 @@
 #include "FuzzyLanguageVisitor.h"
 
 using namespace antlrcpp;
-using namespace autopas_generated_fuzzy_rule_syntax;
+using namespace AutopasGeneratedFuzzyRuleSyntax;
 using namespace antlr4;
 
 FuzzyLanguageParser::FuzzyLanguageParser(TokenStream *input) : Parser(input) {

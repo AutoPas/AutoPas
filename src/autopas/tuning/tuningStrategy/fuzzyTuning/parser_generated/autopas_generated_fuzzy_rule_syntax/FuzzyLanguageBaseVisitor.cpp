@@ -5,4 +5,4 @@
 
 #include "FuzzyLanguageBaseVisitor.h"
 
-using namespace autopas_generated_fuzzy_rule_syntax;
+using namespace AutopasGeneratedFuzzyRuleSyntax;

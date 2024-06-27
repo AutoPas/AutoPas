@@ -12,7 +12,7 @@
 
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramTree.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 /**
  * Used to store the mapping information to transform the result of the fuzzy controller into a configuration suitable
@@ -65,4 +65,4 @@ class OutputMapper {
   std::vector<std::pair<double, std::vector<ConfigurationPattern>>> _mappings;
 };
 
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

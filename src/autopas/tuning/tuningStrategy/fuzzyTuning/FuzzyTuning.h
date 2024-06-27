@@ -15,7 +15,7 @@
 
 namespace autopas {
 
-using namespace autopas::fuzzy_logic;
+using namespace autopas::FuzzyLogic;
 
 /**
  * A tuning strategy that uses fuzzy logic to make predictions about the performance of configurations.
@@ -149,9 +149,9 @@ class FuzzyTuning : public TuningStrategyInterface {
    * Interprets the output of the fuzzy control systems as individual predictors and sets the configuration queue to the
    * cartesian product of all the predictions.
    *
-   * This mode is intended for rule-bases designed for predicting individual parameters of the configuration and combines
-   * the predictions of all the fuzzy control systems to a configuration queue adhering to the constraints of the
-   * systems.
+   * This mode is intended for rule-bases designed for predicting individual parameters of the configuration and
+   * combines the predictions of all the fuzzy control systems to a configuration queue adhering to the constraints of
+   * the systems.
    *
    * Lets say we have 3 FuzzyControlSystems which resulted in the the following configuration patterns:
    * System 1:

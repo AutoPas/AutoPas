@@ -12,7 +12,7 @@
 #include "CrispSet.h"
 #include "FuzzySet.h"
 
-namespace autopas::fuzzy_logic {
+namespace autopas::FuzzyLogic {
 
 /**
  * A class representing a LinguisticVariable. A LinguisticVariable is defined on a CrispSet and consists of several
@@ -35,8 +35,9 @@ class LinguisticVariable {
   void addLinguisticTerm(const std::shared_ptr<FuzzySet> &linguisticTerm);
 
   /**
-   * Overload of the operator== where the left-hand side is a linguistic variable, and the right-hand side is a linguistic term. Returns the fuzzy set corresponding to a linguistic term. This allows a very concise syntax to create
-   * fuzzy rules.
+   * Overload of the operator== where the left-hand side is a linguistic variable, and the right-hand side is a
+   * linguistic term. Returns the fuzzy set corresponding to a linguistic term. This allows a very concise syntax to
+   * create fuzzy rules.
    * @param linguisticTerm The name of the linguistic term to extract.
    * @return The FuzzySet with the given name.
    */
@@ -69,4 +70,4 @@ class LinguisticVariable {
    */
   std::map<std::string, std::shared_ptr<FuzzySet>> _linguisticTerms;
 };
-}  // namespace autopas::fuzzy_logic
+}  // namespace autopas::FuzzyLogic

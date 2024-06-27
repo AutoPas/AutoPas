@@ -14,9 +14,9 @@
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/autopas_generated_fuzzy_rule_syntax/FuzzyLanguageBaseVisitor.h"
 #include "autopas/tuning/tuningStrategy/ruleBasedTuning/RuleBasedProgramParser.h"
 
-using namespace autopas_generated_fuzzy_rule_syntax;
-using namespace autopas::fuzzy_logic;
-using namespace autopas::rule_syntax;
+using namespace AutopasGeneratedFuzzyRuleSyntax;
+using namespace autopas::FuzzyLogic;
+using namespace autopas::RuleSyntax;
 
 /**
  * This class implements a visitor for the fuzzy rule parser.

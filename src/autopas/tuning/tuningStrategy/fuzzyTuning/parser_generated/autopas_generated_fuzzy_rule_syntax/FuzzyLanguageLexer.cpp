@@ -7,7 +7,7 @@
 
 using namespace antlr4;
 
-using namespace autopas_generated_fuzzy_rule_syntax;
+using namespace AutopasGeneratedFuzzyRuleSyntax;
 
 FuzzyLanguageLexer::FuzzyLanguageLexer(CharStream *input) : Lexer(input) {
   _interpreter = new atn::LexerATNSimulator(this, _atn, _decisionToDFA, _sharedContextCache);

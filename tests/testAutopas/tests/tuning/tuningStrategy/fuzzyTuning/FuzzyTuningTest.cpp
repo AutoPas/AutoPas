@@ -15,7 +15,7 @@
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/LinguisticVariable.h"
 
 using namespace autopas;
-using namespace autopas::fuzzy_logic;
+using namespace autopas::FuzzyLogic;
 
 /**
  * Tests whether the triangle fuzzy set has the correct membership values at certain key points.
@@ -437,16 +437,16 @@ TEST(FuzzyTuningTest, testMaxDefuzzification) {
   // the max position of a gaussian should be at the peak
   EXPECT_NEAR(g1->defuzzify(DefuzzificationMethodOption::MoM, numSamples), 15, 1e-1);
 
-  // cutted t2
+  // cut t2
   auto rule1 = FuzzyRule(t1, t2);
-  auto cuttedT2 = rule1.apply({{"x", 5}});
+  auto cutT2 = rule1.apply({{"x", 5}});
 
-  // cutted t3
+  // cut t3
   auto rule2 = FuzzyRule(t2, t3);
-  auto cuttedT3 = rule2.apply({{"x", 15}});
+  auto cutT3 = rule2.apply({{"x", 15}});
 
-  // the max position of the union of the low and the cutted other fuzzy sets should be close to the peak of t1
-  auto unionSet = t1 || cuttedT2 || cuttedT3;
+  // the max position of the union of the low and the cut of the other fuzzy sets should be close to the peak of t1
+  auto unionSet = t1 || cutT2 || cutT3;
   EXPECT_NEAR(unionSet->defuzzify(DefuzzificationMethodOption::MoM, numSamples), 10, 1e-1);
 }
 

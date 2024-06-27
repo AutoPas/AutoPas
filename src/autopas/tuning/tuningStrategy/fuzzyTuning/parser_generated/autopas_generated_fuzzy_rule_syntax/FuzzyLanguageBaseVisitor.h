@@ -8,7 +8,7 @@
 #include "FuzzyLanguageVisitor.h"
 #include "antlr4-runtime.h"
 
-namespace autopas_generated_fuzzy_rule_syntax {
+namespace AutopasGeneratedFuzzyRuleSyntax {
 
 /**
  * This class provides an empty implementation of FuzzyLanguageVisitor, which can be
@@ -63,4 +63,4 @@ class FuzzyLanguageBaseVisitor : public FuzzyLanguageVisitor {
   }
 };
 
-}  // namespace autopas_generated_fuzzy_rule_syntax
+}  // namespace AutopasGeneratedFuzzyRuleSyntax

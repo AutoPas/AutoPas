@@ -6,7 +6,7 @@
 
 #include "OutputMapper.h"
 
-using namespace autopas::fuzzy_logic;
+using namespace autopas::FuzzyLogic;
 
 OutputMapper::OutputMapper(std::string outputDomain,
                            std::vector<std::pair<double, std::vector<ConfigurationPattern>>> mappings)

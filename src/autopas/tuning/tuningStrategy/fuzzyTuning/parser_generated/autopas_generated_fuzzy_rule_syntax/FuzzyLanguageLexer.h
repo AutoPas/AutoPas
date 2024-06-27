@@ -7,7 +7,7 @@
 
 #include "antlr4-runtime.h"
 
-namespace autopas_generated_fuzzy_rule_syntax {
+namespace AutopasGeneratedFuzzyRuleSyntax {
 
 class FuzzyLanguageLexer : public antlr4::Lexer {
  public:
@@ -79,4 +79,4 @@ class FuzzyLanguageLexer : public antlr4::Lexer {
   static Initializer _init;
 };
 
-}  // namespace autopas_generated_fuzzy_rule_syntax
+}  // namespace AutopasGeneratedFuzzyRuleSyntax

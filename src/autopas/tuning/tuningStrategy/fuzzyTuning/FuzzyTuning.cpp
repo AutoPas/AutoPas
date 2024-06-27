@@ -42,20 +42,20 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
 
   std::string linguisticVariablesStr =
       std::accumulate(linguisticVariables.begin(), linguisticVariables.end(), std::string("\n"),
-                      [](const std::string &acc, const std::shared_ptr<fuzzy_logic::LinguisticVariable> &b) {
+                      [](const std::string &acc, const std::shared_ptr<FuzzyLogic::LinguisticVariable> &b) {
                         return acc + std::string(*b);
                       });
 
   std::string outputMappingsStr = std::accumulate(
       outputMappings.begin(), outputMappings.end(), std::string("\n"),
-      [](const std::string &acc, const std::pair<const std::string, std::shared_ptr<fuzzy_logic::OutputMapper>> &b) {
+      [](const std::string &acc, const std::pair<const std::string, std::shared_ptr<FuzzyLogic::OutputMapper>> &b) {
         return acc + std::string(*b.second);
       });
 
   std::string fuzzyControlSystemsStr =
       std::accumulate(fuzzyControlSystems.begin(), fuzzyControlSystems.end(), std::string("\n"),
                       [](const std::string &acc,
-                         const std::pair<const std::string, std::shared_ptr<fuzzy_logic::FuzzyControlSystem>> &b) {
+                         const std::pair<const std::string, std::shared_ptr<FuzzyLogic::FuzzyControlSystem>> &b) {
                         return acc + std::string(*b.second);
                       });
 
@@ -99,7 +99,7 @@ void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence
 void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                         const EvidenceCollection &evidenceCollection) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
-  using namespace autopas::fuzzy_logic;
+  using namespace autopas::FuzzyLogic;
 
   // Runs the FuzzyTuning strategy for the first time. Since the decision of the Fuzzy Tuner doesn't depend on the
   // evidence, and it is expected that the LiveInfo doesn't change that much during a tuning phase. We can run the
@@ -130,7 +130,7 @@ TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyO
 
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Configuration> &configQueue) {
-  using namespace autopas::fuzzy_logic;
+  using namespace autopas::FuzzyLogic;
 
   std::list<Configuration> newSearchSpace{configQueue.begin(), configQueue.end()};
 
@@ -170,7 +170,7 @@ void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Conf
 }
 
 void FuzzyTuning::updateQueueInterpretOutputAsSuitability(std::vector<Configuration> &configQueue) {
-  using namespace autopas::fuzzy_logic;
+  using namespace autopas::FuzzyLogic;
 
   std::list<Configuration> newSearchSpace{configQueue.begin(), configQueue.end()};
 
@@ -235,7 +235,7 @@ std::tuple<std::shared_ptr<FuzzyControlSettings>, std::vector<std::shared_ptr<Li
            std::map<std::string, std::shared_ptr<FuzzyControlSystem>>>
 FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
   using namespace antlr4;
-  using namespace autopas::fuzzy_logic;
+  using namespace autopas::FuzzyLogic;
 
   try {
     // Read file
