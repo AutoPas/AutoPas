@@ -14,6 +14,7 @@
 #include <variant>
 
 #include "CrispSet.h"
+#include "autopas/options/Option.h"
 #include "autopas/utils/ExceptionHandler.h"
 
 namespace autopas::FuzzyLogic {
@@ -21,7 +22,7 @@ namespace autopas::FuzzyLogic {
 /**
  * Used to represent the different defuzzification methods.
  */
-class DefuzzificationMethodOption {
+class DefuzzificationMethodOption : public Option<DefuzzificationMethodOption> {
  public:
   /**
    * Enum for the different defuzzification methods.
@@ -36,6 +37,11 @@ class DefuzzificationMethodOption {
      */
     MoM
   };
+
+  /**
+   * Constructor.
+   */
+  DefuzzificationMethodOption() = default;
 
   /**
    * Constructor from value.
@@ -56,27 +62,9 @@ class DefuzzificationMethodOption {
   static std::map<DefuzzificationMethodOption, std::string> getOptionNames() {
     return {
         {DefuzzificationMethodOption::CoG, "centerOfGravity"},
-        {DefuzzificationMethodOption::MoM, "MoM"},
+        {DefuzzificationMethodOption::MoM, "meanOfMaximum"},
     };
   };
-
-  /**
-   * Parses a string to a DefuzzificationMethodOption.
-   * @param str The exact string representation of the DefuzzificationMethodOption.
-   * @return The DefuzzificationMethodOption.
-   */
-  static DefuzzificationMethodOption parse(const std::string &str) {
-    const auto &optionNames = DefuzzificationMethodOption::getOptionNames();
-
-    auto option =
-        std::find_if(optionNames.begin(), optionNames.end(), [&str](const auto &pair) { return pair.second == str; });
-
-    if (option == optionNames.end()) {
-      autopas::utils::ExceptionHandler::exception("Unknown DefuzzificationMethodOption: {}", str);
-    }
-
-    return option->first;
-  }
 
  private:
   Value _value{Value(-1)};

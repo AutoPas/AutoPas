@@ -13,58 +13,41 @@
 
 namespace autopas::FuzzyLogic {
 
-std::map<std::string, FuzzySetFactory::AvailableFunctions> FuzzySetFactory::availableFunctionMap = {
-    {"Triangle", FuzzySetFactory::AvailableFunctions::Triangle},
-    {"Trapezoid", FuzzySetFactory::AvailableFunctions::Trapezoid},
-    {"Gaussian", FuzzySetFactory::AvailableFunctions::Gaussian},
-    {"Sigmoid", FuzzySetFactory::AvailableFunctions::Sigmoid},
-    {"SigmoidFinite", FuzzySetFactory::AvailableFunctions::SigmoidFinite}};
-
 std::shared_ptr<FuzzySet> FuzzySetFactory::makeFuzzySet(const std::string &linguisticTerm,
                                                         const std::string &functionName,
                                                         const std::vector<double> &params) {
-  // Check if the function name is supported.
-  if (availableFunctionMap.find(functionName) == availableFunctionMap.end()) {
-    std::string supportedFunctions =
-        std::accumulate(availableFunctionMap.begin(), availableFunctionMap.end(), std::string(),
-                        [](const std::string &acc, const std::pair<const std::string, AvailableFunctions> &b) {
-                          return acc + b.first + ", ";
-                        });
-    autopas::utils::ExceptionHandler::exception(
-        "Cannot create FuzzySet: {}. Unsupported function name: {}. Choose from {}", linguisticTerm, functionName,
-        supportedFunctions);
-  }
+  MembershipFunctionOption membershipFunction = MembershipFunctionOption::parseOptionExact(functionName);
 
   FuzzySet::BaseMembershipFunction baseMembershipFunction;
 
   // Create the membership function based on the function name.
-  switch (availableFunctionMap.at(functionName)) {
-    case AvailableFunctions::Triangle:
+  switch (membershipFunction) {
+    case MembershipFunctionOption::Triangle:
       if (params.size() != 3) {
         throwInvalidNumberOfArguments(linguisticTerm, functionName, 3, params.size());
       }
       baseMembershipFunction = std::tuple(functionName, params, triangleFunction(params[0], params[1], params[2]));
       break;
-    case AvailableFunctions::Trapezoid:
+    case MembershipFunctionOption::Trapezoid:
       if (params.size() != 4) {
         throwInvalidNumberOfArguments(linguisticTerm, functionName, 4, params.size());
       }
       baseMembershipFunction =
           std::tuple(functionName, params, trapezoidFunction(params[0], params[1], params[2], params[3]));
       break;
-    case AvailableFunctions::Gaussian:
+    case MembershipFunctionOption::Gaussian:
       if (params.size() != 2) {
         throwInvalidNumberOfArguments(linguisticTerm, functionName, 2, params.size());
       }
       baseMembershipFunction = std::tuple(functionName, params, gaussianFunction(params[0], params[1]));
       break;
-    case AvailableFunctions::Sigmoid:
+    case MembershipFunctionOption::Sigmoid:
       if (params.size() != 2) {
         throwInvalidNumberOfArguments(linguisticTerm, functionName, 2, params.size());
       }
       baseMembershipFunction = std::tuple(functionName, params, sigmoidFunction(params[0], params[1]));
       break;
-    case AvailableFunctions::SigmoidFinite:
+    case MembershipFunctionOption::SigmoidFinite:
       if (params.size() != 3) {
         throwInvalidNumberOfArguments(linguisticTerm, functionName, 3, params.size());
       }

@@ -10,7 +10,7 @@
 # Here global settings for all fuzzy systems can be defined.
 # Currently it is not possible to define different settings for different fuzzy systems.
 FuzzySystemSettings:
-	defuzzificationMethod: "MoM"
+	defuzzificationMethod: "meanOfMaximum"
 	interpretOutputAs: "IndividualSystems"
 
 

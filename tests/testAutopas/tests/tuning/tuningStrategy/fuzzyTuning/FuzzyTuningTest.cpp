@@ -460,7 +460,7 @@ TEST(FuzzyTuningTest, testParseRuleFile) {
   std::string fileContent = R"(
 # Define the settings of the fuzzy control system
 FuzzySystemSettings:
-     defuzzificationMethod: "MoM"
+     defuzzificationMethod: "meanOfMaximum"
      interpretOutputAs: "IndividualSystems"
 
 
@@ -506,7 +506,7 @@ if ("homogeneity" == "lower than 0.041") && ("particlesPerCellStdDev" == "lower 
 
   // check settings
   EXPECT_EQ(settings->size(), 2);
-  EXPECT_EQ(settings->at("defuzzificationMethod"), "MoM");
+  EXPECT_EQ(settings->at("defuzzificationMethod"), "meanOfMaximum");
   EXPECT_EQ(settings->at("interpretOutputAs"), "IndividualSystems");
 
   auto newtonMapper = outputMappings.at("Newton 3");

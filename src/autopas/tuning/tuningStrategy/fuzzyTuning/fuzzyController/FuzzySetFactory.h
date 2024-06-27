@@ -24,18 +24,6 @@ class FuzzySetFactory {
   FuzzySetFactory() = delete;
 
   /**
-   * Enum class that represents the available functions for the FuzzySetFactory.
-   *
-   * If a new function is added, it must be added here and in the `availableFunctionMap` below.
-   */
-  enum class AvailableFunctions { Triangle, Trapezoid, Gaussian, Sigmoid, SigmoidFinite };
-
-  /**
-   * A map of the form {function_name: function_enum}. Used to map function names to function enums.
-   */
-  static std::map<std::string, AvailableFunctions> availableFunctionMap;
-
-  /**
    * Constructs a FuzzySet with the given linguistic term, based on the given activation function.
    * @param linguisticTerm The linguistic term of this FuzzySet.
    * @param functionName The name of the function to create.
@@ -106,6 +94,70 @@ class FuzzySetFactory {
    */
   static void throwInvalidNumberOfArguments(const std::string &linguisticTerm, const std::string &functionName,
                                             size_t expected, size_t actual);
+};
+
+/**
+ * Class representing the choices for the membership functions.
+ */
+class MembershipFunctionOption : public Option<MembershipFunctionOption> {
+ public:
+  /**
+   * Enum for the different defuzzification methods.
+   */
+  enum Value {
+    /**
+     * Triangle function
+     */
+    Triangle,
+    /**
+     * Trapezoid function
+     */
+    Trapezoid,
+    /**
+     * Gaussian function
+     */
+    Gaussian,
+    /**
+     * Sigmoid function
+     */
+    Sigmoid,
+    /**
+     * SigmoidFinite function
+     */
+    SigmoidFinite
+  };
+
+  /**
+   * Constructor.
+   */
+  MembershipFunctionOption() = default;
+
+  /**
+   * Constructor from value.
+   * @param option
+   */
+  constexpr MembershipFunctionOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value.
+   * @return
+   */
+  constexpr operator Value() const { return _value; }
+
+  /**
+   * Provides a way to iterate over the possible choices of DefuzzificationMethod.
+   * @return map option -> string representation
+   */
+  static std::map<MembershipFunctionOption, std::string> getOptionNames() {
+    return {
+        {MembershipFunctionOption::Triangle, "Triangle"},           {MembershipFunctionOption::Trapezoid, "Trapezoid"},
+        {MembershipFunctionOption::Gaussian, "Gaussian"},           {MembershipFunctionOption::Sigmoid, "Sigmoid"},
+        {MembershipFunctionOption::SigmoidFinite, "SigmoidFinite"},
+    };
+  };
+
+ private:
+  Value _value{Value(-1)};
 };
 
 }  // namespace autopas::FuzzyLogic

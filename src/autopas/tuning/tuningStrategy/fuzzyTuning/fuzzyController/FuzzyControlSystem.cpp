@@ -48,10 +48,9 @@ double FuzzyControlSystem::predict(const FuzzySet::Data &data, size_t numSamples
     numSamples = std::stoul(_settings->at("numSamples"));
   }
 
-  auto defuzzificationMethodString = _settings->at("defuzzificationMethod");
-  auto defuzzificationMethod = DefuzzificationMethodOption::parse(defuzzificationMethodString);
+  auto defuzzificationMethod = DefuzzificationMethodOption::parseOptionExact(_settings->at("defuzzificationMethod"));
 
-  AutoPasLog(DEBUG, "Defuzzifying with method: {} and numSamples: {}", defuzzificationMethodString, numSamples);
+  AutoPasLog(DEBUG, "Defuzzifying with method: {} and numSamples: {}", defuzzificationMethod.to_string(), numSamples);
 
   return unionSet->defuzzify(defuzzificationMethod, numSamples);
 }
