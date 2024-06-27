@@ -149,7 +149,7 @@ class FuzzyTuning : public TuningStrategyInterface {
    * Interprets the output of the fuzzy control systems as individual predictors and sets the configuration queue to the
    * cartesian product of all the predictions.
    *
-   * This mode is intended for rule-bases designed to predicting individual parameters of the configuration and combines
+   * This mode is intended for rule-bases designed for predicting individual parameters of the configuration and combines
    * the predictions of all the fuzzy control systems to a configuration queue adhering to the constraints of the
    * systems.
    *
@@ -193,7 +193,7 @@ class FuzzyTuning : public TuningStrategyInterface {
    *   "excellent":   Gaussian(0.875, 0.017)
    *  ...
    *
-   * The FuzzyControlSystem will then predict the suitability of each configuration and sorts them according to the
+   * The FuzzyControlSystem will then predict the suitability of each configuration and sort them according to the
    * predicted suitability (the higher the better). The resulting configuration-queue will then consist of the
    * configurations with the highest suitability values.
    *
