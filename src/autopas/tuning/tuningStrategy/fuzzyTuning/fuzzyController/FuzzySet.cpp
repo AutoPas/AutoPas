@@ -44,8 +44,7 @@ double FuzzySet::evaluate_membership(const Data &data) const {
     // The current fuzzy set is a derived set and has needs to delegate the evaluation recursively to its base sets.
     return std::get<ComposedMembershipFunction>(_membershipFunction)(data);
   } else {
-    autopas::utils::ExceptionHandler::exception("Unknown membership function type");
-    throw std::runtime_error("Unknown membership function type");
+    throw autopas::utils::ExceptionHandler::AutoPasException("Unknown membership function type");
   }
 }
 
@@ -56,8 +55,7 @@ double FuzzySet::defuzzify(DefuzzificationMethodOption method, size_t numSamples
     case DefuzzificationMethodOption::MoM:
       return meanOfMaximum(numSamples);
     default:
-      autopas::utils::ExceptionHandler::exception("Unknown defuzzification method");
-      throw std::runtime_error("Unknown defuzzification method");
+      throw autopas::utils::ExceptionHandler::AutoPasException("Unknown defuzzification method");
   }
 }
 

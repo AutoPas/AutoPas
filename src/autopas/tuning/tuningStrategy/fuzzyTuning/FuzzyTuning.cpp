@@ -269,9 +269,8 @@ FuzzyTuning::parse(const std::string &fuzzyRuleFilename) {
 
     return fuzzy_rule_program;
   } catch (const std::exception &e) {
-    utils::ExceptionHandler::exception("Error while parsing fuzzy rule file: \"{}\". Error: {}", fuzzyRuleFilename,
-                                       e.what());
-    throw std::runtime_error("This should never be reached");
+    throw utils::ExceptionHandler::AutoPasException(
+        fmt::format("Error while parsing fuzzy rule file: \"{}\". Error: {}", fuzzyRuleFilename, e.what()));
   }
 }
 
