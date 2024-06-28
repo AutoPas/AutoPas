@@ -8,8 +8,8 @@
 
 Optional:
 * For `tuningLogToSQL`: `libsqlite3`
-* For rule based tuning: `pkg-config`. By default, rule based tuning is disabled but can be enabled via the CMake 
-(see [below](#rule-based-tuning)).
+* For rule based tuning: `pkg-config`. By default, rule based tuning and fuzzy tuning are disabled but can be enabled via the CMake 
+(see [below](#rules-based-tuning-fuzzy-tuning))
 
 There are a few more dependencies, however you don't need to install them because they come bundled with AutoPas.
 See [libs/](/libs) for a complete list.
