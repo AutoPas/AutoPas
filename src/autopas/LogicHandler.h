@@ -663,7 +663,7 @@ class LogicHandler {
   void rebuildNeighborLists(TraversalInterface &traversal);
 
   /**
-   * Call the current container's iteratePairwise() or iterateTriwise() functions.
+   * Call the current container's iterateInteractions() function.
    *
    * @param traversal
    * @return
@@ -682,7 +682,7 @@ class LogicHandler {
   void iterateRemainder(Functor &functor, bool newton3);
 
   /**
-   * Performs the interactions ParticleContainer::iteratePairwise() did not cover.
+   * Performs the interactions ParticleContainer::iterateInteractions() did not cover.
    *
    * These interactions are:
    *  - particleBuffer    <-> container
@@ -1022,14 +1022,7 @@ void LogicHandler<Particle>::rebuildNeighborLists(TraversalInterface &traversal)
 template <typename Particle>
 void LogicHandler<Particle>::iterateContainer(TraversalInterface &traversal) {
   auto &container = _containerSelector.getCurrentContainer();
-  auto *pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(&traversal);
-  if (pairwiseTraversal) {
-    container.iteratePairwise(pairwiseTraversal);
-  }
-  auto *triwiseTraversal = dynamic_cast<TriwiseTraversalInterface *>(&traversal);
-  if (triwiseTraversal) {
-    container.iterateTriwise(triwiseTraversal);
-  }
+  container.iterateInteractions(&traversal);
 }
 
 template <typename Particle>
@@ -1499,13 +1492,9 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   };
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
-  if (interactionType == InteractionTypeOption::pairwise) {
-    AutoPasLog(DEBUG, "Container::iteratePairwise   took {} ns", measurements.timeIterateContainer);
-    AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
-  } else if (interactionType == InteractionTypeOption::triwise) {
-    AutoPasLog(DEBUG, "Container::iterateTriwise    took {} ns", measurements.timeIterateContainer);
-    AutoPasLog(DEBUG, "RemainderTraversal3B         took {} ns", measurements.timeRemainderTraversal);
-  }
+  AutoPasLog(DEBUG, "Type of interaction : {}", interactionType.to_string());
+  AutoPasLog(DEBUG, "Container::iterateInteractions   took {} ns", measurements.timeIterateContainer);
+  AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
   AutoPasLog(DEBUG, "RebuildNeighborLists         took {} ns", measurements.timeRebuild);
   AutoPasLog(DEBUG, "AutoPas::computeInteractions took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {

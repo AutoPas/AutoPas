@@ -27,10 +27,10 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
       "Functor,"
       "inTuningPhase,"
       "{},"
-      "iteratePairwise[ns],"
+      "iterateInteractions[ns],"
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
-      "iteratePairwiseTotal[ns],"
+      "iterateInteractionsTotal[ns],"
       "tuning[ns],"
       "energyPsys[J],"
       "energyPkg[J],"
@@ -53,14 +53,14 @@ autopas::IterationLogger::~IterationLogger() {
 }
 
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
-                                            std::string functorName, bool inTuningPhase, long timeIteratePairwise,
+                                            std::string functorName, bool inTuningPhase, long timeIterateInteractions,
                                             long timeRemainderTraversal, long timeRebuildNeighborLists,
-                                            long timeIteratePairwiseTotal, long timeTuning, double energyPsys,
+                                            long timeIterateInteractionsTotal, long timeTuning, double energyPsys,
                                             double energyPkg, double energyRam) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
-             configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuildNeighborLists,
-             timeIteratePairwiseTotal, timeTuning, energyPsys, energyPkg, energyRam);
+             configuration.getCSVLine(), timeIterateInteractions, timeRemainderTraversal, timeRebuildNeighborLists,
+             timeIterateInteractionsTotal, timeTuning, energyPsys, energyPkg, energyRam);
 #endif
 }

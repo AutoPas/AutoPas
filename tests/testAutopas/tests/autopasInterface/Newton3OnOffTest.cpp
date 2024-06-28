@@ -199,7 +199,7 @@ void Newton3OnOffTest::iterate(Container &container, Traversal traversal,
   if (interactionType == autopas::InteractionTypeOption::pairwise) {
     auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
     container.rebuildNeighborLists(pairwiseTraversal);
-    container.iteratePairwise(pairwiseTraversal);
+    container.iterateInteractions(pairwiseTraversal);
   } else if (interactionType == autopas::InteractionTypeOption::triwise) {
     auto triwiseTraversal = dynamic_cast<autopas::TriwiseTraversalInterface *>(traversal.get());
     container.rebuildNeighborLists(triwiseTraversal);

@@ -258,16 +258,7 @@ class ParticleContainerInterface {
    * Iterates over all particle pairs in the container.
    * @param traversal The traversal to use for the iteration.
    */
-  virtual void iteratePairwise(PairwiseTraversalInterface *traversal) = 0;
-
-  /**
-   * Iterates over all particle triplets in the container.
-   * @note iterateTriwise does not have to be implemented by the container if it is not used.
-   * @param traversal The traversal to use for the iteration.
-   */
-  virtual void iterateTriwise(TriwiseTraversalInterface *traversal) {
-    utils::ExceptionHandler::exception("iterateTriwise called but has not been implemented!");
-  }
+  virtual void iterateInteractions(TraversalInterface *traversal) = 0;
 
   /**
    * Get the upper corner of the container without halo.

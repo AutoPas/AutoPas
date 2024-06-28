@@ -40,7 +40,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
     auto *traversalInterface = dynamic_cast<VVLTraversalInterface<NeighborList> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setNeighborListToTraverse(_neighborList);
@@ -48,9 +48,10 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VarVerletLists::computeInteractions");
     }
+    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    pairwiseTraversal->traverseParticlePairs();
     traversal->endTraversal();
   }
 

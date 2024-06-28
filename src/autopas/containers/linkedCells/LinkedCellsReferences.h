@@ -177,7 +177,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellTraversal<ReferenceCell> *>(traversal);
@@ -191,9 +191,10 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
           "Trying to use a traversal of wrong type in LinkedCellsReferences::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
+    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    pairwiseTraversal->traverseParticlePairs();
     traversal->endTraversal();
   }
 

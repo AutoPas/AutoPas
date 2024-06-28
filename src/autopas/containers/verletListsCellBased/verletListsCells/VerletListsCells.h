@@ -96,15 +96,17 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
     }
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
+    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
+
     // Check if traversal is allowed for this container and give it the data it needs.
-    _neighborList.setUpTraversal(traversal);
+    _neighborList.setUpTraversal(pairwiseTraversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    pairwiseTraversal->traverseParticlePairs();
     traversal->endTraversal();
   }
 

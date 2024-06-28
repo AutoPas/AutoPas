@@ -133,19 +133,20 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
+    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
+    auto triwiseTraversal = dynamic_cast<TriwiseTraversalInterface *>(traversal);
+
     prepareTraversal(traversal);
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
-    traversal->endTraversal();
-  }
-
-  void iterateTriwise(TriwiseTraversalInterface *traversal) override {
-    prepareTraversal(traversal);
-
-    traversal->initTraversal();
-    traversal->traverseParticleTriplets();
+    if (pairwiseTraversal) {
+      pairwiseTraversal->traverseParticlePairs();
+    } else if (triwiseTraversal) {
+      triwiseTraversal->traverseParticleTriplets();
+    } else {
+      utils::ExceptionHandler::AutoPasException("Given traversal is neither a pairwise nor triwise traversal");
+    }
     traversal->endTraversal();
   }
 

@@ -71,7 +71,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
@@ -81,9 +81,10 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
+    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    pairwiseTraversal->traverseParticlePairs();
     traversal->endTraversal();
   }
 
@@ -95,7 +96,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwise()!
+   * @note This function will be called in iterateInteractions()!
    * @param traversal
    */
   void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
@@ -145,7 +146,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
         LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
             this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
             this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
-    this->_linkedCells.iteratePairwise(&traversal);
+    this->_linkedCells.iterateInteractions(&traversal);
 
     _soaListIsValid = false;
   }

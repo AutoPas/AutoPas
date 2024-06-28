@@ -198,7 +198,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   functor.initTraversal();
   if constexpr (autopas::utils::isPairwiseFunctor<Functor>()) {
     auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
-    container.iteratePairwise(pairwiseTraversal);
+    container.iterateInteractions(pairwiseTraversal);
   } else if constexpr (autopas::utils::isTriwiseFunctor<Functor>()) {
     auto triwiseTraversal = dynamic_cast<autopas::TriwiseTraversalInterface *>(traversal.get());
     container.iterateTriwise(triwiseTraversal);

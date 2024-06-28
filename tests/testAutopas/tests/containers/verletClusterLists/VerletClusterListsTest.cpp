@@ -48,7 +48,7 @@ TEST_F(VerletClusterListsTest, testVerletListBuild) {
   autopas::VCLClusterIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(
       &emptyFunctor, clusterSize, autopas::DataLayoutOption::aos, false);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iteratePairwise(&verletTraversal);
+  verletLists.iterateInteractions(&verletTraversal);
 }
 
 TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
@@ -166,7 +166,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
 
   // Use special functor to collect neighbor interactions from container neighbor lists
   functor.initTraversal();
-  verletLists.iteratePairwise(&verletTraversal);
+  verletLists.iterateInteractions(&verletTraversal);
   functor.endTraversal(false);
   auto calculatedParticlePairs = functor.getParticlePairs();
   // Check that everything is fine so far
@@ -196,7 +196,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
 
   // generate new pairwise interactions
   functor.initTraversal();
-  verletLists.iteratePairwise(&verletTraversal);
+  verletLists.iterateInteractions(&verletTraversal);
   functor.endTraversal(false);
   const auto calculatedParticlePairsAfterMove = functor.getParticlePairs();
   // final comparison
@@ -341,7 +341,7 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
                                                    [&functor](int currentColor) { functor.nextColor(currentColor); });
   functor.initTraversal();
   verletLists.rebuildNeighborLists(&traversal);
-  verletLists.iteratePairwise(&traversal);
+  verletLists.iterateInteractions(&traversal);
   functor.endTraversal(true);
 
   // Check that particles in the same color are only accessed by one thread.

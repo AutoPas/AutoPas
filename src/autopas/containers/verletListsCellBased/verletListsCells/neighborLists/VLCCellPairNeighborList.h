@@ -230,7 +230,7 @@ class VLCCellPairNeighborList : public VLCNeighborListInterface<Particle> {
     auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
         buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
     auto pairBuildTraversal = dynamic_cast<PairwiseTraversalInterface *>(buildTraversal.get());
-    linkedCells.iteratePairwise(pairBuildTraversal);
+    linkedCells.iterateInteractions(pairBuildTraversal);
   }
 
   /**

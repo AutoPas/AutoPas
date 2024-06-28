@@ -22,7 +22,7 @@ TEST_F(DifferentParticlesTest, testNonConstructibleParticle) {
   autoPas.setBoxMax({10., 10., 10.});
   autoPas.init();
 
-  // We also check if iteratePairwise can be instantiated.
+  // We also check if computeInteractions can be instantiated.
   MockPairwiseFunctor<NonConstructibleParticle> functor;
   EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(false));
   autoPas.computeInteractions(&functor);

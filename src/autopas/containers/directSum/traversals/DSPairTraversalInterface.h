@@ -16,7 +16,7 @@ namespace autopas {
 /**
  * Interface for pairwise traversals used by the DirectSum container.
  *
- * The container only accepts pairwise traversals in its iteratePairwise() method that implement this interface.
+ * The container only accepts pairwise traversals in its iterateInteractions() method that implement this interface.
  */
 class DSPairTraversalInterface : public DSTraversalInterface, public PairwiseTraversalInterface {};
 
