@@ -205,7 +205,8 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<
 template <class ParticleCell, class PairwiseFunctor>
 inline void LCC18Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
   auto &cells = *(this->_cells);
-  this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
+  this->template c18Traversal</*allCells*/ false>(
+      [&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }
 
 }  // namespace autopas
