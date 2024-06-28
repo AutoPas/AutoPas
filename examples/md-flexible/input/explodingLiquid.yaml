@@ -38,7 +38,6 @@ Objects:
       bottomLeftCorner           :  [0, 27, 0]
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
-no-flops                         :  false
 no-end-config                    :  true
 no-progress-bar                  :  false
 vtk-filename                     :  explodingLiquid

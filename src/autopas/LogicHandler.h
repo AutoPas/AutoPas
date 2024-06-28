@@ -30,6 +30,7 @@
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/logging/FLOPLogger.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/IterationMeasurements.h"
 #include "autopas/utils/logging/Logger.h"
@@ -62,6 +63,7 @@ class LogicHandler {
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, autoTuner.canMeasureEnergy()),
+        _flopLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -755,7 +757,15 @@ class LogicHandler {
    */
   std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
+  /**
+   * Logger for configuration used and time spent breakdown of iteratePairwise.
+   */
   IterationLogger _iterationLogger;
+
+  /**
+   * Logger for FLOP count and hit rate.
+   */
+  FLOPLogger _flopLogger;
 };
 
 template <typename Particle>
@@ -1154,6 +1164,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
                measurements.energyPkg, measurements.energyRam);
   }
   _iterationLogger.logIteration(configuration, _iteration, stillTuning, tuningTimer.getTotalTime(), measurements);
+
+  _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
   /// Pass on measurements
   // if this was a major iteration add measurements and bump counters

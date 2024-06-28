@@ -26,6 +26,13 @@ if (AUTOPAS_LOG_ITERATIONS OR AUTOPAS_LOG_ALL)
     message(STATUS "IterationLogger enabled.")
 endif ()
 
+# option for FLOPLogger
+option(AUTOPAS_LOG_FLOPS "Generate a csv tracking the FLOP count and hit rate." OFF)
+if (AUTOPAS_LOG_FLOPS OR AUTOPAS_LOG_ALL)
+    target_compile_definitions(autopas PUBLIC AUTOPAS_LOG_FLOPS)
+    message(STATUS "FLOPLogger enabled.")
+endif ()
+
 # option for TuningResultLogger
 option(AUTOPAS_LOG_TUNINGRESULTS "Generate a csv tracking the decisions of the auto tuner." OFF)
 if (AUTOPAS_LOG_TUNINGRESULTS OR AUTOPAS_LOG_ALL)
