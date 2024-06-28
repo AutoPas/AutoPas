@@ -6,7 +6,7 @@
 
 #include "DSSequentialTraversalTest3B.h"
 
-#include "autopas/containers/directSum/traversals/DSSequentialTraversal3B.h"
+#include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
 #include "autopasTools/generators/RandomGenerator.h"
 
 using ::testing::_;
@@ -39,7 +39,7 @@ void DSSequentialTraversalTest3B::testTraversal(bool useSoA) {
   }
 
   if (useSoA) {
-    autopas::DSSequentialTraversal3B<FPCell, MTriwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
+    autopas::DSSequentialTraversal<FPCell, MTriwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
                                                                         autopas::DataLayoutOption::soa, true);
     // domain SoA with itself
     EXPECT_CALL(functor, SoAFunctorSingle(_, true)).Times(1);
@@ -47,9 +47,9 @@ void DSSequentialTraversalTest3B::testTraversal(bool useSoA) {
     EXPECT_CALL(functor, SoAFunctorPair(_, _, true)).Times(1);
     std::for_each(cells.begin(), cells.end(), [](auto &c) { c._particleSoABuffer.resizeArrays(2); });
     traversal.setCellsToTraverse(cells);
-    traversal.traverseParticleTriplets();
+    traversal.traverseParticles();
   } else {
-    autopas::DSSequentialTraversal3B<FPCell, MTriwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
+    autopas::DSSequentialTraversal<FPCell, MTriwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
                                                                         autopas::DataLayoutOption::aos, true);
     // interactions in main cell + interactions with halo.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) * (numParticles - 2) / 6 +
@@ -57,6 +57,6 @@ void DSSequentialTraversalTest3B::testTraversal(bool useSoA) {
                                   numParticles * numHaloParticles * (numHaloParticles - 1) / 2;
     EXPECT_CALL(functor, AoSFunctor(_, _, _, true)).Times((int)expectedFunctorCalls);
     traversal.setCellsToTraverse(cells);
-    traversal.traverseParticleTriplets();
+    traversal.traverseParticles();
   }
 }

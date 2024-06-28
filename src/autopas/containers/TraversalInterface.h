@@ -47,6 +47,11 @@ class TraversalInterface {
   virtual void initTraversal() = 0;
 
   /**
+   * Traverse the particles by pairs, triplets etc. as determined by the Functor type.
+   */
+  virtual void traverseParticles() = 0;
+
+  /**
    * Finalizes the traversal. Should be called after traverse().
    */
   virtual void endTraversal() = 0;

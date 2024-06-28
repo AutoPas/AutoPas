@@ -97,16 +97,14 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
   }
 
   void iterateInteractions(TraversalInterface *traversal) override {
-    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
-
     // Check if traversal is allowed for this container and give it the data it needs.
-    _neighborList.setUpTraversal(pairwiseTraversal);
+    _neighborList.setUpTraversal(traversal);
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
 
     traversal->initTraversal();
-    pairwiseTraversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -117,7 +115,7 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    */
   size_t getNumberOfPartners(const Particle *particle) const { return _neighborList.getNumberOfPartners(particle); }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
 
     _neighborList.buildAoSNeighborList(this->_linkedCells, this->_verletBuiltNewton3, this->getCutoff(),
@@ -130,12 +128,6 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
 
     // the neighbor list is now valid
     this->_neighborListIsValid.store(true, std::memory_order_relaxed);
-  }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VerletListsCells::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletListsCells "
-        "has not been implemented yet.");
   }
 
   /**

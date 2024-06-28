@@ -12,9 +12,7 @@
 
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/CompatibleTraversals.h"
-#include "autopas/containers/PairwiseTraversalInterface.h"
 #include "autopas/containers/TraversalInterface.h"
-#include "autopas/containers/TriwiseTraversalInterface.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/TraversalOption.h"
@@ -159,16 +157,10 @@ class ParticleContainerInterface {
   virtual bool updateHaloParticle(const Particle &haloParticle) = 0;
 
   /**
-   * Rebuilds the neighbor lists for pairwise traversals.
-   * @param traversal The used pairwise traversal.
+   * Rebuilds the neighbor lists for the next traversals.
+   * @param traversal The used traversal.
    */
-  virtual void rebuildNeighborLists(PairwiseTraversalInterface *traversal) = 0;
-
-  /**
-   * Rebuilds the neighbor lists for 3-body traversals.
-   * @param traversal The used triwise traversal.
-   */
-  virtual void rebuildNeighborLists(TriwiseTraversalInterface *traversal) = 0;
+  virtual void rebuildNeighborLists(TraversalInterface *traversal) = 0;
 
   /**
    * Deletes all halo particles.

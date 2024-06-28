@@ -158,10 +158,9 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
       balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
     }
-    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
 
     traversal->initTraversal();
-    pairwiseTraversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -761,7 +760,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
     // when rebuildTowersAndClusters() was not called explicitly.
     if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
@@ -781,12 +780,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
           traversal->getTraversalType());
     }
-  }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VerletClusterLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for "
-        "VerletClusterLists has not been implemented yet.");
   }
 
   /**

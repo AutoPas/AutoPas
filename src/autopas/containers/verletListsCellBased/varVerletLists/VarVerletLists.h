@@ -48,10 +48,9 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VarVerletLists::computeInteractions");
     }
-    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
 
     traversal->initTraversal();
-    pairwiseTraversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -61,7 +60,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   long getNumberOfNeighborPairs() const { return _neighborList.getNumberOfNeighborPairs(); }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid
@@ -70,12 +69,6 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     if (traversal->getDataLayout() == DataLayoutOption::soa and not _neighborList.isSoAListValid()) {
       _neighborList.generateSoAFromAoS();
     }
-  }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VarVerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VarVerletLists has "
-        "not been implemented yet.");
   }
 
  private:

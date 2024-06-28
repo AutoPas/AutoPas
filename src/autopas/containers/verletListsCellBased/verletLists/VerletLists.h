@@ -81,10 +81,9 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       autopas::utils::ExceptionHandler::exception(
           "trying to use a traversal of wrong type in VerletLists::computeInteractions");
     }
-    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
 
     traversal->initTraversal();
-    pairwiseTraversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -99,7 +98,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    * @note This function will be called in iterateInteractions()!
    * @param traversal
    */
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
@@ -109,17 +108,6 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
       // only do this if we need it, i.e., if we are using soa!
       generateSoAListFromAoSVerletLists();
     }
-  }
-
-  /**
-   * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iterateTriwise()!
-   * @param traversal
-   */
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VerletLists has not "
-        "been implemented yet.");
   }
 
  protected:

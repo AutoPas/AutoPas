@@ -625,7 +625,7 @@ class LogicHandler {
    */
   struct IterationMeasurements {
     /// Time
-    long timeIterateContainer{};
+    long timeIterateInteractions{};
     long timeRemainderTraversal{};
     long timeRebuild{};
     long timeTotal{};
@@ -653,22 +653,6 @@ class LogicHandler {
    */
   template <class Functor>
   IterationMeasurements computeInteractions(Functor &functor, TraversalInterface &traversal);
-
-  /**
-   * Rebuild the current container's 2-body or 3-body neighbor lists.
-   *
-   * @param traversal
-   * @return
-   */
-  void rebuildNeighborLists(TraversalInterface &traversal);
-
-  /**
-   * Call the current container's iterateInteractions() function.
-   *
-   * @param traversal
-   * @return
-   */
-  void iterateContainer(TraversalInterface &traversal);
 
   /**
    * Select the right Remainder function depending on the interaction type and newton3 setting.
@@ -962,26 +946,28 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
 
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
-  autopas::utils::Timer timerIterateContainer;
+  autopas::utils::Timer timerIterateInteractions;
   autopas::utils::Timer timerRemainderTraversal;
 
   const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
   auto &autoTuner = _autoTunerRefs[interactionType];
   const bool newton3 = autoTuner->getCurrentConfig().newton3;
   const bool energyMeasurementsPossible = autoTuner->resetEnergy();
+  auto &container = _containerSelector.getCurrentContainer();
 
   timerTotal.start();
   functor.initTraversal();
 
   if (doListRebuild) {
     timerRebuild.start();
-    rebuildNeighborLists(traversal);
+    container.rebuildNeighborLists(&traversal);
     timerRebuild.stop();
+    _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
 
-  timerIterateContainer.start();
-  iterateContainer(traversal);
-  timerIterateContainer.stop();
+  timerIterateInteractions.start();
+  container.iterateInteractions(&traversal);
+  timerIterateInteractions.stop();
 
   timerRemainderTraversal.start();
   iterateRemainder(functor, newton3);
@@ -993,7 +979,7 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
-  return {timerIterateContainer.getTotalTime(),
+  return {timerIterateInteractions.getTotalTime(),
           timerRemainderTraversal.getTotalTime(),
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
@@ -1002,27 +988,6 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
           energyMeasurementsPossible ? energyPkg : nanD,
           energyMeasurementsPossible ? energyRam : nanD,
           energyMeasurementsPossible ? energyTotal : nanL};
-}
-
-template <typename Particle>
-void LogicHandler<Particle>::rebuildNeighborLists(TraversalInterface &traversal) {
-  auto &container = _containerSelector.getCurrentContainer();
-
-  auto *pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(&traversal);
-  if (pairwiseTraversal) {
-    container.rebuildNeighborLists(pairwiseTraversal);
-  }
-  auto *triwiseTraversal = dynamic_cast<TriwiseTraversalInterface *>(&traversal);
-  if (triwiseTraversal) {
-    container.rebuildNeighborLists(triwiseTraversal);
-  }
-  _neighborListsAreValid.store(true, std::memory_order_relaxed);
-}
-
-template <typename Particle>
-void LogicHandler<Particle>::iterateContainer(TraversalInterface &traversal) {
-  auto &container = _containerSelector.getCurrentContainer();
-  container.iterateInteractions(&traversal);
 }
 
 template <typename Particle>
@@ -1493,7 +1458,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
   AutoPasLog(DEBUG, "Type of interaction : {}", interactionType.to_string());
-  AutoPasLog(DEBUG, "Container::iterateInteractions   took {} ns", measurements.timeIterateContainer);
+  AutoPasLog(DEBUG, "Container::iterateInteractions   took {} ns", measurements.timeIterateInteractions);
   AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
   AutoPasLog(DEBUG, "RebuildNeighborLists         took {} ns", measurements.timeRebuild);
   AutoPasLog(DEBUG, "AutoPas::computeInteractions took {} ns", measurements.timeTotal);
@@ -1502,7 +1467,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
                measurements.energyPkg, measurements.energyRam);
   }
   _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning,
-                                measurements.timeIterateContainer, measurements.timeRemainderTraversal,
+                                measurements.timeIterateInteractions, measurements.timeRemainderTraversal,
                                 measurements.timeRebuild, measurements.timeTotal, tuningTimer.getTotalTime(),
                                 measurements.energyPsys, measurements.energyPkg, measurements.energyRam);
 

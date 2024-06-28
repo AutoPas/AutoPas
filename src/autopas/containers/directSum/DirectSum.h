@@ -95,29 +95,17 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   void deleteHaloParticles() override { getHaloCell().clear(); }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
-    // nothing to do.
-  }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     // nothing to do.
   }
 
   CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
   void iterateInteractions(TraversalInterface *traversal) override {
-    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
-    auto triwiseTraversal = dynamic_cast<TriwiseTraversalInterface *>(traversal);
     prepareTraversal(traversal);
 
     traversal->initTraversal();
-    if (pairwiseTraversal) {
-      pairwiseTraversal->traverseParticlePairs();
-    } else if (triwiseTraversal) {
-      triwiseTraversal->traverseParticleTriplets();
-    } else {
-      utils::ExceptionHandler::AutoPasException("Given traversal is neither a pairwise nor triwise traversal");
-    }
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 

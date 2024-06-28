@@ -149,9 +149,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override { updateDirtyParticleReferences(); }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override { updateDirtyParticleReferences(); }
+  void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
   /**
    * Updates all the References in the cells that are out of date.
@@ -191,10 +189,9 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
           "Trying to use a traversal of wrong type in LinkedCellsReferences::computeInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
-    auto pairwiseTraversal = dynamic_cast<PairwiseTraversalInterface *>(traversal);
 
     traversal->initTraversal();
-    pairwiseTraversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 

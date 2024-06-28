@@ -151,7 +151,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     }
   }
 
-  void setUpTraversal(PairwiseTraversalInterface *traversal) override {
+  void setUpTraversal(TraversalInterface *traversal) override {
     auto vTraversal = dynamic_cast<VLCTraversalInterface<Particle, VLCAllCellsNeighborList<Particle>> *>(traversal);
 
     if (vTraversal) {
@@ -185,7 +185,7 @@ class VLCAllCellsNeighborList : public VLCNeighborListInterface<Particle> {
     // Build the AoS list using the AoS or SoA functor depending on buildType
     auto buildTraversal = traversalSelector.template generateTraversal<std::remove_reference_t<decltype(f)>>(
         buildTraversalOption, f, traversalSelectorInfo, dataLayout, useNewton3);
-    auto pairBuildTraversal = dynamic_cast<PairwiseTraversalInterface *>(buildTraversal.get());
+    auto pairBuildTraversal = dynamic_cast<TraversalInterface *>(buildTraversal.get());
     linkedCells.iterateInteractions(pairBuildTraversal);
   }
 

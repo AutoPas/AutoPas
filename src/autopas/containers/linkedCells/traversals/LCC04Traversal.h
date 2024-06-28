@@ -28,7 +28,7 @@ namespace autopas {
  */
 template <class ParticleCell, class PairwiseFunctor>
 class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
-                       public LCPairTraversalInterface<ParticleCell> {
+                       public LCTraversalInterface {
  public:
   /**
    * Constructor of the c04 traversal.
@@ -42,8 +42,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
    */
   LCC04Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor, double interactionLength,
                  const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3),
-        C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
         _cellOffsets32Pack(computeOffsets32Pack()),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
@@ -51,7 +50,7 @@ class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
                                          1l)) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04; }
 
@@ -173,7 +172,7 @@ void LCC04Traversal<ParticleCell, PairwiseFunctor>::processBasePack32(std::vecto
  * @tparam PairwiseFunctor
  */
 template <class ParticleCell, class PairwiseFunctor>
-void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+void LCC04Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {

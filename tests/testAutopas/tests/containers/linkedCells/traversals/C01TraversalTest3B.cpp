@@ -6,7 +6,7 @@
 
 #include "C01TraversalTest3B.h"
 
-#include "autopas/containers/linkedCells/traversals/LCC01Traversal3B.h"
+#include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
 #include "testingHelpers/commonTypedefs.h"
 
 // Place to implement special test cases, which only apply to C01 Traversal

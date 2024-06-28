@@ -21,7 +21,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class VLListIterationTraversal : public PairwiseTraversalInterface, public VLTraversalInterface<ParticleCell> {
+class VLListIterationTraversal : public TraversalInterface, public VLTraversalInterface<ParticleCell> {
   using Particle = typename ParticleCell::ParticleType;
 
  public:
@@ -71,7 +71,7 @@ class VLListIterationTraversal : public PairwiseTraversalInterface, public VLTra
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     auto &aosNeighborLists = *(this->_aosNeighborLists);
     auto &soaNeighborLists = *(this->_soaNeighborLists);
     switch (this->_dataLayout) {
