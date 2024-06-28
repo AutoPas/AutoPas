@@ -12,13 +12,10 @@
 #include "testingHelpers/commonTypedefs.h"
 
 using forceCalculationTestLJFunctor =
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true>;
+    LJFunctorType</* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false, /*relevantForTuning*/ true>;
 
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ false, /*countFLOPs*/ false, /*relevantForTuning*/ true> *);
+extern template bool autopas::AutoPas<Molecule>::iteratePairwise(forceCalculationTestLJFunctor *);
 
 void ForceCalculationTest::testLJ(double particleSpacing, double cutoff, autopas::DataLayoutOption dataLayoutOption,
                                   std::array<std::array<double, 3>, 4> expectedForces, double tolerance) {
