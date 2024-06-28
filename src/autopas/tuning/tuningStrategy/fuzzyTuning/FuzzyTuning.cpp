@@ -70,7 +70,8 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
   _outputMappings = outputMappings;
 
 #else
-  autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF! ");
+  autopas::utils::ExceptionHandler::exception(
+      "FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF! ");
 #endif
 }
 
@@ -117,7 +118,8 @@ void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Config
     utils::ExceptionHandler::exception("FuzzyTuning: Unknown output interpretation: {}", outputInterpretation);
   }
 #else
-  autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF! ");
+  autopas::utils::ExceptionHandler::exception(
+      "FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF! ");
 #endif
 }
 
