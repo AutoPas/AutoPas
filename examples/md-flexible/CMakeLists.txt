@@ -122,7 +122,6 @@ if (HAS_AVX)
             COMMAND
             md-flexible
             --no-end-config
-            --no-flops
             --functor "${TEST_FUNCTOR}"
             --deltaT 0
             --particle-generator uniform

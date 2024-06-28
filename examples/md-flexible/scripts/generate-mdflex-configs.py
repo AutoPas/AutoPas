@@ -45,7 +45,6 @@ Objects:
       particle-sigma             :  1
       particle-mass              :  1
 log-level                        :  info
-no-flops                         :  true
 no-end-config                    :  true
 no-progress-bar                  :  true
 """
