@@ -12,7 +12,8 @@
 #include "testingHelpers/commonTypedefs.h"
 
 using forceCalculationTestLJFunctor =
-    LJFunctorType</* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false, /*relevantForTuning*/ true>;
+    LJFunctorType</* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false,
+                  /*relevantForTuning*/ true>;
 
 extern template class autopas::AutoPas<Molecule>;
 extern template bool autopas::AutoPas<Molecule>::iteratePairwise(forceCalculationTestLJFunctor *);
