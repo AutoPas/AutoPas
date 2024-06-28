@@ -92,7 +92,7 @@ using namespace autopas::FuzzyLogic;
  *
  *
  * Due to the compilation cost of ANTLR and issues with compiling the bundled dependency uuid on some machines, this
- * tuning strategy can be disabled with the CMake option AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
+ * tuning strategy can be disabled with the CMake option AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF.
  */
 class FuzzyTuning : public TuningStrategyInterface {
  public:

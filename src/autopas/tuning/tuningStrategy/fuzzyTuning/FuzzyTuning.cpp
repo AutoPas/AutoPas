@@ -11,7 +11,7 @@
 #include <numeric>
 #include <utility>
 
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/OutputMapper.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/FuzzyRuleErrorListener.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/parser_generated/TranslationVisitor.h"
@@ -31,7 +31,7 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
         _fuzzyRuleFileName);
   }
 
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 
   auto [fuzzyControlSettings, linguisticVariables, outputMappings, fuzzyControlSystems] = parse(_fuzzyRuleFileName);
 
@@ -70,7 +70,7 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
   _outputMappings = outputMappings;
 
 #else
-  autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
+  autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF! ");
 #endif
 }
 
@@ -98,7 +98,7 @@ void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence
 
 void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                         const EvidenceCollection &evidenceCollection) {
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
   using namespace autopas::FuzzyLogic;
 
   // Runs the FuzzyTuning strategy for the first time. Since the decision of the Fuzzy Tuner doesn't depend on the
@@ -117,7 +117,7 @@ void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Config
     utils::ExceptionHandler::exception("FuzzyTuning: Unknown output interpretation: {}", outputInterpretation);
   }
 #else
-  autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF! ");
+  autopas::utils::ExceptionHandler::exception("FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF! ");
 #endif
 }
 
@@ -128,7 +128,7 @@ void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
 
 TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
 
-#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 void FuzzyTuning::updateQueueInterpretOutputAsIndividualSystems(std::vector<Configuration> &configQueue) {
   using namespace autopas::FuzzyLogic;
 
