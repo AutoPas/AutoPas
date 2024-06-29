@@ -21,6 +21,7 @@
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
+#include "autopas/utils/EnergySensor.h"
 
 namespace autopas {
 
@@ -233,6 +234,11 @@ class AutoTuner {
    * Measures consumed energy for tuning
    */
   utils::RaplMeter _raplMeter;
+
+  /**
+   * Sensor for energy measurement
+   */
+  utils::EnergySensor _energySensor;
 
   /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
