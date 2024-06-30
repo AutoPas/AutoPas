@@ -12,6 +12,19 @@ file(
     "*.cuh"
 )
 
+option(AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+        "Enables energy measurements and tuning using Intel's RAPL (Running Average Power Limit) interface for x86 processors
+        running on Linux kernels."
+        OFF
+)
+
+# If rules-based tuning is disabled, we must remove all files which link to antlr. As this includes generated files,
+# where we can't easily change the file, we disable the files here.
+if (NOT AUTOPAS_ENABLE_RULES_BASED_TUNING)
+    list(FILTER MY_SRC EXCLUDE REGEX ".*parser_generated.*")
+    list(FILTER MY_SRC EXCLUDE REGEX ".*RuleBasedProgramParser.*")
+endif ()
+
 add_library(autopas STATIC ${MY_SRC})
 
 target_link_libraries(
@@ -22,13 +35,13 @@ target_link_libraries(
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:MPI::MPI_CXX>
-        antlr4cpp
         $<$<OR:$<BOOL:${AUTOPAS_INTERNODE_TUNING}>,$<BOOL:${MD_FLEXIBLE_USE_MPI}>>:MPI::MPI_CXX>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:MPI::MPI_CXX>
+        $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_TUNING}>:antlr4cpp>
         Eigen3
     PRIVATE
         # harmony are only needed privately when building AutoPas.
-        harmony
+        $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:harmony>
 )
 
 # OpenMP stuff needs to be here because autopas_OpenMP.cmake needs to run before this file to create to OpenMP
@@ -40,6 +53,9 @@ target_compile_definitions(
         $<$<NOT:$<BOOL:${AUTOPAS_OPENMP}>>:EIGEN_DONT_PARALLELIZE>
         $<$<BOOL:${AUTOPAS_INCLUDE_MPI}>:AUTOPAS_INCLUDE_MPI>
         $<$<BOOL:${AUTOPAS_INTERNODE_TUNING}>:AUTOPAS_INTERNODE_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_HARMONY}>:AUTOPAS_ENABLE_HARMONY>
+        $<$<BOOL:${AUTOPAS_ENABLE_RULES_BASED_TUNING}>:AUTOPAS_ENABLE_RULES_BASED_TUNING>
+        $<$<BOOL:${AUTOPAS_ENABLE_ENERGY_MEASUREMENTS}>:AUTOPAS_ENABLE_ENERGY_MEASUREMENTS>
         _USE_MATH_DEFINES
 )
 

@@ -447,11 +447,11 @@ TEST_P(AutoPasInterfaceTest, SimulationLoopTest) {
  * comments of testHaloCalculation() for a more detailed description.
  */
 TEST_P(AutoPasInterfaceTest, HaloCalculationTest) {
-  auto conf = GetParam();
+  const auto conf = GetParam();
   try {
     testHaloCalculation(conf);
   } catch (autopas::utils::ExceptionHandler::AutoPasException &autoPasException) {
-    std::string str = autoPasException.what();
+    const std::string str = autoPasException.what();
     if (str.find("Rejected the only configuration in the search space!") != std::string::npos) {
       GTEST_SKIP() << "skipped with exception: " << autoPasException.what() << std::endl;
     } else {

@@ -222,6 +222,12 @@ class AutoTuner {
    */
   const EvidenceCollection &getEvidenceCollection() const;
 
+  /**
+   * Returns whether the AutoTuner can take energy measurements.
+   * @return
+   */
+  bool canMeasureEnergy() const;
+
  private:
   /**
    * Measures consumed energy for tuning

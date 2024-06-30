@@ -31,6 +31,7 @@
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/IterationLogger.h"
+#include "autopas/utils/logging/IterationMeasurements.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
@@ -61,7 +62,7 @@ class LogicHandler {
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
-        _iterationLogger(outputSuffix),
+        _iterationLogger(outputSuffix, autoTuner.canMeasureEnergy()),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -621,23 +622,6 @@ class LogicHandler {
       Functor &functor, const InteractionTypeOption &interactionType);
 
   /**
-   * Helper struct collecting all sorts of measurements taken during the pairwise iteration.
-   */
-  struct IterationMeasurements {
-    /// Time
-    long timeIterateInteractions{};
-    long timeRemainderTraversal{};
-    long timeRebuild{};
-    long timeTotal{};
-    /// Energy. See RaplMeter.h for the meaning of each field.
-    bool energyMeasurementsPossible{false};
-    double energyPsys{};
-    double energyPkg{};
-    double energyRam{};
-    long energyTotal{};
-  };
-
-  /**
    * Triggers the core steps of computing the particle interactions:
    *    - functor init- / end traversal
    *    - rebuilding of neighbor lists
@@ -943,17 +927,17 @@ typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::c
           "PairwiseFunctor or TriwiseFunctor.");
     }
   }();
+  const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
+  auto &autoTuner = _autoTunerRefs[interactionType];
+  const bool newton3 = autoTuner->getCurrentConfig().newton3;
+  auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerIterateInteractions;
   autopas::utils::Timer timerRemainderTraversal;
 
-  const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
-  auto &autoTuner = _autoTunerRefs[interactionType];
-  const bool newton3 = autoTuner->getCurrentConfig().newton3;
   const bool energyMeasurementsPossible = autoTuner->resetEnergy();
-  auto &container = _containerSelector.getCurrentContainer();
 
   timerTotal.start();
   functor.initTraversal();
@@ -1387,8 +1371,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
-      const auto [homogeneity, maxDensity] =
-          autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
+      const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
       timerCalculateHomogeneity.stop();
       autoTuner->addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
@@ -1466,10 +1449,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
                measurements.energyPkg, measurements.energyRam);
   }
-  _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning,
-                                measurements.timeIterateInteractions, measurements.timeRemainderTraversal,
-                                measurements.timeRebuild, measurements.timeTotal, tuningTimer.getTotalTime(),
-                                measurements.energyPsys, measurements.energyPkg, measurements.energyRam);
+  _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning, tuningTimer.getTotalTime(), measurements);
 
   /// Pass on measurements
   // if this was a major iteration add measurements

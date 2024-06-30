@@ -214,7 +214,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(P
   };
 
   if (cell.size() > _sortingThreshold) {
-    SortedCellView<ParticleCell> cellSorted(cell, utils::ArrayMath::normalize(std::array<double, 3>{1.0, 1.0, 1.0}));
+    SortedCellView<ParticleCell> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
 
     for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {
       auto &[p1Projection, p1Ptr] = *cellIter1;

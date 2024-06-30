@@ -35,6 +35,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedBalancedTraversal.h"
@@ -213,6 +214,12 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePai
           VLCC18Traversal<ParticleCell, PairwiseFunctor, VLCAllCellsNeighborList<typename ParticleCell::ParticleType>>>(
           traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3, ContainerOption::verletListsCells);
+    }
+    case TraversalOption::vlc_c08: {
+      return std::make_unique<
+          VLCC08Traversal<ParticleCell, PairwiseFunctor, VLCAllCellsNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     // Verlet Cluster Lists
     case TraversalOption::vcl_cluster_iteration: {
