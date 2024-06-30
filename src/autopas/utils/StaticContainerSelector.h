@@ -16,6 +16,7 @@
 #include "autopas/containers/verletListsCellBased/varVerletLists/VarVerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletLists.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCells.h"
+#include "autopas/containers/hierarchicalGrids/HierarchicalGrids.h"
 
 namespace autopas {
 /**
@@ -54,6 +55,8 @@ decltype(auto) withStaticContainerType(autopas::ParticleContainerInterface<Parti
           dynamic_cast<autopas::VarVerletLists<Particle, VerletNeighborListAsBuild<Particle>> &>(container));
     case ContainerOption::octree:
       return function(dynamic_cast<autopas::Octree<Particle> &>(container));
+    case ContainerOption::hierarchicalGrids:
+      return function(dynamic_cast<autopas::HierarchicalGrids<Particle> &>(container));
   }
   autopas::utils::ExceptionHandler::exception("Unknown type of container in StaticContainerSelector.h. Type: {}",
                                               container.getContainerType());
