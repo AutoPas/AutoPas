@@ -14,6 +14,14 @@
 #include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_GS)
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_GS.h"
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+#include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_Mask.h"
+#endif
+
 #else
 
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
@@ -57,7 +65,7 @@ using ParticleType = mdLib::MoleculeLJ;
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
+using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true>;
 #else
 using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
 #endif
@@ -72,7 +80,7 @@ using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovecGlobals =
-    mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+    mdLib::LJMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true>;
 #else
 using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #endif
@@ -82,16 +90,43 @@ using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, a
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
  * Type of LJFunctorTypeAVX used in md-flexible.
- * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
+ * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX512_GS as determined by CMake flag
+ * MD_FLEXIBLE_MODE. The Multi-site variant uses cutoffs based on the distance between the center-of-masses.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#error "Multi-Site Lennard-Jones Functor does not have AVX support!"
+#error "Multi-Site Lennard-Jones Functor does not have AVX support!. If your machine can use AVX512, consider using a variant of the AVX512 functor"
 #else
 using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #endif
 
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_GS)
+/**
+ * Type of LJFunctorTypeAVX512_GS used in md-flexible.
+ * Switches between mdLib::LJFunctorAVX512_GS and mdLib::LJMultisiteFunctorAVX512_GS as determined by CMake flag MD_FLEXIBLE_MODE.
+ * Handles cutoffs by using gather and scatter instruction to calculate forces only for interactions within the cutoff distance.
+ * In the multi-site case, the cutoff checks are based on CoM-CoM distances.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+using LJFunctorTypeAVX512_GS = mdLib::LJMultisiteFunctorAVX512_GS<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+#else
+#error "Single-Site Lennard-Jones Functor does not have AVX512 support!. "
+#endif
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+/**
+ * Type of LJFunctorTypeAVX512_MASK used in md-flexible.
+ * Switches between mdLib::LJFunctorAVX512_MASK and mdLib::LJMultisiteFunctorAVX512_MASK as determined by CMake flag MD_FLEXIBLE_MODE.
+ * Handles cutoffs by using a mask for interactions beyond the cutoff distance. In the multi-site case, the cutoff checks
+ * are based on site-to-site distances (i.e. every site pair is traversed).
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+using LJFunctorTypeAVX512_MASK = mdLib::LJMultisiteFunctorAVX512_Mask<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+#else
+#error "Single-Site Lennard-Jones Functor does not have AVX512 support!. "
+#endif
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
@@ -120,22 +155,33 @@ using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, 
  * functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is chosen to
  * be used in the CMake.
  */
+using LJFunctorTypeAbstract =
 #if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
+        mdLib::LJMultisiteFunctor<ParticleType, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#endif
+        mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AVX512_GS
+        mdLib::LJMultisiteFunctorAVX512_GS<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
+#elif MD_FLEXIBLE_FUNCTOR_AVX512_MASK
+        mdLib::LJMultisiteFunctorAV512_MASK<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
 
 #else
+#include "molecularDynamicsLibrary/LJMultisiteFunctor.h"
+    mdLib::LJMultisiteFunctor<ParticleType, true>;
+#endif
+#else
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
+        mdLib::LJFunctor<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+        mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
 #elif MD_FLEXIBLE_FUNCTOR_AVX
-using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
+        mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
-using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
+        mdLib::LJFunctorSVE<ParticleType, true, true>;
+#else
+#include "molecularDynamicsLibrary/LJFunctor.h"
+    mdLib::LJFunctor<ParticleType, true, true>;
 #endif
 
 #endif
