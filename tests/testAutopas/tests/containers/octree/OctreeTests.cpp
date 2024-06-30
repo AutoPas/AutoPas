@@ -539,7 +539,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Perform the traversal
   mockFunctor.initTraversal();
-  container.iteratePairwise(pairwiseTraversal);
+  container.iterateInteractions(pairwiseTraversal);
   mockFunctor.endTraversal(newton3Option);
 
   // NOTE(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has

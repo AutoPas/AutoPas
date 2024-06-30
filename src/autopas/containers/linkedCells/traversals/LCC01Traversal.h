@@ -8,11 +8,13 @@
 
 #include "LCTraversalInterface.h"
 #include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/cellTraversals/C01BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/WrapOpenMP.h"
+#include "autopas/utils/checkFunctorType.h"
 
 namespace autopas {
 

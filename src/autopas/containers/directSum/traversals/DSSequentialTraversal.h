@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "DSTraversalInterface.h"
 #include "autopas/baseFunctors/CellFunctor.h"
 #include "autopas/baseFunctors/CellFunctor3B.h"
 #include "autopas/containers/TraversalInterface.h"

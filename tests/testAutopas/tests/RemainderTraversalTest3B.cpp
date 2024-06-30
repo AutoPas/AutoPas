@@ -15,8 +15,8 @@
 #include "testingHelpers/commonTypedefs.h"
 
 /**
- * Can test all individual steps of iterateTriwise. Expects exactly three particles that form an equilateral triangle of
- * side length sqrt(2).
+ * Can test all individual steps of iterateInteractions. Expects exactly three particles that form an equilateral
+ * triangle of side length sqrt(2).
  *
  * @note Tests invoking this function should have AutoPas logger instantiated (e.g. by inheriting from AutoPasTestBase).
  * @note Buffers need to have at least one (empty) cell. They must not be empty.

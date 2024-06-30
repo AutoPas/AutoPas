@@ -179,13 +179,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
     markSomeParticlesAsDeleted(container, numParticles + numHaloParticles, 19, interactionType);
   }
 
-  if constexpr (autopas::utils::isPairwiseFunctor<Functor>()) {
-    auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
-    container.rebuildNeighborLists(pairwiseTraversal);
-  } else if constexpr (autopas::utils::isTriwiseFunctor<Functor>()) {
-    auto triwiseTraversal = dynamic_cast<autopas::TriwiseTraversalInterface *>(traversal.get());
-    container.rebuildNeighborLists(triwiseTraversal);
-  }
+  container.rebuildNeighborLists(traversal.get());
 
   if (doSlightShift) {
     executeShift(container, skinPerTimestep * rebuildFrequency / 2, numParticles + numHaloParticles);
@@ -196,13 +190,8 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
-  if constexpr (autopas::utils::isPairwiseFunctor<Functor>()) {
-    auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
-    container.iterateInteractions(pairwiseTraversal);
-  } else if constexpr (autopas::utils::isTriwiseFunctor<Functor>()) {
-    auto triwiseTraversal = dynamic_cast<autopas::TriwiseTraversalInterface *>(traversal.get());
-    container.iterateTriwise(triwiseTraversal);
-  }
+  container.iterateInteractions(traversal.get());
+
   functor.endTraversal(newton3Option);
 
   std::vector<std::array<double, 3>> forces(numParticles);
@@ -310,10 +299,12 @@ static auto toString = [](const auto &info) {
   auto [containerOption, traversalOption, dataLayoutOption, newton3Option, numParticles, numHaloParticles, boxMax,
         cellSizeFactor, doSlightShift, particleDeletionPosition, globals, interactionType] = info.param;
   std::stringstream resStream;
-  resStream << containerOption.to_string() << "_" << traversalOption.to_string() << "_" << dataLayoutOption.to_string()
-            << "_" << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles
-            << "_NH" << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_"
-            << cellSizeFactor << "_" << (doSlightShift ? "withShift" : "noshift")
+  resStream << containerOption.to_string() << "_" << traversalOption.to_string()
+            << (interactionType == autopas::InteractionTypeOption::triwise ? "_3B" : "") << "_"
+            << dataLayoutOption.to_string() << "_"
+            << (newton3Option == autopas::Newton3Option::enabled ? "_N3" : "_noN3") << "_NP" << numParticles << "_NH"
+            << numHaloParticles << "_" << boxMax[0] << "_" << boxMax[1] << "_" << boxMax[2] << "_CSF_" << cellSizeFactor
+            << "_" << (doSlightShift ? "withShift" : "noshift")
             << (particleDeletionPosition == DeletionPosition::never ? "_NoDeletions" : "")
             << (particleDeletionPosition & DeletionPosition::beforeLists ? "_DeletionsBeforeLists" : "")
             << (particleDeletionPosition & DeletionPosition::afterLists ? "_DeletionsAfterLists" : "")

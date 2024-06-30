@@ -223,14 +223,7 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for pairwise interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllPairwiseOptions() {
-    std::set<TraversalOption> pairwiseOptions;
-    auto allOptions = getAllOptions();
-    auto triwiseOptions = getAllTriwiseOptions();
-    std::set_difference(allOptions.begin(), allOptions.end(), triwiseOptions.begin(), triwiseOptions.end(),
-                        std::inserter(pairwiseOptions, pairwiseOptions.begin()));
-    return pairwiseOptions;
-  }
+  static std::set<TraversalOption> getAllPairwiseOptions() { return getAllOptions(); }
 
   /**
    * Set of options that apply for 3-body interactions.

@@ -733,7 +733,7 @@ class LogicHandler {
                                        std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Performs the interactions ParticleContainer::iterateTriwise() did not cover.
+   * Performs the interactions ParticleContainer::iterateInteractions() did not cover.
    *
    * These interactions are:
    *  - particleBuffer    <-> container
@@ -1484,7 +1484,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
             return measurements.energyTotal;
           default:
             autopas::utils::ExceptionHandler::exception(
-                "LogicHandler::iteratePairwisePipeline(): Unknown tuning metric.");
+                "LogicHandler::computeInteractionsPipeline(): Unknown tuning metric.");
             return 0l;
         }
       }();

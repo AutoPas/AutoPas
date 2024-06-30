@@ -47,7 +47,7 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
     EXPECT_CALL(functor, SoAFunctorPair(_, _, true)).Times(1);
     std::for_each(cells.begin(), cells.end(), [](auto &c) { c._particleSoABuffer.resizeArrays(2); });
     traversal.setCellsToTraverse(cells);
-    traversal.traverseParticlePairs();
+    traversal.traverseParticles();
   } else {
     autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
                                                                        autopas::DataLayoutOption::aos, true);
@@ -55,6 +55,6 @@ void DSSequentialTraversalTest::testTraversal(bool useSoA) {
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;
     EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((int)expectedFunctorCalls);
     traversal.setCellsToTraverse(cells);
-    traversal.traverseParticlePairs();
+    traversal.traverseParticles();
   }
 }
