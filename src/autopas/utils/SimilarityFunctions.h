@@ -72,27 +72,18 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
     // e.g. if there are 7 bins in the x dimension, and that particle is close to the right domain boundary, the
     // division above might result in 7.0, which gets floored to 7 corresponding to a bin index that is out of bounds!
 
-    // We therefore check for particle indices that are out of bounds and, if the particle is close to the boundary we
+    // We therefore check for particle indices that are out of bounds and, if the particle is within the domain we
     // adjust the index. We don't care about floating point errors causing incorrect indices internally in the
     // domain as, for particles so close to a boundary, it is somewhat arbitrary which bin they fall into.
 
     const auto binIndex3DSafe = [&]() {
       auto newBinIndex3D = binIndex3dUnsafe;
-      for (int i = 0; i < 3; ++i) {
-        if (binIndex3dUnsafe[i] < 0) {
-          if (particleLocation[i] > container.getBoxMin()[i]) {
-            newBinIndex3D[i] = 0;
-          } else {
-            autopas::utils::ExceptionHandler::exception(
-                "calculateHomogeneityAndMaxDensity: Particle is outside the container!");
-          }
-        } else if (binIndex3dUnsafe[i] >= numberOfBinsPerDim) {
-          if (particleLocation[i] < container.getBoxMax()[i]) {
-            newBinIndex3D[i] = numberOfBinsPerDim - 1;
-          } else {
-            autopas::utils::ExceptionHandler::exception(
-                "calculateHomogeneityAndMaxDensity: Particle is outside the container!");
-          }
+      for (int dim = 0; dim < 3; ++dim) {
+        if (particleLocation[dim] > container.getBoxMin()[dim] or particleLocation[dim] < container.getBoxMax()[dim]) {
+          newBinIndex3D[dim] = std::clamp(binIndex3dUnsafe[dim], 0, numberOfBinsPerDim - 1);
+        } else {
+          autopas::utils::ExceptionHandler::exception(
+              "calculateHomogeneityAndMaxDensity: Particle is outside the container!");
         }
       }
       return newBinIndex3D;
