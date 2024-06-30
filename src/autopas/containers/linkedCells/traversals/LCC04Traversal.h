@@ -27,8 +27,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
-                       public LCTraversalInterface {
+class LCC04Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the c04 traversal.

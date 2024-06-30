@@ -91,11 +91,10 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
-  explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, Functor *functor,
-                          const double interactionLength, const std::array<double, 3> &cellLength,
-                          DataLayoutOption dataLayout, bool useNewton3)
-      : C01BasedTraversal<ParticleCell, Functor, (combineSoA ? 2 : 3)>(dims, functor, interactionLength,
-                                                                               cellLength, dataLayout, useNewton3),
+  explicit LCC01Traversal(const std::array<unsigned long, 3> &dims, Functor *functor, const double interactionLength,
+                          const std::array<double, 3> &cellLength, DataLayoutOption dataLayout, bool useNewton3)
+      : C01BasedTraversal<ParticleCell, Functor, (combineSoA ? 2 : 3)>(dims, functor, interactionLength, cellLength,
+                                                                       dataLayout, useNewton3),
         _cellFunctor(functor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
         _functor(functor),
@@ -122,7 +121,8 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * @return
    */
   [[nodiscard]] bool isApplicable() const override {
-    return not this->_useNewton3 and not(combineSoA and this->_dataLayout != DataLayoutOption::soa) and not(combineSoA and not utils::isPairwiseFunctor<Functor>());
+    return not this->_useNewton3 and not(combineSoA and this->_dataLayout != DataLayoutOption::soa) and
+           not(combineSoA and not utils::isPairwiseFunctor<Functor>());
   }
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
@@ -149,13 +149,15 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * Pairwise implementation of processBaseCell().
    * @copydoc processBaseCell()
    */
-  inline void processBaseCellPairwise(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  inline void processBaseCellPairwise(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y,
+                                      unsigned long z);
 
   /**
    * Triwise implementation of processBaseCell().
    * @copydoc processBaseCell()
    */
-  inline void processBaseCellTriwise(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z);
+  inline void processBaseCellTriwise(std::vector<ParticleCell> &cells, unsigned long x, unsigned long y,
+                                     unsigned long z);
 
   /**
    * Pairwise implementation of computeOffsets().
@@ -168,7 +170,6 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * @copydoc computeOffsets()
    */
   void computeTriwiseOffsets();
-
 
   /**
    * Appends all needed Attributes to the SoA buffer in cell.
@@ -194,14 +195,14 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    */
   typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
                             std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
-                                std::vector<std::tuple<long, long, std::array<double, 3>>>>::type _cellOffsets;
+                            std::vector<std::tuple<long, long, std::array<double, 3>>>>::type _cellOffsets;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two or more cells.
    */
   typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
                             internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
-                                internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>::type _cellFunctor;
+                            internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>::type _cellFunctor;
 
   Functor *_functor;
 
@@ -228,8 +229,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeOffsets() 
   } else if (utils::isTriwiseFunctor<Functor>()) {
     computeTriwiseOffsets();
   } else {
-    utils::ExceptionHandler::exception(
-        "LCC01Traversal::computeOffsets(): Functor is not valid.");
+    utils::ExceptionHandler::exception("LCC01Traversal::computeOffsets(): Functor is not valid.");
   }
 }
 
@@ -347,21 +347,22 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeTriwiseOff
 }
 
 template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCell(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y,unsigned long z) {
+inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCell(std::vector<ParticleCell> &cells,
+                                                                               unsigned long x, unsigned long y,
+                                                                               unsigned long z) {
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
     processBaseCellPairwise(cells, x, y, z);
   } else if (utils::isTriwiseFunctor<Functor>()) {
     processBaseCellTriwise(cells, x, y, z);
   } else {
-    utils::ExceptionHandler::exception(
-        "LCC01Traversal::processBaseCell(): Functor is not valid.");
+    utils::ExceptionHandler::exception("LCC01Traversal::processBaseCell(): Functor is not valid.");
   }
 }
 
 template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPairwise(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
+inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPairwise(std::vector<ParticleCell> &cells,
+                                                                                       unsigned long x, unsigned long y,
+                                                                                       unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
   const size_t cOffSize = _cellOffsets.size();
@@ -453,8 +454,9 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellPa
 }
 
 template <class ParticleCell, class Functor, bool combineSoA>
-inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellTriwise(
-    std::vector<ParticleCell> &cells, unsigned long x, unsigned long y, unsigned long z) {
+inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellTriwise(std::vector<ParticleCell> &cells,
+                                                                                      unsigned long x, unsigned long y,
+                                                                                      unsigned long z) {
   unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
   ParticleCell &baseCell = cells[baseIndex];
 

@@ -25,7 +25,9 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction of particles.
  */
 template <class ParticleCell, class Functor>
-class DSSequentialTraversal : public CellTraversal<ParticleCell>, public TraversalInterface, public DSTraversalInterface {
+class DSSequentialTraversal : public CellTraversal<ParticleCell>,
+                              public TraversalInterface,
+                              public DSTraversalInterface {
  public:
   /**
    * Constructor for the DirectSum traversal.
@@ -34,8 +36,7 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>, public Travers
    * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit DSSequentialTraversal(Functor *functor, double cutoff, DataLayoutOption dataLayout,
-                                 bool useNewton3)
+  explicit DSSequentialTraversal(Functor *functor, double cutoff, DataLayoutOption dataLayout, bool useNewton3)
       : CellTraversal<ParticleCell>({2, 1, 1}),
         TraversalInterface(dataLayout, useNewton3),
         _cellFunctor(functor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
@@ -77,7 +78,7 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>, public Travers
    */
   typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
                             internal::CellFunctor<ParticleCell, /*bidirectional*/ Functor, true>,
-                                internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ true>>::type _cellFunctor;
+                            internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ true>>::type _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal

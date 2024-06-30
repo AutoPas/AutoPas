@@ -237,7 +237,7 @@ void TraversalComparison::generateReference(mykey_t key) {
                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled, 1., key, false);
     } else if (interactionType == autopas::InteractionTypeOption::triwise) {
       std::tie(calculatedForces, calculatedGlobals) =
-          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01_3b,
+          calculateForces<globals>(autopas::ContainerOption::linkedCells, autopas::TraversalOption::lc_c01,
                                    autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled, 1., key, false);
     }
     _forcesReference[key] = calculatedForces;

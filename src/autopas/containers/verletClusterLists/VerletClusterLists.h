@@ -143,7 +143,8 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
   void iterateInteractions(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
-          "VerletClusterLists::iterateInteractions(): Trying to do a pairwise iteration, even though verlet lists are not "
+          "VerletClusterLists::iterateInteractions(): Trying to do a pairwise iteration, even though verlet lists are "
+          "not "
           "valid.");
     }
     auto *traversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);

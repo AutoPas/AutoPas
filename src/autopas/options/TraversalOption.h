@@ -19,21 +19,19 @@ inline namespace options {
 class TraversalOption : public Option<TraversalOption> {
  public:
   /**
-   * Possible choices for the cell traversal. Contains both pairwise and triwise traversals.
-   * Try to maintain lexicographic ordering.
+   * Possible choices for the cell traversal. Traversals marked with '+' can be used for both pairwise and triwise
+   * interactions. Try to maintain lexicographic ordering.
    */
   enum Value {
-    /***** Pairwise Traversals *****/
-
     // DirectSum Traversals:
     /**
-     * DSSequentialTraversal : Sequential double loop over all particles.
+     * + DSSequentialTraversal : Sequential nested loop over all particles.
      */
     ds_sequential,
 
     // LinkedCell Traversals:
     /**
-     * LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
+     * + LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
      * parallel. Good load balancing and no overhead.
      */
     lc_c01,
@@ -194,21 +192,6 @@ class TraversalOption : public Option<TraversalOption> {
      * fluctuations.
      */
     vvl_as_built,
-
-    /***** Triwise Traversals *****/
-
-    // Direct Sum
-    /**
-     * DSSequentialTraversal3B : Sequential triple loop over all particles.
-     */
-    ds_sequential_3b,
-
-    // Linked Cells
-    /**
-     * LCC01Traversal3B : 3-body version of lc_c01. Every cell interacts with all neighbors. Is not compatible with
-     * Newton3 thus embarrassingly parallel. Good load balancing and no overhead.
-     */
-    lc_c01_3b,
   };
 
   /**
@@ -233,7 +216,7 @@ class TraversalOption : public Option<TraversalOption> {
    * @return
    */
   static std::set<TraversalOption> getDiscouragedOptions() {
-    return {Value::ds_sequential, Value::vcl_cluster_iteration, Value::ds_sequential_3b};
+    return {Value::ds_sequential, Value::vcl_cluster_iteration};
   }
 
   /**
@@ -253,7 +236,7 @@ class TraversalOption : public Option<TraversalOption> {
    * Set of options that apply for 3-body interactions.
    * @return
    */
-  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential_3b, Value::lc_c01_3b}; }
+  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential, Value::lc_c01}; }
 
   /**
    * Set of all pairwise traversals without discouraged options.
@@ -305,14 +288,12 @@ class TraversalOption : public Option<TraversalOption> {
     return {
         // DirectSum Traversals:
         {TraversalOption::ds_sequential, "ds_sequential"},
-        {TraversalOption::ds_sequential_3b, "ds_sequential_3b"},
 
         // LinkedCell Traversals:
         {TraversalOption::lc_sliced, "lc_sliced"},
         {TraversalOption::lc_sliced_balanced, "lc_sliced_balanced"},
         {TraversalOption::lc_sliced_c02, "lc_sliced_c02"},
         {TraversalOption::lc_c01, "lc_c01"},
-        {TraversalOption::lc_c01_3b, "lc_c01_3b"},
         {TraversalOption::lc_c01_combined_SoA, "lc_c01_combined_SoA"},
         {TraversalOption::lc_c04, "lc_c04"},
         {TraversalOption::lc_c04_HCP, "lc_c04_HCP"},

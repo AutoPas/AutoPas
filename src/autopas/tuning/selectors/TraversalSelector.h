@@ -305,7 +305,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTri
     DataLayoutOption dataLayout, bool useNewton3) {
   switch (traversalType) {
     // Direct sum
-    case TraversalOption::ds_sequential_3b: {
+    case TraversalOption::ds_sequential: {
       return std::make_unique<DSSequentialTraversal<ParticleCell, TriwiseFunctor>>(
           &triwiseFunctor,
           traversalInfo
@@ -313,7 +313,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTri
           dataLayout, useNewton3);
     }
       // Linked Cells
-    case TraversalOption::lc_c01_3b: {
+    case TraversalOption::lc_c01: {
       return std::make_unique<LCC01Traversal<ParticleCell, TriwiseFunctor, /*combineSoA*/ false>>(
           traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
           dataLayout, useNewton3);
