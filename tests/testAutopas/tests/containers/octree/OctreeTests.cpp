@@ -509,7 +509,6 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
     return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<decltype(mockFunctor)>(
         traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
   });
-  auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
 
   // Specify the behavior that should be executed for each particle pair
   int unsigned numPairs = 0;
@@ -539,7 +538,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Perform the traversal
   mockFunctor.initTraversal();
-  container.iterateInteractions(pairwiseTraversal);
+  container.iterateInteractions(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
   // NOTE(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has

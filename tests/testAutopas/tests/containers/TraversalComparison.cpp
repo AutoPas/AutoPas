@@ -170,7 +170,6 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
         return traversalUniquePtr;
       });
 
-  //  auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
   if (not traversal->isApplicable()) {
     return {};
   }

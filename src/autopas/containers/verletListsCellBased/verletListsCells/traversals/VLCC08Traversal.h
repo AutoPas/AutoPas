@@ -62,7 +62,7 @@ class VLCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setSortingThreshold(size_t sortingThreshold) override {}
