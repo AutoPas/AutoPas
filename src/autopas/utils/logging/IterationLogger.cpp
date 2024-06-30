@@ -68,8 +68,9 @@ void autopas::IterationLogger::logIteration(const autopas::Configuration &config
                timeTuning, energyPsys, energyPkg, energyRam);
   } else {
     spdlog::get(_loggerName)
-        ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false", configuration.getCSVLine(),
-               timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, timeTuning);
+        ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
+               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
+               timeTuning);
   }
 #endif
 }

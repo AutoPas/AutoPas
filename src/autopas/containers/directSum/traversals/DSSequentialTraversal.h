@@ -89,16 +89,32 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
 
 template <class ParticleCell, class Functor>
 void DSSequentialTraversal<ParticleCell, Functor>::traverseParticles() {
+  using namespace autopas::utils::ArrayMath::literals;
+
   auto &cells = *(this->_cells);
   // Assume cell[0] is the main domain and cell[1] is the halo
   _cellFunctor.processCell(cells[0]);
-  //  Process interactions with all six halo cells
-  _cellFunctor.processCellPair(cells[0], cells[1], std::array<double, 3>({-1., 0., 0.}));
-  _cellFunctor.processCellPair(cells[0], cells[2], std::array<double, 3>({1., 0., 0.}));
-  _cellFunctor.processCellPair(cells[0], cells[3], std::array<double, 3>({0., -1., 0.}));
-  _cellFunctor.processCellPair(cells[0], cells[4], std::array<double, 3>({0., 1., 0.}));
-  _cellFunctor.processCellPair(cells[0], cells[5], std::array<double, 3>({0., 0., -1.}));
-  _cellFunctor.processCellPair(cells[0], cells[6], std::array<double, 3>({0., 0., 1.}));
+
+  const std::array<std::array<double, 3>, 7> haloDirections{
+      {{0., 0., 0.}, {-1., 0., 0.}, {1., 0., 0.}, {0., -1., 0.}, {0., 1., 0.}, {0., 0., -1.}, {0., 0., 1.}}};
+
+  //  Process pair interactions with all six halo cells.
+  for (int i = 1; i < cells.size(); i++) {
+    _cellFunctor.processCellPair(cells[0], cells[i], std::array<double, 3>(haloDirections[i]));
+  }
+
+  if constexpr (utils::isTriwiseFunctor<Functor>()) {
+    // Process cell triplet interactions with halo cells.
+    for (int i = 1; i < cells.size(); i++) {
+      for (int j = i + 1; j < cells.size(); j++) {
+        const std::array<double, 3> sortDirection = haloDirections[i] + haloDirections[j];
+        _cellFunctor.processCellTriple(
+            cells[0], cells[i], cells[j],
+            (utils::ArrayMath::isNear(sortDirection, {0., 0., 0.}) ? std::array<double, 3>{0., 0., 0.}
+                                                                   : utils::ArrayMath::normalize(sortDirection)));
+      }
+    }
+  }
 }
 
 }  // namespace autopas

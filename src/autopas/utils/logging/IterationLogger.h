@@ -44,8 +44,8 @@ class IterationLogger {
    * @param timeTuning Time for finding the next configuration.
    * @param measurements Struct that holds all measurements from a computeInteractions() iteration.
    */
-  void logIteration(const Configuration &configuration, size_t iteration, std::string functorName, bool inTuningPhase, long timeTuning,
-                    const IterationMeasurements &measurements);
+  void logIteration(const Configuration &configuration, size_t iteration, std::string functorName, bool inTuningPhase,
+                    long timeTuning, const IterationMeasurements &measurements);
 
  private:
   std::string _loggerName;

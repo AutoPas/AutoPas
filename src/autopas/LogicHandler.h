@@ -62,7 +62,8 @@ class LogicHandler {
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
-        _iterationLogger(outputSuffix, autoTuner.canMeasureEnergy()),
+        _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
+                                                   [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -912,8 +913,7 @@ LogicHandler<Particle>::getParticleBuffers() const {
 
 template <typename Particle>
 template <class Functor>
-typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::computeInteractions(
-    Functor &functor, TraversalInterface &traversal) {
+IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &functor, TraversalInterface &traversal) {
   // Helper to derive the Functor type at compile time
   constexpr auto interactionType = [] {
     if (utils::isPairwiseFunctor<Functor>()) {
@@ -1449,7 +1449,8 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
                measurements.energyPkg, measurements.energyRam);
   }
-  _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning, tuningTimer.getTotalTime(), measurements);
+  _iterationLogger.logIteration(configuration, _iteration, functor->getName(), stillTuning, tuningTimer.getTotalTime(),
+                                measurements);
 
   /// Pass on measurements
   // if this was a major iteration add measurements
