@@ -119,11 +119,13 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
-  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
+
   if (_configuration.getInteractionTypes().size() == 0) {
-    throw std::runtime_error(
-        "MD-flexible is not configured for any interaction type. Please specify which functor should be used.");
+    _configuration.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+    _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
+    std::cout << "WARNING: No functor was specified. Using the default Lennard-Jones AutoVec functor." << std::endl;
   }
+  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
 
   // Pairwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
