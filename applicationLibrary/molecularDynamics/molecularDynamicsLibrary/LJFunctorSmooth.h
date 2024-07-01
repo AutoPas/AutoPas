@@ -119,70 +119,7 @@ class LJFunctorSmooth
   bool allowsNonNewton3() final {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
-/*
-  void AoSFunctornotused(Particle &i, Particle &j, bool newton3) final {
-    using namespace autopas::utils::ArrayMath::literals;
 
-    if (i.isDummy() or j.isDummy()) {
-      return;
-    }
-    auto sigmaSquared = _sigmaSquared;
-    auto epsilon24 = _epsilon24;
-    auto shift6 = _shift6;
-    if constexpr (useMixing) {
-      sigmaSquared = _PPLibrary->getMixingSigmaSquared(i.getTypeId(), j.getTypeId());
-      epsilon24 = _PPLibrary->getMixing24Epsilon(i.getTypeId(), j.getTypeId());
-      if constexpr (applyShift) {
-        shift6 = _PPLibrary->getMixingShift6(i.getTypeId(), j.getTypeId());
-      }
-    }
-    auto dr = i.getR() - j.getR();
-    double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
-
-    if (dr2 > _cutoffSquared) {
-      return;
-    }
-
-    double invdr2 = 1. / dr2;
-    double lj6 = sigmaSquared * invdr2;
-    lj6 = lj6 * lj6 * lj6;
-    double lj12 = lj6 * lj6;
-    double lj12m6 = lj12 - lj6;
-    double fac = epsilon24 * (lj12 + lj12m6) * invdr2;
-    auto f = dr * fac;
-    i.addF(f);
-    if (newton3) {
-      // only if we use newton 3 here, we want to
-      j.subF(f);
-    }
-    if (calculateGlobals) {
-      auto virial = dr * f;
-      // Here we calculate either the potential energy * 6.
-      // For newton3, this potential energy contribution is distributed evenly to the two molecules.
-      // For non-newton3, the full potential energy is added to the one molecule.
-      // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
-      double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
-
-      const int threadnum = autopas::autopas_get_thread_num();
-      if (i.isOwned()) {
-        if (newton3) {
-          _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-          _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
-        } else {
-          // for non-newton3 the division is in the post-processing step.
-          _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergy6;
-          _aosThreadData[threadnum].virialSumNoN3 += virial;
-        }
-      }
-      // for non-newton3 the second particle will be considered in a separate calculation
-      if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-        _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
-      }
-    }
-  }
-
- */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {
@@ -230,7 +167,7 @@ class LJFunctorSmooth
       // For newton3, this potential energy contribution is distributed evenly to the two molecules.
       // For non-newton3, the full potential energy is added to the one molecule.
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
-      double potentialEnergy6 = epsilon24 * lj12m6 + (shift6); // this need to be adjusted for the smoothed function, shift 6 is not needed for smoothed
+      double potentialEnergy6 = smoothing * epsilon24 * lj12m6 + (shift6); // this need to be adjusted for the smoothed function, shift 6 is not needed for smoothed
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
@@ -256,160 +193,7 @@ class LJFunctorSmooth
    * This functor will always use a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
-   /*
-  void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
-    if (soa.size() == 0) return;
 
-    const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
-    const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
-    const auto *const __restrict zptr = soa.template begin<Particle::AttributeNames::posZ>();
-    const auto *const __restrict ownedStatePtr = soa.template begin<Particle::AttributeNames::ownershipState>();
-
-    SoAFloatPrecision *const __restrict fxptr = soa.template begin<Particle::AttributeNames::forceX>();
-    SoAFloatPrecision *const __restrict fyptr = soa.template begin<Particle::AttributeNames::forceY>();
-    SoAFloatPrecision *const __restrict fzptr = soa.template begin<Particle::AttributeNames::forceZ>();
-
-    [[maybe_unused]] auto *const __restrict typeptr = soa.template begin<Particle::AttributeNames::typeId>();
-    // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
-    const SoAFloatPrecision cutoffSquared = _cutoffSquared;
-
-    SoAFloatPrecision potentialEnergySum =
-        0.;  // Note: this is not the potential energy, but some fixed multiple of it.
-    SoAFloatPrecision virialSumX = 0.;
-    SoAFloatPrecision virialSumY = 0.;
-    SoAFloatPrecision virialSumZ = 0.;
-
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
-    std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
-    if constexpr (useMixing) {
-      // Preload all sigma and epsilons for next vectorized region.
-      // Not preloading and directly using the values, will produce worse results.
-      sigmaSquareds.resize(soa.size());
-      epsilon24s.resize(soa.size());
-      // if no mixing or mixing but no shift shift6 is constant therefore we do not need this vector.
-      if constexpr (applyShift) {
-        shift6s.resize(soa.size());
-      }
-    }
-
-    const SoAFloatPrecision const_shift6 = _shift6;
-    const SoAFloatPrecision const_sigmaSquared = _sigmaSquared;
-    const SoAFloatPrecision const_epsilon24 = _epsilon24;
-
-    for (unsigned int i = 0; i < soa.size(); ++i) {
-      const auto ownedStateI = ownedStatePtr[i];
-      if (ownedStateI == autopas::OwnershipState::dummy) {
-        continue;
-      }
-
-      SoAFloatPrecision fxacc = 0.;
-      SoAFloatPrecision fyacc = 0.;
-      SoAFloatPrecision fzacc = 0.;
-
-      if constexpr (useMixing) {
-        for (unsigned int j = 0; j < soa.size(); ++j) {
-          auto mixingData = _PPLibrary->getMixingData(typeptr[i], typeptr[j]);
-          sigmaSquareds[j] = mixingData.sigmaSquared;
-          epsilon24s[j] = mixingData.epsilon24;
-          if constexpr (applyShift) {
-            shift6s[j] = mixingData.shift6;
-          }
-        }
-      }
-
-// icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
-      for (unsigned int j = i + 1; j < soa.size(); ++j) {
-        SoAFloatPrecision shift6 = const_shift6;
-        SoAFloatPrecision sigmaSquared = const_sigmaSquared;
-        SoAFloatPrecision epsilon24 = const_epsilon24;
-        if constexpr (useMixing) {
-          sigmaSquared = sigmaSquareds[j];
-          epsilon24 = epsilon24s[j];
-          if constexpr (applyShift) {
-            shift6 = shift6s[j];
-          }
-        }
-
-        const auto ownedStateJ = ownedStatePtr[j];
-
-        const SoAFloatPrecision drx = xptr[i] - xptr[j];
-        const SoAFloatPrecision dry = yptr[i] - yptr[j];
-        const SoAFloatPrecision drz = zptr[i] - zptr[j];
-
-        const SoAFloatPrecision drx2 = drx * drx;
-        const SoAFloatPrecision dry2 = dry * dry;
-        const SoAFloatPrecision drz2 = drz * drz;
-
-        const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
-
-        // Mask away if distance is too large or any particle is a dummy.
-        // Particle ownedStateI was already checked previously.
-        const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
-
-        const SoAFloatPrecision invdr2 = 1. / dr2;
-        const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
-        const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
-        const SoAFloatPrecision lj12 = lj6 * lj6;
-        const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
-
-        const SoAFloatPrecision fx = drx * fac;
-        const SoAFloatPrecision fy = dry * fac;
-        const SoAFloatPrecision fz = drz * fac;
-
-        fxacc += fx;
-        fyacc += fy;
-        fzacc += fz;
-
-        // newton 3
-        fxptr[j] -= fx;
-        fyptr[j] -= fy;
-        fzptr[j] -= fz;
-
-        if (calculateGlobals) {
-          const SoAFloatPrecision virialx = drx * fx;
-          const SoAFloatPrecision virialy = dry * fy;
-          const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
-
-          // Add to the potential energy sum for each particle which is owned.
-          // This results in obtaining 12 * the potential energy for the SoA.
-          SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
-                                           (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
-          potentialEnergySum += potentialEnergy6 * energyFactor;
-
-          virialSumX += virialx * energyFactor;
-          virialSumY += virialy * energyFactor;
-          virialSumZ += virialz * energyFactor;
-        }
-      }
-
-      fxptr[i] += fxacc;
-      fyptr[i] += fyacc;
-      fzptr[i] += fzacc;
-    }
-    if (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_thread_num();
-
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if (newton3) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
-    }
-  }
-*/
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
 
@@ -507,20 +291,21 @@ class LJFunctorSmooth
         const bool innerMask = dr2 >= innerCutoffSquared and ownedStateJ != autopas::OwnershipState::dummy ;
 
 
-/*
+
         const SoAFloatPrecision drtrue = std::sqrt(dr2);
         const SoAFloatPrecision temp = drtrue - innerCutoff ;
         const SoAFloatPrecision cutoffdiffcube =  _cutoffDiffCubed;
         const SoAFloatPrecision _3ci =  _3c_i;
         const SoAFloatPrecision smoothing = innerMask ? 1 - (temp * temp) * (_3ci - 2 * drtrue) / (cutoffdiffcube) : 1.0 ;
-        */
 
 
+/*
         const SoAFloatPrecision drtrue = innerMask ? std::sqrt(dr2): 1.337;
         const SoAFloatPrecision temp = innerMask ? drtrue - innerCutoff : 1.337;
         const SoAFloatPrecision cutoffdiffcube =  _cutoffDiffCubed;
         const SoAFloatPrecision _3ci =  _3c_i;
         const SoAFloatPrecision smoothing = innerMask ? 1 - (temp * temp) * (_3ci - 2 * drtrue) / (cutoffdiffcube) : 1.0 ;
+        */
 
 
         const SoAFloatPrecision invdr2 = 1. / dr2;
@@ -548,7 +333,7 @@ class LJFunctorSmooth
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
+          const SoAFloatPrecision potentialEnergy6 = mask ? (smoothing * epsilon24 * lj12m6 + shift6) : 0.;
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
