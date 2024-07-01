@@ -1440,11 +1440,11 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   };
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
-  AutoPasLog(DEBUG, "Type of interaction : {}", interactionType.to_string());
-  AutoPasLog(DEBUG, "Container::iterateInteractions   took {} ns", measurements.timeIterateInteractions);
-  AutoPasLog(DEBUG, "RemainderTraversal           took {} ns", measurements.timeRemainderTraversal);
-  AutoPasLog(DEBUG, "RebuildNeighborLists         took {} ns", measurements.timeRebuild);
-  AutoPasLog(DEBUG, "AutoPas::computeInteractions took {} ns", measurements.timeTotal);
+  AutoPasLog(DEBUG, "Type of interaction :          {}", interactionType.to_string());
+  AutoPasLog(DEBUG, "Container::iterateInteractions took {} ns", measurements.timeIterateInteractions);
+  AutoPasLog(DEBUG, "RemainderTraversal             took {} ns", measurements.timeRemainderTraversal);
+  AutoPasLog(DEBUG, "RebuildNeighborLists           took {} ns", measurements.timeRebuild);
+  AutoPasLog(DEBUG, "AutoPas::computeInteractions   took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
                measurements.energyPkg, measurements.energyRam);
