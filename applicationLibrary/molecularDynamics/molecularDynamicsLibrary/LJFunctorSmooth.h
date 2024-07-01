@@ -1,8 +1,8 @@
 /**
- * @file LJFunctor.h
+ * @file LJFunctorSmooth.h
  *
- * @date 17 Jan 2018
- * @author tchipevn
+ * @date 17 Jan 2018, 01 Jun 2024
+ * @author tchipevn updated by ivander
  */
 
 #pragma once
@@ -35,9 +35,9 @@ namespace mdLib {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
-class LJFunctor
+class LJFunctorSmooth
     : public autopas::Functor<
-          Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+          Particle, LJFunctorSmooth<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -52,7 +52,7 @@ class LJFunctor
   /**
    * Deleted default constructor
    */
-  LJFunctor() = delete;
+  LJFunctorSmooth() = delete;
 
  private:
   /**
@@ -60,9 +60,9 @@ class LJFunctor
    * @param cutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctor(double cutoff, void * /*dummy*/)
+  explicit LJFunctorSmooth(double cutoff, void * /*dummy*/)
       : autopas::Functor<Particle,
-                         LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
+                         LJFunctorSmooth<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoff{cutoff},
@@ -77,6 +77,7 @@ class LJFunctor
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
+
     }
   }
 
@@ -89,7 +90,7 @@ class LJFunctor
    *
    * @param cutoff
    */
-  explicit LJFunctor(double cutoff) : LJFunctor(cutoff, nullptr) {
+  explicit LJFunctorSmooth(double cutoff) : LJFunctorSmooth(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -101,8 +102,8 @@ class LJFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctor(cutoff, nullptr) {
+  explicit LJFunctorSmooth(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJFunctorSmooth(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
@@ -184,7 +185,6 @@ class LJFunctor
  */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
-
     if (i.isDummy() or j.isDummy()) {
       return;
     }
@@ -836,7 +836,7 @@ class LJFunctor
    * @param molAType molecule A's type id
    * @param molBType molecule B's type id
    * @param newton3 is newton3 applied.
-   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other
+   * @note molAType and molBType make no difference for LJFunctorSmooth, but are kept to have a consistent interface for other
    * functors where they may.
    * @return the number of floating point operations
    */

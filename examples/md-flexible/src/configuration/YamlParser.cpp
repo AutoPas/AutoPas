@@ -221,6 +221,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("glob") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
+        }else if(strArg.find("smooth") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6smooth;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
         } else if(strArg.find("xsimd") != std::string::npos) {
@@ -231,6 +233,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
         } else if(strArg.find("highway") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
+
         } else {
           throw std::runtime_error("Unrecognized functor!");
         }
