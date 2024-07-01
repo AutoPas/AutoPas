@@ -9,8 +9,22 @@ add_executable(runTests ${MY_SRC})
 
 target_compile_definitions(runTests PRIVATE)
 
+if(AUTOPAS_ENABLE_COVERAGE)
+  target_compile_options(runTests PRIVATE -O0 --coverage)
+
+  # add coverage target
+  add_custom_target(
+    coverage
+    DEPENDS lcov
+    COMMAND ${LCOV_EXECUTABLE} --ignore-errors mismatch --rc lcov_branch_coverage=1 --directory . --capture --exclude */tests/* --exclude */build/* --exclude '/usr/*' --output-file coverage.info
+    COMMAND ${GENHTML_EXECUTABLE} --branch-coverage --demangle-cpp -o coverage coverage.info
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+  )
+endif()
+
 target_link_libraries(
     runTests
+    gcov
     autopas
     autopasTools
     molecularDynamicsLibrary
