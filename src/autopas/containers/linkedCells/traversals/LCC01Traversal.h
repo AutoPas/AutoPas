@@ -137,6 +137,17 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  private:
+  // CellOffsets needs to store interaction pairs or triplets depending on the Functor type.
+  using CellOffsetsType = typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
+                                                    std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
+                                                    std::vector<std::tuple<long, long, std::array<double, 3>>>>::type;
+
+  // CellFunctor type for either Pairwise or Triwise Functors.
+  using CellFunctorType =
+      typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
+                                internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
+                                internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>::type;
+
   /**
    * Computes all interactions between the base
    * cell and adjacent cells.
@@ -192,20 +203,19 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
   void resizeBuffers();
 
   /**
-   * Pairs for processBaseCell().
+   * Pairs or triplets for processBaseCell().
    * @note std::map not applicable since ordering arising from insertion is important for later processing!
    */
-  typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                            std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
-                            std::vector<std::tuple<long, long, std::array<double, 3>>>>::type _cellOffsets;
+  CellOffsetsType _cellOffsets;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two or more cells.
    */
-  typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                            internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
-                            internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>::type _cellFunctor;
+  CellFunctorType _cellFunctor;
 
+  /**
+   * Functor defining pairwise or triwise particle interactions.
+   */
   Functor *_functor;
 
   /**

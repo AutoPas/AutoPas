@@ -74,12 +74,16 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
  private:
+  // CellFunctor type for either Pairwise or Triwise Functors.
+  using CellFunctorType =
+      typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
+                                internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
+                                internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false> >::type;
+
   /**
-   * CellFunctor to be used for the traversal defining the interaction between two cells.
+   * CellFunctor to be used for the traversal defining the interaction between two or more cells.
    */
-  typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                            internal::CellFunctor<ParticleCell, /*bidirectional*/ Functor, true>,
-                            internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ true>>::type _cellFunctor;
+  CellFunctorType _cellFunctor;
 
   /**
    * Data Layout Converter to be used with this traversal
@@ -110,7 +114,7 @@ void DSSequentialTraversal<ParticleCell, Functor>::traverseParticles() {
     for (int i = 1; i < cells.size(); i++) {
       for (int j = i + 1; j < cells.size(); j++) {
         // Sorting direction should be from owned to first halo cell.
-        _cellFunctor.processCellTriple( cells[0], cells[i], cells[j], haloDirections[i]);
+        _cellFunctor.processCellTriple(cells[0], cells[i], cells[j], haloDirections[i]);
       }
     }
   }
