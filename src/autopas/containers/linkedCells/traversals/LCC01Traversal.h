@@ -336,9 +336,13 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeTriwiseOff
                   x2, y2, z2, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
 
               if (offset2 <= offset1) continue;
-              // sorting direction towards middle of cell 1 and cell 2
-              const std::array<double, 3> sortDirection = {
-                  (x1 + x2) * this->_cellLength[0], (y1 + y2) * this->_cellLength[1], (z1 + z2) * this->_cellLength[2]};
+              // sorting direction from base cell to the first different cell
+              std::array<double, 3> sortDirection{};
+              if (offset1 == 0) {
+                sortDirection = {x2 * this->_cellLength[0], y2 * this->_cellLength[1], z2 * this->_cellLength[2]};
+              } else {
+                sortDirection = {x1 * this->_cellLength[0], y1 * this->_cellLength[1], z1 * this->_cellLength[2]};
+              }
               _cellOffsets.emplace_back(offset1, offset2, utils::ArrayMath::normalize(sortDirection));
             }
           }
@@ -477,7 +481,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellTr
     } else if (baseIndex != otherIndex1 && otherIndex1 == otherIndex2) {
       this->_cellFunctor.processCellPair(baseCell, otherCell1);
     } else {
-      this->_cellFunctor.processCellTriple(baseCell, otherCell1, otherCell2);
+      this->_cellFunctor.processCellTriple(baseCell, otherCell1, otherCell2, r);
     }
   }
 }

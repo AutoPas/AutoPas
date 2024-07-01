@@ -91,8 +91,10 @@ template <class ParticleCell, class Functor>
 void DSSequentialTraversal<ParticleCell, Functor>::traverseParticles() {
   using namespace autopas::utils::ArrayMath::literals;
 
+  // cells[0] is the owned domain and cells[1-6] are the halo cells.
   auto &cells = *(this->_cells);
-  // Assume cell[0] is the main domain and cell[1] is the halo
+
+  // Process interactions between 3 owned particles.
   _cellFunctor.processCell(cells[0]);
 
   const std::array<std::array<double, 3>, 7> haloDirections{
@@ -107,11 +109,8 @@ void DSSequentialTraversal<ParticleCell, Functor>::traverseParticles() {
     // Process cell triplet interactions with halo cells.
     for (int i = 1; i < cells.size(); i++) {
       for (int j = i + 1; j < cells.size(); j++) {
-        const std::array<double, 3> sortDirection = haloDirections[i] + haloDirections[j];
-        _cellFunctor.processCellTriple(
-            cells[0], cells[i], cells[j],
-            (utils::ArrayMath::isNear(sortDirection, {0., 0., 0.}) ? std::array<double, 3>{0., 0., 0.}
-                                                                   : utils::ArrayMath::normalize(sortDirection)));
+        // Sorting direction should be from owned to first halo cell.
+        _cellFunctor.processCellTriple( cells[0], cells[i], cells[j], haloDirections[i]);
       }
     }
   }
