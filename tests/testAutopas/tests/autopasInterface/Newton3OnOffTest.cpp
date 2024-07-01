@@ -127,17 +127,12 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   Particle defaultParticle;
   autopasTools::generators::RandomGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(),
                                                                container.getBoxMax(), 100);
-  // Do not add any halo particles to this test for pairwise interactions!
+  // Do not add any halo particles to this test!
   // Given an owned particle p1 and a halo particle p2 the following interactions are necessary:
   // Newton3   : p1 <-> p2
   // No Newton3: p1 <-  p2 (but NOT p1 -> p2)
   // Depending if the container is able to avoid all halo <- owned interactions, the total number of functor calls
   // is not trivially to calculate.
-  // for triwise traversals this is (not yet) problematic
-  if (interactionType == autopas::InteractionTypeOption::triwise) {
-    autopasTools::generators::RandomGenerator::fillWithHaloParticles(container, defaultParticle, container.getCutoff(),
-                                                                     8);
-  }
 
   // Create the functor
   FunctorType mockFunctor{};
