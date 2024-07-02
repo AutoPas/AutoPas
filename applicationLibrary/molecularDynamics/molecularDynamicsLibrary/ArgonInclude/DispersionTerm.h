@@ -1,8 +1,8 @@
 /**
-* @file ArgonFunctor.h
-* @author I. Angelucci
-* @date 02/07/24
-*/
+ * @file ArgonFunctor.h
+ * @author I. Angelucci
+ * @date 02/07/24
+ */
 
 #pragma once
 
@@ -14,11 +14,23 @@
 
 namespace autopas::utils::ArrayMath::Argon {
 
+/**
+ *
+ * @tparam ID id of the particle with respect to which we are computing the derivative
+ * @param a first index of the summation
+ * @param b second index of the summation
+ * @param c third index of the summation
+ * @param Z list of values of parameter Z
+ * @param beta list of values of parameter beta
+ * @param displacementIJ displacement between particle I and particle J
+ * @param displacementJK displacement between particle J and particle K
+ * @param displacementKI displacement between particle K and particle I
+ * @return each term of the summation of the dispersion contribution to the force acting on particle with id ID
+ */
 template <size_t a, size_t b, size_t c, size_t ID>
 [[nodiscard]] nabla F_dispersive_abc(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
                                      DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
                                      DisplacementHandle displacementKI) {
-
   const auto Z_abc = Z[mdLib::Argon::index<mdLib::Argon::param::Z>(a, b, c)];
   const auto beta_abc = beta[mdLib::Argon::index<mdLib::Argon::param::beta>(a, b, c)];
 
@@ -40,11 +52,22 @@ template <size_t a, size_t b, size_t c, size_t ID>
 
   const auto W = AngularTerm<a, b, c>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
 
-  const auto nabla_W = AngularTerm_derive_wrt<a, b, c, ID>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
+  const auto nabla_W =
+      AngularTerm_derive_wrt<a, b, c, ID>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
 
   return Z_abc * (W * (nabla_D1 * D2 * D3 + D1 * nabla_D2 * D3 + D1 * D2 * nabla_D3) + D1 * D2 * D3 * nabla_W);
 }
 
+/**
+ *
+ * @tparam ID ID of the particle with respect to whose position we are calculating the derivative
+ * @param Z list of values of parameter Z
+ * @param beta list of values of parameter beta
+ * @param displacementIJ displacement between particle I and particle J
+ * @param displacementJK displacement between particle J and particle K
+ * @param displacementKI displacement between particle K and particle I
+ * @return Repulsive force acting on the particle with id ID
+ */
 template <size_t ID>
 [[nodiscard]] nabla F_dispersive(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
                                  DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
@@ -63,4 +86,4 @@ template <size_t ID>
   return F;
 }
 
-} //  autopas::utils::ArrayMath::Argon
+}  // namespace autopas::utils::ArrayMath::Argon

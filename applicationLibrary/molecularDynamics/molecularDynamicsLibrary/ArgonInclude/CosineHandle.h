@@ -15,7 +15,8 @@ namespace autopas::utils::ArrayMath::Argon {
 class CosineHandle {
  public:
   /**
-   * constructor for the CosineHandle. Constructs the CosineHandle if displacementAB.idStartVertex == displacementAC.idStartVertex
+   * constructor for the CosineHandle. Constructs the CosineHandle if displacementAB.idStartVertex ==
+   * displacementAC.idStartVertex
    * @param displacementAB
    * @param displacementAC
    */

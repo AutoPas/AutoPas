@@ -21,17 +21,17 @@ namespace autopas::utils::ArrayMath::Argon {
  * @param a first index of the summation
  * @param b second index of the summation
  * @param c third index of the summation
- * @param A parameter A
- * @param alpha parameter alpha
- * @param displacementIJ
- * @param displacementJK
- * @param displacementKI
- * @return single term in the summation of the repulsive force
+ * @param A list of values of parameter A
+ * @param alpha list of values of parameter alpha
+ * @param displacementIJ displacement between particle I and particle J
+ * @param displacementJK displacement between particle J and particle K
+ * @param displacementKI displacement between particle K and particle I
+ * @return each term of the summation of the repulsive contribution to the force acting on particle with id ID
  */
 template <size_t a, size_t b, size_t c, size_t ID>
-[[nodiscard]] nabla F_repulsive_abc(const std::array<double, 23> &A,
-                                    const std::array<double, 23> &alpha, DisplacementHandle displacementIJ,
-                                    DisplacementHandle displacementJK, DisplacementHandle displacementKI) {
+[[nodiscard]] nabla F_repulsive_abc(const std::array<double, 23> &A, const std::array<double, 23> &alpha,
+                                    DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
+                                    DisplacementHandle displacementKI) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
@@ -56,13 +56,13 @@ template <size_t a, size_t b, size_t c, size_t ID>
 
 /**
  *
- * @tparam ID id of the particle with respect to which we are computing the derivative
- * @param A parameter A
- * @param alpha parameter alpha
- * @param displacementIJ
- * @param displacementJK
- * @param displacementKI
- * @return Repulsive force acting on the particle identified by ID
+ * @tparam ID ID of the particle with respect to whose position we are calculating the derivative
+ * @param A list of values of parameter A
+ * @param alpha list of values of parameter alpha
+ * @param displacementIJ displacement between particle I and particle J
+ * @param displacementJK displacement between particle J and particle K
+ * @param displacementKI displacement between particle K and particle I
+ * @return Repulsive force acting on the particle with id ID
  */
 template <size_t ID>
 [[nodiscard]] nabla F_repulsive(const std::array<double, 23> &A, const std::array<double, 23> &alpha,

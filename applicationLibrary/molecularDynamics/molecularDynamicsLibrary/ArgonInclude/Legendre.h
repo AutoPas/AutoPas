@@ -82,7 +82,8 @@ template <class T>
  * @param cosI
  * @param cosJ
  * @param cosK
- * @return derivative of Q, i.e. dP_A(cosI)/dcosI * dcosI/dID * P_B(cosJ) * P_C(cosK) +  P_A(cosI) * dP_B(cosJ)/dcosJ * dcosJ/dID * P_C(cosK) +  P_A(cosI) * P_B(cosJ) * dP_C(cosK)/dcosK * dcosK/dID
+ * @return derivative of Q, i.e. dP_A(cosI)/dcosI * dcosI/dID * P_B(cosJ) * P_C(cosK) +  P_A(cosI) * dP_B(cosJ)/dcosJ *
+ * dcosJ/dID * P_C(cosK) +  P_A(cosI) * P_B(cosJ) * dP_C(cosK)/dcosK * dcosK/dID
  */
 template <size_t ID>
 [[nodiscard]] nabla Q_deriv_wrt(const size_t A, const size_t B, const size_t C, const CosineHandle &cosI,
@@ -91,8 +92,8 @@ template <size_t ID>
                    LegendrePol(cosK.getCos(), C);
   auto secondTerm = LegendrePol(cosI.getCos(), A) * derivativeLegendre(cosJ.getCos(), B) * cosJ.derive_wrt<ID>() *
                     LegendrePol(cosK.getCos(), C);
-  auto thirdTerm = LegendrePol(cosI.getCos(), A) * LegendrePol(cosJ.getCos(), B) * derivativeLegendre(cosK.getCos(), C) *
-                   cosK.derive_wrt<ID>();
+  auto thirdTerm = LegendrePol(cosI.getCos(), A) * LegendrePol(cosJ.getCos(), B) *
+                   derivativeLegendre(cosK.getCos(), C) * cosK.derive_wrt<ID>();
   return firstTerm + secondTerm + thirdTerm;
 }
 
