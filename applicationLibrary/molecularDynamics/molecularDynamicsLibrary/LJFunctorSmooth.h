@@ -58,16 +58,17 @@ class LJFunctorSmooth
   /**
    * Internal, actual constructor.
    * @param cutoff
+   * @param innerCutoff
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit LJFunctorSmooth(double cutoff, void * /*dummy*/)
+  explicit LJFunctorSmooth(double cutoff,double innerCutoff, void * /*dummy*/)
       : autopas::Functor<Particle,
                          LJFunctorSmooth<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoff{cutoff},
-        _innerCutoffSquared{cutoff * cutoff * (1.9/2.3) * (1.9/2.3)},
-        _innerCutoff{cutoff * (1.9/2.3)},
+        _innerCutoffSquared{innerCutoff*innerCutoff},
+        _innerCutoff{innerCutoff},
         _cutoffDiff{cutoff-_innerCutoff},
         _cutoffDiffCubed{ _cutoffDiff* _cutoffDiff* _cutoffDiff},
         _3c_i{3*cutoff-_innerCutoff},
@@ -89,8 +90,9 @@ class LJFunctorSmooth
    * @note Only to be used with mixing == false.
    *
    * @param cutoff
+   * @param innerCutoff
    */
-  explicit LJFunctorSmooth(double cutoff) : LJFunctorSmooth(cutoff, nullptr) {
+  explicit LJFunctorSmooth(double cutoff,double innerCutoff) : LJFunctorSmooth(cutoff,innerCutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
@@ -100,10 +102,11 @@ class LJFunctorSmooth
    * Constructor for Functor with mixing active. This functor takes a ParticlePropertiesLibrary to look up (mixed)
    * properties like sigma, epsilon and shift.
    * @param cutoff
+   * @param innerCutoff
    * @param particlePropertiesLibrary
    */
-  explicit LJFunctorSmooth(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
-      : LJFunctorSmooth(cutoff, nullptr) {
+  explicit LJFunctorSmooth(double cutoff,double innerCutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+      : LJFunctorSmooth(cutoff,innerCutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");

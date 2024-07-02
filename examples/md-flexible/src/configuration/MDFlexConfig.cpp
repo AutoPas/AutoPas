@@ -322,6 +322,7 @@ std::string MDFlexConfig::to_string() const {
   }
   printOption(newton3Options);
   printOption(cutoff);
+  printOption(innerCutoff);
   printOption(boxMin);
   printOption(boxMax);
   printOption(cellSizeFactors);
@@ -424,6 +425,7 @@ std::string MDFlexConfig::to_string() const {
 }
 
 void MDFlexConfig::calcSimulationBox() {
+  //TODO do i need to add innercutoff to this?
   const double interactionLength = cutoff.value + verletSkinRadiusPerTimestep.value * verletRebuildFrequency.value;
 
   // helper function so that we can do the same for every object collection
@@ -507,6 +509,7 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 void MDFlexConfig::flushParticles() { _particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
+  //TODO do i need to add inner cutoff for this?
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
   // check size of site level vectors match

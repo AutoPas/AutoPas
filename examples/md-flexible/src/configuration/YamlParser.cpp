@@ -188,9 +188,21 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.cutoff.value = node[key].as<double>();
         if (config.cutoff.value <= 0) {
-          throw std::runtime_error("Cutoff has to be > 0!");
+          throw std::runtime_error("innerCutoff has to be > 0!");
         }
-      } else if (key == config.cellSizeFactors.name) {
+      }else if (key == config.innerCutoff.name) { //Added innercutoff to parser
+        expected = "Positive floating point value > 0.";
+        description = config.innerCutoff.description;
+
+        config.innerCutoff.value = node[key].as<double>();
+        if (config.innerCutoff.value <= 0) {
+          throw std::runtime_error("ínnerCutoff has to be > 0!");
+        }
+        if (config.innerCutoff.value > config.cutoff.value) {
+          throw std::runtime_error("ínnerCutoff must be smaller than cutoff");
+        }
+      }
+      else if (key == config.cellSizeFactors.name) {
         expected = "YAML-sequence of floats.";
         description = config.cellSizeFactors.description;
 

@@ -434,6 +434,8 @@ class MDFlexConfig {
    * cutoff
    */
   MDFlexOption<double, __LINE__> cutoff{2., "cutoff", true, "Lennard-Jones force cutoff."};
+
+  MDFlexOption<double, __LINE__> innerCutoff{1., "innerCutoff", true, "Smoothed Lennard-Jones force inner cutoff."};
   /**
    * functorOption
    */

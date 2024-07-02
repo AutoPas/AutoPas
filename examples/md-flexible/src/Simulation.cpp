@@ -724,7 +724,7 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6smooth: {
         // #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
-        return f(mdLib::LJFunctorSmooth<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+        return f(mdLib::LJFunctorSmooth<ParticleType, true, true>{cutoff,_configuration.innerCutoff.value, particlePropertiesLibrary});
 
     }
     }
