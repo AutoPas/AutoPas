@@ -23,33 +23,91 @@ TEST_F(ParticlePropertiesLibraryTest, SitePropertiesAddingAndGettingTest) {
   // Add site 0
   const double epsilon0 = 1.;
   const double sigma0 = 1.;
+  const double nu0 = 0.1;
   const double mass0 = 1.;
-  PPL->addSiteType(0, epsilon0, sigma0, mass0);
+  PPL->addSiteType(0, mass0);
+  PPL->addLJParametersToSite(0, epsilon0, sigma0);
+  PPL->addATParametersToSite(0, nu0);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 1);
   EXPECT_EQ(PPL->getEpsilon(0), epsilon0);
   EXPECT_EQ(PPL->getSigma(0), sigma0);
+  EXPECT_EQ(PPL->getNu(0), nu0);
   EXPECT_EQ(PPL->getSiteMass(0), mass0);
 
   // Add site 1
   const double epsilon1 = 0.2;
   const double sigma1 = 0.7;
+  const double nu1 = 0.2;
   const double mass1 = 1.2;
-  PPL->addSiteType(1, epsilon1, sigma1, mass1);
+  PPL->addSiteType(1, mass1);
+  PPL->addLJParametersToSite(1, epsilon1, sigma1);
+  PPL->addATParametersToSite(1, nu1);
 
   // Check successfully getting of information
   EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 2);
   EXPECT_EQ(PPL->getEpsilon(0), epsilon0);
   EXPECT_EQ(PPL->getSigma(0), sigma0);
+  EXPECT_EQ(PPL->getNu(0), nu0);
   EXPECT_EQ(PPL->getSiteMass(0), mass0);
   EXPECT_EQ(PPL->getEpsilon(1), epsilon1);
   EXPECT_EQ(PPL->getSigma(1), sigma1);
+  EXPECT_EQ(PPL->getNu(1), nu1);
   EXPECT_EQ(PPL->getSiteMass(1), mass1);
 
   // Check addSiteType with an inappropriate siteId throws an error.
-  EXPECT_ANY_THROW(PPL->addSiteType(1, 1., 1., 1.));
-  EXPECT_ANY_THROW(PPL->addSiteType(5, 1., 1., 1.));
+  EXPECT_ANY_THROW(PPL->addSiteType(1, 1.));
+  EXPECT_ANY_THROW(PPL->addSiteType(5, 1.));
+}
+
+/**
+ * Adds a LJ site and a AT site to a PPL, and tests that the getters for site values return correct
+ * site information being 0 for not explicitly set parameters. Then tests that an error is thrown if LJ or AT
+ * parameters are added for a not yet initialized site.
+ */
+TEST_F(ParticlePropertiesLibraryTest, AddingDifferentSitesTest) {
+  const double cutoff = 0.1;
+  std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
+      std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
+
+  // Add a site 0 as a pure LJ site
+  const double epsilon0 = 1.;
+  const double sigma0 = 1.;
+  const double mass0 = 1.;
+  PPL->addSiteType(0, mass0);
+  PPL->addLJParametersToSite(0, epsilon0, sigma0);
+
+  // Add site 1 as a pure AT site
+  const double nu1 = 0.1;
+  const double mass1 = 1.2;
+  PPL->addSiteType(1, mass1);
+  PPL->addATParametersToSite(1, nu1);
+
+  // Check successfully getting of information
+  // Uninitialized LJ or AT parameters should be 0
+  EXPECT_EQ(PPL->getNumberRegisteredSiteTypes(), 2);
+  EXPECT_EQ(PPL->getEpsilon(0), epsilon0);
+  EXPECT_EQ(PPL->getSigma(0), sigma0);
+  EXPECT_EQ(PPL->getNu(0), 0.0);
+  EXPECT_EQ(PPL->getSiteMass(0), mass0);
+  EXPECT_EQ(PPL->getEpsilon(1), 0.0);
+  EXPECT_EQ(PPL->getSigma(1), 0.0);
+  EXPECT_EQ(PPL->getNu(1), nu1);
+  EXPECT_EQ(PPL->getSiteMass(1), mass1);
+
+  // Calculate Mixing Data
+  PPL->calculateMixingCoefficients();
+
+  // Check mixing data with zero-initialized sites
+  EXPECT_EQ(PPL->getMixing24Epsilon(0, 1), 0.0);
+  EXPECT_EQ(PPL->getMixingSigmaSquared(1, 0), 0.25);
+  EXPECT_EQ(PPL->getMixingNu(0, 0, 1), 0.0);
+  EXPECT_EQ(PPL->getMixingNu(1, 1, 0), 0.0);
+
+  // Check that add<LJ/AT>Site for a non-initialized siteId throws an error.
+  EXPECT_ANY_THROW(PPL->addLJParametersToSite(2, 1., 1.));
+  EXPECT_ANY_THROW(PPL->addATParametersToSite(3, 1.));
 }
 
 /**
@@ -70,8 +128,10 @@ TEST_F(ParticlePropertiesLibraryTest, MolPropertiesAddingAndGettingTest) {
 
 #if MD_FLEXIBLE_MODE == MULTISITE
   // add two site types
-  PPL->addSiteType(0, 1., 1., 1.);
-  PPL->addSiteType(1, 0.2, 0.7, 1.2);
+  PPL->addSiteType(0, 1.);
+  PPL->addSiteType(1, 1.2);
+  PPL->addLJParametersToSite(0, 1., 1.);
+  PPL->addLJParametersToSite(1, 0.2, 0.7);
 
   // Check that PPL is empty of molecule types
   EXPECT_EQ(PPL->getNumberRegisteredMolTypes(), 0);
@@ -159,7 +219,8 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   std::shared_ptr<ParticlePropertiesLibrary<double, size_t>> PPL =
       std::make_shared<ParticlePropertiesLibrary<double, size_t>>(cutoff);
 
-  PPL->addSiteType(0, epsilon, sigma, 1.);
+  PPL->addSiteType(0, 1.);
+  PPL->addLJParametersToSite(0, epsilon, sigma);
   PPL->calculateMixingCoefficients();
 
   const auto cutoffSquared = cutoff * cutoff;
@@ -203,9 +264,12 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
   const double sigma1 = 1.4;
   const double epsilon2 = 1.;
   const double sigma2 = 1.;
-  PPL->addSiteType(0, epsilon0, sigma0, 1.);
-  PPL->addSiteType(1, epsilon1, sigma1, 1.);
-  PPL->addSiteType(2, epsilon2, sigma2, 1.);
+  PPL->addSiteType(0, 1.);
+  PPL->addLJParametersToSite(0, epsilon0, sigma0);
+  PPL->addSiteType(1, 1.);
+  PPL->addLJParametersToSite(1, epsilon1, sigma1);
+  PPL->addSiteType(2, 1.);
+  PPL->addLJParametersToSite(2, epsilon2, sigma2);
 
   // Calculate mixing coefficients
   PPL->calculateMixingCoefficients();
@@ -260,7 +324,7 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
   // Confirm that PPL's individual get sime mixing data functions match PPL's get all mixing data for a site-type pair.
   for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {
     for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); j++) {
-      const auto allMixingData = PPL->getMixingData(i, j);
+      const auto allMixingData = PPL->getLJMixingData(i, j);
       const auto epsilon24 = PPL->getMixing24Epsilon(i, j);
       const auto sigmaSquared = PPL->getMixingSigmaSquared(i, j);
       const auto shift6 = PPL->getMixingShift6(i, j);
@@ -268,6 +332,74 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesMixingTest) {
       EXPECT_DOUBLE_EQ(allMixingData.epsilon24, epsilon24);
       EXPECT_DOUBLE_EQ(allMixingData.sigmaSquared, sigmaSquared);
       EXPECT_DOUBLE_EQ(allMixingData.shift6, shift6);
+    }
+  }
+}
+
+/**
+ * Tests that getting the Axilrod-Teller mixing data works correctly and that the mixing rules applied in PPL are
+ * correct. In addition, tests that the mixing data getters are consistent with each other.
+ */
+TEST_F(ParticlePropertiesLibraryTest, AxilrodTellerMixingTest) {
+  const double cutoff = 1.1;
+  const double cutoffSquared = cutoff * cutoff;
+  std::shared_ptr<ParticlePropertiesLibrary<double, unsigned int>> PPL =
+      std::make_shared<ParticlePropertiesLibrary<double, unsigned int>>(cutoff);
+
+  // Add three sites
+  const double nu0 = 0.1;
+  const double nu1 = 0.7;
+  const double nu2 = 0.3;
+
+  PPL->addSiteType(0, 1.);
+  PPL->addATParametersToSite(0, nu0);
+  PPL->addSiteType(1, 1.);
+  PPL->addATParametersToSite(1, nu1);
+  PPL->addSiteType(2, 1.);
+  PPL->addATParametersToSite(2, nu2);
+
+  // Calculate mixing coefficients
+  PPL->calculateMixingCoefficients();
+
+  // Calculate expected values. Mixing rules are commutative so only unique values are calculated.
+  const auto nu001 = std::cbrt(nu0 * nu0 * nu1);
+  const auto nu011 = std::cbrt(nu0 * nu1 * nu1);
+  const auto nu112 = std::cbrt(nu1 * nu1 * nu2);
+  const auto nu122 = std::cbrt(nu1 * nu2 * nu2);
+  const auto nu012 = std::cbrt(nu0 * nu1 * nu2);
+
+  // Compare PPL's calculated mixing coefficients against the expected values
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 0, 0), nu0);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 0, 1), nu001);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 1, 0), nu001);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 0, 0), nu001);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 1, 1), nu011);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 0, 1), nu011);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 1, 0), nu011);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 1, 1), nu1);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 1, 2), nu112);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 2, 1), nu112);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 1, 1), nu112);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 2, 2), nu122);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 1, 2), nu122);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 2, 1), nu122);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 2, 2), nu2);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 1, 2), nu012);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(0, 2, 1), nu012);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 0, 2), nu012);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(1, 2, 0), nu012);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 0, 1), nu012);
+  EXPECT_DOUBLE_EQ(PPL->getMixingNu(2, 1, 0), nu012);
+
+  // Confirm that PPL's individual get same mixing data functions match PPL's get all mixing data for a site-type pair.
+  for (unsigned int i = 0; i < PPL->getNumberRegisteredSiteTypes(); i++) {
+    for (unsigned int j = 0; j < PPL->getNumberRegisteredSiteTypes(); j++) {
+      for (unsigned int k = 0; k < PPL->getNumberRegisteredSiteTypes(); k++) {
+        const auto allMixingData = PPL->getATMixingData(i, j, k);
+        const auto nu = PPL->getMixingNu(i, j, k);
+
+        EXPECT_DOUBLE_EQ(allMixingData.nu, nu);
+      }
     }
   }
 }

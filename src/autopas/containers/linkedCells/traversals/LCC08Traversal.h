@@ -8,7 +8,7 @@
 
 #include "LCC08CellHandler.h"
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
@@ -25,8 +25,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
-                       public LCTraversalInterface<ParticleCell> {
+class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the lc_c08 traversal.
@@ -35,7 +34,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCC08Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
@@ -43,10 +42,11 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
                           DataLayoutOption dataLayout, bool useNewton3)
       : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
+
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c08; }
 
@@ -57,7 +57,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
   [[nodiscard]] bool isApplicable() const override { return true; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellHandler.setSortingThreshold(sortingThreshold); }
 
@@ -66,7 +66,7 @@ class LCC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>,
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void LCC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     unsigned long baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

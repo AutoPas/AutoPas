@@ -11,7 +11,7 @@
 #include "AutoPasTestBase.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/tuning/selectors/TraversalSelector.h"
-#include "mocks/MockFunctor.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class TraversalSelectorTest : public AutoPasTestBase {

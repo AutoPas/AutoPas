@@ -30,6 +30,10 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -109,6 +113,18 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+/**
+ * Type of LJFunctorTypeAT used in md-flexible.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "The Axilrod Teller functor does not have support for multisite molecules!"
+#else
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+#endif
+
+#endif
+
 /**
  * Type of the Particle Properties Library.
  * Set to the same precision as ParticleType.
@@ -116,9 +132,9 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
 
 /**
- * We require access to a version of the force functor for non-iteratePairwise purposes, e.g. calculating FLOPs or AoS
- * functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is chosen to
- * be used in the CMake.
+ * We require access to a version of the force functor for non-computeInteractions purposes, e.g. calculating FLOPs or
+ * AoS functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is
+ * chosen to be used in the CMake.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
@@ -136,6 +152,10 @@ using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas
 using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
 #elif MD_FLEXIBLE_FUNCTOR_SVE
 using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
+#endif
+
+#ifdef MD_FLEXIBLE_FUNCTOR_AT
+using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true>;
 #endif
 
 #endif

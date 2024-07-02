@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/SlicedBalancedBasedTraversal.h"
+#include "autopas/containers/cellTraversals/SlicedBalancedBasedTraversal.h"
 #include "autopas/containers/verletClusterLists/VerletClusterLists.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLClusterFunctor.h"
 #include "autopas/containers/verletClusterLists/traversals/VCLTraversalInterface.h"
@@ -78,12 +78,12 @@ class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setSortingThreshold(size_t sortingThreshold) override {}

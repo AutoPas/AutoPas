@@ -15,7 +15,7 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -43,7 +43,7 @@ template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool relevantForTuning = true>
 class LJFunctorSVE
-    : public autopas::Functor<
+    : public autopas::PairwiseFunctor<
           Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -61,7 +61,7 @@ class LJFunctorSVE
    */
   explicit LJFunctorSVE(double cutoff, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
-      : autopas::Functor<
+      : autopas::PairwiseFunctor<
             Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
@@ -75,7 +75,7 @@ class LJFunctorSVE
     }
   }
 #else
-      : autopas::Functor<
+      : autopas::PairwiseFunctor<
             Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
@@ -109,6 +109,8 @@ class LJFunctorSVE
                   "or set mixing to true.");
     _PPLibrary = &particlePropertiesLibrary;
   }
+
+  std::string getName() final { return "LJFunctorSVE"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -179,7 +181,7 @@ class LJFunctorSVE
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor will always do a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
@@ -193,7 +195,7 @@ class LJFunctorSVE
 
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   // clang-format on
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
@@ -420,7 +422,7 @@ class LJFunctorSVE
     const svuint64_t typeIds =
         useMixing ? svmul_m(pgC, (indexed) ? svld1_gather_index(pgC, typeID2ptr, index) : svld1_u64(pgC, typeID2ptr), 3)
                   : svundef_u64();
-    const auto mixingDataPtr = useMixing ? _PPLibrary->getMixingDataPtr(*typeID1ptr, 0) : nullptr;
+    const auto mixingDataPtr = useMixing ? _PPLibrary->getLJMixingDataPtr(*typeID1ptr, 0) : nullptr;
 
     const svfloat64_t sigmaSquareds =
         useMixing ? svld1_gather_index(pgC, mixingDataPtr + 1, typeIds) : svdup_f64(_sigmaSquared);
@@ -611,7 +613,7 @@ class LJFunctorSVE
  public:
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    * @note If you want to parallelize this by openmp, please ensure that there
    * are no dependencies, i.e. introduce colors and specify iFrom and iTo accordingly.
    */

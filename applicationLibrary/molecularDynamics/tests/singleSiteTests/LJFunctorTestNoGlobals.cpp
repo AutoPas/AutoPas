@@ -16,10 +16,12 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   std::unique_ptr<FuncType> functor;
 
-  particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1.0);
+  particlePropertiesLibrary.addSiteType(0, 1.0);
+  particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
   if constexpr (mixing) {
     functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
-    particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0);
+    particlePropertiesLibrary.addSiteType(1, 1.0);
+    particlePropertiesLibrary.addLJParametersToSite(1, this->epsilon2, this->sigma2);
   } else {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->epsilon * 24, 1);
@@ -98,8 +100,12 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     std::unique_ptr<FuncType> functor;
 
     if constexpr (mixing) {
-      particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1.0);
-      particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0);
+      particlePropertiesLibrary.addSiteType(0, 1.0);
+      particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
+
+      particlePropertiesLibrary.addSiteType(1, 1.0);
+      particlePropertiesLibrary.addLJParametersToSite(1, this->epsilon2, this->sigma2);
+
       particlePropertiesLibrary.calculateMixingCoefficients();
       functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     } else {

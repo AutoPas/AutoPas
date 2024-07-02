@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "autopas/containers/cellPairTraversals/CellPairTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -36,7 +36,7 @@ class LCC04SoACellHandler {
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
    * @param overlap number of overlapping cells in each direction as result from cutoff and cellLength.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit LCC04SoACellHandler(PairwiseFunctor *pairwiseFunctor, const std::array<unsigned long, 3> &cellsPerDimension,

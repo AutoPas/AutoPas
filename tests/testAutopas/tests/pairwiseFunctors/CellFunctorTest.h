@@ -7,10 +7,9 @@
 #pragma once
 
 #include "AutoPasTestBase.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/baseFunctors/Functor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
-#include "testingHelpers/LJPotential.h"
 #include "testingHelpers/commonTypedefs.h"
 
 template <typename T>

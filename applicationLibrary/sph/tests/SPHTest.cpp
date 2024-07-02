@@ -722,8 +722,8 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
         &fnctr, autopas::DataLayoutOption::aos, true);
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
-    verletLists.iteratePairwise(&traversalLJVerlet);
-    linkedCells.iteratePairwise(&traversalLJ);
+    verletLists.iterateInteractions(&traversalLJVerlet);
+    linkedCells.iterateInteractions(&traversalLJ);
   } else {
     autopas::LCC08Traversal<autopas::FullParticleCell<SPHParticle>, FunctorType> traversalLJ(
         linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &fnctr, linkedCells.getInteractionLength(),
@@ -732,8 +732,8 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
         &fnctr, autopas::DataLayoutOption::soa, true);
 
     verletLists.rebuildNeighborLists(&traversalLJVerlet);
-    verletLists.iteratePairwise(&traversalLJVerlet);
-    linkedCells.iteratePairwise(&traversalLJ);
+    verletLists.iterateInteractions(&traversalLJVerlet);
+    linkedCells.iterateInteractions(&traversalLJ);
   }
   check(verletLists, linkedCells, numMolecules, relErrTolerance);
 }
