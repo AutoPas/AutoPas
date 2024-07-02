@@ -20,6 +20,10 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_XSIMD "If instruction set is available, compile XSIMD Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_MIPP "If instruction set is available, compile MIPP Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_SIMDE "If instruction set is available, compile SIMDe Functor without calculation of global values." ON)
+option(MD_FLEXIBLE_FUNCTOR_HWY "If instruction set is available, compile Highway Function without calculation of global values." ON)
 
 target_compile_definitions(
         md-flexible
@@ -28,7 +32,11 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
-)
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_XSIMD}>:MD_FLEXIBLE_FUNCTOR_XSIMD>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_MIPP}>:MD_FLEXIBLE_FUNCTOR_MIPP>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SIMDE}>:MD_FLEXIBLE_FUNCTOR_SIMDE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_HIGHWAY}>:MD_FLEXIBLE_FUNCTOR_HWY>
+        )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
 string(TOLOWER "${MD_FLEXIBLE_MODE}" MD_FLEXIBLE_MODE_lower)
@@ -98,6 +106,9 @@ if (NOT AUTOPAS_USE_VECTORIZATION)
 elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SSE")
     # If vectorization is set to SSE: don't enable the example
     message(STATUS "Only SSE specified, not adding md-flexible-avx.test-unaligned to ctest.")
+    set(HAS_AVX false)
+elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "SVE")
+    message(STATUS "SVE vectorization level, not adding md-flexible-avx.test-unaligned to ctest.")
     set(HAS_AVX false)
 elseif (AUTOPAS_VECTOR_INSTRUCTIONS MATCHES "NATIVE")
     # If Vectorization is set to native: we try to figure out the vectorization level.
