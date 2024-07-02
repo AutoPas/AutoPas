@@ -1,11 +1,11 @@
-set(AUTOPAS_ENABLE_RULES_BASED_TUNING
+set(AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
         # Default is OFF just for faster default compilation time.
         OFF
         CACHE
-        BOOL "Enables rules-based tuning, which, if using the bundled version, will compile ANTLR and, if it is not installed uuid."
+        BOOL "Enables rules-based tuning and fuzzy tuning, which, if using the bundled version, will compile ANTLR and, if it is not installed uuid."
         )
 
-if (AUTOPAS_ENABLE_RULES_BASED_TUNING)
+if (AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING)
     message(STATUS "Rules-Based Tuning Enabled")
     message(STATUS "antlr4cpp - using bundled version")
 
