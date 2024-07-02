@@ -9,7 +9,7 @@ AutoPas assumes that any (short-range) particle simulation boils down to three h
 
 ## Code Example
 A conceptual example of a primary simulation loop:
-```cpp
+```c++
 // main simulation loop
 while (needsMoreIterations()) {
    // 1. Particles movement as a result of interactions or simulation forces.
@@ -40,7 +40,7 @@ This step is highly user-dependent.
 Based on the simulation at hand, particles move due to the result of interaction forces or forces coming from the simulation model.
 Nevertheless, positions are usually updated through regular AutoPas iterators
 (see [`Iterators.md`](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/Iterators.md) for details):
-```cpp
+```c++
 void updatePositions() {
    for (auto &p : autopas) {
       p.setR(calculateNewPosition(p);
@@ -49,7 +49,7 @@ void updatePositions() {
 ```
 
 #### 1.1 Data Structure Update
-```cpp
+```c++
 auto emigrants = autopas->updateContainer();
 ```
 This method has to be called in every iteration after particles are moved.
@@ -59,7 +59,7 @@ It achieves three things (see [`ContainerInterfaceModel.md`](https://github.com/
   - Particles leaving the bounding box of the container are (marked as) deleted and returned as emigrants.
 
 #### 1.2 Particle Exchange
-```cpp
+```c++
 autopas->addParticles(immigrants);
 autopas->addHaloParticles(haloParticles);
 ```
@@ -71,7 +71,7 @@ Examples of this could be:
   - Deletion of particles due to outflow condition.
 
 ### 2. Particle Interaction
-```cpp
+```c++
 YourFunctor functor();
 autopas->iteratePairwise(&functor);
 ```
