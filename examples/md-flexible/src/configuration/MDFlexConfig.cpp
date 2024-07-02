@@ -301,9 +301,28 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) with globals" << endl;
       break;
     }
+    case FunctorOption::lj12_6_XSIMD: {
+      os << "Lennard-Jones (12-6) XSIMD Wrapper" << endl;
+      break;
+    }
+    case FunctorOption::lj12_6_MIPP: {
+      os << "Lennard-Jones (12-6) MIPP Wrapper" << endl;
+      break;
+    }
+    case FunctorOption::lj12_6_SIMDe: {
+        os << "Lennard-Jones (12-6) SIMD Everywhere Wrapper" << endl;
+        break;
+    }
+    case FunctorOption::lj12_6_HWY: {
+        os << "Lennard-Jones (12-6) Highway Wrapper" << endl;
+    }
+    case FunctorOption::lj12_6smooth: {
+        os << "Lennard-Jones (12-6) Smoothed" << endl;
+    }
   }
   printOption(newton3Options);
   printOption(cutoff);
+  printOption(innerCutoff);
   printOption(boxMin);
   printOption(boxMax);
   printOption(cellSizeFactors);
@@ -406,6 +425,7 @@ std::string MDFlexConfig::to_string() const {
 }
 
 void MDFlexConfig::calcSimulationBox() {
+  //TODO do i need to add innercutoff to this?
   const double interactionLength = cutoff.value + verletSkinRadiusPerTimestep.value * verletRebuildFrequency.value;
 
   // helper function so that we can do the same for every object collection
@@ -489,6 +509,7 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 void MDFlexConfig::flushParticles() { _particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
+  //TODO do i need to add inner cutoff for this?
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
 
   // check size of site level vectors match

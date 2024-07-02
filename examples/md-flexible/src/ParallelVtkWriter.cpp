@@ -45,6 +45,7 @@ void ParallelVtkWriter::recordTimestep(size_t currentIteration, const autopas::A
   recordDomainSubdivision(currentIteration, autoPasContainer.getCurrentConfig(), decomposition);
 }
 
+
 /**
  * @todo: Currently this function runs over all the particles for each property separately.
  * This can be improved by using multiple string streams (one for each property).
@@ -241,10 +242,35 @@ void ParallelVtkWriter::tryCreateSessionAndDataFolders(const std::string &name, 
   tryCreateFolder("data", _sessionFolderPath);
 }
 
+void ParallelVtkWriter::writeAnimationPvd(){
+  std::ostringstream filename;
+  double time = 0;
+  double step = 0.2;
+  filename << _sessionFolderPath << _sessionName << "_" << "animation"<< ".pvd";
+  std::ofstream animationFile;
+  animationFile.open(filename.str(), std::ios::out | std::ios::binary);
+
+  animationFile << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
+  animationFile << "<VTKFile type=\"Collection\" version=\"0.1\" byte_order=\"LittleEndian\" compressor=\"vtkZLibDataCompressor\">\n";
+  animationFile << "  <Collection>\n";
+  for (auto & names : pvtuNames) {
+    animationFile << "    <DataSet timestep=\"" << std::to_string(time) << "\" group=\"\" part=\"0\" file=\"" << names << "\"/>\n";
+    time = time + step;
+  }
+  animationFile << "  </Collection>\n";
+  animationFile << "</VTKFile>";
+}
+
+
 void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
+
+  std::ostringstream temp;
+  temp << _sessionName << "_" << std::setfill('0')
+                            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvtu";
+  pvtuNames.push_back(temp.str());
 
   std::ofstream timestepFile;
   timestepFile.open(filename.str(), std::ios::out | std::ios::binary);
@@ -364,3 +390,4 @@ void ParallelVtkWriter::generateFilename(const std::string &filetype, size_t cur
   filenameStream << _dataFolderPath << _sessionName << "_" << _mpiRank << "_" << std::setfill('0')
                  << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << "." << filetype;
 }
+
