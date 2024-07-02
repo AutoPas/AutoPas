@@ -28,8 +28,8 @@ namespace autopas::utils::ArrayMath::Argon {
  * @param displacementKI
  * @return single term in the summation of the repulsive force
  */
-template <size_t ID>
-[[nodiscard]] nabla F_repulsive_abc(const size_t &a, const size_t &b, const size_t &c, const std::array<double, 23> &A,
+template <size_t a, size_t b, size_t c, size_t ID>
+[[nodiscard]] nabla F_repulsive_abc(const std::array<double, 23> &A,
                                     const std::array<double, 23> &alpha, DisplacementHandle displacementIJ,
                                     DisplacementHandle displacementJK, DisplacementHandle displacementKI) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
@@ -68,29 +68,29 @@ template <size_t ID>
 [[nodiscard]] nabla F_repulsive(const std::array<double, 23> &A, const std::array<double, 23> &alpha,
                                 DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
                                 DisplacementHandle displacementKI) {
-  const auto F = F_repulsive_abc<ID>(0, 0, 0, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 0, 1, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 1, 1, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(1, 1, 1, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 0, 2, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 1, 2, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(1, 1, 2, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 2, 2, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(1, 2, 2, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(2, 2, 2, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 0, 3, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 1, 3, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(1, 1, 3, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 2, 3, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(1, 2, 3, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 3, 3, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 0, 4, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 1, 4, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(1, 1, 4, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 2, 4, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 0, 5, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 1, 5, A, alpha, displacementIJ, displacementJK, displacementKI) +
-                 F_repulsive_abc<ID>(0, 0, 6, A, alpha, displacementIJ, displacementJK, displacementKI);
+  const auto F = F_repulsive_abc<0, 0, 0, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 0, 1, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 1, 1, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<1, 1, 1, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 0, 2, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 1, 2, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<1, 1, 2, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 2, 2, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<1, 2, 2, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<2, 2, 2, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 0, 3, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 1, 3, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<1, 1, 3, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 2, 3, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<1, 2, 3, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 3, 3, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 0, 4, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 1, 4, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<1, 1, 4, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 2, 4, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 0, 5, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 1, 5, ID>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 F_repulsive_abc<0, 0, 6, ID>(A, alpha, displacementIJ, displacementJK, displacementKI);
   return F;
 }
 }  // namespace autopas::utils::ArrayMath::Argon
