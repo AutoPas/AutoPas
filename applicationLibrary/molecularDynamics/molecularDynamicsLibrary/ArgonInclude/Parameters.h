@@ -106,13 +106,31 @@ constexpr size_t indexDispersionPart(const size_t i, const size_t j, const size_
   if (i == 1 && j == 1 && k == 2) {
     return 1;
   }
+  if (i == 1 && j == 2 && k == 1) {
+    return 1;
+  }
+  if (i == 2 && j == 1 && k == 1) {
+    return 1;
+  }
   if (i == 1 && j == 2 && k == 2) {
+    return 2;
+  }
+  if (i == 2 && j == 1 && k == 2) {
+    return 2;
+  }
+  if (i == 2 && j == 2 && k == 1) {
     return 2;
   }
   if (i == 2 && j == 2 && k == 2) {
     return 3;
   }
   if (i == 1 && j == 1 && k == 3) {
+    return 4;
+  }
+  if (i == 1 && j == 3 && k == 1) {
+    return 4;
+  }
+  if (i == 3 && j == 1 && k == 1) {
     return 4;
   }
   throw autopas::utils::ExceptionHandler::AutoPasException("Parameter cannot be accessed");
