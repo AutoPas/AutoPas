@@ -40,7 +40,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
     auto *traversalInterface = dynamic_cast<VVLTraversalInterface<NeighborList> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setNeighborListToTraverse(_neighborList);
@@ -50,7 +50,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -60,7 +60,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   long getNumberOfNeighborPairs() const { return _neighborList.getNumberOfNeighborPairs(); }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid
@@ -69,12 +69,6 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     if (traversal->getDataLayout() == DataLayoutOption::soa and not _neighborList.isSoAListValid()) {
       _neighborList.generateSoAFromAoS();
     }
-  }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VarVerletLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for VarVerletLists has "
-        "not been implemented yet.");
   }
 
  private:

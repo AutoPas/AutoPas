@@ -24,7 +24,7 @@ namespace autopas {
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
 template <class ParticleCell, class Functor, int collapseDepth = 3>
-class ColorBasedTraversal : public CellTraversal<ParticleCell>, virtual public TraversalInterface {
+class ColorBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
  protected:
   /**
    * Constructor of the ColorBasedTraversal.

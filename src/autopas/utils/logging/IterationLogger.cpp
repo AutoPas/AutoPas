@@ -8,7 +8,7 @@
 
 #include "utils/Timer.h"
 
-autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
+autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool energyMeasurements)
     : _loggerName("IterationLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
@@ -21,21 +21,24 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix)
   // set the pattern to the message only
   headerLogger->set_pattern("%v");
   // print csv header
-  headerLogger->info(
+  std::string csvHeader =
       "Date,"
       "Iteration,"
       "Functor,"
       "inTuningPhase,"
       "{},"
-      "iteratePairwise[ns],"
+      "iterateInteractions[ns],"
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
-      "iteratePairwiseTotal[ns],"
-      "tuning[ns],"
-      "energyPsys[J],"
-      "energyPkg[J],"
-      "energyRam[J]",
-      Configuration().getCSVHeader());
+      "iterateInteractionsTotal[ns],"
+      "tuning[ns]";
+  if (energyMeasurements) {
+    csvHeader.append(
+        ",energyPsys[J],"
+        "energyPkg[J],"
+        "energyRam[J]");
+  }
+  headerLogger->info(csvHeader, Configuration().getCSVHeader());
   spdlog::drop(headerLoggerName);
   // End of workaround
 
@@ -53,14 +56,21 @@ autopas::IterationLogger::~IterationLogger() {
 }
 
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
-                                            std::string functorName, bool inTuningPhase, long timeIteratePairwise,
-                                            long timeRemainderTraversal, long timeRebuildNeighborLists,
-                                            long timeIteratePairwiseTotal, long timeTuning, double energyPsys,
-                                            double energyPkg, double energyRam) {
+                                            std::string functorName, bool inTuningPhase, long timeTuning,
+                                            const IterationMeasurements &measurements) {
 #ifdef AUTOPAS_LOG_ITERATIONS
-  spdlog::get(_loggerName)
-      ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
-             configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuildNeighborLists,
-             timeIteratePairwiseTotal, timeTuning, energyPsys, energyPkg, energyRam);
+  const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
+               energyPsys, energyPkg, energyRam, energyTotal] = measurements;
+  if (energyMeasurementsPossible) {
+    spdlog::get(_loggerName)
+        ->info("{},{},{},{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
+               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
+               timeTuning, energyPsys, energyPkg, energyRam);
+  } else {
+    spdlog::get(_loggerName)
+        ->info("{},{},{},{},{},{},{},{},{}", iteration, functorName, inTuningPhase ? "true" : "false",
+               configuration.getCSVLine(), timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal,
+               timeTuning);
+  }
 #endif
 }

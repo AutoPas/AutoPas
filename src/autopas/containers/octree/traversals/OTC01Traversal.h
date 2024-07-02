@@ -44,8 +44,7 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
    */
   explicit OTC01Traversal(PairwiseFunctor *pairwiseFunctor, double cutoff, double interactionLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3),
-        CellTraversal<ParticleCell>({2, 1, 1}),
+      : CellTraversal<ParticleCell>({2, 1, 1}),
         OTTraversalInterface<OctreeNodeWrapper<Particle>>(interactionLength, dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, cutoff /*should use cutoff here, if not used to build verlet-lists*/, dataLayout,
                      useNewton3),
@@ -68,10 +67,10 @@ class OTC01Traversal : public CellTraversal<OctreeLeafNode<Particle>>,
   }
 
   /**
-   * @copydoc PairwiseTraversalInterface::traverseParticlePairs()
+   * @copydoc TraversalInterface::traverseParticles()
    * @note This function expects a vector of exactly two cells. First cell is the main region, second is halo.
    */
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     using namespace autopas::utils::ArrayMath::literals;
 
     auto *haloWrapper = this->getHalo();

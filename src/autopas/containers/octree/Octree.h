@@ -139,13 +139,13 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     return invalidParticles;
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
     if (auto *traversalInterface = dynamic_cast<OTTraversalInterface<ParticleCell> *>(traversal)) {
       traversalInterface->setCells(&this->_cells);
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -190,9 +190,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
                                                                  this->getVerletSkin());
   }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {}
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {}
+  void rebuildNeighborLists(TraversalInterface *traversal) override {}
 
   std::tuple<const Particle *, size_t, size_t> getParticle(size_t cellIndex, size_t particleIndex,
                                                            IteratorBehavior iteratorBehavior,
@@ -255,8 +253,7 @@ class Octree : public CellBasedParticleContainer<OctreeNodeWrapper<Particle>>,
     if constexpr (regionIter) {
       // We extend the search box for cells here since particles might have moved
       boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-      boxMaxWithSafetyMargin +=
-          boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
     }
 
     std::vector<size_t> currentCellIndex{};

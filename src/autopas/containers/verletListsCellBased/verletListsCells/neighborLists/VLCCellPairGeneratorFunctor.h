@@ -18,7 +18,7 @@ namespace autopas {
 template <class Particle>
 
 class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
-  using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
+  using PairwiseNeighborListsType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle>;
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:

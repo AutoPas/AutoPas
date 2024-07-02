@@ -15,7 +15,7 @@
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
-// Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
+// Declare the main AutoPas class and the computeInteractions() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
 extern template class autopas::AutoPas<ParticleType>;
@@ -119,11 +119,13 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
-  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
+
   if (_configuration.getInteractionTypes().size() == 0) {
-    throw std::runtime_error(
-        "MD-flexible is not configured for any interaction type. Please specify which functor should be used.");
+    _configuration.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+    _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
+    std::cout << "WARNING: No functor was specified. Using the default Lennard-Jones AutoVec functor." << std::endl;
   }
+  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
 
   // Pairwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
@@ -215,10 +217,6 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-  _homogeneity =
-      autopas::utils::calculateHomogeneityAndMaxDensity(*_autoPasContainer, _domainDecomposition->getGlobalBoxMin(),
-                                                        _domainDecomposition->getGlobalBoxMax())
-          .first;
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -559,18 +557,11 @@ void Simulation::logSimulationState() {
   autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
-  double squaredHomogeneity = _homogeneity * _homogeneity;
-  double standardDeviationOfHomogeneity{};
-  autopas::AutoPas_MPI_Allreduce(&squaredHomogeneity, &standardDeviationOfHomogeneity, 1, AUTOPAS_MPI_DOUBLE,
-                                 AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-  standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
-
   if (_domainDecomposition->getDomainIndex() == 0) {
     std::cout << "\n\n"
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
-              << "Halo : " << haloParticles << "\n"
-              << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+              << "Halo : " << haloParticles << std::endl;
   }
 }
 

@@ -28,8 +28,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
-                       public LCPairTraversalInterface<ParticleCell> {
+class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -46,15 +45,14 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
   explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                           const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3),
-        C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+      : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
         _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3) {
     computeOffsets();
   }
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   /**
    * Computes all interactions between the base
@@ -204,9 +202,10 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC18Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void LCC18Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
-  this->c18Traversal([&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
+  this->template c18Traversal</*allCells*/ false>(
+      [&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });
 }
 
 }  // namespace autopas

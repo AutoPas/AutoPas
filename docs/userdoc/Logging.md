@@ -24,7 +24,7 @@ Creates a graph representation of the Gaussian cluster model that was created du
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_GAUSSIANCLUSTER`.
 
 ## IterationLogger
-Creates a CSV file containing information about the configuration and timings of every single call to `iteratePairwise()`.
+Creates a CSV file containing information about the configuration and timings of every single call to `iterateInteractions()`.
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_ITERATIONS`.
 
 ## OctreeLogger

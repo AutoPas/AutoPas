@@ -22,7 +22,7 @@ namespace autopas {
  */
 template <class ParticleCell, class Particle, class PairwiseFunctor>
 class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBuild<Particle>>,
-                            public PairwiseTraversalInterface {
+                            public TraversalInterface {
  private:
   /**
    * Internal iterate method for AoS.
@@ -61,7 +61,7 @@ class VVLAsBuildTraversal : public VVLTraversalInterface<VerletNeighborListAsBui
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     auto &neighborList = *(this->_neighborList);
     switch (this->_dataLayout) {
       case DataLayoutOption::aos:

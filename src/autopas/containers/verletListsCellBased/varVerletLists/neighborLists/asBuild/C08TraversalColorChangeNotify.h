@@ -33,8 +33,7 @@ class C08TraversalColorChangeNotify : public LCC08Traversal<ParticleCell, Pairwi
   C08TraversalColorChangeNotify(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                 double interactionLength, const std::array<double, 3> &cellLength,
                                 ColorChangeObserver *observer, DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3),
-        LCC08Traversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength, dataLayout,
+      : LCC08Traversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength, dataLayout,
                                                       useNewton3),
         _observer(observer) {}
 

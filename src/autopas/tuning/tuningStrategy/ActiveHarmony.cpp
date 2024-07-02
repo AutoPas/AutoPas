@@ -30,6 +30,7 @@ ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
       _mpiDivideAndConquer(mpiDivideAndConquer),
       _comm(comm),
       _nonLocalServer(getenv("HARMONY_HOST") != nullptr and mpiDivideAndConquer) {
+#ifdef AUTOPAS_ENABLE_HARMONY
   if (searchSpaceIsEmpty()) {
     utils::ExceptionHandler::exception("ActiveHarmony: No valid configurations could be created.");
   }
@@ -38,9 +39,11 @@ ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
   if (getenv("HARMONY_HOME") == nullptr) {
     putenv(const_cast<char *>(HARMONY_HOME));
   }
+#endif
 }
 
 ActiveHarmony::~ActiveHarmony() {
+#ifdef AUTOPAS_ENABLE_HARMONY
   if (htask != nullptr) {
     ah_leave(htask);
     ah_kill(htask);
@@ -49,9 +52,11 @@ ActiveHarmony::~ActiveHarmony() {
     ah_close(hdesc);
     ah_free(hdesc);
   }
+#endif
 }
 
 void ActiveHarmony::addEvidence(const Configuration &configuration, const Evidence &evidence) {
+#ifdef AUTOPAS_ENABLE_HARMONY
   if (searchSpaceIsTrivial() or searchSpaceIsEmpty()) {
     AutoPasLog(DEBUG, "ActiveHarmony::addEvidence: Search space is {}; did not report performance",
                searchSpaceIsTrivial() ? "trivial" : "empty");
@@ -61,10 +66,12 @@ void ActiveHarmony::addEvidence(const Configuration &configuration, const Eviden
       utils::ExceptionHandler::exception("ActiveHarmony::addEvidence: Error reporting performance to server");
     }
   }
+#endif
 }
 
 template <class OptionClass>
 OptionClass ActiveHarmony::fetchTuningParameter(const char *name, const std::set<OptionClass> &options) {
+#ifdef AUTOPAS_ENABLE_HARMONY
   OptionClass option;
   if (options.size() > 1) {
     option = decltype(option)::parseOptionExact(ah_get_enum(htask, name));
@@ -72,9 +79,13 @@ OptionClass ActiveHarmony::fetchTuningParameter(const char *name, const std::set
     option = *options.begin();
   }
   return option;
+#else
+  return {};
+#endif
 }
 
 Configuration ActiveHarmony::fetchConfiguration() {
+#ifdef AUTOPAS_ENABLE_HARMONY
   const auto traversalOption = fetchTuningParameter(traversalOptionName, _allowedTraversalOptions);
   const auto dataLayoutOption = fetchTuningParameter(dataLayoutOptionName, _allowedDataLayoutOptions);
   const auto newton3Option = fetchTuningParameter(newton3OptionName, _allowedNewton3Options);
@@ -96,9 +107,13 @@ Configuration ActiveHarmony::fetchConfiguration() {
 
   return {containerOption,  cellSizeFactor, traversalOption, loadEstimatorOption,
           dataLayoutOption, newton3Option,  _interactionType};
+#else
+  return {};
+#endif
 }
 
 void ActiveHarmony::rejectConfiguration(const Configuration &configuration, bool indefinitely) {
+#ifdef AUTOPAS_ENABLE_HARMONY
   // dummy evidence where iteration information is not needed, because we only store the measurement in harmony.
   const Evidence badDummyEvidence{
       0,
@@ -107,9 +122,11 @@ void ActiveHarmony::rejectConfiguration(const Configuration &configuration, bool
   };
   addEvidence(configuration, badDummyEvidence);
   resetHarmony();
+#endif
 }
 
 void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) {
+#ifdef AUTOPAS_ENABLE_HARMONY
   // get configurations from server until new configuration with valid newton3 option is found
   bool skipConfig;
   do {
@@ -148,10 +165,12 @@ void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
       return;
     }
   } while (skipConfig);
+#endif
 }
 
 template <class OptionClass>
 void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, const std::set<OptionClass> &options) {
+#ifdef AUTOPAS_ENABLE_HARMONY
   if (options.size() > 1) {                       // only parameters with more than 1 possible options should be tuned
     if (ah_def_enum(hdef, name, nullptr) != 0) {  // define parameter
       utils::ExceptionHandler::exception("ActiveHarmony::configureTuningParameter: Error defining enum \"{}\"", name);
@@ -165,6 +184,7 @@ void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, con
   } else {
     AutoPasLog(DEBUG, "ActiveHarmony::configureTuningParameter: Skipping trivial parameter {}", name);
   }
+#endif
 }
 
 void ActiveHarmony::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
@@ -173,6 +193,7 @@ void ActiveHarmony::reset(size_t iteration, size_t tuningPhase, std::vector<Conf
 }
 
 void ActiveHarmony::resetHarmony() {
+#ifdef AUTOPAS_ENABLE_HARMONY
   int rank, commSize;
   AutoPas_MPI_Comm_size(_comm, &commSize);
   AutoPas_MPI_Comm_rank(_comm, &rank);
@@ -238,6 +259,7 @@ void ActiveHarmony::resetHarmony() {
       }
     }
   }
+#endif
 }
 
 bool ActiveHarmony::searchSpaceIsTrivial() const {
@@ -258,6 +280,7 @@ bool ActiveHarmony::searchSpaceIsEmpty() const {
 }
 
 void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
+#ifdef AUTOPAS_ENABLE_HARMONY
   if (ah_def_name(hdef, "AutoPas") != 0) {
     utils::ExceptionHandler::exception("ActiveHarmony::reset: Error setting search name: {}", ah_error());
   }
@@ -304,6 +327,7 @@ void ActiveHarmony::setupTuningParameters(int commSize, hdef_t *hdef) {
     snprintf(numbuf, sizeof(numbuf), "%d", commSize);
     ah_def_cfg(hdef, "CLIENT_COUNT", numbuf);
   }
+#endif
 }
 
 bool ActiveHarmony::needsSmoothedHomogeneityAndMaxDensity() const { return false; }

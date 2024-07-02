@@ -26,8 +26,9 @@ Therefore, if you want to handle multiple particle types e.g. asteroids vs satel
 This could be achieved via the introduction of an indicator member in your particle class e.g. `typeId` or having the class itself contain the fields for all types.
 
 ## Custom Functors
-The functor is a class that defines the interaction of particles, also sometimes referred to as the force kernel.
-For compatibility, it should inherit from [`Functor`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/pairwiseFunctors/Functor.h).
+The functor is a class that defines the interaction of particles, also sometimes referred to as the force kernel. 
+AutoPas supports pairwise interactions as well as interactions between triplets of particles.
+For compatibility, your functor must inherit from either [`PairwiseFunctor`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/baseFunctors/PairwiseFunctor.h) or [`TriwiseFunctor`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/baseFunctors/TriwiseFunctor.h).
 This class defines how to calculate and store the interactions, as well as some properties of the calculation.
 
 The critical elements to implement are:
@@ -43,12 +44,20 @@ The critical elements to implement are:
 - `isRelevantForTuning()`:
   Indicator function to tell the tuning mechanism if iterations using this functor should be considered or not.
 
-As an example see [`SPHCalcDensityFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary/SPHCalcDensityFunctor.h).
+As an example for a pairwise functor see [`SPHCalcDensityFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary/SPHCalcDensityFunctor.h).
+As an example for a triwise functor see [`AxilrodTellerFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/AxilrodTellerFunctor.h).
 
 ### Using multiple functors
-AutoPas is able to work with simulation setups that use multiple functors to describe different forces.
-A demonstration of that is the [sph example](https://github.com/AutoPas/AutoPas/blob/master/examples/sph/).
-There exist some caveats that have to be considered when using multiple functors:
+AutoPas is able to work with simulation setups that use multiple functors of the same or different interaction types to describe different forces.
+
+#### Multiple functors of different interaction types
+AutoPas supports pairwise and triwise functors which can also be combined to calculate e.g. different force components.
+AutoPas tunes pairwise and triwise functors separately, which means that their configurations are independent.
+An example input file to set up such a simulation can be found in [`3BodyTest.yaml`](https://github.com/AutoPas/AutoPas/blob/master/examples/md-flexible/input/3BodyTest.yaml).
+
+#### Multiple functors of the same interaction type
+A demonstration of this is the [sph example](https://github.com/AutoPas/AutoPas/blob/master/examples/sph/).
+There exist some caveats that have to be considered when using multiple functors of the same interaction type (e.g. all pairwise):
 * All functors need to support the same Newton3 options.
   If there is one functor not supporting Newton3, you have to disable Newton3 support for AutoPas by calling
   ```cpp
@@ -63,4 +72,6 @@ There exist some caveats that have to be considered when using multiple functors
 
 ## Related Files and Folders
 - Functor.h
+- PairwiseFunctor.h
+- TriwiseFunctor.h
 - ParticleBase.h

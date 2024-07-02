@@ -33,7 +33,7 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
   EXPECT_TRUE(slicedTraversal.isApplicable());
   slicedTraversal.setCellsToTraverse(cells);
   slicedTraversal.initTraversal();
-  slicedTraversal.traverseParticlePairs();
+  slicedTraversal.traverseParticles();
 
   /* center point interactions:
    *

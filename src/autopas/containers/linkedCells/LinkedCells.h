@@ -103,11 +103,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
-    // nothing to do.
-  }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     // nothing to do.
   }
 
@@ -133,19 +129,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
     prepareTraversal(traversal);
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
-    traversal->endTraversal();
-  }
-
-  void iterateTriwise(TriwiseTraversalInterface *traversal) override {
-    prepareTraversal(traversal);
-
-    traversal->initTraversal();
-    traversal->traverseParticleTriplets();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -252,8 +240,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     if constexpr (regionIter) {
       // We extend the search box for cells here since particles might have moved
       boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-      boxMaxWithSafetyMargin +=
-          boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
     }
 
     // first and last relevant cell index

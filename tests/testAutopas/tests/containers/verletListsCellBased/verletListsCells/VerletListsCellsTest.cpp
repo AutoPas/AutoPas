@@ -20,7 +20,7 @@ using ::testing::_;
 using ::testing::AtLeast;
 
 void applyFunctor(MockPairwiseFunctor<Particle> &functor, const double cellSizefactor,
-                  autopas::VerletListsCellsHelpers<Particle>::VLCBuildType buildType) {
+                  autopas::VerletListsCellsHelpers::VLCBuildType buildType) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
@@ -42,7 +42,7 @@ void applyFunctor(MockPairwiseFunctor<Particle> &functor, const double cellSizef
       autopas::DataLayoutOption::aos, true, autopas::ContainerOption::verletListsCells);
 
   verletLists.rebuildNeighborLists(&traversal);
-  verletLists.iteratePairwise(&traversal);
+  verletLists.iterateInteractions(&traversal);
 
   std::vector<Particle *> list;
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
@@ -62,15 +62,15 @@ void applyFunctor(MockPairwiseFunctor<Particle> &functor, const double cellSizef
  * Fills an AoS and an SoA list with particles, executes one iteration
  * and compares the positions of each pair of corresponding particles.
  * */
-void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType oldBuildType) {
+void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers::VLCBuildType oldBuildType) {
   const double cutoff = 2.;
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   std::array<double, 3> min = {0, 0, 0};
   std::array<double, 3> max = {10, 10, 10};
 
-  auto buildType = autopas::VerletListsCellsHelpers<Molecule>::VLCBuildType::aosBuild;
-  if (oldBuildType == autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild) {
-    buildType = autopas::VerletListsCellsHelpers<Molecule>::VLCBuildType::soaBuild;
+  auto buildType = autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild;
+  if (oldBuildType == autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild) {
+    buildType = autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild;
   }
 
   autopas::VerletListsCells<Molecule, autopas::VLCCellPairNeighborList<Molecule>> verletLists1(
@@ -96,8 +96,8 @@ void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers<Parti
 
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);
-  verletLists1.iteratePairwise(&verletTraversal1);
-  verletLists2.iteratePairwise(&soaTraversal);
+  verletLists1.iterateInteractions(&verletTraversal1);
+  verletLists2.iterateInteractions(&soaTraversal);
 
   auto iter1 = verletLists1.begin();
   auto iter2 = verletLists2.begin();
@@ -116,25 +116,25 @@ TEST_F(VerletListsCellsTest, testVerletListBuild) {
   MockPairwiseFunctor<Particle> emptyFunctorAoSBuild;
   EXPECT_CALL(emptyFunctorAoSBuild, AoSFunctor(_, _, true)).Times(1);
 
-  applyFunctor(emptyFunctorAoSBuild, 1.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild);
+  applyFunctor(emptyFunctorAoSBuild, 1.0, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild);
 
   MockPairwiseFunctor<Particle> emptyFunctorSoABuild;
   EXPECT_CALL(emptyFunctorSoABuild, AoSFunctor(_, _, true)).Times(1);
 
-  applyFunctor(emptyFunctorSoABuild, 1.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild);
+  applyFunctor(emptyFunctorSoABuild, 1.0, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild);
 
   MockPairwiseFunctor<Particle> emptyFunctorAoSBuild_cs2;
   EXPECT_CALL(emptyFunctorAoSBuild_cs2, AoSFunctor(_, _, true)).Times(1);
 
-  applyFunctor(emptyFunctorAoSBuild_cs2, 2.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild);
+  applyFunctor(emptyFunctorAoSBuild_cs2, 2.0, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild);
 
   MockPairwiseFunctor<Particle> emptyFunctorSoABuild_cs2;
   EXPECT_CALL(emptyFunctorSoABuild_cs2, AoSFunctor(_, _, true)).Times(1);
 
-  applyFunctor(emptyFunctorSoABuild_cs2, 2.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild);
+  applyFunctor(emptyFunctorSoABuild_cs2, 2.0, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild);
 
-  soaTest(1.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild);
-  soaTest(2.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild);
-  soaTest(1.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild);
-  soaTest(2.0, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild);
+  soaTest(1.0, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild);
+  soaTest(2.0, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild);
+  soaTest(1.0, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild);
+  soaTest(2.0, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild);
 }

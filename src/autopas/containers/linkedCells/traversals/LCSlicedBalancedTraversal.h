@@ -48,13 +48,12 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
   explicit LCSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                      double interactionLength, const std::array<double, 3> &cellLength,
                                      DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3),
-        SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
+      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
                                                                     cellLength, dataLayout, useNewton3, true),
         _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
                      dataLayout, useNewton3) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_sliced_balanced; }
 
@@ -68,7 +67,7 @@ class LCSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleCe
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) {
     auto id = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);

@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/containers/PairwiseTraversalInterface.h"
+#include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -27,7 +27,7 @@ namespace autopas {
  * @tparam Functor The functor that defines the interaction between particles.
  */
 template <class ParticleCell, class Functor>
-class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public PairwiseTraversalInterface {
+class SlicedBasedTraversal : public CellTraversal<ParticleCell>, public TraversalInterface {
  public:
   /**
    * Constructor of the sliced traversal.
