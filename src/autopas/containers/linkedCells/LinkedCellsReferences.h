@@ -149,9 +149,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override { updateDirtyParticleReferences(); }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override { updateDirtyParticleReferences(); }
+  void rebuildNeighborLists(TraversalInterface *traversal) override { updateDirtyParticleReferences(); }
 
   /**
    * Updates all the References in the cells that are out of date.
@@ -177,7 +175,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
     auto *cellPairTraversal = dynamic_cast<CellTraversal<ReferenceCell> *>(traversal);
@@ -193,7 +191,7 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -232,10 +230,13 @@ class LinkedCellsReferences : public CellBasedParticleContainer<ReferenceParticl
                                                                const std::array<double, 3> &boxMax) const {
     using namespace autopas::utils::ArrayMath::literals;
 
-    const auto boxMinWithSafetyMargin =
-        boxMin - (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-    const auto boxMaxWithSafetyMargin =
-        boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    }
 
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {

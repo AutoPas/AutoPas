@@ -59,8 +59,7 @@ class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
   explicit VCLSlicedBalancedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
                                       double interactionLength, const std::array<double, 3> &cellLength,
                                       size_t clusterSize, DataLayoutOption dataLayout, bool useNewton3)
-      : TraversalInterface(dataLayout, useNewton3),
-        SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
+      : SlicedBalancedBasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength,
                                                                     cellLength, dataLayout, useNewton3, false),
         _functor(pairwiseFunctor),
         _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
@@ -79,7 +78,7 @@ class VCLSlicedBalancedTraversal : public SlicedBalancedBasedTraversal<ParticleC
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     this->slicedTraversal([&](unsigned long x, unsigned long y, unsigned long z) { processBaseStep(x, y); });
   }
 

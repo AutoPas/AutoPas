@@ -6,9 +6,7 @@
 
 #pragma once
 
-#include <cstdint>
-#include <cstdio>
-#include <fstream>
+#include <string>
 #include <vector>
 
 namespace autopas::utils {
@@ -18,17 +16,6 @@ namespace autopas::utils {
  * using perf events. This requires root or a paranoid value less than 1.
  */
 class RaplMeter {
- private:
-  std::vector<int> _cpus;
-  int _type;
-  long _psys_raw, _pkg_raw, _cores_raw, _ram_raw;
-  double _psys_unit, _pkg_unit, _cores_unit, _ram_unit;
-  int _psys_config, _pkg_config, _cores_config, _ram_config;
-  std::vector<int> _psys_fd, _pkg_fd, _cores_fd, _ram_fd;
-
-  int open_perf_event(int type, int config, int cpu);
-  long read_perf_event(int fd);
-
  public:
   ~RaplMeter();
 
@@ -37,9 +24,10 @@ class RaplMeter {
    * Note: This function returns an error message instead of throwing an exception if initialization is not possible.
    * This way debuggers don't break on the start of every autopas initialization if we are not interested in energy
    * measurement.
+   * @param mustSucceed Bool indicating whether this method should throw on failure.
    * @return Error message. The error is message is empty on success
    */
-  std::string init();
+  bool init(const bool mustSucceed);
 
   /**
    * Reset perf file descriptors to start new measurement.
@@ -92,5 +80,18 @@ class RaplMeter {
    * @return unscaled energy
    */
   long get_total_energy();
+
+ private:
+  std::vector<int> _cpus;
+  long _psys_raw, _pkg_raw, _cores_raw, _ram_raw;
+  double _psys_unit, _pkg_unit, _cores_unit, _ram_unit;
+  std::vector<int> _psys_fd, _pkg_fd, _cores_fd, _ram_fd;
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  int _type;
+  int _psys_config, _pkg_config, _cores_config, _ram_config;
+
+  int open_perf_event(int type, int config, int cpu);
+  long read_perf_event(int fd);
+#endif
 };
 }  // namespace autopas::utils

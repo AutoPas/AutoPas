@@ -140,10 +140,11 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void iteratePairwise(PairwiseTraversalInterface *traversal) override {
+  void iterateInteractions(TraversalInterface *traversal) override {
     if (_isValid == ValidityState::cellsAndListsValid) {
       autopas::utils::ExceptionHandler::exception(
-          "VerletClusterLists::iteratePairwise(): Trying to do a pairwise iteration, even though verlet lists are not "
+          "VerletClusterLists::iterateInteractions(): Trying to do a pairwise iteration, even though verlet lists are "
+          "not "
           "valid.");
     }
     auto *traversalInterface = dynamic_cast<VCLTraversalInterface<Particle> *>(traversal);
@@ -152,7 +153,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       traversalInterface->setTowers(_towerBlock.getTowersRef());
     } else {
       autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in VerletClusterLists::iteratePairwise. TraversalID: {}",
+          "Trying to use a traversal of wrong type in VerletClusterLists::iterateInteractions. TraversalID: {}",
           traversal->getTraversalType());
     }
     if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
@@ -160,7 +161,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -292,10 +293,13 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
       return {nullptr, 0, 0};
     }
 
-    const auto boxMinWithSafetyMargin =
-        boxMin - (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
-    const auto boxMaxWithSafetyMargin =
-        boxMax + (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    }
 
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
@@ -760,7 +764,7 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
     }
   }
 
-  void rebuildNeighborLists(PairwiseTraversalInterface *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     // the builder might have a different newton3 choice than the traversal. This typically only happens in unit tests
     // when rebuildTowersAndClusters() was not called explicitly.
     if (_isValid == ValidityState::invalid or traversal->getUseNewton3() != _builder->getNewton3()) {
@@ -780,12 +784,6 @@ class VerletClusterLists : public ParticleContainerInterface<Particle>, public i
           "Trying to use a traversal of wrong type in VerletClusterLists::rebuildNeighborLists. TraversalID: {}",
           traversal->getTraversalType());
     }
-  }
-
-  void rebuildNeighborLists(TriwiseTraversalInterface *traversal) override {
-    autopas::utils::ExceptionHandler::exception(
-        "VerletClusterLists::rebuildNeighborLists: Rebuilding neighbor lists for a 3-body traversal for "
-        "VerletClusterLists has not been implemented yet.");
   }
 
   /**

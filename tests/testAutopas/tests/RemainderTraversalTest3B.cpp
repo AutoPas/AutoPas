@@ -15,8 +15,8 @@
 #include "testingHelpers/commonTypedefs.h"
 
 /**
- * Can test all individual steps of iterateTriwise. Expects exactly three particles that form an equilateral triangle of
- * side length sqrt(2).
+ * Can test all individual steps of iterateInteractions. Expects exactly three particles that form an equilateral
+ * triangle of side length sqrt(2).
  *
  * @note Tests invoking this function should have AutoPas logger instantiated (e.g. by inheriting from AutoPasTestBase).
  * @note Buffers need to have at least one (empty) cell. They must not be empty.
@@ -62,7 +62,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const std::set<autopas::Configuration> searchSpace(
-      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01_3b,
+      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
         autopas::InteractionTypeOption::triwise}});
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
@@ -451,7 +451,7 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const std::set<autopas::Configuration> searchSpace(
-      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01_3b,
+      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
         autopas::InteractionTypeOption::triwise}});
   std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;

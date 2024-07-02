@@ -75,7 +75,7 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
                                interactionType};
 
   if (interactionType == InteractionTypeOption::triwise) {
-    fallBackConfig.traversal = TraversalOption::lc_c01_3b;
+    fallBackConfig.traversal = TraversalOption::lc_c01;
   }
 
   // Go through the search space and see if SoA or N3 are allowed.

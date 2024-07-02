@@ -15,9 +15,12 @@
 #include <unordered_set>
 #include <variant>
 
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
 #include "RuleBasedProgramParser.h"
 #include "RuleBasedProgramTree.h"
 #include "RuleVM.h"
+#endif
+
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/EvidenceCollection.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
@@ -72,6 +75,11 @@ namespace autopas {
  *
  * Additionally, the class supports a so called "verify mode" where full search is performed and the given rules are
  * checked for correctness.
+ *
+ *
+ * Due to the compilation cost of ANTLR and issues with compiling the bundled dependency uuid on some machines, this
+ * tuning strategy can be disabled with the CMake option AUTOPAS_ENABLE_RULES_BASED_TUNING=OFF.
+ *
  */
 class RuleBasedTuning : public TuningStrategyInterface {
  public:
@@ -79,9 +87,13 @@ class RuleBasedTuning : public TuningStrategyInterface {
    * A function type used to print errors found in verify mode.
    */
   using PrintTuningErrorFunType =
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
       std::function<void(const rule_syntax::ConfigurationOrder &order, const Configuration &actualBetterConfig,
                          unsigned long betterRuntime, const Configuration &shouldBeBetterConfig,
                          unsigned long shouldBeBetterRuntime, const LiveInfo &liveInfo)>;
+#else
+      int;  // This is simply a dummy type and will never be used.
+#endif
 
   /**
    * Constructs a RuleBasedTuning strategy.
@@ -120,6 +132,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
                            const EvidenceCollection &evidenceCollection) override;
 
  private:
+#ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   /**
    * Creates a multi-line string representation of all rules contained in the given rule file.
    *
@@ -145,29 +158,35 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   std::vector<rule_syntax::ConfigurationOrder> applyRules(const std::vector<Configuration> &searchSpace);
 
-  std::set<Configuration> _searchSpace;
-  const std::list<Configuration> _originalSearchSpace;
-  std::set<Configuration> _removedConfigurations;
-  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders;
-  bool _verifyModeEnabled;
-  std::string _ruleFileName;
+  std::vector<rule_syntax::ConfigurationOrder> _lastApplicableConfigurationOrders{};
 
-  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes;
+  // The following member variables are only conditionally compiled to avoid warnings about unused variables.
+
+  bool _verifyModeEnabled{};
   /**
    * Sum of all evidence since the last reset. This, times the number of samples, is approximately the time spent
    * trying out configurations.
    */
   long _tuningTime{0};
   long _wouldHaveSkippedTuningTime{0};
-  long _tuningTimeLifetime{0};
-  long _wouldHaveSkippedTuningTimeLifetime{0};
   /**
    * If the rules would immediately remove all options deactivate the whole strategy until the next reset.
    */
   bool _rulesTooHarsh{false};
+  PrintTuningErrorFunType _tuningErrorPrinter{};
+#endif
 
-  PrintTuningErrorFunType _tuningErrorPrinter;
+  std::set<Configuration> _searchSpace{};
+  std::list<Configuration> _originalSearchSpace{};
+  std::set<Configuration> _removedConfigurations{};
 
-  LiveInfo _currentLiveInfo;
+  std::string _ruleFileName{};
+
+  std::unordered_map<Configuration, long, ConfigHash> _traversalTimes{};
+
+  long _tuningTimeLifetime{0};
+  long _wouldHaveSkippedTuningTimeLifetime{0};
+
+  LiveInfo _currentLiveInfo{};
 };
 }  // namespace autopas

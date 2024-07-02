@@ -69,8 +69,8 @@ class Newton3OnOffTest
 
       auto [containerOption, traversalOption, dataLayoutOption, interactionType] = inputTuple;
 
-      auto retStr =
-          containerOption.to_string() + "_" + traversalOption.to_string() + "_" + dataLayoutOption.to_string();
+      auto retStr = containerOption.to_string() + "_" + traversalOption.to_string() + "_" +
+                    dataLayoutOption.to_string() + "_" + interactionType.to_string();
       // replace all '-' with '_', otherwise the test name is invalid
       std::replace(retStr.begin(), retStr.end(), '-', '_');
       return retStr;

@@ -61,7 +61,7 @@ class InteractionTypeOption : public Option<InteractionTypeOption> {
   static std::map<InteractionTypeOption, std::string> getOptionNames() {
     return {
         {InteractionTypeOption::pairwise, "pairwise"},
-        {InteractionTypeOption::triwise, "three-body"},
+        {InteractionTypeOption::triwise, "triwise"},
     };
   };
 

@@ -12,49 +12,99 @@
 using ::testing::_;
 using ::testing::AtLeast;
 
-TEST_F(DSSequentialTraversalTest, testTraversalAoS) { testTraversal(false); }
+TEST_F(DSSequentialTraversalTest, testTraversalPairwiseAoS) { testTraversalPairwise(false); }
 
-TEST_F(DSSequentialTraversalTest, testTraversalSoA) { testTraversal(true); }
+TEST_F(DSSequentialTraversalTest, testTraversalPairwiseSoA) { testTraversalPairwise(true); }
 
-void DSSequentialTraversalTest::testTraversal(bool useSoA) {
-  size_t numParticles = 20;
-  size_t numHaloParticles = 10;
+TEST_F(DSSequentialTraversalTest, testTraversalTriwiseAoS) { testTraversalTriwise(false); }
+
+TEST_F(DSSequentialTraversalTest, testTraversalTriwiseSoA) { testTraversalTriwise(true); }
+
+std::vector<FPCell> DSSequentialTraversalTest::fillParticleCells(size_t numParticles, size_t numHaloParticlesPerCell) {
+  autopas::Particle particle;
+  std::vector<FPCell> cells(7);
+
+  // helper function to randomly place particles in the specified cell
+  auto addParticlesToCell = [&](const size_t cellID, const size_t num, const std::array<double, 3> boxMin,
+                                const std::array<double, 3> boxMax) {
+    for (size_t i = 0; i < num; i++) {
+      particle.setR(autopasTools::generators::RandomGenerator::randomPosition(boxMin, boxMax));
+      cells[cellID].addParticle(particle);
+    }
+  };
+
+  // Add particles to all cells
+  addParticlesToCell(0, numParticles, {0, 0, 0}, {10, 10, 10});
+  addParticlesToCell(1, numHaloParticlesPerCell, {-10, -10, -10}, {0, 20, 20});
+  addParticlesToCell(2, numHaloParticlesPerCell, {10, -10, -10}, {20, 20, 20});
+  addParticlesToCell(3, numHaloParticlesPerCell, {0, -10, -10}, {10, 0, 20});
+  addParticlesToCell(4, numHaloParticlesPerCell, {0, 10, -10}, {10, 20, 20});
+  addParticlesToCell(5, numHaloParticlesPerCell, {0, 0, -10}, {10, 10, 0});
+  addParticlesToCell(6, numHaloParticlesPerCell, {0, 0, 10}, {10, 10, 20});
+
+  return cells;
+}
+
+void DSSequentialTraversalTest::testTraversalPairwise(bool useSoA) {
+  const size_t numParticles = 20;
+  const size_t numHaloParticlesPerCell = 2;
+  const size_t numHaloParticles = numHaloParticlesPerCell * 6;
+
+  auto cells = fillParticleCells(numParticles, numHaloParticlesPerCell);
 
   MPairwiseFunctor functor;
-  std::vector<FPCell> cells;
-  cells.resize(2);
-  autopas::Particle defaultParticle;
-
-  Particle particle;
-  for (size_t i = 0; i < numParticles + numHaloParticles; ++i) {
-    particle.setID(i);
-    // first particles go in domain cell rest to halo cell
-    if (i < numParticles) {
-      particle.setR(autopasTools::generators::RandomGenerator::randomPosition({0, 0, 0}, {10, 10, 10}));
-      cells[0].addParticle(particle);
-    } else {
-      particle.setR(autopasTools::generators::RandomGenerator::randomPosition({10, 10, 10}, {20, 20, 20}));
-      cells[1].addParticle(particle);
-    }
-  }
 
   if (useSoA) {
     autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
                                                                        autopas::DataLayoutOption::soa, true);
     // domain SoA with itself
     EXPECT_CALL(functor, SoAFunctorSingle(_, true)).Times(1);
-    // domain SoA with halo
-    EXPECT_CALL(functor, SoAFunctorPair(_, _, true)).Times(1);
+    // domain SoA with halo domains
+    EXPECT_CALL(functor, SoAFunctorPair(_, _, true)).Times(6);
     std::for_each(cells.begin(), cells.end(), [](auto &c) { c._particleSoABuffer.resizeArrays(2); });
     traversal.setCellsToTraverse(cells);
-    traversal.traverseParticlePairs();
+    traversal.traverseParticles();
   } else {
     autopas::DSSequentialTraversal<FPCell, MPairwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
                                                                        autopas::DataLayoutOption::aos, true);
-    // interactions in main cell + interactions with halo.
+    // interactions in main cell + interactions with halo cells.
     size_t expectedFunctorCalls = numParticles * (numParticles - 1) / 2 + numParticles * numHaloParticles;
     EXPECT_CALL(functor, AoSFunctor(_, _, true)).Times((int)expectedFunctorCalls);
     traversal.setCellsToTraverse(cells);
-    traversal.traverseParticlePairs();
+    traversal.traverseParticles();
+  }
+}
+
+void DSSequentialTraversalTest::testTraversalTriwise(bool useSoA) {
+  const size_t numParticles = 20;
+  const size_t numHaloParticlesPerCell = 2;
+  const size_t numHaloParticles = numHaloParticlesPerCell * 6;
+
+  auto cells = fillParticleCells(numParticles, numHaloParticlesPerCell);
+
+  MTriwiseFunctor functor;
+
+  if (useSoA) {
+    autopas::DSSequentialTraversal<FPCell, MTriwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
+                                                                      autopas::DataLayoutOption::soa, true);
+    // domain SoA with itself
+    EXPECT_CALL(functor, SoAFunctorSingle(_, true)).Times(1);
+    // domain SoA with halo domains
+    EXPECT_CALL(functor, SoAFunctorPair(_, _, true)).Times(6);
+    // domain SoA with halo domains
+    EXPECT_CALL(functor, SoAFunctorTriple(_, _, _, true)).Times(15);
+    std::for_each(cells.begin(), cells.end(), [](auto &c) { c._particleSoABuffer.resizeArrays(2); });
+    traversal.setCellsToTraverse(cells);
+    traversal.traverseParticles();
+  } else {
+    autopas::DSSequentialTraversal<FPCell, MTriwiseFunctor> traversal(&functor, std::numeric_limits<double>::max(),
+                                                                      autopas::DataLayoutOption::aos, true);
+    // interactions in main cell + interactions with halo cells.
+    size_t expectedFunctorCalls = numParticles * (numParticles - 1) * (numParticles - 2) / 6 +
+                                  numParticles * (numParticles - 1) * numHaloParticles / 2 +
+                                  numParticles * numHaloParticles * (numHaloParticles - 1) / 2;
+    EXPECT_CALL(functor, AoSFunctor(_, _, _, true)).Times((int)expectedFunctorCalls);
+    traversal.setCellsToTraverse(cells);
+    traversal.traverseParticles();
   }
 }

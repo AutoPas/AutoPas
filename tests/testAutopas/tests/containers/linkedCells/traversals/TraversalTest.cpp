@@ -71,8 +71,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
     }
   }
 
-  auto pairwiseTraversal = dynamic_cast<autopas::PairwiseTraversalInterface *>(traversal.get());
-  linkedCells.iteratePairwise(pairwiseTraversal);
+  linkedCells.iterateInteractions(traversal.get());
 }
 
 TEST_P(TraversalTest, testTraversal_2x2x2) {
