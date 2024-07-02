@@ -49,7 +49,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.boundaryOption,
       config.boxLength,
       config.cellSizeFactors,
-      config.fastParticlesThrow,
       config.checkpointfile,
       config.containerOptions,
       config.cutoff,
@@ -95,7 +94,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.useTuningLogger,
       config.verletClusterSize,
       config.verletRebuildFrequency,
-      config.verletSkinRadiusPerTimestep,
+      config.verletSkinRadius,
       config.vtkFileName,
       config.vtkOutputFolder,
       config.vtkWriteFrequency,
@@ -475,17 +474,13 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.verletSkinRadiusPerTimestep)::getoptChar: {
+      case decltype(config.verletSkinRadius)::getoptChar: {
         try {
-          config.verletSkinRadiusPerTimestep.value = stod(strArg);
+          config.verletSkinRadius.value = stod(strArg);
         } catch (const exception &) {
-          cerr << "Error parsing verlet-skin-radius-per-timestep: " << optarg << endl;
+          cerr << "Error parsing verlet-skin-radius: " << optarg << endl;
           displayHelp = true;
         }
-        break;
-      }
-      case decltype(config.fastParticlesThrow)::getoptChar: {
-        config.fastParticlesThrow.value = true;
         break;
       }
       case decltype(config.tuningSamples)::getoptChar: {

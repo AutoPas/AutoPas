@@ -21,7 +21,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {3, 3, 3};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   auto params = GetParam();
   double cellSizeFactor = std::get<0>(params);
@@ -30,7 +30,7 @@ TEST_P(PairwiseVerletListsTest, testTwoParticles) {
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   EXPECT_CALL(emptyFunctor, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
   autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2, 2, 2};
   Particle p(r, {0., 0., 0.}, 0);
@@ -75,7 +75,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   auto params = GetParam();
   double cellSizeFactor = std::get<0>(params);
@@ -86,7 +86,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesOneFar) {
   EXPECT_CALL(emptyFunctorOther, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
 
   autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
   Particle p(r, {0., 0., 0.}, 0);
@@ -135,7 +135,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   auto params = GetParam();
   double cellSizeFactor = std::get<0>(params);
@@ -145,7 +145,7 @@ TEST_P(PairwiseVerletListsTest, testThreeParticlesClose) {
 
   EXPECT_CALL(mock, AoSFunctor(_, _, useNewton3)).Times(AtLeast(1));
   autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
   Particle p(r, {0., 0., 0.}, 0);
@@ -194,7 +194,7 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
   std::array<double, 3> min = {1, 1, 1};
   std::array<double, 3> max = {5, 5, 5};
   double cutoff = 1.;
-  double skinPerTimestep = 0.01;
+  double skin = 0.2;
   unsigned int rebuildFrequency = 20;
   auto params = GetParam();
   double cellSizeFactor = std::get<0>(params);
@@ -202,7 +202,7 @@ TEST_P(PairwiseVerletListsTest, testOneParticle) {
   auto buildType = std::get<2>(params);
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
   autopas::VerletListsCells<Particle, autopas::VLCCellPairNeighborList<Particle>> verletLists(
-      min, max, cutoff, skinPerTimestep, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
+      min, max, cutoff, skin, rebuildFrequency, cellSizeFactor, loadEstimator, buildType);
 
   std::array<double, 3> r = {2.5, 2.5, 2.5};
   Particle p(r, {0., 0., 0.}, 0);
