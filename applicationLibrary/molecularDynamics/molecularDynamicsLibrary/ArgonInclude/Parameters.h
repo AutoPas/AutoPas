@@ -1,7 +1,7 @@
 /**
-* @file ArgonFunctor.h
-* @author I. Angelucci
-* @date 13/06/24
+ * @file ArgonFunctor.h
+ * @author I. Angelucci
+ * @date 13/06/24
  */
 
 #pragma once
@@ -118,7 +118,7 @@ constexpr size_t indexDispersionPart(const size_t i, const size_t j, const size_
   throw autopas::utils::ExceptionHandler::AutoPasException("Parameter cannot be accessed");
 }
 
-enum param{ A, alpha, Z, beta };
+enum param { A, alpha, Z, beta };
 
 /**
  *
@@ -151,4 +151,4 @@ constexpr size_t index<beta>(const size_t i, const size_t j, const size_t k) {
   return indexDispersionPart(i, j, k);
 }
 
-} // namespace mdLib::Argon
+}  // namespace mdLib::Argon
