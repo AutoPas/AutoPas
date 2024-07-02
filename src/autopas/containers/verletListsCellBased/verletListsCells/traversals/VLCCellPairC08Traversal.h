@@ -68,7 +68,7 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
 template <class ParticleCell, class PairwiseFunctor>
 inline void VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
   if (this->_dataLayout == DataLayoutOption::soa) {
-    _soa = (*(this->_cellPairVerletList)).loadSoA(_functor);
+    _soa = this->_cellPairVerletList->loadSoA(_functor);
   }
 
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
@@ -78,7 +78,7 @@ inline void VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor>::traversePart
   });
 
   if (this->_dataLayout == DataLayoutOption::soa) {
-    (*(this->_cellPairVerletList)).extractSoA(_functor);
+    this->_cellPairVerletList->extractSoA(_functor);
     _soa = nullptr;
   }
 }
