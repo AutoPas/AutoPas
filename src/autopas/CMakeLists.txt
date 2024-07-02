@@ -30,7 +30,7 @@ add_library(autopas STATIC ${MY_SRC})
 target_link_libraries(
     autopas
     PUBLIC
-        rt # required for Time.h
+        #rt # required for Time.h
         ${CMAKE_THREAD_LIBS_INIT} # required for Logger and ExceptionHandler
         $<$<BOOL:${AUTOPAS_OPENMP}>:OpenMP::OpenMP_CXX>
         spdlog::spdlog
