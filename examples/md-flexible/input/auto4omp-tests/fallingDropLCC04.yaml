@@ -1,4 +1,4 @@
-# Falling drop modified to use Linked Cells + C04 only, for OpenMP chunk size performance impact investigation.
+# Falling drop modified to use lc_c04 only, for OpenMP performance investigation.
 
 # This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
 ## md-flexible compiled for multi-site molecules.
