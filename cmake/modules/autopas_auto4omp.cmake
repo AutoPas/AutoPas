@@ -84,6 +84,11 @@ set(
 )
 
 set(
+        LIBOMP_HAVE_X86INTRIN_H_DOC
+        "An Intel header that provides access to to the CPU’s high resolution timers."
+)
+
+set(
         LIBOMPTARGET_NVPTX_COMPUTE_CAPABILITIES_DOC
         "Nvidia GPU's compute capability."
 )
@@ -109,10 +114,11 @@ set_autopas_auto4omp_target_boolean_doc("AUTOPAS_TARGET_omptarget-nvptx_DOC" "om
 
 # AutoPas CMake variables for Auto4OMP.
 option(AUTOPAS_AUTO4OMP "${AUTOPAS_AUTO4OMP_DOC}" ON)
+option(AUTOPAS_LB4OMP "${AUTOPAS_LB4OMP_DOC}" ON)
+option(AUTOPAS_AUTO4OMP_DEBUG "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
+option(AUTOPAS_AUTO4OMP_MASTER_FORCE "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
 option(AUTOPAS_AUTO4OMP_GIT_FORCE "${AUTOPAS_AUTO4OMP_GIT_FORCE_DOC}" OFF)
 set(AUTOPAS_AUTO4OMP_GIT_TAG "master" CACHE STRING "${AUTOPAS_AUTO4OMP_GIT_TAG_DOC}")
-option(AUTOPAS_AUTO4OMP_DEBUG "${AUTOPAS_AUTO4OMP_DEBUG_DOC}" OFF)
-option(AUTOPAS_LB4OMP "${AUTOPAS_LB4OMP_DOC}" ON) # Work in progress, keep off for now.
 set(AUTOPAS_AUTO4OMP_INSTALL_DIR "" CACHE PATH "${AUTOPAS_AUTO4OMP_INSTALL_DIR_DOC}")
 set(AUTOPAS_NVCC_GNUC_PATH OFF CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}")
 set(AUTOPAS_LLVM_LIT_EXECUTABLE OFF CACHE FILEPATH "${AUTOPAS_LLVM_LIT_EXECUTABLE_DOC}")
@@ -161,16 +167,6 @@ else ()
     #### __builtin_readcyclecounter() is available since clang 4 (possibly prior). [1]
     #### On systems lacking a cycle counter register or similar, the function defaults to 0.
     #### Compile and run CycleCounterQuery.cpp to check if a cycle counter's available, inspired from [2, 3].
-    add_executable(
-            has_builtin_readcyclecounter
-            EXCLUDE_FROM_ALL "${CMAKE_SOURCE_DIR}/src/autopas/utils/CycleCounterQuery.cpp"
-    )
-    set_target_properties(
-            has_builtin_readcyclecounter
-            PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/scripts"
-    )
-
-    #### For now, build manually.
     execute_process(
             COMMAND mkdir -p ${CMAKE_BINARY_DIR}/scripts
             COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_SOURCE_DIR}/src/autopas/utils/CycleCounterQuery.cpp
@@ -197,6 +193,18 @@ else ()
         # If time-stamp counter available, enable.
         message(DEBUG "Time-stamp counter found, enabling.")
         option(LIBOMP_HAVE___RDTSC ${LIBOMP_HAVE___RDTSC_DOC} ON)
+
+        # Make sure x86intrin.h is available [12].
+        include(CheckIncludeFile)
+        set(CMAKE_REQUIRED_QUIET_TEMP ${CMAKE_REQUIRED_QUIET})
+        set(CMAKE_REQUIRED_QUIET TRUE)
+        CHECK_INCLUDE_FILE(x86intrin.h AUTOPAS_HAVE_X86INTRIN_H)
+        set(CMAKE_REQUIRED_QUIET ${CMAKE_REQUIRED_QUIET_TEMP})
+        if (AUTOPAS_HAVE_X86INTRIN_H)
+            option(LIBOMP_HAVE_X86INTRIN_H ${LIBOMP_HAVE_X86INTRIN_H_DOC} ON)
+        else ()
+            message(WARNING "Intel intrinsics not found, Auto4OMP may complain.")
+        endif ()
     elseif (${HAS_BUILTIN_READCYCLECOUNTER_OUTPUT} LESS_EQUAL 0)
         message(STATUS "No time-stamp counter found.")
         message(
@@ -253,7 +261,7 @@ else ()
                     set(AUTOPAS_NVCC_GNUC_PATH "${GCC_PATH}" CACHE FILEPATH "${AUTOPAS_NVCC_GNUC_PATH_DOC}" FORCE)
                 else ()
                     message(
-                            STATUS
+                            DEBUG
                             "CUDA enabled, but system's gcc is incompatible with NVCC. Looking for compatible gcc."
                     )
                 endif ()
@@ -370,9 +378,6 @@ else ()
     # Mark as standalone build to fix CMake's missing declaration errors.
     set(OPENMP_STANDALONE_BUILD ON)
 
-    # Set LIBOMP_HAVE_X86INTRIN_H
-    set(LIBOMP_HAVE_X86INTRIN_H ON CACHE INTERNAL "")
-
     # Enable the FetchContent CMake module.
     include(FetchContent)
 
@@ -431,7 +436,7 @@ else ()
         FetchContent_Declare(
                 auto4omp
                 URL ${AUTOPAS_SOURCE_DIR}/libs/LB4OMP-debug.zip
-                URL_HASH MD5=cc15b6be16c0bcd9e95fd08069c32381 # Calculated with the md5sum command.
+                URL_HASH MD5=6b2f4e5770f850dc8f8438bac0617ce2 # Calculated with the md5sum command.
         )
     else ()
         # Load the pre-packaged Auto4OMP including the fix for build errors when specifying OMP <5.
@@ -543,6 +548,7 @@ Sources:
     [9]   https://unix.stackexchange.com/a/294493
     [10]  https://stackoverflow.com/a/71817684
     [11]  https://cmake.org/cmake/help/latest/guide/importing-exporting/index.html
+    [12]  build/_deps/auto4omp-src/runtime/cmake/config-ix.cmake
 
     [*]   Don't use LB4OMP v0.1 (the Auto4OMP release). Clone the newer master branch instead.
           v0.1 initializes atomics as follows: atomic<int> i = 0;
