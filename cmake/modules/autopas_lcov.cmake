@@ -1,3 +1,7 @@
+#if(AUTOPAS_ENABLE_COVERAGE)
+#    include(autopas_lcov)
+#endif()
+
 include(ExternalProject)
 
 ExternalProject_Add(
@@ -7,7 +11,7 @@ ExternalProject_Add(
     URL_HASH          MD5=c276a95c6a3bf9af1d14a7350196a87d
     CONFIGURE_COMMAND ""
     BUILD_COMMAND     ""
-    INSTALL_COMMAND   make PREFIX=${CMAKE_CURRENT_BINARY_DIR}/lcov/install install > /dev/null 2>&1
+    INSTALL_COMMAND   make PREFIX=${CMAKE_CURRENT_BINARY_DIR}/lcov/install install
     BUILD_IN_SOURCE   True
 )
 

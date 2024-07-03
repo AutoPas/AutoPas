@@ -10,7 +10,7 @@ add_executable(runTests ${MY_SRC})
 target_compile_definitions(runTests PRIVATE)
 
 if(AUTOPAS_ENABLE_COVERAGE)
-  target_compile_options(runTests PRIVATE -O0 --coverage)
+  target_compile_options(runTests PRIVATE --coverage)
 
   # add coverage target
   add_custom_target(

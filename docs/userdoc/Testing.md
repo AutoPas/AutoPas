@@ -85,7 +85,16 @@ Explanation:
 | `gdb --args`        | Launches the debugger. Everything that follows is treated as arguments to `gdb`.                                                                                                                                                   |
 
 ## Creating Coverage Reports
-The creation of a coverage report can be activated with the additional CMAKE option `-DAUTOPAS_ENABLE_COVERAGE=ON`. Please note that also debugging mode has to be enabled to create coverage reports. This can be enabled with `-DCMAKE_BUILD_TYPE=Debug`. Running the tests now creates a file called "coverage.info" in the build directory.
-After running the tests an HTML output can be created of the "coverage.info". This HTML output is stored in "BUILDDIRECTORY/coverage" and can be downloaded and viewed in a browser.
+The following commands can be used to create a coverage report in the form of HTML output. Please note that this is only supported with GCC, and debugging mode must be enabled to create coverage reports.
+
+```bash
+cd $BUILD_DIR
+cmake -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_ENABLE_COVERAGE=ON ..
+make runTests
+ctest
+make coverage
+```
+
+After these commands have been executed, a folder named `$BUILD_DIR/coverage` can be found which contains the HTML output. This can be downloaded and viewed in a browser.
 
 ## Related Files and Folders
