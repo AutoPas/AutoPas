@@ -1,6 +1,6 @@
-#if(AUTOPAS_ENABLE_COVERAGE)
-#    include(autopas_lcov)
-#endif()
+if (NOT AUTOPAS_ENABLE_COVERAGE)
+  return()
+endif()
 
 include(ExternalProject)
 
