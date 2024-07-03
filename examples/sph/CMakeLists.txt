@@ -16,7 +16,7 @@ if (NOT ${MPI_CXX_FOUND})
             COMMAND sph-main | grep "time step" | tail -2 | head -1 | grep -q "time step 8"
             CONFIGURATIONS checkExamples
     )
-    add_dependencies(checkExamples sph-main-mpi)
+    add_dependencies(checkExamples sph-main)
 else ()
     message(STATUS "sph-main - MPI compiler found: ${MPI_CXX_COMPILER}")
     add_executable(sph-main ${MY_SRC})
