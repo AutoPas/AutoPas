@@ -151,7 +151,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(Part
     return;
   }
 
-  switch (_dataLayout) {
+  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       processCellAoS(cell);
       break;
@@ -185,7 +185,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
     return;
   }
 
-  switch (_dataLayout) {
+  switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       if (_useNewton3) {
         processCellPairAoSN3(cell1, cell2, sortingDirection);

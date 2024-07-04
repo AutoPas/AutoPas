@@ -34,7 +34,7 @@ class DataLayoutConverter {
    */
   template <class ParticleCell>
   void loadDataLayout(ParticleCell &cell) {
-    switch (_dataLayout) {
+    switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
       case DataLayoutOption::aos: {
         return;
       }
@@ -52,7 +52,7 @@ class DataLayoutConverter {
    */
   template <class ParticleCell>
   void storeDataLayout(ParticleCell &cell) {
-    switch (_dataLayout) {
+    switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
       case DataLayoutOption::aos: {
         return;
       }
