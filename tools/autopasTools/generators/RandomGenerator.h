@@ -62,7 +62,7 @@ class RandomGenerator {
   template <class Container, class Particle>
   static void fillWithParticles(Container &container, const Particle &defaultParticle,
                                 const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                unsigned long numParticles = 100ul, unsigned int seed = 42);
+                                unsigned long numParticles = 100ul, unsigned int seed = 42, unsigned int numTypes = 1);
 
   /**
    * Fills the halo of a container (also AutoPas object) with randomly uniformly distributed particles.
@@ -104,13 +104,14 @@ class RandomGenerator {
 template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                        unsigned long numParticles, unsigned int seed) {
+                                        unsigned long numParticles, unsigned int seed, unsigned int numTypes) {
   srand(seed);  // fixed seedpoint
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
     particle.setR(randomPosition(boxMin, boxMax));
     particle.setID(i);
+    particle.setTypeId(i%numTypes);
     container.addParticle(particle);
   }
 }
