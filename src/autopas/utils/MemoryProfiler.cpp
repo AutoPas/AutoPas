@@ -35,7 +35,7 @@ size_t autopas::memoryProfiler::currentMemoryUsage() {
     AutoPasLog(ERROR, "Error querying the resident memory size", statusFileName);
     return 0;
   }
-  // info.resident_size is the resident memory size in bytes, hence we divide by 1024 to return kilobytes
-  return static_cast<size_t>(info.resident_size / 1024);
+  // info.resident_size is the resident memory size in bytes, hence we divide by 1000 to return kilobytes
+  return static_cast<size_t>(info.resident_size / 1000);
 #endif
 }

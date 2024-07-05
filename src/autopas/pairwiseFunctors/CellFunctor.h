@@ -151,6 +151,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(Part
     return;
   }
 
+  // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
   switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       processCellAoS(cell);
@@ -185,6 +186,7 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
     return;
   }
 
+  // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
   switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
     case DataLayoutOption::aos:
       if (_useNewton3) {

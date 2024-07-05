@@ -34,6 +34,7 @@ class DataLayoutConverter {
    */
   template <class ParticleCell>
   void loadDataLayout(ParticleCell &cell) {
+    // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
     switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
       case DataLayoutOption::aos: {
         return;
@@ -52,6 +53,7 @@ class DataLayoutConverter {
    */
   template <class ParticleCell>
   void storeDataLayout(ParticleCell &cell) {
+    // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
     switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
       case DataLayoutOption::aos: {
         return;
