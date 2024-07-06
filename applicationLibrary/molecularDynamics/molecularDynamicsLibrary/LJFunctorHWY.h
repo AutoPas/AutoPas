@@ -327,7 +327,7 @@ namespace mdLib {
 
                 template <bool remainder>
                 inline void fillJRegisters(VectorDouble& x2, VectorDouble& y2, VectorDouble& z2,
-                    VectorDouble& ownedStateJDouble, const int64_t *const __restrict ownedPtr2,
+                    MaskDouble& dummyMaskJ, const int64_t *const __restrict ownedPtr2,
                     const double *const __restrict xPtr2, const double *const __restrict yPtr2,
                     const double *const __restrict zPtr2, const long j, const long rest) {
 
@@ -403,7 +403,8 @@ namespace mdLib {
                         throw std::runtime_error("Not yet implemented!");
                     }
 
-                    ownedStateJDouble = highway::ConvertTo(tag_double, ownedJ);
+                    VectorDouble ownedJDouble = highway::ConvertTo(tag_double, ownedJ);
+                    dummyMaskJ = highway::Ne(ownedJDouble, _ownedStateDummy);
                 }
 
                 template <bool remainderI, bool remainderJ, bool reversed>
@@ -1011,20 +1012,41 @@ namespace mdLib {
                     auto virialSumZ = _zeroDouble;
                     auto uPotSum = _zeroDouble;
 
+                    VectorDouble fxAcc = _zeroDouble;
+                    VectorDouble fyAcc = _zeroDouble;
+                    VectorDouble fzAcc = _zeroDouble;
+
+                    MaskDouble dummyMaskI;
+                    VectorDouble x1 = _zeroDouble;
+                    VectorDouble y1 = _zeroDouble;
+                    VectorDouble z1 = _zeroDouble;
+
+                    MaskDouble dummyMaskJ;
+                    VectorDouble x2 = _zeroDouble;
+                    VectorDouble y2 = _zeroDouble;
+                    VectorDouble z2 = _zeroDouble;
+
+                    VectorDouble epsilon24s = _epsilon24;
+                    VectorDouble sigmaSquareds = _sigmaSquared;
+                    VectorDouble shift6s = _shift6;
+
                     long i = soa.size() - 1;
                     for (; checkFirstLoopCondition<true>(i); decrementFirstLoop(i)) {
 
-                        VectorDouble fxAcc = _zeroDouble;
-                        VectorDouble fyAcc = _zeroDouble;
-                        VectorDouble fzAcc = _zeroDouble;
+                        /*
+                        if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
 
-                        MaskDouble dummyMaskI;
-                        VectorDouble x1 = _zeroDouble;
-                        VectorDouble y1 = _zeroDouble;
-                        VectorDouble z1 = _zeroDouble;
+                            // TODO : handle different vec patterns
+                            // continue;
+                        }
+                        */
 
                         static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                             "OwnershipStates underlying type should be int64_t!");
+
+                        fxAcc = _zeroDouble;
+                        fyAcc = _zeroDouble;
+                        fzAcc = _zeroDouble;
 
                         fillIRegisters<false, true>(x1, y1, z1, dummyMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
                             xPtr, yPtr, zPtr, i, 0);
@@ -1032,14 +1054,22 @@ namespace mdLib {
                         long j = 0;
 
                         for (; checkSecondLoopCondition<true>(i, j); incrementSecondLoop(j)) {
+
+                            fillJRegisters<false>(x2, y2, z2, dummyMaskJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                xPtr, yPtr, zPtr, j, 0);
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, false, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, 0, 0);
+                            }
                             
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
+
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
                             
-                            SoAKernel<true, false, false>(j, dummyMaskI, x1, y1, z1, fxPtr, fyPtr, fzPtr,
-                                typeIDptr, typeIDptr, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0);
+                            SoAKernel<true>(j, dummyMask, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if (checkOverlap(i,j)) {
                                 handleOverlap<false, false>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
@@ -1051,14 +1081,23 @@ namespace mdLib {
 
                         const int restJ = obtainSecondLoopRest<true>(i);
                         if (restJ > 0) {
+                        
+                            fillJRegisters<true>(x2, y2, z2, dummyMaskJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                xPtr, yPtr, zPtr, j, restJ);
+                            
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, 0, restJ);
+                            }
                             
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<true, false, true>(j, dummyMaskI, x1, y1, z1, fxPtr, fyPtr, fzPtr,
-                                typeIDptr, typeIDptr, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, 0, restJ);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<true>(j, dummyMask, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if (checkOverlap(i,j)) {
                                 handleOverlap<false, true>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
@@ -1078,14 +1117,9 @@ namespace mdLib {
                     */
                     const long restI = obtainFirstLoopRest<true>(i);
                     if (restI > 0) {
-                        VectorDouble fxAcc = _zeroDouble;
-                        VectorDouble fyAcc = _zeroDouble;
-                        VectorDouble fzAcc = _zeroDouble;
-
-                        MaskDouble dummyMaskI;
-                        VectorDouble x1 = _zeroDouble;
-                        VectorDouble y1 = _zeroDouble;
-                        VectorDouble z1 = _zeroDouble;
+                        fxAcc = _zeroDouble;
+                        fyAcc = _zeroDouble;
+                        fzAcc = _zeroDouble;
 
                         fillIRegisters<true, true>(x1, y1, z1, dummyMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
                             xPtr, yPtr, zPtr, i, restI);
@@ -1094,13 +1128,22 @@ namespace mdLib {
 
                         for (; checkSecondLoopCondition<true>(i, j); incrementSecondLoop(j)) {
 
+                            fillJRegisters<false>(x2, y2, z2, dummyMaskJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                xPtr, yPtr, zPtr, j, 0);
+
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, restI, 0);
+                            }
+
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<true, false, true>(j, dummyMaskI, x1, y1, z1, fxPtr, fyPtr, fzPtr,
-                                typeIDptr, typeIDptr, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<true>(j, dummyMask, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if (checkOverlap(i,j)) {
                                 handleOverlap<true, false>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restI);
@@ -1113,13 +1156,22 @@ namespace mdLib {
                         const int restJ = obtainSecondLoopRest<true>(i);
                         if (restJ > 0) {
 
+                            fillJRegisters<true>(x2, y2, z2, dummyMaskJ, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                xPtr, yPtr, zPtr, j, restJ);
+
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<true, true, true>(epsilon24s, sigmaSquareds, shift6s, typeIDptr, typeIDptr, restI, restJ);
+                            }
+
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<true, true, true>(j, dummyMaskI, x1, y1, z1, fxPtr, fyPtr, fzPtr,
-                                typeIDptr, typeIDptr, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<true>(j, dummyMask, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if (checkOverlap(i,j)) {
                                 handleOverlap<true, true>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restI);
@@ -1186,17 +1238,38 @@ namespace mdLib {
                     VectorDouble virialSumZ = _zeroDouble;
                     VectorDouble uPotSum = _zeroDouble;
 
+                    VectorDouble fxAcc = _zeroDouble;
+                    VectorDouble fyAcc = _zeroDouble;
+                    VectorDouble fzAcc = _zeroDouble;
+
+                    MaskDouble dummyMaskI;
+                    VectorDouble x1 = _zeroDouble;
+                    VectorDouble y1 = _zeroDouble;
+                    VectorDouble z1 = _zeroDouble;
+
+                    MaskDouble dummyMaskJ;
+                    VectorDouble x2 = _zeroDouble;
+                    VectorDouble y2 = _zeroDouble;
+                    VectorDouble z2 = _zeroDouble;
+
+                    VectorDouble epsilon24s = _epsilon24;
+                    VectorDouble sigmaSquareds = _sigmaSquared;
+                    VectorDouble shift6s = _shift6;
+
                     long i = 0;
                     for (; checkFirstLoopCondition<false>(i, soa1.size()); incrementFirstLoop(i)) {
 
-                        VectorDouble fxAcc = _zeroDouble;
-                        VectorDouble fyAcc = _zeroDouble;
-                        VectorDouble fzAcc = _zeroDouble;
+                        /*
+                        if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
 
-                        MaskDouble dummyMaskI;
-                        VectorDouble x1 = _zeroDouble;
-                        VectorDouble y1 = _zeroDouble;
-                        VectorDouble z1 = _zeroDouble;
+                            // TODO : handle different vec patterns
+                            // continue;
+                        }
+                        */
+
+                        fxAcc = _zeroDouble;
+                        fyAcc = _zeroDouble;
+                        fzAcc = _zeroDouble;
 
                         fillIRegisters<false, false>(x1, y1, z1, dummyMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr1),
                             x1Ptr, y1Ptr, z1Ptr, i, 0);
@@ -1204,14 +1277,23 @@ namespace mdLib {
                         long j = 0;
 
                         for (; checkSecondLoopCondition<false>(soa2.size(), j); incrementSecondLoop(j)) {
+
+                            fillJRegisters<false>(x2, y2, z2, dummyMaskJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x2Ptr, y2Ptr, z2Ptr, j, 0);
+
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, false, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, 0, 0);
+                            }
                             
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<newton3, false, false>(j, dummyMaskI, x1, y1, z1, fx2Ptr, fy2Ptr, fz2Ptr,
-                                typeID1ptr, typeID2ptr, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<newton3>(j, dummyMask, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
                                 handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
@@ -1221,13 +1303,22 @@ namespace mdLib {
                         const int restJ = obtainSecondLoopRest<false>(soa2.size());
                         if (restJ > 0) {
 
+                            fillJRegisters<true>(x2, y2, z2, dummyMaskJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x2Ptr, y2Ptr, z2Ptr, j, restJ);
+
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, true, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, 0, restJ);
+                            }
+
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<newton3, true, false>(j, dummyMaskI, x1, y1, z1, fx2Ptr, fy2Ptr, fz2Ptr,
-                                typeID1ptr, typeID2ptr, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, 0, restJ);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<newton3>(j, dummyMask, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
                                 handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
@@ -1236,17 +1327,16 @@ namespace mdLib {
 
                         reduceAccumulatedForce<false, false>(fxAcc, fyAcc, fzAcc, fx1Ptr, fy1Ptr, fz1Ptr, i);
                     }
-                    
+                    /*
+                    for (; ownedStatePtr1[i] == autopas::OwnershipState::dummy && i < soa1.size()-1;) {
+                        ++i;
+                    }
+                    */
                     const long restI = obtainFirstLoopRest<false>(i, soa1.size());
                     if (restI > 0) {
-                        VectorDouble fxAcc = _zeroDouble;
-                        VectorDouble fyAcc = _zeroDouble;
-                        VectorDouble fzAcc = _zeroDouble;
-
-                        MaskDouble dummyMaskI;
-                        VectorDouble x1 = _zeroDouble;
-                        VectorDouble y1 = _zeroDouble;
-                        VectorDouble z1 = _zeroDouble;
+                        fxAcc = _zeroDouble;
+                        fyAcc = _zeroDouble;
+                        fzAcc = _zeroDouble;
 
                         fillIRegisters<true, false>(x1, y1, z1, dummyMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr1),
                             x1Ptr, y1Ptr, z1Ptr, i, restI);
@@ -1255,13 +1345,22 @@ namespace mdLib {
 
                         for (; checkSecondLoopCondition<false>(soa2.size(), j); incrementSecondLoop(j)) {
 
+                            fillJRegisters<false>(x2, y2, z2, dummyMaskJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x2Ptr, y2Ptr, z2Ptr, j, 0);
+
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<false, false, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, restI, 0);
+                            }
+
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<newton3, false, true>(j, dummyMaskI, x1, y1, z1, fx2Ptr, fy2Ptr, fz2Ptr,
-                                typeID1ptr, typeID2ptr, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<newton3>(j, dummyMask, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
                                 handleNewton3Accumulation<false>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, 0);
@@ -1271,13 +1370,22 @@ namespace mdLib {
                         const int restJ = obtainSecondLoopRest<false>(soa2.size());
                         if (restJ > 0) {
 
+                            fillJRegisters<true>(x2, y2, z2, dummyMaskJ, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x2Ptr, y2Ptr, z2Ptr, j, restJ);
+
+                            if constexpr (useMixing) {
+                                fillPhysicsRegisters<true, true, false>(epsilon24s, sigmaSquareds, shift6s, typeID1ptr, typeID2ptr, restI, restJ);
+                            }
+
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<newton3, true, true>(j, dummyMaskI, x1, y1, z1, fx2Ptr, fy2Ptr, fz2Ptr,
-                                typeID1ptr, typeID2ptr, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<newton3>(j, dummyMask, x1, y1, z1,
+                                x2, y2, z2, epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc,
+                                fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum);
                             
                             if constexpr (newton3) {
                                 handleNewton3Accumulation<true>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
@@ -1309,65 +1417,46 @@ namespace mdLib {
                     }
                 }
 
-                template <bool newton3, bool remainderJ, bool remainderI>
-                inline void SoAKernel(const long j, const MaskDouble& dummyMaskI,
-                    const VectorDouble& x1, const VectorDouble& y1, const VectorDouble& z1, const double *const __restrict x2Ptr,
-                    const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
-                    const size_t *const typeID1Ptr, const size_t *const typeID2Ptr, const int64_t *const __restrict ownedStatePtr2,
+                template <bool newton3>
+                inline void SoAKernel(const long j, const MaskDouble& dummyMask,
+                    const VectorDouble& x1, const VectorDouble& y1, const VectorDouble& z1, const VectorDouble& x2, const VectorDouble& y2,
+                    const VectorDouble& z2, const VectorDouble& epsilon24s, const VectorDouble& sigmaSquareds, const VectorDouble& shift6s,
                     VectorDouble& fxAcc, VectorDouble& fyAcc, VectorDouble& fzAcc, VectorDouble& fx, VectorDouble& fy, VectorDouble& fz,
-                    VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ, VectorDouble& uPotSum,
-                    const size_t restI, const size_t restJ) {
+                    VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ, VectorDouble& uPotSum) {
                     
-                    VectorDouble epsilon24s = _epsilon24;
-                    VectorDouble sigmaSquareds = _sigmaSquared;
-                    VectorDouble shift6s = _shift6;
-
-                    if constexpr (useMixing) {
-                        fillPhysicsRegisters<false, false, true>(epsilon24s, sigmaSquareds, shift6s, typeID1Ptr, typeID2Ptr, restI, restJ);
-                    }
-
-                    VectorDouble x2 = _zeroDouble;
-                    VectorDouble y2 = _zeroDouble;
-                    VectorDouble z2 = _zeroDouble;
-                    VectorDouble ownedStateJDouble = _zeroDouble;
-
-                    fillJRegisters<remainderJ>(x2, y2, z2, ownedStateJDouble, ownedStatePtr2,
-                        x2Ptr, y2Ptr, z2Ptr, j, restJ);
-
                     // distance calculations
-                    const auto drX = x1 - x2;
-                    const auto drY = y1 - y2;
-                    const auto drZ = z1 - z2;
+                    auto drX = x1 - x2;
+                    auto drY = y1 - y2;
+                    auto drZ = z1 - z2;
                     
-                    const auto drX2 = drX * drX;
-                    const auto drY2 = drY * drY;
-                    const auto drZ2 = drZ * drZ;
+                    auto drX2 = drX * drX;
+                    auto drY2 = drY * drY;
+                    auto drZ2 = drZ * drZ;
 
-                    const auto dr2 = drX2 + drY2 + drZ2;
+                    auto dr2 = drX2 + drY2 + drZ2;
 
-                    const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
-                    const auto zeroMask = highway::Ne(dr2, _zeroDouble); // TODO : discuss this approach
+                    auto cutoffMask = highway::Le(dr2, _cutoffSquared);
+                    auto zeroMask = highway::Ne(dr2, _zeroDouble); // TODO : discuss this approach
 
-                    const auto dummyMask = highway::And(dummyMaskI, highway::Ne(ownedStateJDouble, _zeroDouble));
-                    const auto combinedCutoffMask = highway::And(cutoffMask, zeroMask);
-                    const auto cutoffDummyMask = highway::And(combinedCutoffMask, dummyMask);
+                    auto combinedCutoffMask = highway::And(cutoffMask, zeroMask);
+                    auto cutoffDummyMask = highway::And(combinedCutoffMask, dummyMask);
 
                     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
                         return;
                     }
 
                     // compute LJ Potential
-                    const auto invDr2 = _oneDouble / dr2;
-                    const auto lj2 = sigmaSquareds * invDr2;
-                    const auto lj4 = lj2 * lj2;
-                    const auto lj6 = lj2 * lj4;
-                    const auto lj12 = lj6 * lj6;
-                    const auto lj12m6 = lj12 - lj6;
-                    const auto lj12m6alj12 = lj12m6 + lj12;
-                    const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
-                    const VectorDouble fac = lj12m6alj12e * invDr2;
+                    auto invDr2 = _oneDouble / dr2;
+                    auto lj2 = sigmaSquareds * invDr2;
+                    auto lj4 = lj2 * lj2;
+                    auto lj6 = lj2 * lj4;
+                    auto lj12 = lj6 * lj6;
+                    auto lj12m6 = lj12 - lj6;
+                    auto lj12m6alj12 = lj12m6 + lj12;
+                    auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
+                    VectorDouble fac = lj12m6alj12e * invDr2;
 
-                    const VectorDouble facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
+                    VectorDouble facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
                     fx = drX * facMasked;
                     fy = drY * facMasked;
@@ -1445,12 +1534,19 @@ namespace mdLib {
                         VectorDouble fyAcc = highway::Zero(tag_double);
                         VectorDouble fzAcc = highway::Zero(tag_double);
 
-                        const VectorDouble x1 = highway::Set(tag_double, xPtr[indexFirst]);
-                        const VectorDouble y1 = highway::Set(tag_double, yPtr[indexFirst]);
-                        const VectorDouble z1 = highway::Set(tag_double, zPtr[indexFirst]);
-                        const int64_t ownedI = static_cast<int64_t>(ownedStatePtr[indexFirst]);
-                        const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
-                        const MaskDouble ownedMaskI = highway::Ne(ownedStateI, _ownedStateDummy);
+                        VectorDouble x1 = _zeroDouble;
+                        VectorDouble y1 = _zeroDouble;
+                        VectorDouble z1 = _zeroDouble;
+                        MaskDouble dummyMaskI;
+
+                        VectorDouble x2 = _zeroDouble;
+                        VectorDouble y2 = _zeroDouble;
+                        VectorDouble z2 = _zeroDouble;
+                        MaskDouble dummyMaskJ;
+
+                        VectorDouble epsilon24s = _epsilon24;
+                        VectorDouble sigmaSquareds = _sigmaSquared;
+                        VectorDouble shift6s = _shift6;
 
                         alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
                         alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
@@ -1479,13 +1575,21 @@ namespace mdLib {
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
 
+                            fillVectorRegisters<false, false, false>(x1, y1, z1, x2, y2, z2, dummyMaskI, dummyMaskJ,
+                                epsilon24s, sigmaSquareds, shift6s, &typeIDPtr[indexFirst], typeID2Tmp.data(),
+                                xPtr, yPtr, zPtr, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
+                                reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()),
+                                indexFirst, j, 0, 0);
+
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<newton3, false, false>(j, ownedMaskI, x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
-                                &typeIDPtr[indexFirst], typeID2Tmp.data(), reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<newton3>(j, dummyMask, x1, y1, z1, x2, y2, z2,
+                                epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc, fx, fy, fz,
+                                virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
 
@@ -1515,13 +1619,21 @@ namespace mdLib {
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
 
+                            fillVectorRegisters<false, true, false>(x1, y1, z1, x2, y2, z2, dummyMaskI, dummyMaskJ,
+                                epsilon24s, sigmaSquareds, shift6s, &typeIDPtr[indexFirst], typeID2Tmp.data(),
+                                xPtr, yPtr, zPtr, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
+                                reinterpret_cast<const int64_t *>(ownedStatePtr), reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()),
+                                 indexFirst, j, 0, restJ);
+
                             VectorDouble fx = _zeroDouble;
                             VectorDouble fy = _zeroDouble;
                             VectorDouble fz = _zeroDouble;
 
-                            SoAKernel<newton3, true, false>(j, ownedMaskI, x1, y1, z1, x2Tmp.data(), y2Tmp.data(), z2Tmp.data(),
-                                &typeIDPtr[indexFirst], typeID2Tmp.data(), reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()),
-                                fxAcc, fyAcc, fzAcc, fx, fy, fz, virialSumX, virialSumY, virialSumZ, uPotSum, 0, restJ);
+                            MaskDouble dummyMask = highway::And(dummyMaskI, dummyMaskJ);
+
+                            SoAKernel<newton3>(j, dummyMask, x1, y1, z1, x2, y2, z2,
+                                epsilon24s, sigmaSquareds, shift6s, fxAcc, fyAcc, fzAcc, fx, fy, fz,
+                                virialSumX, virialSumY, virialSumZ, uPotSum);
 
                             if constexpr (newton3) {
 
