@@ -39,13 +39,21 @@ TEST(FuzzyTuningTest, testTriangleFuzzySet) {
   EXPECT_NEAR(triangle->evaluate_membership(x0), 0, epsilon);
 
   const std::map<std::string, double> x2 = {{"x", 2}};
-  EXPECT_NEAR(triangle->evaluate_membership(x2), (1.0 - 0) / (5 - 0) * 2, epsilon);
+
+  // as x = 2 is in the increasing part of the triangle, and the triangle increases linearly from 0 to 1 between 0 and 5
+  // we can calculate the membership value at x = 2 as follows:
+  // y = delta_y / delta_x * (x - 0) + 0 = (1.0 - 0) / (5 - 0) * (2 - 0) + 0 = 0.4
+  EXPECT_NEAR(triangle->evaluate_membership(x2), 0.4, epsilon);
 
   const std::map<std::string, double> x5 = {{"x", 5}};
   EXPECT_NEAR(triangle->evaluate_membership(x5), 1, epsilon);
 
   const std::map<std::string, double> x7 = {{"x", 7}};
-  EXPECT_NEAR(triangle->evaluate_membership(x7), (1.0 - 0) / (10 - 5) * (10 - 7), epsilon);
+
+  // as x = 7 is in the decreasing part of the triangle, and the triangle decreases linearly from 1 to 0 between 5 and
+  // 10 we can calculate the membership value at x = 7 as:
+  // y = delta_y / delta_x * (x - 5) +1  = (0 - 1) / (10 - 5) * (7 - 5) + 1 = -0.4 + 1 = 0.6
+  EXPECT_NEAR(triangle->evaluate_membership(x7), 0.6, epsilon);
 
   const std::map<std::string, double> x10 = {{"x", 10}};
   EXPECT_NEAR(triangle->evaluate_membership(x10), 0, epsilon);
@@ -72,16 +80,23 @@ TEST(FuzzyTuningTest, testGaussianFuzzySet) {
   EXPECT_NEAR(gaussian->evaluate_membership(xMinus10), 0, epsilon);
 
   const std::map<std::string, double> x0 = {{"x", 0}};
-  EXPECT_NEAR(gaussian->evaluate_membership(x0), exp(-0.5 * pow((0.0 - 1) / 2, 2)), epsilon);
+
+  // the gaussian function is defined as f(x) = exp(-0.5 * ((x - mean) / std_dev)^2)
+  // for the given parameters mean = 1 and std_dev = 2 the membership value at x = 0 should be:
+  // f(0) = exp(-0.5 * ((0 - 1) / 2)^2) = exp(-0.5 * (-0.5)^2) = exp(-0.5 * 0.25) = exp(-0.125) ≈ 0.88249690258
+  EXPECT_NEAR(gaussian->evaluate_membership(x0), 0.88249690258, epsilon);
 
   const std::map<std::string, double> x1 = {{"x", 1}};
   EXPECT_NEAR(gaussian->evaluate_membership(x1), 1, epsilon);
 
   const std::map<std::string, double> x2 = {{"x", 2}};
-  EXPECT_NEAR(gaussian->evaluate_membership(x2), exp(-0.5 * pow((2.0 - 1) / 2, 2)), epsilon);
+
+  // f(2) = exp(-0.5 * ((2 - 1) / 2)^2) = exp(-0.5 * 0.5^2) = exp(-0.5 * 0.25) = exp(-0.125) ≈ 0.88249690258
+  EXPECT_NEAR(gaussian->evaluate_membership(x2), 0.88249690258, epsilon);
 
   const std::map<std::string, double> x10 = {{"x", 10}};
-  EXPECT_NEAR(gaussian->evaluate_membership(x10), exp(-0.5 * pow((10.0 - 1) / 2, 2)), epsilon);
+  // f(10) = exp(-0.5 * ((10 - 1) / 2)^2) = exp(-0.5 * 4.5^2) = exp(-0.5 * 20.25) = exp(-10.125) ≈ 0.000040065297
+  EXPECT_NEAR(gaussian->evaluate_membership(x10), 0.000040065297, epsilon);
 }
 
 /**

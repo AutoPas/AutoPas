@@ -126,6 +126,9 @@ void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Config
 void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                       const EvidenceCollection &evidenceCollection) {
   // This is left empty because the FuzzyTuning strategy is only run once at the beginning of a tuning phase.
+  AutoPasLog(TRACE,
+             "FuzzyTuning: optimizeSuggestions called. This method does nothing, as reset() already updated the "
+             "config-queue");
 }
 
 TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
