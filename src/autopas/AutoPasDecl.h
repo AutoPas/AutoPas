@@ -27,6 +27,7 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
+#include "autopas/options/EnergySensorOption.h"
 
 namespace autopas {
 
@@ -928,6 +929,21 @@ class AutoPas {
   void setTuningMetricOption(TuningMetricOption tuningMetricOption) {
     _autoTunerInfo.tuningMetric = tuningMetricOption;
   }
+
+  /**
+   * Getter for the energy sensor 
+   * @return
+   */
+  [[nodiscard]] const EnergySensorOption &getEnergySensorOption() const { return _autoTunerInfo.energySensor; }
+
+  /**
+   * Setter for the energy sensor
+   * @param energySensorOption
+   */
+  void setEnergySensorOption(EnergySensorOption energySensorOption) {
+    _autoTunerInfo.energySensor = energySensorOption;
+  }
+  
 
   /**
    * Setter for the maximal Difference for the bucket distribution.

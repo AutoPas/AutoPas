@@ -63,6 +63,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.dontShowProgressBar,
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
+      #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+      config.energySensorOption,
+      #endif
       config.functorOption,
       config.generatorOption,
       config.globalForce,

@@ -5,8 +5,10 @@
  */
 
 #pragma once
-
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
 #include "pmt.h"
+#endif
+#include "autopas/options/EnergySensorOption.h"
 
 namespace autopas::utils {
 
@@ -18,7 +20,7 @@ namespace autopas::utils {
 
 class EnergySensor {
     public:
-    EnergySensor();
+    EnergySensor(EnergySensorOption sensor);
 
     bool startMeasurement();
 
@@ -30,11 +32,20 @@ class EnergySensor {
 
     double getSeconds();
 
+    /**
+     * Getter for used sensor option
+     * @return
+     */
+    const EnergySensorOption getOption();
+
 
 private:
-        std::unique_ptr<pmt::PMT> sensor; 
-        pmt::State start;
-        pmt::State end;
+        #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+        std::unique_ptr<pmt::PMT> _sensor; 
+        pmt::State _start;
+        pmt::State _end;
+        #endif
+        EnergySensorOption _option;
 
 };
 

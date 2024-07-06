@@ -17,7 +17,6 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
-#include "autopas/utils/RaplMeter.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
@@ -162,12 +161,6 @@ class AutoTuner {
   void logIteration(const Configuration &conf, bool tuningIteration, long tuningTime);
 
   /**
-   * Initialize rapl meter.
-   * @return True if energy measurements are possible on this system.
-   */
-  bool initEnergy();
-
-  /**
    * Reset the rapl meter to prepare for a new measurement.
    * @return True if energy measurements are possible on this system.
    */
@@ -230,10 +223,6 @@ class AutoTuner {
   bool canMeasureEnergy() const;
 
  private:
-  /**
-   * Measures consumed energy for tuning
-   */
-  utils::RaplMeter _raplMeter;
 
   /**
    * Sensor for energy measurement
@@ -304,6 +293,7 @@ class AutoTuner {
    * Metric to use for tuning.
    */
   TuningMetricOption _tuningMetric;
+  
 
   /**
    * Is energy measurement possible.

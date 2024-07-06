@@ -8,6 +8,7 @@
 
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TuningMetricOption.h"
+#include "autopas/options/EnergySensorOption.h"
 namespace autopas {
 
 /**
@@ -30,5 +31,9 @@ struct AutoTunerInfo {
    * Number of samples that shall be collected per combination.
    */
   unsigned int maxSamples{3};
+  /**
+   * Used energy sensor of energy metric selected 
+   */
+  EnergySensorOption energySensor{EnergySensorOption::none};
 };
 }  // namespace autopas

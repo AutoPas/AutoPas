@@ -32,6 +32,7 @@
 #include "src/configuration/objects/Sphere.h"
 #include "src/domainDecomposition/LoadBalancerOption.h"
 #include "src/options/BoundaryTypeOption.h"
+#include "autopas/options/EnergySensorOption.h"
 
 /**
  * Class containing all necessary parameters for configuring a md-flexible simulation.
@@ -281,6 +282,14 @@ class MDFlexConfig {
       "Metric to use for tuning. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
+  /**
+  * enerySensorOption
+  */
+ MDFlexOption<autopas::EnergySensorOption, __LINE__> energySensorOption{
+    autopas::EnergySensorOption::rapl, "energy-sensor", true,
+    "Sensor, used for energy consumption measurement, Possible Values: " +
+    autopas::utils::ArrayUtils::to_string(autopas::EnergySensorOption::getAllOptions(), " ", {"(", ")"})
+ };
   /**
    * ruleFilename
    */
