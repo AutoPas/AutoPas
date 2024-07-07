@@ -469,9 +469,13 @@ namespace mdLib {
                         const auto lowerFyAcc = highway::LowerHalf(fyAcc);
                         const auto lowerFzAcc = highway::LowerHalf(fzAcc);
 
-                        fxPtr[i] += highway::ReduceSum(tag_double, lowerFxAcc);
-                        fyPtr[i] += highway::ReduceSum(tag_double, lowerFyAcc);
-                        fzPtr[i] += highway::ReduceSum(tag_double, lowerFzAcc);
+                        const auto lowerFxAccExt = highway::ZeroExtendVector(tag_double, lowerFxAcc);
+                        const auto lowerFyAccExt = highway::ZeroExtendVector(tag_double, lowerFyAcc);
+                        const auto lowerFzAccExt = highway::ZeroExtendVector(tag_double, lowerFzAcc);
+
+                        fxPtr[i] += highway::ReduceSum(tag_double, lowerFxAccExt);
+                        fyPtr[i] += highway::ReduceSum(tag_double, lowerFyAccExt);
+                        fzPtr[i] += highway::ReduceSum(tag_double, lowerFzAccExt);
 
                         if constexpr (!remainder) {
                             size_t index = reversed ? i-1 : i+1;
