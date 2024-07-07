@@ -594,6 +594,10 @@ namespace mdLib {
                             }
                         }
 
+                        if constexpr (vecPattern == VectorizationPattern::p1xVec
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::pVecxVec) {
                         const int restJ = obtainSecondLoopRest(i);
                         if (restJ > 0) {
 
@@ -616,9 +620,15 @@ namespace mdLib {
                                 handleNewton3Accumulation<true>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restJ);
                             }
                         }
+                        }
 
                         reduceAccumulatedForce<true, false>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, 0);
                     }
+
+                    if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::pVecx1
+                            || vecPattern == VectorizationPattern::pVecxVec) {
 
                     const size_t restI = obtainFirstLoopRest<true>(i, 0);
                     if (restI > 0) {
@@ -655,6 +665,10 @@ namespace mdLib {
                             }
                         }
 
+                        if constexpr (vecPattern == VectorizationPattern::p1xVec
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::pVecxVec) {
                         const int restJ = obtainSecondLoopRest(i);
                         if (restJ > 0) {
 
@@ -676,8 +690,11 @@ namespace mdLib {
                                 handleNewton3Accumulation<true>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restJ);
                             }
                         }
+                        }
 
                         reduceAccumulatedForce<true, true>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, restI);
+                    }
+
                     }
 
                     if constexpr (calculateGlobals) {
@@ -749,6 +766,10 @@ namespace mdLib {
                             }
                         }
 
+                        if constexpr (vecPattern == VectorizationPattern::p1xVec
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::pVecxVec) {
                         const int restJ = obtainSecondLoopRest(soa2.size());
                         if (restJ > 0) {
 
@@ -768,9 +789,16 @@ namespace mdLib {
                                 handleNewton3Accumulation<true>(j, fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, restJ);
                             }
                         }
+                        }
 
                         reduceAccumulatedForce<false, false>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, 0);
                     }
+
+                    if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::pVecx1
+                            || vecPattern == VectorizationPattern::pVecxVec) {
+
                     const size_t restI = obtainFirstLoopRest<false>(i, soa1.size());
 
                     if (restI > 0) {
@@ -805,6 +833,10 @@ namespace mdLib {
                             }
                         }
 
+                        if constexpr (vecPattern == VectorizationPattern::p1xVec
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::p2xVecDiv2
+                            || vecPattern == VectorizationPattern::pVecxVec) {
                         const int restJ = obtainSecondLoopRest(soa2.size());
                         if (restJ > 0) {
 
@@ -824,8 +856,11 @@ namespace mdLib {
                                 handleNewton3Accumulation<true>(j, fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, restJ);
                             }
                         }
+                        }
 
                         reduceAccumulatedForce<false, true>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, restI);
+                    }
+
                     }
 
                     if constexpr (calculateGlobals) {
