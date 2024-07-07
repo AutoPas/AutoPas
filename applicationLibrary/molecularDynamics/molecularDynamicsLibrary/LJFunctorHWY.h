@@ -586,8 +586,14 @@ namespace mdLib {
                             fyAcc += fy;
                             fzAcc += fz;
 
-                            if (checkOverlap(i, j)) {
-                                handleOverlap<false, false>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
+                            if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2
+                                    || vecPattern == VectorizationPattern::pVecx1) { 
+                                if (checkOverlap(i, j)) {
+                                    handleOverlap<false, false>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
+                                }
+                                else {
+                                    handleNewton3Accumulation<false>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
+                                }
                             }
                             else {
                                 handleNewton3Accumulation<false>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
@@ -613,8 +619,14 @@ namespace mdLib {
                             fyAcc += fy;
                             fzAcc += fz;
 
-                            if (checkOverlap(i, j)) {
-                                handleOverlap<false, true>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
+                            if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2
+                                    || vecPattern == VectorizationPattern::pVecx1) { 
+                                if (checkOverlap(i, j)) {
+                                    handleOverlap<false, true>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
+                                }
+                                else {
+                                    handleNewton3Accumulation<true>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restJ);
+                                }
                             }
                             else {
                                 handleNewton3Accumulation<true>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restJ);
@@ -657,8 +669,14 @@ namespace mdLib {
                             fyAcc += fy;
                             fzAcc += fz;
 
-                            if (checkOverlap(i, j)) {
-                                handleOverlap<true, false>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restI);
+                            if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2
+                                    || vecPattern == VectorizationPattern::pVecx1) { 
+                                if (checkOverlap(i, j)) {
+                                    handleOverlap<true, false>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restI);
+                                }
+                                else {
+                                    handleNewton3Accumulation<false>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
+                                }
                             }
                             else {
                                 handleNewton3Accumulation<false>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, 0);
@@ -683,8 +701,15 @@ namespace mdLib {
                             fxAcc += fx;
                             fyAcc += fy;
                             fzAcc += fz;
-                            if (checkOverlap(i, j)) {
-                                handleOverlap<true, true>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restI);
+
+                            if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2
+                                    || vecPattern == VectorizationPattern::pVecx1) { 
+                                if (checkOverlap(i, j)) {
+                                    handleOverlap<true, true>(i, j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restI);
+                                }
+                                else {
+                                    handleNewton3Accumulation<true>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restJ);
+                                }
                             }
                             else {
                                 handleNewton3Accumulation<true>(j, fx, fy, fz, fxPtr, fyPtr, fzPtr, restJ);
