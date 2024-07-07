@@ -75,10 +75,9 @@ class DSSequentialTraversal : public CellTraversal<ParticleCell>,
 
  private:
   // CellFunctor type for either Pairwise or Triwise Functors.
-  using CellFunctorType =
-      typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                                internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
-                                internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false> >::type;
+  using CellFunctorType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
+                                             internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
+                                             internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>;
 
   /**
    * CellFunctor to be used for the traversal defining the interaction between two or more cells.
@@ -101,7 +100,7 @@ void DSSequentialTraversal<ParticleCell, Functor>::traverseParticles() {
   // Process interactions between 3 owned particles.
   _cellFunctor.processCell(cells[0]);
 
-  const std::array<std::array<double, 3>, 7> haloDirections{
+  constexpr std::array<std::array<double, 3>, 7> haloDirections{
       {{0., 0., 0.}, {-1., 0., 0.}, {1., 0., 0.}, {0., -1., 0.}, {0., 1., 0.}, {0., 0., -1.}, {0., 0., 1.}}};
 
   //  Process pair interactions with all six halo cells.
@@ -110,7 +109,7 @@ void DSSequentialTraversal<ParticleCell, Functor>::traverseParticles() {
   }
 
   if constexpr (utils::isTriwiseFunctor<Functor>()) {
-    // Process cell triplet interactions with halo cells.
+    // Process cell triplet interactions with 1 owned particle and two halo particles from different cells.
     for (int i = 1; i < cells.size(); i++) {
       for (int j = i + 1; j < cells.size(); j++) {
         // Sorting direction should be from owned to first halo cell.

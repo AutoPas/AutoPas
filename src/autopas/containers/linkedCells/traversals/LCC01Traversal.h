@@ -138,15 +138,14 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
 
  private:
   // CellOffsets needs to store interaction pairs or triplets depending on the Functor type.
-  using CellOffsetsType = typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                                                    std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
-                                                    std::vector<std::tuple<long, long, std::array<double, 3>>>>::type;
+  using CellOffsetsType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
+                                             std::vector<std::vector<std::pair<long, std::array<double, 3>>>>,
+                                             std::vector<std::tuple<long, long, std::array<double, 3>>>>;
 
   // CellFunctor type for either Pairwise or Triwise Functors.
-  using CellFunctorType =
-      typename std::conditional<decltype(utils::isPairwiseFunctor<Functor>())::value,
-                                internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
-                                internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>::type;
+  using CellFunctorType = std::conditional_t<decltype(utils::isPairwiseFunctor<Functor>())::value,
+                                             internal::CellFunctor<ParticleCell, Functor, /*bidirectional*/ false>,
+                                             internal::CellFunctor3B<ParticleCell, Functor, /*bidirectional*/ false>>;
 
   /**
    * Computes all interactions between the base
@@ -249,7 +248,7 @@ template <class ParticleCell, class Functor, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computePairwiseOffsets() {
   _cellOffsets.resize(2 * this->_overlap[0] + 1);
 
-  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
+  const auto interactionLengthSquare{this->_interactionLength * this->_interactionLength};
 
   for (long x = -this->_overlap[0]; x <= 0l; ++x) {
     for (long y = -this->_overlap[1]; y <= static_cast<long>(this->_overlap[1]); ++y) {
@@ -302,6 +301,9 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computePairwiseOf
 template <class ParticleCell, class Functor, bool combineSoA>
 inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeTriwiseOffsets() {
   using namespace utils::ArrayMath::literals;
+  // Reserve approximately. Overestimates more for larger overlap.
+  const int cubeSize = this->_overlap[0] * this->_overlap[1] * this->_overlap[2];
+  _cellOffsets.reserve(cubeSize * cubeSize / 4);
 
   // Helper function to get minimal distance between two cells
   auto cellDistance = [&](long x1, long y1, long z1, long x2, long y2, long z2) {
@@ -310,7 +312,7 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeTriwiseOff
                                  std::max(0l, (std::abs(z1 - z2) - 1l)) * this->_cellLength[2]};
   };
 
-  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
+  const auto interactionLengthSquare{this->_interactionLength * this->_interactionLength};
   _cellOffsets.emplace_back(0, 0, std::array<double, 3>{1., 1., 1.});
 
   // offsets for the first cell
@@ -345,7 +347,9 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::computeTriwiseOff
               const long offset2 = utils::ThreeDimensionalMapping::threeToOneD(
                   x2, y2, z2, utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension));
 
+              // Only add unique combinations. E.g.: (5, 8) == (8, 5)
               if (offset2 <= offset1) continue;
+
               // sorting direction from base cell to the first different cell
               std::array<double, 3> sortDirection{};
               if (offset1 == 0) {
@@ -368,10 +372,12 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCell(s
                                                                                unsigned long z) {
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
     processBaseCellPairwise(cells, x, y, z);
-  } else if (utils::isTriwiseFunctor<Functor>()) {
+  } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
     processBaseCellTriwise(cells, x, y, z);
   } else {
-    utils::ExceptionHandler::exception("LCC01Traversal::processBaseCell(): Functor is not valid.");
+    utils::ExceptionHandler::exception(
+        "LCC01Traversal::processBaseCell(): Functor {} is not of type PairwiseFunctor or TriwiseFunctor.",
+        _functor->getName());
   }
 }
 
@@ -482,13 +488,13 @@ inline void LCC01Traversal<ParticleCell, Functor, combineSoA>::processBaseCellTr
     ParticleCell &otherCell1 = cells[otherIndex1];
     ParticleCell &otherCell2 = cells[otherIndex2];
 
-    if (baseIndex == otherIndex1 && baseIndex == otherIndex2) {
+    if (baseIndex == otherIndex1 and baseIndex == otherIndex2) {
       this->_cellFunctor.processCell(baseCell);
-    } else if (baseIndex == otherIndex1 && baseIndex != otherIndex2) {
+    } else if (baseIndex == otherIndex1 and baseIndex != otherIndex2) {
       this->_cellFunctor.processCellPair(baseCell, otherCell2);
-    } else if (baseIndex != otherIndex1 && baseIndex == otherIndex2) {
+    } else if (baseIndex != otherIndex1 and baseIndex == otherIndex2) {
       this->_cellFunctor.processCellPair(baseCell, otherCell1);
-    } else if (baseIndex != otherIndex1 && otherIndex1 == otherIndex2) {
+    } else if (baseIndex != otherIndex1 and otherIndex1 == otherIndex2) {
       this->_cellFunctor.processCellPair(baseCell, otherCell1);
     } else {
       this->_cellFunctor.processCellTriple(baseCell, otherCell1, otherCell2, r);
