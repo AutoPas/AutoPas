@@ -480,9 +480,13 @@ namespace mdLib {
                             const auto upperFyAcc = highway::UpperHalf(tag_double, fyAcc);
                             const auto upperFzAcc = highway::UpperHalf(tag_double, fzAcc);
 
-                            fxPtr[index] = highway::ReduceSum(tag_double, upperFxAcc);
-                            fyPtr[index] = highway::ReduceSum(tag_double, upperFyAcc);
-                            fzPtr[index] = highway::ReduceSum(tag_double, upperFzAcc);
+                            const auto upperFxAccExt = highway::ZeroExtendVector(tag_double, upperFxAcc);
+                            const auto upperFyAccExt = highway::ZeroExtendVector(tag_double, upperFyAcc);
+                            const auto upperFzAccExt = highway::ZeroExtendVector(tag_double, upperFzAcc);
+
+                            fxPtr[index] = highway::ReduceSum(tag_double, upperFxAccExt);
+                            fyPtr[index] = highway::ReduceSum(tag_double, upperFyAccExt);
+                            fzPtr[index] = highway::ReduceSum(tag_double, upperFzAccExt);
                         }
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
