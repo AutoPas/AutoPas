@@ -208,8 +208,12 @@ void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(P
     if (_useNewton3) {
       _functor->AoSFunctor(p1, p2, true);
     } else {
-      _functor->AoSFunctor(p1, p2, false);
-      _functor->AoSFunctor(p2, p1, false);
+      if (not p1.isHalo()) {
+        _functor->AoSFunctor(p1, p2, false);
+      }
+      if (not p2.isHalo()) {
+        _functor->AoSFunctor(p2, p1, false);
+      }
     }
   };
 
