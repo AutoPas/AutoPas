@@ -282,6 +282,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(ruleFilename);
   }
 
+  // TODO: C++20 Use contains instead of count
   if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     os << setw(valueOffset) << left << "PairwiseInteraction:" << endl;
     constexpr int indentWidth = 2;
@@ -318,6 +319,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(newton3Options, -indentWidth);
   }
 
+  // TODO c++20: use contains instead of count
   if (getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     os << setw(valueOffset) << left << "ThreeBodyInteraction:" << endl;
     constexpr int indentWidth = 2;

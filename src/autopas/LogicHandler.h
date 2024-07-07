@@ -68,7 +68,7 @@ class LogicHandler {
     using namespace autopas::utils::ArrayMath::literals;
 
     // Initialize AutoPas with tuners for given interaction types
-    for (auto &[interactionType, tuner] : autotuners) {
+    for (const auto &[interactionType, tuner] : autotuners) {
       _interactionTypes.insert(interactionType);
 
       const auto configuration = tuner->getCurrentConfig();
@@ -159,7 +159,7 @@ class LogicHandler {
 
     if (_functorCalls > 0) {
       // Bump iteration counters for all autotuners
-      for (auto &[interactionType, autoTuner] : _autoTunerRefs) {
+      for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
         const bool needsToWait = checkTuningStates(interactionType);
         autoTuner->bumpIterationCounters(needsToWait);
       }
@@ -536,7 +536,7 @@ class LogicHandler {
     // Goes over all pairs in _autoTunerRefs and returns true as soon as one is `inTuningPhase()`.
     // The tuner associated with the given interaction type is ignored.
     return std::any_of(std::begin(_autoTunerRefs), std::end(_autoTunerRefs), [&](const auto &entry) {
-      return entry.first == interactionType ? false : entry.second->inTuningPhase();
+      return !(entry.first == interactionType) and entry.second->inTuningPhase();
     });
   }
 
@@ -727,7 +727,6 @@ class LogicHandler {
    *  - haloParticleBuffer -> particleBuffer
    *
    * @note Buffers need to have at least one (empty) cell. They must not be empty.
-   * @note TODO: Update this function with SoA-usage
    *
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.
@@ -760,7 +759,7 @@ class LogicHandler {
    */
   bool neighborListsAreValid();
 
-  const LogicHandlerInfo &_logicHandlerInfo;
+  const LogicHandlerInfo _logicHandlerInfo;
   /**
    * Specifies after how many pair-wise traversals the neighbor lists (if they exist) are to be rebuild.
    */
@@ -859,12 +858,14 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::neighborListsAreValid() {
-  const auto needPairRebuild = _interactionTypes.count(InteractionTypeOption::pairwise) != 0 and
-                               _autoTunerRefs[InteractionTypeOption::pairwise]->willRebuildNeighborLists();
-  const auto needTriRebuild = _interactionTypes.count(InteractionTypeOption::triwise) != 0 and
-                              _autoTunerRefs[InteractionTypeOption::triwise]->willRebuildNeighborLists();
+  // Implement rebuild indicator as function, so it is only evaluated when needed.
+  const auto needRebuild = [&](const InteractionTypeOption &interactionOption) {
+    return _interactionTypes.count(interactionOption) != 0 and
+           _autoTunerRefs[interactionOption]->willRebuildNeighborLists();
+  };
 
-  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needPairRebuild or needTriRebuild) {
+  if (_stepsSinceLastListRebuild >= _neighborListRebuildFrequency or needRebuild(InteractionTypeOption::pairwise) or
+      needRebuild(InteractionTypeOption::triwise)) {
     _neighborListsAreValid.store(false, std::memory_order_relaxed);
   }
 
@@ -928,7 +929,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     }
   }();
   const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
-  auto &autoTuner = _autoTunerRefs[interactionType];
+  auto const *autoTuner = _autoTunerRefs[interactionType].get();
   const bool newton3 = autoTuner->getCurrentConfig().newton3;
   auto &container = _containerSelector.getCurrentContainer();
 
@@ -1277,7 +1278,7 @@ void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, Container
 #endif
 
   // Step 3: 3-body interactions of 1 buffer particle and 2 container particles
-  // todo: parallelize without race conditions
+  // todo: parallelize without race conditions - https://github.com/AutoPas/AutoPas/issues/904
   // AUTOPAS_OPENMP(parallel for shared(bufferParticles))
   for (auto i = 0; i < numTotal; ++i) {
     Particle &p1 = *bufferParticles[i];
@@ -1329,7 +1330,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   bool stillTuning = false;
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
-  auto &autoTuner = _autoTunerRefs[interactionType];
+  auto *const autoTuner = _autoTunerRefs[interactionType].get();
 
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
@@ -1419,9 +1420,8 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
-  auto &autoTuner = _autoTunerRefs[interactionType];
+  auto const *autoTuner = _autoTunerRefs[interactionType].get();
   autoTuner->logTuningResult(stillTuning, tuningTimer.getTotalTime());
-  const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
 
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
@@ -1469,6 +1469,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
             return 0l;
         }
       }();
+      const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
       autoTuner->addMeasurement(measurement, rebuildIteration);
     }
   } else {

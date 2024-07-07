@@ -29,7 +29,7 @@ This could be achieved via the introduction of an indicator member in your parti
 The functor is a class that defines the interaction of particles, also sometimes referred to as the force kernel. 
 AutoPas supports pairwise interactions as well as interactions between triplets of particles.
 For compatibility, your functor must inherit from either [`PairwiseFunctor`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/baseFunctors/PairwiseFunctor.h) or [`TriwiseFunctor`](https://github.com/AutoPas/AutoPas/blob/master/src/autopas/baseFunctors/TriwiseFunctor.h).
-This class defines how to calculate and store the interactions, as well as some properties of the calculation.
+These classes suggest how to calculate and store the interactions, as well as some properties of the calculation.
 
 The critical elements to implement are:
 - `AoSFunctor()`:

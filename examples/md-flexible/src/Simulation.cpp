@@ -454,13 +454,13 @@ void Simulation::updateForces() {
   // Calculate pairwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
     _timers.forceUpdatePairwise.start();
-    isTuningIteration = (isTuningIteration | calculatePairwiseForces());
+    isTuningIteration |= calculatePairwiseForces();
     timeIteration += _timers.forceUpdatePairwise.stop();
   }
   // Calculate triwise forces
   if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
     _timers.forceUpdateTriwise.start();
-    isTuningIteration = (isTuningIteration | calculateTriwiseForces());
+    isTuningIteration |= calculateTriwiseForces();
     timeIteration += _timers.forceUpdateTriwise.stop();
   }
 
@@ -667,7 +667,7 @@ void Simulation::logMeasurements() {
 
         const auto flops = flopCounterFunctor.getFlops();
 
-        std::cout << "Statistics for the 3-Body Force Calculation at end of simulation:" << std::endl;
+        std::cout << "Statistics for the Triwise Force Calculation at end of simulation:" << std::endl;
         std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
         std::cout << "  GFLOPs/sec                         : "
                   << static_cast<double>(flops * _iteration) * 1e-9 / (static_cast<double>(forceUpdateTriwise) * 1e-9)

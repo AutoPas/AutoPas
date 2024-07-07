@@ -27,7 +27,7 @@ while (needsMoreIterations()) {
 
    // 2. Particle Interactions
    YourFunctor functor();                       // User code
-   autopas->iterateInteractions(&functor);          // Tuning and parallelization happens here
+   autopas->computeInteractions(&functor);      // Tuning and parallelization happen here
 
    // 3. Your science goes here.
 }

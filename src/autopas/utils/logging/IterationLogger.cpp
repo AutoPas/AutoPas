@@ -56,7 +56,7 @@ autopas::IterationLogger::~IterationLogger() {
 }
 
 void autopas::IterationLogger::logIteration(const autopas::Configuration &configuration, size_t iteration,
-                                            std::string functorName, bool inTuningPhase, long timeTuning,
+                                            const std::string &functorName, bool inTuningPhase, long timeTuning,
                                             const IterationMeasurements &measurements) {
 #ifdef AUTOPAS_LOG_ITERATIONS
   const auto &[timeIteratePairwise, timeRemainderTraversal, timeRebuild, timeTotal, energyMeasurementsPossible,
