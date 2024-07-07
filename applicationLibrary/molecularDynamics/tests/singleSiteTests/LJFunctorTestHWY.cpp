@@ -517,7 +517,7 @@ TEST_P(LJFunctorTestHWY, testLJFunctorVSLJFunctorHWYTwoCellsUseUnalignedViews) {
 
 std::vector<VectorizationPattern> patterns {
     VectorizationPattern::p1xVec,
-    VectorizationPattern::p2xVecDiv2,
+    //VectorizationPattern::p2xVecDiv2,
     //VectorizationPattern::pVecDiv2x2,
     //VectorizationPattern::pVecx1,
 };

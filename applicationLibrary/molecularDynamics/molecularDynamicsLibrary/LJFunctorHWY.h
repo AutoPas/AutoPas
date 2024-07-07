@@ -186,15 +186,6 @@ namespace mdLib {
                         restMasksDouble[n] = highway::FirstN(tag_double, n+1);
                         restMasksLong[n] = highway::FirstN(tag_long, n+1);
                     }
-
-                    alignas(64) double upper[_vecLengthDouble];
-                    for (size_t n = _vecLengthDouble/2; n < _vecLengthDouble; ++n) {
-                        upper[n] = -1.;
-                    }
-
-                    auto helper = highway::Load(tag_double, upper);
-                    upperMask = highway::MaskFromVec(helper);
-                    lowerMask = highway::FirstN(tag_double, _vecLengthDouble/2);
                 }
 
                 template <bool reversed>
