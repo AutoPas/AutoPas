@@ -117,6 +117,10 @@ function (
             # Capturing lcov counters and generating report
         COMMAND
             ${LCOV_PATH}
+            --ignore-errors
+            mismatch,inconsistent
+            --rc 
+            branch_coverage=1
             --directory
             .
             --capture
@@ -126,13 +130,15 @@ function (
             ${LCOV_PATH}
             --remove
             ${_outputname}.info
-            'build/*'
-            'tests/*'
+            '*/build/*'
+            '*/tests/*'
             '/usr/*'
             --output-file
             ${_outputname}.info.cleaned
         COMMAND
             ${GENHTML_PATH}
+            --branch-coverage
+            --demangle-cpp
             -o
             ${_outputname}
             ${_outputname}.info.cleaned
