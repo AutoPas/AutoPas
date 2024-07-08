@@ -203,12 +203,39 @@ namespace mdLib {
                     }
                 }
 
+                inline void decrementFirstLoop(size_t &i) {
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        --i;
+                    }
+                    else {
+
+                    }
+                }
+
+                inline void incrementFirstLoop(unsigned int &i) {
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        ++i;
+                    }
+                    else {
+
+                    }
+                }
+
                 inline bool checkSecondLoopCondition(const size_t i, const size_t j) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         return j < (i & ~(_vecLengthDouble - 1));
                     }
                     else {
                         return false;
+                    }
+                }
+
+                inline void incrementSecondLoop(unsigned int &j) {
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        j += _vecLengthDouble;
+                    }
+                    else {
+
                     }
                 }
 
@@ -233,6 +260,29 @@ namespace mdLib {
                         y1 = highway::Set(tag_double, yPtr[i]);
                         z1 = highway::Set(tag_double, zPtr[i]);
                     }
+                }
+
+                template <bool remainder>
+                inline void handleNewton3Reduction(const VectorDouble& fx, const VectorDouble& fy, const VectorDouble& fz,
+                        double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+                        double *const __restrict fz2Ptr, const size_t j, const size_t rest) {
+                    const VectorDouble fx2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fx2Ptr[j])
+                            : highway::LoadU(tag_double, &fx2Ptr[j]);
+                    const VectorDouble fy2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fy2Ptr[j])
+                            : highway::LoadU(tag_double, &fy2Ptr[j]);
+                    const VectorDouble fz2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
+                            : highway::LoadU(tag_double, &fz2Ptr[j]);
+
+                    const VectorDouble fx2New = fx2 - fx;
+                    const VectorDouble fy2New = fy2 - fy;
+                    const VectorDouble fz2New = fz2 - fz;
+
+                    remainder ? highway::BlendedStore(fx2New, restMasksDouble[rest-1], tag_double, &fx2Ptr[j])
+                            : highway::StoreU(fx2New, tag_double, &fx2Ptr[j]);
+                    remainder ? highway::BlendedStore(fy2New, restMasksDouble[rest-1], tag_double, &fy2Ptr[j])
+                            : highway::StoreU(fy2New, tag_double, &fy2Ptr[j]);
+                    remainder ? highway::BlendedStore(fz2New, restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
+                            : highway::StoreU(fz2New, tag_double, &fz2Ptr[j]);
                 }
 
                 inline void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
@@ -292,7 +342,8 @@ namespace mdLib {
                     auto virialSumZ = _zeroDouble;
                     auto uPotSum = _zeroDouble;
 
-                    for (size_t i = soa.size() - 1; checkFirstLoopCondition<true>(i, 0); --i) {
+                    size_t i = soa.size() - 1;
+                    for (; checkFirstLoopCondition<true>(i, 0); decrementFirstLoop(i)) {
 
                         if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
                             continue;
@@ -313,8 +364,8 @@ namespace mdLib {
 
                         fillIRegisters(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedStateI);
 
-                        size_t j = 0;
-                        for (; checkSecondLoopCondition(i, j); j+=_vecLengthDouble) {
+                        unsigned int j = 0;
+                        for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
 
                             SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xPtr, yPtr,
                                zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr, fxAcc, fyAcc, fzAcc, virialSumX,
@@ -369,7 +420,8 @@ namespace mdLib {
                     VectorDouble virialSumZ = _zeroDouble;
                     VectorDouble uPotSum = _zeroDouble;
 
-                    for (unsigned int i = 0; checkFirstLoopCondition<false>(i, soa1.size()); ++i) {
+                    unsigned int i = 0;
+                    for (; checkFirstLoopCondition<false>(i, soa1.size()); incrementFirstLoop(i)) {
 
                         if (ownedStatePtr1[i] == autopas::OwnershipState::dummy) {
                             continue;
@@ -388,7 +440,7 @@ namespace mdLib {
 
                         unsigned int j = 0;
 
-                        for (; checkSecondLoopCondition(soa2.size(), j); j += _vecLengthDouble) {
+                        for (; checkSecondLoopCondition(soa2.size(), j); incrementSecondLoop(j)) {
 
                             SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2Ptr,
                                   y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, fxAcc, fyAcc, fzAcc,
@@ -518,23 +570,7 @@ namespace mdLib {
                     fzAcc = fzAcc + fz;
 
                     if constexpr (newton3) {
-                        const VectorDouble fx2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fx2Ptr[j])
-                            : highway::LoadU(tag_double, &fx2Ptr[j]);
-                        const VectorDouble fy2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fy2Ptr[j])
-                            : highway::LoadU(tag_double, &fy2Ptr[j]);
-                        const VectorDouble fz2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
-                            : highway::LoadU(tag_double, &fz2Ptr[j]);
-
-                        const VectorDouble fx2New = fx2 - fx;
-                        const VectorDouble fy2New = fy2 - fy;
-                        const VectorDouble fz2New = fz2 - fz;
-
-                        remainder ? highway::BlendedStore(fx2New, restMasksDouble[rest-1], tag_double, &fx2Ptr[j])
-                            : highway::StoreU(fx2New, tag_double, &fx2Ptr[j]);
-                        remainder ? highway::BlendedStore(fy2New, restMasksDouble[rest-1], tag_double, &fy2Ptr[j])
-                            : highway::StoreU(fy2New, tag_double, &fy2Ptr[j]);
-                        remainder ? highway::BlendedStore(fz2New, restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
-                            : highway::StoreU(fz2New, tag_double, &fz2Ptr[j]);
+                        handleNewton3Reduction<remainder>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, rest);
                     }
 
                     if constexpr (calculateGlobals) {
