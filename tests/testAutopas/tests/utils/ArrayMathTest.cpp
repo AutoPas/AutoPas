@@ -163,6 +163,11 @@ TEST(ArrayMathTest, testMulScalarOp) {
     ASSERT_DOUBLE_EQ(result[d], a[d] * scalar);
   }
 
+  result = scalar * a;
+  for (int d = 0; d < 3; ++d) {
+    ASSERT_DOUBLE_EQ(result[d], a[d] * scalar);
+  }
+
   result *= scalar;
   for (int d = 0; d < 3; ++d) {
     ASSERT_DOUBLE_EQ(result[d], a[d] * scalar * scalar);
