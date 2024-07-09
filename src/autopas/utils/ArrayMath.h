@@ -648,6 +648,21 @@ constexpr std::array<T, SIZE> &operator*=(std::array<T, SIZE> &a, T s) {
   return a;
 }
 
+/**
+ * Minus operator to perform negation
+ * @tparam T floating point type
+ * @tparam SIZE size of the array a
+ * @param a the array
+ * @return array whose elements are -a[i]
+ */
+template <class T, std::size_t SIZE>
+constexpr std::array<T, SIZE> operator-(std::array<T, SIZE> &a) {
+  for (std::size_t d = 0; d < SIZE; ++d) {
+    a[d] *= -1;
+  }
+  return a;
+}
+
 }  // namespace literals
 
 /**
