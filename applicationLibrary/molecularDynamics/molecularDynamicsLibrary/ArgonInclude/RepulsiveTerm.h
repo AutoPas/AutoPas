@@ -50,11 +50,10 @@ template <size_t a, size_t b, size_t c, size_t ID>
   const auto nablaKI = displacementKI.derive_wrt<ID>();
 
   const auto firstTerm{ (nablaIJ + nablaJK + nablaJK) * (-alpha_abc) * Permutation(a, b, c, cosineI, cosineJ, cosineK)};
-  //firstTerm = firstTerm * Permutation(a, b, c, cosineI, cosineJ, cosineK);
 
   const auto secondTerm{Permutation_deriv_wrt<ID>(a, b, c, cosineI, cosineJ, cosineK)};
 
-  return multiplyingFactor * (firstTerm + secondTerm);
+  return (firstTerm + secondTerm) * multiplyingFactor;
 }
 
 template <size_t a, size_t b, size_t c>
