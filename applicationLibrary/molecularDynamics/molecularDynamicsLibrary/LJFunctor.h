@@ -792,11 +792,6 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
 
-      AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
-      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
-      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", numKernelCallsNoN3Acc);
-      AutoPasLog(TRACE, "Number of Global Calculations      = {}", numGlobalCalcsAcc);
-
       constexpr size_t numFLOPsPerDistanceCall = 8;
       constexpr size_t numFLOPsPerN3KernelCall = 18;
       constexpr size_t numFLOPsPerNoN3KernelCall = 15;
@@ -822,9 +817,6 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
 
-      AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
-      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
-      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", numKernelCallsNoN3Acc);
       return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
              (static_cast<double>(numDistCallsAcc));
     } else {
