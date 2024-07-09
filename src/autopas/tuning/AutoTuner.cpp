@@ -284,7 +284,7 @@ void AutoTuner::bumpIterationCounters() {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  const bool inTuningPhase = _iterationsSinceTuning >= _tuningInterval;
+  const bool inTuningPhase = this->inTuningPhase();
   // How many iterations ago did the rhythm of rebuilds change?
   const auto iterationBaseline = inTuningPhase ? (_iterationsSinceTuning - _tuningInterval) : _iterationsSinceTuning;
   // What is the rebuild rhythm?
