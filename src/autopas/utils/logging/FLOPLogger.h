@@ -24,8 +24,7 @@ namespace autopas {
  * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_LOG_FLOPS to ON.
  *
  * When enabled and used with a functor where FLOP counting is not implemented (in which case the functor will return
- * the default nonsensical negative FLOP count and/or Hit rate), the field is left empty. In such cases, the user is
- * made aware of the situation when the logger is destructed.
+ * the default nonsensical negative FLOP count and/or Hit rate), "Not Implemented" is outputted instead.
  *
  */
 class FLOPLogger {
@@ -42,7 +41,9 @@ class FLOPLogger {
   ~FLOPLogger();
 
   /**
-   * Log the given arguments and the internal buffer to the csv file. If a value is negative, a blank space is printed.
+   * Log the given arguments and the internal buffer to the csv file. If a value is negative, it is interpreted that
+   * the functor has not implemented the relevant function.
+   *
    * @param iteration
    * @param numFLOPs number of FLOPs
    * @param hitRate percentage of distance calculations that result in force contributions.
@@ -51,12 +52,6 @@ class FLOPLogger {
 
  private:
   std::string _loggerName;
-
-  /**
-   * Flag for if logger has logged an empty field (<=> a functor which does not have an implementation of getNumFLOPs
-   * or getHitRate() has been used). In such case, an info message is outputted upon the destruction of the logger.
-   */
-  bool _loggedEmptyFields{false};
 };
 
 }  // namespace autopas

@@ -13,7 +13,6 @@
 
 autopas::FLOPLogger::FLOPLogger(const std::string &outputSuffix) : _loggerName("FLOPLogger" + outputSuffix) {
 #ifdef AUTOPAS_LOG_FLOPS
-  _loggedEmptyFields = false;
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
   const auto outputFileName("AutoPas_FLOPCount_" + outputSuffix + fillerAfterSuffix +
                             autopas::utils::Timer::getDateStamp() + ".csv");
@@ -41,11 +40,6 @@ autopas::FLOPLogger::FLOPLogger(const std::string &outputSuffix) : _loggerName("
 
 autopas::FLOPLogger::~FLOPLogger() {
 #ifdef AUTOPAS_LOG_FLOPS
-  if (_loggedEmptyFields) {
-    AutoPasLog(INFO,
-               "FLOPLogger logged some empty fields. This might be because a Functor was used which did not provide an "
-               "implementation for getNumFLOPs or getHitRate.");
-  }
   spdlog::drop(_loggerName);
 #endif
 }
@@ -53,12 +47,8 @@ autopas::FLOPLogger::~FLOPLogger() {
 void autopas::FLOPLogger::logIteration(size_t iteration, int numFLOPs, double hitRate) {
 #ifdef AUTOPAS_LOG_FLOPS
   // Convert negative numbers to empty strings to represent no implementation
-  const auto numFLOPsStr = numFLOPs >= 0 ? std::to_string(numFLOPs) : "";
-  const auto hitRateStr = hitRate >= 0 ? std::to_string(hitRate) : "";
+  const auto numFLOPsStr = numFLOPs >= 0 ? std::to_string(numFLOPs) : "Not Implemented";
+  const auto hitRateStr = hitRate >= 0 ? std::to_string(hitRate) : "Not Implemented";
   spdlog::get(_loggerName)->info("{},{},{}", iteration, numFLOPsStr, hitRateStr);
-
-  if (numFLOPs < 0 or hitRate < 0) {
-    _loggedEmptyFields = true;
-  }
 #endif
 }

@@ -52,7 +52,7 @@ By "useful" FLOPs, we mean avoiding anything which does not contribute to the pa
 e.g. FLOPs spent on masked vector registers.
 As this is subjective, please refer to the documentation of the Functor you are using for more details.
 By hit rate, we mean the proportion of distance calculations that are within the cutoff.
-If a functor has not implemented `getNumFLOPs` or `getHitRate`, the respective fields of the CSV will be left blank.
+If a functor has not implemented `getNumFLOPs` or `getHitRate`, "Not Implemented" will be outputted instead.
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_FLOPS`.
 
 
