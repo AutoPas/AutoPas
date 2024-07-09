@@ -17,9 +17,9 @@
 #include "autopas/utils/StaticBoolSelector.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/inBox.h"
-
+#include <hwy/highway.h>
 namespace mdLib {
-
+namespace highway = hwy::HWY_NAMESPACE;
 /**
  * A functor to handle lennard-jones interactions between two particles (molecules).
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
@@ -78,7 +78,6 @@ class LJFunctorSmooth
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
-
     }
   }
 
@@ -170,7 +169,7 @@ class LJFunctorSmooth
       // For newton3, this potential energy contribution is distributed evenly to the two molecules.
       // For non-newton3, the full potential energy is added to the one molecule.
       // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
-      double potentialEnergy6 = smoothing * epsilon24 * lj12m6 + (shift6); // this need to be adjusted for the smoothed function, shift 6 is not needed for smoothed
+      double potentialEnergy6 = smoothing * epsilon24 * lj12m6; // this need to be adjusted for the smoothed function, shift 6 is not needed for smoothed
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
@@ -260,10 +259,9 @@ class LJFunctorSmooth
           }
         }
       }
-
+//simple vectorizetion
 // icpc vectorizes this.
-// g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+// g++ only with -ffast-math or -funsafe-math-optimizations // check not autovectorized
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
@@ -291,16 +289,18 @@ class LJFunctorSmooth
         // Mask away if distance is too large or any particle is a dummy.
         // Particle ownedStateI was already checked previously.
         const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy ;
-        const bool innerMask = dr2 >= innerCutoffSquared and ownedStateJ != autopas::OwnershipState::dummy ;
+        //const bool innerMask = dr2 >= innerCutoffSquared and ownedStateJ != autopas::OwnershipState::dummy ;
 
 
+        SoAFloatPrecision smoothing = 1.0;
 
-        const SoAFloatPrecision drtrue = std::sqrt(dr2);
-        const SoAFloatPrecision temp = drtrue - innerCutoff ;
-        const SoAFloatPrecision cutoffdiffcube =  _cutoffDiffCubed;
-        const SoAFloatPrecision _3ci =  _3c_i;
-        const SoAFloatPrecision smoothing = innerMask ? 1 - (temp * temp) * (_3ci - 2 * drtrue) / (cutoffdiffcube) : 1.0 ;
-
+        if(dr2 >= innerCutoffSquared) {
+          const SoAFloatPrecision drtrue = std::sqrt(dr2);
+          const SoAFloatPrecision temp = drtrue - innerCutoff;
+          const SoAFloatPrecision cutoffdiffcube = _cutoffDiffCubed;
+          const SoAFloatPrecision _3ci = _3c_i;
+          smoothing = 1 - (temp * temp) * (_3ci - 2 * drtrue) / (cutoffdiffcube);
+        }
 
 /*
         const SoAFloatPrecision drtrue = innerMask ? std::sqrt(dr2): 1.337;
@@ -310,14 +310,18 @@ class LJFunctorSmooth
         const SoAFloatPrecision smoothing = innerMask ? 1 - (temp * temp) * (_3ci - 2 * drtrue) / (cutoffdiffcube) : 1.0 ;
         */
 
+        SoAFloatPrecision facSmooth = 0.;
+        SoAFloatPrecision lj12m6 = 0. ;
 
-        const SoAFloatPrecision invdr2 = 1. / dr2;
-        const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
-        const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
-        const SoAFloatPrecision lj12 = lj6 * lj6;
-        const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
-        const SoAFloatPrecision facSmooth = innerMask ? fac * smoothing : fac;
+        if(dr2 >= cutoffSquared) {
+          const SoAFloatPrecision invdr2 = 1. / dr2;
+          const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
+          const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
+          const SoAFloatPrecision lj12 = lj6 * lj6;
+          lj12m6 = lj12 - lj6;
+          const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+          facSmooth = fac * smoothing;
+        }
 
         const SoAFloatPrecision fx = drx * facSmooth;
         const SoAFloatPrecision fy = dry * facSmooth;
@@ -336,7 +340,7 @@ class LJFunctorSmooth
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision potentialEnergy6 = mask ? (smoothing * epsilon24 * lj12m6 + shift6) : 0.;
+          const SoAFloatPrecision potentialEnergy6 = mask ? (smoothing * epsilon24 * lj12m6) : 0.;
 
           // Add to the potential energy sum for each particle which is owned.
           // This results in obtaining 12 * the potential energy for the SoA.
@@ -421,6 +425,8 @@ class LJFunctorSmooth
     SoAFloatPrecision virialSumZ = 0.;
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
+    const SoAFloatPrecision innerCutoffSquared = _innerCutoffSquared;
+    const SoAFloatPrecision innerCutoff = _innerCutoff;
     SoAFloatPrecision shift6 = _shift6;
     SoAFloatPrecision sigmaSquared = _sigmaSquared;
     SoAFloatPrecision epsilon24 = _epsilon24;
@@ -429,6 +435,7 @@ class LJFunctorSmooth
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> shift6s;
+
     if constexpr (useMixing) {
       sigmaSquareds.resize(soa2.size());
       epsilon24s.resize(soa2.size());
@@ -461,7 +468,7 @@ class LJFunctorSmooth
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+//#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -487,16 +494,32 @@ class LJFunctorSmooth
         // Particle ownedStateI was already checked previously.
         const bool mask = dr2 <= cutoffSquared and ownedStateJ != autopas::OwnershipState::dummy;
 
-        const SoAFloatPrecision invdr2 = 1. / dr2;
-        const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
-        const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
-        const SoAFloatPrecision lj12 = lj6 * lj6;
-        const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 * mask : 0.;
+        SoAFloatPrecision smoothing = 1.0;
 
-        const SoAFloatPrecision fx = drx * fac;
-        const SoAFloatPrecision fy = dry * fac;
-        const SoAFloatPrecision fz = drz * fac;
+        if(dr2 >= innerCutoffSquared) {
+          const SoAFloatPrecision drtrue = std::sqrt(dr2);
+          const SoAFloatPrecision temp = drtrue - innerCutoff;
+          const SoAFloatPrecision cutoffdiffcube = _cutoffDiffCubed;
+          const SoAFloatPrecision _3ci = _3c_i;
+          smoothing = 1 - (temp * temp) * (_3ci - 2 * drtrue) / (cutoffdiffcube);
+        }
+
+        SoAFloatPrecision facSmooth = 0.;
+        SoAFloatPrecision lj12m6 = 0. ;
+
+        if(dr2 >= cutoffSquared) {
+          const SoAFloatPrecision invdr2 = 1. / dr2;
+          const SoAFloatPrecision lj2 = sigmaSquared * invdr2;
+          const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
+          const SoAFloatPrecision lj12 = lj6 * lj6;
+          lj12m6 = lj12 - lj6;
+          const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+          facSmooth = fac * smoothing;
+        }
+
+        const SoAFloatPrecision fx = drx * facSmooth;
+        const SoAFloatPrecision fy = dry * facSmooth;
+        const SoAFloatPrecision fz = drz * facSmooth;
 
         fxacc += fx;
         fyacc += fy;
