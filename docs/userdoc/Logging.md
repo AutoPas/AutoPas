@@ -46,5 +46,15 @@ Creates a CSV containing the results of every tuning phase.
 It is beneficial if only the high-level end results are of interest.
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGRESULTS`.
 
+## FLOPLogger
+Creates a CSV containing the "useful" FLOP count and hit rate per particle interaction.
+By "useful" FLOPs, we mean avoiding anything which does not contribute to the particle interaction 
+e.g. FLOPs spent on masked vector registers.
+As this is subjective, please refer to the documentation of the Functor you are using for more details.
+By hit rate, we mean the proportion of distance calculations that are within the cutoff.
+If a functor has not implemented `getNumFLOPs` or `getHitRate`, the respective fields of the CSV will be left blank.
+This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_FLOPS`.
+
+
 ## Related Files and Folders
 - src/autopas/utils/logging/
