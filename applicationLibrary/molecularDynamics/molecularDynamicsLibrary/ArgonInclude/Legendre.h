@@ -86,12 +86,12 @@ template <class T>
 template <size_t ID>
 [[nodiscard]] nabla Q_deriv_wrt(const size_t A, const size_t B, const size_t C, const CosineHandle &cosI,
                                 const CosineHandle &cosJ, const CosineHandle &cosK) {
-  auto firstTerm = derivativeLegendre(cosI.getCos(), A) * cosI.derive_wrt<ID>() * LegendrePol(cosJ.getCos(), B) *
+  auto firstTerm = derivativeLegendre(cosI.getCos(), A) * cosI.derive_wrt(ID) * LegendrePol(cosJ.getCos(), B) *
                    LegendrePol(cosK.getCos(), C);
-  auto secondTerm = LegendrePol(cosI.getCos(), A) * derivativeLegendre(cosJ.getCos(), B) * cosJ.derive_wrt<ID>() *
+  auto secondTerm = LegendrePol(cosI.getCos(), A) * derivativeLegendre(cosJ.getCos(), B) * cosJ.derive_wrt(ID) *
                     LegendrePol(cosK.getCos(), C);
   auto thirdTerm = LegendrePol(cosI.getCos(), A) * LegendrePol(cosJ.getCos(), B) *
-                   derivativeLegendre(cosK.getCos(), C) * cosK.derive_wrt<ID>();
+                   derivativeLegendre(cosK.getCos(), C) * cosK.derive_wrt(ID);
   return firstTerm + secondTerm + thirdTerm;
 }
 

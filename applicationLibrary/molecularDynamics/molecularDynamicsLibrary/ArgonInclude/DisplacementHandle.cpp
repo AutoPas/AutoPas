@@ -23,8 +23,7 @@ DisplacementHandle::DisplacementHandle(const std::array<double, 3> &positionStar
   return DisplacementHandle(positionEndVertex_, positionStartVertex_, idEndVertex_, idStartVertex_);
 }
 
-template <size_t ID>
-[[nodiscard]] nabla DisplacementHandle::derive_wrt() const {
+[[nodiscard]] nabla DisplacementHandle::derive_wrt(const size_t ID) const {
   auto moduloDisplacement{L2Norm(displacement_)};
   if (ID != idStartVertex_ && ID != idEndVertex_) {
     return std::array<double, 3>{{0, 0, 0}};

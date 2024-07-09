@@ -22,8 +22,7 @@ CosineHandle::CosineHandle(const DisplacementHandle &displacementAB, const Displ
   id_ = displacementAB.getIdStartVertex();
 }
 
-template <size_t ID>
-[[nodiscard]] nabla CosineHandle::derive_wrt() const {
+[[nodiscard]] nabla CosineHandle::derive_wrt(const size_t ID) const {
   if (id_ != ID && displacementAB_.getIdEndVertex() != ID && displacementAC_.getIdEndVertex() != ID) {
     return std::array<double, 3>{{0, 0, 0}};
   } else if (ID == id_) {

@@ -54,11 +54,10 @@ class DisplacementHandle {
 
   /**
    *
-   * @tparam ID id of the particle with respect to which we are computing the derivative
+   * @param ID id of the particle with respect to which we are computing the derivative
    * @return derivative of the cosine displacement_ w.r.t. ID
    */
-  template <size_t ID>
-  [[nodiscard]] nabla derive_wrt() const;
+  [[nodiscard]] nabla derive_wrt(const size_t ID) const;
 
  private:
   std::array<double, 3> positionStartVertex_;
