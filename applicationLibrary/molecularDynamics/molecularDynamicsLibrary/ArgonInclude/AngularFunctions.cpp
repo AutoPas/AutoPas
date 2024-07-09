@@ -27,16 +27,16 @@ namespace {
 
 template <size_t ID>
 [[nodiscard]] nabla cos_2theta_derive_wrt(const CosineHandle &cosine) {
-  const auto cos_deriv = cosine.derive_wrt<ID>();
-  return 4 * cosine.getCos() * cos_deriv;
+  const auto cos_deriv = cosine.derive_wrt(ID);
+  return cos_deriv * 4. * cosine.getCos();
 }
 
 [[nodiscard]] double cos_3theta(const double &cos_theta) { return 4 * Math::pow<3>(cos_theta) - 3 * cos_theta; }
 
 template <size_t ID>
 [[nodiscard]] nabla cos_3theta_derive_wrt(const CosineHandle &cosine) {
-  const auto cos_deriv = cosine.derive_wrt<ID>();
-  return (12 * cosine.getCos() * cosine.getCos() - 3) * cos_deriv;
+  const auto cos_deriv = cosine.derive_wrt(ID);
+  return cos_deriv * (12 * cosine.getCos() * cosine.getCos() - 3);
 }
 
 [[nodiscard]] double cos_4theta(const double &cos_theta) {
@@ -48,8 +48,8 @@ template <size_t ID>
 [[nodiscard]] nabla cos_4theta_derive_wrt(const CosineHandle &cosine) {
   const auto cos_theta = cosine.getCos();
   const auto cos_2theta = 2 * Math::pow<2>(cos_theta) - 1;
-  const auto cos_deriv = cosine.derive_wrt<ID>();
-  return 16 * cos_2theta * cos_theta * cos_deriv;
+  const auto cos_deriv = cosine.derive_wrt(ID);
+  return cos_deriv * 16. * cos_2theta * cos_theta;
 }
 
 [[nodiscard]] double sin_theta(const double &cos_theta) { return std::sqrt(1 - Math::pow<2>(cos_theta)); }
@@ -57,8 +57,8 @@ template <size_t ID>
 template <size_t ID>
 [[nodiscard]] nabla sin_theta_derive_wrt(const CosineHandle &cosine) {
   const auto cos_theta = cosine.getCos();
-  const auto cos_deriv = cosine.derive_wrt<ID>();
-  return -cos_theta / sin_theta(cos_theta) * cos_deriv;
+  const auto cos_deriv = cosine.derive_wrt(ID);
+  return cos_deriv * (-cos_theta) / sin_theta(cos_theta);
 }
 
 [[nodiscard]] double cos_theta1_minus_theta2(const double &cos_theta1, const double &cos_theta_2) {
@@ -68,15 +68,15 @@ template <size_t ID>
 template <size_t ID>
 [[nodiscard]] nabla cos_theta1_minus_theta2_derive_wrt(const CosineHandle &cosine1, const CosineHandle &cosine2) {
   const auto cos_1 = cosine1.getCos();
-  const auto cos_1_deriv = cosine1.derive_wrt<ID>();
+  const auto cos_1_deriv = cosine1.derive_wrt(ID);
   const auto cos_2 = cosine2.getCos();
-  const auto cos_2_deriv = cosine2.derive_wrt<ID>();
+  const auto cos_2_deriv = cosine2.derive_wrt(ID);
   const auto sin_1 = sin_theta(cosine1.getCos());
   const auto sin_1_deriv = sin_theta_derive_wrt<ID>(cosine1);
   const auto sin_2 = sin_theta(cosine2.getCos());
   const auto sin_2_deriv = sin_theta_derive_wrt<ID>(cosine2);
 
-  return cos_1_deriv * cos_2 + cos_1 * cos_2_deriv + sin_1_deriv * sin_2 + sin_1 * sin_2_deriv;
+  return cos_1_deriv * cos_2 + cos_2_deriv * cos_1 + sin_1_deriv * sin_2 + sin_2_deriv * sin_1;
 }
 
 [[nodiscard]] double cos_2_theta1_minus_theta2(const double &cos_theta1, const double &cos_theta_2) {
@@ -254,9 +254,9 @@ template <size_t ID>
   const auto cosJ = cosineJ.getCos();
   const auto cosK = cosineK.getCos();
 
-  const auto nablaCosI = cosineI.derive_wrt<ID>();
-  const auto nablaCosJ = cosineJ.derive_wrt<ID>();
-  const auto nablaCosK = cosineK.derive_wrt<ID>();
+  const auto nablaCosI = cosineI.derive_wrt(ID);
+  const auto nablaCosJ = cosineJ.derive_wrt(ID);
+  const auto nablaCosK = cosineK.derive_wrt(ID);
 
   const auto nablaDisplacementTerm = nablaIJ / IJ * (-1.) + nablaJK / JK * (-1.) + nablaKI / KI;
   const auto cosineTerm = 1 + 3 * cosI * cosJ * cosK;
@@ -285,7 +285,7 @@ template <size_t ID>
   const auto cos3K = cos_3theta(cosK);
   const auto cosIminusJ = cos_theta1_minus_theta2(cosI, cosJ);
 
-  const auto nablaCosK = cosineK.derive_wrt<ID>();
+  const auto nablaCosK = cosineK.derive_wrt(ID);
   const auto nablaCos2K = cos_2theta_derive_wrt<ID>(cosineK);
   const auto nablaCos3K = cos_3theta_derive_wrt<ID>(cosineK);
   const auto nablaCosIminusJ = cos_theta1_minus_theta2_derive_wrt<ID>(cosineI, cosineJ);
@@ -337,7 +337,7 @@ template <size_t ID>
   const auto cosJminusK = cos_theta1_minus_theta2(cosJ, cosK);
   const auto cos2JminusK = cos_2_theta1_minus_theta2(cosJ, cosK);
 
-  const auto nablaCosI = cosineI.derive_wrt<ID>();
+  const auto nablaCosI = cosineI.derive_wrt(ID);
   const auto nablaCos2I = cos_2theta_derive_wrt<ID>(cosineI);
   const auto nablaCos3I = cos_3theta_derive_wrt<ID>(cosineI);
   const auto nablaCosJminusK = cos_theta1_minus_theta2_derive_wrt<ID>(cosineJ, cosineK);
@@ -393,9 +393,9 @@ template <size_t ID>
   const auto cos2JminusK = cos_2_theta1_minus_theta2(cosJ, cosK);
   const auto cos2KminusI = cos_2_theta1_minus_theta2(cosK, cosI);
 
-  const auto nablaCosI = cosineI.derive_wrt<ID>();
-  const auto nablaCosJ = cosineJ.derive_wrt<ID>();
-  const auto nablaCosK = cosineK.derive_wrt<ID>();
+  const auto nablaCosI = cosineI.derive_wrt(ID);
+  const auto nablaCosJ = cosineJ.derive_wrt(ID);
+  const auto nablaCosK = cosineK.derive_wrt(ID);
   const auto nablaCos2I = cos_2theta_derive_wrt<ID>(cosineI);
   const auto nablaCos2J = cos_2theta_derive_wrt<ID>(cosineJ);
   const auto nablaCos2K = cos_2theta_derive_wrt<ID>(cosineK);
@@ -406,7 +406,7 @@ template <size_t ID>
   const auto nablaDisplacementTerm = (nablaIJ / IJ + nablaJK / JK + nablaKI / KI) * (-5.);
   const auto cosineTerm =
       -27 + 220 * cosI * cosJ * cosK + 490 * cos2I * cos2J * cos2K + 175 * (cos2IminusJ + cos2JminusK + cos2KminusI);
-  const auto nablaCosineTerm1 = 220 * (nablaCosI * cosJ * cosK + cosI * nablaCosJ * cosK + cosI * cosJ * nablaCosK);
+  const auto nablaCosineTerm1 = (nablaCosI * cosJ * cosK + nablaCosJ * cosI * cosK + nablaCosK * cosI * cosJ) * 220;
   const auto nablaCosineTerm2 =
       490 * (nablaCos2I * cos2J * cos2K + cos2I * nablaCos2J * cos2K + cos2I * cos2J * nablaCos2K);
   const auto nablaCosineTerm3 = 175 * (nablaCos2IminusJ + nablaCos2JminusK + nablaCos2KminusI);
@@ -435,7 +435,7 @@ template <size_t ID>
   const auto cos4K = cos_4theta(cosK);
   const auto cosIminusJ = cos_theta1_minus_theta2(cosI, cosJ);
 
-  const auto nablaCosK = cosineK.derive_wrt<ID>();
+  const auto nablaCosK = cosineK.derive_wrt(ID);
   const auto nablaCos2K = cos_2theta_derive_wrt<ID>(cosineK);
   const auto nablaCos3K = cos_3theta_derive_wrt<ID>(cosineK);
   const auto nablaCos4K = cos_4theta_derive_wrt<ID>(cosineK);
@@ -444,7 +444,7 @@ template <size_t ID>
   const auto nablaDisplacementTerm = nablaIJ / IJ * (-3.) + nablaJK / JK * (-5.) + nablaKI / KI * (-5.);
   const auto cosineTerm = 9 + 8 * cos2K - 49 * cos4K + 6 * cosIminusJ * (9 * cosK + 7 * cos3K);
   const auto nablaCosineTerm = 8 * nablaCos2K - 49 * nablaCos4K + 6 * nablaCosIminusJ * (9 * cosK + 7 * cos3K) +
-                               6 * cosIminusJ * (9 * nablaCosK + 7 * nablaCos3K);
+                               6 * cosIminusJ * (nablaCosK * 9. + 7 * nablaCos3K);
 
   return 5. / 32 / (Math::pow<3>(IJ) + Math::pow<5>(JK) + Math::pow<5>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
