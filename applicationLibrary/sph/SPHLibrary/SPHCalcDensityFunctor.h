@@ -70,16 +70,6 @@ class SPHCalcDensityFunctor : public autopas::Functor<Particle, SPHCalcDensityFu
     return flops;
   }
 
-  size_t getNumFLOPs() {
-    AutoPasLog(DEBUG, "SPHCalcDensityFunctor::getNumFLOPs called but is not implemented and will return 0.");
-    return 0;
-  }
-
-  double getHitRate() {
-    AutoPasLog(DEBUG, "SPHCalcDensityFunctor::getHitRate called but is not implemented and will return 0.");
-    return 0;
-  }
-
   /**
    * @copydoc autopas::Functor::SoAFunctorSingle()
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.

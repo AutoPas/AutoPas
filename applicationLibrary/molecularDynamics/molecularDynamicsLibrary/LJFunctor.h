@@ -777,7 +777,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    *
    * @return number of FLOPs since initTraversal() is called.
    */
-  size_t getNumFLOPs() const override {
+  [[nodiscard]] int getNumFLOPs() const override {
     if constexpr (countFLOPs) {
       const size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                                                [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
@@ -809,7 +809,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     }
   }
 
-  double getHitRate() const override {
+  [[nodiscard]] double getHitRate() const override {
     if constexpr (countFLOPs) {
       const size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                                                [](size_t sum, const auto &data) { return sum + data.numDistCalls; });

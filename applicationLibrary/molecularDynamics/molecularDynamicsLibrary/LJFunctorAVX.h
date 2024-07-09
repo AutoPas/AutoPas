@@ -72,7 +72,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      AutoPasLog(DEBUG, "Using LJFunctorAVX with countFLOPs will output FLOP counts and hit rates of 0.");
+      AutoPasLog(DEBUG, "Using LJFunctorAVX with countFLOPs but FLOP counting is not implemented.");
     }
   }
 #else
@@ -994,20 +994,6 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
     } else {
       _shift6AoS = 0.;
     }
-  }
-
-  size_t getNumFLOPs() const override {
-    if constexpr (not countFLOPs) {
-      AutoPasLog(WARN, "LJFunctorAVX::getNumFLOPs called but countFLOPs is not enabled");
-    }
-    return 0;
-  }
-
-  double getHitRate() const override {
-    if constexpr (not countFLOPs) {
-      AutoPasLog(WARN, "LJFunctorAVX::getHitRate called but countFLOPs is not enabled");
-    }
-    return 0;
   }
 
  private:

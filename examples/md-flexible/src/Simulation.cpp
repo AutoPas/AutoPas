@@ -143,27 +143,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
                                      _configuration.outputSuffix.value + fillerAfterSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
 
-#ifdef AUTOPAS_LOG_FLOPS
-  {
-    // Throw warnings if user is using a functor which doesn't support FLOP counting
-    const std::vector<MDFlexConfig::FunctorOption> functorsThatDontSupportFLOPCounting = {
-      MDFlexConfig::FunctorOption::lj12_6_AVX,
-      MDFlexConfig::FunctorOption::lj12_6_SVE,
-#if MD_FLEXIBLE_MODE == MULTISITE
-      MDFlexConfig::FunctorOption::lj12_6,
-      MDFlexConfig::FunctorOption::lj12_6_Globals,
-#endif
-    };
-      for (auto fun : functorsThatDontSupportFLOPCounting) {
-      if (_configuration.functorOption.value == fun) {
-        AutoPasLog(WARN,
-                   "FLOP counting is not implemented for the chosen functor and will return 0 for numFLOPs and hit "
-                   "rate. Please set -DAUTOPAS_LOG_FLOPS=OFF or use a supported functor.");
-      }
-    }
-  }
-#endif
-
   _autoPasContainer->init();
 
   // Throw an error if there is not more than one configuration to test in the search space but more than one tuning

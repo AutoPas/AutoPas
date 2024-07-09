@@ -21,8 +21,12 @@ namespace autopas {
  *
  * It uses an asynchronous spd logger to write a csv file named "AutoPas_FLOPCount_<dateStamp>.csv".
  *
- * By default logging the data is disabled. It can be enabled by setting the cmake variable MD_FLEXIBLE_LOG_FLOPS
- * to ON.
+ * By default logging the data is disabled. It can be enabled by setting the cmake variable AUTOPAS_LOG_FLOPS to ON.
+ *
+ * When enabled and used with a functor where FLOP counting is not implemented (in which case the functor will return
+ * the default nonsensical negative FLOP count and/or Hit rate), the field is left empty. In such cases, the user is
+ * made aware of the situation when the logger is destructed.
+ *
  */
 class FLOPLogger {
  public:
@@ -38,15 +42,21 @@ class FLOPLogger {
   ~FLOPLogger();
 
   /**
-   * Log the given arguments and the internal buffer to the csv file.
+   * Log the given arguments and the internal buffer to the csv file. If a value is negative, a blank space is printed.
    * @param iteration
    * @param numFLOPs number of FLOPs
    * @param hitRate percentage of distance calculations that result in force contributions.
    */
-  void logIteration(size_t iteration, size_t numFLOPs, double hitRate);
+  void logIteration(size_t iteration, int numFLOPs, double hitRate);
 
  private:
   std::string _loggerName;
+
+  /**
+   * Flag for if logger has logged an empty field (<=> a functor which does not have an implementation of getNumFLOPs
+   * or getHitRate() has been used). In such case, an info message is outputted upon the destruction of the logger.
+   */
+  bool _loggedEmptyFields{false};
 };
 
 }  // namespace autopas

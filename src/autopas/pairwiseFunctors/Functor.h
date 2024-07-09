@@ -225,16 +225,23 @@ class Functor {
   double getCutoff() const { return _cutoff; }
 
   /**
-   * Get the number of FLOPs. Implementation required if FLOP logger used.
+   * Get the number of FLOPs. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default negative output as invalid and
+   * leaves a blank space in the log.
    * @return number of FLOPs
    */
-  virtual size_t getNumFLOPs() const { return 0; }
+  [[nodiscard]] virtual int getNumFLOPs() const { return -1; }
 
   /**
-   * Get the hit rate. Implementation required if FLOP logger used.
+   * Get the hit rate. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default negative output as invalid and
+   * leaves a blank space in the log.
+   *
    * @return (number of kernel calls) / (number of distance calculations)
    */
-  virtual double getHitRate() const { return 0; }
+  [[nodiscard]] virtual double getHitRate() const { return -1; }
 
  private:
   /**
