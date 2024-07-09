@@ -13,13 +13,16 @@
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+// AutoPas is instantiated in AutoPasInstantiations.cpp
+// but iteratePairwise() versions with countFLOPs == true not,
+// so they have to be explicitly instantiated here.
 extern template class autopas::AutoPas<Molecule>;
 template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, true, true> *);
+    mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, /*countFLOPs*/ true, true> *);
 template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, true, true, true> *);
+    mdLib::LJFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true, true> *);
 template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true, true, true> *);
+    mdLib::LJFunctor<Molecule, true, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true, true> *);
 
 /**
  * Generates a square of four particles, iterates over it with the LJFunctor and checks the values of getNumFLOPs() and

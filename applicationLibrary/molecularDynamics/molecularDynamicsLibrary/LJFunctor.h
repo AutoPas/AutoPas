@@ -777,17 +777,17 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    *
    * @return number of FLOPs since initTraversal() is called.
    */
-  size_t getNumFLOPs() {
+  size_t getNumFLOPs() const override {
     if constexpr (countFLOPs) {
-      size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+      const size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                                                [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
-      size_t numKernelCallsN3Acc =
+      const size_t numKernelCallsN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
-      size_t numKernelCallsNoN3Acc =
+      const size_t numKernelCallsNoN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
-      size_t numGlobalCalcsAcc =
+      const size_t numGlobalCalcsAcc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
 
@@ -809,14 +809,14 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     }
   }
 
-  double getHitRate() {
+  double getHitRate() const override {
     if constexpr (countFLOPs) {
-      size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+      const size_t numDistCallsAcc = std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                                                [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
-      size_t numKernelCallsN3Acc =
+      const size_t numKernelCallsN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
-      size_t numKernelCallsNoN3Acc =
+      const size_t numKernelCallsNoN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
 
@@ -857,6 +857,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    // Counters for when countFLOPs is activated
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;

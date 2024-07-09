@@ -882,14 +882,14 @@ class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, ap
     }
   }
 
-  size_t getNumFLOPs() {
+  size_t getNumFLOPs() const override {
     if constexpr (not countFLOPs) {
       AutoPasLog(WARN, "LJFunctorSVE::getNumFLOPs called but countFLOPs is not enabled");
     }
     return 0;
   }
 
-  double getHitRate() {
+  double getHitRate() const override {
     if constexpr (not countFLOPs) {
       AutoPasLog(WARN, "LJFunctorSVE::getHitRate called but countFLOPs is not enabled");
     }

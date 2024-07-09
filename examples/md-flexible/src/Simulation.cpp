@@ -146,14 +146,15 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 #ifdef AUTOPAS_LOG_FLOPS
   {
     // Throw warnings if user is using a functor which doesn't support FLOP counting
-    const std::vector<MDFlexConfig::FunctorOption> functorsThatDontSupportFLOPCounting =
-#if MD_FLEXIBLE_MODE == SINGLESITE
-        {MDFlexConfig::FunctorOption::lj12_6_AVX, MDFlexConfig::FunctorOption::lj12_6_SVE};
-#else
-        {MDFlexConfig::FunctorOption::lj12_6, MDFlexConfig::FunctorOption::lj12_6_Globals,
-         MDFlexConfig::FunctorOption::lj12_6_AVX, MDFlexConfig::FunctorOption::lj12_6_SVE};
+    const std::vector<MDFlexConfig::FunctorOption> functorsThatDontSupportFLOPCounting = {
+      MDFlexConfig::FunctorOption::lj12_6_AVX,
+      MDFlexConfig::FunctorOption::lj12_6_SVE,
+#if MD_FLEXIBLE_MODE == MULTISITE
+      MDFlexConfig::FunctorOption::lj12_6,
+      MDFlexConfig::FunctorOption::lj12_6_Globals,
 #endif
-    for (auto fun : functorsThatDontSupportFLOPCounting) {
+    };
+      for (auto fun : functorsThatDontSupportFLOPCounting) {
       if (_configuration.functorOption.value == fun) {
         AutoPasLog(WARN,
                    "FLOP counting is not implemented for the chosen functor and will return 0 for numFLOPs and hit "

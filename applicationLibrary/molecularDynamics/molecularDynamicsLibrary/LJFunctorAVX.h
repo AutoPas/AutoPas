@@ -996,14 +996,14 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
     }
   }
 
-  size_t getNumFLOPs() {
+  size_t getNumFLOPs() const override {
     if constexpr (not countFLOPs) {
       AutoPasLog(WARN, "LJFunctorAVX::getNumFLOPs called but countFLOPs is not enabled");
     }
     return 0;
   }
 
-  double getHitRate() {
+  double getHitRate() const override {
     if constexpr (not countFLOPs) {
       AutoPasLog(WARN, "LJFunctorAVX::getHitRate called but countFLOPs is not enabled");
     }
