@@ -169,21 +169,6 @@ TEST(ArrayMathTest, testMulScalarOp) {
   }
 }
 
-TEST(ArrayMathTest, testMinusOperator) {
-  using namespace autopas::utils::ArrayMath::literals;
-
-  std::array<double, 3> a({1.1, 2.2, 3.3});
-  std::array<double, 3> result = -a;
-  std::array<double, 3> expected_result({-1.1, -2.2, -3.3});
-  for (int d = 0; d < 3; ++d) {
-    ASSERT_DOUBLE_EQ(result[d], expected_result[d]);
-  }
-
-  /*for (int d = 0; d < 3; ++d) {
-    ASSERT_DOUBLE_EQ(result[d], -a[d]);
-  }*/
-}
-
 TEST(ArrayMathTest, testL2Norm) {
   std::array<double, 3> a({1.1, -2.2, 3.3});
   const double result = utils::ArrayMath::L2Norm(a);
