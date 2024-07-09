@@ -239,7 +239,7 @@ template <size_t ID>
 }
 
 template <size_t ID>
-[[nodiscard]] double W_111_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
+[[nodiscard]] nabla W_111_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
                                      const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
                                      const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
@@ -262,12 +262,11 @@ template <size_t ID>
   const auto cosineTerm = 1 + 3 * cosI * cosJ * cosK;
   const auto nablaCosineTerm = nablaCosI * cosJ * cosK + nablaCosJ * cosI * cosK + nablaCosK * cosI * cosJ;
 
-  return 9. / (Math::pow<3>(IJ) * Math::pow<3>(JK) * Math::pow<3>(KI)) *
-         (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
+  return (nablaDisplacementTerm * cosineTerm + nablaCosineTerm) * 9. / (Math::pow<3>(IJ) * Math::pow<3>(JK) * Math::pow<3>(KI));
 }
 
 template <size_t ID>
-[[nodiscard]] double W_112_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
+[[nodiscard]] nabla W_112_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
                                      const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
                                      const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
@@ -293,14 +292,13 @@ template <size_t ID>
   const auto nablaDisplacementTerm =  nablaIJ / IJ * (-3.) + nablaJK / JK * (-4.) + nablaKI / KI * (-4.);
   const auto cosineTerm = 9 * cosK - 25 * cos3K + 6 * cosIminusJ * (3 + 5 * cos2K);
   const auto nablaCosineTerm =
-      9 * nablaCosK - 25 * nablaCos3K + 6 * nablaCosIminusJ * (3 + 5 * cos2K) + 30 * cosIminusJ * nablaCos2K;
+      nablaCosK * 9. - 25 * nablaCos3K + 6 * nablaCosIminusJ * (3 + 5 * cos2K) + 30 * cosIminusJ * nablaCos2K;
 
-  return 3. / 16 / (Math::pow<3>(IJ) + Math::pow<4>(JK) + Math::pow<4>(KI)) *
-         (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
+  return (nablaDisplacementTerm * cosineTerm + nablaCosineTerm) * 3. / 16 / (Math::pow<3>(IJ) + Math::pow<4>(JK) + Math::pow<4>(KI));
 }
 
 template <size_t ID>
-[[nodiscard]] double W_211_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
+[[nodiscard]] nabla W_211_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
                                      const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
                                      const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   // permutation of i and k
@@ -309,7 +307,7 @@ template <size_t ID>
 }
 
 template <size_t ID>
-[[nodiscard]] double W_121_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
+[[nodiscard]] nabla W_121_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
                                      const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
                                      const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   // permutation of j and k
@@ -318,7 +316,7 @@ template <size_t ID>
 }
 
 template <size_t ID>
-[[nodiscard]] double W_122_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
+[[nodiscard]] nabla W_122_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
                                      const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
                                      const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
@@ -345,9 +343,9 @@ template <size_t ID>
 
   const auto nablaDisplacementTerm = nablaIJ / IJ * (-4.) + nablaJK / JK * (-5.) + nablaKI / KI * (-4.);
   const auto cosineTerm = 3 * cosI + 15 * cos3I + 20 * cosJminusK * (1 - 3 * cos2I) + 70 * cos2JminusK * cosI;
-  const auto nablaCosineTerm = 3 * nablaCosI + 15 * nablaCos3I + 20 * nablaCosJminusK * (1 - 3 * cos2I) -
-                               60 * cosJminusK * nablaCos2I + 70 * nablaCos2JminusK * cosI +
-                               70 * cos2JminusK * nablaCosI;
+  const auto nablaCosineTerm = nablaCosI * 3. + nablaCos3I * 15. + nablaCosJminusK * 20.  * (1 - 3 * cos2I) -
+                               nablaCos2I * 60. * cosJminusK + nablaCos2JminusK * 70. * cosI +
+                               nablaCosI * 70. * cos2JminusK;
 
   return 15. / 64 / (Math::pow<4>(IJ) + Math::pow<5>(JK) + Math::pow<4>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
@@ -406,7 +404,7 @@ template <size_t ID>
   const auto nablaDisplacementTerm = (nablaIJ / IJ + nablaJK / JK + nablaKI / KI) * (-5.);
   const auto cosineTerm =
       -27 + 220 * cosI * cosJ * cosK + 490 * cos2I * cos2J * cos2K + 175 * (cos2IminusJ + cos2JminusK + cos2KminusI);
-  const auto nablaCosineTerm1 = (nablaCosI * cosJ * cosK + nablaCosJ * cosI * cosK + nablaCosK * cosI * cosJ) * 220;
+  const auto nablaCosineTerm1 = (nablaCosI * cosJ * cosK + nablaCosJ * cosI * cosK + nablaCosK * cosI * cosJ) * 220.;
   const auto nablaCosineTerm2 =
       490 * (nablaCos2I * cos2J * cos2K + cos2I * nablaCos2J * cos2K + cos2I * cos2J * nablaCos2K);
   const auto nablaCosineTerm3 = 175 * (nablaCos2IminusJ + nablaCos2JminusK + nablaCos2KminusI);
