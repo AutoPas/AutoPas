@@ -50,7 +50,7 @@ template <size_t a, size_t b, size_t c, size_t ID>
   const auto nabla_D2 = DampingTerm_deriv_wrt<ID>(beta_abc, displacementJK, n2);
   const auto nabla_D3 = DampingTerm_deriv_wrt<ID>(beta_abc, displacementKI, n3);
 
-  const auto W = AngularTerm<a, b, c>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
+  const auto W = AngularTerm(a, b, c, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
 
   const auto nabla_W =
       AngularTerm_derive_wrt<a, b, c, ID>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
