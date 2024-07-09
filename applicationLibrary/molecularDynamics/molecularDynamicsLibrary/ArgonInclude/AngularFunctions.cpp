@@ -246,9 +246,9 @@ template <size_t ID>
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
 
-  const auto nablaIJ = displacementIJ.derive_wrt<ID>();
-  const auto nablaJK = displacementJK.derive_wrt<ID>();
-  const auto nablaKI = displacementKI.derive_wrt<ID>();
+  const auto nablaIJ = displacementIJ.derive_wrt(ID);
+  const auto nablaJK = displacementJK.derive_wrt(ID);
+  const auto nablaKI = displacementKI.derive_wrt(ID);
 
   const auto cosI = cosineI.getCos();
   const auto cosJ = cosineJ.getCos();
@@ -258,7 +258,7 @@ template <size_t ID>
   const auto nablaCosJ = cosineJ.derive_wrt<ID>();
   const auto nablaCosK = cosineK.derive_wrt<ID>();
 
-  const auto nablaDisplacementTerm = - nablaIJ / IJ - nablaJK / JK + nablaKI / KI;
+  const auto nablaDisplacementTerm = nablaIJ / IJ * (-1.) + nablaJK / JK * (-1.) + nablaKI / KI;
   const auto cosineTerm = 1 + 3 * cosI * cosJ * cosK;
   const auto nablaCosineTerm = nablaCosI * cosJ * cosK + nablaCosJ * cosI * cosK + nablaCosK * cosI * cosJ;
 
@@ -274,9 +274,9 @@ template <size_t ID>
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
 
-  const auto nablaIJ = displacementIJ.derive_wrt<ID>();
-  const auto nablaJK = displacementJK.derive_wrt<ID>();
-  const auto nablaKI = displacementKI.derive_wrt<ID>();
+  const auto nablaIJ = displacementIJ.derive_wrt(ID);
+  const auto nablaJK = displacementJK.derive_wrt(ID);
+  const auto nablaKI = displacementKI.derive_wrt(ID);
 
   const auto cosI = cosineI.getCos();
   const auto cosJ = cosineJ.getCos();
@@ -290,7 +290,7 @@ template <size_t ID>
   const auto nablaCos3K = cos_3theta_derive_wrt<ID>(cosineK);
   const auto nablaCosIminusJ = cos_theta1_minus_theta2_derive_wrt<ID>(cosineI, cosineJ);
 
-  const auto nablaDisplacementTerm = -3 * nablaIJ / IJ - 4 * nablaJK / JK - 4 * nablaKI / KI;
+  const auto nablaDisplacementTerm =  nablaIJ / IJ * (-3.) + nablaJK / JK * (-4.) + nablaKI / KI * (-4.);
   const auto cosineTerm = 9 * cosK - 25 * cos3K + 6 * cosIminusJ * (3 + 5 * cos2K);
   const auto nablaCosineTerm =
       9 * nablaCosK - 25 * nablaCos3K + 6 * nablaCosIminusJ * (3 + 5 * cos2K) + 30 * cosIminusJ * nablaCos2K;
@@ -325,9 +325,9 @@ template <size_t ID>
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
 
-  const auto nablaIJ = displacementIJ.derive_wrt<ID>();
-  const auto nablaJK = displacementJK.derive_wrt<ID>();
-  const auto nablaKI = displacementKI.derive_wrt<ID>();
+  const auto nablaIJ = displacementIJ.derive_wrt(ID);
+  const auto nablaJK = displacementJK.derive_wrt(ID);
+  const auto nablaKI = displacementKI.derive_wrt(ID);
 
   const auto cosI = cosineI.getCos();
   const auto cosJ = cosineJ.getCos();
@@ -343,7 +343,7 @@ template <size_t ID>
   const auto nablaCosJminusK = cos_theta1_minus_theta2_derive_wrt<ID>(cosineJ, cosineK);
   const auto nablaCos2JminusK = cos_2_theta1_minus_theta2_derive_wrt<ID>(cosineJ, cosineK);
 
-  const auto nablaDisplacementTerm = -4 * nablaIJ / IJ - 5 * nablaJK / JK - 4 * nablaKI / KI;
+  const auto nablaDisplacementTerm = nablaIJ / IJ * (-4.) + nablaJK / JK * (-5.) + nablaKI / KI * (-4.);
   const auto cosineTerm = 3 * cosI + 15 * cos3I + 20 * cosJminusK * (1 - 3 * cos2I) + 70 * cos2JminusK * cosI;
   const auto nablaCosineTerm = 3 * nablaCosI + 15 * nablaCos3I + 20 * nablaCosJminusK * (1 - 3 * cos2I) -
                                60 * cosJminusK * nablaCos2I + 70 * nablaCos2JminusK * cosI +
@@ -379,9 +379,9 @@ template <size_t ID>
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
 
-  const auto nablaIJ = displacementIJ.derive_wrt<ID>();
-  const auto nablaJK = displacementJK.derive_wrt<ID>();
-  const auto nablaKI = displacementKI.derive_wrt<ID>();
+  const auto nablaIJ = displacementIJ.derive_wrt(ID);
+  const auto nablaJK = displacementJK.derive_wrt(ID);
+  const auto nablaKI = displacementKI.derive_wrt(ID);
 
   const auto cosI = cosineI.getCos();
   const auto cosJ = cosineJ.getCos();
@@ -403,7 +403,7 @@ template <size_t ID>
   const auto nablaCos2JminusK = cos_2_theta1_minus_theta2_derive_wrt<ID>(cosineJ, cosineK);
   const auto nablaCos2KminusI = cos_2_theta1_minus_theta2_derive_wrt<ID>(cosineK, cosineI);
 
-  const auto nablaDisplacementTerm = -5 * (nablaIJ / IJ + nablaJK / JK + nablaKI / KI);
+  const auto nablaDisplacementTerm = (nablaIJ / IJ + nablaJK / JK + nablaKI / KI) * (-5.);
   const auto cosineTerm =
       -27 + 220 * cosI * cosJ * cosK + 490 * cos2I * cos2J * cos2K + 175 * (cos2IminusJ + cos2JminusK + cos2KminusI);
   const auto nablaCosineTerm1 = 220 * (nablaCosI * cosJ * cosK + cosI * nablaCosJ * cosK + cosI * cosJ * nablaCosK);
@@ -423,9 +423,9 @@ template <size_t ID>
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
 
-  const auto nablaIJ = displacementIJ.derive_wrt<ID>();
-  const auto nablaJK = displacementJK.derive_wrt<ID>();
-  const auto nablaKI = displacementKI.derive_wrt<ID>();
+  const auto nablaIJ = displacementIJ.derive_wrt(ID);
+  const auto nablaJK = displacementJK.derive_wrt(ID);
+  const auto nablaKI = displacementKI.derive_wrt(ID);
 
   const auto cosI = cosineI.getCos();
   const auto cosJ = cosineJ.getCos();
@@ -441,7 +441,7 @@ template <size_t ID>
   const auto nablaCos4K = cos_4theta_derive_wrt<ID>(cosineK);
   const auto nablaCosIminusJ = cos_theta1_minus_theta2_derive_wrt<ID>(cosineI, cosineJ);
 
-  const auto nablaDisplacementTerm = -3 * nablaIJ / IJ - 5 * nablaJK / JK - 5 * nablaKI / KI;
+  const auto nablaDisplacementTerm = nablaIJ / IJ * (-3.) + nablaJK / JK * (-5.) + nablaKI / KI * (-5.);
   const auto cosineTerm = 9 + 8 * cos2K - 49 * cos4K + 6 * cosIminusJ * (9 * cosK + 7 * cos3K);
   const auto nablaCosineTerm = 8 * nablaCos2K - 49 * nablaCos4K + 6 * nablaCosIminusJ * (9 * cosK + 7 * cos3K) +
                                6 * cosIminusJ * (9 * nablaCosK + 7 * nablaCos3K);
