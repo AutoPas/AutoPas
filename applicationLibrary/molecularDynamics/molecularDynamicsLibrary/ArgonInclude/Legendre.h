@@ -22,10 +22,10 @@ namespace autopas::utils::ArrayMath::Argon {
  */
 template <class T>
 [[nodiscard]] constexpr T LegendrePol(const T &x, const size_t d) {
-  if (d > 6) {
+/*  if (d > 6) {
     throw ExceptionHandler::AutoPasException(
         "Argon Simulation: asked to compute Legendre polynomial of order higher than 6.");
-  }
+  }*/
   switch (d) {
     case 0:
       return 1;
@@ -42,6 +42,8 @@ template <class T>
     case 6:
       return 0.0625 * (231 * Math::pow<6>(x) - 315 * Math::pow<4>(x) + 105 * Math::pow<2>(x) - 5);
   }
+  throw ExceptionHandler::AutoPasException(
+      "Argon Simulation: asked to compute Legendre polynomial of order higher than 6.");
 }
 
 /**

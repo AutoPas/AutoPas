@@ -56,7 +56,6 @@ template <size_t a, size_t b, size_t c, size_t ID>
       AngularTerm_derive_wrt<a, b, c, ID>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
 
   return ((nabla_D1 * D2 * D3 + nabla_D2 * D1 * D3 + nabla_D3 * D1 * D2) * W + nabla_W * D1 * D2 * D3) * Z_abc;
-  return Z_abc * ((nabla_D1 * D2 * D3 + D1 * nabla_D2 * D3 + D1 * D2 * nabla_D3) * W + D1 * D2 * D3 * nabla_W);
 }
 
 template <size_t a, size_t b, size_t c>
