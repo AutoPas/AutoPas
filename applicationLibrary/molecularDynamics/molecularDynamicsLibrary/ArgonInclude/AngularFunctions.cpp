@@ -470,8 +470,7 @@ template <size_t ID>
 
 }  // namespace
 
-template <size_t a, size_t b, size_t c>
-[[nodiscard]] double AngularTerm(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
+[[nodiscard]] double AngularTerm(const size_t a, const size_t b, const size_t c, const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
                                  const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
                                  const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   if (a == 1 && b == 1 && c == 1) {
