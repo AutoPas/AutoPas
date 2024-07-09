@@ -42,7 +42,9 @@ autopas::FLOPLogger::FLOPLogger(const std::string &outputSuffix) : _loggerName("
 autopas::FLOPLogger::~FLOPLogger() {
 #ifdef AUTOPAS_LOG_FLOPS
   if (_loggedEmptyFields) {
-    AutoPasLog(INFO, "FLOPLogger logged some empty fields. This might be because a Functor was used which did not provide an implementation for getNumFLOPs or getHitRate.");
+    AutoPasLog(INFO,
+               "FLOPLogger logged some empty fields. This might be because a Functor was used which did not provide an "
+               "implementation for getNumFLOPs or getHitRate.");
   }
   spdlog::drop(_loggerName);
 #endif
@@ -55,6 +57,8 @@ void autopas::FLOPLogger::logIteration(size_t iteration, int numFLOPs, double hi
   const auto hitRateStr = hitRate >= 0 ? std::to_string(hitRate) : "";
   spdlog::get(_loggerName)->info("{},{},{}", iteration, numFLOPsStr, hitRateStr);
 
-  if (numFLOPs < 0 or hitRate < 0) {_loggedEmptyFields = true;}
+  if (numFLOPs < 0 or hitRate < 0) {
+    _loggedEmptyFields = true;
+  }
 #endif
 }

@@ -530,7 +530,6 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
         Particle::AttributeNames::vsigmax, Particle::AttributeNames::engDot, Particle::AttributeNames::accX,
         Particle::AttributeNames::accY,    Particle::AttributeNames::accZ,   Particle::AttributeNames::ownershipState};
   }
-
 };
 
 }  // namespace sphLib
