@@ -181,7 +181,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, DEM };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -564,6 +564,25 @@ class MDFlexConfig {
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{
       {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+  /**
+   * particle radii for DEM
+   */
+  MDFlexOption<std::array<double, 2>, __LINE__> particleRadii{{1., 1.}, "particleRadii", true, 
+      "Minimum (first) and maximum (second) radius of the particles (DEM only)."};
+  /**
+   * poissonMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> poissonMap{
+      {{0ul, 1.}}, "poisson", true, "Mapping from site type to a Poisson value (DEM only)."};
+  /**
+   * youngMap
+   */
+  MDFlexOption<std::map<unsigned long, double>, 0> youngMap{
+      {{0ul, 1.}}, "young", true, "Mapping from site type to a Young's modulus value (DEM only)."};
+  /**
+   * number of Hierarchical Grid levels
+   */
+  MDFlexOption<size_t, __LINE__> numberOfHGLevels{1, "numberOfHGLevels", true, "Number of Hierarchical Grid levels."};
   // Molecule Type Generation
   // Strings for parsing yaml files.
   /**

@@ -48,11 +48,15 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // only for particles within sixthRootOfTwo * sigma / 2.0 of the boundary. For minimal redundant iterating over
   // particles, we iterate once over particles within the largest possible range where a particle might experience a
   // repulsion, i.e. sixthRootOfTwo * maxSigma / 2.0.
-  double maxSigma{0};
-  for (const auto &[_, sigma] : configuration.sigmaMap.value) {
-    maxSigma = std::max(maxSigma, sigma);
+  if (configuration.functorOption.value != MDFlexConfig::FunctorOption::DEM) {
+    double maxSigma{0};
+    for (const auto &[_, sigma] : configuration.sigmaMap.value) {
+      maxSigma = std::max(maxSigma, sigma);
+    }
+    _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
+  } else {
+    _maxReflectiveSkin = configuration.particleRadii.value[1];
   }
-  _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
 
   // initialize _communicator and _domainIndex
   initializeMPICommunicator();
@@ -428,6 +432,103 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             p->setTorque(currentTorque);
           }
 #endif
+        }
+      }
+    };
+
+    // apply if we are at a global boundary on lower end of the dimension
+    if (isNear(_localBoxMin[dimensionIndex], _globalBoxMin[dimensionIndex])) {
+      reflSkinMin = _globalBoxMin;
+      reflSkinMax = _globalBoxMax;
+      reflSkinMax[dimensionIndex] = _globalBoxMin[dimensionIndex] + _maxReflectiveSkin;
+
+      reflect(false);
+    }
+    // apply if we are at a global boundary on upper end of the dimension
+    if (isNear(_localBoxMax[dimensionIndex], _globalBoxMax[dimensionIndex])) {
+      reflSkinMin = _globalBoxMin;
+      reflSkinMax = _globalBoxMax;
+      reflSkinMin[dimensionIndex] = _globalBoxMax[dimensionIndex] - _maxReflectiveSkin;
+
+      reflect(true);
+    }
+  }
+}
+
+void RegularGridDecomposition::reflectDEMParticlesAtBoundaries(AutoPasType &autoPasContainer) {
+  using autopas::utils::Math::isNear;
+  std::array<double, _dimensionCount> reflSkinMin{}, reflSkinMax{};
+
+  for (int dimensionIndex = 0; dimensionIndex < _dimensionCount; ++dimensionIndex) {
+    // skip if boundary is not reflective
+    if (_boundaryType[dimensionIndex] != options::BoundaryTypeOption::reflective) continue;
+
+    auto reflect = [&](bool isUpper) {
+      const auto boundaryPosition = isUpper ? reflSkinMax[dimensionIndex] : reflSkinMin[dimensionIndex];
+
+      for (auto p = autoPasContainer.getRegionIterator(reflSkinMin, reflSkinMax, autopas::IteratorBehavior::owned);
+           p.isValid(); ++p) {
+        // Check that particle is touching the boundary
+        const auto position = p->getR();
+        const auto distanceToBoundary = std::abs(position[dimensionIndex] - boundaryPosition);
+
+        // Calculates force acting on site from another site
+        const auto DEMKernel = [](const std::array<double, 3> sitePosition,
+                                 const std::array<double, 3> mirrorSitePosition, 
+                                 const double radius,
+                                 const std::array<double, 3> velParticle,
+                                 const std::array<double, 3> velMirror,
+                                 const double mass,
+                                 const double poisson,
+                                 const double young) {
+
+        
+          const double dampingRatio = 0.1;
+
+
+          const auto displacement = autopas::utils::ArrayMath::sub(sitePosition, mirrorSitePosition);
+          const auto penetrationDepth = 2.0 * radius - autopas::utils::ArrayMath::L2Norm(displacement);
+          
+          const auto relVelocity = autopas::utils::ArrayMath::sub(velParticle, velMirror);
+
+          const double radEq = radius / 2.0;
+          const double massEq = mass / 2.0;
+          const double youngEq = young / ( 2.0 * ( 1.0 - poisson * poisson ) );
+
+          const double factorNormalForce = 4./3. * youngEq * sqrt( radEq * penetrationDepth );
+          const double factorNormalDamping = dampingRatio * 2.0 * sqrt( massEq * factorNormalForce );
+
+          const double magnitudeNormalForce = factorNormalForce * penetrationDepth;
+
+          const auto vectorNormalForce = autopas::utils::ArrayMath::mulScalar(
+                        autopas::utils::ArrayMath::normalize(displacement), magnitudeNormalForce );
+          const auto vectorNormalDamping = autopas::utils::ArrayMath::mulScalar( relVelocity, factorNormalDamping );
+          
+          return autopas::utils::ArrayMath::sub( vectorNormalForce, vectorNormalDamping );
+        };
+
+        const bool reflectParticleFlag = distanceToBoundary < p->getRad();
+
+        if (reflectParticleFlag) {
+
+          const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
+            const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
+            auto returnedPosition = position;
+            returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
+            return returnedPosition;
+          }();
+          const double particleRadius = p->getRad();
+          const auto particleVelocity = p->getV();
+          auto mirrorVelocity = particleVelocity;
+          mirrorVelocity[dimensionIndex] *= - 1;
+          const double particleMass = p->getMass();
+          const double particlePoisson = p->getPoisson();
+          const double particleYoung = p->getYoung();
+          const auto force = DEMKernel(position, mirrorPosition, 
+                                       particleRadius, particleVelocity, mirrorVelocity, 
+                                       particleMass, particlePoisson, particleYoung);
+          p->addF(force);
+
         }
       }
     };

@@ -155,6 +155,13 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
       TraversalOption::lc_c04_combined_SoA,
   };
 };
+/**
+ * Lists all traversal options applicable for the Hierarchical Grid container.
+ * @return set of all applicable traversal options.
+ */
+[[maybe_unused]] static const std::set<TraversalOption> &allHGCompatibleTraversals() {
+  return allLCCompatibleTraversals();
+}
 
 /**
  * Lists all traversal options applicable for the given container.
@@ -189,6 +196,9 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix) {
     }
     case ContainerOption::octree: {
       return allOTCompatibleTraversals();
+    }
+    case ContainerOption::hierarchicalGrids: {
+      return allHGCompatibleTraversals();
     }
   }
 

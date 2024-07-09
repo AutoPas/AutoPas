@@ -132,6 +132,13 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     timestepFile << "        " << particle->getID() << "\n";
   }
   timestepFile << "        </DataArray>\n";
+  
+  // print radii
+  timestepFile << "        <DataArray Name=\"radii\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\">\n";
+  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+    timestepFile << "        " << particle->getRad() << "\n";
+  }
+  timestepFile << "        </DataArray>\n";
 
   timestepFile << "      </PointData>\n";
   timestepFile << "      <CellData/>\n";
@@ -269,6 +276,7 @@ void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
 #endif
   timestepFile << "      <PDataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
   timestepFile << "      <PDataArray Name=\"ids\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\"/>\n";
+  timestepFile << "      <PDataArray Name=\"radii\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Float32\"/>\n";
   timestepFile << "    </PPointData>\n";
   timestepFile << "    <PCellData/>\n";
   timestepFile << "    <PPoints>\n";

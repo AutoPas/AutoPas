@@ -68,6 +68,11 @@ class ContainerOption : public Option<ContainerOption> {
      * distributed since it is space adaptive
      */
     octree,
+    /**
+     * hierarchicalGrids : Based on a set of LinkedCells grid with varying grid sizes into which differently sized 
+     * particles can be sorted. 
+     */
+    hierarchicalGrids,
   };
 
   /**
@@ -110,6 +115,7 @@ class ContainerOption : public Option<ContainerOption> {
         {ContainerOption::varVerletListsAsBuild, "VarVerletListsAsBuild"},
         {ContainerOption::pairwiseVerletLists, "PairwiseVerletLists"},
         {ContainerOption::octree, "Octree"},
+        {ContainerOption::hierarchicalGrids, "HierarchicalGrids"}
     };
   };
 

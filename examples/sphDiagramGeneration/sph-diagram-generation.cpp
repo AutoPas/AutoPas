@@ -14,6 +14,10 @@
 using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
 
+unsigned int autopas::HierarchicalGridsHelpers::_numberOfHGLevels = 1;  
+template<>
+double demLib::DEMFunctor<Particle>::_factorSubtractExcessForces = 1;
+
 template <class Container, class Functor>
 void measureContainer(Container *cont, Functor *func, int numParticles, int numIterations);
 
