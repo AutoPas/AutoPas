@@ -212,7 +212,7 @@ class MDFlexConfig {
   enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals };
 
   /**
-   * Choice of the 3-body functor
+   * Choice of the Triwise functor
    */
   enum class FunctorOption3B { none, at };
 
@@ -249,7 +249,7 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::DataLayoutOption>, __LINE__> dataLayoutOptions3B{
       autopas::DataLayoutOption::getMostOptions(), "data-layout-3b", true,
-      "List of data layout options to use for the 3-body interaction. Possible Values: " +
+      "List of data layout options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::DataLayoutOption::getAllOptions(), " ", {"(", ")"})};
   /**
    * selectorStrategy
@@ -291,7 +291,7 @@ class MDFlexConfig {
    */
   MDFlexOption<std::set<autopas::Newton3Option>, __LINE__> newton3Options3B{
       autopas::Newton3Option::getMostOptions(), "newton3-3b", true,
-      "List of newton3 options to use for the 3-body interaction. Possible Values: " +
+      "List of newton3 options to use for the triwise interaction. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
   /**
    * cellSizeFactors
@@ -509,7 +509,7 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "3-Body force functor to use. Possible Values: (axilrod-teller)"};
+      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller)"};
   /**
    * iterations
    */

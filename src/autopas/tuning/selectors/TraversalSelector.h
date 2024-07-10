@@ -326,7 +326,7 @@ std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTri
           dataLayout, useNewton3);
     }
     default: {
-      autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known 3-body traversal type!",
+      autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",
                                                   traversalType.to_string());
       return {nullptr};
     }

@@ -230,7 +230,7 @@ class TraversalOption : public Option<TraversalOption> {
   static std::set<TraversalOption> getAllPairwiseOptions() { return getAllOptions(); }
 
   /**
-   * Set of options that apply for 3-body interactions.
+   * Set of options that apply for triwise interactions.
    * @return
    */
   static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential, Value::lc_c01}; }

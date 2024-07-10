@@ -235,7 +235,7 @@ class AxilrodTellerFunctor
     }
 
     if constexpr (calculateGlobals) {
-      // Calculate third of total potential energy from 3-body interaction
+      // Calculate third of total potential energy from triwise interaction
       const double potentialEnergy = factor * (allDistsSquared - 3.0 * allDotProducts) / 9.0;
 
       // Virial is calculated as f_i * r_i

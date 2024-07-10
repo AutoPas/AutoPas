@@ -147,7 +147,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
                                           autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
-  // 3-body specific options
+  // Triwise specific options
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
                                            autopas::InteractionTypeOption::triwise);
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options3B.value,
@@ -788,7 +788,7 @@ T Simulation::applyWithChosenFunctor3B(F f) {
 #endif
     }
     default: {
-      throw std::runtime_error("Unknown 3-body functor choice" +
+      throw std::runtime_error("Unknown triwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
     }
   }

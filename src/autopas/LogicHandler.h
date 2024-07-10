@@ -923,7 +923,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
       return InteractionTypeOption::triwise;
     } else {
       utils::ExceptionHandler::exception(
-          "LogicHandler::computeInteractions(): Functor is not valid. Only 2-body and 3-body functors are supported. "
+          "LogicHandler::computeInteractions(): Functor is not valid. Only pairwise and triwise functors are supported. "
           "Please use a functor derived from "
           "PairwiseFunctor or TriwiseFunctor.");
     }
@@ -1217,7 +1217,7 @@ void LogicHandler<Particle>::computeRemainderInteractions3B(TriwiseFunctor *f, C
 
   timerBufferBufferBuffer.start();
 #endif
-  // Step 1: 3-body interactions of all particles in the buffers (owned and halo)
+  // Step 1: Triwise interactions of all particles in the buffers (owned and halo)
   AUTOPAS_OPENMP(parallel for)
   for (auto i = 0; i < numOwnedBufferParticles; ++i) {
     Particle &p1 = *bufferParticles[i];
@@ -1241,7 +1241,7 @@ void LogicHandler<Particle>::computeRemainderInteractions3B(TriwiseFunctor *f, C
   timerBufferBufferContainer.start();
 #endif
 
-  // Step 2: 3-body interactions of 2 buffer particles with 1 container particle
+  // Step 2: Triwise interactions of 2 buffer particles with 1 container particle
   const auto haloBoxMin = container.getBoxMin() - container.getInteractionLength();
   const auto interactionLengthInv = 1. / container.getInteractionLength();
 
@@ -1277,7 +1277,7 @@ void LogicHandler<Particle>::computeRemainderInteractions3B(TriwiseFunctor *f, C
   timerBufferContainerContainer.start();
 #endif
 
-  // Step 3: 3-body interactions of 1 buffer particle and 2 container particles
+  // Step 3: Triwise interactions of 1 buffer particle and 2 container particles
   // todo: parallelize without race conditions - https://github.com/AutoPas/AutoPas/issues/904
   // AUTOPAS_OPENMP(parallel for shared(bufferParticles))
   for (auto i = 0; i < numTotal; ++i) {

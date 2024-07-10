@@ -318,7 +318,7 @@ class Simulation {
   bool calculatePairwiseForces();
 
   /**
-   * Calculates the 3-body forces between particles in the autopas container.
+   * Calculates the triwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
   bool calculateTriwiseForces();

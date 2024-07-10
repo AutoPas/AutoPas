@@ -242,7 +242,7 @@ TEST_P(TraversalComparison, traversalTest) {
   // Todo: Remove this when the AxilrodTeller functor implements SoA
   if (interactionType == autopas::InteractionTypeOption::triwise and
       dataLayoutOption == autopas::DataLayoutOption::soa) {
-    GTEST_SKIP_("SoAs are not yet implemented for 3-body traversals/functors.");
+    GTEST_SKIP_("SoAs are not yet implemented for triwise traversals/functors.");
   }
 
   TraversalComparison::mykey_t key{numParticles, numHaloParticles, boxMax, doSlightShift, particleDeletionPosition,

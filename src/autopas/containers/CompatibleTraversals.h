@@ -46,7 +46,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
- * Lists all 3-body traversal options applicable for the Direct Sum container.
+ * Lists all triwise traversal options applicable for the Direct Sum container.
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allDSCompatibleTraversals3B() {
@@ -64,7 +64,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
 }
 
 /**
- * Lists all 3-body traversal options applicable for the Linked Cells container.
+ * Lists all triwise traversal options applicable for the Linked Cells container.
  * @return set of all applicable traversal options.
  */
 [[maybe_unused]] static const std::set<TraversalOption> &allLCCompatibleTraversals3B() {
@@ -215,7 +215,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
       }
     }
-    // Check compatible 3-body traversals
+    // Check compatible triwise traversals
     case InteractionTypeOption::triwise: {
       switch (containerOption) {
         case ContainerOption::directSum: {

@@ -26,7 +26,7 @@ class InteractionTypeOption : public Option<InteractionTypeOption> {
      */
     pairwise,
     /**
-     * 3-Body interactions.
+     * Triwise interactions.
      */
     triwise,
   };

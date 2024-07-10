@@ -13,7 +13,7 @@
 namespace autopas {
 /**
  * This class helps in getting the number of performed floating point operations. It is a functor that only calculates
- * the amount of floating point operations for a 3-body force functor that requires 3 distance checks between each of
+ * the amount of floating point operations for a triwise force functor that requires 3 distance checks between each of
  * the particles, where each distance must be smaller than the cutoff.
  *
  * @todo: we may want the possibility of doing this faster in cases where the number of flops per kernel call is
@@ -33,9 +33,9 @@ class FlopCounterFunctor3B : public TriwiseFunctor<Particle, FlopCounterFunctor3
   bool allowsNonNewton3() override { return true; }
 
   /**
-   * constructor of FlopCounterFunctor3B
-   * @param forceFunctor 3-body force functor whose flops are counted
-   * @param cutoffRadius the cutoff radius
+   * Constructor of FlopCounterFunctor3B
+   * @param forceFunctor Triwise force functor whose flops are counted
+   * @param cutoffRadius The cutoff radius
    */
   explicit FlopCounterFunctor3B<Particle, ForceFunctorType>(ForceFunctorType forceFunctor, double cutoffRadius)
       : autopas::TriwiseFunctor<Particle, FlopCounterFunctor3B<Particle, ForceFunctorType>>(cutoffRadius),

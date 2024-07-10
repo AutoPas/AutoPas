@@ -245,7 +245,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (strArg.find("at") != std::string::npos or strArg.find("axilrod-teller") != std::string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
-          throw std::runtime_error("Unrecognized 3-body functor!");
+          throw std::runtime_error("Unrecognized triwise functor!");
         }
         config.addInteractionType(autopas::InteractionTypeOption::triwise);
       } else if (key == config.iterations.name) {

@@ -42,7 +42,7 @@ class CellFunctor3B {
   void processCell(ParticleCell &cell);
 
   /**
-   * Process the interactions between the particles of cell1 with particles of cell2. This includes both 3-body
+   * Process the interactions between the particles of cell1 with particles of cell2. This includes both triwise
    * interactions with 2 particles from cell1 and 1 particle from cell2 as well as 1 particle from cell1 and 2 particles
    * from cell2.
    * @param cell1
