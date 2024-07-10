@@ -60,7 +60,7 @@ void AutoTuner::addHomogeneityAndMaxDensity(double homogeneity, double maxDensit
   _timerCalculateHomogeneity.addTime(time);
 }
 
-void AutoTuner::logTuningResult(bool tuningIteration, long tuningTime) {
+void AutoTuner::logTuningResult(bool tuningIteration, long tuningTime) const {
   // only log if we are at the end of a tuning phase
   if (not tuningIteration and _iterationsSinceTuning == 0 and not _evidenceCollection.empty()) {
     // This string is part of several older scripts, hence it is not recommended to change it.

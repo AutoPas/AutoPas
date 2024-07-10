@@ -45,7 +45,7 @@ class IterationLogger {
    * @param measurements Struct that holds all measurements from a computeInteractions() iteration.
    */
   void logIteration(const Configuration &configuration, size_t iteration, const std::string &functorName,
-                    bool inTuningPhase, long timeTuning, const IterationMeasurements &measurements);
+                    bool inTuningPhase, long timeTuning, const IterationMeasurements &measurements) const;
 
  private:
   std::string _loggerName;

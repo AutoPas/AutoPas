@@ -929,7 +929,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     }
   }();
   const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
-  auto const *autoTuner = _autoTunerRefs[interactionType].get();
+  auto *const autoTuner = _autoTunerRefs[interactionType].get();
   const bool newton3 = autoTuner->getCurrentConfig().newton3;
   auto &container = _containerSelector.getCurrentContainer();
 
@@ -1420,7 +1420,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
-  auto const *autoTuner = _autoTunerRefs[interactionType].get();
+  auto *const autoTuner = _autoTunerRefs[interactionType].get();
   autoTuner->logTuningResult(stillTuning, tuningTimer.getTotalTime());
 
   /// Computing the particle interactions

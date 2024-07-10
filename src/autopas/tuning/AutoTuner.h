@@ -158,7 +158,7 @@ class AutoTuner {
    * @param tuningIteration
    * @param tuningTime
    */
-  void logTuningResult(bool tuningIteration, long tuningTime);
+  void logTuningResult(bool tuningIteration, long tuningTime) const;
 
   /**
    * Initialize rapl meter.
