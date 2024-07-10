@@ -84,13 +84,12 @@ DisplacementHandle::DisplacementHandle(const std::array<double, 3> &positionStar
 template <size_t ID>
 [[nodiscard]] nabla DisplacementHandle::derive_wrt() const {
   auto moduloDisplacement{L2Norm(displacement_)};
-  if (ID != idStartVertex_ && ID != idEndVertex_) {
-    return std::array<double, 3>{{0, 0, 0}};
-  } else if (ID == idStartVertex_) {
-    return std::array<double, 3>{0, 0, 0} - displacement_ / moduloDisplacement;
+  if (ID == idStartVertex_) {
+    return -1. * displacement_ / moduloDisplacement;
   } else if (ID == idEndVertex_) {
     return displacement_ / moduloDisplacement;
   }
+  return std::array<double, 3>{{0, 0, 0}};
 }
 
 }  // namespace autopas::utils::ArrayMath::Argon
