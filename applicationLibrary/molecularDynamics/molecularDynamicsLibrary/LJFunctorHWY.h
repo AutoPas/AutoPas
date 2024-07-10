@@ -224,6 +224,11 @@ namespace mdLib {
                     }
                 }
 
+                template <bool reversed>
+                inline int obtainFirstLoopRest(const int i, const int stop) {
+                    return reversed ? (i < 0 ? 0 : i+1) : stop-i;
+                }
+
                 inline bool checkSecondLoopCondition(const size_t i, const size_t j) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         return j < (i & ~(_vecLengthDouble - 1));
@@ -364,7 +369,7 @@ namespace mdLib {
 
                 template <bool reversed, bool remainder>
                 inline void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
-                        double *const __restrict fzPtr, const VectorDouble& fxAcc, const VectorDouble& fyAcc, const VectorDouble& fzAcc) {
+                        double *const __restrict fzPtr, const VectorDouble& fxAcc, const VectorDouble& fyAcc, const VectorDouble& fzAcc, const int restI) {
 
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         fxPtr[i] += highway::ReduceSum(tag_double, fxAcc);
@@ -482,8 +487,42 @@ namespace mdLib {
                                 fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0, restJ);
                         }
 
-                        reduceAccumulatedForce<true, false>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc);
-                    }   
+                        reduceAccumulatedForce<true, false>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, 0);
+                    }
+
+                    const int restI = obtainFirstLoopRest<true>(i, -1);
+                    
+                    if (restI > 0) {
+                        VectorDouble fxAcc = _zeroDouble;
+                        VectorDouble fyAcc = _zeroDouble;
+                        VectorDouble fzAcc = _zeroDouble;
+
+                        MaskDouble ownedMaskI;
+
+                        VectorDouble x1;
+                        VectorDouble y1;
+                        VectorDouble z1;
+
+                        fillIRegisters<true, true>(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedMaskI, restI);
+
+                        unsigned int j = 0;
+                        for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
+
+                            SoAKernel<true, true, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
+                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+                        }
+
+                        const int restJ = obtainSecondLoopRest(i);
+                        if (restJ > 0) {
+                        
+                            SoAKernel<true, true, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
+                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+                        }
+
+                        reduceAccumulatedForce<true, true>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, restI);
+                    }
 
                     if constexpr (calculateGlobals) {
                         computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
@@ -552,9 +591,40 @@ namespace mdLib {
                                 fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0, restJ);
                         }
 
-                        reduceAccumulatedForce<false, false>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc);
+                        reduceAccumulatedForce<false, false>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, 0);
                     }
+                    const int restI = obtainFirstLoopRest<false>(i, soa1.size());
+                    if (restI > 0) {
+                        VectorDouble fxAcc = _zeroDouble;
+                        VectorDouble fyAcc = _zeroDouble;
+                        VectorDouble fzAcc = _zeroDouble;
 
+                        MaskDouble ownedMaskI;
+                        VectorDouble x1 = _zeroDouble;
+                        VectorDouble y1 = _zeroDouble;
+                        VectorDouble z1 = _zeroDouble;
+
+                        fillIRegisters<true, false>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x1, y1, z1, ownedMaskI, restI);
+
+                        unsigned int j = 0;
+
+                        for (; checkSecondLoopCondition(soa2.size(), j); incrementSecondLoop(j)) {
+
+                            SoAKernel<newton3, true, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
+                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+                        }
+
+                        const int restJ = obtainSecondLoopRest(soa2.size());
+                        if (restJ > 0) {
+                            SoAKernel<newton3, true, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
+                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+                        }
+
+                        reduceAccumulatedForce<false, true>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, restI);
+                    }
+                    
                     if constexpr (calculateGlobals) {
                         computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
                     }
@@ -679,8 +749,9 @@ namespace mdLib {
                     const auto dr2 = drX2 + drY2 + drZ2;
 
                     const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
+                    const auto zeroMask = highway::Ne(dr2, _zeroDouble);
                     const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
-                    const auto cutoffDummyMask = highway::And(cutoffMask, dummyMask);
+                    const auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
 
                     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
                         return;
