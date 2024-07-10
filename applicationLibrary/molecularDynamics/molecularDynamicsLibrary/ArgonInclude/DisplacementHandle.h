@@ -68,4 +68,28 @@ class DisplacementHandle {
   size_t idEndVertex_;
 };
 
+DisplacementHandle::DisplacementHandle(const std::array<double, 3> &positionStartVertex,
+                                       const std::array<double, 3> &positionEndVertex, const size_t &idStartVertex,
+                                       const size_t &idEndVertex)
+    : positionStartVertex_(positionStartVertex),
+      positionEndVertex_(positionEndVertex),
+      displacement_(positionEndVertex - positionStartVertex),
+      idStartVertex_(idStartVertex),
+      idEndVertex_(idEndVertex) {}
+
+[[nodiscard]] DisplacementHandle DisplacementHandle::getInv() const {
+  return DisplacementHandle(positionEndVertex_, positionStartVertex_, idEndVertex_, idStartVertex_);
+}
+
+template <size_t ID>
+[[nodiscard]] nabla DisplacementHandle::derive_wrt() const {
+  auto moduloDisplacement{L2Norm(displacement_)};
+  if (ID == idStartVertex_) {
+    return -1. * displacement_ / moduloDisplacement;
+  } else if (ID == idEndVertex_) {
+    return displacement_ / moduloDisplacement;
+  }
+  return std::array<double, 3>{{0, 0, 0}};
+}
+
 }  // namespace autopas::utils::ArrayMath::Argon
