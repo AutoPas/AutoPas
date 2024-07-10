@@ -240,8 +240,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_111_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
@@ -268,8 +268,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_112_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
@@ -301,8 +301,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_211_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   // permutation of i and k
   return W_112_deriv_wrt<ID>(displacementJK.getInv(), displacementIJ.getInv(), displacementKI.getInv(), cosineK,
                              cosineJ, cosineI);
@@ -310,8 +310,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_121_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   // permutation of j and k
   return W_112_deriv_wrt<ID>(displacementKI.getInv(), displacementJK.getInv(), displacementIJ.getInv(), cosineI,
                              cosineK, cosineJ);
@@ -319,8 +319,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_122_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
@@ -355,8 +355,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_212_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   // permutation of i and j
   return W_122_deriv_wrt<ID>(displacementIJ.getInv(), displacementKI.getInv(), displacementJK.getInv(), cosineJ,
                              cosineI, cosineK);
@@ -364,8 +364,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_221_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   // permutation of i and k
   return W_122_deriv_wrt<ID>(displacementJK.getInv(), displacementIJ.getInv(), displacementKI.getInv(), cosineK,
                              cosineJ, cosineI);
@@ -373,8 +373,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_222_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
@@ -404,8 +404,8 @@ template <size_t ID>
   const auto nablaCos2KminusI = cos_2_theta1_minus_theta2_derive_wrt<ID>(cosineK, cosineI);
 
   const auto nablaDisplacementTerm = -5. * (nablaIJ / IJ + nablaJK / JK + nablaKI / KI);
-  const auto cosineTerm =
-      -27. + 220. * cosI * cosJ * cosK + 490. * cos2I * cos2J * cos2K + 175. * (cos2IminusJ + cos2JminusK + cos2KminusI);
+  const auto cosineTerm = -27. + 220. * cosI * cosJ * cosK + 490. * cos2I * cos2J * cos2K +
+                          175. * (cos2IminusJ + cos2JminusK + cos2KminusI);
   const auto nablaCosineTerm1 = 220. * (nablaCosI * cosJ * cosK + cosI * nablaCosJ * cosK + cosI * cosJ * nablaCosK);
   const auto nablaCosineTerm2 =
       490. * (nablaCos2I * cos2J * cos2K + cos2I * nablaCos2J * cos2K + cos2I * cos2J * nablaCos2K);
@@ -417,8 +417,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_113_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   const auto IJ = L2Norm(displacementIJ.getDisplacement());
   const auto JK = L2Norm(displacementJK.getDisplacement());
   const auto KI = L2Norm(displacementKI.getDisplacement());
@@ -452,8 +452,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_131_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   // permuation of j and k
   return W_113_deriv_wrt<ID>(displacementKI.getInv(), displacementJK.getInv(), displacementIJ.getInv(), cosineI,
                              cosineK, cosineJ);
@@ -461,8 +461,8 @@ template <size_t ID>
 
 template <size_t ID>
 [[nodiscard]] nabla W_311_deriv_wrt(const DisplacementHandle &displacementIJ, const DisplacementHandle &displacementJK,
-                                     const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                     const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                    const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                    const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   // permutation of i and k
   return W_113_deriv_wrt<ID>(displacementJK.getInv(), displacementIJ.getInv(), displacementKI.getInv(), cosineK,
                              cosineJ, cosineI);
@@ -538,9 +538,9 @@ template <size_t a, size_t b, size_t c>
  */
 template <size_t a, size_t b, size_t c, size_t ID>
 [[nodiscard]] nabla AngularTerm_derive_wrt(const DisplacementHandle &displacementIJ,
-                                            const DisplacementHandle &displacementJK,
-                                            const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
-                                            const CosineHandle &cosineJ, const CosineHandle &cosineK) {
+                                           const DisplacementHandle &displacementJK,
+                                           const DisplacementHandle &displacementKI, const CosineHandle &cosineI,
+                                           const CosineHandle &cosineJ, const CosineHandle &cosineK) {
   if (a == 1 && b == 1 && c == 1) {
     return W_111_deriv_wrt<ID>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
   }
