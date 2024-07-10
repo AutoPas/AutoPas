@@ -55,6 +55,26 @@ template <size_t a, size_t b, size_t c, size_t ID>
   return multiplyingFactor * (firstTerm + secondTerm);
 }
 
+template <size_t a, size_t b, size_t c>
+[[nodiscard]] double U_repulsive_abc(const std::array<double, 23> &A, const std::array<double, 23> &alpha,
+                                     DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
+                                     DisplacementHandle displacementKI) {
+  const auto IJ = L2Norm(displacementIJ.getDisplacement());
+  const auto JK = L2Norm(displacementJK.getDisplacement());
+  const auto KI = L2Norm(displacementKI.getDisplacement());
+
+  const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
+  const auto cosineJ = CosineHandle(displacementIJ.getInv(), displacementJK);
+  const auto cosineK = CosineHandle(displacementKI, displacementJK.getInv());
+
+  const auto A_abc = A[mdLib::Argon::index<mdLib::Argon::param::A>(a, b, c)];
+  const auto alpha_abc = alpha[mdLib::Argon::index<mdLib::Argon::param::A>(a, b, c)];
+
+  const auto permutationTerm = Permutation(a, b, c, cosineI, cosineJ, cosineK);
+
+  return A_abc * std::exp(- alpha_abc * (IJ + JK + KI)) * permutationTerm;
+}
+
 /**
  *
  * @tparam ID ID of the particle with respect to whose position we are calculating the derivative
