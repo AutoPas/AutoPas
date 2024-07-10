@@ -258,7 +258,7 @@ template <size_t ID>
   const auto nablaCosJ = cosineJ.derive_wrt<ID>();
   const auto nablaCosK = cosineK.derive_wrt<ID>();
 
-  const auto nablaDisplacementTerm = -nablaIJ / IJ - nablaJK / JK + nablaKI / KI;
+  const auto nablaDisplacementTerm = -1. * (nablaIJ / IJ + nablaJK / JK + nablaKI / KI);
   const auto cosineTerm = 1 + 3 * cosI * cosJ * cosK;
   const auto nablaCosineTerm = nablaCosI * cosJ * cosK + cosI * nablaCosJ * cosK + cosI * cosJ * nablaCosK;
 
