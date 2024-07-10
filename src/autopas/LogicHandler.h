@@ -672,11 +672,12 @@ class LogicHandler {
    */
   template <bool newton3, class ContainerType, class PairwiseFunctor>
   void computeRemainderInteractions2B(PairwiseFunctor *f, ContainerType &container,
-                            std::vector<FullParticleCell<Particle>> &particleBuffers,
-                            std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+                                      std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                      std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and containers
+   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and
+   * containers
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.
    * @tparam PairwiseFunctor
@@ -692,7 +693,8 @@ class LogicHandler {
                                       std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and buffers
+   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and
+   * buffers
    * @tparam newton3
    * @tparam PairwiseFunctor
    * @param f
@@ -705,7 +707,8 @@ class LogicHandler {
                                    std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and halo buffers
+   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and halo
+   * buffers
    * @tparam newton3
    * @tparam PairwiseFunctor
    * @param f
@@ -739,8 +742,8 @@ class LogicHandler {
    */
   template <bool newton3, class ContainerType, class TriwiseFunctor>
   void computeRemainderInteractions3B(TriwiseFunctor *f, ContainerType &container,
-                              std::vector<FullParticleCell<Particle>> &particleBuffers,
-                              std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
+                                      std::vector<FullParticleCell<Particle>> &particleBuffers,
+                                      std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
    * Check that the simulation box is at least of interaction length in each direction.
@@ -923,7 +926,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
       return InteractionTypeOption::triwise;
     } else {
       utils::ExceptionHandler::exception(
-          "LogicHandler::computeInteractions(): Functor is not valid. Only pairwise and triwise functors are supported. "
+          "LogicHandler::computeInteractions(): Functor is not valid. Only pairwise and triwise functors are "
+          "supported. "
           "Please use a functor derived from "
           "PairwiseFunctor or TriwiseFunctor.");
     }
@@ -999,9 +1003,9 @@ void LogicHandler<Particle>::computeRemainderInteractions(Functor &functor, cons
 
 template <class Particle>
 template <bool newton3, class ContainerType, class PairwiseFunctor>
-void LogicHandler<Particle>::computeRemainderInteractions2B(PairwiseFunctor *f, ContainerType &container,
-                                                  std::vector<FullParticleCell<Particle>> &particleBuffers,
-                                                  std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+void LogicHandler<Particle>::computeRemainderInteractions2B(
+    PairwiseFunctor *f, ContainerType &container, std::vector<FullParticleCell<Particle>> &particleBuffers,
+    std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
   if (_bufferLocks.size() < particleBuffers.size()) {
     utils::ExceptionHandler::exception("Not enough locks for non-halo buffers! Num Locks: {}, Buffers: {}",
@@ -1175,9 +1179,9 @@ void LogicHandler<Particle>::remainderHelperBufferHaloBuffer(
 
 template <class Particle>
 template <bool newton3, class ContainerType, class TriwiseFunctor>
-void LogicHandler<Particle>::computeRemainderInteractions3B(TriwiseFunctor *f, ContainerType &container,
-                                                    std::vector<FullParticleCell<Particle>> &particleBuffers,
-                                                    std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
+void LogicHandler<Particle>::computeRemainderInteractions3B(
+    TriwiseFunctor *f, ContainerType &container, std::vector<FullParticleCell<Particle>> &particleBuffers,
+    std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   using autopas::utils::ArrayUtils::static_cast_copy_array;
   using namespace autopas::utils::ArrayMath::literals;
 

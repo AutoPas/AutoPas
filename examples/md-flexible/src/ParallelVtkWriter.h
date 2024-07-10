@@ -104,12 +104,12 @@ class ParallelVtkWriter {
   /**
    * Writes the current domain subdivision into vtk files.
    * @param currentIteration: The simulations current iteration.
-   * @param autoPasConfiguration: The configuration of an autoPasContainer.
+   * @param autoPasConfigurations: All current configuration of an autopas container (pairwise, triwise).
    * @param decomposition: The simulations domain decomposition.
    */
   void recordDomainSubdivision(size_t currentIteration,
                                const std::unordered_map<autopas::InteractionTypeOption::Value,
-                                                        const autopas::Configuration *> &autoPasConfiguration,
+                                                        const autopas::Configuration *> &autoPasConfigurations,
                                const RegularGridDecomposition &decomposition);
 
   /**
@@ -137,6 +137,7 @@ class ParallelVtkWriter {
    * Creates the .pvts file required to load structured grid data from multiple ranks into ParaView.
    * @param currentIteration: The simulation's current iteration.
    * @param decomposition: The decomposition of the domain.
+   * @param interactionTypes: Interaction types that are considered in the current simulation.
    */
   void createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition,
                       const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes);
