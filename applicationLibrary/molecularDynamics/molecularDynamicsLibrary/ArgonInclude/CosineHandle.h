@@ -59,9 +59,7 @@ CosineHandle::CosineHandle(const DisplacementHandle &displacementAB, const Displ
 
 template <size_t ID>
 [[nodiscard]] nabla CosineHandle::derive_wrt() const {
-  if (id_ != ID && displacementAB_.getIdEndVertex() != ID && displacementAC_.getIdEndVertex() != ID) {
-    return std::array<double, 3>{{0, 0, 0}};
-  } else if (ID == id_) {
+  if (ID == id_) {
     auto firstTerm{cos_ / ArrayMath::dot(AB_, AB_) - 1. / ArrayMath::dot(AB_, AC_)};
     auto secondTerm{cos_ / ArrayMath::dot(AC_, AC_) - 1. / ArrayMath::dot(AB_, AC_)};
     return AB_ * firstTerm + AC_ * secondTerm;
@@ -74,6 +72,7 @@ template <size_t ID>
     auto secondTerm{1. / ArrayMath::dot(AB_, AC_)};
     return AC_ * firstTerm + AB_ * secondTerm;
   }
+  return std::array<double, 3>{{0, 0, 0}};
 }
 
 }  // namespace autopas::utils::ArrayMath::Argon
