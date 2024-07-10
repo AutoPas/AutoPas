@@ -27,10 +27,10 @@ autopas::IterationLogger::IterationLogger(const std::string &outputSuffix, bool 
       "Functor,"
       "inTuningPhase,"
       "{},"
-      "iterateInteractions[ns],"
+      "computeInteractions[ns],"
       "remainderTraversal[ns],"
       "rebuildNeighborLists[ns],"
-      "iterateInteractionsTotal[ns],"
+      "computeInteractionsTotal[ns],"
       "tuning[ns]";
   if (energyMeasurements) {
     csvHeader.append(

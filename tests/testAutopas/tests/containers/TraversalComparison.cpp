@@ -189,7 +189,7 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
   }
 
   functor.initTraversal();
-  container.iterateInteractions(traversal.get());
+  container.computeInteractions(traversal.get());
 
   functor.endTraversal(newton3Option);
 

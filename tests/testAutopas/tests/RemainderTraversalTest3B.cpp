@@ -15,7 +15,7 @@
 #include "testingHelpers/commonTypedefs.h"
 
 /**
- * Can test all individual steps of iterateInteractions. Expects exactly three particles that form an equilateral
+ * Can test all individual steps of computeInteractions. Expects exactly three particles that form an equilateral
  * triangle of side length sqrt(2).
  *
  * @note Tests invoking this function should have AutoPas logger instantiated (e.g. by inheriting from AutoPasTestBase).

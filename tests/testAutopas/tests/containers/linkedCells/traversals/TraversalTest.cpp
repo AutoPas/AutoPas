@@ -71,7 +71,7 @@ void testTraversal(autopas::TraversalOption traversalOption, autopas::LoadEstima
     }
   }
 
-  linkedCells.iterateInteractions(traversal.get());
+  linkedCells.computeInteractions(traversal.get());
 }
 
 TEST_P(TraversalTest, testTraversal_2x2x2) {

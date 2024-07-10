@@ -97,7 +97,7 @@ TEST_F(VarVerletListsTest, testVerletListBuild) {
       &emptyFunctor, autopas::DataLayoutOption::aos, true);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iterateInteractions(&dummyTraversal);
+  verletLists.computeInteractions(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -125,7 +125,7 @@ TEST_F(VarVerletListsTest, testVerletList) {
   autopas::VVLAsBuildTraversal<FPCell, autopas::Particle, MPairwiseFunctor> dummyTraversal(
       &mockFunctor, autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iterateInteractions(&dummyTraversal);
+  verletLists.computeInteractions(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -154,7 +154,7 @@ TEST_F(VarVerletListsTest, testVerletListInSkin) {
       &mockFunctor, autopas::DataLayoutOption::aos, true);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iterateInteractions(&dummyTraversal);
+  verletLists.computeInteractions(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -182,9 +182,9 @@ TEST_F(VarVerletListsTest, testVerletListBuildTwice) {
       &emptyFunctor, autopas::DataLayoutOption::aos, true);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iterateInteractions(&dummyTraversal);
+  verletLists.computeInteractions(&dummyTraversal);
 
-  verletLists.iterateInteractions(&dummyTraversal);
+  verletLists.computeInteractions(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -215,7 +215,7 @@ TEST_F(VarVerletListsTest, testVerletListBuildFarAway) {
   autopas::VVLAsBuildTraversal<FPCell, autopas::Particle, MPairwiseFunctor> dummyTraversal(
       &emptyFunctor, autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iterateInteractions(&dummyTraversal);
+  verletLists.computeInteractions(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }
@@ -243,9 +243,9 @@ TEST_F(VarVerletListsTest, testVerletListBuildHalo) {
       &emptyFunctor, autopas::DataLayoutOption::aos, true);
 
   verletLists.rebuildNeighborLists(&dummyTraversal);
-  verletLists.iterateInteractions(&dummyTraversal);
+  verletLists.computeInteractions(&dummyTraversal);
 
-  verletLists.iterateInteractions(&dummyTraversal);
+  verletLists.computeInteractions(&dummyTraversal);
 
   EXPECT_EQ(verletLists.getNumberOfNeighborPairs(), 1);
 }

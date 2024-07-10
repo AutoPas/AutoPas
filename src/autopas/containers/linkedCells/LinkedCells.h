@@ -129,7 +129,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
-  void iterateInteractions(TraversalInterface *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     prepareTraversal(traversal);
 
     traversal->initTraversal();

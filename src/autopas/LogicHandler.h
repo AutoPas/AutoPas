@@ -648,10 +648,10 @@ class LogicHandler {
    * @return
    */
   template <class Functor>
-  void iterateRemainder(Functor &functor, bool newton3);
+  void computeRemainderInteractions(Functor &functor, const bool newton3);
 
   /**
-   * Performs the interactions ParticleContainer::iterateInteractions() did not cover.
+   * Performs the interactions ParticleContainer::computeInteractions() did not cover.
    *
    * These interactions are:
    *  - particleBuffer    <-> container
@@ -671,12 +671,12 @@ class LogicHandler {
    * updated.
    */
   template <bool newton3, class ContainerType, class PairwiseFunctor>
-  void doRemainderTraversal(PairwiseFunctor *f, ContainerType &container,
+  void computeRemainderInteractions2B(PairwiseFunctor *f, ContainerType &container,
                             std::vector<FullParticleCell<Particle>> &particleBuffers,
                             std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Helper Method for doRemainderTraversal. This method calculates all interactions between buffers and containers
+   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and containers
    * @tparam newton3
    * @tparam ContainerType Type of the particle container.
    * @tparam PairwiseFunctor
@@ -692,7 +692,7 @@ class LogicHandler {
                                       std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Helper Method for doRemainderTraversal. This method calculates all interactions between buffers and buffers
+   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and buffers
    * @tparam newton3
    * @tparam PairwiseFunctor
    * @param f
@@ -705,7 +705,7 @@ class LogicHandler {
                                    std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Helper Method for doRemainderTraversal. This method calculates all interactions between buffers and halo buffers
+   * Helper Method for computeRemainderInteractions2B. This method calculates all interactions between buffers and halo buffers
    * @tparam newton3
    * @tparam PairwiseFunctor
    * @param f
@@ -718,7 +718,7 @@ class LogicHandler {
                                        std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
   /**
-   * Performs the interactions ParticleContainer::iterateInteractions() did not cover.
+   * Performs the interactions ParticleContainer::computeInteractions() did not cover.
    *
    * These interactions are:
    *  - particleBuffer    <-> container
@@ -738,7 +738,7 @@ class LogicHandler {
    * updated.
    */
   template <bool newton3, class ContainerType, class TriwiseFunctor>
-  void doRemainderTraversal3B(TriwiseFunctor *f, ContainerType &container,
+  void computeRemainderInteractions3B(TriwiseFunctor *f, ContainerType &container,
                               std::vector<FullParticleCell<Particle>> &particleBuffers,
                               std::vector<FullParticleCell<Particle>> &haloParticleBuffers);
 
@@ -935,8 +935,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
   autopas::utils::Timer timerTotal;
   autopas::utils::Timer timerRebuild;
-  autopas::utils::Timer timerIterateInteractions;
-  autopas::utils::Timer timerRemainderTraversal;
+  autopas::utils::Timer timerComputeInteractions;
+  autopas::utils::Timer timerComputeRemainder;
 
   const bool energyMeasurementsPossible = autoTuner->resetEnergy();
 
@@ -950,13 +950,13 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     _neighborListsAreValid.store(true, std::memory_order_relaxed);
   }
 
-  timerIterateInteractions.start();
-  container.iterateInteractions(&traversal);
-  timerIterateInteractions.stop();
+  timerComputeInteractions.start();
+  container.computeInteractions(&traversal);
+  timerComputeInteractions.stop();
 
-  timerRemainderTraversal.start();
-  iterateRemainder(functor, newton3);
-  timerRemainderTraversal.stop();
+  timerComputeRemainder.start();
+  computeRemainderInteractions(functor, newton3);
+  timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
   const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner->sampleEnergy();
@@ -964,8 +964,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
-  return {timerIterateInteractions.getTotalTime(),
-          timerRemainderTraversal.getTotalTime(),
+  return {timerComputeInteractions.getTotalTime(),
+          timerComputeRemainder.getTotalTime(),
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
           energyMeasurementsPossible,
@@ -977,21 +977,21 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
 template <typename Particle>
 template <class Functor>
-void LogicHandler<Particle>::iterateRemainder(Functor &functor, const bool newton3) {
+void LogicHandler<Particle>::computeRemainderInteractions(Functor &functor, const bool newton3) {
   auto &container = _containerSelector.getCurrentContainer();
 
   withStaticContainerType(container, [&](auto &actualContainerType) {
     if constexpr (utils::isPairwiseFunctor<Functor>()) {
       if (newton3) {
-        doRemainderTraversal<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        computeRemainderInteractions2B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       } else {
-        doRemainderTraversal<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        computeRemainderInteractions2B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       }
     } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
       if (newton3) {
-        doRemainderTraversal3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        computeRemainderInteractions3B<true>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       } else {
-        doRemainderTraversal3B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
+        computeRemainderInteractions3B<false>(&functor, actualContainerType, _particleBuffer, _haloParticleBuffer);
       }
     }
   });
@@ -999,7 +999,7 @@ void LogicHandler<Particle>::iterateRemainder(Functor &functor, const bool newto
 
 template <class Particle>
 template <bool newton3, class ContainerType, class PairwiseFunctor>
-void LogicHandler<Particle>::doRemainderTraversal(PairwiseFunctor *f, ContainerType &container,
+void LogicHandler<Particle>::computeRemainderInteractions2B(PairwiseFunctor *f, ContainerType &container,
                                                   std::vector<FullParticleCell<Particle>> &particleBuffers,
                                                   std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // Sanity check. If this is violated feel free to add some logic here that adapts the number of locks.
@@ -1175,7 +1175,7 @@ void LogicHandler<Particle>::remainderHelperBufferHaloBuffer(
 
 template <class Particle>
 template <bool newton3, class ContainerType, class TriwiseFunctor>
-void LogicHandler<Particle>::doRemainderTraversal3B(TriwiseFunctor *f, ContainerType &container,
+void LogicHandler<Particle>::computeRemainderInteractions3B(TriwiseFunctor *f, ContainerType &container,
                                                     std::vector<FullParticleCell<Particle>> &particleBuffers,
                                                     std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   using autopas::utils::ArrayUtils::static_cast_copy_array;
@@ -1441,7 +1441,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
   AutoPasLog(DEBUG, "Type of interaction :          {}", interactionType.to_string());
-  AutoPasLog(DEBUG, "Container::iterateInteractions took {} ns", measurements.timeIterateInteractions);
+  AutoPasLog(DEBUG, "Container::computeInteractions took {} ns", measurements.timeComputeInteractions);
   AutoPasLog(DEBUG, "RemainderTraversal             took {} ns", measurements.timeRemainderTraversal);
   AutoPasLog(DEBUG, "RebuildNeighborLists           took {} ns", measurements.timeRebuild);
   AutoPasLog(DEBUG, "AutoPas::computeInteractions   took {} ns", measurements.timeTotal);

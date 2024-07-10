@@ -192,7 +192,7 @@ template <class Container, class Traversal>
 void Newton3OnOffTest::iterate(Container &container, Traversal traversal,
                                autopas::InteractionTypeOption interactionType) {
   container.rebuildNeighborLists(traversal.get());
-  container.iterateInteractions(traversal.get());
+  container.computeInteractions(traversal.get());
 }
 
 template <class Functor, class Container>

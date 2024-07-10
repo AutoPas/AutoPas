@@ -41,7 +41,7 @@ TEST_P(VerletListsTest, testVerletListBuildAndIterate) {
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor,
                                                                               autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -77,7 +77,7 @@ TEST_P(VerletListsTest, testVerletListInSkin) {
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&mockFunctor,
                                                                               autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -113,9 +113,9 @@ TEST_P(VerletListsTest, testVerletListBuildTwice) {
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor,
                                                                               autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
   auto &list = verletLists.getVerletListsAoS();
 
   EXPECT_EQ(list.size(), 2);
@@ -155,7 +155,7 @@ TEST_P(VerletListsTest, testVerletListBuildFarAway) {
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor,
                                                                               autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -191,9 +191,9 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
   autopas::VLListIterationTraversal<FPCell, MPairwiseFunctor> verletTraversal(&emptyFunctor,
                                                                               autopas::DataLayoutOption::aos, true);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
 
   auto &list = verletLists.getVerletListsAoS();
 
@@ -291,7 +291,7 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
   EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, _)).Times(1);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
 }
 
 /**
@@ -312,7 +312,7 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
       &ljFunctor, autopas::DataLayoutOption::soa, false);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
-  verletLists.iterateInteractions(&verletTraversal);
+  verletLists.computeInteractions(&verletTraversal);
 }
 
 TEST_P(VerletListsTest, SoAvsAoSLJ) {
@@ -339,8 +339,8 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
       &ljFunctor, autopas::DataLayoutOption::soa, false);
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);
-  verletLists1.iterateInteractions(&verletTraversal1);
-  verletLists2.iterateInteractions(&soaTraversal);
+  verletLists1.computeInteractions(&verletTraversal1);
+  verletLists2.computeInteractions(&soaTraversal);
 
   auto iter1 = verletLists1.begin();
   auto iter2 = verletLists2.begin();

@@ -250,7 +250,7 @@ class ParticleContainerInterface {
    * Iterates over all particle pairs in the container.
    * @param traversal The traversal to use for the iteration.
    */
-  virtual void iterateInteractions(TraversalInterface *traversal) = 0;
+  virtual void computeInteractions(TraversalInterface *traversal) = 0;
 
   /**
    * Get the upper corner of the container without halo.

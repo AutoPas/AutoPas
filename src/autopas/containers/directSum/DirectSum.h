@@ -150,7 +150,7 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
 
   CellType getParticleCellTypeEnum() const override { return CellType::FullParticleCell; }
 
-  void iterateInteractions(TraversalInterface *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     prepareTraversal(traversal);
 
     traversal->initTraversal();

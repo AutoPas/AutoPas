@@ -42,7 +42,7 @@ void applyFunctor(MockPairwiseFunctor<Particle> &functor, const double cellSizef
       autopas::DataLayoutOption::aos, true, autopas::ContainerOption::verletListsCells);
 
   verletLists.rebuildNeighborLists(&traversal);
-  verletLists.iterateInteractions(&traversal);
+  verletLists.computeInteractions(&traversal);
 
   std::vector<Particle *> list;
   for (auto iter = verletLists.begin(autopas::IteratorBehavior::ownedOrHalo); iter.isValid(); ++iter) {
@@ -96,8 +96,8 @@ void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers::VLCB
 
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);
-  verletLists1.iterateInteractions(&verletTraversal1);
-  verletLists2.iterateInteractions(&soaTraversal);
+  verletLists1.computeInteractions(&verletTraversal1);
+  verletLists2.computeInteractions(&soaTraversal);
 
   auto iter1 = verletLists1.begin();
   auto iter2 = verletLists2.begin();
