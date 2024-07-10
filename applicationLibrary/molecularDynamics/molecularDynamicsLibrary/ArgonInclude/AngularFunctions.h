@@ -262,8 +262,9 @@ template <size_t ID>
   const auto cosineTerm = 1 + 3 * cosI * cosJ * cosK;
   const auto nablaCosineTerm = nablaCosI * cosJ * cosK + cosI * nablaCosJ * cosK + cosI * cosJ * nablaCosK;
 
-  return 9. / (Math::pow<3>(IJ) * Math::pow<3>(JK) * Math::pow<3>(KI)) *
-         (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
+  const double factor = 9. / (Math::pow<3>(IJ) * Math::pow<3>(JK) * Math::pow<3>(KI));
+
+  return factor * (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
 }
 
 template <size_t ID>
