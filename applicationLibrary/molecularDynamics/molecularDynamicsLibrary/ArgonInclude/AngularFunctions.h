@@ -293,7 +293,7 @@ template <size_t ID>
   const auto nablaDisplacementTerm = -3. * nablaIJ / IJ - 4. * nablaJK / JK - 4. * nablaKI / KI;
   const auto cosineTerm = 9. * cosK - 25. * cos3K + 6. * cosIminusJ * (3 + 5. * cos2K);
   const auto nablaCosineTerm =
-      9. * nablaCosK - 25. * nablaCos3K + 6 * nablaCosIminusJ * (3 + 5. * cos2K) + 30. * cosIminusJ * nablaCos2K;
+      9. * nablaCosK - 25. * nablaCos3K + 6. * nablaCosIminusJ * (3 + 5. * cos2K) + 30. * cosIminusJ * nablaCos2K;
 
   return 3. / 16 / (Math::pow<3>(IJ) + Math::pow<4>(JK) + Math::pow<4>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
