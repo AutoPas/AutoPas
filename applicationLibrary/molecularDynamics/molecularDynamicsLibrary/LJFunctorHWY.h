@@ -455,7 +455,7 @@ namespace mdLib {
 
                     size_t i = soa.size() - 1;
                     for (; checkFirstLoopCondition<true>(i, 0); decrementFirstLoop(i)) {
-
+                        // TODO : goal : no code duplication from non-rest and rest case
                         static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                             "OwnershipStates underlying type should be int64_t!");
 
@@ -490,38 +490,41 @@ namespace mdLib {
                         reduceAccumulatedForce<true, false>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, 0);
                     }
 
-                    const int restI = obtainFirstLoopRest<true>(i, -1);
-                    
-                    if (restI > 0) {
-                        VectorDouble fxAcc = _zeroDouble;
-                        VectorDouble fyAcc = _zeroDouble;
-                        VectorDouble fzAcc = _zeroDouble;
-
-                        MaskDouble ownedMaskI;
-
-                        VectorDouble x1;
-                        VectorDouble y1;
-                        VectorDouble z1;
-
-                        fillIRegisters<true, true>(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedMaskI, restI);
-
-                        unsigned int j = 0;
-                        for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
-
-                            SoAKernel<true, true, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
-                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
-                        }
-
-                        const int restJ = obtainSecondLoopRest(i);
-                        if (restJ > 0) {
+                    if constexpr (vecPattern != VectorizationPattern::p1xVec) {
+                        // Rest I can't occur in 1xVec case
+                        const int restI = obtainFirstLoopRest<true>(i, -1);
                         
-                            SoAKernel<true, true, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
-                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
-                        }
+                        if (restI > 0) {
+                            VectorDouble fxAcc = _zeroDouble;
+                            VectorDouble fyAcc = _zeroDouble;
+                            VectorDouble fzAcc = _zeroDouble;
 
-                        reduceAccumulatedForce<true, true>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, restI);
+                            MaskDouble ownedMaskI;
+
+                            VectorDouble x1;
+                            VectorDouble y1;
+                            VectorDouble z1;
+
+                            fillIRegisters<true, true>(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedMaskI, restI);
+
+                            unsigned int j = 0;
+                            for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
+
+                                SoAKernel<true, true, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                    x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
+                                    fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+                            }
+
+                            const int restJ = obtainSecondLoopRest(i);
+                            if (restJ > 0) {
+                            
+                                SoAKernel<true, true, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
+                                    x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
+                                    fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+                            }
+
+                            reduceAccumulatedForce<true, true>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, restI);
+                        }
                     }
 
                     if constexpr (calculateGlobals) {
@@ -563,7 +566,7 @@ namespace mdLib {
 
                     unsigned int i = 0;
                     for (; checkFirstLoopCondition<false>(i, soa1.size()); incrementFirstLoop(i)) {
-
+                        // TODO : goal : no code duplication from non-rest and rest case
                         VectorDouble fxAcc = _zeroDouble;
                         VectorDouble fyAcc = _zeroDouble;
                         VectorDouble fzAcc = _zeroDouble;
@@ -593,38 +596,42 @@ namespace mdLib {
 
                         reduceAccumulatedForce<false, false>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, 0);
                     }
-                    const int restI = obtainFirstLoopRest<false>(i, soa1.size());
-                    if (restI > 0) {
-                        VectorDouble fxAcc = _zeroDouble;
-                        VectorDouble fyAcc = _zeroDouble;
-                        VectorDouble fzAcc = _zeroDouble;
 
-                        MaskDouble ownedMaskI;
-                        VectorDouble x1 = _zeroDouble;
-                        VectorDouble y1 = _zeroDouble;
-                        VectorDouble z1 = _zeroDouble;
+                    if constexpr (vecPattern != VectorizationPattern::p1xVec) {
+                        // Rest I can't occur in 1xVec case
+                        const int restI = obtainFirstLoopRest<false>(i, soa1.size());
+                        if (restI > 0) {
+                            VectorDouble fxAcc = _zeroDouble;
+                            VectorDouble fyAcc = _zeroDouble;
+                            VectorDouble fzAcc = _zeroDouble;
 
-                        fillIRegisters<true, false>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x1, y1, z1, ownedMaskI, restI);
+                            MaskDouble ownedMaskI;
+                            VectorDouble x1 = _zeroDouble;
+                            VectorDouble y1 = _zeroDouble;
+                            VectorDouble z1 = _zeroDouble;
 
-                        unsigned int j = 0;
+                            fillIRegisters<true, false>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x1, y1, z1, ownedMaskI, restI);
 
-                        for (; checkSecondLoopCondition(soa2.size(), j); incrementSecondLoop(j)) {
+                            unsigned int j = 0;
 
-                            SoAKernel<newton3, true, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
-                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+                            for (; checkSecondLoopCondition(soa2.size(), j); incrementSecondLoop(j)) {
+
+                                SoAKernel<newton3, true, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                    x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
+                                    fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+                            }
+
+                            const int restJ = obtainSecondLoopRest(soa2.size());
+                            if (restJ > 0) {
+                                SoAKernel<newton3, true, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                    x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
+                                    fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+                            }
+
+                            reduceAccumulatedForce<false, true>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, restI);
                         }
-
-                        const int restJ = obtainSecondLoopRest(soa2.size());
-                        if (restJ > 0) {
-                            SoAKernel<newton3, true, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
-                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
-                        }
-
-                        reduceAccumulatedForce<false, true>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, restI);
                     }
-                    
+
                     if constexpr (calculateGlobals) {
                         computeGlobals<newton3>(virialSumX, virialSumY, virialSumZ, uPotSum);
                     }
