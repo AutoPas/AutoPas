@@ -22,10 +22,6 @@ namespace autopas::utils::ArrayMath::Argon {
  */
 template <class T>
 [[nodiscard]] constexpr T LegendrePol(const T &x, const size_t d) {
-/*  if (d > 6) {
-    throw ExceptionHandler::AutoPasException(
-        "Argon Simulation: asked to compute Legendre polynomial of order higher than 6.");
-  }*/
   switch (d) {
     case 0:
       return 1;
@@ -90,12 +86,12 @@ template <class T>
 template <size_t ID>
 [[nodiscard]] nabla Q_deriv_wrt(const size_t A, const size_t B, const size_t C, const CosineHandle &cosI,
                                 const CosineHandle &cosJ, const CosineHandle &cosK) {
-  auto firstTerm = cosI.derive_wrt(ID) * derivativeLegendre(cosI.getCos(), A) * LegendrePol(cosJ.getCos(), B) *
+  auto firstTerm = derivativeLegendre(cosI.getCos(), A) * cosI.derive_wrt<ID>() * LegendrePol(cosJ.getCos(), B) *
                    LegendrePol(cosK.getCos(), C);
-  auto secondTerm = cosJ.derive_wrt(ID) * LegendrePol(cosI.getCos(), A) * derivativeLegendre(cosJ.getCos(), B) *
+  auto secondTerm = LegendrePol(cosI.getCos(), A) * derivativeLegendre(cosJ.getCos(), B) * cosJ.derive_wrt<ID>() *
                     LegendrePol(cosK.getCos(), C);
-  auto thirdTerm = cosK.derive_wrt(ID) * LegendrePol(cosI.getCos(), A) * LegendrePol(cosJ.getCos(), B) *
-                   derivativeLegendre(cosK.getCos(), C);
+  auto thirdTerm = LegendrePol(cosI.getCos(), A) * LegendrePol(cosJ.getCos(), B) *
+                   derivativeLegendre(cosK.getCos(), C) * cosK.derive_wrt<ID>();
   return firstTerm + secondTerm + thirdTerm;
 }
 
