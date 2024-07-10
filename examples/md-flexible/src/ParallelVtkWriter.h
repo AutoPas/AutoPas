@@ -107,7 +107,9 @@ class ParallelVtkWriter {
    * @param autoPasConfiguration: The configuration of an autoPasContainer.
    * @param decomposition: The simulations domain decomposition.
    */
-  void recordDomainSubdivision(size_t currentIteration, const std::unordered_map<autopas::InteractionTypeOption::Value, const autopas::Configuration*> &autoPasConfiguration,
+  void recordDomainSubdivision(size_t currentIteration,
+                               const std::unordered_map<autopas::InteractionTypeOption::Value,
+                                                        const autopas::Configuration *> &autoPasConfiguration,
                                const RegularGridDecomposition &decomposition);
 
   /**
@@ -136,7 +138,8 @@ class ParallelVtkWriter {
    * @param currentIteration: The simulation's current iteration.
    * @param decomposition: The decomposition of the domain.
    */
-  void createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition, const std::unordered_set<autopas::InteractionTypeOption::Value>& interactionTypes);
+  void createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition,
+                      const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes);
 
   /**
    * Tries to create a folder at a location.

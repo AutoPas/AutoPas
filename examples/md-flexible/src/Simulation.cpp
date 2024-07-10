@@ -120,11 +120,23 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
 
-  if (_configuration.getInteractionTypes().size() == 0) {
-    _configuration.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+  if (_configuration.getInteractionTypes().empty()) {
+    std::string functorName{};
+    _configuration.functorOption.value =
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+        MDFlexConfig::FunctorOption::lj12_6_AVX;
+    functorName = "Lennard-Jones AVX Functor.";
+#elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
+        MDFlexConfig::FunctorOption::lj12_6_SVE;
+    functorName = "Lennard-Jones SVE Functor.";
+#else
+        MDFlexConfig::FunctorOption::lj12_6;
+    functorName = "Lennard-Jones AutoVec Functor.";
+#endif
     _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
-    std::cout << "WARNING: No functor was specified. Using the default Lennard-Jones AutoVec functor." << std::endl;
+    std::cout << "WARNING: No functor was specified. Using the " << functorName << std::endl;
   }
+
   _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
 
   // Pairwise specific options

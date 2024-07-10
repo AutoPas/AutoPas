@@ -158,11 +158,14 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
   timestepFile.close();
 }
 
-void ParallelVtkWriter::recordDomainSubdivision(size_t currentIteration,
-                                                const std::unordered_map<autopas::InteractionTypeOption::Value, const autopas::Configuration*> &autoPasConfiguration,
-                                                const RegularGridDecomposition &decomposition) {
+void ParallelVtkWriter::recordDomainSubdivision(
+    size_t currentIteration,
+    const std::unordered_map<autopas::InteractionTypeOption::Value, const autopas::Configuration *>
+        &autoPasConfiguration,
+    const RegularGridDecomposition &decomposition) {
   std::unordered_set<autopas::InteractionTypeOption::Value> interactionTypes;
-  std::transform(autoPasConfiguration.begin(), autoPasConfiguration.end(), std::inserter(interactionTypes, interactionTypes.end()), [&](auto pair) {return pair.first;});
+  std::transform(autoPasConfiguration.begin(), autoPasConfiguration.end(),
+                 std::inserter(interactionTypes, interactionTypes.end()), [&](auto pair) { return pair.first; });
 
   if (_mpiRank == 0) {
     createPvtsFile(currentIteration, decomposition, interactionTypes);
@@ -310,7 +313,9 @@ void ParallelVtkWriter::createPvtuFile(size_t currentIteration) {
   timestepFile.close();
 }
 
-void ParallelVtkWriter::createPvtsFile(size_t currentIteration, const RegularGridDecomposition &decomposition, const std::unordered_set<autopas::InteractionTypeOption::Value>& interactionTypes) {
+void ParallelVtkWriter::createPvtsFile(
+    size_t currentIteration, const RegularGridDecomposition &decomposition,
+    const std::unordered_set<autopas::InteractionTypeOption::Value> &interactionTypes) {
   std::ostringstream filename;
   filename << _sessionFolderPath << _sessionName << "_" << std::setfill('0')
            << std::setw(_maximumNumberOfDigitsInIteration) << currentIteration << ".pvts";
