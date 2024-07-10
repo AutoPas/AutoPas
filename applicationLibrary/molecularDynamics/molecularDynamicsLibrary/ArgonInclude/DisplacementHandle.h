@@ -58,7 +58,7 @@ class DisplacementHandle {
    * @return derivative of the cosine displacement_ w.r.t. ID
    */
   template <size_t ID>
-  [[nodiscard]] nabla derive_wrt();
+  [[nodiscard]] nabla derive_wrt() const;
 
  private:
   std::array<double, 3> positionStartVertex_;

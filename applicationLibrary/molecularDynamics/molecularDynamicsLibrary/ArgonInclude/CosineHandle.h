@@ -34,7 +34,7 @@ class CosineHandle {
    * @return derivative of the cosine cos_ w.r.t. ID
    */
   template <size_t ID>
-  [[nodiscard]] nabla derive_wrt();
+  [[nodiscard]] nabla derive_wrt() const;
 
  private:
   DisplacementHandle displacementAB_;
