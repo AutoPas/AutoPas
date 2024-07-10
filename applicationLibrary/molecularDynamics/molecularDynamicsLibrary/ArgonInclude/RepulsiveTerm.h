@@ -114,4 +114,34 @@ template <size_t ID>
                  F_repulsive_abc<0, 0, 6, ID>(A, alpha, displacementIJ, displacementJK, displacementKI);
   return F;
 }
+
+[[nodiscard]] double U_repulsive(const std::array<double, 23> &A, const std::array<double, 23> &alpha,
+                                 DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
+                                 DisplacementHandle displacementKI) {
+  const auto U = U_repulsive_abc<0, 0, 0>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 0, 1>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 1, 1>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<1, 1, 1>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 0, 2>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 1, 2>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<1, 1, 2>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 2, 2>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<1, 2, 2>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<2, 2, 2>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 0, 3>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 1, 3>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<1, 1, 3>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 2, 3>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<1, 2, 3>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 3, 3>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 0, 4>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 1, 4>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<1, 1, 4>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 2, 4>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 0, 5>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 1, 5>(A, alpha, displacementIJ, displacementJK, displacementKI) +
+                 U_repulsive_abc<0, 0, 6>(A, alpha, displacementIJ, displacementJK, displacementKI);
+  return U;
+}
+
 }  // namespace autopas::utils::ArrayMath::Argon
