@@ -290,10 +290,10 @@ template <size_t ID>
   const auto nablaCos3K = cos_3theta_derive_wrt<ID>(cosineK);
   const auto nablaCosIminusJ = cos_theta1_minus_theta2_derive_wrt<ID>(cosineI, cosineJ);
 
-  const auto nablaDisplacementTerm = -3 * nablaIJ / IJ - 4 * nablaJK / JK - 4 * nablaKI / KI;
-  const auto cosineTerm = 9 * cosK - 25 * cos3K + 6 * cosIminusJ * (3 + 5 * cos2K);
+  const auto nablaDisplacementTerm = -3. * nablaIJ / IJ - 4. * nablaJK / JK - 4. * nablaKI / KI;
+  const auto cosineTerm = 9. * cosK - 25. * cos3K + 6. * cosIminusJ * (3 + 5. * cos2K);
   const auto nablaCosineTerm =
-      9 * nablaCosK - 25 * nablaCos3K + 6 * nablaCosIminusJ * (3 + 5 * cos2K) + 30 * cosIminusJ * nablaCos2K;
+      9. * nablaCosK - 25. * nablaCos3K + 6 * nablaCosIminusJ * (3 + 5. * cos2K) + 30. * cosIminusJ * nablaCos2K;
 
   return 3. / 16 / (Math::pow<3>(IJ) + Math::pow<4>(JK) + Math::pow<4>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
@@ -343,11 +343,11 @@ template <size_t ID>
   const auto nablaCosJminusK = cos_theta1_minus_theta2_derive_wrt<ID>(cosineJ, cosineK);
   const auto nablaCos2JminusK = cos_2_theta1_minus_theta2_derive_wrt<ID>(cosineJ, cosineK);
 
-  const auto nablaDisplacementTerm = -4 * nablaIJ / IJ - 5 * nablaJK / JK - 4 * nablaKI / KI;
-  const auto cosineTerm = 3 * cosI + 15 * cos3I + 20 * cosJminusK * (1 - 3 * cos2I) + 70 * cos2JminusK * cosI;
-  const auto nablaCosineTerm = 3 * nablaCosI + 15 * nablaCos3I + 20 * nablaCosJminusK * (1 - 3 * cos2I) -
-                               60 * cosJminusK * nablaCos2I + 70 * nablaCos2JminusK * cosI +
-                               70 * cos2JminusK * nablaCosI;
+  const auto nablaDisplacementTerm = -4. * nablaIJ / IJ - 5. * nablaJK / JK - 4. * nablaKI / KI;
+  const auto cosineTerm = 3. * cosI + 15. * cos3I + 20. * cosJminusK * (1 - 3. * cos2I) + 70. * cos2JminusK * cosI;
+  const auto nablaCosineTerm = 3. * nablaCosI + 15. * nablaCos3I + 20. * nablaCosJminusK * (1 - 3. * cos2I) -
+                               60. * cosJminusK * nablaCos2I + 70. * nablaCos2JminusK * cosI +
+                               70. * cos2JminusK * nablaCosI;
 
   return 15. / 64 / (Math::pow<4>(IJ) + Math::pow<5>(JK) + Math::pow<4>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
@@ -403,13 +403,13 @@ template <size_t ID>
   const auto nablaCos2JminusK = cos_2_theta1_minus_theta2_derive_wrt<ID>(cosineJ, cosineK);
   const auto nablaCos2KminusI = cos_2_theta1_minus_theta2_derive_wrt<ID>(cosineK, cosineI);
 
-  const auto nablaDisplacementTerm = -5 * (nablaIJ / IJ + nablaJK / JK + nablaKI / KI);
+  const auto nablaDisplacementTerm = -5. * (nablaIJ / IJ + nablaJK / JK + nablaKI / KI);
   const auto cosineTerm =
-      -27 + 220 * cosI * cosJ * cosK + 490 * cos2I * cos2J * cos2K + 175 * (cos2IminusJ + cos2JminusK + cos2KminusI);
-  const auto nablaCosineTerm1 = 220 * (nablaCosI * cosJ * cosK + cosI * nablaCosJ * cosK + cosI * cosJ * nablaCosK);
+      -27. + 220. * cosI * cosJ * cosK + 490. * cos2I * cos2J * cos2K + 175. * (cos2IminusJ + cos2JminusK + cos2KminusI);
+  const auto nablaCosineTerm1 = 220. * (nablaCosI * cosJ * cosK + cosI * nablaCosJ * cosK + cosI * cosJ * nablaCosK);
   const auto nablaCosineTerm2 =
-      490 * (nablaCos2I * cos2J * cos2K + cos2I * nablaCos2J * cos2K + cos2I * cos2J * nablaCos2K);
-  const auto nablaCosineTerm3 = 175 * (nablaCos2IminusJ + nablaCos2JminusK + nablaCos2KminusI);
+      490. * (nablaCos2I * cos2J * cos2K + cos2I * nablaCos2J * cos2K + cos2I * cos2J * nablaCos2K);
+  const auto nablaCosineTerm3 = 175. * (nablaCos2IminusJ + nablaCos2JminusK + nablaCos2KminusI);
 
   return 15. / 128 / (Math::pow<5>(IJ) + Math::pow<5>(JK) + Math::pow<5>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm1 + nablaCosineTerm2 + nablaCosineTerm3);
@@ -441,10 +441,10 @@ template <size_t ID>
   const auto nablaCos4K = cos_4theta_derive_wrt<ID>(cosineK);
   const auto nablaCosIminusJ = cos_theta1_minus_theta2_derive_wrt<ID>(cosineI, cosineJ);
 
-  const auto nablaDisplacementTerm = -3 * nablaIJ / IJ - 5 * nablaJK / JK - 5 * nablaKI / KI;
-  const auto cosineTerm = 9 + 8 * cos2K - 49 * cos4K + 6 * cosIminusJ * (9 * cosK + 7 * cos3K);
-  const auto nablaCosineTerm = 8 * nablaCos2K - 49 * nablaCos4K + 6 * nablaCosIminusJ * (9 * cosK + 7 * cos3K) +
-                               6 * cosIminusJ * (9 * nablaCosK + 7 * nablaCos3K);
+  const auto nablaDisplacementTerm = -3. * nablaIJ / IJ - 5. * nablaJK / JK - 5. * nablaKI / KI;
+  const auto cosineTerm = 9. + 8. * cos2K - 49. * cos4K + 6. * cosIminusJ * (9. * cosK + 7. * cos3K);
+  const auto nablaCosineTerm = 8. * nablaCos2K - 49. * nablaCos4K + 6. * nablaCosIminusJ * (9. * cosK + 7. * cos3K) +
+                               6. * cosIminusJ * (9. * nablaCosK + 7. * nablaCos3K);
 
   return 5. / 32 / (Math::pow<3>(IJ) + Math::pow<5>(JK) + Math::pow<5>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
