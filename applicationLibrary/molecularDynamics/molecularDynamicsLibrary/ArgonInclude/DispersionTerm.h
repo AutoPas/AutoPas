@@ -110,4 +110,21 @@ template <size_t ID>
   return F;
 }
 
+[[nodiscard]] double U_dispersive(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
+                                  DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
+                                  DisplacementHandle displacementKI) {
+  const auto U = U_dispersive_abc<1, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 1, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 2, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<2, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 2, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<2, 1, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<2, 2, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<2, 2, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 1, 3>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 3, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<3, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI);
+  return U;
+}
+
 }  // namespace autopas::utils::ArrayMath::Argon
