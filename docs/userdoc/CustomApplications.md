@@ -60,7 +60,7 @@ A demonstration of this is the [sph example](https://github.com/AutoPas/AutoPas/
 There exist some caveats that have to be considered when using multiple functors of the same interaction type (e.g. all pairwise):
 * All functors need to support the same Newton3 options.
   If there is one functor not supporting Newton3, you have to disable Newton3 support for AutoPas by calling
-  ```cpp
+  ```c++
   autopas.setAllowedNewton3Options({false});
   ```
   Otherwise, the algorithm selection might choose a configuration with Newton3 and fail to apply the functor that does not support it.

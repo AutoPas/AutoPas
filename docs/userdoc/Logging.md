@@ -10,12 +10,12 @@ It supports all spdlog-levels, which are also accessible via the type alias `aut
 These levels can be (de)activated at compile time via the `CMake` variable `AUTOPAS_MIN_LOG_LVL`.
 At run time, this logger's compiled levels can be set, e.g., via:
 
-```cpp
+```c++
 autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
 ```
 
 To conveniently use this logger, a macro is provided that takes the log level in all caps, a message string which will be formatted by [fmt](https://github.com/fmtlib/fmt) followed by any number of arguments:
-```cpp
+```c++
 AutoPasLog(INFO, "Message with two arguments: {} {}", arg0, arg1);
 ```
 
