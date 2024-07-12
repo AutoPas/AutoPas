@@ -22,9 +22,9 @@ static bool contains(const std::string &s, const std::string &sub) { return s.fi
 /**
  * List of valid scheduling kind abbreviations.
  */
-static const std::array<std::string, 36> validNameAbbreviations{
+static const std::array<std::string, 37> validNameAbbreviations{
     // clang-format off
-    "dyn",  "SS",   "guid", "GSS",  "run", "sta", "STATIC", "rand", "exh",   "bin",   "exp",
+    "auto", "dyn",  "SS",   "guid", "GSS",  "run", "sta", "STATIC", "rand", "exh",   "bin",   "exp",
 #ifdef AUTOPAS_USE_LB4OMP
     "prof", "fsc",  "FSC",  "tap",  "TAP", "fac", "FAC",    "bold", "BOLD",  "wf",    "WF",  "tfss", "TFSS",
     "fiss", "FISS", "viss", "VISS", "rnd", "RND", "trap",   "TSS",  "steal", "Steal", "af",  "AF"
@@ -343,7 +343,7 @@ class OpenMPKindOption : public Option<OpenMPKindOption> {
       return OpenMPKindOption::omp_guided;
     else if (contains(name, "run"))
       return OpenMPKindOption::omp_runtime;
-    else if (contains(name, "sta") || contains(name, "STATIC"))
+    else if ((contains(name, "sta") || contains(name, "STATIC")) && !contains(name, "teal"))
       return OpenMPKindOption::omp_static;
     else if (contains(name, "rand"))
       return OpenMPKindOption::auto4omp_randomsel;
