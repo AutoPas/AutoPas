@@ -50,6 +50,8 @@ class TraversalTest
     CountFunctor(floatType cutoff)
         : autopas::PairwiseFunctor<Particle, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
 
+    std::string getName() override { return "TraversalTestCountFunctor"; }
+
     bool isRelevantForTuning() override { return true; }
 
     bool allowsNewton3() override { return true; }

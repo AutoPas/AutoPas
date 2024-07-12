@@ -158,13 +158,13 @@ class Functor {
    * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
-  virtual std::string getName() { return "Functor"; }
+  virtual std::string getName() = 0;
 
   /**
    * Getter for the functor's cutoff
    * @return
    */
-  double getCutoff() const { return _cutoff; }
+  [[nodiscard]] double getCutoff() const { return _cutoff; }
 
  private:
   /**

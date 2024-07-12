@@ -44,6 +44,8 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Par
     };
   }
 
+  std::string getName() override { return "CollectParticlePairsFunctor"; }
+
   bool isRelevantForTuning() override { return false; }
 
   bool allowsNewton3() override { return true; }
@@ -77,6 +79,8 @@ class CollectParticlesPerThreadFunctor
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&i);
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&j);
   }
+
+  std::string getName() override { return "CollectParticlesPerThreadFunctor"; }
 
   bool isRelevantForTuning() override { return false; }
 

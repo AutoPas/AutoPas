@@ -43,6 +43,8 @@ class VLCAllCellsGeneratorFunctor
         _cellsPerDim(cellsPerDim),
         _newListAllocationSize(newListAllocationSize) {}
 
+  std::string getName() override { return "VLCAllCellsGeneratorFunctor"; }
+
   bool isRelevantForTuning() override { return false; }
 
   bool allowsNewton3() override {

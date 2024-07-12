@@ -38,6 +38,8 @@ class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPair
         _globalToLocalIndex(globalToLocalIndex),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
+  std::string getName() override { return "VLCCellPairGeneratorFunctor"; }
+
   bool isRelevantForTuning() override { return false; }
 
   bool allowsNewton3() override {

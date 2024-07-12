@@ -43,6 +43,8 @@ The critical elements to implement are:
   Indicator functions that return a `std::array` of all `AttributeNames`, which the functor needs to load from the particle to perform the calculation, as well as which fields are written.
 - `isRelevantForTuning()`:
   Indicator function to tell the tuning mechanism if iterations using this functor should be considered or not.
+- `getName()`:
+  This function should return the name of the functor as a `std::string`.
 
 As an example for a pairwise functor see [`SPHCalcDensityFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary/SPHCalcDensityFunctor.h).
 As an example for a triwise functor see [`AxilrodTellerFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/molecularDynamics/molecularDynamicsLibrary/AxilrodTellerFunctor.h).

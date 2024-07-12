@@ -66,6 +66,11 @@ class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle, EmptyPair
   bool allowsNonNewton3() override { return true; }
 
   /**
+   * @copydoc autopas::Functor::getName()
+   */
+  std::string getName() override { return "EmptyPairwiseFunctor"; }
+
+  /**
    * @copydoc autopas::Functor::isRelevantForTuning()
    */
   bool isRelevantForTuning() override { return true; }

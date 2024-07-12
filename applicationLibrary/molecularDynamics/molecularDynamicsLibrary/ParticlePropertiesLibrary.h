@@ -230,9 +230,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  auto getLJMixingData(intType i, intType j) const {
-    return _computedLJMixingData[i * _numRegisteredSiteTypes + j];
-  }
+  auto getLJMixingData(intType i, intType j) const { return _computedLJMixingData[i * _numRegisteredSiteTypes + j]; }
 
   /**
    * Get a pointer to Mixing Data for one pair of LJ site types.
