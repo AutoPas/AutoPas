@@ -44,11 +44,11 @@ autopas::FLOPLogger::~FLOPLogger() {
 #endif
 }
 
-void autopas::FLOPLogger::logIteration(size_t iteration, int numFLOPs, double hitRate) {
+void autopas::FLOPLogger::logIteration(size_t iteration, size_t numFLOPs, double hitRate) {
 #ifdef AUTOPAS_LOG_FLOPS
-  // Convert negative numbers to empty strings to represent no implementation
-  const auto numFLOPsStr = numFLOPs >= 0 ? std::to_string(numFLOPs) : "Not Implemented";
-  const auto hitRateStr = hitRate >= 0 ? std::to_string(hitRate) : "Not Implemented";
+  // Convert numeric_limits<size_t>::max and numeric_limits<double>::quiet_NaN to empty strings to represent no implementation
+  const auto numFLOPsStr = numFLOPs != std::numeric_limits<size_t>::max() ? std::to_string(numFLOPs) : "Not Implemented";
+  const auto hitRateStr = not std::isnan(hitRate) ? std::to_string(hitRate) : "Not Implemented";
   spdlog::get(_loggerName)->info("{},{},{}", iteration, numFLOPsStr, hitRateStr);
 #endif
 }

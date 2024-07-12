@@ -41,14 +41,14 @@ class FLOPLogger {
   ~FLOPLogger();
 
   /**
-   * Log the given arguments and the internal buffer to the csv file. If a value is negative, it is interpreted that
+   * Log the given arguments and the internal buffer to the csv file. If a value is not valid, it is interpreted that
    * the functor has not implemented the relevant function.
    *
    * @param iteration
-   * @param numFLOPs number of FLOPs
-   * @param hitRate percentage of distance calculations that result in force contributions.
+   * @param numFLOPs number of FLOPs. std::numeric_limits<size_t>::max() is interpreted as invalid.
+   * @param hitRate percentage of distance calculations that result in force contributions. std::numeric_limits<double>::quiet_NaN() is interpreted as invalid.
    */
-  void logIteration(size_t iteration, int numFLOPs, double hitRate);
+  void logIteration(size_t iteration, size_t numFLOPs, double hitRate);
 
  private:
   std::string _loggerName;
