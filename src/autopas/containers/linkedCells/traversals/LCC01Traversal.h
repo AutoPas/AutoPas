@@ -190,7 +190,7 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, Functor, (combineS
    * @param appendCell
    */
   template <std::size_t... I>
-  inline constexpr void appendNeeded(ParticleCell &cell, ParticleCell &appendCell, std::index_sequence<I...>) {
+  constexpr void appendNeeded(ParticleCell &cell, ParticleCell &appendCell, std::index_sequence<I...>) {
     cell._particleSoABuffer.template append<std::get<I>(Functor::getNeededAttr(std::false_type()))...>(
         appendCell._particleSoABuffer);
   }

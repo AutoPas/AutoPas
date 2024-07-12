@@ -220,7 +220,7 @@ class ParticlePropertiesLibrary {
    * @param  j Id of site two.
    * @return 24*epsilon_ij
    */
-  inline floatType getMixing24Epsilon(intType i, intType j) const {
+  floatType getMixing24Epsilon(intType i, intType j) const {
     return _computedLJMixingData[i * _numRegisteredSiteTypes + j].epsilon24;
   }
 
@@ -230,7 +230,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  inline auto getLJMixingData(intType i, intType j) const {
+  auto getLJMixingData(intType i, intType j) const {
     return _computedLJMixingData[i * _numRegisteredSiteTypes + j];
   }
 
@@ -240,7 +240,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return
    */
-  inline const double *getLJMixingDataPtr(intType i, intType j) {
+  const double *getLJMixingDataPtr(intType i, intType j) {
     return reinterpret_cast<const double *>(&_computedLJMixingData[i * _numRegisteredSiteTypes + j]);
   }
 
@@ -250,7 +250,7 @@ class ParticlePropertiesLibrary {
    * @param j Id of site two.
    * @return sigma_ij²
    */
-  inline floatType getMixingSigmaSquared(intType i, intType j) const {
+  floatType getMixingSigmaSquared(intType i, intType j) const {
     return _computedLJMixingData[i * _numRegisteredSiteTypes + j].sigmaSquared;
   }
 
@@ -260,7 +260,7 @@ class ParticlePropertiesLibrary {
    * @param j siteId of site two.
    * @return shift * 6
    */
-  inline floatType getMixingShift6(intType i, intType j) const {
+  floatType getMixingShift6(intType i, intType j) const {
     return _computedLJMixingData[i * _numRegisteredSiteTypes + j].shift6;
   }
 
@@ -281,7 +281,7 @@ class ParticlePropertiesLibrary {
    * @param  k Id of site three.
    * @return nu_ijk
    */
-  inline floatType getMixingNu(intType i, intType j, intType k) const {
+  floatType getMixingNu(intType i, intType j, intType k) const {
     return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
                                  k]
         .nu;
@@ -294,7 +294,7 @@ class ParticlePropertiesLibrary {
    * @param k Id of site three.
    * @return
    */
-  inline auto getATMixingData(intType i, intType j, intType k) const {
+  auto getATMixingData(intType i, intType j, intType k) const {
     return _computedATMixingData[i * _numRegisteredSiteTypes * _numRegisteredSiteTypes + j * _numRegisteredSiteTypes +
                                  k];
   }
