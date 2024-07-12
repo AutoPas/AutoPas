@@ -227,8 +227,8 @@ class Functor {
   /**
    * Get the number of FLOPs. Implementation required if FLOPLogger used.
    *
-   * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max() output as invalid and
-   * leaves a blank space in the log.
+   * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()
+   * output as invalid and leaves a blank space in the log.
    * @return number of FLOPs
    */
   [[nodiscard]] virtual size_t getNumFLOPs() const { return std::numeric_limits<size_t>::max(); }

@@ -46,7 +46,8 @@ class FLOPLogger {
    *
    * @param iteration
    * @param numFLOPs number of FLOPs. std::numeric_limits<size_t>::max() is interpreted as invalid.
-   * @param hitRate percentage of distance calculations that result in force contributions. std::numeric_limits<double>::quiet_NaN() is interpreted as invalid.
+   * @param hitRate percentage of distance calculations that result in force contributions.
+   * std::numeric_limits<double>::quiet_NaN() is interpreted as invalid.
    */
   void logIteration(size_t iteration, size_t numFLOPs, double hitRate);
 
