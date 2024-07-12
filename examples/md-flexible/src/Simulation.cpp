@@ -194,7 +194,7 @@ void Simulation::run() {
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0) {
-      updatePositions();
+      updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -249,7 +249,7 @@ void Simulation::run() {
       _timers.computationalLoad.start();
     }
 
-    updateForces();
+    updateInteractionForces();
 
     if (_configuration.deltaT.value != 0) {
       updateVelocities();
@@ -381,7 +381,7 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
   return ss.str();
 }
 
-void Simulation::updatePositions() {
+void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
@@ -397,7 +397,7 @@ void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.stop();
 }
 
-void Simulation::updateForces() {
+void Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.start();
 
   _timers.forceUpdatePairwise.start();
@@ -418,12 +418,6 @@ void Simulation::updateForces() {
     }
   }
   _previousIterationWasTuningIteration = isTuningIteration;
-
-  _timers.forceUpdateGlobal.start();
-  if (not _configuration.globalForceIsZero()) {
-    calculateGlobalForces(_configuration.globalForce.value);
-  }
-  _timers.forceUpdateGlobal.stop();
 
   _timers.forceUpdateTotal.stop();
 }
@@ -506,7 +500,6 @@ void Simulation::logMeasurements() {
   const long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
   const long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   const long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
-  const long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
   const long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
   const long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
   const long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
@@ -543,8 +536,6 @@ void Simulation::logMeasurements() {
                                haloParticleExchange + reflectParticlesAtBoundaries + migratingParticleExchange);
     std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotal, maximumNumberOfDigits, simulate);
     std::cout << timerToString("      Tuning                      ", forceUpdateTuning, maximumNumberOfDigits,
-                               forceUpdateTotal);
-    std::cout << timerToString("      ForceUpdateGlobalForces     ", forceUpdateGlobalForces, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
