@@ -30,8 +30,6 @@ if (AUTOPAS_ENABLE_COVERAGE)
     target_compile_options(runTests PRIVATE --coverage)
   endif()
 
-  #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_COVERAGE} ${CMAKE_CXX_FLAGS_DEBUG}")
-
   # add coverage target
   add_custom_target(
     coverage
