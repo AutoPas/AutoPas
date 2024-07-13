@@ -89,7 +89,7 @@ The following commands can be used to create a coverage report in the form of HT
 
 ```bash
 cd $BUILD_DIR
-cmake cmake -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_BUILD_TESTS=ON -DAUTOPAS_ENABLE_COVERAGE=ON ..
+cmake -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_BUILD_TESTS=ON -DAUTOPAS_ENABLE_COVERAGE=ON ..
 make coverage
 ```
 
