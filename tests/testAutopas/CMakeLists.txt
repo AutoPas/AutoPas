@@ -15,8 +15,7 @@ if(AUTOPAS_ENABLE_COVERAGE)
   # add coverage target
   add_custom_target(
     coverage
-    DEPENDS lcov
-    COMMAND ${LCOV_EXECUTABLE} --ignore-errors mismatch --rc lcov_branch_coverage=1 --directory . --capture --exclude */tests/* --exclude */build/* --exclude '/usr/*' --output-file coverage.info
+    COMMAND ${LCOV_EXECUTABLE} --ignore-errors mismatch --rc branch_coverage=1 --directory . --capture --exclude */tests/* --exclude */build/* --exclude '/usr/*' --output-file coverage.info
     COMMAND ${GENHTML_EXECUTABLE} --branch-coverage --demangle-cpp -o coverage coverage.info
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
