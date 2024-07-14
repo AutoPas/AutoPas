@@ -201,6 +201,18 @@ namespace mdLib {
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         return reversed ? (long)i >= 1 : (i < stop - 1);
                     }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : Implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : Implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : Implement
+                        return false;
+                    }
                     else {
                         return false;
                     }
@@ -213,14 +225,38 @@ namespace mdLib {
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         i -= 2;
                     }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : Implement
+                    }
+                    else {
+
+                    }
                 }
 
                 inline void incrementFirstLoop(unsigned int &i) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         ++i;
                     }
-                    else {
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         i += 2;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : Implement
+                    }
+                    else {
+
                     }
                 }
 
@@ -236,6 +272,18 @@ namespace mdLib {
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         return j < (i & ~(_vecLengthDouble/2 - 1));
                     }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : Implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : Implement
+                        return false;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : Implement
+                        return false;
+                    }
                     else {
                         return false;
                     }
@@ -248,6 +296,15 @@ namespace mdLib {
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         j += _vecLengthDouble/2;
                     }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : Implement
+                    }
                     else {
 
                     }
@@ -259,6 +316,18 @@ namespace mdLib {
                     }
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         return (int)(i & (_vecLengthDouble/2 - 1));
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                        return -1;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                        return -1;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
+                        return -1;
                     }
                     else {
                         return -1;
@@ -306,6 +375,15 @@ namespace mdLib {
                         x1 = highway::ConcatLowerLower(tag_double, tmpX1, x1);
                         y1 = highway::ConcatLowerLower(tag_double, tmpY1, y1);
                         z1 = highway::ConcatLowerLower(tag_double, tmpZ1, z1);
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : implement
                     }
 
                     ownedMaskI = highway::Ne(ownedStateIDouble, _zeroDouble);
@@ -365,6 +443,15 @@ namespace mdLib {
                         highway::BlendedStore(newFy, mask, tag_double, &fy2Ptr[j]);
                         highway::BlendedStore(newFz, mask, tag_double, &fz2Ptr[j]);
                     }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : Implement
+                    }
                 }
 
                 template <bool reversed, bool remainder>
@@ -404,6 +491,15 @@ namespace mdLib {
                             fzPtr[index] += highway::ReduceSum(tag_double, upperFzAccExt);
                         }
                     }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : Implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+                        // TODO : Implement
+                    }
                 }
 
                 template <bool newton3>
@@ -427,6 +523,48 @@ namespace mdLib {
                     _aosThreadData[threadnum].virialSum[1] += globals[1] * factor;
                     _aosThreadData[threadnum].virialSum[2] += globals[2] * factor;
                     _aosThreadData[threadnum].uPotSum += globals[3] * factor;
+                }
+
+                template <bool reversed, bool newton3, bool remainderI>
+                inline void handleILoopBody(const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
+                        const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
+                        const double *const __restrict xPtr2, const double *const __restrict yPtr2,
+                        const double *const __restrict zPtr2, const autopas::OwnershipState *const __restrict ownedStatePtr2,
+                        double *const __restrict fxPtr1, double *const __restrict fyPtr1, double *const __restrict fzPtr1,
+                        double *const __restrict fxPtr2, double *const __restrict fyPtr2, double *const __restrict fzPtr2,
+                        const size_t * const __restrict typeIDptr1, const size_t * const __restrict typeIDptr2,
+                        VectorDouble& virialSumX, VectorDouble& virialSumY, VectorDouble& virialSumZ, VectorDouble& uPotSum,
+                        const size_t restI, const size_t jStop) {
+
+                        VectorDouble fxAcc = _zeroDouble;
+                        VectorDouble fyAcc = _zeroDouble;
+                        VectorDouble fzAcc = _zeroDouble;
+
+                        MaskDouble ownedMaskI;
+
+                        VectorDouble x1 = _zeroDouble;
+                        VectorDouble y1 = _zeroDouble;
+                        VectorDouble z1 = _zeroDouble;
+
+                        fillIRegisters<remainderI, reversed>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI, restI);
+
+                        unsigned int j = 0;
+                        for (; checkSecondLoopCondition(jStop, j); incrementSecondLoop(j)) {
+
+                            SoAKernel<newton3, remainderI, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], typeIDptr2,
+                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
+                        }
+
+                        const int restJ = obtainSecondLoopRest(jStop);
+                        if (restJ > 0) {
+                        
+                            SoAKernel<newton3, remainderI, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], typeIDptr2,
+                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
+                        }
+
+                        reduceAccumulatedForce<reversed, remainderI>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
                 }
 
                 template <bool newton3>
@@ -455,39 +593,11 @@ namespace mdLib {
 
                     size_t i = soa.size() - 1;
                     for (; checkFirstLoopCondition<true>(i, 0); decrementFirstLoop(i)) {
-                        // TODO : goal : no code duplication from non-rest and rest case
                         static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                             "OwnershipStates underlying type should be int64_t!");
 
-                        VectorDouble fxAcc = _zeroDouble;
-                        VectorDouble fyAcc = _zeroDouble;
-                        VectorDouble fzAcc = _zeroDouble;
-
-                        MaskDouble ownedMaskI;
-
-                        VectorDouble x1;
-                        VectorDouble y1;
-                        VectorDouble z1;
-
-                        fillIRegisters<false, true>(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedMaskI, 0);
-
-                        unsigned int j = 0;
-                        for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
-
-                            SoAKernel<true, false, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
-                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0);
-                        }
-
-                        const int restJ = obtainSecondLoopRest(i);
-                        if (restJ > 0) {
-                        
-                            SoAKernel<true, false, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
-                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0, restJ);
-                        }
-
-                        reduceAccumulatedForce<true, false>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, 0);
+                        handleILoopBody<true, true, false>(i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr,
+                            fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr, typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
                     }
 
                     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
@@ -495,35 +605,8 @@ namespace mdLib {
                         const int restI = obtainFirstLoopRest<true>(i, -1);
                         
                         if (restI > 0) {
-                            VectorDouble fxAcc = _zeroDouble;
-                            VectorDouble fyAcc = _zeroDouble;
-                            VectorDouble fzAcc = _zeroDouble;
-
-                            MaskDouble ownedMaskI;
-
-                            VectorDouble x1;
-                            VectorDouble y1;
-                            VectorDouble z1;
-
-                            fillIRegisters<true, true>(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedMaskI, restI);
-
-                            unsigned int j = 0;
-                            for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
-
-                                SoAKernel<true, true, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                    x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
-                                    fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
-                            }
-
-                            const int restJ = obtainSecondLoopRest(i);
-                            if (restJ > 0) {
-                            
-                                SoAKernel<true, true, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr),
-                                    x1, y1, z1, xPtr, yPtr, zPtr, fxPtr, fyPtr, fzPtr, &typeIDptr[i], typeIDptr,
-                                    fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
-                            }
-
-                            reduceAccumulatedForce<true, true>(i, fxPtr, fyPtr, fzPtr, fxAcc, fyAcc, fzAcc, restI);
+                            handleILoopBody<true, true, true>(i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr,
+                                fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr, typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, i);
                         }
                     }
 
@@ -566,69 +649,16 @@ namespace mdLib {
 
                     unsigned int i = 0;
                     for (; checkFirstLoopCondition<false>(i, soa1.size()); incrementFirstLoop(i)) {
-                        // TODO : goal : no code duplication from non-rest and rest case
-                        VectorDouble fxAcc = _zeroDouble;
-                        VectorDouble fyAcc = _zeroDouble;
-                        VectorDouble fzAcc = _zeroDouble;
-
-                        MaskDouble ownedMaskI;
-                        VectorDouble x1;
-                        VectorDouble y1;
-                        VectorDouble z1;
-
-                        fillIRegisters<false, false>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x1, y1, z1, ownedMaskI, 0);
-
-                        unsigned int j = 0;
-
-                        for (; checkSecondLoopCondition(soa2.size(), j); incrementSecondLoop(j)) {
-
-                            SoAKernel<newton3, false, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
-                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0, 0);
-                        }
-
-                        const int restJ = obtainSecondLoopRest(soa2.size());
-                        if (restJ > 0) {
-                            SoAKernel<newton3, false, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
-                                fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, 0, restJ);
-                        }
-
-                        reduceAccumulatedForce<false, false>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, 0);
+                        handleILoopBody<false, newton3, false>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2,
+                            fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, soa2.size());
                     }
 
                     if constexpr (vecPattern != VectorizationPattern::p1xVec) {
                         // Rest I can't occur in 1xVec case
                         const int restI = obtainFirstLoopRest<false>(i, soa1.size());
                         if (restI > 0) {
-                            VectorDouble fxAcc = _zeroDouble;
-                            VectorDouble fyAcc = _zeroDouble;
-                            VectorDouble fzAcc = _zeroDouble;
-
-                            MaskDouble ownedMaskI;
-                            VectorDouble x1 = _zeroDouble;
-                            VectorDouble y1 = _zeroDouble;
-                            VectorDouble z1 = _zeroDouble;
-
-                            fillIRegisters<true, false>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x1, y1, z1, ownedMaskI, restI);
-
-                            unsigned int j = 0;
-
-                            for (; checkSecondLoopCondition(soa2.size(), j); incrementSecondLoop(j)) {
-
-                                SoAKernel<newton3, true, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                    x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
-                                    fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
-                            }
-
-                            const int restJ = obtainSecondLoopRest(soa2.size());
-                            if (restJ > 0) {
-                                SoAKernel<newton3, true, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
-                                    x1, y1, z1, x2Ptr, y2Ptr, z2Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr,
-                                    fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
-                            }
-
-                            reduceAccumulatedForce<false, true>(i, fx1Ptr, fy1Ptr, fz1Ptr, fxAcc, fyAcc, fzAcc, restI);
+                            handleILoopBody<false, newton3, true>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2,
+                                fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, soa2.size());
                         }
                     }
 
