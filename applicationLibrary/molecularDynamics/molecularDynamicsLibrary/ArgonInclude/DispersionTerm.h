@@ -79,7 +79,8 @@ template <size_t a, size_t b, size_t c>
 
   const auto W = AngularTerm<a, b, c>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
 
-  return D1 * D2 * D3 * W * Z_abc;
+  const auto U = D1 * D2 * D3 * W * Z_abc;
+  return U;
 }
 
 /**
