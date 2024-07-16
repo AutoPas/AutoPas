@@ -50,7 +50,7 @@ constexpr bool includeCase(const C08CellDirection &direction, const std::array<i
   }
 }
 
-C08CellOffsetVector computeCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
+std::vector<int> computeCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
                                           const std::array<int, 3> &overlap) {
   using utils::ArrayMath::prod, utils::ArrayMath::addScalar;
   using utils::ArrayUtils::static_cast_copy_array;
@@ -87,26 +87,35 @@ std::array<double, 3> computeSortingDirection(const std::array<int, 3> &cellsPer
   return utils::ArrayMath::normalize(sortDir);
 }
 
-C08CellOffsetPairVector computePairwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
-                                                      const std::array<double, 3> &cellLength,
-                                                      double interactionLength) {
+template <bool WithSorting, bool XResolved>
+OffsetPairType<WithSorting, XResolved> computePairwiseCellOffsetsC08(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    double interactionLength) {
   using namespace autopas::utils::ArrayMath::literals;
   using utils::ArrayMath::ceilToInt;
   using utils::ArrayUtils::static_cast_copy_array;
   using utils::ThreeDimensionalMapping::threeToOneD;
+
+  static_assert(!(WithSorting && XResolved), "Both WithSorting and XResolved cannot be true at the same time!");
+
   // Output of the function: Vector of pairwise cell indices & projection axis
-  C08CellOffsetPairVector resultOffsetsC08{};
+  OffsetPairType<WithSorting, XResolved> resultOffsetsC08{};
 
   // The overlap with interacting cells (see autopas::CBasedTraversal constructor)
   const std::array<int, 3> overlap{ceilToInt(interactionLength / cellLength)};
   // The offsets to the cells in 1D coordinates (in case overlap = [1, 1, 1] ==> cellOffsets contains 2x2x2 = 8 values)
-  const C08CellOffsetVector cellOffsets = computeCellOffsetsC08(cellsPerDimension, overlap);
+  const std::vector<int> cellOffsets = computeCellOffsetsC08(cellsPerDimension, overlap);
   const std::array<int, 3> &cellsPerDimIntegral = static_cast_copy_array<int>(cellsPerDimension);
 
   // Small constants used multiple times in the code below
   // Note, Legacy: With ov1 --> No support for assymetric overlaps!
   const int ov1 = overlap[0] + 1;
   const double interactionLengthSquare{interactionLength * interactionLength};
+
+  // Due to 2D output, we need to first resize the outer vector to the x dimension
+  if constexpr (XResolved) {
+    resultOffsetsC08.resize(ov1);
+  }
 
   // Iteration to build the cell pairs required for the C08 base step, x, y, z reprent the spatial dimension
   for (int x = 0; x <= overlap[0]; ++x) {
@@ -138,10 +147,16 @@ C08CellOffsetPairVector computePairwiseCellOffsetsC08(const std::array<unsigned 
             // 2. Exclusion Criteria to skip computations by not including certain cell-combinations
             //      if the distance between cell centers is actually in interactionLength
             if (distSquare <= interactionLengthSquare) {
-              // Calculate the sorting direction
-              const auto sortDir = computeSortingDirection(cellsPerDimIntegral, distVec1, offset2);
-              // In case of a return value, add the cell paris + their sorting direction
-              resultOffsetsC08.emplace_back(offset2, offset1, sortDir);
+              // Calculate the sorting direction if sorting is enabled
+              if constexpr (WithSorting) {
+                const auto sortDir = computeSortingDirection(cellsPerDimIntegral, distVec1, offset2);
+                // In case of a return value, add the cell paris + their sorting direction
+                resultOffsetsC08.emplace_back(offset2, offset1, sortDir);
+              } else if constexpr (XResolved) {
+                resultOffsetsC08[x].emplace_back(offset2, offset1);
+              } else {
+                resultOffsetsC08.emplace_back(offset2, offset1);
+              }
             }
           }
         }
@@ -150,5 +165,18 @@ C08CellOffsetPairVector computePairwiseCellOffsetsC08(const std::array<unsigned 
   }
   return resultOffsetsC08;
 }
+
+template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<true, false>(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    double interactionLength);
+
+
+template std::vector<OffsetPair> computePairwiseCellOffsetsC08<false, false>(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    double interactionLength);
+
+template std::vector<OffsetPairVector> computePairwiseCellOffsetsC08<false, true>(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    double interactionLength);
 
 }  // namespace autopas::internal

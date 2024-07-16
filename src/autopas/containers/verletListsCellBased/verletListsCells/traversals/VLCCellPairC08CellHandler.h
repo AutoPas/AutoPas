@@ -28,7 +28,7 @@ class VLCCellPairC08CellHandler {
    */
   VLCCellPairC08CellHandler(const std::array<unsigned long, 3> &dims, double interactionLength,
                             const std::array<double, 3> &cellLength)
-      : _cellPairOffsets{internal::computePairwiseCellOffsetsC08(dims, cellLength, interactionLength)} {}
+      : _cellPairOffsets{internal::computePairwiseCellOffsetsC08<false>(dims, cellLength, interactionLength)} {}
 
   /**
    * Executes a c08 base step for the cell at cellIndex.
@@ -48,7 +48,7 @@ class VLCCellPairC08CellHandler {
     const auto &globalToLocalIndex = neighborList.getGlobalToLocalMap();
 
     // for all interaction pairs defined via the c08 base step
-    for (const auto &[offsetA, offsetB, dirVec] : this->_cellPairOffsets) {
+    for (const auto &[offsetA, offsetB] : this->_cellPairOffsets) {
       // the lists are built with a c18 traversal
       // the interaction will always be saved in the smaller cell's neighbor list
       // std::minmax(a, b) returns references. Hence, we can't use temporaries as arguments.
@@ -117,6 +117,6 @@ class VLCCellPairC08CellHandler {
 
  private:
   /** Member containng the cell pair offsets for processCellListsC08 */
-  internal::C08CellOffsetPairVector _cellPairOffsets;
+  std::vector<internal::OffsetPair> _cellPairOffsets;
 };
 }  // namespace autopas
