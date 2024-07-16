@@ -68,7 +68,7 @@ template <size_t ID>
   const auto AB = L2Norm(displacementAB.getDisplacement());
   const auto exp = std::exp(-beta * AB);
   const auto series = McLaurianSeriesDerivativeTerm(0, n, AB, beta);
-  const auto nablaAB = displacementAB.derive_wrt(ID);
+  const auto nablaAB = displacementAB.derive_wrt<ID>();
   return nablaAB * exp * series;
 }
 

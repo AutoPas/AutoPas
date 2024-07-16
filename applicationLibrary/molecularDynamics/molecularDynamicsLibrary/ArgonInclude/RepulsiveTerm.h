@@ -45,9 +45,9 @@ template <size_t a, size_t b, size_t c, size_t ID>
 
   const auto multiplyingFactor{-A_abc * std::exp(-alpha_abc * (IJ + JK + KI))};
 
-  const auto nablaIJ = displacementIJ.derive_wrt(ID);
-  const auto nablaJK = displacementJK.derive_wrt(ID);
-  const auto nablaKI = displacementKI.derive_wrt(ID);
+  const auto nablaIJ = displacementIJ.derive_wrt<ID>();
+  const auto nablaJK = displacementJK.derive_wrt<ID>();
+  const auto nablaKI = displacementKI.derive_wrt<ID>();
 
   const auto firstTerm{ (nablaIJ + nablaJK + nablaJK) * (-alpha_abc) * Permutation(a, b, c, cosineI, cosineJ, cosineK)};
 
