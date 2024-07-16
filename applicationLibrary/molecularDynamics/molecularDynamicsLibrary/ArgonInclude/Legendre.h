@@ -107,8 +107,8 @@ template <size_t ID>
  */
 [[nodiscard]] double Permutation(const size_t A, const size_t B, const size_t C, const CosineHandle &cosI,
                                  const CosineHandle &cosJ, const CosineHandle &cosK) {
-  return Q(A, B, C, cosI, cosJ, cosK) + Q(A, C, B, cosI, cosJ, cosK) + Q(B, A, C, cosI, cosJ, cosK) +
-         Q(B, C, A, cosI, cosJ, cosK) + Q(C, A, B, cosI, cosJ, cosK) + Q(C, B, A, cosI, cosJ, cosK);
+  return Q(A, B, C, cosI, cosJ, cosK) + Q(A, B, C, cosI, cosK, cosJ) + Q(A, B, C, cosJ, cosI, cosK) +
+         Q(A, B, C, cosJ, cosK, cosI) + Q(A, B, C, cosK, cosI, cosJ) + Q(A, B, C, cosK, cosJ, cosI);
 }
 
 /**
