@@ -228,7 +228,7 @@ class Functor {
    * Get the number of FLOPs. Implementation required if FLOPLogger used.
    *
    * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()
-   * output as invalid and leaves a blank space in the log.
+   * output as invalid and leaves "Not Implemented" the log.
    * @return number of FLOPs
    */
   [[nodiscard]] virtual size_t getNumFLOPs() const { return std::numeric_limits<size_t>::max(); }
@@ -237,7 +237,7 @@ class Functor {
    * Get the hit rate. Implementation required if FLOPLogger used.
    *
    * If derived class provides no implementation, the FLOPLogger interprets the default NaN output as invalid and
-   * leaves a blank space in the log.
+   * leaves "Not Implemented" in the log.
    *
    * @return (number of kernel calls) / (number of distance calculations)
    */
