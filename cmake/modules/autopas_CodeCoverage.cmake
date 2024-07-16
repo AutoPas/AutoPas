@@ -8,6 +8,7 @@ option(AUTOPAS_ENABLE_COVERAGE ${COVERAGE_REQUIREMENTS_MSG} OFF)
 
 if (AUTOPAS_ENABLE_COVERAGE)
 
+  # search for required tools (lcov >= 2.1 is required)
   find_program(GCOV_EXECUTABLE gcov)
   find_program(LCOV_EXECUTABLE lcov)
   find_program(GENHTML_EXECUTABLE genhtml)
@@ -17,15 +18,20 @@ if (AUTOPAS_ENABLE_COVERAGE)
   endif ()
 
   message(STATUS ${LCOV_ENABLED_MSG})
+  
+  # Debug mode has to be enabled for creating coverage reports
   if (NOT AUTOPAS_BUILD_TESTS OR NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(WARNING ${DISABLE_COVERAGE_MSG})
+    message(FATAL_ERROR ${DISABLE_COVERAGE_MSG})
     set(AUTOPAS_ENABLE_COVERAGE OFF CACHE BOOL ${COVERAGE_REQUIREMENTS_MSG} FORCE)
   endif()
+
+  # GCOV comes with GCC and only works with GCC as compiler
   if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message(FATAL_ERROR ${NON_GNU_COMPILER_ERROR_MSG})
     set(AUTOPAS_ENABLE_COVERAGE OFF CACHE BOOL ${COVERAGE_REQUIREMENTS_MSG} FORCE)
   endif()
 
+  # set the coverage flag for the test executable
   if(TARGET runTests)
     target_compile_options(runTests PRIVATE --coverage)
   endif()
@@ -33,9 +39,14 @@ if (AUTOPAS_ENABLE_COVERAGE)
   # add coverage target
   add_custom_target(
     coverage
+    # test have to be built before
     DEPENDS runTests
+    # first run the tests
     COMMAND ${CMAKE_BINARY_DIR}/tests/testAutopas/runTests
+    # enable branch coverage and exclude the tests itself, the build folder and /usr from coverage reporting. 
+    # If we do not use --ignore-errors mismatch the coverage report aborts, since there seem to be some inconsistent entries.
     COMMAND ${LCOV_EXECUTABLE} --ignore-errors mismatch --rc branch_coverage=1 --directory . --capture --exclude */tests/* --exclude */build/* --exclude '/usr/*' --output-file coverage.info
+    # create the HTML output
     COMMAND ${GENHTML_EXECUTABLE} --branch-coverage --demangle-cpp -o coverage coverage.info
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
