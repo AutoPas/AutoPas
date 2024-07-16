@@ -1,5 +1,5 @@
 /**
- * @file LCCellHandler.h
+ * @file LCC08CellHandlerUtility.h
  * @author J. Schuhmacher
  * @date 11.07.2024
  */

@@ -1,5 +1,5 @@
 /**
- * @file LCCellHandler.cpp
+ * @file LCC08CellHandlerUtility.cpp
  * @author J. Schuhmacher
  * @date 11.07.2024
  */
@@ -165,6 +165,12 @@ OffsetPairType<WithSorting, XResolved> computePairwiseCellOffsetsC08(
   }
   return resultOffsetsC08;
 }
+
+/*
+ * Explicit Template Instantation - Required since definition not in header file
+ * The combination <true, true> is invalid (hence, not instantiated), but also
+ * failproof due the static_assert inside computePairwiseCellOffsetsC08(..)
+ */
 
 template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<true, false>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
