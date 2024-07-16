@@ -45,15 +45,14 @@ template <size_t a, size_t b, size_t c, size_t ID>
 
   const auto multiplyingFactor{-A_abc * std::exp(-alpha_abc * (IJ + JK + KI))};
 
-  const auto nablaIJ = displacementIJ.derive_wrt<ID>();
-  const auto nablaJK = displacementJK.derive_wrt<ID>();
-  const auto nablaKI = displacementKI.derive_wrt<ID>();
-
-  const auto firstTerm{ (nablaIJ + nablaJK + nablaJK) * (-alpha_abc) * Permutation(a, b, c, cosineI, cosineJ, cosineK)};
+  const auto firstTerm{
+      -alpha_abc *
+      (displacementIJ.derive_wrt<ID>() + displacementJK.derive_wrt<ID>() + displacementKI.derive_wrt<ID>()) *
+      Permutation(a, b, c, cosineI, cosineJ, cosineK)};
 
   const auto secondTerm{Permutation_deriv_wrt<ID>(a, b, c, cosineI, cosineJ, cosineK)};
 
-  return (firstTerm + secondTerm) * multiplyingFactor;
+  return multiplyingFactor * (firstTerm + secondTerm);
 }
 
 template <size_t a, size_t b, size_t c>
