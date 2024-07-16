@@ -13,8 +13,11 @@ namespace autopas::utils::ArrayMath::Argon {
 namespace {
 
 [[nodiscard]] size_t factorial(const size_t &n) {
-  if (n == 0 || n == 1) return 1;
-  return n * factorial(n - 1);
+  if (n == 0 || n == 1) {
+    return 1;
+  }
+  auto fact = n * factorial(n - 1);
+  return fact;
 }
 
 template <typename T>
