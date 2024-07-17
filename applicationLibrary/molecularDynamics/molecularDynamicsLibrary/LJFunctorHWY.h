@@ -24,7 +24,7 @@ namespace mdLib {
     // architecture specific information
     const highway::ScalableTag<double> tag_double;
     const highway::ScalableTag<int64_t> tag_long;
-    const long _vecLengthDouble {highway::Lanes(tag_double)};
+    const size_t _vecLengthDouble {highway::Lanes(tag_double)};
     using VectorDouble = decltype(highway::Zero(tag_double));
     using VectorLong = decltype(highway::Zero(tag_long));
 
@@ -57,9 +57,9 @@ namespace mdLib {
                         _aosThreadData.resize(autopas::autopas_get_max_threads());
                     }
 
-                    initializeRestMasks();
+                    initializeMasks();
 
-                    std::cout << hwy::TargetName(HWY_TARGET) << std::endl; // AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
+                    // std::cout << hwy::TargetName(HWY_TARGET) << std::endl; // AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
                 }
 
         public:
@@ -185,11 +185,19 @@ namespace mdLib {
 
             private:
 
-                inline void initializeRestMasks() {
+                inline void initializeMasks() {
 
                     for (size_t n = 0; n <_vecLengthDouble-1;++n) {
                         restMasksDouble[n] = highway::FirstN(tag_double, n+1);
                         restMasksLong[n] = highway::FirstN(tag_long, n+1);
+                    }
+
+                    HWY_ALIGN std::array<double, _vecLengthDouble> overlap {0.};
+                    for (size_t n = 0; n < _vecLengthDouble/2; ++n) {
+                        overlap.at(_vecLengthDouble-1-n) = -1.;
+                        const VectorDouble overlapVec = highway::Load(tag_double, overlap.data());
+                        overlap.at(_vecLengthDouble-1-n) = 0.;
+                        overlapMasks[n] = highway::Eq(overlapVec, _zeroDouble);
                     }
                 }
 
@@ -525,6 +533,34 @@ namespace mdLib {
                     _aosThreadData[threadnum].uPotSum += globals[3] * factor;
                 }
 
+                inline void prepareOverlap(const size_t i, const unsigned int j, MaskDouble& ownedMaskI) {
+                    if constexpr (vecPattern == VectorizationPattern::p1xVec) {
+                        return;
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
+                        const int overlap = i-j-_vecLengthDouble/2-1;
+
+                        if (overlap >= 0) {
+                            return;
+                        }
+                        auto test = highway::VecFromMask(ownedMaskI);
+                        const int maskIndex = (overlap*-1)-1;
+                        const auto mask = overlapMasks[maskIndex];
+                        auto test1 = highway::VecFromMask(mask);
+                        ownedMaskI = highway::And(ownedMaskI, mask);
+                        auto test2 = highway::VecFromMask(ownedMaskI);
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
+
+                    }
+                }
+
                 template <bool reversed, bool newton3, bool remainderI>
                 inline void handleILoopBody(const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
                         const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
@@ -551,6 +587,10 @@ namespace mdLib {
                         unsigned int j = 0;
                         for (; checkSecondLoopCondition(jStop, j); incrementSecondLoop(j)) {
 
+                            if constexpr (reversed) {
+                                prepareOverlap(i, j, ownedMaskI);
+                            }
+
                             SoAKernel<newton3, remainderI, false>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], typeIDptr2,
                                 fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
@@ -558,6 +598,10 @@ namespace mdLib {
 
                         const int restJ = obtainSecondLoopRest(jStop);
                         if (restJ > 0) {
+
+                            if constexpr (reversed) {
+                                prepareOverlap(i, j, ownedMaskI);
+                            }
                         
                             SoAKernel<newton3, remainderI, true>(j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], typeIDptr2,
@@ -786,9 +830,8 @@ namespace mdLib {
                     const auto dr2 = drX2 + drY2 + drZ2;
 
                     const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
-                    const auto zeroMask = highway::Ne(dr2, _zeroDouble);
                     const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
-                    const auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
+                    const auto cutoffDummyMask = highway::And(cutoffMask, dummyMask);
 
                     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
                         return;
@@ -893,14 +936,22 @@ namespace mdLib {
                         const VectorDouble ownedStateI = highway::Set(tag_double, static_cast<double>(ownedI));
                         const MaskDouble ownedMaskI = highway::Ne(ownedStateI, _zeroDouble);
 
-                        alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
-                        alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
-                        alignas(64) std::array<double, _vecLengthDouble> z2Tmp{};
-                        alignas(64) std::array<double, _vecLengthDouble> fx2Tmp{};
-                        alignas(64) std::array<double, _vecLengthDouble> fy2Tmp{};
-                        alignas(64) std::array<double, _vecLengthDouble> fz2Tmp{};
-                        alignas(64) std::array<size_t, _vecLengthDouble> typeID2Tmp{};
-                        alignas(64) std::array<autopas::OwnershipState, _vecLengthDouble> ownedStates2Tmp{};
+                        HWY_ALIGN double x2Tmp[_vecLengthDouble];
+                        HWY_ALIGN double y2Tmp[_vecLengthDouble];
+                        HWY_ALIGN double z2Tmp[_vecLengthDouble];
+                        HWY_ALIGN double fx2Tmp[_vecLengthDouble];
+                        HWY_ALIGN double fy2Tmp[_vecLengthDouble];
+                        HWY_ALIGN double fz2Tmp[_vecLengthDouble];
+                        HWY_ALIGN size_t typeID2Tmp[_vecLengthDouble];
+                        HWY_ALIGN autopas::OwnershipState ownedStates2Tmp[_vecLengthDouble];
+                        //alignas(64) std::array<double, _vecLengthDouble> x2Tmp{};
+                        //alignas(64) std::array<double, _vecLengthDouble> y2Tmp{};
+                        //alignas(64) std::array<double, _vecLengthDouble> z2Tmp{};
+                        //alignas(64) std::array<double, _vecLengthDouble> fx2Tmp{};
+                        //alignas(64) std::array<double, _vecLengthDouble> fy2Tmp{};
+                        //alignas(64) std::array<double, _vecLengthDouble> fz2Tmp{};
+                        //alignas(64) std::array<size_t, _vecLengthDouble> typeID2Tmp{};
+                        //alignas(64) std::array<autopas::OwnershipState, _vecLengthDouble> ownedStates2Tmp{};
 
                         size_t j = 0;
 
@@ -920,9 +971,9 @@ namespace mdLib {
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
 
-                            SoAKernel<newton3, false, false>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
-                                x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
-                                &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+                            SoAKernel<newton3, false, false>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1,
+                                x2Tmp, y2Tmp, z2Tmp, fx2Tmp, fy2Tmp, fz2Tmp,
+                                &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX,
                                 virialSumY, virialSumZ, uPotSum, 0, 0);
 
                             if constexpr (newton3) {
@@ -951,9 +1002,9 @@ namespace mdLib {
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
 
-                            SoAKernel<newton3, false, true>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
-                                x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
-                                &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
+                            SoAKernel<newton3, false, true>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1,
+                                x2Tmp, y2Tmp, z2Tmp, fx2Tmp, fy2Tmp, fz2Tmp,
+                                &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX,
                                 virialSumY, virialSumZ, uPotSum, 0, rest);
 
                             if constexpr (newton3) {
@@ -1166,6 +1217,7 @@ namespace mdLib {
 
                 MaskDouble restMasksDouble[_vecLengthDouble-1];
                 MaskLong restMasksLong[_vecLengthDouble-1];
+                MaskDouble overlapMasks[_vecLengthDouble-1];
 
                 const double _cutoffSquareAoS {0.};
                 double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0.;
