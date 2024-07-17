@@ -72,7 +72,7 @@ template <size_t a, size_t b, size_t c>
 
   const auto permutationTerm = Permutation(a, b, c, cosineI, cosineJ, cosineK);
 
-  return A_abc * std::exp(- alpha_abc * (IJ + JK + KI)) * permutationTerm;
+  return A_abc * std::exp(-alpha_abc * (IJ + JK + KI)) * permutationTerm;
 }
 
 /**
