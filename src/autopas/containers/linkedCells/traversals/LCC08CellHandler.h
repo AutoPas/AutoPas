@@ -49,8 +49,8 @@ class LCC08CellHandler {
         _overlap(overlap),
         _dataLayout(dataLayout),
         _useNewton3(useNewton3),
-        _cellPairOffsets{
-            internal::computePairwiseCellOffsetsC08<true>(cellsPerDimension, cellLength, interactionLength)} {}
+        _cellPairOffsets{internal::computePairwiseCellOffsetsC08<internal::C08OffsetMode::C08_CELL_PAIRS_SORTING>(
+            cellsPerDimension, cellLength, interactionLength)} {}
 
   /**
    * Computes one interaction for each spacial direction based on the lower left

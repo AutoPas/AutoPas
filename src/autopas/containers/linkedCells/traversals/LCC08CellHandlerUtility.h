@@ -42,13 +42,24 @@ using OffsetPair = std::pair<unsigned long, unsigned long>;
  */
 using OffsetPairVector = std::vector<OffsetPair>;
 
+/** Compile Time Modes for the function {@link computePairwiseCellOffsetsC08} */
+enum class C08OffsetMode {
+  /** Returns the C08 base step cell pairs without sorting */
+  C08_CELL_PAIRS = 0,
+  /** Returns the C08 base step cell pairs with sorting (for SortedView projection) */
+  C08_CELL_PAIRS_SORTING = 1,
+  /** Returns the C08 base step cell pairs adapted to C04, i.e. two-dimensiona resolved on X-axis */
+  C04_CELL_PAIRS = 2,
+};
+
 /**
  * Template Magic Parameter Alias which links the types {@link OffsetPairSorting}, {@link OffsetPair} and {@link
  * OffsetPairVector}
  */
-template <bool WithSorting = true, bool XResolved = false>
+template <C08OffsetMode Mode>
 using OffsetPairType = std::vector<
-    std::conditional_t<WithSorting, OffsetPairSorting, std::conditional_t<XResolved, OffsetPairVector, OffsetPair>>>;
+    std::conditional_t<Mode == C08OffsetMode::C08_CELL_PAIRS_SORTING, OffsetPairSorting,
+                       std::conditional_t<Mode == C08OffsetMode::C04_CELL_PAIRS, OffsetPairVector, OffsetPair>>>;
 
 /**
  * Represents the interaction directions between cell pairs in the C08 base step
@@ -78,7 +89,7 @@ constexpr inline std::array<C08CellDirection, 4> ALL_DIRECTIONS{
  * @param z the z index of the spatial dimension
  * @return offset of cell2
  */
-constexpr int calculateOffset2(int overlap1, const C08CellDirection &direction, int z);
+constexpr int calculateCell2Index(int overlap1, const C08CellDirection &direction, int z);
 
 /**
  * Calculates the multipliers (zero or one) for a given direction.
@@ -86,7 +97,7 @@ constexpr int calculateOffset2(int overlap1, const C08CellDirection &direction, 
  * @param direction one of the four directions
  * @return pair of multipliers: first one for x dimension, second one for y dimension
  */
-constexpr std::pair<int, int> toDirectionMultiplier(const C08CellDirection &direction);
+constexpr std::pair<int, int> toDistVectorMultiplier(const C08CellDirection &direction);
 
 /**
  * Returns true if the cell-interaction in the given direction, with the given base cell coordinates and overlap
@@ -98,7 +109,8 @@ constexpr std::pair<int, int> toDirectionMultiplier(const C08CellDirection &dire
  * @param z the z offset of the base cell
  * @return true if the pair needs to be included
  */
-constexpr bool includeCase(const C08CellDirection &direction, const std::array<int, 3> &overlap, int x, int y, int z);
+constexpr bool includeC08Case(const C08CellDirection &direction, const std::array<int, 3> &overlap, int x, int y,
+                              int z);
 
 /**
  * Computes the sorting direction between two cells from center of cell1 to center of cell2.
@@ -122,9 +134,7 @@ std::vector<int> computeCellOffsetsC08(const std::array<unsigned long, 3> &cells
 /**
  * Computes the cell pair offsets for the C08 base step and the normalized vector between pair of cell-centers,
  * which is later used for early stopping the evaluation of the pairwise cell interactions due to being out-of-reach.
- * @tparam WithSorting add a sorting return value (vector between cell centers), default: true
- * @tparam XResolved return a vector of vectors pre-sorted on axis, default: false,
- *                cannot be true when WithSorting is true
+ * @tparam Mode Determines the concret return type (see {@link C08OffsetMode}
  * @param cellsPerDimension the number of cells per dimension
  * @param cellLength the length of a cell in CellBlock3D.
  * @param interactionLength the interaction length consisting of cutoff + skin
@@ -133,9 +143,8 @@ std::vector<int> computeCellOffsetsC08(const std::array<unsigned long, 3> &cells
  *  - vector containg cell offsets + sorting/ vector between cell centers triplets
  *  - vector of vector containing cell offsets (pre-sorted after X dimension)
  */
-template <bool WithSorting = true, bool XResolved = false>
-OffsetPairType<WithSorting, XResolved> computePairwiseCellOffsetsC08(
-    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
-    double interactionLength);
+template <C08OffsetMode Mode>
+OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
+                                                   const std::array<double, 3> &cellLength, double interactionLength);
 
 }  // namespace autopas::internal
