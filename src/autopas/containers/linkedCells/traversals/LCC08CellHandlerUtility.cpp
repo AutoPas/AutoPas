@@ -170,7 +170,7 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
  * failproof due the static_assert inside computePairwiseCellOffsetsC08(..)
  */
 
-/** Template Sepcialization to return C08 cell paris with sorting (i.e. triplets) */
+//! @cond Doxygen_Suppress
 template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<C08OffsetMode::C08_CELL_PAIRS_SORTING>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
@@ -184,5 +184,6 @@ template std::vector<OffsetPair> computePairwiseCellOffsetsC08<C08OffsetMode::C0
 template std::vector<OffsetPairVector> computePairwiseCellOffsetsC08<C08OffsetMode::C04_CELL_PAIRS>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
+//! @endcond
 
 }  // namespace autopas::internal

@@ -42,7 +42,7 @@ using OffsetPair = std::pair<unsigned long, unsigned long>;
  */
 using OffsetPairVector = std::vector<OffsetPair>;
 
-/** Compile Time Modes for the function {@link computePairwiseCellOffsetsC08} */
+/** Compile Time Modes for the function {@link autopas::internal::computePairwiseCellOffsetsC08} */
 enum class C08OffsetMode {
   /** Returns the C08 base step cell pairs without sorting */
   C08_CELL_PAIRS = 0,
