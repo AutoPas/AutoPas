@@ -85,7 +85,7 @@ Explanation:
 | `gdb --args`        | Launches the debugger. Everything that follows is treated as arguments to `gdb`.                                                                                                                                                   |
 
 ## Creating Coverage Reports
-The following commands can be used to create a coverage report in the form of HTML output. Please note that this is only supported with GCC, and debugging mode must be enabled to create coverage reports.
+The following commands can be used to create a coverage report in the form of HTML output. Please note that this is only supported with GCC, and debugging mode must be enabled to create coverage reports. Furthermore, LCOV version >= 2.0 must be installed.
 
 ```bash
 cd $BUILD_DIR

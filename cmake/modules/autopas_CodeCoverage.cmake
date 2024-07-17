@@ -17,6 +17,19 @@ if (AUTOPAS_ENABLE_COVERAGE)
     message(FATAL_ERROR ${COVERAGE_REQUIREMENTS_MSG})
   endif ()
 
+  # check for lcov >= 2.0
+  # Execute 'lcov --version' and capture the output
+  execute_process(
+      COMMAND ${LCOV_EXECUTABLE} --version
+      OUTPUT_VARIABLE LCOV_VERSION_OUTPUT
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  
+  # Check if the output contains "v2." indicating version 2 or higher
+  if(NOT LCOV_VERSION_OUTPUT MATCHES "([2-9]|[1-9][0-9]+)")
+    message(FATAL_ERROR "lcov version 2.0 or higher is required. Found version: ${LCOV_VERSION_OUTPUT}")
+  endif()
+
   message(STATUS ${LCOV_ENABLED_MSG})
   
   # Debug mode has to be enabled for creating coverage reports
