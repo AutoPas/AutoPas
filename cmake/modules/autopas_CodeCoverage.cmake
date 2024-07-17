@@ -1,5 +1,6 @@
 set(LCOV_ENABLED_MSG "LCOV Coverage report enabled")
 set(LCOV_DISABLED_MSG "LCOV Coverage report disabled")
+set(LCOV_REQUIRED_VERSION_MSG "Disabling code coverage. LCOV version 2.0 or higher is required.")
 set(DISABLE_COVERAGE_MSG "Disabling code coverage. CMAKE_BUILD_TYPE=Debug and AUTOPAS_BUILD_TESTS=ON required.")
 set(COVERAGE_REQUIREMENTS_MSG "Enable code coverage, requires GCC and CMAKE_BUILD_TYPE=Debug.")
 set(NON_GNU_COMPILER_ERROR_MSG "For code coverage ensure that GCOV, LCOV and GENHTML is installed. Disabling code coverage.")
@@ -26,8 +27,8 @@ if (AUTOPAS_ENABLE_COVERAGE)
   )
   
   # Check if the output contains "v2." indicating version 2 or higher
-  if(NOT LCOV_VERSION_OUTPUT MATCHES "([2-9]|[1-9][0-9]+)")
-    message(FATAL_ERROR "lcov version 2.0 or higher is required. Found version: ${LCOV_VERSION_OUTPUT}")
+  if(NOT LCOV_VERSION_OUTPUT MATCHES "LCOV version ([2-9]|[1-9][0-9]+)\\.([0-9]+)")
+    message(FATAL_ERROR ${LCOV_REQUIRED_VERSION_MSG})
   endif()
 
   message(STATUS ${LCOV_ENABLED_MSG})
