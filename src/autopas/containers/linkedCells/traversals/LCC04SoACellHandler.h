@@ -71,7 +71,6 @@ class LCC04SoACellHandler {
   void resizeBuffers();
 
  private:
-
   /**
    * Interaction Length (cutoff + skin).
    */
@@ -330,7 +329,6 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::writeBufferIntoC
 template <class ParticleCell, class PairwiseFunctor>
 inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
     const std::array<unsigned long, 3> &cellsPerDimension) {
-
   _baseOffsets.resize(_overlap[0] + 1);
   for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
     for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
@@ -338,8 +336,8 @@ inline void LCC04SoACellHandler<ParticleCell, PairwiseFunctor>::setupIntervals(
     }
   }
 
-  std::vector<internal::OffsetPairVector> cellPairOffsets =
-    internal::computePairwiseCellOffsetsC08<false, true>(cellsPerDimension, this->_cellLength, this->_interactionLength);
+  std::vector<internal::OffsetPairVector> cellPairOffsets = internal::computePairwiseCellOffsetsC08<false, true>(
+      cellsPerDimension, this->_cellLength, this->_interactionLength);
 
   // Create intervals
   const unsigned long numStripes = cellPairOffsets.size();

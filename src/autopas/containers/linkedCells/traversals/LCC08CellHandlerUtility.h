@@ -7,9 +7,9 @@
 #pragma once
 
 #include <array>
-#include <utility>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "autopas/utils/ArrayMath.h"
@@ -43,10 +43,12 @@ using OffsetPair = std::pair<unsigned long, unsigned long>;
 using OffsetPairVector = std::vector<OffsetPair>;
 
 /**
- * Template Magic Parameter Alias which links the types {@link OffsetPairSorting}, {@link OffsetPair} and {@link OffsetPairVector}
+ * Template Magic Parameter Alias which links the types {@link OffsetPairSorting}, {@link OffsetPair} and {@link
+ * OffsetPairVector}
  */
 template <bool WithSorting = true, bool XResolved = false>
-using OffsetPairType = std::vector<std::conditional_t<WithSorting, OffsetPairSorting, std::conditional_t<XResolved, OffsetPairVector, OffsetPair>>>;
+using OffsetPairType = std::vector<
+    std::conditional_t<WithSorting, OffsetPairSorting, std::conditional_t<XResolved, OffsetPairVector, OffsetPair>>>;
 
 /**
  * Represents the interaction directions between cell pairs in the C08 base step
@@ -115,7 +117,7 @@ std::array<double, 3> computeSortingDirection(const std::array<int, 3> &cellsPer
  * @return a vector of unsigned long values representing the computed cell offsets in 1D coordinates
  */
 std::vector<int> computeCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
-                                          const std::array<int, 3> &overlap);
+                                       const std::array<int, 3> &overlap);
 
 /**
  * Computes the cell pair offsets for the C08 base step and the normalized vector between pair of cell-centers,
@@ -132,8 +134,8 @@ std::vector<int> computeCellOffsetsC08(const std::array<unsigned long, 3> &cells
  *  - vector of vector containing cell offsets (pre-sorted after X dimension)
  */
 template <bool WithSorting = true, bool XResolved = false>
-OffsetPairType<WithSorting, XResolved>
-computePairwiseCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
-                              const std::array<double, 3> &cellLength, double interactionLength);
+OffsetPairType<WithSorting, XResolved> computePairwiseCellOffsetsC08(
+    const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
+    double interactionLength);
 
 }  // namespace autopas::internal

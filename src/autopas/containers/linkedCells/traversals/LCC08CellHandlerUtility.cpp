@@ -51,7 +51,7 @@ constexpr bool includeCase(const C08CellDirection &direction, const std::array<i
 }
 
 std::vector<int> computeCellOffsetsC08(const std::array<unsigned long, 3> &cellsPerDimension,
-                                          const std::array<int, 3> &overlap) {
+                                       const std::array<int, 3> &overlap) {
   using utils::ArrayMath::prod, utils::ArrayMath::addScalar;
   using utils::ArrayUtils::static_cast_copy_array;
   using utils::ThreeDimensionalMapping::threeToOneD;
@@ -175,7 +175,6 @@ OffsetPairType<WithSorting, XResolved> computePairwiseCellOffsetsC08(
 template std::vector<OffsetPairSorting> computePairwiseCellOffsetsC08<true, false>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
     double interactionLength);
-
 
 template std::vector<OffsetPair> computePairwiseCellOffsetsC08<false, false>(
     const std::array<unsigned long, 3> &cellsPerDimension, const std::array<double, 3> &cellLength,
