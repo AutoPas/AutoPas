@@ -720,14 +720,15 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
    * - accumulate force on mol i: 3
    * - accumulate force on mol j if n3: 3
    * - Total: 15 without n3, 18 with n3
+   * - If mixing is used, an extra 2 FLOPs are calculated for the mixing parameters
    *
    * For the globals calculation, this is:
    * - virial: 3
-   * - potential: 1, or 2 with shift
+   * - potential: 1, or 2 with shift and no mixing, or 8 with shift and mixing (assume division is 1 FLOP)
    * - accumulation: 4
    * - multiplications by 0.5 and second accumulations are not treated as useful FLOPs, as these are just workarounds
    *   to avoid accumulating globals on owned/halo borders twice
-   * - Total: 8, or 9 with shift
+   * - Total: 8, or 9 with shift and no mixing, or 15 with shift and mixing
    *
    * Caveats:
    *
@@ -756,9 +757,9 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
                           [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
 
       constexpr size_t numFLOPsPerDistanceCall = 8;
-      constexpr size_t numFLOPsPerN3KernelCall = 18;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 15;
-      constexpr size_t numFLOPsPerGlobalCalc = applyShift ? 9 : 8;
+      constexpr size_t numFLOPsPerN3KernelCall = useMixing ? 20 : 18;
+      constexpr size_t numFLOPsPerNoN3KernelCall = useMixing ? 17 : 15;
+      constexpr size_t numFLOPsPerGlobalCalc = applyShift ? (useMixing ? 9 : 15) : 8;
 
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
              numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsAcc * numFLOPsPerGlobalCalc;
