@@ -284,7 +284,7 @@ void AutoTuner::bumpIterationCounters() {
 }
 
 bool AutoTuner::willRebuildNeighborLists() const {
-  const bool inTuningPhase = _iterationsSinceTuning >= _tuningInterval;
+  const bool inTuningPhase = this->inTuningPhase();
   // How many iterations ago did the rhythm of rebuilds change?
   const auto iterationBaseline = inTuningPhase ? (_iterationsSinceTuning - _tuningInterval) : _iterationsSinceTuning;
   // What is the rebuild rhythm?
@@ -293,29 +293,8 @@ bool AutoTuner::willRebuildNeighborLists() const {
 }
 
 bool AutoTuner::initEnergy() {
-  // Check if energy measurement is possible.
-  std::string errMsg(_raplMeter.init());
-  if (errMsg.empty()) {
-    try {
-      _raplMeter.reset();
-      _raplMeter.sample();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      if (_tuningMetric == TuningMetricOption::energy) {
-        utils::ExceptionHandler::exception(e);
-      } else {
-        AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", e.what());
-        return false;
-      }
-    }
-  } else {
-    if (_tuningMetric == TuningMetricOption::energy) {
-      utils::ExceptionHandler::exception(errMsg);
-    } else {
-      AutoPasLog(WARN, "Energy Measurement not possible:\n\t{}", errMsg);
-      return false;
-    }
-  }
-  return true;
+  // Try to initialize the raplMeter
+  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy);
 }
 
 bool AutoTuner::resetEnergy() {
@@ -435,4 +414,6 @@ bool AutoTuner::inTuningPhase() const {
 }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
+
+bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
 }  // namespace autopas

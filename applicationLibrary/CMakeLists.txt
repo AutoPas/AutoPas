@@ -80,7 +80,7 @@ if (AUTOPAS_BUILD_TESTS)
             "${TEST_EXE_UNIQUE_PATH}/*.h"
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
-            "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
+            "molecularDynamics/tests/templateInstantiations/AutoPasInstantiations.cpp"
     )
     if (MD_FLEXIBLE_MODE_lower MATCHES "singlesite")
         list(FILTER MY_SRC EXCLUDE REGEX ".*particlePropertiesLibraryTests.*")

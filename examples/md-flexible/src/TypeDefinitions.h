@@ -71,9 +71,6 @@ constexpr bool countFLOPs =
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false,
                                                        mdFlexibleTypeDefs::countFLOPs>;
-#ifdef AUTOPAS_LOG_FLOPS
-#warning "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJMultisiteFunctor)!"
-#endif
 #else
 using LJFunctorTypeAutovec =
     mdLib::LJFunctor<true, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
@@ -90,9 +87,6 @@ using LJFunctorTypeAutovec =
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
                                                               true, mdFlexibleTypeDefs::countFLOPs>;
-#ifdef AUTOPAS_LOG_FLOPS
-#warning "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJMultisiteFunctor)!"
-#endif
 #else
 using LJFunctorTypeAutovecGlobals =
     mdLib::LJFunctor<true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
@@ -112,9 +106,6 @@ using LJFunctorTypeAutovecGlobals =
 #else
 using LJFunctorTypeAVX =
     mdLib::LJFunctorAVX<true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
-#ifdef AUTOPAS_LOG_FLOPS
-#warning "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJFunctorAVX)!"
-#endif
 #endif
 
 #endif
@@ -131,9 +122,6 @@ using LJFunctorTypeAVX =
 #else
 using LJFunctorTypeSVE =
     mdLib::LJFunctorSVE<true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
-#ifdef AUTOPAS_LOG_FLOPS
-#warning "AUTOPAS_LOG_FLOPS enabled but is not suported for compiled functor (LJFunctorSVE)!"
-#endif
 #endif
 
 #endif

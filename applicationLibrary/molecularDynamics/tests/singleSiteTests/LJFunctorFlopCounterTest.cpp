@@ -7,14 +7,23 @@
 #include "LJFunctorFlopCounterTest.h"
 
 #include "autopas/AutoPasDecl.h"
+#include "autopas/AutoPasImpl.h"
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/WrapOpenMP.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
+// AutoPas is instantiated in AutoPasInstantiations.cpp
+// but iteratePairwise() versions with countFLOPs == true not,
+// so they have to be explicitly instantiated here.
 extern template class autopas::AutoPas<Molecule>;
-extern template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor</* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false, /*countFLOPs*/ true, /*relevantForTuning*/ true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    mdLib::LJFunctor<false, false, autopas::FunctorN3Modes::Both, false, /*countFLOPs*/ true, true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    mdLib::LJFunctor<false, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true, true> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(
+    mdLib::LJFunctor<true, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true, true> *);
+
 /**
  * Generates a square of four particles, iterates over it with the LJFunctor and checks the values of getNumFLOPs() and
  * getHitRate()
@@ -148,13 +157,11 @@ void LJFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
-  AUTOPAS_OPENMP(parallel) {
-    AUTOPAS_OPENMP(sections) {
-      AUTOPAS_OPENMP(section)
-      ljFunctor.AoSFunctor(p1, p2, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.AoSFunctor(p3, p4, newton3);
-    }
+  AUTOPAS_OPENMP(parallel sections) {
+    AUTOPAS_OPENMP(section)
+    ljFunctor.AoSFunctor(p1, p2, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.AoSFunctor(p3, p4, newton3);
   }
 }
 
@@ -201,27 +208,23 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP(bool newton3) 
   // parallel. If interactions are dangerous, archer will complain.
 
   // first functors on one soa
-  AUTOPAS_OPENMP(parallel) {
-    AUTOPAS_OPENMP(sections) {
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
-    }
+  AUTOPAS_OPENMP(parallel sections) {
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorSingle(cell1._particleSoABuffer, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorSingle(cell2._particleSoABuffer, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorSingle(cell3._particleSoABuffer, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorSingle(cell4._particleSoABuffer, newton3);
   }
 
   // functors on two soas
-  AUTOPAS_OPENMP(parallel) {
-    AUTOPAS_OPENMP(sections) {
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
-      AUTOPAS_OPENMP(section)
-      ljFunctor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
-    }
+  AUTOPAS_OPENMP(parallel sections) {
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, newton3);
+    AUTOPAS_OPENMP(section)
+    ljFunctor.SoAFunctorPair(cell3._particleSoABuffer, cell4._particleSoABuffer, newton3);
   }
 }
 

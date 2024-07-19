@@ -29,8 +29,8 @@ namespace mdLib {
  * If set to false, _epsilon and _sigma need to be set.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
- * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate
+ * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
@@ -66,7 +66,6 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
-        _aosThreadDataGlobals(),
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
       _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
@@ -93,7 +92,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
       return;
     }
 
-    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     if constexpr (countFLOPs) {
       ++_aosThreadDataFLOPs[threadnum].numDistCalls;
@@ -178,7 +177,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
 
-    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     const auto *const __restrict xptr = soa.template begin<molecule::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<molecule::AttributeNames::posY>();
@@ -255,7 +254,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
 
         const SoAFloatPrecision epsilon24 = useMixing ? sqrtEpsilon24I * sqrtEpsilonPtr[j] : const_epsilon24;
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+        const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -272,23 +271,23 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
 
         if constexpr (countFLOPs) {
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
-          numKernelCallsN3Sum += mask ? 1 : 0;
+          numKernelCallsN3Sum += mask;
         }
 
         if (calculateGlobals) {
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
+          SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6);
 
-          SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6) : 0.;
           if constexpr (applyShift) {
             if constexpr (useMixing) {
               const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquared;
               const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
               const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
-              potentialEnergy6 += mask ? shift6 : 0.;
+              potentialEnergy6 += mask * shift6;
             } else {
-              potentialEnergy6 += mask ? const_shift6 : 0.;
+              potentialEnergy6 += mask * const_shift6;
             }
 
           }
@@ -304,7 +303,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
           virialSumZ += virialz * energyFactor;
 
           if constexpr (countFLOPs) {
-            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask ? 1 : 0;
+            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask;
           }
         }
       }
@@ -362,7 +361,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
-    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     const auto *const __restrict x1ptr = soa1.template begin<molecule::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<molecule::AttributeNames::posY>();
@@ -449,7 +448,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
         const SoAFloatPrecision sqrtEpsilonSoA2 = useMixing ? sqrtEpsilonPtr2[j] : 0.;
         const SoAFloatPrecision epsilon24 = useMixing ? sqrtEpsilon24SoA1 * sqrtEpsilonSoA2 : const_epsilon24;
 
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+        const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -467,9 +466,9 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
         if constexpr (countFLOPs) {
           numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
           if constexpr (newton3) {
-            numKernelCallsN3Sum += mask ? 1 : 0;
+            numKernelCallsN3Sum += mask;
           } else {
-            numKernelCallsNoN3Sum += mask ? 1 : 0;
+            numKernelCallsNoN3Sum += mask;
           }
         }
 
@@ -479,15 +478,15 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
           SoAFloatPrecision virialz = drz * fz;
 
 
-          SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6) : 0.;
+          SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6);
           if constexpr (applyShift) {
             if constexpr (useMixing) {
               const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquared;
               const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
               const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
-              potentialEnergy6 += mask ? shift6 : 0.;
+              potentialEnergy6 += mask * shift6;
             } else {
-              potentialEnergy6 += mask ? const_shift6 : 0.;
+              potentialEnergy6 += mask * const_shift6;
             }
           }
 
@@ -502,7 +501,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
           virialSumZ += virialz * energyFactor;
 
           if constexpr (countFLOPs) {
-            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask ? 1 : 0;
+            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask;
           }
         }
       }
@@ -615,12 +614,14 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
     _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
-    for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
-      if constexpr (calculateGlobals) {
-        _aosThreadDataGlobals[i].setZero();
+    if constexpr (calculateGlobals) {
+      for (auto &data : _aosThreadDataGlobals) {
+        data.setZero();
       }
-      if constexpr (countFLOPs) {
-        _aosThreadDataFLOPs[i].setZero();
+    }
+    if constexpr (countFLOPs) {
+      for (auto &data : _aosThreadDataFLOPs) {
+        data.setZero();
       }
     }
   }
@@ -641,12 +642,11 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
       // Non-newton3 calls are accumulated temporarily and later divided by 2.
       double potentialEnergySumNoN3Acc = 0;
       std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
-      for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
-        potentialEnergySumNoN3Acc += _aosThreadDataGlobals[i].potentialEnergySumNoN3;
-        _potentialEnergySum += _aosThreadDataGlobals[i].potentialEnergySumN3;
-
-        virialSumNoN3Acc += _aosThreadDataGlobals[i].virialSumNoN3;
-        _virialSum += _aosThreadDataGlobals[i].virialSumN3;
+      for (const auto &data : _aosThreadDataGlobals) {
+        potentialEnergySumNoN3Acc += data.potentialEnergySumNoN3;
+        _potentialEnergySum += data.potentialEnergySumN3;
+        virialSumNoN3Acc += data.virialSumNoN3;
+        _virialSum += data.virialSumN3;
       }
       // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
       // here.
@@ -740,24 +740,20 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
    *
    * @return number of FLOPs since initTraversal() is called.
    */
-  size_t getNumFLOPs() {
+  [[nodiscard]] size_t getNumFLOPs() const override {
     if constexpr (countFLOPs) {
-      size_t numDistCallsAcc = 0;
-      size_t numKernelCallsN3Acc = 0;
-      size_t numKernelCallsNoN3Acc = 0;
-      size_t numGlobalCalcsAcc = 0;
-
-      for (int i = 0; i < _aosThreadDataFLOPs.size(); ++i) {
-        numDistCallsAcc += _aosThreadDataFLOPs[i].numDistCalls;
-        numKernelCallsN3Acc += _aosThreadDataFLOPs[i].numKernelCallsN3;
-        numKernelCallsNoN3Acc += _aosThreadDataFLOPs[i].numKernelCallsNoN3;
-        numGlobalCalcsAcc += _aosThreadDataFLOPs[i].numGlobalCalcs;
-      }
-
-      AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
-      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
-      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", numKernelCallsNoN3Acc);
-      AutoPasLog(TRACE, "Number of Global Calculations      = {}", numGlobalCalcsAcc);
+      const size_t numDistCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      const size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      const size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+      const size_t numGlobalCalcsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
 
       constexpr size_t numFLOPsPerDistanceCall = 8;
       constexpr size_t numFLOPsPerN3KernelCall = 18;
@@ -772,22 +768,20 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
     }
   }
 
-  double getHitRate() {
+  [[nodiscard]] double getHitRate() const override {
     if constexpr (countFLOPs) {
-      size_t numDistCallsAcc = 0;
-      size_t numKernelCallsN3Acc = 0;
-      size_t numKernelCallsNoN3Acc = 0;
+      const size_t numDistCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      const size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      const size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
 
-      for (int i = 0; i < _aosThreadDataFLOPs.size(); ++i) {
-        numDistCallsAcc += _aosThreadDataFLOPs[i].numDistCalls;
-        numKernelCallsN3Acc += _aosThreadDataFLOPs[i].numKernelCallsN3;
-        numKernelCallsNoN3Acc += _aosThreadDataFLOPs[i].numKernelCallsNoN3;
-      }
-
-      AutoPasLog(TRACE, "Number of Distance Calls           = {}", numDistCallsAcc);
-      AutoPasLog(TRACE, "Number of Newton3 Kernel Calls     = {}", numKernelCallsN3Acc);
-      AutoPasLog(TRACE, "Number of Non-Newton3 Kernel Calls = {}", numKernelCallsNoN3Acc);
-      return ((double)numKernelCallsNoN3Acc + (double)numKernelCallsN3Acc) / ((double)numDistCallsAcc);
+      return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
+             (static_cast<double>(numDistCallsAcc));
     } else {
       autopas::utils::ExceptionHandler::exception("LJFunctor::getHitRate called without countFLOPs enabled!");
       return 0;
@@ -820,6 +814,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    // Counters for when countFLOPs is activated
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
@@ -837,7 +832,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
       return;
     }
 
-    const int threadnum = calculateGlobals or countFLOPs ? autopas::autopas_get_thread_num() : 0;
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     // this is a magic number, that should correspond to at least
     // vectorization width*N have testet multiple sizes:
@@ -916,7 +911,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
           const SoAFloatPrecision lj12m6 = lj12 - lj6;
 
           const SoAFloatPrecision epsilon24 = useMixing ? sqrtEpsilon24Tmp[j] * sqrtEpsilonArr[j] : const_epsilon24;
-          const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+          const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
           const SoAFloatPrecision fx = drx * fac;
           const SoAFloatPrecision fy = dry * fac;
@@ -934,9 +929,9 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
           if constexpr (countFLOPs) {
             numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
             if constexpr (newton3) {
-              numKernelCallsN3Sum += mask ? 1 : 0;
+              numKernelCallsN3Sum += mask;
             } else {
-              numKernelCallsNoN3Sum += mask ? 1 : 0;
+              numKernelCallsNoN3Sum += mask;
             }
           }
 
@@ -944,15 +939,15 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
             SoAFloatPrecision virialx = drx * fx;
             SoAFloatPrecision virialy = dry * fy;
             SoAFloatPrecision virialz = drz * fz;
-            SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6) : 0.;
+            SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6);
             if constexpr (applyShift) {
               if constexpr (useMixing) {
                 const auto sigmaDivCutoffPow2 = sigmaSquared / _cutoffSquared;
                 const auto sigmaDivCutoffPow6 = sigmaDivCutoffPow2 * sigmaDivCutoffPow2 * sigmaDivCutoffPow2;
                 const auto shift6 = epsilon24 * (sigmaDivCutoffPow6 - sigmaDivCutoffPow6 * sigmaDivCutoffPow6);
-                potentialEnergy6 += mask ? shift6 : 0.;
+                potentialEnergy6 += mask * shift6;
               } else {
-                potentialEnergy6 += mask ? const_shift6 : 0.;
+                potentialEnergy6 += mask * const_shift6;
               }
 
             }
@@ -1141,11 +1136,13 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
   /**
    * This class stores internal data for FLOP counters for each thread. Make sure that this data has proper size, i.e.
    * k*64 Bytes!
+   * The FLOP count and HitRate are not counted/calculated directly, but through helper counters (numKernelCallsNoN3,
+   * numKernelCallsN3, numDistCalls, numGlobalCalcs) to reduce computational cost in the functors themselves and to
+   * improve maintainability (e.g. if the cost of a kernel call changes).
    */
   class AoSThreadDataFLOPs {
    public:
-    AoSThreadDataFLOPs()
-        : numKernelCallsNoN3{0}, numKernelCallsN3{0}, numDistCalls{0}, numGlobalCalcs{0}, __remainingTo64{} {}
+    AoSThreadDataFLOPs() : __remainingTo64{} {}
 
     /**
      * Set all counters to zero.
@@ -1159,22 +1156,19 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
 
     /**
      * Number of calls to Lennard-Jones Kernel with newton3 disabled.
-     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-     * cheaper.
+     * Used for calculating number of FLOPs and hit rate.
      */
     size_t numKernelCallsNoN3 = 0;
 
     /**
      * Number of calls to Lennard-Jones Kernel with newton3 enabled.
-     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-     * cheaper.
+     * Used for calculating number of FLOPs and hit rate.
      */
     size_t numKernelCallsN3 = 0;
 
     /**
      * Number of distance calculations.
-     * Used for calculating number of FLOPs and hit rate. Tracking these metrics together through _numKernelCallsNoN3 is
-     * cheaper.
+     * Used for calculating number of FLOPs and hit rate.
      */
     size_t numDistCalls = 0;
 
@@ -1206,8 +1200,8 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
   std::array<double, 3> _virialSum;
 
   // thread buffer for aos
-  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals;
-  std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs;
+  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals{};
+  std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs{};
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;

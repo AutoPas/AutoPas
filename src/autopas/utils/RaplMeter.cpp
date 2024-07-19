@@ -6,19 +6,21 @@
 
 #include "autopas/utils/RaplMeter.h"
 
+#include <unistd.h>
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
 #include <linux/perf_event.h>
 #include <sys/syscall.h>
-#include <unistd.h>
 
-#include <cmath>
 #include <cstring>
 #include <sstream>
+#endif
 
 #include "autopas/utils/ExceptionHandler.h"
 #include "autopas/utils/logging/Logger.h"
 
 namespace autopas::utils {
 
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
 int RaplMeter::open_perf_event(int type, int config, int cpu) {
   struct perf_event_attr attr;
   memset(&attr, 0, sizeof(attr));
@@ -41,7 +43,29 @@ int RaplMeter::open_perf_event(int type, int config, int cpu) {
   return fd;
 }
 
-std::string RaplMeter::init() {
+long RaplMeter::read_perf_event(int fd) {
+  if (fd == -1) {
+    return 0;
+  }
+  long value;
+  lseek(fd, 0, SEEK_SET);
+  if (read(fd, &value, 8) == -1) {
+    utils::ExceptionHandler::exception("Failed to read perf event:\n\t");
+  }
+  return value;
+}
+#endif
+
+bool RaplMeter::init(const bool mustSucceed) {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+  auto throwIfRequired = [&](const std::string &errMsg) {
+    if (mustSucceed) {
+      utils::ExceptionHandler::exception(errMsg);
+    } else {
+      AutoPasLog(WARN, errMsg);
+    }
+  };
+
   {
     FILE *fd;
     int i = 0;
@@ -55,7 +79,8 @@ std::string RaplMeter::init() {
         break;
       }
       if (fscanf(fd, "%d", &package) == 0) {
-        return "RaplMeter::init(): failed to read cpu topology";
+        throwIfRequired("RaplMeter::init(): failed to read cpu topology");
+        return false;
       }
       fclose(fd);
       if (this->_cpus.size() == 0 or last_package < package) {
@@ -66,13 +91,16 @@ std::string RaplMeter::init() {
       i++;
     } while (fd);
   }
+
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/type", "r")) {
     if (fscanf(fff, "%d", &this->_type) != 1) {
-      return "RaplMeter::init(): Failed to parse /sys/bus/event_source/devices/power/type";
+      throwIfRequired("RaplMeter::init(): Failed to parse /sys/bus/event_source/devices/power/type");
+      return false;
     }
     fclose(fff);
   } else {
-    return "RaplMeter::init(): No support for energy measurements detected.";
+    throwIfRequired("RaplMeter::init(): No support for energy measurements detected.");
+    return false;
   }
 
   this->_psys_config = 0;
@@ -151,13 +179,29 @@ std::string RaplMeter::init() {
   int fd = syscall(__NR_perf_event_open);
   if (fd < 0) {
     if (errno == EACCES) {
-      return "Failed to open perf event: Permission denied";
+      throwIfRequired("Failed to open perf event: Permission denied");
+      return false;
     }
   } else {
     close(fd);
   }
 
-  return std::string();
+  // First initialization was successful, try to reset and sample
+  try {
+    reset();
+    sample();
+  } catch (const utils::ExceptionHandler::AutoPasException &e) {
+    throwIfRequired("Energy Measurement not possible:\n\t" + std::string(e.what()));
+    return false;
+  }
+  return true;
+#else
+  if (mustSucceed) {
+    utils::ExceptionHandler::exception(
+        "Trying to initialize RAPLMeter but AUTOPAS_ENABLE_ENERGY_MEASUREMENTS is disabled.");
+  }
+  return false;
+#endif
 }
 
 RaplMeter::~RaplMeter() {
@@ -183,19 +227,8 @@ RaplMeter::~RaplMeter() {
   }
 }
 
-long RaplMeter::read_perf_event(int fd) {
-  if (fd == -1) {
-    return 0;
-  }
-  long value;
-  lseek(fd, 0, SEEK_SET);
-  if (read(fd, &value, 8) == -1) {
-    utils::ExceptionHandler::exception("Failed to read perf event:\n\t");
-  }
-  return value;
-}
-
 void RaplMeter::reset() {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   for (int f : this->_psys_fd) {
     if (f != -1) {
       close(f);
@@ -236,9 +269,11 @@ void RaplMeter::reset() {
       this->_ram_fd.push_back(open_perf_event(this->_type, this->_ram_config, i));
     }
   }
+#endif
 }
 
 void RaplMeter::sample() {
+#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   this->_psys_raw = 0;
   for (int f : this->_psys_fd) {
     if (f != -1) {
@@ -266,6 +301,7 @@ void RaplMeter::sample() {
       this->_ram_raw += read_perf_event(f);
     }
   }
+#endif
 }
 
 double RaplMeter::get_psys_energy() { return this->_psys_unit * this->_psys_raw; }

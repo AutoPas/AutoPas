@@ -6,6 +6,9 @@
 
 #include "FLOPLogger.h"
 
+#include <string>
+
+#include "Logger.h"
 #include "autopas/utils/Timer.h"
 
 autopas::FLOPLogger::FLOPLogger(const std::string &outputSuffix) : _loggerName("FLOPLogger" + outputSuffix) {
@@ -43,6 +46,11 @@ autopas::FLOPLogger::~FLOPLogger() {
 
 void autopas::FLOPLogger::logIteration(size_t iteration, size_t numFLOPs, double hitRate) {
 #ifdef AUTOPAS_LOG_FLOPS
-  spdlog::get(_loggerName)->info("{},{},{}", iteration, numFLOPs, hitRate);
+  // Convert numeric_limits<size_t>::max and numeric_limits<double>::quiet_NaN to empty strings to represent no
+  // implementation
+  const auto numFLOPsStr =
+      numFLOPs != std::numeric_limits<size_t>::max() ? std::to_string(numFLOPs) : "Not Implemented";
+  const auto hitRateStr = not std::isnan(hitRate) ? std::to_string(hitRate) : "Not Implemented";
+  spdlog::get(_loggerName)->info("{},{},{}", iteration, numFLOPsStr, hitRateStr);
 #endif
 }

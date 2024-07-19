@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include <spdlog/common.h>
 
+#include <algorithm>
 #include <ostream>
 
 #include "AutoPasTestBase.h"

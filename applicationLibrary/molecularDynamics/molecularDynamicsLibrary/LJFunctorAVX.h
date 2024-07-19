@@ -74,9 +74,7 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      AutoPasLog(WARN,
-                 "FLOP counting is not implemented for the AVX functor and will return gibberish. Please use the "
-                 "AutoVec Functor or set -DAUTOPAS_LOG_FLOPS=OFF.");
+      AutoPasLog(DEBUG, "Using LJFunctorAVX with countFLOPs but FLOP counting is not implemented.");
     }
   }
 #else
@@ -990,16 +988,6 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
     } else {
       _shift6AoS = 0.;
     }
-  }
-
-  size_t getNumFLOPs() {
-    AutoPasLog(WARN, "LJFunctorAVX::getNumFLOPs called but is not implemented and will return 0.");
-    return 0;
-  }
-
-  double getHitRate() {
-    AutoPasLog(WARN, "LJFunctorAVX::getHitRate called but is not implemented and will return 0.");
-    return 0;
   }
 
  private:

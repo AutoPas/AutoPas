@@ -530,16 +530,6 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
         Particle::AttributeNames::vsigmax, Particle::AttributeNames::engDot, Particle::AttributeNames::accX,
         Particle::AttributeNames::accY,    Particle::AttributeNames::accZ,   Particle::AttributeNames::ownershipState};
   }
-
-  size_t getNumFLOPs() {
-    AutoPasLog(WARN, "SPHCalcHydroForceFunctor::getNumFLOPs called but is not implemented and will return 0.");
-    return 0;
-  }
-
-  double getHitRate() {
-    AutoPasLog(WARN, "SPHCalcHydroForceFunctor::getHitRate called but is not implemented and will return 0.");
-    return 0;
-  }
 };
 
 }  // namespace sphLib

@@ -226,16 +226,23 @@ class Functor {
   double getCutoff() const { return _cutoff; }
 
   /**
-   * Get the number of FLOPs. Implementation required if FLOP logger used.
+   * Get the number of FLOPs. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()
+   * output as invalid and leaves "Not Implemented" the log.
    * @return number of FLOPs
    */
-  virtual size_t getNumFLOPs() { return 0; }
+  [[nodiscard]] virtual size_t getNumFLOPs() const { return std::numeric_limits<size_t>::max(); }
 
   /**
-   * Get the hit rate. Implementation required if FLOP logger used.
+   * Get the hit rate. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default NaN output as invalid and
+   * leaves "Not Implemented" in the log.
+   *
    * @return (number of kernel calls) / (number of distance calculations)
    */
-  virtual double getHitRate() { return 0; }
+  [[nodiscard]] virtual double getHitRate() const { return std::numeric_limits<double>::quiet_NaN(); }
 
  private:
   /**

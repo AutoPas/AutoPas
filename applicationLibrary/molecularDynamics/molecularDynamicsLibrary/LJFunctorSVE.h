@@ -81,9 +81,7 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
     if constexpr (countFLOPs) {
-      AutoPasLog(WARN,
-                 "FLOP counting is not implemented for the SVE functor and will return gibberish. Please use the "
-                 "AutoVec Functor or set -DAUTOPAS_LOG_FLOPS=OFF.");
+      AutoPasLog(DEBUG, "Using LJFunctorSVE with countFLOPs but FLOP counting is not implemented."););
     }
   }
 #else
@@ -918,16 +916,6 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
     } else {
       _shift6AoS = 0.;
     }
-  }
-
-  size_t getNumFLOPs() {
-    AutoPasLog(WARN, "LJFunctorSVE::getNumFLOPs called but is not implemented and will return 0.");
-    return 0;
-  }
-
-  double getHitRate() {
-    AutoPasLog(WARN, "LJFunctorSVE::getHitRate called but is not implemented and will return 0.");
-    return 0;
   }
 
  private:

@@ -11,6 +11,7 @@ mpi-strategy                         :  no-mpi
 tuning-interval                      :  5000
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
+tuning-metric                        :  time
 functor                              :  Lennard-Jones (12-6) avx
 newton3                              :  [disabled, enabled]
 cutoff                               :  1
@@ -100,7 +101,6 @@ thermostat:
   thermostatInterval                 :  10
   addBrownianMotion                  :  true
 log-level                            :  info
-no-flops                             :  false
 no-end-config                        :  false
 no-progress-bar                      :  false
 vtk-filename                         :  AllOptionsSim

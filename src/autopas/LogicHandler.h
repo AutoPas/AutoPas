@@ -32,6 +32,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/FLOPLogger.h"
 #include "autopas/utils/logging/IterationLogger.h"
+#include "autopas/utils/logging/IterationMeasurements.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
@@ -61,8 +62,8 @@ class LogicHandler {
         _containerSelector(logicHandlerInfo.boxMin, logicHandlerInfo.boxMax, logicHandlerInfo.cutoff),
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
-        _iterationLogger(outputSuffix),
-        _FLOPLogger(outputSuffix),
+        _iterationLogger(outputSuffix, autoTuner.canMeasureEnergy()),
+        _flopLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -586,23 +587,6 @@ class LogicHandler {
   std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> selectConfiguration(Functor &functor);
 
   /**
-   * Helper struct collecting all sorts of measurements taken during the pairwise iteration.
-   */
-  struct IterationMeasurements {
-    /// Time
-    long timeIteratePairwise{};
-    long timeRemainderTraversal{};
-    long timeRebuild{};
-    long timeTotal{};
-    /// Energy. See RaplMeter.h for the meaning of each field.
-    bool energyMeasurementsPossible{false};
-    double energyPsys{};
-    double energyPkg{};
-    double energyRam{};
-    long energyTotal{};
-  };
-
-  /**
    * Triggers the core steps of the pairwise iteration:
    *    - functor init- / end traversal
    *    - rebuilding of neighbor lists
@@ -781,7 +765,7 @@ class LogicHandler {
   /**
    * Logger for FLOP count and hit rate.
    */
-  FLOPLogger _FLOPLogger;
+  FLOPLogger _flopLogger;
 };
 
 template <typename Particle>
@@ -848,8 +832,7 @@ LogicHandler<Particle>::getParticleBuffers() const {
 
 template <typename Particle>
 template <class PairwiseFunctor>
-typename LogicHandler<Particle>::IterationMeasurements LogicHandler<Particle>::iteratePairwise(
-    PairwiseFunctor &functor, TraversalInterface &traversal) {
+IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &functor, TraversalInterface &traversal) {
   const bool doListRebuild = not neighborListsAreValid();
   const auto &configuration = _autoTuner.getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
@@ -1114,8 +1097,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
-      const auto [homogeneity, maxDensity] =
-          autopas::utils::calculateHomogeneityAndMaxDensity(container, container.getBoxMin(), container.getBoxMax());
+      const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
       timerCalculateHomogeneity.stop();
       _autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
@@ -1181,14 +1163,9 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
     AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
                measurements.energyPkg, measurements.energyRam);
   }
-  _iterationLogger.logIteration(configuration, _iteration, stillTuning, measurements.timeIteratePairwise,
-                                measurements.timeRemainderTraversal, measurements.timeRebuild, measurements.timeTotal,
-                                tuningTimer.getTotalTime(), measurements.energyPsys, measurements.energyPkg,
-                                measurements.energyRam);
+  _iterationLogger.logIteration(configuration, _iteration, stillTuning, tuningTimer.getTotalTime(), measurements);
 
-#ifdef AUTOPAS_LOG_FLOPS
-  _FLOPLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
-#endif
+  _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
   /// Pass on measurements
   // if this was a major iteration add measurements and bump counters
