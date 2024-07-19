@@ -272,7 +272,13 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   mol1.setR({2., 2., 2.});
   mol1.setF({0., 0., 1.});
   mol1.setV({0., 0., 1.});
+#if MD_FLEXIBLE_MODE == SINGLESITE
+  mol1.setSigma(1.);
+  mol1.setEpsilon(1.);
+  mol1.setMass(0.5);
+#else
   mol1.setTypeId(0);
+#endif
   mol1.setID(0);
   autopasContainer->addParticle(mol1);
 
@@ -451,7 +457,13 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   mol.setR({2., 2., 2.});
   mol.setF({0., 0., 1.});
   mol.setV({0., 0., 1.});
+#if MD_FLEXIBLE_MODE == SINGLESITE
+  mol.setSigma(1.);
+  mol.setEpsilon(1.);
+  mol.setMass(0.5);
+#else
   mol.setTypeId(0);
+#endif
   autopasContainer->addParticle(mol);
 
   // Try to calculate the quaternion

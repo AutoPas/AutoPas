@@ -55,7 +55,16 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   const std::array<double, 3> velocity = {0., 0., 0.};
   for (auto &particle : configuration.getParticles()) {
     EXPECT_EQ(velocity, particle.getV());  // velocity set to {0.,0.,0.} in parsingFile
-    switch (particle.getTypeId()) {
+
+    // Each object has a particle with a different type => We count the number of particles of each "type".
+    // For single site molecules, each type ID corresponds to a molecule of the same mass
+    const auto typeID =
+#if MD_FLEXIBLE_MODE == SINGLESITE
+        static_cast<size_t>(std::round(particle.getMass()));
+#else
+        particle.getTypeID();
+#endif
+    switch (typeID) {
       case 0: {
         gridCounter++;
         break;

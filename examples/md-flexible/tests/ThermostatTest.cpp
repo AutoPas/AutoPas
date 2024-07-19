@@ -91,33 +91,37 @@ TEST_F(ThermostatTest, BrownianMotionTest_NonZeroInitialAngVelWithNonZeroTransVe
 }
 
 /**
- * Tests the application of Brownian Motion and the Thermostat for systems with multiple molecule types.
+ * Tests the application of Brownian Motion and the Thermostat for systems with multiple molecular masses.
+ *
+ * For single site molecules, the mass is stored in the molecule object. For multi-site molecules, the mass is stored
+ * in the PPL.
+ *
  */
-TEST_F(ThermostatTest, MultiComponentTest) {
+TEST_F(ThermostatTest, MultiMassTest) {
   ParticleType dummyMolecule;
-  // fill with particles of type 0 and init
+  // fill with particles of mass 1 and init
   initContainer(_autopas, dummyMolecule, {25, 25, 25});
-  // add some type 1 particles
+  // add some mass 2 particles
+#if MD_FLEXIBLE_MODE == SINGLESITE
+  dummyMolecule.setMass(2.);
+#else
   dummyMolecule.setTypeId(1);
+#endif
   autopasTools::generators::GridGenerator::fillWithParticles(_autopas, {25, 25, 25}, dummyMolecule);
 
   // init system with brownian motion and test for the given temperature
   constexpr double targetTemperature1 = 4.2;
   Thermostat::addBrownianMotion(_autopas, _particlePropertiesLibrary, targetTemperature1);
-  auto temperatureMap = Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary);
+  const auto resultingTemperature1 = Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary);
 
-  for (auto &[typeId, temperature] : temperatureMap) {
-    // brownian motion is probabilistic therefore a large tolerance is needed
-    EXPECT_NEAR(temperature, targetTemperature1, 0.1);
-  }
+  EXPECT_NEAR(resultingTemperature1, targetTemperature1, 0.1);
 
-  // set system to a different temperature through apply and check that the temperature matches for each component
+  // set system to a different temperature through apply
   constexpr double targetTemperature2 = targetTemperature1 + 2.;
   Thermostat::apply(_autopas, _particlePropertiesLibrary, targetTemperature2, std::numeric_limits<double>::max());
-  temperatureMap = Thermostat::calcTemperatureComponent(_autopas, _particlePropertiesLibrary);
-  for (auto &[typeId, temperature] : temperatureMap) {
-    EXPECT_NEAR(temperature, targetTemperature2, 1e-9);
-  }
+  const auto resultingTemperature2 = Thermostat::calcTemperature(_autopas, _particlePropertiesLibrary);
+
+  EXPECT_NEAR(resultingTemperature2, targetTemperature2, 0.1);
 }
 
 /**

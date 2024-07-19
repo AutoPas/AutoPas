@@ -19,26 +19,32 @@
 namespace Thermostat {
 /**
  * Calculates temperature of system.
+ *
+ * Kinetic Energy for each molecule is
+ *    1/2 * mass * dot(vel, vel) + 1/2 Sum_{0 <= i < 3} MoI_i * angVel_i^2
+ * where MoI is the diagonal Moment of Inertia. This formula comes from Rapport, The Art of MD, equation (8.2.34).
+ *
+ * The second term is only applied for Multi-Site MD.
+ *
  * Assuming dimension-less units and Boltzmann constant = 1.
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
- * @param particlePropertiesLibrary
+ * @param particlePropertiesLibrary. Ignored if using single site mode
  * @return Temperature of system.
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
 double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
-  AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary))
-  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
+  AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas))
+  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
-#if MD_FLEXIBLE_MODE == MULTISITE
+#if MD_FLEXIBLE_MODE == SINGLESITE
+    kineticEnergyMul2 += iter->getMass() * autopas::utils::ArrayMath::dot(vel, vel);
+#else
     const auto angVel = iter->getAngularVel();
-#endif
-    kineticEnergyMul2 +=
-        particlePropertiesLibrary.getMolMass(iter->getTypeId()) * autopas::utils::ArrayMath::dot(vel, vel);
-#if MD_FLEXIBLE_MODE == MULTISITE
+
     kineticEnergyMul2 += autopas::utils::ArrayMath::dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()),
                                                         autopas::utils::ArrayMath::mul(angVel, angVel));
 #endif
@@ -51,101 +57,16 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
     3
 #endif
   };
+
+  // Sum kinetic energies across multiple ranks. Also get total number of particles
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2, 1, AUTOPAS_MPI_DOUBLE,
+                                 AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+
+  unsigned long numberOfParticles = autopas.getNumberOfParticles();
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG,
+                                 AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+
   return kineticEnergyMul2 / (autopas.getNumberOfParticles() * degreesOfFreedom);
-}
-
-/**
- * Calculates temperature of system, for each component separately.
- *
- * Kinetic Energy for each molecule is
- *    1/2 * mass * dot(vel, vel) + 1/2 Sum_{0 <= i < 3} MoI_i * angVel_i^2
- * where MoI is the diagonal Moment of Inertia. This formula comes from Rapport, The Art of MD, equation (8.2.34).
- *
- * The second term is only applied for Multi-Site MD.
- *
- * Assuming dimension-less units and Boltzmann constant = 1.
- *
- * @warning This function is only usable in multi-site mode, where mixing parameters are stored as per site types
- *
- * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
- * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
- * @param autopas
- * @param particlePropertiesLibrary ignored if using single-site mode
- * @return map of: particle typeID -> temperature for this type
- */
-template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>
-auto calcTemperatureComponent(const AutoPasTemplate &autopas,
-                              ParticlePropertiesLibraryTemplate &particlePropertiesLibrary) {
-#if MD_FLEXIBLE_MODE == SINGLESITE
-  autopas::utils::ExceptionHandler::exception("calcTemperatureComponent is no longer supported for single-site molecules!");
-#endif
-
-  using autopas::utils::ArrayMath::dot;
-  using namespace autopas::utils::ArrayMath::literals;
-
-  // map of: particle typeID -> kinetic energy times 2 for this type
-  std::map<size_t, double> kineticEnergyMul2Map;
-  // map of: particle typeID -> number of particles of this type
-  std::map<size_t, size_t> numParticleMap;
-
-  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
-    kineticEnergyMul2Map[typeID] = 0.;
-    numParticleMap[typeID] = 0ul;
-  }
-
-  AUTOPAS_OPENMP(parallel) {
-    // create aggregators for each thread
-    std::map<size_t, double> kineticEnergyMul2MapThread;
-    std::map<size_t, size_t> numParticleMapThread;
-    for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
-      kineticEnergyMul2MapThread[typeID] = 0.;
-      numParticleMapThread[typeID] = 0ul;
-    }
-    // parallel iterators
-    for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
-      const auto &vel = iter->getV();
-      kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
-          particlePropertiesLibrary.getMolMass(iter->getTypeId()) * dot(vel, vel);
-#if MD_FLEXIBLE_MODE == MULTISITE
-      // add contribution from angular momentum
-      const auto &angVel = iter->getAngularVel();
-      kineticEnergyMul2MapThread.at(iter->getTypeId()) +=
-          dot(particlePropertiesLibrary.getMomentOfInertia(iter->getTypeId()), angVel * angVel);
-#endif
-      numParticleMapThread.at(iter->getTypeId())++;
-    }
-    // manual reduction
-    AUTOPAS_OPENMP(critical) {
-      for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
-        kineticEnergyMul2Map[typeID] += kineticEnergyMul2MapThread[typeID];
-        numParticleMap[typeID] += numParticleMapThread[typeID];
-      }
-    }
-  }
-  // md-flexible's molecules have 3 DoF for translational velocity and optionally 3 additional rotational DoF
-#if MD_FLEXIBLE_MODE == MULTISITE
-  constexpr unsigned int degreesOfFreedom{6};
-#else
-  constexpr unsigned int degreesOfFreedom{3};
-#endif
-
-  for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
-    // workaround for MPICH: send and receive buffer must not be the same.
-    autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2Map[typeID], 1, AUTOPAS_MPI_DOUBLE,
-                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-
-    autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticleMap[typeID], 1, AUTOPAS_MPI_UNSIGNED_LONG,
-                                   AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-  }
-
-  auto kineticEnergyAndParticleMaps = std::make_tuple(kineticEnergyMul2Map.begin(), numParticleMap.begin());
-
-  for (auto [kineticEnergyMapIter, numParticleMapIter] = kineticEnergyAndParticleMaps;
-       kineticEnergyMapIter != kineticEnergyMul2Map.end(); ++kineticEnergyMapIter, ++numParticleMapIter) {
-    // The calculation below assumes that the Boltzmann constant is 1.
-    kineticEnergyMapIter->second /= static_cast<double>(numParticleMapIter->second) * degreesOfFreedom;
-  }
-  return kineticEnergyMul2Map;
 }
 
 /**
@@ -245,8 +166,8 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 
 #if MD_FLEXIBLE_MODE == SINGLESITE
   // get total number of particles
-  double numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned);
-  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticles, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  unsigned long numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned);
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
 
   // calculate current temperature:
   double kineticEnergy = 0.;
