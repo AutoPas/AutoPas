@@ -15,7 +15,7 @@
 template class autopas::AutoPas<Molecule>;
 template class autopas::AutoPas<NonConstructibleParticle>;
 
-template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<Molecule> *);
+template bool autopas::AutoPas<Molecule>::iteratePairwise(mdLib::LJFunctor<> *);
 template bool autopas::AutoPas<Molecule>::iteratePairwise(
     LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                   /*globals*/ true> *);
