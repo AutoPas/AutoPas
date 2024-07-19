@@ -13,8 +13,7 @@
 template class autopas::AutoPas<Molecule>;
 // clang-format off
 template bool autopas::AutoPas<Molecule>::iteratePairwise(
-    mdLib::LJFunctor<Molecule,
-                     /* shifting */ false,
+    mdLib::LJFunctor</* shifting */ false,
                      /*mixing*/ false,
                      autopas::FunctorN3Modes::Both,
                      /*globals*/ false,
