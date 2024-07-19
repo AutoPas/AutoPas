@@ -35,7 +35,9 @@ namespace mdLib {
 template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs,relevantForTuning>> {
+class LJFunctor
+    : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<applyShift, useMixing, useNewton3, calculateGlobals,
+                                                                 countFLOPs, relevantForTuning>> {
   /**
    * Particle Type
    */
@@ -61,8 +63,9 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
    * @param cutoff
    */
   explicit LJFunctor(double cutoff)
-      : autopas::Functor<molecule, LJFunctor<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs,
-                                             relevantForTuning>>(cutoff),
+      : autopas::Functor<molecule,
+                         LJFunctor<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
+            cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -289,7 +292,6 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
             } else {
               potentialEnergy6 += mask * const_shift6;
             }
-
           }
 
           // Add to the potential energy sum for each particle which is owned.
@@ -417,7 +419,6 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
 // g++ only with -ffast-math or -funsafe-math-optimizations
 #pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
-
         const auto ownedStateJ = ownedStatePtr2[j];
 
         const SoAFloatPrecision drx = x1ptr[i] - x2ptr[j];
@@ -476,7 +477,6 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
           SoAFloatPrecision virialx = drx * fx;
           SoAFloatPrecision virialy = dry * fy;
           SoAFloatPrecision virialz = drz * fz;
-
 
           SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6);
           if constexpr (applyShift) {
@@ -576,20 +576,24 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
    */
   constexpr static auto getNeededAttr() {
     return std::array<typename molecule::AttributeNames, 10>{
-        molecule::AttributeNames::id,     molecule::AttributeNames::posX,   molecule::AttributeNames::posY,
-        molecule::AttributeNames::posZ,   molecule::AttributeNames::forceX, molecule::AttributeNames::forceY,
-        molecule::AttributeNames::forceZ, molecule::AttributeNames::squareRootEpsilon, molecule::AttributeNames::sigmaDiv2,
-        molecule::AttributeNames::ownershipState};
+        molecule::AttributeNames::id,        molecule::AttributeNames::posX,
+        molecule::AttributeNames::posY,      molecule::AttributeNames::posZ,
+        molecule::AttributeNames::forceX,    molecule::AttributeNames::forceY,
+        molecule::AttributeNames::forceZ,    molecule::AttributeNames::squareRootEpsilon,
+        molecule::AttributeNames::sigmaDiv2, molecule::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename molecule::AttributeNames, 7>{
-        molecule::AttributeNames::id,   molecule::AttributeNames::posX,   molecule::AttributeNames::posY,
-        molecule::AttributeNames::posZ, molecule::AttributeNames::squareRootEpsilon, molecule::AttributeNames::sigmaDiv2,
-        molecule::AttributeNames::ownershipState};
+    return std::array<typename molecule::AttributeNames, 7>{molecule::AttributeNames::id,
+                                                            molecule::AttributeNames::posX,
+                                                            molecule::AttributeNames::posY,
+                                                            molecule::AttributeNames::posZ,
+                                                            molecule::AttributeNames::squareRootEpsilon,
+                                                            molecule::AttributeNames::sigmaDiv2,
+                                                            molecule::AttributeNames::ownershipState};
   }
 
   /**
@@ -854,7 +858,8 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
     // if the size of the verlet list is larger than the given size vecsize,
     // we will use a vectorized version.
     if (neighborListSize >= vecsize) {
-      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, sigmaDiv2Tmp, sqrtEpsilon24Tmp, xArr, yArr, zArr, fxArr, fyArr, fzArr, sigmaDiv2Arr, sqrtEpsilonArr;
+      alignas(64) std::array<SoAFloatPrecision, vecsize> xtmp, ytmp, ztmp, sigmaDiv2Tmp, sqrtEpsilon24Tmp, xArr, yArr,
+          zArr, fxArr, fyArr, fzArr, sigmaDiv2Arr, sqrtEpsilonArr;
       alignas(64) std::array<autopas::OwnershipState, vecsize> ownedStateArr{};
       // broadcast of the position of particle i
       for (size_t tmpj = 0; tmpj < vecsize; tmpj++) {
@@ -950,7 +955,6 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
               } else {
                 potentialEnergy6 += mask * const_shift6;
               }
-
             }
 
             const SoAFloatPrecision energyFactor =
@@ -1015,7 +1019,8 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
       const SoAFloatPrecision lj12 = lj6 * lj6;
       const SoAFloatPrecision lj12m6 = lj12 - lj6;
 
-      const SoAFloatPrecision epsilon24 = useMixing ? 24 * sqrtEpsilonPtr[indexFirst] * sqrtEpsilonPtr[j] : const_epsilon24;
+      const SoAFloatPrecision epsilon24 =
+          useMixing ? 24 * sqrtEpsilonPtr[indexFirst] * sqrtEpsilonPtr[j] : const_epsilon24;
       const SoAFloatPrecision fac = epsilon24 * (lj12 + lj12m6) * invdr2;
 
       const SoAFloatPrecision fx = drx * fac;
@@ -1054,7 +1059,6 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
           } else {
             potentialEnergy6 += const_shift6;
           }
-
         }
 
         // Add to the potential energy sum for each particle which is owned.

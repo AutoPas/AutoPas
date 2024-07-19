@@ -127,7 +127,8 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 #endif
 
   // print sqrtEpsilons
-  timestepFile << "        <DataArray Name=\"sqrtEpsilons\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
+  timestepFile
+      << "        <DataArray Name=\"sqrtEpsilons\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     timestepFile << "        " << particle->getSquareRootEpsilon() << "\n";
   }

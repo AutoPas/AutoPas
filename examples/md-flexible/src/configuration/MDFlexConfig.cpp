@@ -87,10 +87,11 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
  * @param filename The name of the pvtu file.
  * @param rank The rank which created the respective vtu file.
  * @param particles Container for the particles recorded in the respective vts file.
- * @param maxSigma largest sigma in simulation. This needs to be handled here as a user may input a recorded state with sigma
- * values that are larger than what is included in the site map.
+ * @param maxSigma largest sigma in simulation. This needs to be handled here as a user may input a recorded state with
+ * sigma values that are larger than what is included in the site map.
  */
-void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles, double &maxSigma) {
+void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles,
+                                 double &maxSigma) {
   const size_t endOfPath = filename.find_last_of('/');
   const auto filePath = filename.substr(0ul, endOfPath);
   const auto fileBasename = filename.substr(endOfPath + 1);

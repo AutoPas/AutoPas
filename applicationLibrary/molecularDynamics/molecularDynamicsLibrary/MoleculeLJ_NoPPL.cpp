@@ -7,8 +7,8 @@
 #include "MoleculeLJ_NoPPL.h"
 
 namespace mdLib {
-MoleculeLJ_NoPPL::MoleculeLJ_NoPPL(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
-                       double squareRootEpsilon, double sigmaDiv2)
+MoleculeLJ_NoPPL::MoleculeLJ_NoPPL(const std::array<double, 3> &pos, const std::array<double, 3> &v,
+                                   unsigned long moleculeId, double squareRootEpsilon, double sigmaDiv2)
     : autopas::Particle(pos, v, moleculeId), _squareRootEpsilon{squareRootEpsilon}, _sigmaDiv2{sigmaDiv2} {}
 
 const std::array<double, 3> &MoleculeLJ_NoPPL::getOldF() const { return _oldF; }

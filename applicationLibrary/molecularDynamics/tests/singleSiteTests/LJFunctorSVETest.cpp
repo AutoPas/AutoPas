@@ -259,8 +259,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   constexpr bool calculateGlobals = true;
   mdLib::LJFunctor<shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoSVE(_cutoff);
   ljFunctorNoSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorSVE<shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorSVE(
-      _cutoff);
+  mdLib::LJFunctorSVE<shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorSVE(_cutoff);
   ljFunctorSVE.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellSVE, cellNoSVE)) << "Cells not equal after copy initialization.";

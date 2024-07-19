@@ -194,32 +194,32 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
 
   /**
    * Get epsilon.
-   * @warning this molecule stores sqrt(epsilon) and so this function performs a square on the stored result. Use getSquareRootEpsilon
-   * in performance critical regions which require the square root of epsilon.
+   * @warning this molecule stores sqrt(epsilon) and so this function performs a square on the stored result. Use
+   * getSquareRootEpsilon in performance critical regions which require the square root of epsilon.
    * @return epsilon
    */
   [[nodiscard]] double getEpsilon() const;
 
   /**
    * Set epsilon.
-   * @warning this molecule stores sqrt(epsilon) and so this function performs a square root and should not be used in performance
-   * critical regions.
+   * @warning this molecule stores sqrt(epsilon) and so this function performs a square root and should not be used in
+   * performance critical regions.
    * @param epsilon
    */
   void setEpsilon(const double &epsilon);
 
   /**
    * Get sigma.
-   * @warning this molecule stores sigma/2 and so this function performs a multiplication on the stored result. Use getSigmaDiv2
-   * in performance critical regions which require sigma/2.
+   * @warning this molecule stores sigma/2 and so this function performs a multiplication on the stored result. Use
+   * getSigmaDiv2 in performance critical regions which require sigma/2.
    * @return sigma
    */
   [[nodiscard]] double getSigma() const;
 
   /**
    * Set sigma.
-   * @warning this molecule stores sigma/2 and so this function performs a division and should not be used in performance
-   * critical regions.
+   * @warning this molecule stores sigma/2 and so this function performs a division and should not be used in
+   * performance critical regions.
    * @param sigma
    */
   void setSigma(const double &sigma);
@@ -262,7 +262,6 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    */
   void setMass(const double &mass);
 
-
   /**
    * Creates a string containing all data of the particle.
    * @return String representation.
@@ -270,7 +269,6 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
   [[nodiscard]] std::string toString() const override;
 
  protected:
-
   /**
    * Old Force of the particle experiences as 3D vector.
    */

@@ -259,8 +259,7 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   constexpr bool calculateGlobals = true;
   mdLib::LJFunctor<shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(
-      _cutoff);
+  mdLib::LJFunctorAVX<shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(_cutoff);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";

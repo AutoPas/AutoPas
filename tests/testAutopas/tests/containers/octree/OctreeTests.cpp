@@ -278,8 +278,10 @@ static Molecule getRandomlyDistributedParticle(std::array<double, 3> min, std::a
  * @param max The maximum coordinate of the octree's bounding box
  * @param randomParticleCount How many particles should be spawned
  */
-static std::unique_ptr<autopas::OctreeNodeInterface<Molecule>> createRandomOctree(
-    std::array<double, 3> min, std::array<double, 3> max, int randomParticleCount, int treeSplitThreshold = 16) {
+static std::unique_ptr<autopas::OctreeNodeInterface<Molecule>> createRandomOctree(std::array<double, 3> min,
+                                                                                  std::array<double, 3> max,
+                                                                                  int randomParticleCount,
+                                                                                  int treeSplitThreshold = 16) {
   using namespace autopas;
   std::unique_ptr<OctreeNodeInterface<Molecule>> root =
       std::make_unique<OctreeLeafNode<Molecule>>(min, max, nullptr, treeSplitThreshold, 1, 1.0);
@@ -366,10 +368,8 @@ TEST_F(OctreeTest, testNeighborLocator) {
  */
 TEST_F(OctreeTest, testOverlapVolume) {
   using namespace autopas;
-  ASSERT_DOUBLE_EQ(OctreeNodeInterface<Molecule>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {1, 0, 0}, {2, 1, 1}),
-                   0);
-  ASSERT_DOUBLE_EQ(OctreeNodeInterface<Molecule>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0, 0, 0}, {1, 1, 1}),
-                   1);
+  ASSERT_DOUBLE_EQ(OctreeNodeInterface<Molecule>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {1, 0, 0}, {2, 1, 1}), 0);
+  ASSERT_DOUBLE_EQ(OctreeNodeInterface<Molecule>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0, 0, 0}, {1, 1, 1}), 1);
   ASSERT_DOUBLE_EQ(
       OctreeNodeInterface<Molecule>::getEnclosedVolumeWith({0, 0, 0}, {1, 1, 1}, {0.5, 0.5, 0.5}, {1, 1, 1}),
       0.5 * 0.5 * 0.5);
@@ -736,7 +736,7 @@ TEST_F(OctreeTest, testLeafIDs) {
   // Get leaves
   std::vector<OctreeLeafNode<Molecule> *> leaves;
   root->appendAllLeaves(leaves);
-  OTC18Traversal<Molecule , mdLib::LJFunctor<>>::assignIDs(leaves);
+  OTC18Traversal<Molecule, mdLib::LJFunctor<>>::assignIDs(leaves);
 
   std::vector<int> ids, expected;
   for (int i = 0; i < leaves.size(); ++i) {

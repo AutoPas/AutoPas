@@ -59,8 +59,8 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   };
 
   // Sum kinetic energies across multiple ranks. Also get total number of particles
-  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2, 1, AUTOPAS_MPI_DOUBLE,
-                                 AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergyMul2, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
 
   unsigned long numberOfParticles = autopas.getNumberOfParticles();
   autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG,
@@ -104,7 +104,8 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
     std::default_random_engine randomEngine(42 + autopas::autopas_get_thread_num());
     std::normal_distribution<double> normalDistribution{0, 1};
 
-    // This needlessly requires a sqrt per molecule -> If we move this to object creation we can do this once per object,
+    // This needlessly requires a sqrt per molecule -> If we move this to object creation we can do this once per
+    // object,
     for (auto mol = autopas.begin(autopas::IteratorBehavior::owned); mol.isValid(); ++mol) {
       const std::array<double, 3> normal3DVecTranslational = {
           normalDistribution(randomEngine), normalDistribution(randomEngine), normalDistribution(randomEngine)};
@@ -112,10 +113,10 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
       mol->addV(normal3DVecTranslational * scale);
     }
   }
-#elif MD_FLEXIBLE_MODE == MULTISITE // If Multisite, use old handling with PPL for this
+#elif MD_FLEXIBLE_MODE == MULTISITE  // If Multisite, use old handling with PPL for this
   // Generate map(s) of molecule type Id to scaling factors
   std::map<size_t, double> translationalVelocityScale;
-  std::map<size_t, std::array<double, 3>> rotationalVelocityScale;
+  std::map<size_t, std::array<double, 3> > rotationalVelocityScale;
 
   for (int typeID = 0; typeID < particlePropertiesLibrary.getNumberRegisteredSiteTypes(); typeID++) {
     translationalVelocityScale.emplace(typeID,
@@ -144,8 +145,6 @@ void addBrownianMotion(AutoPasTemplate &autopas, ParticlePropertiesLibraryTempla
   }
 
 #endif
-
-
 }
 
 /**
@@ -167,18 +166,20 @@ void apply(AutoPasTemplate &autopas, ParticlePropertiesLibraryTemplate &particle
 #if MD_FLEXIBLE_MODE == SINGLESITE
   // get total number of particles
   unsigned long numParticles = autopas.getNumberOfParticles(autopas::IteratorBehavior::owned);
-  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &numParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
 
   // calculate current temperature:
   double kineticEnergy = 0.;
-  AUTOPAS_OPENMP(parallel default(none) reduction( + : kineticEnergy) shared(autopas)) {
+  AUTOPAS_OPENMP(parallel default(none) reduction(+ : kineticEnergy) shared(autopas)) {
     for (auto mol = autopas.begin(autopas::IteratorBehavior::owned); mol.isValid(); ++mol) {
       const auto &vel = mol->getV();
       const auto &mass = mol->getMass();
       kineticEnergy += mass * dot(vel, vel);
     }
   }
-  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergy, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
+  autopas::AutoPas_MPI_Allreduce(AUTOPAS_MPI_IN_PLACE, &kineticEnergy, 1, AUTOPAS_MPI_DOUBLE, AUTOPAS_MPI_SUM,
+                                 AUTOPAS_MPI_COMM_WORLD);
 
   // Assume Boltzmann constant is 1. Assume 3 DoF (needs to be modified to 6 for multi-site)
   const auto currentTemperature = kineticEnergy / (numParticles * 3);

@@ -37,10 +37,12 @@ namespace mdLib {
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
-template <bool applyShift = false, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
+template <bool applyShift = false, bool useMixing = false,
+          autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorAVX<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs,relevantForTuning>> {
-
+class LJFunctorAVX
+    : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorAVX<applyShift, useMixing, useNewton3, calculateGlobals,
+                                                                    countFLOPs, relevantForTuning>> {
   /**
    * Particle Type
    */
@@ -57,13 +59,15 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
    */
   LJFunctorAVX() = delete;
 
- /**
-  * Constructor
-  * @param cutoff
-  */
+  /**
+   * Constructor
+   * @param cutoff
+   */
   explicit LJFunctorAVX(double cutoff)
 #ifdef __AVX__
-      : autopas::Functor<molecule, LJFunctorAVX<applyShift, useMixing, useNewton3, calculateGlobals,countFLOPs, relevantForTuning>>(cutoff),
+      : autopas::Functor<
+            molecule, LJFunctorAVX<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
+            cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -78,9 +82,8 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
     }
   }
 #else
-      : autopas::Functor<
-            molecule, LJFunctorAVX<applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff) {
+      : autopas::Functor<molecule,
+                         LJFunctorAVX<applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without AVX support!");
   }
 #endif
@@ -249,16 +252,16 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
       // a & ~(b -1) == a - (a mod b)
       for (; j < (i & ~(vecLength - 1)); j += 4) {
         SoAKernel<true, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                               zptr, fxptr, fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2ptr, fxacc, fyacc, fzacc, &virialSumX,
-                               &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                               zptr, fxptr, fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2ptr,
+                               fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
       }
       // If b is a power of 2 the following holds:
       // a & (b -1) == a mod b
       const int rest = (int)(i & (vecLength - 1));
       if (rest > 0) {
         SoAKernel<true, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr,
-                              zptr, fxptr, fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2ptr, fxacc, fyacc, fzacc, &virialSumX,
-                              &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+                              zptr, fxptr, fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2ptr,
+                              fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
       }
 
       // horizontally reduce fDacc to sumfD
@@ -380,14 +383,16 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
       unsigned int j = 0;
       for (; j < (soa2.size() & ~(vecLength - 1)); j += 4) {
         SoAKernel<newton3, false>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr2, sigmaDiv2Ptr2, fxacc, fyacc, fzacc,
-                                  &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                                  y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr2,
+                                  sigmaDiv2Ptr2, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ,
+                                  &potentialEnergySum, 0);
       }
       const int rest = (int)(soa2.size() & (vecLength - 1));
       if (rest > 0)
         SoAKernel<newton3, true>(j, ownedStateI, reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr,
-                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr2, sigmaDiv2Ptr2, fxacc, fyacc, fzacc,
-                                 &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
+                                 y2ptr, z2ptr, fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr2,
+                                 sigmaDiv2Ptr2, fxacc, fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ,
+                                 &potentialEnergySum, rest);
 
       // horizontally reduce fDacc to sumfD
       const __m256d hSumfxfy = _mm256_hadd_pd(fxacc, fyacc);
@@ -487,10 +492,10 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
                         const __m256d &x1, const __m256d &y1, const __m256d &z1, const double *const __restrict x2ptr,
                         const double *const __restrict y2ptr, const double *const __restrict z2ptr,
                         double *const __restrict fx2ptr, double *const __restrict fy2ptr,
-                        double *const __restrict fz2ptr, const __m256d &sqrtEpsilon1Mul24, const __m256d &sigmaDiv21, const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaDiv2Ptr,
+                        double *const __restrict fz2ptr, const __m256d &sqrtEpsilon1Mul24, const __m256d &sigmaDiv21,
+                        const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaDiv2Ptr,
                         __m256d &fxacc, __m256d &fyacc, __m256d &fzacc, __m256d *virialSumX, __m256d *virialSumY,
                         __m256d *virialSumZ, __m256d *potentialEnergySum, const unsigned int rest = 0) {
-
     const __m256d x2 = remainderIsMasked ? _mm256_maskload_pd(&x2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&x2ptr[j]);
     const __m256d y2 = remainderIsMasked ? _mm256_maskload_pd(&y2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&y2ptr[j]);
     const __m256d z2 = remainderIsMasked ? _mm256_maskload_pd(&z2ptr[j], _masks[rest - 1]) : _mm256_loadu_pd(&z2ptr[j]);
@@ -527,7 +532,9 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
 
     const __m256d invdr2 = _mm256_div_pd(_one, dr2);
 
-    const __m256d sigmaDiv22 = useMixing ? (remainderIsMasked ? _mm256_maskload_pd(&sigmaDiv2Ptr[j], _masks[rest-1]) : _mm256_loadu_pd(&sigmaDiv2Ptr[j])) : _zero;
+    const __m256d sigmaDiv22 = useMixing ? (remainderIsMasked ? _mm256_maskload_pd(&sigmaDiv2Ptr[j], _masks[rest - 1])
+                                                              : _mm256_loadu_pd(&sigmaDiv2Ptr[j]))
+                                         : _zero;
     const __m256d sigmaMixed = useMixing ? _mm256_add_pd(sigmaDiv21, sigmaDiv22) : _zero;
     const __m256d sigmaSquared = useMixing ? _mm256_mul_pd(sigmaMixed, sigmaMixed) : _sigmaSquared;
 
@@ -538,7 +545,10 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
     const __m256d lj12m6 = _mm256_sub_pd(lj12, lj6);
     const __m256d lj12m6alj12 = _mm256_add_pd(lj12m6, lj12);
 
-    const __m256d sqrtEpsilon2 = useMixing ? (remainderIsMasked ? _mm256_maskload_pd(&sqrtEpsilonPtr[j], _masks[rest-1]) : _mm256_loadu_pd(&sqrtEpsilonPtr[j])) : _zero;
+    const __m256d sqrtEpsilon2 = useMixing
+                                     ? (remainderIsMasked ? _mm256_maskload_pd(&sqrtEpsilonPtr[j], _masks[rest - 1])
+                                                          : _mm256_loadu_pd(&sqrtEpsilonPtr[j]))
+                                     : _zero;
     const __m256d epsilon24 = useMixing ? _mm256_mul_pd(sqrtEpsilon1Mul24, sqrtEpsilon2) : _epsilon24;
 
     const __m256d lj12m6alj12e = _mm256_mul_pd(lj12m6alj12, epsilon24);
@@ -584,14 +594,19 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
       const __m256d virialZ = _mm256_mul_pd(fz, drz);
 
       const auto sigmaDivCutoffPow2 = applyShift and useMixing ? _mm256_div_pd(sigmaSquared, _cutoffSquared) : _zero;
-      const auto sigmaDivCutoffPow4 = applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow2, sigmaDivCutoffPow2) : _zero;
-      const auto sigmaDivCutoffPow6 = applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow4, sigmaDivCutoffPow2) : _zero;
-      const auto sigmaDivCutoffPow12 = applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow6, sigmaDivCutoffPow6) : _zero;
-      const auto sigmaDivCutoffPow6SubPow12 = applyShift and useMixing ? _mm256_sub_pd(sigmaDivCutoffPow6, sigmaDivCutoffPow12) : _zero;
+      const auto sigmaDivCutoffPow4 =
+          applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow2, sigmaDivCutoffPow2) : _zero;
+      const auto sigmaDivCutoffPow6 =
+          applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow4, sigmaDivCutoffPow2) : _zero;
+      const auto sigmaDivCutoffPow12 =
+          applyShift and useMixing ? _mm256_mul_pd(sigmaDivCutoffPow6, sigmaDivCutoffPow6) : _zero;
+      const auto sigmaDivCutoffPow6SubPow12 =
+          applyShift and useMixing ? _mm256_sub_pd(sigmaDivCutoffPow6, sigmaDivCutoffPow12) : _zero;
       const auto shift6 = applyShift and useMixing ? _mm256_mul_pd(epsilon24, sigmaDivCutoffPow6SubPow12) : _shift6;
 
       // Global Potential
-      const __m256d potentialEnergy = applyShift ? wrapperFMA(epsilon24, lj12m6, shift6) : _mm256_mul_pd(epsilon24, lj12m6);
+      const __m256d potentialEnergy =
+          applyShift ? wrapperFMA(epsilon24, lj12m6, shift6) : _mm256_mul_pd(epsilon24, lj12m6);
 
       const __m256d potentialEnergyMasked =
           remainderIsMasked
@@ -718,8 +733,8 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
 
       SoAKernel<newton3, false>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                 x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                                sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilon2tmp.data(), sigmaDiv2tmp.data(), fxacc, fyacc, fzacc, &virialSumX,
-                                &virialSumY, &virialSumZ, &potentialEnergySum, 0);
+                                sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilon2tmp.data(), sigmaDiv2tmp.data(), fxacc,
+                                fyacc, fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, 0);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < vecLength; ++vecIndex) {
@@ -763,8 +778,8 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
 
       SoAKernel<newton3, true>(0, ownedStateI, reinterpret_cast<const int64_t *>(ownedStates2tmp.data()), x1, y1, z1,
                                x2tmp.data(), y2tmp.data(), z2tmp.data(), fx2tmp.data(), fy2tmp.data(), fz2tmp.data(),
-                               sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilon2tmp.data(), sigmaDiv2tmp.data(), fxacc, fyacc, fzacc, &virialSumX, &virialSumY,
-                               &virialSumZ, &potentialEnergySum, rest);
+                               sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilon2tmp.data(), sigmaDiv2tmp.data(), fxacc, fyacc,
+                               fzacc, &virialSumX, &virialSumY, &virialSumZ, &potentialEnergySum, rest);
 
       if constexpr (newton3) {
         for (size_t vecIndex = 0; vecIndex < rest; ++vecIndex) {
@@ -841,18 +856,24 @@ class LJFunctorAVX : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorA
    */
   constexpr static auto getNeededAttr() {
     return std::array<typename molecule::AttributeNames, 10>{
-        molecule::AttributeNames::id,     molecule::AttributeNames::posX,   molecule::AttributeNames::posY,
-        molecule::AttributeNames::posZ,   molecule::AttributeNames::forceX, molecule::AttributeNames::forceY,
-        molecule::AttributeNames::forceZ, molecule::AttributeNames::squareRootEpsilon, molecule::AttributeNames::sigmaDiv2, molecule::AttributeNames::ownershipState};
+        molecule::AttributeNames::id,        molecule::AttributeNames::posX,
+        molecule::AttributeNames::posY,      molecule::AttributeNames::posZ,
+        molecule::AttributeNames::forceX,    molecule::AttributeNames::forceY,
+        molecule::AttributeNames::forceZ,    molecule::AttributeNames::squareRootEpsilon,
+        molecule::AttributeNames::sigmaDiv2, molecule::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename molecule::AttributeNames, 7>{
-        molecule::AttributeNames::id,   molecule::AttributeNames::posX,   molecule::AttributeNames::posY,
-        molecule::AttributeNames::posZ, molecule::AttributeNames::squareRootEpsilon, molecule::AttributeNames::sigmaDiv2, molecule::AttributeNames::ownershipState};
+    return std::array<typename molecule::AttributeNames, 7>{molecule::AttributeNames::id,
+                                                            molecule::AttributeNames::posX,
+                                                            molecule::AttributeNames::posY,
+                                                            molecule::AttributeNames::posZ,
+                                                            molecule::AttributeNames::squareRootEpsilon,
+                                                            molecule::AttributeNames::sigmaDiv2,
+                                                            molecule::AttributeNames::ownershipState};
   }
 
   /**

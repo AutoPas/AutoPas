@@ -44,7 +44,9 @@ namespace mdLib {
 template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorSVE<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>> {
+class LJFunctorSVE
+    : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorSVE<applyShift, useMixing, useNewton3, calculateGlobals,
+                                                                    countFLOPs, relevantForTuning>> {
   /**
    * Particle Type
    */
@@ -85,11 +87,12 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
     }
   }
 #else
-      : autopas::Functor<molecule, LJFunctorSVE<applyShift, useMixing, useNewton3, calculateGlobals,countFLOPs, relevantForTuning>>(cutoff) {
+      : autopas::Functor<
+            molecule, LJFunctorSVE<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>>(
+            cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
 #endif
-
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -147,7 +150,6 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
         } else {
           potentialEnergy6 += _shift6AoS;
         }
-
       }
 
       const int threadnum = autopas::autopas_get_thread_num();
@@ -262,9 +264,9 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
 
         SoAKernel<true, false>(j, ownedStatePtr[i] == autopas::OwnershipState::owned,
                                reinterpret_cast<const int64_t *>(ownedStatePtr), x1, y1, z1, xptr, yptr, zptr, fxptr,
-                               fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2ptr, fxacc, fyacc, fzacc, virialSumX, virialSumY,
-                               virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(), pg_3,
-                               svundef_u64(), pg_4, svundef_u64());
+                               fyptr, fzptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2ptr, fxacc, fyacc,
+                               fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2,
+                               svundef_u64(), pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fxptr[i] += svaddv(svptrue_b64(), fxacc);
@@ -359,9 +361,9 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
 
         SoAKernel<newton3, false>(j, ownedStatePtr1[i] == autopas::OwnershipState::owned,
                                   reinterpret_cast<const int64_t *>(ownedStatePtr2), x1, y1, z1, x2ptr, y2ptr, z2ptr,
-                                  fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr2, sigmaDiv2ptr2, fxacc, fyacc, fzacc, virialSumX,
-                                  virialSumY, virialSumZ, potentialEnergySum, pg_1, svundef_u64(), pg_2, svundef_u64(),
-                                  pg_3, svundef_u64(), pg_4, svundef_u64());
+                                  fx2ptr, fy2ptr, fz2ptr, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr2, sigmaDiv2ptr2,
+                                  fxacc, fyacc, fzacc, virialSumX, virialSumY, virialSumZ, potentialEnergySum, pg_1,
+                                  svundef_u64(), pg_2, svundef_u64(), pg_3, svundef_u64(), pg_4, svundef_u64());
       }
 
       fx1ptr[i] += svaddv_f64(svptrue_b64(), fxacc);
@@ -414,13 +416,14 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
   }
 
   template <bool indexed>
-  inline void lennardJones(const svuint64_t &index, const svfloat64_t &sqrtEpsilon1Mul24, const svfloat64_t &sigmaDiv21, const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaDiv2Ptr,
+  inline void lennardJones(const svuint64_t &index, const svfloat64_t &sqrtEpsilon1Mul24, const svfloat64_t &sigmaDiv21,
+                           const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaDiv2Ptr,
                            const svbool_t &pgC, const svfloat64_t &dr2, svfloat64_t &epsilon24s, svfloat64_t &shift6s,
                            svfloat64_t &lj6, svfloat64_t &fac) {
-
     svfloat64_t sigmaSquareds;
     if constexpr (useMixing) {
-      const svfloat64_t sigmaDiv22 = (indexed) ? svld1_gather_index(pgC, sigmaDiv2Ptr, index) : svld1_f64(pgC, &sigmaDiv2Ptr[j]);
+      const svfloat64_t sigmaDiv22 =
+          (indexed) ? svld1_gather_index(pgC, sigmaDiv2Ptr, index) : svld1_f64(pgC, &sigmaDiv2Ptr[j]);
       const svfloat64_t sigmaMixed = svadd_f64_m(pgC, sigmaDiv21, sigmaDiv22);
       sigmaSquareds = svmul_f64_m(pgC, sigmaMixed, sigmaMixed);
 
@@ -429,8 +432,9 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
       epsilon24s = svmul_x(pgC, sqrtEpsilon1Mul24, sqrtEpsilon2);
 
       if constexpr (applyShift) {
-        // Warning: The following is a division using the Newton-Raphson approximation. According to the BSc thesis of Eke Timur (https://mediatum.ub.tum.de/1657424), 4 iterations produces
-        // bitwise perfect accuracy. No supporting evidence was given for this.
+        // Warning: The following is a division using the Newton-Raphson approximation. According to the BSc thesis of
+        // Eke Timur (https://mediatum.ub.tum.de/1657424), 4 iterations produces bitwise perfect accuracy. No supporting
+        // evidence was given for this.
         svfloat64_t invCutoffSquared = svrecpe(_cutoffSquared);
         invCutoffSquared = svmul_x(pgC, invCutoffSquared, svrecps(_cutoffSquared, invCutoffSquared));
         invCutoffSquared = svmul_x(pgC, invCutoffSquared, svrecps(_cutoffSquared, invCutoffSquared));
@@ -453,8 +457,9 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
       shift6s = svdup_f64(_shift6);
     }
 
-    // Warning: The following is a division using the Newton-Raphson approximation. According to the BSc thesis of Eke Timur (https://mediatum.ub.tum.de/1657424), 4 iterations produces
-    // bitwise perfect accuracy. No supporting evidence was given for this. Todo Verify this.
+    // Warning: The following is a division using the Newton-Raphson approximation. According to the BSc thesis of Eke
+    // Timur (https://mediatum.ub.tum.de/1657424), 4 iterations produces bitwise perfect accuracy. No supporting
+    // evidence was given for this. Todo Verify this.
     svfloat64_t invdr2 = svrecpe(dr2);
     invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
     invdr2 = svmul_x(pgC, invdr2, svrecps(dr2, invdr2));
@@ -541,9 +546,10 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
       const svfloat64_t &x1, const svfloat64_t &y1, const svfloat64_t &z1, const double *const __restrict x2ptr,
       const double *const __restrict y2ptr, const double *const __restrict z2ptr, double *const __restrict fx2ptr,
       double *const __restrict fy2ptr, double *const __restrict fz2ptr, const svfloat64_t &sqrtEpsilon1Mul24,
-      const svfloat64_t &sigmaDiv21, const double *const __restrict sqrtEpsilonPtr, const double *const __restrict sigmaDiv2Ptr,
-      const size_t *const typeID2ptr, svfloat64_t &fxacc, svfloat64_t &fyacc, svfloat64_t &fzacc,
-      svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ, svfloat64_t &potentialEnergySum,
+      const svfloat64_t &sigmaDiv21, const double *const __restrict sqrtEpsilonPtr,
+      const double *const __restrict sigmaDiv2Ptr, const size_t *const typeID2ptr, svfloat64_t &fxacc,
+      svfloat64_t &fyacc, svfloat64_t &fzacc, svfloat64_t &virialSumX, svfloat64_t &virialSumY, svfloat64_t &virialSumZ,
+      svfloat64_t &potentialEnergySum,
 
       const svbool_t &pg_1, const svuint64_t &index_1, const svbool_t &pg_2, const svuint64_t &index_2,
       const svbool_t &pg_3, const svuint64_t &index_3, const svbool_t &pg_4, const svuint64_t &index_4
@@ -591,28 +597,32 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
     svfloat64_t lj6_1;
     svfloat64_t fac_1;
     if (continue_1)
-      lennardJones<indexed>(index_1, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
+      lennardJones<indexed>(index_1, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_1, dr2_1,
+                            epsilon24s_1, shift6s_1, lj6_1, fac_1);
 
     svfloat64_t epsilon24s_2;
     svfloat64_t shift6s_2;
     svfloat64_t lj6_2;
     svfloat64_t fac_2;
     if (continue_2)
-      lennardJones<indexed>(index_2, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_2, dr2_2, epsilon24s_2, shift6s_2, lj6_2, fac_2);
+      lennardJones<indexed>(index_2, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_2, dr2_2,
+                            epsilon24s_2, shift6s_2, lj6_2, fac_2);
 
     svfloat64_t epsilon24s_3;
     svfloat64_t shift6s_3;
     svfloat64_t lj6_3;
     svfloat64_t fac_3;
     if (continue_3)
-      lennardJones<indexed>(index_3, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_3, dr2_3, epsilon24s_3, shift6s_3, lj6_3, fac_3);
+      lennardJones<indexed>(index_3, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_3, dr2_3,
+                            epsilon24s_3, shift6s_3, lj6_3, fac_3);
 
     svfloat64_t epsilon24s_4;
     svfloat64_t shift6s_4;
     svfloat64_t lj6_4;
     svfloat64_t fac_4;
     if (continue_4)
-      lennardJones<indexed>(index_4, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_4, dr2_4, epsilon24s_4, shift6s_4, lj6_4, fac_4);
+      lennardJones<indexed>(index_4, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_4, dr2_4,
+                            epsilon24s_4, shift6s_4, lj6_4, fac_4);
 
     if (continue_1)
       applyForces<newton3, indexed>(j, index_1, ownedStateIisOwned, fx2ptr, fy2ptr, fz2ptr, fxacc, fyacc, fzacc,
@@ -715,7 +725,8 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
       svfloat64_t lj6_1;
       svfloat64_t fac_1;
       if (continue_1)
-        lennardJones<true>(index_1, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_1, dr2_1, epsilon24s_1, shift6s_1, lj6_1, fac_1);
+        lennardJones<true>(index_1, sqrtEpsilon1Mul24, sigmaDiv21, sqrtEpsilonPtr, sigmaDiv2Ptr, pgC_1, dr2_1,
+                           epsilon24s_1, shift6s_1, lj6_1, fac_1);
 
       if (continue_1)
         applyForces<newton3, true>(0, index_1, ownedStatePtr[indexFirst] == autopas::OwnershipState::owned, fxptr,
@@ -752,18 +763,24 @@ class LJFunctorSVE : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctorS
    */
   constexpr static auto getNeededAttr() {
     return std::array<typename molecule::AttributeNames, 10>{
-        molecule::AttributeNames::id,     molecule::AttributeNames::posX,   molecule::AttributeNames::posY,
-        molecule::AttributeNames::posZ,   molecule::AttributeNames::forceX, molecule::AttributeNames::forceY,
-        molecule::AttributeNames::forceZ, molecule::AttributeNames::squareRootEpsilon, molecule::AttributeNames::sigmaDiv2, molecule::AttributeNames::ownershipState};
+        molecule::AttributeNames::id,        molecule::AttributeNames::posX,
+        molecule::AttributeNames::posY,      molecule::AttributeNames::posZ,
+        molecule::AttributeNames::forceX,    molecule::AttributeNames::forceY,
+        molecule::AttributeNames::forceZ,    molecule::AttributeNames::squareRootEpsilon,
+        molecule::AttributeNames::sigmaDiv2, molecule::AttributeNames::ownershipState};
   }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr(std::false_type)
    */
   constexpr static auto getNeededAttr(std::false_type) {
-    return std::array<typename molecule::AttributeNames, 7>{
-        molecule::AttributeNames::id,   molecule::AttributeNames::posX,   molecule::AttributeNames::posY,
-        molecule::AttributeNames::posZ, molecule::AttributeNames::squareRootEpsilon, molecule::AttributeNames::sigmaDiv2, molecule::AttributeNames::ownershipState};
+    return std::array<typename molecule::AttributeNames, 7>{molecule::AttributeNames::id,
+                                                            molecule::AttributeNames::posX,
+                                                            molecule::AttributeNames::posY,
+                                                            molecule::AttributeNames::posZ,
+                                                            molecule::AttributeNames::squareRootEpsilon,
+                                                            molecule::AttributeNames::sigmaDiv2,
+                                                            molecule::AttributeNames::ownershipState};
   }
 
   /**

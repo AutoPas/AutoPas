@@ -22,7 +22,7 @@ TYPED_TEST_P(LJFunctorTestVs, testMixingVsNoMixingSoA) {
 
   size_t numParticlesPerCell = 9;
 
-  Molecule defaultParticle({0.,0.,0.}, {0.,0.,0.}, 0, std::sqrt(this->epsilon), this->sigma/2);
+  Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, std::sqrt(this->epsilon), this->sigma / 2);
   FMCell cell1NoPPL;
   FMCell cell2NoPPL;
   autopasTools::generators::RandomGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
@@ -64,7 +64,8 @@ TYPED_TEST_P(LJFunctorTestVs, testMixingVsNoMixingAoS) {
 
   FunMixing funMixing(this->cutoff);
 
-  std::vector<Molecule> moleculesNoPPL = {Molecule({0, 0, 0}, {0, 0, 0}, 0, std::sqrt(this->epsilon), this->sigma/2), Molecule({0, 0, 1}, {0, 0, 0}, 1, std::sqrt(this->epsilon), this->sigma/2)};
+  std::vector<Molecule> moleculesNoPPL = {Molecule({0, 0, 0}, {0, 0, 0}, 0, std::sqrt(this->epsilon), this->sigma / 2),
+                                          Molecule({0, 0, 1}, {0, 0, 0}, 1, std::sqrt(this->epsilon), this->sigma / 2)};
   std::vector<Molecule> moleculesPPL(moleculesNoPPL);
 
   constexpr bool newton3 = false;

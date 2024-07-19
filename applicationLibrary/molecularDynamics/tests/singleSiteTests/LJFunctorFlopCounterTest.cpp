@@ -119,7 +119,8 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   // update container -> build neighbor lists in case of Verlet
   auto buffer = autoPas.updateContainer();  // buffer is meaningless here
 
-  mdLib::LJFunctor<applyShift, useMixing, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(autoPas.getCutoff());
+  mdLib::LJFunctor<applyShift, useMixing, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
+      autoPas.getCutoff());
 
   autoPas.iteratePairwise(&ljFunctor);
 
@@ -159,7 +160,8 @@ void LJFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<applyShift, useMixing, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
+  mdLib::LJFunctor<applyShift, useMixing, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
+      cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
@@ -187,7 +189,8 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoASingleAndPairOMP(bool newton3) 
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<applyShift, useMixing, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
+  mdLib::LJFunctor<applyShift, useMixing, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
+      cutoff);
 
   autopas::FullParticleCell<Molecule> cell1;
   cell1.addParticle(p1);
@@ -251,7 +254,8 @@ void LJFunctorFlopCounterTest::testFLOPCounterSoAVerletOMP(bool newton3) {
 
   const double cutoff = 1.;
 
-  mdLib::LJFunctor<applyShift, useMixing, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(cutoff);
+  mdLib::LJFunctor<applyShift, useMixing, autopas::FunctorN3Modes::Both, calculateGlobals, true, true> ljFunctor(
+      cutoff);
 
   autopas::FullParticleCell<Molecule> cell;
   cell.addParticle(p0);
@@ -296,7 +300,6 @@ TEST_P(LJFunctorFlopCounterTest, testFLOPCountingNoOMP) {
       LJFunctorFlopCounterTest::testFLOPCounter<false, false, false>(dataLayout, newton3, isVerlet);
     }
   }
-
 }
 
 /**
@@ -370,7 +373,6 @@ TEST_P(LJFunctorFlopCounterTest, testFLOPCountingOMP) {
       }
     }
   }
-
 }
 
 /**
@@ -404,7 +406,6 @@ INSTANTIATE_TEST_SUITE_P(
                     std::make_tuple(autopas::DataLayoutOption::soa, true, false, true, true, false),
                     std::make_tuple(autopas::DataLayoutOption::soa, false, false, true, true, true),
                     std::make_tuple(autopas::DataLayoutOption::soa, true, false, true, true, true),
-
 
                     std::make_tuple(autopas::DataLayoutOption::aos, false, true, false, false, false),
                     std::make_tuple(autopas::DataLayoutOption::aos, true, true, false, false, false),
