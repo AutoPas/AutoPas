@@ -136,11 +136,6 @@ class Simulation {
     autopas::utils::Timer forceUpdatePairwise;
 
     /**
-     * Records the time used for the update of the global forces of all particles.
-     */
-    autopas::utils::Timer forceUpdateGlobal;
-
-    /**
      * Records the time used for the force update of all particles during the tuning iterations.
      */
     autopas::utils::Timer forceUpdateTuning;
@@ -259,9 +254,10 @@ class Simulation {
                                                  long maxTime = 0ul);
 
   /**
-   * Updates the position of particles in the local AutoPas container.
+   * Updates the position of particles in the local AutoPas container. In addition, the oldForce is set to the value of
+   * the current forces and the force buffers of the particles are reset to the global force.
    */
-  void updatePositions();
+  void updatePositionsAndResetForces();
 
   /**
    * Update the quaternion orientation of the particles in the local AutoPas container.
@@ -272,7 +268,7 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  void updateForces();
+  void updateInteractionForces();
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
