@@ -759,7 +759,7 @@ class LJFunctor : public autopas::Functor<mdLib::MoleculeLJ_NoPPL, LJFunctor<app
       constexpr size_t numFLOPsPerDistanceCall = 8;
       constexpr size_t numFLOPsPerN3KernelCall = useMixing ? 20 : 18;
       constexpr size_t numFLOPsPerNoN3KernelCall = useMixing ? 17 : 15;
-      constexpr size_t numFLOPsPerGlobalCalc = applyShift ? (useMixing ? 9 : 15) : 8;
+      constexpr size_t numFLOPsPerGlobalCalc = applyShift ? (useMixing ? 15 : 9) : 8;
 
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
              numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsAcc * numFLOPsPerGlobalCalc;
