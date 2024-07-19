@@ -516,11 +516,11 @@ void Simulation::updateSimulationPauseState() {
 
     // reset the forces which accumulated during the tuning phase
     for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-      particle->setF({0., 0., 0.});
+      particle->setF(_configuration.globalForce.value);
     }
 
     // calculate the forces of the latest iteration again
-    updateForces();
+    updateInteractionForces();
 
     _simulationIsPaused = false;
   }
