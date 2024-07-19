@@ -45,6 +45,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 // #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
 #include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorHWY.h"
 #include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSmooth.h"
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSmoothHWY.h"
 // #endif
 //! @endcond
 
@@ -725,6 +726,11 @@ T Simulation::applyWithChosenFunctor(F f) {
     case MDFlexConfig::FunctorOption::lj12_6smooth: {
         // #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
         return f(mdLib::LJFunctorSmooth<ParticleType, true, true>{cutoff,_configuration.innerCutoff.value, particlePropertiesLibrary});
+
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_smoothHWY: {
+        // #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+        return f(mdLib::LJFunctorSmoothHWY<ParticleType, true, true>{cutoff,_configuration.innerCutoff.value, particlePropertiesLibrary});
 
     }
     }

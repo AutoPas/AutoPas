@@ -319,6 +319,9 @@ std::string MDFlexConfig::to_string() const {
     case FunctorOption::lj12_6smooth: {
         os << "Lennard-Jones (12-6) Smoothed" << endl;
     }
+    case FunctorOption::lj12_6_smoothHWY: {
+        os << "Lennard-Jones (12-6) Smoothed with Highway Wrapper" << endl;
+    }
   }
   printOption(newton3Options);
   printOption(cutoff);

@@ -233,7 +233,9 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("glob") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
-        }else if(strArg.find("smooth") != std::string::npos) {
+        } else if(strArg.find("smohwy") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_smoothHWY;
+        } else if(strArg.find("smooth") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6smooth;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;

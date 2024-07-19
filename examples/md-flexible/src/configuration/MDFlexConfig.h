@@ -181,7 +181,7 @@ class MDFlexConfig {
   /**
    * Choice of the functor
    */
-  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_XSIMD, lj12_6_MIPP, lj12_6_SIMDe, lj12_6_HWY, lj12_6smooth };
+  enum class FunctorOption { lj12_6, lj12_6_AVX, lj12_6_SVE, lj12_6_Globals, lj12_6_XSIMD, lj12_6_MIPP, lj12_6_SIMDe, lj12_6_HWY, lj12_6smooth, lj12_6_smoothHWY };
 
   /**
    * Choice of the particle generators specified in the command line
