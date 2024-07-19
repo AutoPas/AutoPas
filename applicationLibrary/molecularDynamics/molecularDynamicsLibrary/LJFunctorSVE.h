@@ -104,6 +104,13 @@ class LJFunctorSVE
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
+  /**
+   * Functor for Array of Structures for Lennard Jones.
+   *
+   * @param i Molecule i
+   * @param j Molecule j
+   * @param newton3
+   */
   void AoSFunctor(molecule &i, molecule &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 

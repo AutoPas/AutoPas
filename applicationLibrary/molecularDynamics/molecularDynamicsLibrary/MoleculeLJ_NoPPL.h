@@ -26,7 +26,6 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    * @param pos Position of the molecule.
    * @param v Velocity of the molecule.
    * @param moleculeId Unique Id of the molecule.
-   * @param typeId TypeId of the molecule.
    * @param squareRootEpsilon sqrt(epsilon of molecule)
    * @param sigmaDiv2 sigma of molecule/2
    */
