@@ -30,7 +30,7 @@ namespace Thermostat {
  * @tparam AutoPasTemplate Type of AutoPas Object (no pointer)
  * @tparam ParticlePropertiesLibraryTemplate Type of ParticlePropertiesLibrary Object (no pointer)
  * @param autopas
- * @param particlePropertiesLibrary. Ignored if using single site mode
+ * @param particlePropertiesLibrary Ignored if using single site mode
  * @return Temperature of system.
  */
 template <class AutoPasTemplate, class ParticlePropertiesLibraryTemplate>

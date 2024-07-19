@@ -22,7 +22,7 @@ class Object {
   /**
    * Constructor that should be used by inheriting types.
    * @param velocity
-   * @param typeId. If single-site mode, this is used to lookup the mixing parameters from the config object during
+   * @param typeId If single-site mode, this is used to lookup the mixing parameters from the config object during
    * object generation. If multi-site, this is stored directly (and used to lookup these parameters during the
    * simulation).
    */
