@@ -66,11 +66,6 @@ class LJFunctor
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoff{cutoff},
-        _innerCutoffSquared{cutoff * cutoff * (1.9/2.3) * (1.9/2.3)},
-        _innerCutoff{cutoff * (1.9/2.3)},
-        _cutoffDiff{cutoff-_innerCutoff},
-        _cutoffDiffCubed{ _cutoffDiff* _cutoffDiff* _cutoffDiff},
-        _3c_i{3*cutoff-_innerCutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
@@ -118,8 +113,8 @@ class LJFunctor
   bool allowsNonNewton3() final {
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
-/*
-  void AoSFunctornotused(Particle &i, Particle &j, bool newton3) final {
+
+  void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy()) {
@@ -181,7 +176,7 @@ class LJFunctor
     }
   }
 
- */
+ /*
   void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -251,12 +246,15 @@ class LJFunctor
     }
   }
 
+
+  */
+
   /**
    * @copydoc autopas::Functor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
-   /*
+
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
 
@@ -409,7 +407,9 @@ class LJFunctor
       }
     }
   }
-*/
+
+
+/*
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
 
@@ -507,13 +507,13 @@ class LJFunctor
         const bool innerMask = dr2 >= innerCutoffSquared and ownedStateJ != autopas::OwnershipState::dummy ;
 
 
-/*
+
         const SoAFloatPrecision drtrue = std::sqrt(dr2);
         const SoAFloatPrecision temp = drtrue - innerCutoff ;
         const SoAFloatPrecision cutoffdiffcube =  _cutoffDiffCubed;
         const SoAFloatPrecision _3ci =  _3c_i;
         const SoAFloatPrecision smoothing = innerMask ? 1 - (temp * temp) * (_3ci - 2 * drtrue) / (cutoffdiffcube) : 1.0 ;
-        */
+
 
 
         const SoAFloatPrecision drtrue = innerMask ? std::sqrt(dr2): 1.337;
@@ -584,6 +584,8 @@ class LJFunctor
       }
     }
   }
+
+    */
   /**
    * @copydoc autopas::Functor::SoAFunctorPair()
    */
@@ -1230,11 +1232,6 @@ class LJFunctor
   const double _cutoffSquared;
   const double _cutoff;
 
-  const double _innerCutoffSquared;
-  const double _innerCutoff;
-  const double _cutoffDiff;
-  const double _cutoffDiffCubed;
-  const double _3c_i;
   // not const because they might be reset through PPL
   double _epsilon24, _sigmaSquared, _shift6 = 0;
 
