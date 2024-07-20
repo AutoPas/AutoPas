@@ -26,11 +26,12 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    * @param pos Position of the molecule.
    * @param v Velocity of the molecule.
    * @param moleculeId Unique Id of the molecule.
+   * @param typeId Type of molecule.
    * @param squareRootEpsilon sqrt(epsilon of molecule)
    * @param sigmaDiv2 sigma of molecule/2
    */
   MoleculeLJ_NoPPL(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
-                   double squareRootEpsilon = 1., double sigmaDiv2 = 0.5);
+                   unsigned long typeId, double squareRootEpsilon = 1., double sigmaDiv2 = 0.5);
 
   ~MoleculeLJ_NoPPL() = default;
 
@@ -52,6 +53,7 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
     oldForceX,
     oldForceY,
     oldForceZ,
+    typeId,
     squareRootEpsilon,
     sigmaDiv2,
     mass,
@@ -69,7 +71,7 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
       typename autopas::utils::SoAType<MoleculeLJ_NoPPL *, size_t /*id*/, double /*x*/, double /*y*/, double /*z*/,
                                        double /*vx*/, double /*vy*/, double /*vz*/, double /*fx*/, double /*fy*/,
                                        double /*fz*/, double /*oldFx*/, double /*oldFy*/, double /*oldFz*/,
-                                       double /*squareRootEpsilon*/, double /*sigmaDiv2*/, double /*mass*/,
+                                       unsigned long /*typeId*/, double /*squareRootEpsilon*/, double /*sigmaDiv2*/, double /*mass*/,
                                        autopas::OwnershipState /*ownershipState*/>::Type;
 
   /**
@@ -116,6 +118,8 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
       return getOldF()[1];
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       return getOldF()[2];
+    } else if constexpr (attribute == AttributeNames::typeId) {
+      return getTypeId();
     } else if constexpr (attribute == AttributeNames::squareRootEpsilon) {
       return getSquareRootEpsilon();
     } else if constexpr (attribute == AttributeNames::sigmaDiv2) {
@@ -164,6 +168,8 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
       _oldF[1] = value;
     } else if constexpr (attribute == AttributeNames::oldForceZ) {
       _oldF[2] = value;
+    } else if constexpr (attribute == AttributeNames::typeId) {
+      _typeId = value;
     } else if constexpr (attribute == AttributeNames::squareRootEpsilon) {
       _squareRootEpsilon = value;
     } else if constexpr (attribute == AttributeNames::sigmaDiv2) {
@@ -188,6 +194,18 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    * @param oldForce
    */
   void setOldF(const std::array<double, 3> &oldForce);
+
+  /**
+   * Get TypeId.
+   * @return
+   */
+  [[nodiscard]] size_t getTypeId() const;
+
+  /**
+   * Set the type id of the Molecule.
+   * @param typeId
+   */
+  void setTypeId(size_t typeId);
 
   /** ---- Mixing Parameters (Non-Efficient) ---- **/
 
@@ -275,17 +293,24 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
 
  private:
   /**
-   * sqrt(epsilon). Used directly in force calculation to avoid square roots in kernel.
+   * Type of the molecule.
+   */
+  unsigned long _typeId{0};
+
+  /**
+   * sqrt(epsilon). Used directly in force calculation to avoid square roots in kernel. Must always correspond to the
+   * epsilon value for the molecule's type Id as in the Particle Properties Library.
    */
   double _squareRootEpsilon{1.};
 
   /**
-   * sigma/2. Used directly in force calculation to avoid divisions in kernel.
+   * sigma/2. Used directly in force calculation to avoid divisions in kernel. Must always correspond to the
+   * sigma value for the molecule's type Id as in the Particle Properties Library.
    */
   double _sigmaDiv2{0.5};
 
   /**
-   * mass of molecule
+   * mass of molecule. Must always correspond to the epsilon value for the molecule's type Id as in the Particle Properties Library.
    */
   double _mass{1.};
 };
