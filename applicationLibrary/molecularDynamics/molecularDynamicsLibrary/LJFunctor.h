@@ -775,8 +775,8 @@ class LJFunctor
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
              numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsAcc * numFLOPsPerGlobalCalc;
     } else {
-      autopas::utils::ExceptionHandler::exception("LJFunctor::getNumFLOPs called without countFLOPs enabled!");
-      return 0;
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      return std::numeric_limits<size_t>::max();
     }
   }
 
@@ -795,8 +795,8 @@ class LJFunctor
       return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
              (static_cast<double>(numDistCallsAcc));
     } else {
-      autopas::utils::ExceptionHandler::exception("LJFunctor::getHitRate called without countFLOPs enabled!");
-      return 0;
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      return std::numeric_limits<size_t>::quiet_NaN();
     }
   }
 
