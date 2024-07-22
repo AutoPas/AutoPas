@@ -338,7 +338,7 @@ template <typename floatType, typename intType>
 void ParticlePropertiesLibrary<floatType, intType>::addSiteType(intType siteID, floatType mass) {
   if (_numRegisteredSiteTypes != siteID) {
     autopas::utils::ExceptionHandler::exception(
-        "ParticlePropertiesLibrary::addATParametersToSiteType(): trying to register a site type with id {}. Please "
+        "ParticlePropertiesLibrary::addSiteType(): trying to register a site type with id {}. Please "
         "register types "
         "consecutively, starting at id 0. Currently there are {} registered types.",
         siteID, _numRegisteredSiteTypes);

@@ -129,7 +129,8 @@ class CellFunctor3B {
    * @param cell3
    * @param sortingDirection Normalized vector along which particles from cell1 and cell2 are sorted.
    *
-   * @warning If sorting is used, sortingDirection must be the orthogonal vector from cell1 and cell2.
+   * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1 and
+   * cell2.
    */
   void processCellTripleAoSN3(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3,
                               const std::array<double, 3> &sortingDirection);
@@ -142,7 +143,8 @@ class CellFunctor3B {
    * @param cell3
    * @param sortingDirection Normalized vector along which particles from cell1 and cell2 are sorted.
    *
-   * @warning If sorting is used, sortingDirection must be the orthogonal vector from cell1 and cell2.
+   * @warning If sorting is used, sortingDirection should correspond to the pairwise sorting direction between cell1 and
+   * cell2.
    */
   void processCellTripleAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, ParticleCell &cell3,
                                 const std::array<double, 3> &sortingDirection);

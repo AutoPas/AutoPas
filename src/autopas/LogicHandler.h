@@ -534,7 +534,7 @@ class LogicHandler {
     // Goes over all pairs in _autoTunerRefs and returns true as soon as one is `inTuningPhase()`.
     // The tuner associated with the given interaction type is ignored.
     return std::any_of(std::begin(_autoTunerRefs), std::end(_autoTunerRefs), [&](const auto &entry) {
-      return !(entry.first == interactionType) and entry.second->inTuningPhase();
+      return not(entry.first == interactionType) and entry.second->inTuningPhase();
     });
   }
 
@@ -646,7 +646,7 @@ class LogicHandler {
    * @return
    */
   template <class Functor>
-  void computeRemainderInteractions(Functor &functor, const bool newton3);
+  void computeRemainderInteractions(Functor &functor, bool newton3);
 
   /**
    * Performs the interactions ParticleContainer::computeInteractions() did not cover.
@@ -979,7 +979,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
 
 template <typename Particle>
 template <class Functor>
-void LogicHandler<Particle>::computeRemainderInteractions(Functor &functor, const bool newton3) {
+void LogicHandler<Particle>::computeRemainderInteractions(Functor &functor, bool newton3) {
   auto &container = _containerSelector.getCurrentContainer();
 
   withStaticContainerType(container, [&](auto &actualContainerType) {
@@ -1338,8 +1338,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
     configuration = autoTuner->getCurrentConfig();
-    // The currently selected container might not be compatible with the configuration for this functor. Check and change
-    // if necessary. (see https://github.com/AutoPas/AutoPas/issues/871)
+    // The currently selected container might not be compatible with the configuration for this functor. Check and
+    // change if necessary. (see https://github.com/AutoPas/AutoPas/issues/871)
     if (_containerSelector.getCurrentContainer().getContainerType() != configuration.container) {
       _containerSelector.selectContainer(
           configuration.container,

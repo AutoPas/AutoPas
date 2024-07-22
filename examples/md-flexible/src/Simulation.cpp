@@ -122,19 +122,16 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   if (_configuration.getInteractionTypes().empty()) {
     std::string functorName{};
-    _configuration.functorOption.value =
+    std::tie(_configuration.functorOption.value, functorName) =
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-        MDFlexConfig::FunctorOption::lj12_6_AVX;
-    functorName = "Lennard-Jones AVX Functor.";
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6_AVX, "Lennard-Jones AVX Functor.");
 #elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-        MDFlexConfig::FunctorOption::lj12_6_SVE;
-    functorName = "Lennard-Jones SVE Functor.";
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6_SVE, "Lennard-Jones SVE Functor.");
 #else
-        MDFlexConfig::FunctorOption::lj12_6;
-    functorName = "Lennard-Jones AutoVec Functor.";
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6, "Lennard-Jones AutoVec Functor.");
 #endif
     _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
-    std::cout << "WARNING: No functor was specified. Using the " << functorName << std::endl;
+    std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
   }
 
   _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());

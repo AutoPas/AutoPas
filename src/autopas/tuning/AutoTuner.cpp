@@ -24,7 +24,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     : _selectorStrategy(autoTunerInfo.selectorStrategy),
       _tuningStrategies(std::move(tuningStrategies)),
       _tuningInterval(autoTunerInfo.tuningInterval),
-      _iterationsSinceTuning(autoTunerInfo.tuningInterval - 1), // Tuning should happen in the next (first) iteration
+      _iterationsSinceTuning(autoTunerInfo.tuningInterval - 1),  // Tuning should happen in the next (first) iteration
       _stillTuning(false),
       _tuningMetric(autoTunerInfo.tuningMetric),
       _energyMeasurementPossible(initEnergy()),
@@ -40,7 +40,7 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _tuningResultLogger(outputSuffix),
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix) {
   _samplesNotRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples),
-  _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
+      _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
   if (_searchSpace.empty()) {

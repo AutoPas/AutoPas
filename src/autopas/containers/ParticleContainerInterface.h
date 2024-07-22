@@ -247,7 +247,7 @@ class ParticleContainerInterface {
   [[nodiscard]] constexpr bool end() const { return false; }
 
   /**
-   * Iterates over all particle pairs in the container.
+   * Iterates over all particle multiples (e.g. pairs, triplets) in the container using the given traversal.
    * @param traversal The traversal to use for the iteration.
    */
   virtual void computeInteractions(TraversalInterface *traversal) = 0;
