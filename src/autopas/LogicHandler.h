@@ -157,21 +157,19 @@ class LogicHandler {
   [[nodiscard]] std::vector<Particle> updateContainer() {
     bool doDataStructureUpdate = not neighborListsAreValid();
 
-    if (_functorCalls > 0) {
-      // Bump iteration counters for all autotuners
-      for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
-        const bool needsToWait = checkTuningStates(interactionType);
-        autoTuner->bumpIterationCounters(needsToWait);
-      }
-
-      // We will do a rebuild in this timestep
-      if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-        _stepsSinceLastListRebuild = 0;
-      }
-      ++_stepsSinceLastListRebuild;
-      _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
-      ++_iteration;
+    // Bump iteration counters for all autotuners
+    for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
+      const bool needsToWait = checkTuningStates(interactionType);
+      autoTuner->bumpIterationCounters(needsToWait);
     }
+
+    // We will do a rebuild in this timestep
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+      _stepsSinceLastListRebuild = 0;
+    }
+    ++_stepsSinceLastListRebuild;
+    _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
+    ++_iteration;
 
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
@@ -1340,8 +1338,8 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
     configuration = autoTuner->getCurrentConfig();
-    // In case of multiple active interaction types, the current container might be from another autoTuner's
-    // configuration (see https://github.com/AutoPas/AutoPas/issues/871).
+    // The currently selected container might not be compatible with the configuration for this functor. Check and change
+    // if necessary. (see https://github.com/AutoPas/AutoPas/issues/871)
     if (_containerSelector.getCurrentContainer().getContainerType() != configuration.container) {
       _containerSelector.selectContainer(
           configuration.container,
@@ -1385,6 +1383,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
 
     if (needsLiveInfo) {
       // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
+      // https://github.com/AutoPas/AutoPas/issues/916
       LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       autoTuner->receiveLiveInfo(info);

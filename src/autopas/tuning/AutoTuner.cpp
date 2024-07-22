@@ -24,8 +24,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     : _selectorStrategy(autoTunerInfo.selectorStrategy),
       _tuningStrategies(std::move(tuningStrategies)),
       _tuningInterval(autoTunerInfo.tuningInterval),
-      _iterationsSinceTuning(autoTunerInfo.tuningInterval),  // init to max so that tuning happens in first iteration
-      _stillTuning(searchSpace.size() > 1),
+      _iterationsSinceTuning(autoTunerInfo.tuningInterval - 1), // Tuning should happen in the next (first) iteration
+      _stillTuning(false),
       _tuningMetric(autoTunerInfo.tuningMetric),
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
@@ -35,11 +35,11 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
           [](auto &tuningStrat) { return tuningStrat->needsSmoothedHomogeneityAndMaxDensity(); })),
       _needsLiveInfo(std::transform_reduce(_tuningStrategies.begin(), _tuningStrategies.end(), false, std::logical_or(),
                                            [](auto &tuningStrat) { return tuningStrat->needsLiveInfo(); })),
-      _samplesNotRebuildingNeighborLists(autoTunerInfo.maxSamples),
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
       _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix) {
+  _samplesNotRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples),
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
@@ -163,7 +163,7 @@ std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
   // If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
     return {getCurrentConfig(), false};
-  } else if (getCurrentNumSamples() < _maxSamples) {
+  } else if (getCurrentNumSamples() < _maxSamples and getCurrentNumSamples() > 0) {
     // If we are still collecting samples from one config return immediately.
     return {getCurrentConfig(), true};
   } else {
@@ -215,7 +215,7 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
   // sanity check
   if (getCurrentNumSamples() >= _maxSamples) {
     utils::ExceptionHandler::exception(
-        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough"
+        "AutoTuner::addMeasurement(): Trying to add a new measurement to the AutoTuner but there are already enough "
         "for this configuration!\n"
         "tuneConfiguration() should have been called before to process and flush samples.");
   }
@@ -283,8 +283,6 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
   ++_iterationsSinceTuning;
   ++_iteration;
 
-  // this will NOT catch the first tuning phase because _iterationsSinceTuning is initialized to _tuningInterval.
-  // Hence, _tuningPhase is initialized as 1.
   if (_iterationsSinceTuning == _tuningInterval) {
     ++_tuningPhase;
     _stillTuning = true;

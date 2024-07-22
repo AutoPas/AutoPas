@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <vector>
 
-#include "autopas/AutoPasDecl.h"
 #include "autopas/LogicHandler.h"
 #include "autopas/LogicHandlerInfo.h"
 #include "autopas/cells/FullParticleCell.h"
@@ -20,7 +19,6 @@
 #include "autopas/tuning/tuningStrategy/SortByName.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
 #include "autopas/tuning/utils/SearchSpaceGenerators.h"
-#include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/checkFunctorType.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -211,10 +209,12 @@ TEST_F(AutoTunerTest, testWillRebuildDDL) {
   EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
   EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
 
-  // Intended false positive
+  // Expect a rebuild for the first iteration
+  EXPECT_TRUE(autoTuner.willRebuildNeighborLists()) << "Expect rebuild for first iteration.";
   auto dummyParticlesVec = logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor,
                                            autopas::InteractionTypeOption::pairwise);  // DS NoN3
+  // Intended false positive
   EXPECT_FALSE(autoTuner.willRebuildNeighborLists()) << "Expect no rebuild because more samples needed.";
   dummyParticlesVec = logicHandler.updateContainer();
   logicHandler.computeInteractionsPipeline(&functor,
@@ -768,6 +768,9 @@ TEST_F(AutoTunerTest, testRestoreAfterWipe) {
   };
   constexpr size_t rebuildFrequency = 3;
   autopas::AutoTuner autoTuner{tuningStrategies, searchSpace, autoTunerInfo, rebuildFrequency, ""};
+
+  // This triggers the first tuning phase
+  autoTuner.bumpIterationCounters();
 
   // Fill the search space with random data so the slow config filter can work
   for (const auto conf : searchSpace) {
