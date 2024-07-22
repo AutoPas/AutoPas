@@ -195,7 +195,7 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    if (_configuration.deltaT.value != 0) {
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
@@ -253,7 +253,12 @@ void Simulation::run() {
 
     updateInteractionForces();
 
-    if (_configuration.deltaT.value != 0) {
+    if (_configuration.pauseSimulationDuringTuning.value) {
+      // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
+      updateSimulationPauseState();
+    }
+
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateAngularVelocities();
@@ -262,7 +267,9 @@ void Simulation::run() {
     }
     _timers.computationalLoad.stop();
 
-    ++_iteration;
+    if (not _simulationIsPaused) {
+      ++_iteration;
+    }
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
@@ -403,12 +410,12 @@ void Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.start();
 
   _timers.forceUpdatePairwise.start();
-  const bool isTuningIteration = calculatePairwiseForces();
-
+  _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
+  _currentIterationIsTuningIteration = calculatePairwiseForces();
   const auto timeIteration = _timers.forceUpdatePairwise.stop();
 
   // count time spent for tuning
-  if (isTuningIteration) {
+  if (_currentIterationIsTuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
     ++_numTuningIterations;
   } else {
@@ -419,7 +426,6 @@ void Simulation::updateInteractionForces() {
       ++_numTuningPhasesCompleted;
     }
   }
-  _previousIterationWasTuningIteration = isTuningIteration;
 
   _timers.forceUpdateTotal.stop();
 }
@@ -493,6 +499,30 @@ void Simulation::logSimulationState() {
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
               << "Halo : " << haloParticles << std::endl;
+  }
+}
+
+void Simulation::updateSimulationPauseState() {
+  // If we are at the beginning of a tuning phase, we need to freeze the simulation
+  if (_currentIterationIsTuningIteration && (!_previousIterationWasTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase..."
+              << std::endl;
+    _simulationIsPaused = true;
+  }
+
+  // If we are at the end of a tuning phase, we need to resume the simulation
+  if (_previousIterationWasTuningIteration && (!_currentIterationIsTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase." << std::endl;
+
+    // reset the forces which accumulated during the tuning phase
+    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      particle->setF(_configuration.globalForce.value);
+    }
+
+    // calculate the forces of the latest iteration again
+    updateInteractionForces();
+
+    _simulationIsPaused = false;
   }
 }
 
