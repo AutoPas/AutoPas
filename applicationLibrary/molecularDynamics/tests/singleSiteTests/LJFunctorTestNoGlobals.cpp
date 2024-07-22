@@ -103,14 +103,14 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     FMCell cell1, cell2;
     {
       // particle 1 is always in cell1
-      Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 1., 0.5);
+      Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0, 1., 0.5);
       cell1.addParticle(p1);
 
       // The cell of particle 2 depends on the InteractionType.
 
       // p2 includes sqrtEpsilon & sigma/2 that don't match those actually used when mixing is disabled
       // but this doesn't matter as these parameters shouldn't be used.
-      Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 1.4142135623730951, 1.);
+      Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 0, 1.4142135623730951, 1.);
       switch (interactionType) {
         case TestType::InteractionType::verlet:
           // same as for own
