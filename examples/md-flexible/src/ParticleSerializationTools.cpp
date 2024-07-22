@@ -14,33 +14,6 @@ namespace {
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 constexpr std::array<typename ParticleType::AttributeNames, 25> Attributes = {
-    mdLib::MultisiteMoleculeLJ::AttributeNames::id,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::posX,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::posY,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::posZ,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityX,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityY,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::velocityZ,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::forceX,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::forceY,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::forceZ,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceX,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceY,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::oldForceZ,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion0,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion1,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion2,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::quaternion3,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelX,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelY,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::angularVelZ,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueX,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueY,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::torqueZ,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::typeId,
-    mdLib::MultisiteMoleculeLJ::AttributeNames::ownershipState};
-#else
-constexpr std::array<typename ParticleType::AttributeNames, 17> Attributes = {
     ParticleType::AttributeNames::id,
     ParticleType::AttributeNames::posX,
     ParticleType::AttributeNames::posY,
@@ -54,9 +27,34 @@ constexpr std::array<typename ParticleType::AttributeNames, 17> Attributes = {
     ParticleType::AttributeNames::oldForceX,
     ParticleType::AttributeNames::oldForceY,
     ParticleType::AttributeNames::oldForceZ,
-    ParticleType::AttributeNames::squareRootEpsilon,
-    ParticleType::AttributeNames::sigmaDiv2,
-    ParticleType::AttributeNames::mass,
+    ParticleType::AttributeNames::quaternion0,
+    ParticleType::AttributeNames::quaternion1,
+    ParticleType::AttributeNames::quaternion2,
+    ParticleType::AttributeNames::quaternion3,
+    ParticleType::AttributeNames::angularVelX,
+    ParticleType::AttributeNames::angularVelY,
+    ParticleType::AttributeNames::angularVelZ,
+    ParticleType::AttributeNames::torqueX,
+    ParticleType::AttributeNames::torqueY,
+    ParticleType::AttributeNames::torqueZ,
+    ParticleType::AttributeNames::typeId,
+    ParticleType::AttributeNames::ownershipState};
+#else
+constexpr std::array<typename ParticleType::AttributeNames, 15> Attributes = {
+    ParticleType::AttributeNames::id,
+    ParticleType::AttributeNames::posX,
+    ParticleType::AttributeNames::posY,
+    ParticleType::AttributeNames::posZ,
+    ParticleType::AttributeNames::velocityX,
+    ParticleType::AttributeNames::velocityY,
+    ParticleType::AttributeNames::velocityZ,
+    ParticleType::AttributeNames::forceX,
+    ParticleType::AttributeNames::forceY,
+    ParticleType::AttributeNames::forceZ,
+    ParticleType::AttributeNames::oldForceX,
+    ParticleType::AttributeNames::oldForceY,
+    ParticleType::AttributeNames::oldForceZ,
+    ParticleType::AttributeNames::typeId,
     ParticleType::AttributeNames::ownershipState};
 #endif
 
@@ -66,7 +64,7 @@ constexpr std::array<typename ParticleType::AttributeNames, 17> Attributes = {
 #if MD_FLEXIBLE_MODE == MULTISITE
 constexpr size_t AttributesSize = 200;
 #else
-constexpr size_t AttributesSize = 136;
+constexpr size_t AttributesSize = 120;
 #endif
 
 /**
