@@ -170,8 +170,8 @@ TEST_F(ParticlePropertiesLibraryTest, LennardJonesTestShiftGivesCorrectEnergyAtC
   const auto shift = shift6 / 6.;
 
   // Create two LJ Molecules that are cutoff apart
-  mdLib::MoleculeLJ_NoPPL molA({0., 0., 0.}, {0., 0., 0.}, 0, std::sqrt(epsilon), sigma / 2);
-  mdLib::MoleculeLJ_NoPPL molB({cutoff, 0., 0.}, {0., 0., 0.}, 1, std::sqrt(epsilon), sigma / 2);
+  mdLib::MoleculeLJ_NoPPL molA({0., 0., 0.}, {0., 0., 0.}, 0, 0, std::sqrt(epsilon), sigma / 2);
+  mdLib::MoleculeLJ_NoPPL molB({cutoff, 0., 0.}, {0., 0., 0.}, 1, 1, std::sqrt(epsilon), sigma / 2);
 
   // Create LJ Functor class and use it to calculate the potential energy between the two
   mdLib::LJFunctor</* shifting */ false, /*mixing*/ true, autopas::FunctorN3Modes::Both,

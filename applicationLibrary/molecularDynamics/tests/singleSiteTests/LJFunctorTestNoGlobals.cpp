@@ -21,10 +21,9 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->epsilon * 24, 1);
   }
-  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 1., 0.5);
-  // p2 includes sqrtEpsilon & sigma/2 that don't match those actually used when mixing is disabled
-  // but this doesn't matter as these parameters shouldn't be used.
-  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, 1.4142135623730951, 1.);
+  Molecule p1({0., 0., 0.}, {0., 0., 0.}, 0, 0, std::sqrt(this->epsilon), this->sigma/2.);
+  // when mixing is disabled, the epsilon & sigma parameters aren't used.
+  Molecule p2({0.1, 0.2, 0.3}, {0., 0., 0.}, 1, mixing ? 1 : 0, mixing ? std::sqrt(this->epsilon2) : 0., mixing ? this->sigma2/2. : 0.);
 
   if (auto msg = this->shouldSkipIfNotImplemented([&]() { functor->AoSFunctor(p1, p2, newton3); }); msg != "") {
     GTEST_SKIP() << msg;
