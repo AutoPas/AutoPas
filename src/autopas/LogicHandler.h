@@ -33,6 +33,7 @@
 #include "autopas/utils/logging/FLOPLogger.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/IterationMeasurements.h"
+#include "autopas/utils/logging/LiveInfoLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
@@ -64,6 +65,7 @@ class LogicHandler {
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, autoTuner.canMeasureEnergy()),
         _flopLogger(outputSuffix),
+        _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -762,6 +764,8 @@ class LogicHandler {
    */
   IterationLogger _iterationLogger;
 
+  LiveInfoLogger _liveInfoLogger;
+
   /**
    * Logger for FLOP count and hit rate.
    */
@@ -1066,6 +1070,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   bool stillTuning = false;
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
+  LiveInfo info{};
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
@@ -1105,7 +1110,6 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     const auto needsLiveInfo = _autoTuner.prepareIteration();
 
     if (needsLiveInfo) {
-      LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       _autoTuner.receiveLiveInfo(info);
     }
@@ -1124,6 +1128,14 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       std::tie(configuration, stillTuning) = _autoTuner.rejectConfig(configuration, rejectIndefinitely);
     }
   }
+
+#ifdef AUTOPAS_LOG_LIVEINFO
+  // if live info has not been gathered yet, gather it now and log it
+  if (info.get().empty()) {
+    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+  }
+  _liveInfoLogger.logLiveInfo(info, _iteration);
+#endif
 
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }

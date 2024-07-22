@@ -268,6 +268,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         description = config.deltaT.description;
 
         config.deltaT.value = node[key].as<double>();
+      } else if (key == config.pauseSimulationDuringTuning.name) {
+        expected = "Boolean Value";
+        description = config.pauseSimulationDuringTuning.description;
+
+        config.pauseSimulationDuringTuning.value = node[key].as<bool>();
       } else if (key == config.sortingThreshold.name) {
         expected = "Unsigned Integer >= 0.";
         description = config.sortingThreshold.description;
