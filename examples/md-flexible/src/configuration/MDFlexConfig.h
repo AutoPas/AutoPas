@@ -556,11 +556,6 @@ class MDFlexConfig {
   MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
       {{0ul, 1.}}, "sigma", true, "Mapping from site type to a sigma value."};
   /**
-   * maxSigma. Largest sigma value in simulation - used for reflective boundaries.
-   */
-  double _maxSigma{0.};
-
-  /**
    * massMap
    */
   MDFlexOption<std::map<unsigned long, double>, 0> massMap{

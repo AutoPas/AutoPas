@@ -117,34 +117,12 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     timestepFile << "        " << torque[0] << " " << torque[1] << " " << torque[2] << "\n";
   }
   timestepFile << "        </DataArray>\n";
+#endif
 
   // print type ids
   timestepFile << "        <DataArray Name=\"typeIds\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
     timestepFile << "        " << particle->getTypeId() << "\n";
-  }
-  timestepFile << "        </DataArray>\n";
-#endif
-
-  // print sqrtEpsilons
-  timestepFile
-      << "        <DataArray Name=\"sqrtEpsilons\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    timestepFile << "        " << particle->getSquareRootEpsilon() << "\n";
-  }
-  timestepFile << "        </DataArray>\n";
-
-  // print sigmaDiv2s
-  timestepFile << "        <DataArray Name=\"sigmaDiv2s\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    timestepFile << "        " << particle->getSigmaDiv2() << "\n";
-  }
-  timestepFile << "        </DataArray>\n";
-
-  // print masses
-  timestepFile << "        <DataArray Name=\"masses\" NumberOfComponents=\"1\" format=\"ascii\" type=\"Int32\">\n";
-  for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    timestepFile << "        " << particle->getMass() << "\n";
   }
   timestepFile << "        </DataArray>\n";
 

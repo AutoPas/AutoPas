@@ -16,9 +16,7 @@ ParticleSerializationToolsTest::ParticleSerializationToolsTest() : AutoPasTestBa
   _molecule.setF({0.05, 0.06, 0.07});
   _molecule.setID(12);
   _molecule.setOwnershipState(autopas::OwnershipState::halo);
-  _molecule.setEpsilon(0.5);
-  _molecule.setSigma(1.5);
-  _molecule.setMass(0.8);
+  _molecule.setTypeId(5);
   _molecule.setOldF({0.01, 0.02, 0.03});
 #if MD_FLEXIBLE_MODE == MULTISITE
   _molecule.setQuaternion({0.2, 0.3, 0.4, 0.5});
@@ -39,9 +37,7 @@ TEST_F(ParticleSerializationToolsTest, testSeralizeAndDeserializeParticle) {
   EXPECT_EQ(deserializedParticle.getF(), _molecule.getF());
   EXPECT_EQ(deserializedParticle.getOldF(), _molecule.getOldF());
   EXPECT_EQ(deserializedParticle.getID(), _molecule.getID());
-  EXPECT_EQ(deserializedParticle.getEpsilon(), _molecule.getEpsilon());
-  EXPECT_EQ(deserializedParticle.getSigma(), _molecule.getSigma());
-  EXPECT_EQ(deserializedParticle.getMass(), _molecule.getMass());
+  EXPECT_EQ(deserializedParticle.getTypeId(), _molecule.getTypeId());
 #if MD_FLEXIBLE_MODE == MULTISITE
   EXPECT_EQ(deserializedParticle.getQuaternion(), _molecule.getQuaternion());
   EXPECT_EQ(deserializedParticle.getAngularVel(), _molecule.getAngularVel());

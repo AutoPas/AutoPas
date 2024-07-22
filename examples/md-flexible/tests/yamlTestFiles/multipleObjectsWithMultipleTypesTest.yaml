@@ -3,27 +3,6 @@
 #GeneratorsTest.MultipleObjectGeneration
 #ParticlePropertiesTests.ParticlePropertiesInitialization
 #YamlParser
-Sites:
-  0:
-    epsilon: 1.
-    sigma: 1.
-    mass: 0.
-  1:
-    epsilon: 1.
-    sigma: 1.
-    mass: 1.
-  2:
-    epsilon: 1.
-    sigma: 1.
-    mass: 2.
-  3:
-    epsilon: 1.
-    sigma: 1.
-    mass: 3.
-  4:
-    epsilon: 1.
-    sigma: 1.
-    mass: 4.
 Objects:
   CubeGrid:
     0:

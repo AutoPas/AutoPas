@@ -48,7 +48,11 @@ RegularGridDecomposition::RegularGridDecomposition(const MDFlexConfig &configura
   // only for particles within sixthRootOfTwo * sigma / 2.0 of the boundary. For minimal redundant iterating over
   // particles, we iterate once over particles within the largest possible range where a particle might experience a
   // repulsion, i.e. sixthRootOfTwo * maxSigma / 2.0.
-  _maxReflectiveSkin = sixthRootOfTwo * configuration._maxSigma / 2.;
+  double maxSigma{0};
+  for (const auto &[_, sigma] : configuration.sigmaMap.value) {
+    maxSigma = std::max(maxSigma, sigma);
+  }
+  _maxReflectiveSkin = sixthRootOfTwo * maxSigma / 2.;
 
   // initialize _communicator and _domainIndex
   initializeMPICommunicator();
@@ -353,7 +357,7 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
 #if MD_FLEXIBLE_MODE == MULTISITE
                                      particlePropertiesLib.getMoleculesLargestSigma(p->getTypeId());
 #else
-                                     p->getSigma();
+                                     particlePropertiesLib.getSigma(p->getTypeId());
 #endif
 
         if (reflectMoleculeFlag) {

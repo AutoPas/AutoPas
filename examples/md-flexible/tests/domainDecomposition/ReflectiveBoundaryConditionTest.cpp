@@ -361,13 +361,11 @@ void testReflectiveBoundaryZoning(const std::array<double, 3> &particlePosition,
     particle.setID(0);
     particle.setR(particlePosition);
     particle.setF({0., 0., 0.});
-#if MD_FLEXIBLE_MODE == SINGLESITE
-    particle.setSigma(sigmas[particleTypeID]);
-#else
+#if MD_FLEXIBLE_MODE == MULTISITE
     particle.setQuaternion({0., 0., 0., 1.});
     particle.setTorque({0., 0., 0.});
-    particle.setTypeId(particleTypeID);
 #endif
+    particle.setTypeId(particleTypeID);
     autoPasContainer->addParticle(particle);
 #if not defined(AUTOPAS_INCLUDE_MPI)
   } else {

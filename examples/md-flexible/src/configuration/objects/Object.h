@@ -22,9 +22,7 @@ class Object {
   /**
    * Constructor that should be used by inheriting types.
    * @param velocity
-   * @param typeId If single-site mode, this is used to lookup the mixing parameters from the config object during
-   * object generation. If multi-site, this is stored directly (and used to lookup these parameters during the
-   * simulation).
+   * @param typeId
    */
   Object(const std::array<double, 3> &velocity, unsigned long typeId) : _velocity(velocity), _typeId(typeId) {}
 
@@ -44,15 +42,12 @@ class Object {
   [[nodiscard]] ParticleType getDummyParticle(const size_t &particleId) const {
     ParticleType particle{};
     particle.setID(particleId);
+    particle.setTypeId(_typeId);
     particle.setOwnershipState(autopas::OwnershipState::owned);
     particle.setV(_velocity);
     particle.setF({0.0, 0.0, 0.0});
     particle.setOldF({0.0, 0.0, 0.0});
-    particle.setEpsilon(_epsilon);
-    particle.setSigma(_sigma);
-    particle.setMass(_mass);
 #if MD_FLEXIBLE_MODE == MULTISITE
-    particle.setTypeId(_typeId);
     particle.setQuaternion({1.0, 0.0, 0.0, 0.0});  // todo: add option for this to be set randomly
     particle.setAngularVel({0.0, 0.0, 0.0});
     particle.setTorque({0.0, 0.0, 0.0});
@@ -72,42 +67,6 @@ class Object {
    * @return typeId
    */
   [[nodiscard]] unsigned long getTypeId() const { return _typeId; }
-
-  /**
-   * Getter for the epsilon of the particles in the object.
-   * @return epsilon
-   */
-  [[nodiscard]] double getEpsilon() const { return _epsilon; }
-
-  /**
-   * Getter for the sigma of the particles in the object.
-   * @return sigma
-   */
-  [[nodiscard]] double getSigma() const { return _sigma; }
-
-  /**
-   * Getter for the mass of the particles in the object.
-   * @return mass
-   */
-  [[nodiscard]] double getMass() const { return _mass; }
-
-  /**
-   * Setter for the epsilon of the particles in the object.
-   * @param epsilon
-   */
-  void setEpsilon(const double epsilon) { _epsilon = epsilon; }
-
-  /**
-   * Setter for the sigma of the particles in the object.
-   * @param sigma
-   */
-  void setSigma(const double &sigma) { _sigma = sigma; }
-
-  /**
-   * Setter for the mass of the particles in the object.
-   * @param mass
-   */
-  void setMass(const double &mass) { _mass = mass; }
 
   /**
    * Getter for the smallest x,y,z coordinates for Object
@@ -164,21 +123,10 @@ class Object {
    */
   std::array<double, 3> _velocity;
   /**
-   * Type of every particle in the object. This is only used for multi-site simulations and this refers to the molId.
+   * Type of every particle in the object. For single-site simulations, this refers directly to the siteId. For
+   * multi-site simulations, this refers to the molId.
    */
   unsigned long _typeId;
-  /**
-   * Epsilon of every molecule. Only used for single-site simulations.
-   */
-  double _epsilon;
-  /**
-   * Sigma of every molecule. Only used for single-site simulations.
-   */
-  double _sigma;
-  /**
-   * Mass of every molecule. Only used for single-site simulations.
-   */
-  double _mass;
   /**
    * valueOffset of MDFlexConfig - expected indent
    */

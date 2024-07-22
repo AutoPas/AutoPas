@@ -276,9 +276,8 @@ TEST_F(TimeDiscretizationTest, testCalculateAngularVelocities) {
   mol1.setSigma(1.);
   mol1.setEpsilon(1.);
   mol1.setMass(0.5);
-#else
-  mol1.setTypeId(0);
 #endif
+  mol1.setTypeId(0);
   mol1.setID(0);
   autopasContainer->addParticle(mol1);
 
@@ -461,9 +460,8 @@ TEST_F(TimeDiscretizationTest, testCalculateQuaternion) {
   mol.setSigma(1.);
   mol.setEpsilon(1.);
   mol.setMass(0.5);
-#else
-  mol.setTypeId(0);
 #endif
+  mol.setTypeId(0);
   autopasContainer->addParticle(mol);
 
   // Try to calculate the quaternion

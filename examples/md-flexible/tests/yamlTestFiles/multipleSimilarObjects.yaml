@@ -1,13 +1,4 @@
 #test yaml parser for multiple similar Objects
-Sites:
-  0:
-    epsilon: 1.
-    sigma: 1.
-    mass: 0.
-  1:
-    epsilon: 1.
-    sigma: 1.
-    mass: 1.
 Objects:
   CubeGrid:
     0:
