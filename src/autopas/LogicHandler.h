@@ -32,6 +32,7 @@
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/IterationMeasurements.h"
+#include "autopas/utils/logging/LiveInfoLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
@@ -64,6 +65,7 @@ class LogicHandler {
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, std::any_of(autotuners.begin(), autotuners.end(),
                                                    [](const auto &tuner) { return tuner.second->canMeasureEnergy(); })),
+        _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
 
@@ -841,6 +843,8 @@ class LogicHandler {
   std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
   IterationLogger _iterationLogger;
+
+  LiveInfoLogger _liveInfoLogger;
 };
 
 template <typename Particle>
@@ -1333,6 +1337,9 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
   auto *const autoTuner = _autoTunerRefs[interactionType].get();
+  // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
+  // https://github.com/AutoPas/AutoPas/issues/916
+  LiveInfo info{};
 
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
@@ -1382,9 +1389,6 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     const auto needsLiveInfo = autoTuner->prepareIteration();
 
     if (needsLiveInfo) {
-      // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
-      // https://github.com/AutoPas/AutoPas/issues/916
-      LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       autoTuner->receiveLiveInfo(info);
     }
@@ -1404,6 +1408,14 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       std::tie(configuration, stillTuning) = autoTuner->rejectConfig(configuration, rejectIndefinitely);
     }
   }
+
+#ifdef AUTOPAS_LOG_LIVEINFO
+  // if live info has not been gathered yet, gather it now and log it
+  if (info.get().empty()) {
+    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
+  }
+  _liveInfoLogger.logLiveInfo(info, _iteration);
+#endif
 
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }
