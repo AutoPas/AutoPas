@@ -283,6 +283,18 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
         } else if (strArg.find("lj") != string::npos or strArg.find("lennard-jones") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if(strArg.find("xsimd") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_XSIMD;
+        } else if(strArg.find("mipp") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_MIPP;
+        } else if(strArg.find("simde") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
+        } else if(strArg.find("highway") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
+        }else if(strArg.find("smoHWY") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_smoothHWY;
+        }else if(strArg.find("smooth") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6smooth;
         } else {
           cerr << "Unknown functor: " << strArg << endl;
           cerr << "Please use 'Lennard-Jones', 'Lennard-Jones-With-Globals', 'Lennard-Jones-AVX' or 'Lennard-Jones-SVE'"

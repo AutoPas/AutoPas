@@ -43,6 +43,8 @@ class ParallelVtkWriter {
   void recordTimestep(size_t currentIteration, const autopas::AutoPas<ParticleType> &autoPasContainer,
                       const RegularGridDecomposition &decomposition);
 
+  void writeAnimationPvd();
+
  private:
   /**
    * Checks if a file with the given path exists.
@@ -60,6 +62,7 @@ class ParallelVtkWriter {
    */
   int _numberOfRanks{};
 
+
   /**
    * Stores the MPI rank of the current process.
    * Every process will write into it's own .vtu file, while the process with rank 0 will
@@ -72,6 +75,7 @@ class ParallelVtkWriter {
    */
   std::string _sessionName;
 
+  std::vector<std::string> pvtuNames;
   /**
    * Stores the path to the current session's output folder.
    */
@@ -152,4 +156,5 @@ class ParallelVtkWriter {
    * @param filenameStream: The output string string for the filename.
    */
   void generateFilename(const std::string &filetype, size_t currentIteration, std::ostringstream &filenameStream);
+
 };

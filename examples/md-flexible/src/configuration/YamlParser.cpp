@@ -188,9 +188,21 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.cutoff.value = node[key].as<double>();
         if (config.cutoff.value <= 0) {
-          throw std::runtime_error("Cutoff has to be > 0!");
+          throw std::runtime_error("innerCutoff has to be > 0!");
         }
-      } else if (key == config.cellSizeFactors.name) {
+      }else if (key == config.innerCutoff.name) { //Added innercutoff to parser
+        expected = "Positive floating point value > 0.";
+        description = config.innerCutoff.description;
+
+        config.innerCutoff.value = node[key].as<double>();
+        if (config.innerCutoff.value <= 0) {
+          throw std::runtime_error("ínnerCutoff has to be > 0!");
+        }
+        if (config.innerCutoff.value > config.cutoff.value) {
+          throw std::runtime_error("ínnerCutoff must be smaller than cutoff");
+        }
+      }
+      else if (key == config.cellSizeFactors.name) {
         expected = "YAML-sequence of floats.";
         description = config.cellSizeFactors.description;
 
@@ -221,8 +233,21 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("glob") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
+        } else if(strArg.find("smohwy") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_smoothHWY;
+        } else if(strArg.find("smooth") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6smooth;
         } else if (strArg.find("lj") != std::string::npos or strArg.find("lennard-jones") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6;
+        } else if(strArg.find("xsimd") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_XSIMD;
+        } else if(strArg.find("mipp") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_MIPP;
+        } else if(strArg.find("simde") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
+        } else if(strArg.find("highway") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
+
         } else {
           throw std::runtime_error("Unrecognized functor!");
         }

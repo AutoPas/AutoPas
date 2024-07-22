@@ -30,8 +30,23 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeSVE *);
 #endif
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
+// #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeHWY *);
+// #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorXSIMD.h"
+#endif
+#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSIMDe.h"
+#endif
+// #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorHWY.h"
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSmooth.h"
+#include "../applicationLibrary/molecularDynamics/molecularDynamicsLibrary/LJFunctorSmoothHWY.h"
+// #endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -40,9 +55,11 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
 #include <iostream>
 
 #include "Thermostat.h"
+#include "TimeDiscretization.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
 #include "configuration/MDFlexConfig.h"
+
 
 namespace {
 /**
@@ -288,6 +305,7 @@ void Simulation::run() {
   // Record last state of simulation.
   if (_createVtkFiles) {
     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+    _vtkWriter->writeAnimationPvd();
   }
 }
 
@@ -683,14 +701,54 @@ T Simulation::applyWithChosenFunctor(F f) {
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
+      return f(LJFunctorSVE<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
-  }
-  throw std::runtime_error("Unknown functor choice" +
+    case MDFlexConfig::FunctorOption::lj12_6_XSIMD: {
+#if defined(MD_FLEXIBLE_FUNCTOR_XSIMD)
+        return f(mdLib::LJFunctorXSIMD<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+#else
+        throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor XSIMD. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_XSIMD=ON`.");
+#endif
+    } case MDFlexConfig::FunctorOption::lj12_6_MIPP: {
+#if defined(MD_FLEXIBLE_FUNCTOR_MIPP)
+        return f(mdLib::LJFunctorMIPP<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+#else
+            throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor MIPP. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_MIPP=ON`.");
+#endif
+    }  case MDFlexConfig::FunctorOption::lj12_6_SIMDe: {
+#if defined(MD_FLEXIBLE_FUNCTOR_SIMDE)
+        return f(mdLib::LJFunctorSIMDe<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+#else
+        throw std::runtime_error(
+          "MD-Flexible was not compiled with support for LJFunctor SIMDe. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_SIMDE=ON`.");
+#endif
+    }  case MDFlexConfig::FunctorOption::lj12_6_HWY: {
+// #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+        return f(mdLib::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+
+    }
+    case MDFlexConfig::FunctorOption::lj12_6smooth: {
+        // #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+        return f(mdLib::LJFunctorSmooth<ParticleType, true, true>{cutoff,_configuration.innerCutoff.value, particlePropertiesLibrary});
+
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_smoothHWY: {
+        // #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
+        return f(mdLib::LJFunctorSmoothHWY<ParticleType, true, true>{cutoff,_configuration.innerCutoff.value, particlePropertiesLibrary});
+
+    }
+    }
+
+    throw std::runtime_error("Unknown functor choice" +
                            std::to_string(static_cast<int>(_configuration.functorOption.value)));
 }
