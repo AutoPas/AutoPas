@@ -31,7 +31,7 @@ class MoleculeLJ_NoPPL : public autopas::Particle {
    * @param sigmaDiv2 sigma of molecule/2
    */
   MoleculeLJ_NoPPL(const std::array<double, 3> &pos, const std::array<double, 3> &v, unsigned long moleculeId,
-                   unsigned long typeId, double squareRootEpsilon = 1., double sigmaDiv2 = 0.5);
+                   unsigned long typeId = 0, double squareRootEpsilon = 1., double sigmaDiv2 = 0.5);
 
   ~MoleculeLJ_NoPPL() = default;
 
