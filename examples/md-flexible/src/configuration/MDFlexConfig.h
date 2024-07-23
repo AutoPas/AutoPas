@@ -22,6 +22,7 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
 #include "autopas/options/TuningStrategyOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/Math.h"
 #include "autopas/utils/NumberSet.h"
 #include "src/TypeDefinitions.h"
@@ -449,6 +450,10 @@ class MDFlexConfig {
         "functor", true,
         "Force functor to use. Possible Values: (lennard-jones "
         "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
+  };
+
+  MDFlexOption<autopas::VectorizationPatternOption, __LINE__> vecPatternOption {
+    autopas::VectorizationPatternOption::p1xVec, "vectorizationPattern", true, "Vectorization Pattern for HWY Functor."
   };
   /**
    * iterations

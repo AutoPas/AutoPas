@@ -96,7 +96,7 @@ using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
 
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 
-using LJFunctorTypeHWY = mdLib::LJFunctorHWY<ParticleType, true, true>;
+using LJFunctorTypeHWY = mdLib::LJFunctorHWY<autopas::VectorizationPatternOption::Value::p1xVec, ParticleType, true, true>;
 
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
 /**

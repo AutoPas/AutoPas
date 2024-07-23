@@ -716,9 +716,18 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SIMDE=ON`.");
 #endif
     }  case MDFlexConfig::FunctorOption::lj12_6_HWY: {
-// #if defined(MD_FLEXIBLE_FUNCTOR_HWY)
-        return f(mdLib::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
 
+        switch (_configuration.vecPatternOption.value) {
+          case autopas::VectorizationPatternOption::p1xVec: {
+            return f(mdLib::LJFunctorHWY<autopas::VectorizationPatternOption::p1xVec, ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+          }
+          case autopas::VectorizationPatternOption::p2xVecDiv2: {
+            return f(mdLib::LJFunctorHWY<autopas::VectorizationPatternOption::p2xVecDiv2, ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+          }
+        }
+
+        throw std::runtime_error("Unknown vectorization pattern choice" +
+                              std::to_string(static_cast<int>(_configuration.vecPatternOption.value)));
     }
     }
 
