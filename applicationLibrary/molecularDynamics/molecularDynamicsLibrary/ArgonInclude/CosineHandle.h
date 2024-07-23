@@ -60,16 +60,16 @@ CosineHandle::CosineHandle(const DisplacementHandle &displacementAB, const Displ
 template <size_t ID>
 [[nodiscard]] nabla CosineHandle::derive_wrt() const {
   if (ID == id_) {
-    auto firstTerm{cos_ / ArrayMath::dot(AB_, AB_) - 1. / ArrayMath::dot(AB_, AC_)};
-    auto secondTerm{cos_ / ArrayMath::dot(AC_, AC_) - 1. / ArrayMath::dot(AB_, AC_)};
+    auto firstTerm{cos_ / (ArrayMath::L2Norm(AB_)* ArrayMath::L2Norm(AB_)) - 1. / (ArrayMath::L2Norm(AB_)* ArrayMath::L2Norm(AC_))};
+    auto secondTerm{cos_ / (ArrayMath::L2Norm(AC_)* ArrayMath::L2Norm(AC_)) - 1. / (ArrayMath::L2Norm(AB_)* ArrayMath::L2Norm(AC_))};
     return AB_ * firstTerm + AC_ * secondTerm;
   } else if (ID == displacementAB_.getIdEndVertex()) {
-    auto firstTerm{-cos_ / ArrayMath::dot(AB_, AB_)};
-    auto secondTerm{1. / ArrayMath::dot(AB_, AC_)};
+    auto firstTerm{-cos_ / (ArrayMath::L2Norm(AB_)* ArrayMath::L2Norm(AB_))};
+    auto secondTerm{1. / (ArrayMath::L2Norm(AB_)* ArrayMath::L2Norm(AC_))};
     return AB_ * firstTerm + AC_ * secondTerm;
   } else if (ID == displacementAC_.getIdEndVertex()) {
-    auto firstTerm{-cos_ / ArrayMath::dot(AC_, AC_)};
-    auto secondTerm{1. / ArrayMath::dot(AB_, AC_)};
+    auto firstTerm{-cos_ / (ArrayMath::L2Norm(AC_)* ArrayMath::L2Norm(AC_))};
+    auto secondTerm{1. / (ArrayMath::L2Norm(AB_)* ArrayMath::L2Norm(AC_))};
     return AC_ * firstTerm + AB_ * secondTerm;
   }
   return std::array<double, 3>{{0, 0, 0}};
