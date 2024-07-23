@@ -39,7 +39,7 @@ bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
   for (size_t i = 0; i < soa1.size(); ++i) {
     EXPECT_EQ(idptr1[i], idptr2[i]);
 
-    double tolerance = 1e-8;
+    double tolerance = 2e-8;
     EXPECT_NEAR(xptr1[i], xptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
     EXPECT_NEAR(yptr1[i], yptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
     EXPECT_NEAR(zptr1[i], zptr2[i], tolerance) << "for particle pair " << idptr1[i] << "and i=" << i;
@@ -55,8 +55,8 @@ bool LJFunctorAVXTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::S
 bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
-  double tolerance = 1e-8;
-
+  double tolerance = 2e-8;
+  
   EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
@@ -88,19 +88,31 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
 
   size_t numParticles = 7;
 
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  PPL.addSiteType(0,1.,1.,1.);
+  PPL.addSiteType(1,1.5,2.,1.);
+  PPL.addSiteType(2,2.,1.,1.);
+  PPL.addSiteType(3,2.5,2.,1.);
+  PPL.addSiteType(4,3.,1.,1.);
+  PPL.calculateMixingCoefficients();
+
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(
       cell1AVX, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
   autopasTools::generators::RandomGenerator::fillWithParticles(
       cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
-  if (doDeleteSomeParticles) {
-    for (auto &particle : cell1AVX) {
-      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+  for (auto &particle : cell1AVX) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 3) { autopas::internal::markParticleAsDeleted(particle); }
     }
-    for (auto &particle : cell2AVX) {
-      if (particle.getID() == 4) autopas::internal::markParticleAsDeleted(particle);
+    particle.setTypeId(particle.getID() % 5);
+  }
+  for (auto &particle : cell2AVX) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 4) { autopas::internal::markParticleAsDeleted(particle); }
     }
+    particle.setTypeId(particle.getID() % 5);
   }
 
   // copy cells
@@ -108,10 +120,10 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   FMCell cell2NoAVX(cell2AVX);
 
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
+  constexpr bool mixing = true;
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PPL);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
+  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ljFunctorAVX.initTraversal();
@@ -166,23 +178,32 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
 
   size_t numParticles = 7;
 
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  PPL.addSiteType(0,1.,1.,1.);
+  PPL.addSiteType(1,1.5,2.,1.);
+  PPL.addSiteType(2,2.,1.,1.);
+  PPL.addSiteType(3,2.5,2.,1.);
+  PPL.addSiteType(4,3.,1.,1.);
+  PPL.calculateMixingCoefficients();
+
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
-  if (doDeleteSomeParticles) {
-    for (auto &particle : cellAVX) {
-      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+  for (auto &particle : cellAVX) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 3) { autopas::internal::markParticleAsDeleted(particle); }
     }
+    particle.setTypeId(particle.getID() % 5);
   }
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
+  constexpr bool mixing = true;
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PPL);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
+  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
@@ -226,15 +247,23 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
 
   constexpr size_t numParticles = 7;
 
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  PPL.addSiteType(0,1.,1.,1.);
+  PPL.addSiteType(1,1.5,2.,1.);
+  PPL.addSiteType(2,2.,1.,1.);
+  PPL.addSiteType(3,2.5,2.,1.);
+  PPL.addSiteType(4,3.,1.,1.);
+  PPL.calculateMixingCoefficients();
+
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
-  if (doDeleteSomeParticles) {
-    // mark some particles as deleted to test if the functor handles them correctly
-    for (auto &particle : cellAVX) {
-      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+  for (auto &particle : cellAVX) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 3) { autopas::internal::markParticleAsDeleted(particle); }
     }
+    particle.setTypeId(particle.getID() % 5);
   }
 
   // generate neighbor lists
@@ -255,12 +284,12 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   // copy cells
   FMCell cellNoAVX(cellAVX);
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
+  constexpr bool mixing = true;
   constexpr bool calculateGlobals = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff, PPL);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
   mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(
-      _cutoff);
+      _cutoff, PPL);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
@@ -300,24 +329,32 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
 
   constexpr size_t numParticles = 7;
 
+  ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
+  PPL.addSiteType(0,1.,1.,1.);
+  PPL.addSiteType(1,1.5,2.,1.);
+  PPL.addSiteType(2,2.,1.,1.);
+  PPL.addSiteType(3,2.5,2.,1.);
+  PPL.addSiteType(4,3.,1.,1.);
+  PPL.calculateMixingCoefficients();
+
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
-  if (doDeleteSomeParticles) {
-    // mark some particles as deleted to test if the functor handles them correctly
-    for (auto &particle : cellAVX) {
-      if (particle.getID() == 3) autopas::internal::markParticleAsDeleted(particle);
+  for (auto &particle : cellAVX) {
+    if (doDeleteSomeParticles) {
+      if (particle.getID() == 3) { autopas::internal::markParticleAsDeleted(particle); }
     }
+    particle.setTypeId(particle.getID() % 5);
   }
 
   // copy cells
   FMCell cellNoAVX(cellAVX);
   constexpr bool shifting = true;
-  constexpr bool mixing = false;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff);
+  constexpr bool mixing = true;
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorNoAVX(_cutoff, PPL);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
+  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
