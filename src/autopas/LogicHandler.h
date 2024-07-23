@@ -160,11 +160,11 @@ class LogicHandler {
     bool doDataStructureUpdate = not neighborListsAreValid();
 
     if (_functorCalls > 0) {
-    // Bump iteration counters for all autotuners
-    for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
-      const bool needsToWait = checkTuningStates(interactionType);
-      autoTuner->bumpIterationCounters(needsToWait);
-    }
+      // Bump iteration counters for all autotuners
+      for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
+        const bool needsToWait = checkTuningStates(interactionType);
+        autoTuner->bumpIterationCounters(needsToWait);
+      }
 
       // We will do a rebuild in this timestep
       if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
