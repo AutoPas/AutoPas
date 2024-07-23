@@ -58,6 +58,30 @@ template <size_t a, size_t b, size_t c, size_t ID>
   return Z_abc * (W * (nabla_D1 * D2 * D3 + D1 * nabla_D2 * D3 + D1 * D2 * nabla_D3) + D1 * D2 * D3 * nabla_W);
 }
 
+template <size_t a, size_t b, size_t c>
+[[nodiscard]] double U_dispersive_abc(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
+                                      DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
+                                      DisplacementHandle displacementKI) {
+  const auto Z_abc = Z[mdLib::Argon::index<mdLib::Argon::param::Z>(a, b, c)];
+  const auto beta_abc = beta[mdLib::Argon::index<mdLib::Argon::param::beta>(a, b, c)];
+
+  const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
+  const auto cosineJ = CosineHandle(displacementIJ.getInv(), displacementJK);
+  const auto cosineK = CosineHandle(displacementKI, displacementJK.getInv());
+
+  const auto n1 = a + b + 1;
+  const auto n2 = b + c + 1;
+  const auto n3 = c + a + 1;
+
+  const auto D1 = DampingTerm(beta_abc, displacementIJ, n1);
+  const auto D2 = DampingTerm(beta_abc, displacementJK, n2);
+  const auto D3 = DampingTerm(beta_abc, displacementKI, n3);
+
+  const auto W = AngularTerm<a, b, c>(displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
+
+  return D1 * D2 * D3 * W * Z_abc;
+}
+
 /**
  *
  * @tparam ID ID of the particle with respect to whose position we are calculating the derivative
@@ -84,6 +108,23 @@ template <size_t ID>
                  F_dispersive_abc<1, 3, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
                  F_dispersive_abc<3, 1, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI);
   return F;
+}
+
+[[nodiscard]] double U_dispersive(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
+                                  DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
+                                  DisplacementHandle displacementKI) {
+  const auto U = U_dispersive_abc<1, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 1, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 2, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<2, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 2, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<2, 1, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<2, 2, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<2, 2, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 1, 3>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<1, 3, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
+                 U_dispersive_abc<3, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI);
+  return U;
 }
 
 }  // namespace autopas::utils::ArrayMath::Argon
