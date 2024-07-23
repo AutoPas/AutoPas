@@ -56,7 +56,7 @@ bool LJFunctorAVXTest::particleEqual(Particle &p1, Particle &p2) {
   EXPECT_EQ(p1.getID(), p2.getID());
 
   double tolerance = 2e-8;
-  
+
   EXPECT_NEAR(p1.getR()[0], p2.getR()[0], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[1], p2.getR()[1], tolerance) << "for particle pair " << p1.getID();
   EXPECT_NEAR(p1.getR()[2], p2.getR()[2], tolerance) << "for particle pair " << p1.getID();
@@ -89,11 +89,11 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   size_t numParticles = 7;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  PPL.addSiteType(0,1.,1.,1.);
-  PPL.addSiteType(1,1.5,2.,1.);
-  PPL.addSiteType(2,2.,1.,1.);
-  PPL.addSiteType(3,2.5,2.,1.);
-  PPL.addSiteType(4,3.,1.,1.);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(1, 1.5, 2., 1.);
+  PPL.addSiteType(2, 2., 1., 1.);
+  PPL.addSiteType(3, 2.5, 2., 1.);
+  PPL.addSiteType(4, 3., 1., 1.);
   PPL.calculateMixingCoefficients();
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -104,13 +104,17 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
 
   for (auto &particle : cell1AVX) {
     if (doDeleteSomeParticles) {
-      if (particle.getID() == 3) { autopas::internal::markParticleAsDeleted(particle); }
+      if (particle.getID() == 3) {
+        autopas::internal::markParticleAsDeleted(particle);
+      }
     }
     particle.setTypeId(particle.getID() % 5);
   }
   for (auto &particle : cell2AVX) {
     if (doDeleteSomeParticles) {
-      if (particle.getID() == 4) { autopas::internal::markParticleAsDeleted(particle); }
+      if (particle.getID() == 4) {
+        autopas::internal::markParticleAsDeleted(particle);
+      }
     }
     particle.setTypeId(particle.getID() % 5);
   }
@@ -179,11 +183,11 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   size_t numParticles = 7;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  PPL.addSiteType(0,1.,1.,1.);
-  PPL.addSiteType(1,1.5,2.,1.);
-  PPL.addSiteType(2,2.,1.,1.);
-  PPL.addSiteType(3,2.5,2.,1.);
-  PPL.addSiteType(4,3.,1.,1.);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(1, 1.5, 2., 1.);
+  PPL.addSiteType(2, 2., 1., 1.);
+  PPL.addSiteType(3, 2.5, 2., 1.);
+  PPL.addSiteType(4, 3., 1., 1.);
   PPL.calculateMixingCoefficients();
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -192,7 +196,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
-      if (particle.getID() == 3) { autopas::internal::markParticleAsDeleted(particle); }
+      if (particle.getID() == 3) {
+        autopas::internal::markParticleAsDeleted(particle);
+      }
     }
     particle.setTypeId(particle.getID() % 5);
   }
@@ -248,11 +254,11 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   constexpr size_t numParticles = 7;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  PPL.addSiteType(0,1.,1.,1.);
-  PPL.addSiteType(1,1.5,2.,1.);
-  PPL.addSiteType(2,2.,1.,1.);
-  PPL.addSiteType(3,2.5,2.,1.);
-  PPL.addSiteType(4,3.,1.,1.);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(1, 1.5, 2., 1.);
+  PPL.addSiteType(2, 2., 1., 1.);
+  PPL.addSiteType(3, 2.5, 2., 1.);
+  PPL.addSiteType(4, 3., 1., 1.);
   PPL.calculateMixingCoefficients();
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -261,7 +267,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
-      if (particle.getID() == 3) { autopas::internal::markParticleAsDeleted(particle); }
+      if (particle.getID() == 3) {
+        autopas::internal::markParticleAsDeleted(particle);
+      }
     }
     particle.setTypeId(particle.getID() % 5);
   }
@@ -286,10 +294,11 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   constexpr bool shifting = true;
   constexpr bool mixing = true;
   constexpr bool calculateGlobals = true;
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff, PPL);
+  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorNoAVX(_cutoff,
+                                                                                                               PPL);
   ljFunctorNoAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(
-      _cutoff, PPL);
+  mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(_cutoff,
+                                                                                                                PPL);
   ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
   ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellNoAVX)) << "Cells not equal after copy initialization.";
@@ -330,11 +339,11 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
   constexpr size_t numParticles = 7;
 
   ParticlePropertiesLibrary<double, size_t> PPL{_cutoff};
-  PPL.addSiteType(0,1.,1.,1.);
-  PPL.addSiteType(1,1.5,2.,1.);
-  PPL.addSiteType(2,2.,1.,1.);
-  PPL.addSiteType(3,2.5,2.,1.);
-  PPL.addSiteType(4,3.,1.,1.);
+  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(1, 1.5, 2., 1.);
+  PPL.addSiteType(2, 2., 1., 1.);
+  PPL.addSiteType(3, 2.5, 2., 1.);
+  PPL.addSiteType(4, 3., 1., 1.);
   PPL.calculateMixingCoefficients();
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
@@ -343,7 +352,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
-      if (particle.getID() == 3) { autopas::internal::markParticleAsDeleted(particle); }
+      if (particle.getID() == 3) {
+        autopas::internal::markParticleAsDeleted(particle);
+      }
     }
     particle.setTypeId(particle.getID() % 5);
   }
