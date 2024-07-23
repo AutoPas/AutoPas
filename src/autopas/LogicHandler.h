@@ -159,19 +159,21 @@ class LogicHandler {
   [[nodiscard]] std::vector<Particle> updateContainer() {
     bool doDataStructureUpdate = not neighborListsAreValid();
 
+    if (_functorCalls > 0) {
     // Bump iteration counters for all autotuners
     for (const auto &[interactionType, autoTuner] : _autoTunerRefs) {
       const bool needsToWait = checkTuningStates(interactionType);
       autoTuner->bumpIterationCounters(needsToWait);
     }
 
-    // We will do a rebuild in this timestep
-    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
-      _stepsSinceLastListRebuild = 0;
+      // We will do a rebuild in this timestep
+      if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
+        _stepsSinceLastListRebuild = 0;
+      }
+      ++_stepsSinceLastListRebuild;
+      _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
+      ++_iteration;
     }
-    ++_stepsSinceLastListRebuild;
-    _containerSelector.getCurrentContainer().setStepsSinceLastRebuild(_stepsSinceLastListRebuild);
-    ++_iteration;
 
     // The next call also adds particles to the container if doDataStructureUpdate is true.
     auto leavingBufferParticles = collectLeavingParticlesFromBuffer(doDataStructureUpdate);
@@ -1438,6 +1440,9 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   auto *const autoTuner = _autoTunerRefs[interactionType].get();
   autoTuner->logTuningResult(stillTuning, tuningTimer.getTotalTime());
 
+  // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
+  const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
+
   /// Computing the particle interactions
   AutoPasLog(DEBUG, "Iterating with configuration: {} tuning: {}", configuration.toString(), stillTuning);
   const IterationMeasurements measurements = computeInteractions(*functor, *traversalPtr);
@@ -1484,7 +1489,6 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
             return 0l;
         }
       }();
-      const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
       autoTuner->addMeasurement(measurement, rebuildIteration);
     }
   } else {

@@ -24,8 +24,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
     : _selectorStrategy(autoTunerInfo.selectorStrategy),
       _tuningStrategies(std::move(tuningStrategies)),
       _tuningInterval(autoTunerInfo.tuningInterval),
-      _iterationsSinceTuning(autoTunerInfo.tuningInterval - 1),  // Tuning should happen in the next (first) iteration
-      _stillTuning(false),
+      _iterationsSinceTuning(autoTunerInfo.tuningInterval),  // Init to max so that tuning happens in first iteration
+      _stillTuning(searchSpace.size() > 1),
       _tuningMetric(autoTunerInfo.tuningMetric),
       _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
@@ -291,10 +291,13 @@ void AutoTuner::bumpIterationCounters(bool needToWait) {
 
 bool AutoTuner::willRebuildNeighborLists() const {
   const bool stillTuning = inTuningPhase();
+
+  // Are we going to rebuild in the upcoming iteration?
+  auto itersSinceTuning = _iterationsSinceTuning + 1;
+
   // How many iterations ago did the rhythm of rebuilds change?
-  auto iterationBaseline = stillTuning ? (_iterationsSinceTuning - _tuningInterval) : _iterationsSinceTuning;
-  // Return whether we will need to rebuild in the next iteration.
-  ++iterationBaseline;
+  auto iterationBaseline = stillTuning ? (itersSinceTuning - _tuningInterval) : itersSinceTuning;
+
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = stillTuning ? _maxSamples : _rebuildFrequency;
   return (iterationBaseline % iterationsPerRebuild) == 0;
