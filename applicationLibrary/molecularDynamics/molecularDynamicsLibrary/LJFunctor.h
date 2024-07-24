@@ -821,7 +821,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
              (static_cast<double>(numDistCallsAcc));
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
-      return std::numeric_limits<size_t>::quiet_NaN();
+      return std::numeric_limits<double>::quiet_NaN();
     }
   }
 
