@@ -49,8 +49,9 @@ class LCC08CellHandler {
         _overlap(overlap),
         _dataLayout(dataLayout),
         _useNewton3(useNewton3),
-        _cellPairOffsets{internal::computePairwiseCellOffsetsC08<internal::C08OffsetMode::C08_CELL_PAIRS_SORTING>(
-            cellsPerDimension, cellLength, interactionLength)} {}
+        _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
+            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
+                                                                            interactionLength)} {}
 
   /**
    * Computes one interaction for each spacial direction based on the lower left
@@ -70,7 +71,7 @@ class LCC08CellHandler {
    * Pair sets for processBaseCell().
    * Values are: offset of first cell, offset of second cell, sorting direction.
    */
-  std::vector<internal::OffsetPairSorting> _cellPairOffsets;
+  std::vector<LCC08CellHandlerUtility::OffsetPairSorting> _cellPairOffsets;
 
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
