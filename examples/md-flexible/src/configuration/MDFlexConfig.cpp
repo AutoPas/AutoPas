@@ -333,6 +333,10 @@ std::string MDFlexConfig::to_string() const {
         os << "Axilrod-Teller" << endl;
         break;
       }
+      case FunctorOption3B::at_AVX512: {
+        os << "Axilrod-Teller AVX512 intrinsics" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions3B, -indentWidth);

@@ -34,6 +34,10 @@
 #include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AVX512)
+#include "molecularDynamicsLibrary/AxilrodTellerFunctorAVX512.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -121,6 +125,18 @@ using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
 using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+#endif
+
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AVX512)
+/**
+ * Type of ATFunctorTypeAVX512 used in md-flexible.
+ */
+#if MD_FLEXIBLE_MODE == MULTISITE
+#error "The Axilrod Teller AVX512 functor does not have support for multisite molecules!"
+#else
+using ATFunctorAVX512 = mdLib::AxilrodTellerFunctorAVX512<ParticleType, true>;
 #endif
 
 #endif

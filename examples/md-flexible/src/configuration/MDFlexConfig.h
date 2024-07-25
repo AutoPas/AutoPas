@@ -199,7 +199,7 @@ class MDFlexConfig {
   /**
    * Choice of the 3-body functor
    */
-  enum class FunctorOption3B { none, at };
+  enum class FunctorOption3B { none, at, at_AVX512 };
 
   /**
    * Choice of the particle generators specified in the command line
@@ -485,7 +485,7 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "3-Body force functor to use. Possible Values: (axilrod-teller)"};
+      FunctorOption3B::none, "functor-3b", true, "3-Body force functor to use. Possible Values: (axilrod-teller, axilrod-teller-AVX512)"};
   /**
    * iterations
    */

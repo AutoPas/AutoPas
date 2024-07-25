@@ -33,6 +33,9 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AVX512)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctorAVX512 *);
+#endif
 
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(
     autopas::FlopCounterFunctor<ParticleType, ForceFunctorAbstract> *);
@@ -761,6 +764,15 @@ T Simulation::applyWithChosenFunctor3B(F f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption3B::at_AVX512: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AVX512)
+      return f(ATFunctorAVX512{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for AxilrodTeller AVX512 Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AT_AVX512=ON`.");
 #endif
     }
     default: {
