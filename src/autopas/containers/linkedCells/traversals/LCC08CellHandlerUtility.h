@@ -46,7 +46,7 @@ using OffsetPair = std::pair<unsigned long, unsigned long>;
 using OffsetPairVector = std::vector<OffsetPair>;
 
 /**
- * Compile Time Modes for the function {@link computePairwiseCellOffsetsC08}
+ * Compile Time Modes for the function autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08
  *
  * @note In case of a new mode, this also requires the explciit instantation of the new template
  * in LCC08CellHandlerUtility.cpp and a modificaqtion to {@link OffsetPairType}
@@ -100,22 +100,17 @@ constexpr inline char ENUM_EXTENSION_EXCEPTION[]{
     "Enum C08CellDirection was extended, but its assciated switch-case statements was not!"};
 
 /**
- * Calculates the 1D index offset for cell2 in the pair, given a direction from the base cell, a z index and the
- * overlap.
- * @param overlap1 the overlap of the interacting cells (plus one)
- * @param direction one of the four directions
- * @param z the z index of the spatial dimension
- * @return offset of cell2
- */
-constexpr int calculateCell2Index(int overlap1, const C08CellDirection &direction, int z);
-
-/**
  * Helper function for autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08.
- * The calculated distance vector
+ * This function basically translates a direction, like backLeft to the corresponding vector pointing
+ * towards this cell relativly starting from the base cell. We treat frontLeft as base cell
+ * So, e.g. frontLeft --> (0, 0) since we are good
+ * Alternativley, e.g. backLeft --> (0, 1) pointing in positive y direction
+ *
+ * The values might need to be scaled given the overlap (so e.g. pointing over multiple cells into a direction)
  * @param direction one of the four directions
  * @return pair of multipliers: first one for x dimension, second one for y dimension
  */
-constexpr std::pair<int, int> toMask(const C08CellDirection &direction);
+constexpr std::pair<int, int> toMaskXY(const C08CellDirection &direction);
 
 /**
  * Returns true if the cell-interaction in the given direction, with the given base cell coordinates (x, y, z) and
@@ -133,23 +128,14 @@ constexpr bool includeCellPair(const C08CellDirection &direction, const std::arr
                                int z);
 
 /**
- * Computes the sorting direction between two cells from center of cell1 to center of cell2.
- * @param cellsPerDimension array containing the number of cells per dimension
- * @param distVec1 the vector to cell1 from the origin
- * @param offset2 the offset of cell2
+ * Computes the sorting direction between two cells from center of cell1 to center of cell2 using the 3D indices
+ * of the cells.
+ * @param offset1Vector the vector of cell1 from the origin
+ * @param offset2Cartesian the relative coordinates of cell2 in 3D
  * @return a vector containing the sorting direction, i.e. the vector from center of cell1 to center of cell2
  */
-std::array<double, 3> computeSortingDirection(const std::array<int, 3> &cellsPerDimension,
-                                              const std::array<double, 3> &distVec1, int offset2);
-
-/**
- * Computes the relative 1D cell offsets in the region around a given base cell.
- * @param cellsPerDimension the number of cells per dimension (required to determine 1D coordinates)
- * @param overlap the extent of overlap between neighboring cells (required to determine the amount of cells)
- * @return a vector of unsigned long values representing the computed cell offsets in 1D coordinates
- */
-std::vector<int> computeRelativeCellOffsets(const std::array<unsigned long, 3> &cellsPerDimension,
-                                            const std::array<int, 3> &overlap);
+std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offset1Vector,
+                                              const std::array<double, 3> &offset2Cartesian);
 
 }  // namespace internal
 

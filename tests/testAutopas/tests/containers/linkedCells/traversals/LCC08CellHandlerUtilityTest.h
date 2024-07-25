@@ -40,6 +40,12 @@ class LCC08CellHandlerUtilityTest : public AutoPasTestBase {
   constexpr static inline std::array<double, 3> CELL_LENGTH{1, 1, 1};
 
   /**
+   * We us this for floating point comparisons, where the precision does not really matter (just the first numbers
+   * should be equal)
+   */
+  constexpr static inline double TEST_EPSILON{1e-3};
+
+  /**
    * Converts a vector of cell offset pairs into a sorted vector of cell offset differences.
    * So, each pair is flattend to a single difference. This enables testing of the cell pairs
    * in an agnostic fahsion independent of sorting order, order of offsets inside the pair, and the concret

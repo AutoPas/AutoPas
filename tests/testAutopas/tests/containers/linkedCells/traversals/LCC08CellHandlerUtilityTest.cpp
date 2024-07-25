@@ -9,49 +9,12 @@
 #include "autopas/utils/StringUtils.h"
 
 using testing::ContainerEq;
+using testing::DoubleNear;
 using testing::Eq;
 using testing::Pointwise;
 
 using autopas::LCC08CellHandlerUtility::C08OffsetMode;
 using autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08;
-using autopas::LCC08CellHandlerUtility::internal::computeRelativeCellOffsets;
-
-/*
- * If the base cell has zero overlap with other cells dues to a overlap = interactionLength / cellLength = 0
- * ==> Expcected Cell Offsets for potential interactions, only self { 0 }
- */
-TEST_F(LCC08CellHandlerUtilityTest, ComputeCellOffsetsC08Test_0x0x0) {
-  constexpr std::array<int, 3> overlap{0, 0, 0};
-  const std::vector<int> actualOffsets = computeRelativeCellOffsets(CELLS_PER_DIMENSION, overlap);
-  const std::vector<int> expectedOffsets{0};
-  ASSERT_THAT(actualOffsets, ContainerEq(expectedOffsets));
-}
-
-/*
- * If the base cell has an overlap of one with other cells
- * ==> Expected Cell Offets for potential interactions 2x2x2, with a 12 cells per dimension (for 1D index), it is
- *     {0, 144, 12, 156, 1, 145, 13, 157}
- */
-TEST_F(LCC08CellHandlerUtilityTest, ComputeCellOffsetsC08Test_1x1x1) {
-  constexpr std::array<int, 3> overlap{1, 1, 1};
-  const std::vector<int> actualOffsets = computeRelativeCellOffsets(CELLS_PER_DIMENSION, overlap);
-  const std::vector<int> expectedOffsets{0, 144, 12, 156, 1, 145, 13, 157};
-  ASSERT_THAT(actualOffsets, ContainerEq(expectedOffsets));
-}
-
-/*
- * If the base cell has an overlap of two wither neighboring cells
- * ==> Expected Cell Offsets 3x3x3, i.e. an array of size 27, again with 12 cells per dimension (for 1D index)
- */
-TEST_F(LCC08CellHandlerUtilityTest, ComputeCellOffsetsC08Test_2x2x2) {
-  constexpr std::array<int, 3> overlap{2, 2, 2};
-  const std::vector<int> actualOffsets = computeRelativeCellOffsets(CELLS_PER_DIMENSION, overlap);
-  const std::vector<int> expectedOffsets{
-      0,   144, 288, 12,  156, 300, 24,  168, 312, 1,   145, 289, 13,  157,
-      301, 25,  169, 313, 2,   146, 290, 14,  158, 302, 26,  170, 314,
-  };
-  ASSERT_THAT(actualOffsets, ContainerEq(expectedOffsets));
-}
 
 /*
  * The given cell length and interaction length lead to an overlap of one.
@@ -60,12 +23,19 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputeCellOffsetsC08Test_2x2x2) {
  */
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
   constexpr double interactionLength{1.0};
+  // Calculated by hand & checked with the legacy implementation
   constexpr std::array<unsigned long, 14> expectedPairOffsetDifferences{
       0, 1, 11, 12, 13, 131, 132, 133, 143, 144, 145, 155, 156, 157,
   };
+  constexpr std::array<std::pair<unsigned long, unsigned long>, 14> expectedPairOffsets{
+      std::make_pair(0, 0),    std::make_pair(144, 0),  std::make_pair(156, 0), std::make_pair(145, 0),
+      std::make_pair(157, 0),  std::make_pair(0, 12),   std::make_pair(1, 12),  std::make_pair(144, 12),
+      std::make_pair(145, 12), std::make_pair(0, 1),    std::make_pair(144, 1), std::make_pair(156, 1),
+      std::make_pair(0, 13),   std::make_pair(144, 13),
+  };
 
-  const auto actualOffsetPairs = computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairsSorting>(
-      CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+  const auto actualOffsetPairs =
+      computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairs>(CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
   // Ensure the correct amount of interaction pairs
   ASSERT_EQ(actualOffsetPairs.size(), 14);
 
@@ -74,14 +44,47 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
   // E.g. (0, 1) or (1, 0) would both valid. Here it is just tested as 1
   // E.g. (0, 1) or (12, 13) would both be valid (if the pattern is applied everywhere the same, it'ls like applying
   // the same interaction, but always shifted in y += 1). Here it is just tested as 1
-  std::vector<unsigned long> actualPairOffsetsDiffercnes;
-  std::transform(actualOffsetPairs.begin(), actualOffsetPairs.end(), std::back_inserter(actualPairOffsetsDiffercnes),
-                 [](const auto &tuple) {
-                   const auto &[offset1, offset2, sort] = tuple;
-                   return std::abs(static_cast<int>(offset1) - static_cast<int>(offset2));
-                 });
-  std::sort(actualPairOffsetsDiffercnes.begin(), actualPairOffsetsDiffercnes.end());
+  std::vector<unsigned long> actualPairOffsetsDiffercnes =
+      transformAndSortOffsetPairs<C08OffsetMode::c08CellPairs>(actualOffsetPairs);
   ASSERT_THAT(actualPairOffsetsDiffercnes, Pointwise(Eq(), expectedPairOffsetDifferences));
+
+  // This test case is more senstive, it will fail in case the ordering of the output-pairs is wrong
+  // If this fails, your implementation is not necessarily wrong - but different
+  ASSERT_THAT(actualOffsetPairs, Pointwise(Eq(), expectedPairOffsets));
+}
+
+TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1_Sorting) {
+  constexpr double interactionLength{1.0};
+  // Checked & Computed with the legacy implementation
+  constexpr std::array<std::array<double, 3>, 14> expectedSortingVectors{{
+      {0.57735, 0.57735, 0.57735},
+      {0, 0, -1},
+      {0, -0.707107, -0.707107},
+      {-0.707107, 0, -0.707107},
+      {-0.57735, -0.57735, -0.57735},
+      {0, 1, 0},
+      {-0.707107, 0.707107, 0},
+      {0, 0.707107, -0.707107},
+      {-0.57735, 0.57735, -0.57735},
+      {1, 0, 0},
+      {0.707107, 0, -0.707107},
+      {0.57735, -0.57735, -0.57735},
+      {0.707107, 0.707107, 0},
+      {0.57735, 0.57735, -0.57735},
+  }};
+
+  const auto actualOffsetTriplets = computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairsSorting>(
+      CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+  // Ensure the correct amount of interaction pairs
+  ASSERT_EQ(actualOffsetTriplets.size(), 14);
+
+  std::vector<std::array<double, 3>> actualSortingVectors{};
+  actualSortingVectors.reserve(14);
+  std::transform(actualOffsetTriplets.begin(), actualOffsetTriplets.end(), std::back_inserter(actualSortingVectors),
+                 [](const auto &tuple) { return std::get<2>(tuple); });
+  for (size_t i = 0; i < expectedSortingVectors.size(); ++i) {
+    ASSERT_THAT(actualSortingVectors[i], Pointwise(DoubleNear(TEST_EPSILON), expectedSortingVectors[i]));
+  }
 }
 
 /*
@@ -90,6 +93,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
  */
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2) {
   constexpr double interactionLength{2.0};
+  // Checked & Computed with the legacy implementation
   constexpr std::array<unsigned long, 63> expectedPairOffsetDifferences{
       0,   1,   2,   10,  11,  12,  13,  14,  22,  23,  24,  25,  26,  118, 119, 120, 121, 122, 130, 131, 132,
       133, 134, 142, 143, 144, 145, 146, 154, 155, 156, 157, 158, 166, 167, 168, 169, 170, 262, 263, 264, 265,
@@ -107,12 +111,96 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2) {
   ASSERT_THAT(actualPairOffsetsDiffercnes, Pointwise(Eq(), expectedPairOffsetDifferences));
 }
 
+TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2_Sorting) {
+  constexpr double interactionLength{2.0};
+  // Checked & Computed with the legacy implementation
+  constexpr std::array<std::array<double, 3>, 63> expectedSortingVectors{{
+      {0.57735, 0.57735, 0.57735},
+      {0, 0, -1},
+      {0, -0.894427, -0.447214},
+      {-0.894427, 0, -0.447214},
+      {-0.666667, -0.666667, -0.333333},
+      {0, 0, -1},
+      {0, -0.707107, -0.707107},
+      {-0.707107, 0, -0.707107},
+      {-0.57735, -0.57735, -0.57735},
+      {0, 1, 0},
+      {-0.894427, 0.447214, 0},
+      {0, 0.707107, -0.707107},
+      {0, -0.707107, -0.707107},
+      {-0.816497, 0.408248, -0.408248},
+      {-0.816497, -0.408248, -0.408248},
+      {0, 0.447214, -0.894427},
+      {0, -0.447214, -0.894427},
+      {-0.666667, 0.333333, -0.666667},
+      {-0.666667, -0.333333, -0.666667},
+      {0, 1, 0},
+      {-0.707107, 0.707107, 0},
+      {0, 0.894427, -0.447214},
+      {-0.666667, 0.666667, -0.333333},
+      {0, 0.707107, -0.707107},
+      {-0.57735, 0.57735, -0.57735},
+      {1, 0, 0},
+      {0.707107, 0, -0.707107},
+      {0.408248, -0.816497, -0.408248},
+      {-0.707107, 0, -0.707107},
+      {-0.408248, -0.816497, -0.408248},
+      {0.447214, 0, -0.894427},
+      {0.333333, -0.666667, -0.666667},
+      {-0.447214, 0, -0.894427},
+      {-0.333333, -0.666667, -0.666667},
+      {0.707107, 0.707107, 0},
+      {-0.707107, 0.707107, 0},
+      {0.57735, 0.57735, -0.57735},
+      {0.57735, -0.57735, -0.57735},
+      {-0.57735, 0.57735, -0.57735},
+      {-0.57735, -0.57735, -0.57735},
+      {0.408248, 0.408248, -0.816497},
+      {0.408248, -0.408248, -0.816497},
+      {-0.408248, 0.408248, -0.816497},
+      {-0.408248, -0.408248, -0.816497},
+      {0.447214, 0.894427, 0},
+      {-0.447214, 0.894427, 0},
+      {0.408248, 0.816497, -0.408248},
+      {-0.408248, 0.816497, -0.408248},
+      {0.333333, 0.666667, -0.666667},
+      {-0.333333, 0.666667, -0.666667},
+      {1, 0, 0},
+      {0.894427, 0, -0.447214},
+      {0.666667, -0.666667, -0.333333},
+      {0.707107, 0, -0.707107},
+      {0.57735, -0.57735, -0.57735},
+      {0.894427, 0.447214, 0},
+      {0.816497, 0.408248, -0.408248},
+      {0.816497, -0.408248, -0.408248},
+      {0.666667, 0.333333, -0.666667},
+      {0.666667, -0.333333, -0.666667},
+      {0.707107, 0.707107, 0},
+      {0.666667, 0.666667, -0.333333},
+      {0.57735, 0.57735, -0.57735},
+  }};
+
+  const auto actualOffsetTriplets = computePairwiseCellOffsetsC08<C08OffsetMode::c08CellPairsSorting>(
+      CELLS_PER_DIMENSION, CELL_LENGTH, interactionLength);
+  // Ensure the correct amount of interaction pairs
+  ASSERT_EQ(actualOffsetTriplets.size(), 63);
+
+  std::vector<std::array<double, 3>> actualSortingVectors{};
+  actualSortingVectors.reserve(63);
+  std::transform(actualOffsetTriplets.begin(), actualOffsetTriplets.end(), std::back_inserter(actualSortingVectors),
+                 [](const auto &tuple) { return std::get<2>(tuple); });
+  for (size_t i = 0; i < expectedSortingVectors.size(); ++i) {
+    ASSERT_THAT(actualSortingVectors[i], Pointwise(DoubleNear(TEST_EPSILON), expectedSortingVectors[i]));
+  }
+}
+
 /*
  * The given cell length and interaction length lead to an overlap of three (4x4x4).
  * Ergo, we have 4x4x4 cells and shall have 168 interaction pairs in total between the cells.
  */
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_3x3x3) {
   constexpr double interactionLength{3.0};
+  // Calculated with the legacy implementation
   constexpr std::array<unsigned long, 168> expectedPairOffsetDifferences{
       0,   1,   2,   3,   9,   10,  11,  12,  13,  14,  15,  21,  22,  23,  24,  25,  26,  27,  33,  34,  35,
       36,  37,  38,  39,  105, 106, 107, 108, 109, 110, 111, 117, 118, 119, 120, 121, 122, 123, 129, 130, 131,

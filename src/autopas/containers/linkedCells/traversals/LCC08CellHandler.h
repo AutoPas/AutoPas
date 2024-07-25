@@ -51,7 +51,7 @@ class LCC08CellHandler {
         _useNewton3(useNewton3),
         _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
             LCC08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
-                                                                            interactionLength)} {}
+                                                                         interactionLength)} {}
 
   /**
    * Computes one interaction for each spacial direction based on the lower left
