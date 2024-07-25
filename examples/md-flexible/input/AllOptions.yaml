@@ -110,7 +110,6 @@ thermostat:
   thermostatInterval                 :  10
   addBrownianMotion                  :  true
 log-level                            :  info
-no-flops                             :  false
 no-end-config                        :  false
 no-progress-bar                      :  false
 vtk-filename                         :  AllOptionsSim

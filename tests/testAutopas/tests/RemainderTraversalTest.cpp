@@ -87,8 +87,8 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
-  mdLib::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>
-      functor(logicHandlerInfo.cutoff);
+  LJFunctorType</*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
+      logicHandlerInfo.cutoff);
   // Choose sigma != distance so we get Upot != 0
   constexpr double sigma = 2.;
   constexpr double epsilon = 1.;
@@ -368,7 +368,7 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
 
   logicHandler.setParticleBuffers(particlesBuffer, haloParticlesBuffer);
 
-  mdLib::LJFunctor<Molecule> functor(logicHandlerInfo.cutoff);
+  LJFunctorType<> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(24, 1);
   // do the actual test
   logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::pairwise);

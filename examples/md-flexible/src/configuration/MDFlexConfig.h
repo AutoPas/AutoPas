@@ -522,10 +522,6 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"}) +
           " Default: {periodic, periodic, periodic}"};
   /**
-   * dontMeasureFlops
-   */
-  MDFlexOption<bool, __LINE__> dontMeasureFlops{true, "no-flops", false, "Set to omit the calculation of flops."};
-  /**
    * Omit the creation of a config file at the end of the Simulation.
    * This starts with a "not" such that it can be used as a flag with a sane default.
    */

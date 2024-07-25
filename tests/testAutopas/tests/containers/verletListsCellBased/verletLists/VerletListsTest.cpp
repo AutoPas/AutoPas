@@ -306,10 +306,10 @@ TEST_P(VerletListsTest, LoadExtractSoALJ) {
 
   Molecule p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, 0);
   verletLists.addHaloParticle(p);
-  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
+  LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIterationTraversal<FMCell, mdLib::LJFunctor<Molecule>> verletTraversal(
-      &ljFunctor, autopas::DataLayoutOption::soa, false);
+  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal(&ljFunctor, autopas::DataLayoutOption::soa,
+                                                                             false);
 
   verletLists.rebuildNeighborLists(&verletTraversal);
   verletLists.computeInteractions(&verletTraversal);
@@ -331,12 +331,12 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
                                                                verletLists1.getBoxMax(), 100);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
                                                                verletLists2.getBoxMax(), 100);
-  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
+  LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
-  autopas::VLListIterationTraversal<FMCell, mdLib::LJFunctor<Molecule>> verletTraversal1(
-      &ljFunctor, autopas::DataLayoutOption::aos, false);
-  autopas::VLListIterationTraversal<FMCell, mdLib::LJFunctor<Molecule>> soaTraversal(
-      &ljFunctor, autopas::DataLayoutOption::soa, false);
+  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal1(&ljFunctor,
+                                                                              autopas::DataLayoutOption::aos, false);
+  autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> soaTraversal(&ljFunctor, autopas::DataLayoutOption::soa,
+                                                                          false);
   verletLists1.rebuildNeighborLists(&verletTraversal1);
   verletLists2.rebuildNeighborLists(&soaTraversal);
   verletLists1.computeInteractions(&verletTraversal1);

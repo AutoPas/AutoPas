@@ -6,7 +6,6 @@
  */
 
 #include "autopas/AutoPasImpl.h"
-#include "autopas/baseFunctors/FlopCounterFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/EmptyPairwiseFunctor.h"
 #include "testingHelpers/NonConstructibleParticle.h"
@@ -18,14 +17,12 @@ template class autopas::AutoPas<NonConstructibleParticle>;
 
 template bool autopas::AutoPas<Molecule>::computeInteractions(mdLib::LJFunctor<Molecule> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+    LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ true> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
+    LJFunctorType</* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
                      /*globals*/ false> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(EmptyPairwiseFunctor<Molecule> *);
-template bool autopas::AutoPas<Molecule>::computeInteractions(
-    autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> *);
 template bool autopas::AutoPas<NonConstructibleParticle>::computeInteractions(
     MockPairwiseFunctor<NonConstructibleParticle> *);
 

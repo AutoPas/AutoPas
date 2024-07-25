@@ -11,7 +11,14 @@
 
 //! @cond Doxygen_Suppress
 template class autopas::AutoPas<Molecule>;
+// clang-format off
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::LJFunctor<Molecule, /* shifting */ false, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ false, /*relevantForTuning*/ true> *);
+    mdLib::LJFunctor<Molecule,
+                     /* shifting */ false,
+                     /*mixing*/ false,
+                     autopas::FunctorN3Modes::Both,
+                     /*globals*/ false,
+                     /*countFLOPs*/ false,
+                     /*relevantForTuning*/ true> *);
+// clang-format on
 //! @endcond

@@ -43,6 +43,11 @@ The critical elements to implement are:
   Indicator functions that return a `std::array` of all `AttributeNames`, which the functor needs to load from the particle to perform the calculation, as well as which fields are written.
 - `isRelevantForTuning()`:
   Indicator function to tell the tuning mechanism if iterations using this functor should be considered or not.
+- `getNumFLOPs()` and `getHitRate()`:
+  These functions return the number of FLOPs per traversal of the container and the hit-rate (the ratio of distance calculations
+  that lead to functor interactions e.g. force contributions.) These functions are only used if `AUTOPAS_LOG_FLOPS` is
+  set to `ON`. If unimplemented, these functions return 0, making the statistics produced by the FLOP logger useless, but
+  otherwise not affecting the simulation.
 - `getName()`:
   This function should return the name of the functor as a `std::string`.
 
