@@ -235,7 +235,6 @@ class AxilrodTellerFunctor
    */
   void SoAFunctorTriple(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                         autopas::SoAView<SoAArraysType> soa3, const bool newton3) {
-    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
     if (newton3) {
       SoAFunctorTripleImpl<true>(soa1, soa2, soa3);
     } else {
@@ -252,8 +251,6 @@ class AxilrodTellerFunctor
    */
   template <bool newton3>
   void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
-    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorSingle() is not implemented.");
-    //  TODO
     if (soa.size() == 0) {
       return;
     }
@@ -276,8 +273,10 @@ class AxilrodTellerFunctor
 
     for (size_t i = soa.size() - 1; static_cast<long>(i) >= 2; --i) {
       if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
+
       SoAFloatPrecision fxiacc = 0.;
       SoAFloatPrecision fyiacc = 0.;
       SoAFloatPrecision fziacc = 0.;
@@ -288,8 +287,10 @@ class AxilrodTellerFunctor
 
       for (size_t j = i - 1; static_cast<long>(j) >= 1; --j) {
         if (ownedStatePtr[j] == autopas::OwnershipState::dummy) {
+          // skip dummy particles
           continue;
         }
+
         SoAFloatPrecision fxjacc = 0.;
         SoAFloatPrecision fyjacc = 0.;
         SoAFloatPrecision fzjacc = 0.;
@@ -298,6 +299,7 @@ class AxilrodTellerFunctor
         const SoAFloatPrecision yj = yptr[j];
         const SoAFloatPrecision zj = zptr[j];
 
+        // calculate distance i-j
         const SoAFloatPrecision drxij = xj - xi;
         const SoAFloatPrecision dryij = yj - yi;
         const SoAFloatPrecision drzij = zj - zi;
@@ -313,12 +315,15 @@ class AxilrodTellerFunctor
 
         for (size_t k = 0; k < j; ++k) {
           if (ownedStatePtr[k] == autopas::OwnershipState::dummy) {
+            // skip dummy particles
             continue;
           }
+
           const SoAFloatPrecision xk = xptr[k];
           const SoAFloatPrecision yk = yptr[k];
           const SoAFloatPrecision zk = zptr[k];
 
+          // calculate distance j-k
           const SoAFloatPrecision drxjk = xk - xj;
           const SoAFloatPrecision dryjk = yk - yj;
           const SoAFloatPrecision drzjk = zk - zj;
@@ -329,6 +334,7 @@ class AxilrodTellerFunctor
 
           const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
 
+          // calculate distance k-i
           const SoAFloatPrecision drxki = xi - xk;
           const SoAFloatPrecision dryki = yi - yk;
           const SoAFloatPrecision drzki = zi - zk;
@@ -343,6 +349,7 @@ class AxilrodTellerFunctor
             continue;
           }
 
+          // all particles are within cutoff -> calculate forces
           const SoAFloatPrecision drxi2 = drxij * drxki;
           const SoAFloatPrecision dryi2 = dryij * dryki;
           const SoAFloatPrecision drzi2 = drzij * drzki;
@@ -408,6 +415,7 @@ class AxilrodTellerFunctor
           const SoAFloatPrecision nfxk = fxi + fxj;
           const SoAFloatPrecision nfyk = fyi + fyj;
           const SoAFloatPrecision nfzk = fzi + fzj;
+
           fxptr[k] -= nfxk;
           fyptr[k] -= nfyk;
           fzptr[k] -= nfzk;
@@ -447,9 +455,6 @@ class AxilrodTellerFunctor
    */
   template <bool newton3>
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
-    // TODO: should always calculate forces for all particles in soa1, even when newton3 == false
-    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorPair() is not implemented.");
-    // TODO
     if (soa1.size() == 0 or soa2.size() == 0) {
       return;
     }
@@ -478,8 +483,10 @@ class AxilrodTellerFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    // particle 1 always from soa1
     for (size_t i = 0; i < soa1.size(); ++i) {
       if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
 
@@ -492,9 +499,9 @@ class AxilrodTellerFunctor
       const SoAFloatPrecision zi = z1ptr[i];
 
       // particle 2 from soa1 and 3 from soa2
-
       for (size_t j = i + 1; j < soa1.size(); ++j) {
         if (ownedState1ptr[j] == autopas::OwnershipState::dummy) {
+          // skip dummy particles
           continue;
         }
 
@@ -506,6 +513,7 @@ class AxilrodTellerFunctor
         const SoAFloatPrecision yj = y1ptr[j];
         const SoAFloatPrecision zj = z1ptr[j];
 
+        // calculate distance i-j
         const SoAFloatPrecision drxij = xj - xi;
         const SoAFloatPrecision dryij = yj - yi;
         const SoAFloatPrecision drzij = zj - zi;
@@ -519,14 +527,18 @@ class AxilrodTellerFunctor
           continue;
         }
 
+        // particle 3 always from soa2
         for (size_t k = 0; k < soa2.size(); ++k) {
           if (ownedState2ptr[k] == autopas::OwnershipState::dummy) {
+            // skip dummy particles
             continue;
           }
+
           const SoAFloatPrecision xk = x2ptr[k];
           const SoAFloatPrecision yk = y2ptr[k];
           const SoAFloatPrecision zk = z2ptr[k];
 
+          // calculate distance j-k
           const SoAFloatPrecision drxjk = xk - xj;
           const SoAFloatPrecision dryjk = yk - yj;
           const SoAFloatPrecision drzjk = zk - zj;
@@ -537,6 +549,7 @@ class AxilrodTellerFunctor
 
           const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
 
+          // calculate distance k-i
           const SoAFloatPrecision drxki = xi - xk;
           const SoAFloatPrecision dryki = yi - yk;
           const SoAFloatPrecision drzki = zi - zk;
@@ -551,6 +564,7 @@ class AxilrodTellerFunctor
             continue;
           }
 
+          // all particles are within cutoff -> calculate forces
           const SoAFloatPrecision drxi2 = drxij * drxki;
           const SoAFloatPrecision dryi2 = dryij * dryki;
           const SoAFloatPrecision drzi2 = drzij * drzki;
@@ -644,9 +658,9 @@ class AxilrodTellerFunctor
       }
 
       // both particles 2 and 3 from soa2
-
       for (size_t j = soa2.size() - 1; static_cast<long>(j) >= 1; --j) {
         if (ownedState2ptr[j] == autopas::OwnershipState::dummy) {
+          // skip dummy particles
           continue;
         }
 
@@ -658,6 +672,7 @@ class AxilrodTellerFunctor
         const SoAFloatPrecision yj = y2ptr[j];
         const SoAFloatPrecision zj = z2ptr[j];
 
+        // calculate distance i-j
         const SoAFloatPrecision drxij = xj - xi;
         const SoAFloatPrecision dryij = yj - yi;
         const SoAFloatPrecision drzij = zj - zi;
@@ -670,15 +685,19 @@ class AxilrodTellerFunctor
         if (drij2 > _cutoffSquared) {
           continue;
         }
-        // particle 3 from soa 2
+
+        // particle 3 always from soa 2
         for (size_t k = 0; k < j; ++k) {
           if (ownedState2ptr[k] == autopas::OwnershipState::dummy) {
+            // skip dummy particles
             continue;
           }
+
           const SoAFloatPrecision xk = x2ptr[k];
           const SoAFloatPrecision yk = y2ptr[k];
           const SoAFloatPrecision zk = z2ptr[k];
 
+          // calculate distance j-k
           const SoAFloatPrecision drxjk = xk - xj;
           const SoAFloatPrecision dryjk = yk - yj;
           const SoAFloatPrecision drzjk = zk - zj;
@@ -689,6 +708,7 @@ class AxilrodTellerFunctor
 
           const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
 
+          // calculate distance k-i
           const SoAFloatPrecision drxki = xi - xk;
           const SoAFloatPrecision dryki = yi - yk;
           const SoAFloatPrecision drzki = zi - zk;
@@ -703,6 +723,7 @@ class AxilrodTellerFunctor
             continue;
           }
 
+          // all particles are within cutoff -> calculate forces
           const SoAFloatPrecision drxi2 = drxij * drxki;
           const SoAFloatPrecision dryi2 = dryij * dryki;
           const SoAFloatPrecision drzi2 = drzij * drzki;
@@ -820,8 +841,6 @@ class AxilrodTellerFunctor
   template <bool newton3>
   void SoAFunctorTripleImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                                    autopas::SoAView<SoAArraysType> soa3) {
-    // autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctor::SoAFunctorTriple() is not implemented.");
-    //   TODO
     if (soa1.size() == 0 or soa2.size() == 0 or soa3.size() == 0) {
       return;
     }
@@ -860,8 +879,10 @@ class AxilrodTellerFunctor
 
     for (size_t i = 0; i < soa1.size(); ++i) {
       if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
+
       SoAFloatPrecision fxiacc = 0.;
       SoAFloatPrecision fyiacc = 0.;
       SoAFloatPrecision fziacc = 0.;
@@ -872,8 +893,10 @@ class AxilrodTellerFunctor
 
       for (size_t j = 0; j < soa2.size(); ++j) {
         if (ownedState2ptr[j] == autopas::OwnershipState::dummy) {
+          // skip dummy particles
           continue;
         }
+
         SoAFloatPrecision fxjacc = 0.;
         SoAFloatPrecision fyjacc = 0.;
         SoAFloatPrecision fzjacc = 0.;
@@ -882,6 +905,7 @@ class AxilrodTellerFunctor
         const SoAFloatPrecision yj = y2ptr[j];
         const SoAFloatPrecision zj = z2ptr[j];
 
+        // calculate distance i-j
         const SoAFloatPrecision drxij = xj - xi;
         const SoAFloatPrecision dryij = yj - yi;
         const SoAFloatPrecision drzij = zj - zi;
@@ -897,12 +921,15 @@ class AxilrodTellerFunctor
 
         for (size_t k = 0; k < soa3.size(); ++k) {
           if (ownedState3ptr[k] == autopas::OwnershipState::dummy) {
+            // skip dummy particles
             continue;
           }
+
           const SoAFloatPrecision xk = x3ptr[k];
           const SoAFloatPrecision yk = y3ptr[k];
           const SoAFloatPrecision zk = z3ptr[k];
 
+          // calculate distance j-k
           const SoAFloatPrecision drxjk = xk - xj;
           const SoAFloatPrecision dryjk = yk - yj;
           const SoAFloatPrecision drzjk = zk - zj;
@@ -913,6 +940,7 @@ class AxilrodTellerFunctor
 
           const SoAFloatPrecision drjk2 = drxjk2 + dryjk2 + drzjk2;
 
+          // calculate distance k-i
           const SoAFloatPrecision drxki = xi - xk;
           const SoAFloatPrecision dryki = yi - yk;
           const SoAFloatPrecision drzki = zi - zk;
@@ -927,6 +955,7 @@ class AxilrodTellerFunctor
             continue;
           }
 
+          // all particles are within cutoff -> calculate forces
           const SoAFloatPrecision drxi2 = drxij * drxki;
           const SoAFloatPrecision dryi2 = dryij * dryki;
           const SoAFloatPrecision drzi2 = drzij * drzki;
@@ -990,9 +1019,9 @@ class AxilrodTellerFunctor
             fyjacc += fyj;
             fzjacc += fzj;
 
-            const auto nfxk = fxi + fxj;
-            const auto nfyk = fyi + fyj;
-            const auto nfzk = fzi + fzj;
+            const SoAFloatPrecision nfxk = fxi + fxj;
+            const SoAFloatPrecision nfyk = fyi + fyj;
+            const SoAFloatPrecision nfzk = fzi + fzj;
 
             fx3ptr[k] -= nfxk;
             fy3ptr[k] -= nfyk;
