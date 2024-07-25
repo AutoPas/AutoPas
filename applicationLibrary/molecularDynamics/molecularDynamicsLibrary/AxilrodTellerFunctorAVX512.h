@@ -65,12 +65,12 @@ class AxilrodTellerFunctorAVX512
       : autopas::TriwiseFunctor<
             Particle, AxilrodTellerFunctorAVX512<Particle, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
-        _cutoffSquared{cutoff * cutoff},
+        _cutoffSquaredAoS{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
         _aosThreadData(),
         _postProcessed{false},
-        _cutoffSquaredPd{simde_mm512_set1_pd(cutoff * cutoff)} {
+        _cutoffSquared{simde_mm512_set1_pd(cutoff * cutoff)} {
     if constexpr (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
@@ -97,7 +97,8 @@ class AxilrodTellerFunctorAVX512
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit AxilrodTellerFunctorAVX512(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  explicit AxilrodTellerFunctorAVX512(double cutoff,
+                                      ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
       : AxilrodTellerFunctorAVX512(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
@@ -128,7 +129,7 @@ class AxilrodTellerFunctorAVX512
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
       return;
     }
-    auto nu = _nu;
+    auto nu = _nuAoS;
     if constexpr (useMixing) {
       nu = _PPLibrary->getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
     }
@@ -141,7 +142,7 @@ class AxilrodTellerFunctorAVX512
     double dr2ki = autopas::utils::ArrayMath::dot(drki, drki);
 
     // Check cutoff
-    if (dr2ij > _cutoffSquared or dr2jk > _cutoffSquared or dr2ki > _cutoffSquared) {
+    if (dr2ij > _cutoffSquaredAoS or dr2jk > _cutoffSquaredAoS or dr2ki > _cutoffSquaredAoS) {
       return;
     }
 
@@ -272,7 +273,6 @@ class AxilrodTellerFunctorAVX512
   inline bool SoAParticlesInCutoff(const double *const x1ptr, const double *const y1ptr, const double *const z1ptr,
                                    const double *const x2ptr, const double *const y2ptr, const double *const z2ptr,
                                    size_t index1, size_t index2) {
-    // TODO vectorize this maybe
     const SoAFloatPrecision drxij = x2ptr[index2] - x1ptr[index1];
     const SoAFloatPrecision dryij = y2ptr[index2] - y1ptr[index1];
     const SoAFloatPrecision drzij = z2ptr[index2] - z1ptr[index1];
@@ -282,7 +282,7 @@ class AxilrodTellerFunctorAVX512
     const SoAFloatPrecision drzij2 = drzij * drzij;
 
     const SoAFloatPrecision drij2 = drxij2 + dryij2 + drzij2;
-    return drij2 <= _cutoffSquared;
+    return drij2 <= _cutoffSquaredAoS;
   }
 
   /**
@@ -332,348 +332,68 @@ class AxilrodTellerFunctorAVX512
 
  private:
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
-  void SoAKernel(const simde__m512i indicesK, const simde__m512d &x1, const simde__m512d &y1, const simde__m512d &z1,
-                 const simde__m512d &x2, const simde__m512d &y2, const simde__m512d &z2,
-                 const double *const __restrict x3ptr, const double *const __restrict y3ptr,
-                 const double *const __restrict z3ptr, const size_t type1, const size_t type2,
-                 const size_t *const __restrict type3ptr, const simde__mmask8 &ownedMask1,
-                 const simde__mmask8 &ownedMask2, const autopas::OwnershipState *const __restrict ownedState3ptr,
-                 const simde__m512d &drxij, const simde__m512d &dryij, const simde__m512d &drzij,
-                 const simde__m512d &drij2, simde__m512d &fxiacc, simde__m512d &fyiacc, simde__m512d &fziacc,
-                 simde__m512d &fxjacc, simde__m512d &fyjacc, simde__m512d &fzjacc, double *const __restrict fx3ptr,
-                 double *const __restrict fy3ptr, double *const __restrict fz3ptr, simde__m512d &potentialEnergySum,
-                 simde__m512d &virialSumX, simde__m512d &virialSumY, simde__m512d &virialSumZ, unsigned int rest = 0) {
-    const simde__m512d x3 = remainderIsMasked ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, x3ptr, 8)
-                                              : simde_mm512_i64gather_pd(indicesK, x3ptr, 8);
-    const simde__m512d y3 = remainderIsMasked ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, y3ptr, 8)
-                                              : simde_mm512_i64gather_pd(indicesK, y3ptr, 8);
-    const simde__m512d z3 = remainderIsMasked ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, z3ptr, 8)
-                                              : simde_mm512_i64gather_pd(indicesK, z3ptr, 8);
-
-    // only required for calculating globals
-    const simde__m512i ownedState3 =
-        remainderIsMasked
-            ? simde_mm512_mask_i64gather_epi64(_ownedStateDummyEpi64, _masks[rest], indicesK,
-                                               reinterpret_cast<const long long *const>(ownedState3ptr), 8)
-            : simde_mm512_i64gather_epi64(indicesK, reinterpret_cast<const long long *const>(ownedState3ptr), 8);
-    const simde__mmask8 ownedMask3 = simde_mm512_cmp_epi64_mask(ownedState3, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
-
-    const simde__m512d drxjk = simde_mm512_sub_pd(x3, x2);
-    const simde__m512d dryjk = simde_mm512_sub_pd(y3, y2);
-    const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
-
-    const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
-    const simde__m512d drjk2PART = simde_mm512_fmadd_pd(dryjk, dryjk, drxjk2);
-    const simde__m512d drjk2 = simde_mm512_fmadd_pd(drzjk, drzjk, drjk2PART);
-
-    const simde__m512d drxki = simde_mm512_sub_pd(x1, x3);
-    const simde__m512d dryki = simde_mm512_sub_pd(y1, y3);
-    const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
-
-    const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
-    const simde__m512d drki2PART = simde_mm512_fmadd_pd(dryki, dryki, drxki2);
-    const simde__m512d drki2 = simde_mm512_fmadd_pd(drzki, drzki, drki2PART);
-
-    const simde__m512d drxi2 = simde_mm512_mul_pd(drxij, drxki);
-    const simde__m512d dri2PART = simde_mm512_fmadd_pd(dryij, dryki, drxi2);
-    const simde__m512d dri2 = simde_mm512_fmadd_pd(drzij, drzki, dri2PART);
-
-    const simde__m512d drxj2 = simde_mm512_mul_pd(drxij, drxjk);
-    const simde__m512d drj2PART = simde_mm512_fmadd_pd(dryij, dryjk, drxj2);
-    const simde__m512d drj2 = simde_mm512_fmadd_pd(drzij, drzjk, drj2PART);
-
-    const simde__m512d drxk2 = simde_mm512_mul_pd(drxjk, drxki);
-    const simde__m512d drk2PART = simde_mm512_fmadd_pd(dryjk, dryki, drxk2);
-    const simde__m512d drk2 = simde_mm512_fmadd_pd(drzjk, drzki, drk2PART);
-
-    const simde__m512d drijk2PART = simde_mm512_mul_pd(dri2, drj2);
-    const simde__m512d drijk2 = simde_mm512_mul_pd(drijk2PART, drk2);
-
-    const simde__m512d dr2PART = simde_mm512_mul_pd(drij2, drjk2);
-    const simde__m512d dr2 = simde_mm512_mul_pd(dr2PART, drki2);
-    const simde__m512d dr2sqrt = simde_mm512_sqrt_pd(dr2);
-    const simde__m512d dr5PART = simde_mm512_mul_pd(dr2, dr2);
-    const simde__m512d dr5 = simde_mm512_mul_pd(dr5PART, dr2sqrt);
-
-    if constexpr (useMixing) {
-      _nuPd = simde_mm512_set_pd(
-          not remainderIsMasked or rest > 7 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[7]]) : 0,
-          not remainderIsMasked or rest > 6 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[6]]) : 0,
-          not remainderIsMasked or rest > 5 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[5]]) : 0,
-          not remainderIsMasked or rest > 4 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[4]]) : 0,
-          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[3]]) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[2]]) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[1]]) : 0,
-          _PPLibrary->getMixingNu(type1, type2, type3ptr[indicesK[0]]));
-    }
-    const simde__m512d invdr5 =
-        remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest], _nuPd, dr5) : simde_mm512_div_pd(_nuPd, dr5);
-    const simde__m512d invdr53 = simde_mm512_mul_pd(_three, invdr5);
-
-    const simde__m512d drj2_drk2 = simde_mm512_sub_pd(drj2, drk2);
-    const simde__m512d i_jkFactor = simde_mm512_mul_pd(dri2, drj2_drk2);
-    const simde__m512d drj2drk2 = simde_mm512_mul_pd(drj2, drk2);
-    const simde__m512d drjk2drki2 = simde_mm512_mul_pd(drjk2, drki2);
-    const simde__m512d drijk2BYdrij2 =
-        remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest], drijk2, drij2) : simde_mm512_div_pd(drijk2, drij2);
-    const simde__m512d i_ijFactorPART = simde_mm512_sub_pd(drj2drk2, drjk2drki2);
-    const simde__m512d i_ijFactor = simde_mm512_fmadd_pd(drijk2BYdrij2, _five, i_ijFactorPART);
-    const simde__m512d drij2drjk2 = simde_mm512_mul_pd(drij2, drjk2);
-    const simde__m512d drijk2BYdrki2 =
-        remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest], drijk2, drki2) : simde_mm512_div_pd(drijk2, drki2);
-    const simde__m512d i_kiFactorPART = simde_mm512_sub_pd(drj2drk2, drij2drjk2);
-    const simde__m512d i_kiFactor = simde_mm512_fmadd_pd(drijk2BYdrki2, _five, i_kiFactorPART);
-
-    const simde__m512d fxiPART = simde_mm512_mul_pd(drxjk, i_jkFactor);
-    const simde__m512d fxiPART2 = simde_mm512_fmadd_pd(drxij, i_ijFactor, fxiPART);
-    const simde__m512d fxiPART3 = simde_mm512_fnmadd_pd(drxki, i_kiFactor, fxiPART2);
-    const simde__m512d fxi = simde_mm512_mul_pd(invdr53, fxiPART3);
-    fxiacc = simde_mm512_add_pd(fxi, fxiacc);
-    const simde__m512d fyiPART = simde_mm512_mul_pd(dryjk, i_jkFactor);
-    const simde__m512d fyiPART2 = simde_mm512_fmadd_pd(dryij, i_ijFactor, fyiPART);
-    const simde__m512d fyiPART3 = simde_mm512_fnmadd_pd(dryki, i_kiFactor, fyiPART2);
-    const simde__m512d fyi = simde_mm512_mul_pd(invdr53, fyiPART3);
-    fyiacc = simde_mm512_add_pd(fyi, fyiacc);
-    const simde__m512d fziPART = simde_mm512_mul_pd(drzjk, i_jkFactor);
-    const simde__m512d fziPART2 = simde_mm512_fmadd_pd(drzij, i_ijFactor, fziPART);
-    const simde__m512d fziPART3 = simde_mm512_fnmadd_pd(drzki, i_kiFactor, fziPART2);
-    const simde__m512d fzi = simde_mm512_mul_pd(invdr53, fziPART3);
-    fziacc = simde_mm512_add_pd(fzi, fziacc);
-
-    if constexpr (calculateGlobals) {
-      const simde__m512d virialXI = simde_mm512_mul_pd(fxi, x1);
-      virialSumX = simde_mm512_mask_add_pd(virialSumX, ownedMask1, virialSumX, virialXI);
-      const simde__m512d virialYI = simde_mm512_mul_pd(fyi, y1);
-      virialSumY = simde_mm512_mask_add_pd(virialSumY, ownedMask1, virialSumY, virialYI);
-      const simde__m512d virialZI = simde_mm512_mul_pd(fzi, z1);
-      virialSumZ = simde_mm512_mask_add_pd(virialSumZ, ownedMask1, virialSumZ, virialZI);
-    }
-
-    if constexpr (newton3j) {
-      const simde__m512d drk2_dri2 = simde_mm512_sub_pd(drk2, dri2);
-      const simde__m512d j_kiFactor = simde_mm512_mul_pd(drj2, drk2_dri2);
-      const simde__m512d dri2drk2 = simde_mm512_mul_pd(dri2, drk2);
-      const simde__m512d j_ijFactorPART = simde_mm512_sub_pd(dri2drk2, drjk2drki2);
-      const simde__m512d j_ijFactor = simde_mm512_fmadd_pd(drijk2BYdrij2, _five, j_ijFactorPART);
-      const simde__m512d drij2drki2 = simde_mm512_mul_pd(drij2, drki2);
-      const simde__m512d drijk2BYdrjk2 =
-          remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest], drijk2, drjk2) : simde_mm512_div_pd(drijk2, drjk2);
-      const simde__m512d j_jkFactorPART = simde_mm512_sub_pd(dri2drk2, drij2drki2);
-      const simde__m512d j_jkFactor = simde_mm512_fmadd_pd(drijk2BYdrjk2, _five, j_jkFactorPART);
-
-      const simde__m512d fxjPART = simde_mm512_mul_pd(drxki, j_kiFactor);
-      const simde__m512d fxjPART2 = simde_mm512_fnmadd_pd(drxij, j_ijFactor, fxjPART);
-      const simde__m512d fxjPART3 = simde_mm512_fmadd_pd(drxjk, j_jkFactor, fxjPART2);
-      const simde__m512d fxj = simde_mm512_mul_pd(invdr53, fxjPART3);
-      fxjacc = simde_mm512_add_pd(fxj, fxjacc);
-      const simde__m512d fyjPART = simde_mm512_mul_pd(dryki, j_kiFactor);
-      const simde__m512d fyjPART2 = simde_mm512_fnmadd_pd(dryij, j_ijFactor, fyjPART);
-      const simde__m512d fyjPART3 = simde_mm512_fmadd_pd(dryjk, j_jkFactor, fyjPART2);
-      const simde__m512d fyj = simde_mm512_mul_pd(invdr53, fyjPART3);
-      fyjacc = simde_mm512_add_pd(fyj, fyjacc);
-      const simde__m512d fzjPART = simde_mm512_mul_pd(drzki, j_kiFactor);
-      const simde__m512d fzjPART2 = simde_mm512_fnmadd_pd(drzij, j_ijFactor, fzjPART);
-      const simde__m512d fzjPART3 = simde_mm512_fmadd_pd(drzjk, j_jkFactor, fzjPART2);
-      const simde__m512d fzj = simde_mm512_mul_pd(invdr53, fzjPART3);
-      fzjacc = simde_mm512_add_pd(fzj, fzjacc);
-
-      if constexpr (calculateGlobals) {
-        const simde__m512d virialXJ = simde_mm512_mul_pd(fxj, x2);
-        virialSumX = simde_mm512_mask_add_pd(virialSumX, ownedMask2, virialSumX, virialXJ);
-        const simde__m512d virialYJ = simde_mm512_mul_pd(fyj, y2);
-        virialSumY = simde_mm512_mask_add_pd(virialSumY, ownedMask2, virialSumY, virialYJ);
-        const simde__m512d virialZJ = simde_mm512_mul_pd(fzj, z2);
-        virialSumZ = simde_mm512_mask_add_pd(virialSumZ, ownedMask2, virialSumZ, virialZJ);
-      }
-
-      if constexpr (newton3k) {
-        const simde__m512d nfxk = simde_mm512_add_pd(fxi, fxj);
-        const simde__m512d nfyk = simde_mm512_add_pd(fyi, fyj);
-        const simde__m512d nfzk = simde_mm512_add_pd(fzi, fzj);
-
-        const simde__m512d fxk_old = remainderIsMasked
-                                         ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fx3ptr, 8)
-                                         : simde_mm512_i64gather_pd(indicesK, fx3ptr, 8);
-        const simde__m512d fyk_old = remainderIsMasked
-                                         ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fy3ptr, 8)
-                                         : simde_mm512_i64gather_pd(indicesK, fy3ptr, 8);
-        const simde__m512d fzk_old = remainderIsMasked
-                                         ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fz3ptr, 8)
-                                         : simde_mm512_i64gather_pd(indicesK, fz3ptr, 8);
-
-        const simde__m512d fxk_new = simde_mm512_sub_pd(fxk_old, nfxk);
-        const simde__m512d fyk_new = simde_mm512_sub_pd(fyk_old, nfyk);
-        const simde__m512d fzk_new = simde_mm512_sub_pd(fzk_old, nfzk);
-
-        if constexpr (remainderIsMasked) {
-          simde_mm512_mask_i64scatter_pd(fx3ptr, _masks[rest], indicesK, fxk_new, 8);
-          simde_mm512_mask_i64scatter_pd(fy3ptr, _masks[rest], indicesK, fyk_new, 8);
-          simde_mm512_mask_i64scatter_pd(fz3ptr, _masks[rest], indicesK, fzk_new, 8);
-        } else {
-          simde_mm512_i64scatter_pd(fx3ptr, indicesK, fxk_new, 8);
-          simde_mm512_i64scatter_pd(fy3ptr, indicesK, fyk_new, 8);
-          simde_mm512_i64scatter_pd(fz3ptr, indicesK, fzk_new, 8);
-        }
-        if constexpr (calculateGlobals) {
-          const simde__m512d virialXK = simde_mm512_mul_pd(nfxk, x3);
-          virialSumX = simde_mm512_mask_sub_pd(virialSumX, ownedMask3, virialSumX, virialXK);
-          const simde__m512d virialYK = simde_mm512_mul_pd(nfyk, y3);
-          virialSumY = simde_mm512_mask_sub_pd(virialSumY, ownedMask3, virialSumY, virialYK);
-          const simde__m512d virialZK = simde_mm512_mul_pd(nfzk, z3);
-          virialSumZ = simde_mm512_mask_sub_pd(virialSumZ, ownedMask3, virialSumZ, virialZK);
-        }
-      }
-    }
-
-    if constexpr (calculateGlobals) {
-      const simde__m512d potentialEnergyThird = simde_mm512_mul_pd(invdr5, simde_mm512_fmsub_pd(dr2, _third, drijk2));
-      potentialEnergySum =
-          simde_mm512_mask_add_pd(potentialEnergySum, ownedMask1, potentialEnergySum, potentialEnergyThird);
-      if constexpr (newton3j) {
-        potentialEnergySum =
-            simde_mm512_mask_add_pd(potentialEnergySum, ownedMask2, potentialEnergySum, potentialEnergyThird);
-      }
-      if constexpr (newton3k) {
-        potentialEnergySum =
-            simde_mm512_mask_add_pd(potentialEnergySum, ownedMask3, potentialEnergySum, potentialEnergyThird);
-      }
-    }
-  }
-
-  template <bool newton3j, bool newton3k, bool remainderIsMasked>
-  void SoAKernelOuterCompressAlignr(
-      simde__m512i &interactionIndices, int &numAssignedRegisters, const size_t k, const simde__m512d &x1,
-      const simde__m512d &y1, const simde__m512d &z1, const simde__m512d &x2, const simde__m512d &y2,
-      const simde__m512d &z2, const double *const __restrict x3ptr, const double *const __restrict y3ptr,
-      const double *const __restrict z3ptr, const size_t type1, const size_t type2,
-      const size_t *const __restrict type3ptr, const simde__mmask8 &ownedMask1, const simde__mmask8 &ownedMask2,
-      const autopas::OwnershipState *const __restrict ownedState3ptr, const simde__m512d &drxij,
-      const simde__m512d &dryij, const simde__m512d &drzij, const simde__m512d &drij2, simde__m512d &fxiacc,
-      simde__m512d &fyiacc, simde__m512d &fziacc, simde__m512d &fxjacc, simde__m512d &fyjacc, simde__m512d &fzjacc,
-      double *const __restrict fx3ptr, double *const __restrict fy3ptr, double *const __restrict fz3ptr,
-      simde__m512d &potentialEnergySum, simde__m512d &virialSumX, simde__m512d &virialSumY, simde__m512d &virialSumZ,
-      unsigned int rest = 0) {
-    const simde__m512i loopIndices = simde_mm512_add_epi64(simde_mm512_set1_epi64(k), _ascendingIndices);
-
-    const simde__m512d x3 =
-        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &x3ptr[k]) : simde_mm512_loadu_pd(&x3ptr[k]);
-    const simde__m512d y3 =
-        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &y3ptr[k]) : simde_mm512_loadu_pd(&y3ptr[k]);
-    const simde__m512d z3 =
-        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &z3ptr[k]) : simde_mm512_loadu_pd(&z3ptr[k]);
-
-    const simde__m512d drxki = simde_mm512_sub_pd(x1, x3);
-    const simde__m512d dryki = simde_mm512_sub_pd(y1, y3);
-    const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
-
-    const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
-    const simde__m512d drki2PART = simde_mm512_fmadd_pd(dryki, dryki, drxki2);
-    const simde__m512d drki2 = simde_mm512_fmadd_pd(drzki, drzki, drki2PART);
-
-    const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-    const simde__m512d drxjk = simde_mm512_sub_pd(x3, x2);
-    const simde__m512d dryjk = simde_mm512_sub_pd(y3, y2);
-    const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
-
-    const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
-    const simde__m512d drjk2PART = simde_mm512_fmadd_pd(dryjk, dryjk, drxjk2);
-    const simde__m512d drjk2 = simde_mm512_fmadd_pd(drzjk, drzjk, drjk2PART);
-
-    const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
-
-    const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
-
-    const simde__m512i ownedState3 = simde_mm512_loadu_epi64(&ownedState3ptr[k]);
-    const simde__mmask8 dummyMask =
-        simde_mm512_cmp_epi64_mask(ownedState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
-
-    const simde__mmask8 mask = remainderIsMasked
-                                   ? simde_mm512_kand(_masks[rest], simde_mm512_kand(cutoffMask, dummyMask))
-                                   : simde_mm512_kand(cutoffMask, dummyMask);
-
-    const int popCountMask = std::bitset<8>(mask).count();
-
-    if (popCountMask == 0) {
-      return;
-    }
-
-    const simde__m512i newInteractionIndices = simde_mm512_maskz_compress_epi64(mask, loopIndices);
-    if (numAssignedRegisters + popCountMask < 8) {
-      interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, popCountMask);
-      numAssignedRegisters += popCountMask;
-    } else {
-      interactionIndices =
-          simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, 8 - numAssignedRegisters);
-
-      SoAKernel<newton3j, newton3k, false>(interactionIndices, x1, y1, z1, x2, y2, z2, x3ptr, y3ptr, z3ptr, type1,
-                                           type2, type3ptr, ownedMask1, ownedMask2, ownedState3ptr, drxij, dryij, drzij,
-                                           drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fx3ptr, fy3ptr,
-                                           fz3ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ);
-
-      interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, _zeroI, popCountMask);
-      numAssignedRegisters += popCountMask - 8;
-    }
-  }
-
-  template <bool newton3j, bool newton3k, bool remainderIsMasked>
-  void SoAKernelMasked(const size_t k, const simde__m512d &x1, const simde__m512d &y1, const simde__m512d &z1,
-                       const simde__m512d &x2, const simde__m512d &y2, const simde__m512d &z2,
-                       const double *const __restrict x3ptr, const double *const __restrict y3ptr,
-                       const double *const __restrict z3ptr, const size_t type1, const size_t type2,
-                       const size_t *const __restrict type3ptr, const simde__mmask8 &ownedMask1,
-                       const simde__mmask8 &ownedMask2, const autopas::OwnershipState *const ownedState3ptr,
+  void SoAKernelMasked(const size_t k, const simde__m512d &xi, const simde__m512d &yi, const simde__m512d &zi,
+                       const simde__m512d &xj, const simde__m512d &yj, const simde__m512d &zj,
+                       const double *const __restrict xkPtr, const double *const __restrict ykPtr,
+                       const double *const __restrict zkPtr, const size_t typeI, const size_t typeJ,
+                       const size_t *const __restrict typeKptr, const simde__mmask8 &ownedMaskI,
+                       const simde__mmask8 &ownedMaskJ, const autopas::OwnershipState *const ownedStateKptr,
                        const simde__m512d &drxij, const simde__m512d &dryij, const simde__m512d &drzij,
                        const simde__m512d &drij2, simde__m512d &fxiacc, simde__m512d &fyiacc, simde__m512d &fziacc,
                        simde__m512d &fxjacc, simde__m512d &fyjacc, simde__m512d &fzjacc,
-                       double *const __restrict fx3ptr, double *const __restrict fy3ptr,
-                       double *const __restrict fz3ptr, simde__m512d &potentialEnergySum, simde__m512d &virialSumX,
+                       double *const __restrict fxkPtr, double *const __restrict fykPtr,
+                       double *const __restrict fzkPtr, simde__m512d &potentialEnergySum, simde__m512d &virialSumX,
                        simde__m512d &virialSumY, simde__m512d &virialSumZ, unsigned int rest = 0) {
-    const simde__m512d x3 =
-        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &x3ptr[k]) : simde_mm512_loadu_pd(&x3ptr[k]);
-    const simde__m512d y3 =
-        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &y3ptr[k]) : simde_mm512_loadu_pd(&y3ptr[k]);
-    const simde__m512d z3 =
-        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &z3ptr[k]) : simde_mm512_loadu_pd(&z3ptr[k]);
+    const simde__m512d xk =
+        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &xkPtr[k]) : simde_mm512_loadu_pd(&xkPtr[k]);
+    const simde__m512d yk =
+        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &ykPtr[k]) : simde_mm512_loadu_pd(&ykPtr[k]);
+    const simde__m512d zk =
+        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &zkPtr[k]) : simde_mm512_loadu_pd(&zkPtr[k]);
 
     // only required for calculating globals
-    const simde__m512i ownedState3 = remainderIsMasked ? simde_mm512_maskz_loadu_epi64(_masks[rest], &ownedState3ptr[k])
-                                                       : simde_mm512_loadu_epi64(&ownedState3ptr[k]);
-    const simde__mmask8 ownedMask3 = simde_mm512_cmp_epi64_mask(ownedState3, _ownedStateOwnedEpi64, SIMDE_MM_CMPINT_EQ);
+    const simde__m512i ownedStateK = remainderIsMasked ? simde_mm512_maskz_loadu_epi64(_masks[rest], &ownedStateKptr[k])
+                                                       : simde_mm512_loadu_epi64(&ownedStateKptr[k]);
+    const simde__mmask8 ownedMaskK =
+        simde_mm512_cmp_epi64_mask(ownedStateK, _ownedStateOwnedMM512i, SIMDE_MM_CMPINT_EQ);
 
-    const simde__m512d drxki = simde_mm512_sub_pd(x1, x3);
-    const simde__m512d dryki = simde_mm512_sub_pd(y1, y3);
-    const simde__m512d drzki = simde_mm512_sub_pd(z1, z3);
+    // calculate distance k-i
+    const simde__m512d drxki = simde_mm512_sub_pd(xi, xk);
+    const simde__m512d dryki = simde_mm512_sub_pd(yi, yk);
+    const simde__m512d drzki = simde_mm512_sub_pd(zi, zk);
 
     const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
     const simde__m512d drki2PART = simde_mm512_fmadd_pd(dryki, dryki, drxki2);
     const simde__m512d drki2 = simde_mm512_fmadd_pd(drzki, drzki, drki2PART);
 
-    const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
+    const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquared, SIMDE_CMP_LE_OS);
 
-    const simde__m512d drxjk = simde_mm512_sub_pd(x3, x2);
-    const simde__m512d dryjk = simde_mm512_sub_pd(y3, y2);
-    const simde__m512d drzjk = simde_mm512_sub_pd(z3, z2);
+    // calculate distance j-k
+    const simde__m512d drxjk = simde_mm512_sub_pd(xk, xj);
+    const simde__m512d dryjk = simde_mm512_sub_pd(yk, yj);
+    const simde__m512d drzjk = simde_mm512_sub_pd(zk, zj);
 
     const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
     const simde__m512d drjk2PART = simde_mm512_fmadd_pd(dryjk, dryjk, drxjk2);
     const simde__m512d drjk2 = simde_mm512_fmadd_pd(drzjk, drzjk, drjk2PART);
 
-    const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquaredPd, SIMDE_CMP_LE_OS);
+    const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquared, SIMDE_CMP_LE_OS);
 
     const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
 
-    const simde__mmask8 dummyMask =
-        simde_mm512_cmp_epi64_mask(ownedState3, _ownedStateDummyEpi64, SIMDE_MM_CMPINT_NE);
+    const simde__mmask8 dummyMask = simde_mm512_cmp_epi64_mask(ownedStateK, _ownedStateDummyMM512i, SIMDE_MM_CMPINT_NE);
 
+    // mask with bits set if particle is not a dummy and within cutoff of the first two particles
     const simde__mmask8 mask = remainderIsMasked
                                    ? simde_mm512_kand(_masks[rest], simde_mm512_kand(cutoffMask, dummyMask))
                                    : simde_mm512_kand(cutoffMask, dummyMask);
 
-    if (std::bitset<8>(mask).count() == 0) {
+    if (std::bitset<vecLength>(mask).count() == 0) {
+      // early exit if all particles are ignored
       return;
     }
 
+    // calculate force
     const simde__m512d drxi2 = simde_mm512_mul_pd(drxij, drxki);
     const simde__m512d dri2PART = simde_mm512_fmadd_pd(dryij, dryki, drxi2);
     const simde__m512d dri2 = simde_mm512_fmadd_pd(drzij, drzki, dri2PART);
@@ -696,17 +416,17 @@ class AxilrodTellerFunctorAVX512
     const simde__m512d dr5 = simde_mm512_mul_pd(dr5PART, dr2sqrt);
 
     if constexpr (useMixing) {
-      _nuPd = simde_mm512_set_pd(
-          not remainderIsMasked or rest > 7 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[k + 7]) : 0,
-          not remainderIsMasked or rest > 6 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[k + 6]) : 0,
-          not remainderIsMasked or rest > 5 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[k + 5]) : 0,
-          not remainderIsMasked or rest > 4 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[k + 4]) : 0,
-          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[k + 3]) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[k + 2]) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingNu(type1, type2, type3ptr[k + 1]) : 0,
-          _PPLibrary->getMixingNu(type1, type2, type3ptr[k]));
+      _nu = simde_mm512_set_pd(
+          not remainderIsMasked or rest > 7 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 7]) : 0,
+          not remainderIsMasked or rest > 6 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 6]) : 0,
+          not remainderIsMasked or rest > 5 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 5]) : 0,
+          not remainderIsMasked or rest > 4 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 4]) : 0,
+          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 3]) : 0,
+          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 2]) : 0,
+          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 1]) : 0,
+          _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k]));
     }
-    const simde__m512d invdr5 = simde_mm512_maskz_div_pd(mask, _nuPd, dr5);
+    const simde__m512d invdr5 = simde_mm512_maskz_div_pd(mask, _nu, dr5);
     const simde__m512d invdr53 = simde_mm512_mul_pd(_three, invdr5);
 
     const simde__m512d drj2_drk2 = simde_mm512_sub_pd(drj2, drk2);
@@ -738,12 +458,12 @@ class AxilrodTellerFunctorAVX512
     fziacc = simde_mm512_mask_add_pd(fziacc, mask, fzi, fziacc);  // TODO mask everywhere
 
     if constexpr (calculateGlobals) {
-      const simde__m512d virialXI = simde_mm512_mul_pd(fxi, x1);
-      virialSumX = simde_mm512_mask_add_pd(virialSumX, ownedMask1, virialSumX, virialXI);
-      const simde__m512d virialYI = simde_mm512_mul_pd(fyi, y1);
-      virialSumY = simde_mm512_mask_add_pd(virialSumY, ownedMask1, virialSumY, virialYI);
-      const simde__m512d virialZI = simde_mm512_mul_pd(fzi, z1);
-      virialSumZ = simde_mm512_mask_add_pd(virialSumZ, ownedMask1, virialSumZ, virialZI);
+      const simde__m512d virialXI = simde_mm512_mul_pd(fxi, xi);
+      virialSumX = simde_mm512_mask_add_pd(virialSumX, ownedMaskI, virialSumX, virialXI);
+      const simde__m512d virialYI = simde_mm512_mul_pd(fyi, yi);
+      virialSumY = simde_mm512_mask_add_pd(virialSumY, ownedMaskI, virialSumY, virialYI);
+      const simde__m512d virialZI = simde_mm512_mul_pd(fzi, zi);
+      virialSumZ = simde_mm512_mask_add_pd(virialSumZ, ownedMaskI, virialSumZ, virialZI);
     }
 
     if constexpr (newton3j) {
@@ -774,12 +494,12 @@ class AxilrodTellerFunctorAVX512
       fzjacc = simde_mm512_mask_add_pd(fzjacc, mask, fzj, fzjacc);
 
       if constexpr (calculateGlobals) {
-        const simde__m512d virialXJ = simde_mm512_mul_pd(fxj, x2);
-        virialSumX = simde_mm512_mask_add_pd(virialSumX, ownedMask2, virialSumX, virialXJ);
-        const simde__m512d virialYJ = simde_mm512_mul_pd(fyj, y2);
-        virialSumY = simde_mm512_mask_add_pd(virialSumY, ownedMask2, virialSumY, virialYJ);
-        const simde__m512d virialZJ = simde_mm512_mul_pd(fzj, z2);
-        virialSumZ = simde_mm512_mask_add_pd(virialSumZ, ownedMask2, virialSumZ, virialZJ);
+        const simde__m512d virialXJ = simde_mm512_mul_pd(fxj, xj);
+        virialSumX = simde_mm512_mask_add_pd(virialSumX, ownedMaskJ, virialSumX, virialXJ);
+        const simde__m512d virialYJ = simde_mm512_mul_pd(fyj, yj);
+        virialSumY = simde_mm512_mask_add_pd(virialSumY, ownedMaskJ, virialSumY, virialYJ);
+        const simde__m512d virialZJ = simde_mm512_mul_pd(fzj, zj);
+        virialSumZ = simde_mm512_mask_add_pd(virialSumZ, ownedMaskJ, virialSumZ, virialZJ);
       }
 
       if constexpr (newton3k) {
@@ -787,25 +507,25 @@ class AxilrodTellerFunctorAVX512
         const simde__m512d nfyk = simde_mm512_add_pd(fyi, fyj);
         const simde__m512d nfzk = simde_mm512_add_pd(fzi, fzj);
 
-        const simde__m512d fxk_old = simde_mm512_maskz_loadu_pd(mask, &fx3ptr[k]);
-        const simde__m512d fyk_old = simde_mm512_maskz_loadu_pd(mask, &fy3ptr[k]);
-        const simde__m512d fzk_old = simde_mm512_maskz_loadu_pd(mask, &fz3ptr[k]);
+        const simde__m512d fxk_old = simde_mm512_maskz_loadu_pd(mask, &fxkPtr[k]);
+        const simde__m512d fyk_old = simde_mm512_maskz_loadu_pd(mask, &fykPtr[k]);
+        const simde__m512d fzk_old = simde_mm512_maskz_loadu_pd(mask, &fzkPtr[k]);
 
         const simde__m512d fxk_new = simde_mm512_sub_pd(fxk_old, nfxk);
         const simde__m512d fyk_new = simde_mm512_sub_pd(fyk_old, nfyk);
         const simde__m512d fzk_new = simde_mm512_sub_pd(fzk_old, nfzk);
 
-        simde_mm512_mask_storeu_pd(&fx3ptr[k], mask, fxk_new);
-        simde_mm512_mask_storeu_pd(&fy3ptr[k], mask, fyk_new);
-        simde_mm512_mask_storeu_pd(&fz3ptr[k], mask, fzk_new);
+        simde_mm512_mask_storeu_pd(&fxkPtr[k], mask, fxk_new);
+        simde_mm512_mask_storeu_pd(&fykPtr[k], mask, fyk_new);
+        simde_mm512_mask_storeu_pd(&fzkPtr[k], mask, fzk_new);
 
         if constexpr (calculateGlobals) {
-          const simde__m512d virialXK = simde_mm512_mul_pd(nfxk, x3);
-          virialSumX = simde_mm512_mask_sub_pd(virialSumX, ownedMask3, virialSumX, virialXK);
-          const simde__m512d virialYK = simde_mm512_mul_pd(nfyk, y3);
-          virialSumY = simde_mm512_mask_sub_pd(virialSumY, ownedMask3, virialSumY, virialYK);
-          const simde__m512d virialZK = simde_mm512_mul_pd(nfzk, z3);
-          virialSumZ = simde_mm512_mask_sub_pd(virialSumZ, ownedMask3, virialSumZ, virialZK);
+          const simde__m512d virialXK = simde_mm512_mul_pd(nfxk, xk);
+          virialSumX = simde_mm512_mask_sub_pd(virialSumX, ownedMaskK, virialSumX, virialXK);
+          const simde__m512d virialYK = simde_mm512_mul_pd(nfyk, yk);
+          virialSumY = simde_mm512_mask_sub_pd(virialSumY, ownedMaskK, virialSumY, virialYK);
+          const simde__m512d virialZK = simde_mm512_mul_pd(nfzk, zk);
+          virialSumZ = simde_mm512_mask_sub_pd(virialSumZ, ownedMaskK, virialSumZ, virialZK);
         }
       }
     }
@@ -813,14 +533,14 @@ class AxilrodTellerFunctorAVX512
     if constexpr (calculateGlobals) {
       const simde__m512d potentialEnergyThird = simde_mm512_mul_pd(invdr5, simde_mm512_fmsub_pd(dr2, _third, drijk2));
       potentialEnergySum =
-          simde_mm512_mask_add_pd(potentialEnergySum, ownedMask1, potentialEnergySum, potentialEnergyThird);
+          simde_mm512_mask_add_pd(potentialEnergySum, ownedMaskI, potentialEnergySum, potentialEnergyThird);
       if constexpr (newton3j) {
         potentialEnergySum =
-            simde_mm512_mask_add_pd(potentialEnergySum, ownedMask2, potentialEnergySum, potentialEnergyThird);
+            simde_mm512_mask_add_pd(potentialEnergySum, ownedMaskJ, potentialEnergySum, potentialEnergyThird);
       }
       if constexpr (newton3k) {
         potentialEnergySum =
-            simde_mm512_mask_add_pd(potentialEnergySum, ownedMask3, potentialEnergySum, potentialEnergyThird);
+            simde_mm512_mask_add_pd(potentialEnergySum, ownedMaskK, potentialEnergySum, potentialEnergyThird);
       }
     }
   }
@@ -855,45 +575,48 @@ class AxilrodTellerFunctorAVX512
     simde__m512d potentialEnergySum = simde_mm512_setzero_pd();
 
     if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
+      _nu = simde_mm512_set1_pd(_nuAoS);
     }
 
     for (size_t i = soa.size() - 1; static_cast<long>(i) >= 2; --i) {
       if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
 
-      const simde__mmask8 ownedMask1 = ownedStatePtr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+      // only required for calculating globals
+      const simde__mmask8 ownedMaskI = ownedStatePtr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-      const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(zptr[i]);
+      const simde__m512d xi = simde_mm512_set1_pd(xptr[i]);
+      const simde__m512d yi = simde_mm512_set1_pd(yptr[i]);
+      const simde__m512d zi = simde_mm512_set1_pd(zptr[i]);
 
       simde__m512d fxiacc = simde_mm512_setzero_pd();
       simde__m512d fyiacc = simde_mm512_setzero_pd();
       simde__m512d fziacc = simde_mm512_setzero_pd();
 
-      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
       for (size_t j = i - 1; static_cast<long>(j) >= 1; --j) {
         if (ownedStatePtr[j] == autopas::OwnershipState::dummy or
             not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, i, j)) {
+          // skip dummy particles
           continue;
         }
 
         // only required for calculating globals
-        const simde__mmask8 ownedMask2 = ownedStatePtr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+        const simde__mmask8 ownedMaskJ = ownedStatePtr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-        const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(zptr[j]);
+        const simde__m512d xj = simde_mm512_set1_pd(xptr[j]);
+        const simde__m512d yj = simde_mm512_set1_pd(yptr[j]);
+        const simde__m512d zj = simde_mm512_set1_pd(zptr[j]);
 
         simde__m512d fxjacc = simde_mm512_setzero_pd();
         simde__m512d fyjacc = simde_mm512_setzero_pd();
         simde__m512d fzjacc = simde_mm512_setzero_pd();
 
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+        // calculate distance i-j
+        const simde__m512d drxij = simde_mm512_sub_pd(xj, xi);
+        const simde__m512d dryij = simde_mm512_sub_pd(yj, yi);
+        const simde__m512d drzij = simde_mm512_sub_pd(zj, zi);
 
         const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
         const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
@@ -903,15 +626,18 @@ class AxilrodTellerFunctorAVX512
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
         size_t k = 0;
+        // loop up to multiple of vecLength
+        // only works if vecLength is a power of 2
         for (; k < (j & ~(vecLength - 1)); k += vecLength) {
-          SoAKernelMasked<true, true, false>(k, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i], typeptr[j],
-                                             typeptr, ownedMask1, ownedMask2, ownedStatePtr, drxij, dryij, drzij, drij2,
+          SoAKernelMasked<true, true, false>(k, xi, yi, zi, xj, yj, zj, xptr, yptr, zptr, typeptr[i], typeptr[j],
+                                             typeptr, ownedMaskI, ownedMaskJ, ownedStatePtr, drxij, dryij, drzij, drij2,
                                              fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fxptr, fyptr, fzptr,
                                              potentialEnergySum, virialSumX, virialSumY, virialSumZ);
         }
+        // process remainder
         if (k < j) {
-          SoAKernelMasked<true, true, true>(k, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i], typeptr[j],
-                                            typeptr, ownedMask1, ownedMask2, ownedStatePtr, drxij, dryij, drzij, drij2,
+          SoAKernelMasked<true, true, true>(k, xi, yi, zi, xj, yj, zj, xptr, yptr, zptr, typeptr[i], typeptr[j],
+                                            typeptr, ownedMaskI, ownedMaskJ, ownedStatePtr, drxij, dryij, drzij, drij2,
                                             fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fxptr, fyptr, fzptr,
                                             potentialEnergySum, virialSumX, virialSumY, virialSumZ, j - k);
         }
@@ -971,47 +697,50 @@ class AxilrodTellerFunctorAVX512
     simde__m512d virialSumZ = simde_mm512_setzero_pd();
 
     if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
+      _nu = simde_mm512_set1_pd(_nuAoS);
     }
 
+    // particle 1 always from soa1
     for (size_t i = 0; i < soa1.size(); ++i) {
       if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
 
       // only required for calculating globals
-      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+      const simde__mmask8 ownedMaskI = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-      const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(z1ptr[i]);
+      const simde__m512d xi = simde_mm512_set1_pd(x1ptr[i]);
+      const simde__m512d yi = simde_mm512_set1_pd(y1ptr[i]);
+      const simde__m512d zi = simde_mm512_set1_pd(z1ptr[i]);
 
       simde__m512d fxiacc = simde_mm512_setzero_pd();
       simde__m512d fyiacc = simde_mm512_setzero_pd();
       simde__m512d fziacc = simde_mm512_setzero_pd();
 
       // particle 2 from soa1 and 3 from soa2
-
       for (size_t j = i + 1; j < soa1.size(); ++j) {
         if (ownedState1ptr[j] == autopas::OwnershipState::dummy or
             not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x1ptr, y1ptr, z1ptr, i, j)) {
+          // skip dummy particles
           continue;
         }
 
         // only required for calculating globals
-        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+        const simde__mmask8 ownedMaskJ = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-        const simde__m512d x2 = simde_mm512_set1_pd(x1ptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(y1ptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(z1ptr[j]);
+        const simde__m512d xj = simde_mm512_set1_pd(x1ptr[j]);
+        const simde__m512d yj = simde_mm512_set1_pd(y1ptr[j]);
+        const simde__m512d zj = simde_mm512_set1_pd(z1ptr[j]);
 
         simde__m512d fxjacc = simde_mm512_setzero_pd();
         simde__m512d fyjacc = simde_mm512_setzero_pd();
         simde__m512d fzjacc = simde_mm512_setzero_pd();
 
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+        // calculate distance i-j
+        const simde__m512d drxij = simde_mm512_sub_pd(xj, xi);
+        const simde__m512d dryij = simde_mm512_sub_pd(yj, yi);
+        const simde__m512d drzij = simde_mm512_sub_pd(zj, zi);
 
         const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
         const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
@@ -1020,17 +749,21 @@ class AxilrodTellerFunctorAVX512
         const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
+        // particle 3 always from soa2
         size_t k = 0;
+        // loop up to multiple of vecLength
+        // only works if vecLength is a power of 2
         for (; k < (soa2.size() & ~(vecLength - 1)); k += vecLength) {
           SoAKernelMasked<true, newton3, false>(
-              k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i], type1ptr[j], type2ptr, ownedMask1,
-              ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              k, xi, yi, zi, xj, yj, zj, x2ptr, y2ptr, z2ptr, type1ptr[i], type1ptr[j], type2ptr, ownedMaskI,
+              ownedMaskJ, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
               fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ);
         }
+        // process remainder
         if (k < soa2.size()) {
           SoAKernelMasked<true, newton3, true>(
-              k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i], type1ptr[j], type2ptr, ownedMask1,
-              ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              k, xi, yi, zi, xj, yj, zj, x2ptr, y2ptr, z2ptr, type1ptr[i], type1ptr[j], type2ptr, ownedMaskI,
+              ownedMaskJ, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
               fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ, soa2.size() - k);
         }
         fx1ptr[j] += simde_mm512_reduce_add_pd(fxjacc);
@@ -1039,27 +772,28 @@ class AxilrodTellerFunctorAVX512
       }
 
       // both particles 2 and 3 from soa2
-
       for (size_t j = soa2.size() - 1; static_cast<long>(j) >= 0; --j) {
         if (ownedState2ptr[j] == autopas::OwnershipState::dummy or
             not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x2ptr, y2ptr, z2ptr, i, j)) {
+          // skip dummy particles
           continue;
         }
 
         // only required for calculating globals
-        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+        const simde__mmask8 ownedMaskJ = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-        const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(y2ptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(z2ptr[j]);
+        const simde__m512d xj = simde_mm512_set1_pd(x2ptr[j]);
+        const simde__m512d yj = simde_mm512_set1_pd(y2ptr[j]);
+        const simde__m512d zj = simde_mm512_set1_pd(z2ptr[j]);
 
         simde__m512d fxjacc = simde_mm512_setzero_pd();
         simde__m512d fyjacc = simde_mm512_setzero_pd();
         simde__m512d fzjacc = simde_mm512_setzero_pd();
 
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+        // calculate distance i-j
+        const simde__m512d drxij = simde_mm512_sub_pd(xj, xi);
+        const simde__m512d dryij = simde_mm512_sub_pd(yj, yi);
+        const simde__m512d drzij = simde_mm512_sub_pd(zj, zi);
 
         const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
         const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
@@ -1068,19 +802,21 @@ class AxilrodTellerFunctorAVX512
         const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
-        // particle 3 from soa 2
-
+        // particle 3 always from soa 2
         size_t k = 0;
+        // loop up to multiple of vecLength
+        // only works if vecLength is a power of 2
         for (; k < (j & ~(vecLength - 1)); k += vecLength) {
           SoAKernelMasked<newton3, newton3, false>(
-              k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i], type2ptr[j], type2ptr, ownedMask1,
-              ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              k, xi, yi, zi, xj, yj, zj, x2ptr, y2ptr, z2ptr, type1ptr[i], type2ptr[j], type2ptr, ownedMaskI,
+              ownedMaskJ, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
               fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ);
         }
+        // process remainder
         if (k < j) {
           SoAKernelMasked<newton3, newton3, true>(
-              k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i], type2ptr[j], type2ptr, ownedMask1,
-              ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              k, xi, yi, zi, xj, yj, zj, x2ptr, y2ptr, z2ptr, type1ptr[i], type2ptr[j], type2ptr, ownedMaskI,
+              ownedMaskJ, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
               fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ, j - k);
         }
 
@@ -1153,47 +889,48 @@ class AxilrodTellerFunctorAVX512
     simde__m512d virialSumZ = simde_mm512_setzero_pd();
 
     if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
+      _nu = simde_mm512_set1_pd(_nuAoS);
     }
 
     for (size_t i = 0; i < soa1.size(); ++i) {
       if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
 
       // only required for calculating globals
-      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+      const simde__mmask8 ownedMaskI = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-      const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(z1ptr[i]);
+      const simde__m512d xi = simde_mm512_set1_pd(x1ptr[i]);
+      const simde__m512d yi = simde_mm512_set1_pd(y1ptr[i]);
+      const simde__m512d zi = simde_mm512_set1_pd(z1ptr[i]);
 
       simde__m512d fxiacc = simde_mm512_setzero_pd();
       simde__m512d fyiacc = simde_mm512_setzero_pd();
       simde__m512d fziacc = simde_mm512_setzero_pd();
 
-      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
       for (size_t j = 0; j < soa2.size(); ++j) {
         if (ownedState2ptr[j] == autopas::OwnershipState::dummy or
             not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x2ptr, y2ptr, z2ptr, i, j)) {
+          // skip dummy particles
           continue;
         }
 
         // only required for calculating globals
-        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+        const simde__mmask8 ownedMaskJ = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-        // TODO scalar operations and set1 ?
-        const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(y2ptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(z2ptr[j]);
+        const simde__m512d xj = simde_mm512_set1_pd(x2ptr[j]);
+        const simde__m512d yj = simde_mm512_set1_pd(y2ptr[j]);
+        const simde__m512d zj = simde_mm512_set1_pd(z2ptr[j]);
 
         simde__m512d fxjacc = simde_mm512_setzero_pd();
         simde__m512d fyjacc = simde_mm512_setzero_pd();
         simde__m512d fzjacc = simde_mm512_setzero_pd();
 
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+        // calculate distance i-j
+        const simde__m512d drxij = simde_mm512_sub_pd(xj, xi);
+        const simde__m512d dryij = simde_mm512_sub_pd(yj, yi);
+        const simde__m512d drzij = simde_mm512_sub_pd(zj, zi);
 
         const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
         const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
@@ -1203,16 +940,19 @@ class AxilrodTellerFunctorAVX512
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
         size_t k = 0;
+        // loop up to multiple of vecLength
+        // only works if vecLength is a power of 2
         for (; k < (soa3.size() & ~(vecLength - 1)); k += vecLength) {
           SoAKernelMasked<newton3, newton3, false>(
-              k, x1, y1, z1, x2, y2, z2, x3ptr, y3ptr, z3ptr, type1ptr[i], type2ptr[j], type3ptr, ownedMask1,
-              ownedMask2, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              k, xi, yi, zi, xj, yj, zj, x3ptr, y3ptr, z3ptr, type1ptr[i], type2ptr[j], type3ptr, ownedMaskI,
+              ownedMaskJ, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
               fx3ptr, fy3ptr, fz3ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ);
         }
+        // process remainder
         if (k < soa3.size()) {
           SoAKernelMasked<newton3, newton3, true>(
-              k, x1, y1, z1, x2, y2, z2, x3ptr, y3ptr, z3ptr, type1ptr[i], type2ptr[j], type3ptr, ownedMask1,
-              ownedMask2, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              k, xi, yi, zi, xj, yj, zj, x3ptr, y3ptr, z3ptr, type1ptr[i], type2ptr[j], type3ptr, ownedMaskI,
+              ownedMaskJ, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
               fx3ptr, fy3ptr, fz3ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ, soa3.size() - k);
         }
 
@@ -1234,6 +974,309 @@ class AxilrodTellerFunctorAVX512
       _aosThreadData[threadnum].virialSum[0] += simde_mm512_reduce_add_pd(virialSumX);
       _aosThreadData[threadnum].virialSum[1] += simde_mm512_reduce_add_pd(virialSumY);
       _aosThreadData[threadnum].virialSum[2] += simde_mm512_reduce_add_pd(virialSumZ);
+    }
+  }
+
+  // -------------------------------------------------------------
+  // functions for a compress + alignr + gather + scatter approach
+  // TODO currently not used. remove completely or keep as an option?
+  // -------------------------------------------------------------
+
+  template <bool newton3j, bool newton3k, bool remainderIsMasked>
+  void SoAKernelGatherScatter(const simde__m512i indicesK, const simde__m512d &xi, const simde__m512d &yi,
+                              const simde__m512d &zi, const simde__m512d &xj, const simde__m512d &yj,
+                              const simde__m512d &zj, const double *const __restrict xkPtr,
+                              const double *const __restrict ykPtr, const double *const __restrict zkPtr,
+                              const size_t typeI, const size_t typeJ, const size_t *const __restrict typeKptr,
+                              const simde__mmask8 &ownedMaskI, const simde__mmask8 &ownedMaskJ,
+                              const autopas::OwnershipState *const __restrict ownedStateKptr, const simde__m512d &drxij,
+                              const simde__m512d &dryij, const simde__m512d &drzij, const simde__m512d &drij2,
+                              simde__m512d &fxiacc, simde__m512d &fyiacc, simde__m512d &fziacc, simde__m512d &fxjacc,
+                              simde__m512d &fyjacc, simde__m512d &fzjacc, double *const __restrict fxkPtr,
+                              double *const __restrict fykPtr, double *const __restrict fzkPtr,
+                              simde__m512d &potentialEnergySum, simde__m512d &virialSumX, simde__m512d &virialSumY,
+                              simde__m512d &virialSumZ, unsigned int rest = 0) {
+    const simde__m512d xk = remainderIsMasked ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, xkPtr, 8)
+                                              : simde_mm512_i64gather_pd(indicesK, xkPtr, 8);
+    const simde__m512d yk = remainderIsMasked ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, ykPtr, 8)
+                                              : simde_mm512_i64gather_pd(indicesK, ykPtr, 8);
+    const simde__m512d zk = remainderIsMasked ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, zkPtr, 8)
+                                              : simde_mm512_i64gather_pd(indicesK, zkPtr, 8);
+
+    // only required for calculating globals
+    const simde__m512i ownedStateK =
+        remainderIsMasked
+            ? simde_mm512_mask_i64gather_epi64(_ownedStateDummyMM512i, _masks[rest], indicesK,
+                                               reinterpret_cast<const long long *const>(ownedStateKptr), 8)
+            : simde_mm512_i64gather_epi64(indicesK, reinterpret_cast<const long long *const>(ownedStateKptr), 8);
+    const simde__mmask8 ownedMaskK =
+        simde_mm512_cmp_epi64_mask(ownedStateK, _ownedStateOwnedMM512i, SIMDE_MM_CMPINT_EQ);
+
+    // calculate distance j-k
+    const simde__m512d drxjk = simde_mm512_sub_pd(xk, xj);
+    const simde__m512d dryjk = simde_mm512_sub_pd(yk, yj);
+    const simde__m512d drzjk = simde_mm512_sub_pd(zk, zj);
+
+    const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
+    const simde__m512d drjk2PART = simde_mm512_fmadd_pd(dryjk, dryjk, drxjk2);
+    const simde__m512d drjk2 = simde_mm512_fmadd_pd(drzjk, drzjk, drjk2PART);
+
+    // calculate distance k-i
+    const simde__m512d drxki = simde_mm512_sub_pd(xi, xk);
+    const simde__m512d dryki = simde_mm512_sub_pd(yi, yk);
+    const simde__m512d drzki = simde_mm512_sub_pd(zi, zk);
+
+    const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
+    const simde__m512d drki2PART = simde_mm512_fmadd_pd(dryki, dryki, drxki2);
+    const simde__m512d drki2 = simde_mm512_fmadd_pd(drzki, drzki, drki2PART);
+
+    // particles are presumed to be within cutoff -> calculate force
+    const simde__m512d drxi2 = simde_mm512_mul_pd(drxij, drxki);
+    const simde__m512d dri2PART = simde_mm512_fmadd_pd(dryij, dryki, drxi2);
+    const simde__m512d dri2 = simde_mm512_fmadd_pd(drzij, drzki, dri2PART);
+
+    const simde__m512d drxj2 = simde_mm512_mul_pd(drxij, drxjk);
+    const simde__m512d drj2PART = simde_mm512_fmadd_pd(dryij, dryjk, drxj2);
+    const simde__m512d drj2 = simde_mm512_fmadd_pd(drzij, drzjk, drj2PART);
+
+    const simde__m512d drxk2 = simde_mm512_mul_pd(drxjk, drxki);
+    const simde__m512d drk2PART = simde_mm512_fmadd_pd(dryjk, dryki, drxk2);
+    const simde__m512d drk2 = simde_mm512_fmadd_pd(drzjk, drzki, drk2PART);
+
+    const simde__m512d drijk2PART = simde_mm512_mul_pd(dri2, drj2);
+    const simde__m512d drijk2 = simde_mm512_mul_pd(drijk2PART, drk2);
+
+    const simde__m512d dr2PART = simde_mm512_mul_pd(drij2, drjk2);
+    const simde__m512d dr2 = simde_mm512_mul_pd(dr2PART, drki2);
+    const simde__m512d dr2sqrt = simde_mm512_sqrt_pd(dr2);
+    const simde__m512d dr5PART = simde_mm512_mul_pd(dr2, dr2);
+    const simde__m512d dr5 = simde_mm512_mul_pd(dr5PART, dr2sqrt);
+
+    if constexpr (useMixing) {
+      _nu = simde_mm512_set_pd(
+          not remainderIsMasked or rest > 7 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[7]]) : 0,
+          not remainderIsMasked or rest > 6 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[6]]) : 0,
+          not remainderIsMasked or rest > 5 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[5]]) : 0,
+          not remainderIsMasked or rest > 4 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[4]]) : 0,
+          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[3]]) : 0,
+          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[2]]) : 0,
+          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[1]]) : 0,
+          _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[0]]));
+    }
+    const simde__m512d invdr5 =
+        remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest], _nu, dr5) : simde_mm512_div_pd(_nu, dr5);
+    const simde__m512d invdr53 = simde_mm512_mul_pd(_three, invdr5);
+
+    const simde__m512d drj2_drk2 = simde_mm512_sub_pd(drj2, drk2);
+    const simde__m512d i_jkFactor = simde_mm512_mul_pd(dri2, drj2_drk2);
+    const simde__m512d drj2drk2 = simde_mm512_mul_pd(drj2, drk2);
+    const simde__m512d drjk2drki2 = simde_mm512_mul_pd(drjk2, drki2);
+    const simde__m512d drijk2BYdrij2 =
+        remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest], drijk2, drij2) : simde_mm512_div_pd(drijk2, drij2);
+    const simde__m512d i_ijFactorPART = simde_mm512_sub_pd(drj2drk2, drjk2drki2);
+    const simde__m512d i_ijFactor = simde_mm512_fmadd_pd(drijk2BYdrij2, _five, i_ijFactorPART);
+    const simde__m512d drij2drjk2 = simde_mm512_mul_pd(drij2, drjk2);
+    const simde__m512d drijk2BYdrki2 =
+        remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest], drijk2, drki2) : simde_mm512_div_pd(drijk2, drki2);
+    const simde__m512d i_kiFactorPART = simde_mm512_sub_pd(drj2drk2, drij2drjk2);
+    const simde__m512d i_kiFactor = simde_mm512_fmadd_pd(drijk2BYdrki2, _five, i_kiFactorPART);
+
+    const simde__m512d fxiPART = simde_mm512_mul_pd(drxjk, i_jkFactor);
+    const simde__m512d fxiPART2 = simde_mm512_fmadd_pd(drxij, i_ijFactor, fxiPART);
+    const simde__m512d fxiPART3 = simde_mm512_fnmadd_pd(drxki, i_kiFactor, fxiPART2);
+    const simde__m512d fxi = simde_mm512_mul_pd(invdr53, fxiPART3);
+    fxiacc = simde_mm512_add_pd(fxi, fxiacc);
+    const simde__m512d fyiPART = simde_mm512_mul_pd(dryjk, i_jkFactor);
+    const simde__m512d fyiPART2 = simde_mm512_fmadd_pd(dryij, i_ijFactor, fyiPART);
+    const simde__m512d fyiPART3 = simde_mm512_fnmadd_pd(dryki, i_kiFactor, fyiPART2);
+    const simde__m512d fyi = simde_mm512_mul_pd(invdr53, fyiPART3);
+    fyiacc = simde_mm512_add_pd(fyi, fyiacc);
+    const simde__m512d fziPART = simde_mm512_mul_pd(drzjk, i_jkFactor);
+    const simde__m512d fziPART2 = simde_mm512_fmadd_pd(drzij, i_ijFactor, fziPART);
+    const simde__m512d fziPART3 = simde_mm512_fnmadd_pd(drzki, i_kiFactor, fziPART2);
+    const simde__m512d fzi = simde_mm512_mul_pd(invdr53, fziPART3);
+    fziacc = simde_mm512_add_pd(fzi, fziacc);
+
+    if constexpr (calculateGlobals) {
+      const simde__m512d virialXI = simde_mm512_mul_pd(fxi, xi);
+      virialSumX = simde_mm512_mask_add_pd(virialSumX, ownedMaskI, virialSumX, virialXI);
+      const simde__m512d virialYI = simde_mm512_mul_pd(fyi, yi);
+      virialSumY = simde_mm512_mask_add_pd(virialSumY, ownedMaskI, virialSumY, virialYI);
+      const simde__m512d virialZI = simde_mm512_mul_pd(fzi, zi);
+      virialSumZ = simde_mm512_mask_add_pd(virialSumZ, ownedMaskI, virialSumZ, virialZI);
+    }
+
+    if constexpr (newton3j) {
+      const simde__m512d drk2_dri2 = simde_mm512_sub_pd(drk2, dri2);
+      const simde__m512d j_kiFactor = simde_mm512_mul_pd(drj2, drk2_dri2);
+      const simde__m512d dri2drk2 = simde_mm512_mul_pd(dri2, drk2);
+      const simde__m512d j_ijFactorPART = simde_mm512_sub_pd(dri2drk2, drjk2drki2);
+      const simde__m512d j_ijFactor = simde_mm512_fmadd_pd(drijk2BYdrij2, _five, j_ijFactorPART);
+      const simde__m512d drij2drki2 = simde_mm512_mul_pd(drij2, drki2);
+      const simde__m512d drijk2BYdrjk2 =
+          remainderIsMasked ? simde_mm512_maskz_div_pd(_masks[rest], drijk2, drjk2) : simde_mm512_div_pd(drijk2, drjk2);
+      const simde__m512d j_jkFactorPART = simde_mm512_sub_pd(dri2drk2, drij2drki2);
+      const simde__m512d j_jkFactor = simde_mm512_fmadd_pd(drijk2BYdrjk2, _five, j_jkFactorPART);
+
+      const simde__m512d fxjPART = simde_mm512_mul_pd(drxki, j_kiFactor);
+      const simde__m512d fxjPART2 = simde_mm512_fnmadd_pd(drxij, j_ijFactor, fxjPART);
+      const simde__m512d fxjPART3 = simde_mm512_fmadd_pd(drxjk, j_jkFactor, fxjPART2);
+      const simde__m512d fxj = simde_mm512_mul_pd(invdr53, fxjPART3);
+      fxjacc = simde_mm512_add_pd(fxj, fxjacc);
+      const simde__m512d fyjPART = simde_mm512_mul_pd(dryki, j_kiFactor);
+      const simde__m512d fyjPART2 = simde_mm512_fnmadd_pd(dryij, j_ijFactor, fyjPART);
+      const simde__m512d fyjPART3 = simde_mm512_fmadd_pd(dryjk, j_jkFactor, fyjPART2);
+      const simde__m512d fyj = simde_mm512_mul_pd(invdr53, fyjPART3);
+      fyjacc = simde_mm512_add_pd(fyj, fyjacc);
+      const simde__m512d fzjPART = simde_mm512_mul_pd(drzki, j_kiFactor);
+      const simde__m512d fzjPART2 = simde_mm512_fnmadd_pd(drzij, j_ijFactor, fzjPART);
+      const simde__m512d fzjPART3 = simde_mm512_fmadd_pd(drzjk, j_jkFactor, fzjPART2);
+      const simde__m512d fzj = simde_mm512_mul_pd(invdr53, fzjPART3);
+      fzjacc = simde_mm512_add_pd(fzj, fzjacc);
+
+      if constexpr (calculateGlobals) {
+        const simde__m512d virialXJ = simde_mm512_mul_pd(fxj, xj);
+        virialSumX = simde_mm512_mask_add_pd(virialSumX, ownedMaskJ, virialSumX, virialXJ);
+        const simde__m512d virialYJ = simde_mm512_mul_pd(fyj, yj);
+        virialSumY = simde_mm512_mask_add_pd(virialSumY, ownedMaskJ, virialSumY, virialYJ);
+        const simde__m512d virialZJ = simde_mm512_mul_pd(fzj, zj);
+        virialSumZ = simde_mm512_mask_add_pd(virialSumZ, ownedMaskJ, virialSumZ, virialZJ);
+      }
+
+      if constexpr (newton3k) {
+        const simde__m512d nfxk = simde_mm512_add_pd(fxi, fxj);
+        const simde__m512d nfyk = simde_mm512_add_pd(fyi, fyj);
+        const simde__m512d nfzk = simde_mm512_add_pd(fzi, fzj);
+
+        const simde__m512d fxk_old = remainderIsMasked
+                                         ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fxkPtr, 8)
+                                         : simde_mm512_i64gather_pd(indicesK, fxkPtr, 8);
+        const simde__m512d fyk_old = remainderIsMasked
+                                         ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fykPtr, 8)
+                                         : simde_mm512_i64gather_pd(indicesK, fykPtr, 8);
+        const simde__m512d fzk_old = remainderIsMasked
+                                         ? simde_mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fzkPtr, 8)
+                                         : simde_mm512_i64gather_pd(indicesK, fzkPtr, 8);
+
+        const simde__m512d fxk_new = simde_mm512_sub_pd(fxk_old, nfxk);
+        const simde__m512d fyk_new = simde_mm512_sub_pd(fyk_old, nfyk);
+        const simde__m512d fzk_new = simde_mm512_sub_pd(fzk_old, nfzk);
+
+        if constexpr (remainderIsMasked) {
+          simde_mm512_mask_i64scatter_pd(fxkPtr, _masks[rest], indicesK, fxk_new, 8);
+          simde_mm512_mask_i64scatter_pd(fykPtr, _masks[rest], indicesK, fyk_new, 8);
+          simde_mm512_mask_i64scatter_pd(fzkPtr, _masks[rest], indicesK, fzk_new, 8);
+        } else {
+          simde_mm512_i64scatter_pd(fxkPtr, indicesK, fxk_new, 8);
+          simde_mm512_i64scatter_pd(fykPtr, indicesK, fyk_new, 8);
+          simde_mm512_i64scatter_pd(fzkPtr, indicesK, fzk_new, 8);
+        }
+        if constexpr (calculateGlobals) {
+          const simde__m512d virialXK = simde_mm512_mul_pd(nfxk, xk);
+          virialSumX = simde_mm512_mask_sub_pd(virialSumX, ownedMaskK, virialSumX, virialXK);
+          const simde__m512d virialYK = simde_mm512_mul_pd(nfyk, yk);
+          virialSumY = simde_mm512_mask_sub_pd(virialSumY, ownedMaskK, virialSumY, virialYK);
+          const simde__m512d virialZK = simde_mm512_mul_pd(nfzk, zk);
+          virialSumZ = simde_mm512_mask_sub_pd(virialSumZ, ownedMaskK, virialSumZ, virialZK);
+        }
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      const simde__m512d potentialEnergyThird = simde_mm512_mul_pd(invdr5, simde_mm512_fmsub_pd(dr2, _third, drijk2));
+      potentialEnergySum =
+          simde_mm512_mask_add_pd(potentialEnergySum, ownedMaskI, potentialEnergySum, potentialEnergyThird);
+      if constexpr (newton3j) {
+        potentialEnergySum =
+            simde_mm512_mask_add_pd(potentialEnergySum, ownedMaskJ, potentialEnergySum, potentialEnergyThird);
+      }
+      if constexpr (newton3k) {
+        potentialEnergySum =
+            simde_mm512_mask_add_pd(potentialEnergySum, ownedMaskK, potentialEnergySum, potentialEnergyThird);
+      }
+    }
+  }
+
+  template <bool newton3j, bool newton3k, bool remainderIsMasked>
+  void SoAKernelCompressAlignr(simde__m512i &interactionIndices, int &numAssignedRegisters, const size_t k,
+                               const simde__m512d &xi, const simde__m512d &yi, const simde__m512d &zi,
+                               const simde__m512d &xj, const simde__m512d &yj, const simde__m512d &zj,
+                               const double *const xkPtr, const double *const ykPtr, const double *const zkPtr,
+                               const size_t typeI, const size_t typeJ, const size_t *const typeKptr,
+                               const simde__mmask8 &ownedMaskI, const simde__mmask8 &ownedMaskJ,
+                               const autopas::OwnershipState *const ownedStateKptr, const simde__m512d &drxij,
+                               const simde__m512d &dryij, const simde__m512d &drzij, const simde__m512d &drij2,
+                               simde__m512d &fxiacc, simde__m512d &fyiacc, simde__m512d &fziacc, simde__m512d &fxjacc,
+                               simde__m512d &fyjacc, simde__m512d &fzjacc, double *const fxkPtr, double *const fykPtr,
+                               double *const fzkPtr, simde__m512d &potentialEnergySum, simde__m512d &virialSumX,
+                               simde__m512d &virialSumY, simde__m512d &virialSumZ, unsigned int rest = 0) {
+    const simde__m512i loopIndices = simde_mm512_add_epi64(simde_mm512_set1_epi64(k), _ascendingIndices);
+
+    const simde__m512d xk =
+        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &xkPtr[k]) : simde_mm512_loadu_pd(&xkPtr[k]);
+    const simde__m512d yk =
+        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &ykPtr[k]) : simde_mm512_loadu_pd(&ykPtr[k]);
+    const simde__m512d zk =
+        remainderIsMasked ? simde_mm512_maskz_loadu_pd(_masks[rest], &zkPtr[k]) : simde_mm512_loadu_pd(&zkPtr[k]);
+
+    // calculate distance k-i
+    const simde__m512d drxki = simde_mm512_sub_pd(xi, xk);
+    const simde__m512d dryki = simde_mm512_sub_pd(yi, yk);
+    const simde__m512d drzki = simde_mm512_sub_pd(zi, zk);
+
+    const simde__m512d drxki2 = simde_mm512_mul_pd(drxki, drxki);
+    const simde__m512d drki2PART = simde_mm512_fmadd_pd(dryki, dryki, drxki2);
+    const simde__m512d drki2 = simde_mm512_fmadd_pd(drzki, drzki, drki2PART);
+
+    const simde__mmask8 cutoffMask_ki = simde_mm512_cmp_pd_mask(drki2, _cutoffSquared, SIMDE_CMP_LE_OS);
+
+    // calculate distance j-k
+    const simde__m512d drxjk = simde_mm512_sub_pd(xk, xj);
+    const simde__m512d dryjk = simde_mm512_sub_pd(yk, yj);
+    const simde__m512d drzjk = simde_mm512_sub_pd(zk, zj);
+
+    const simde__m512d drxjk2 = simde_mm512_mul_pd(drxjk, drxjk);
+    const simde__m512d drjk2PART = simde_mm512_fmadd_pd(dryjk, dryjk, drxjk2);
+    const simde__m512d drjk2 = simde_mm512_fmadd_pd(drzjk, drzjk, drjk2PART);
+
+    const simde__mmask8 cutoffMask_jk = simde_mm512_cmp_pd_mask(drjk2, _cutoffSquared, SIMDE_CMP_LE_OS);
+
+    const simde__mmask8 cutoffMask = simde_mm512_kand(cutoffMask_jk, cutoffMask_ki);
+
+    const simde__m512i ownedStateK = simde_mm512_loadu_epi64(&ownedStateKptr[k]);
+    const simde__mmask8 dummyMask = simde_mm512_cmp_epi64_mask(ownedStateK, _ownedStateDummyMM512i, SIMDE_MM_CMPINT_NE);
+
+    // mask with bits set if particle is not a dummy and within cutoff of the first two particles
+    const simde__mmask8 mask = remainderIsMasked
+                                   ? simde_mm512_kand(_masks[rest], simde_mm512_kand(cutoffMask, dummyMask))
+                                   : simde_mm512_kand(cutoffMask, dummyMask);
+
+    const int popCountMask = std::bitset<vecLength>(mask).count();
+
+    if (popCountMask == 0) {
+      // early exit if all particles are ignored
+      return;
+    }
+
+    // compress indices of relevant particles towards lower end of vector register
+    const simde__m512i newInteractionIndices = simde_mm512_maskz_compress_epi64(mask, loopIndices);
+    if (numAssignedRegisters + popCountMask < vecLength) {
+      // concatenate new and old indices and shift to higher end of vector register
+      interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, popCountMask);
+      numAssignedRegisters += popCountMask;
+    } else {
+      // concatenate new and old indices and shift to higher end of vector register
+      interactionIndices =
+          simde_mm512_alignr_epi64(newInteractionIndices, interactionIndices, vecLength - numAssignedRegisters);
+
+      SoAKernelGatherScatter<newton3j, newton3k, false>(
+          interactionIndices, xi, yi, zi, xj, yj, zj, xkPtr, ykPtr, zkPtr, typeI, typeJ, typeKptr, ownedMaskI,
+          ownedMaskJ, ownedStateKptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+          fxkPtr, fykPtr, fzkPtr, potentialEnergySum, virialSumX, virialSumY, virialSumZ);
+
+      // shift remaining new indices to higher end of vector register
+      interactionIndices = simde_mm512_alignr_epi64(newInteractionIndices, _zeroMM512i, popCountMask);
+      numAssignedRegisters += popCountMask - vecLength;
     }
   }
 
@@ -1260,46 +1303,48 @@ class AxilrodTellerFunctorAVX512
     simde__m512d potentialEnergySum = simde_mm512_setzero_pd();
 
     if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
+      _nu = simde_mm512_set1_pd(_nuAoS);
     }
 
     for (size_t i = soa.size() - 1; static_cast<long>(i) >= 2; --i) {
       if (ownedStatePtr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
 
       // only required for calculating globals
-      const simde__mmask8 ownedMask1 = ownedStatePtr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+      const simde__mmask8 ownedMaskI = ownedStatePtr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-      const simde__m512d x1 = simde_mm512_set1_pd(xptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(yptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(zptr[i]);
+      const simde__m512d xi = simde_mm512_set1_pd(xptr[i]);
+      const simde__m512d yi = simde_mm512_set1_pd(yptr[i]);
+      const simde__m512d zi = simde_mm512_set1_pd(zptr[i]);
 
       simde__m512d fxiacc = simde_mm512_setzero_pd();
       simde__m512d fyiacc = simde_mm512_setzero_pd();
       simde__m512d fziacc = simde_mm512_setzero_pd();
 
-      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
       for (size_t j = i - 1; static_cast<long>(j) >= 1; --j) {
         if (ownedStatePtr[j] == autopas::OwnershipState::dummy or
             not SoAParticlesInCutoff(xptr, yptr, zptr, xptr, yptr, zptr, i, j)) {
+          // skip dummy particles
           continue;
         }
 
         // only required for calculating globals
-        const simde__mmask8 ownedMask2 = ownedStatePtr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+        const simde__mmask8 ownedMaskJ = ownedStatePtr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-        const simde__m512d x2 = simde_mm512_set1_pd(xptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(yptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(zptr[j]);
+        const simde__m512d xj = simde_mm512_set1_pd(xptr[j]);
+        const simde__m512d yj = simde_mm512_set1_pd(yptr[j]);
+        const simde__m512d zj = simde_mm512_set1_pd(zptr[j]);
 
         simde__m512d fxjacc = simde_mm512_setzero_pd();
         simde__m512d fyjacc = simde_mm512_setzero_pd();
         simde__m512d fzjacc = simde_mm512_setzero_pd();
 
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+        // calculate distance i-j
+        const simde__m512d drxij = simde_mm512_sub_pd(xj, xi);
+        const simde__m512d dryij = simde_mm512_sub_pd(yj, yi);
+        const simde__m512d drzij = simde_mm512_sub_pd(zj, zi);
 
         const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
         const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
@@ -1308,31 +1353,35 @@ class AxilrodTellerFunctorAVX512
         const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
-        simde__m512i interactionIndices = _zeroI;
+        simde__m512i interactionIndices = _zeroMM512i;
         int numAssignedRegisters = 0;
 
         size_t k = 0;
+        // loop up to multiple of vecLength
+        // only works if vecLength is a power of 2
         for (; k < (j & ~(vecLength - 1)); k += vecLength) {
-          SoAKernelOuterCompressAlignr<true, true, false>(
-              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i],
-              typeptr[j], typeptr, ownedMask1, ownedMask2, ownedStatePtr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
-              fziacc, fxjacc, fyjacc, fzjacc, fxptr, fyptr, fzptr, potentialEnergySum, virialSumX, virialSumY,
-              virialSumZ);
+          SoAKernelCompressAlignr<true, true, false>(interactionIndices, numAssignedRegisters, k, xi, yi, zi, xj, yj,
+                                                     zj, xptr, yptr, zptr, typeptr[i], typeptr[j], typeptr, ownedMaskI,
+                                                     ownedMaskJ, ownedStatePtr, drxij, dryij, drzij, drij2, fxiacc,
+                                                     fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fxptr, nullptr, fzptr,
+                                                     potentialEnergySum, virialSumX, virialSumY, virialSumZ);
         }
+        // process remainder
         if (k < j) {
-          SoAKernelOuterCompressAlignr<true, true, true>(
-              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i],
-              typeptr[j], typeptr, ownedMask1, ownedMask2, ownedStatePtr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
-              fziacc, fxjacc, fyjacc, fzjacc, fxptr, fyptr, fzptr, potentialEnergySum, virialSumX, virialSumY,
-              virialSumZ, j - k);
+          SoAKernelCompressAlignr<true, true, true>(interactionIndices, numAssignedRegisters, k, xi, yi, zi, xj, yj, zj,
+                                                    xptr, yptr, zptr, typeptr[i], typeptr[j], typeptr, ownedMaskI,
+                                                    ownedMaskJ, ownedStatePtr, drxij, dryij, drzij, drij2, fxiacc,
+                                                    fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fxptr, nullptr, fzptr,
+                                                    potentialEnergySum, virialSumX, virialSumY, virialSumZ, j - k);
         }
+        // process remaining interaction indices
         if (numAssignedRegisters > 0) {
-          // shift remainder to right
-          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
-          SoAKernel<true, true, true>(interactionIndices, x1, y1, z1, x2, y2, z2, xptr, yptr, zptr, typeptr[i],
-                                      typeptr[j], typeptr, ownedMask1, ownedMask2, ownedStatePtr, drxij, dryij, drzij,
-                                      drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fxptr, fyptr, fzptr,
-                                      potentialEnergySum, virialSumX, virialSumY, virialSumZ, numAssignedRegisters);
+          // shift remaining interaction indices to right
+          interactionIndices = simde_mm512_alignr_epi64(_zeroMM512i, interactionIndices, 8 - numAssignedRegisters);
+          SoAKernelGatherScatter<true, true, true>(
+              interactionIndices, xi, yi, zi, xj, yj, zj, xptr, yptr, zptr, typeptr[i], typeptr[j], typeptr, ownedMaskI,
+              ownedMaskJ, ownedStatePtr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
+              fxptr, fyptr, fzptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numAssignedRegisters);
         }
 
         fxptr[j] += simde_mm512_reduce_add_pd(fxjacc);
@@ -1384,49 +1433,50 @@ class AxilrodTellerFunctorAVX512
     simde__m512d virialSumZ = simde_mm512_setzero_pd();
 
     if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
+      _nu = simde_mm512_set1_pd(_nuAoS);
     }
 
+    // particle 1 always from soa1
     for (size_t i = 0; i < soa1.size(); ++i) {
       if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
 
       // only required for calculating globals
-      const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+      const simde__mmask8 ownedMaskI = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-      const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(z1ptr[i]);
+      const simde__m512d xi = simde_mm512_set1_pd(x1ptr[i]);
+      const simde__m512d yi = simde_mm512_set1_pd(y1ptr[i]);
+      const simde__m512d zi = simde_mm512_set1_pd(z1ptr[i]);
 
       simde__m512d fxiacc = simde_mm512_setzero_pd();
       simde__m512d fyiacc = simde_mm512_setzero_pd();
       simde__m512d fziacc = simde_mm512_setzero_pd();
 
-      // TODO maybe change loop order to always pick particle 2 from soa2 and soa3 from either soa1 or soa2
       // particle 2 from soa1 and 3 from soa2
-
-      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
       for (size_t j = i + 1; j < soa1.size(); ++j) {
         if (ownedState1ptr[j] == autopas::OwnershipState::dummy or
             not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x1ptr, y1ptr, z1ptr, i, j)) {
+          // skip dummy particles
           continue;
         }
 
         // only required for calculating globals
-        const simde__mmask8 ownedMask2 = ownedState1ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+        const simde__mmask8 ownedMaskJ = ownedState1ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-        const simde__m512d x2 = simde_mm512_set1_pd(x1ptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(y1ptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(z1ptr[j]);
+        const simde__m512d xj = simde_mm512_set1_pd(x1ptr[j]);
+        const simde__m512d yj = simde_mm512_set1_pd(y1ptr[j]);
+        const simde__m512d zj = simde_mm512_set1_pd(z1ptr[j]);
 
         simde__m512d fxjacc = simde_mm512_setzero_pd();
         simde__m512d fyjacc = simde_mm512_setzero_pd();
         simde__m512d fzjacc = simde_mm512_setzero_pd();
 
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+        // calculate distance i-j
+        const simde__m512d drxij = simde_mm512_sub_pd(xj, xi);
+        const simde__m512d dryij = simde_mm512_sub_pd(yj, yi);
+        const simde__m512d drzij = simde_mm512_sub_pd(zj, zi);
 
         const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
         const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
@@ -1435,32 +1485,35 @@ class AxilrodTellerFunctorAVX512
         const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
-        simde__m512i interactionIndices = _zeroI;
+        simde__m512i interactionIndices = _zeroMM512i;
         int numAssignedRegisters = 0;
 
         size_t k = 0;
+        // loop up to multiple of vecLength
+        // only works if vecLength is a power of 2
         for (; k < (soa2.size() & ~(vecLength - 1)); k += vecLength) {
-          SoAKernelOuterCompressAlignr<true, newton3, false>(
-              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
-              type1ptr[j], type2ptr, ownedMask1, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
-              fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
+          SoAKernelCompressAlignr<true, newton3, false>(
+              interactionIndices, numAssignedRegisters, k, xi, yi, zi, xj, yj, zj, x2ptr, y2ptr, z2ptr, type1ptr[i],
+              type1ptr[j], type2ptr, ownedMaskI, ownedMaskJ, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
+              fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, nullptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
               virialSumZ);
         }
+        // process remainder
         if (k < soa2.size()) {
-          SoAKernelOuterCompressAlignr<true, newton3, true>(
-              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
-              type1ptr[j], type2ptr, ownedMask1, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
-              fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
+          SoAKernelCompressAlignr<true, newton3, true>(
+              interactionIndices, numAssignedRegisters, k, xi, yi, zi, xj, yj, zj, x2ptr, y2ptr, z2ptr, type1ptr[i],
+              type1ptr[j], type2ptr, ownedMaskI, ownedMaskJ, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
+              fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, nullptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
               virialSumZ, soa2.size() - k);
         }
         if (numAssignedRegisters > 0) {
           // shift remainder to right
-          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
-          SoAKernel<true, newton3, true>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
-                                         type1ptr[j], type2ptr, ownedMask1, ownedMask2, ownedState2ptr, drxij, dryij,
-                                         drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr,
-                                         fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ,
-                                         numAssignedRegisters);
+          interactionIndices = simde_mm512_alignr_epi64(_zeroMM512i, interactionIndices, 8 - numAssignedRegisters);
+          SoAKernelGatherScatter<true, newton3, true>(
+              interactionIndices, xi, yi, zi, xj, yj, zj, x2ptr, y2ptr, z2ptr, type1ptr[i], type1ptr[j], type2ptr,
+              ownedMaskI, ownedMaskJ, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc,
+              fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ,
+              numAssignedRegisters);
         }
         fx1ptr[j] += simde_mm512_reduce_add_pd(fxjacc);
         fy1ptr[j] += simde_mm512_reduce_add_pd(fyjacc);
@@ -1486,9 +1539,9 @@ class AxilrodTellerFunctorAVX512
         simde__m512d fyjacc = simde_mm512_setzero_pd();
         simde__m512d fzjacc = simde_mm512_setzero_pd();
 
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+        const simde__m512d drxij = simde_mm512_sub_pd(x2, xi);
+        const simde__m512d dryij = simde_mm512_sub_pd(y2, yi);
+        const simde__m512d drzij = simde_mm512_sub_pd(z2, zi);
 
         const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
         const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
@@ -1499,32 +1552,33 @@ class AxilrodTellerFunctorAVX512
 
         // particle 3 from soa 2
 
-        simde__m512i interactionIndices = _zeroI;
+        simde__m512i interactionIndices = _zeroMM512i;
         int numAssignedRegisters = 0;
 
         size_t k = 0;
         for (; k < (j & ~(vecLength - 1)); k += vecLength) {
-          SoAKernelOuterCompressAlignr<newton3, newton3, false>(
-              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
-              type2ptr[j], type2ptr, ownedMask1, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
-              fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
+          SoAKernelCompressAlignr<newton3, newton3, false>(
+              interactionIndices, numAssignedRegisters, k, xi, yi, zi, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
+              type2ptr[j], type2ptr, ownedMaskI, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
+              fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, nullptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
               virialSumZ);
         }
         if (k < j) {
-          SoAKernelOuterCompressAlignr<newton3, newton3, true>(
-              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
-              type2ptr[j], type2ptr, ownedMask1, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
-              fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
+          SoAKernelCompressAlignr<newton3, newton3, true>(
+              interactionIndices, numAssignedRegisters, k, xi, yi, zi, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i],
+              type2ptr[j], type2ptr, ownedMaskI, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
+              fziacc, fxjacc, fyjacc, fzjacc, fx2ptr, nullptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
               virialSumZ, j - k);
         }
+        // process remaining interaction indices
         if (numAssignedRegisters > 0) {
-          // shift remainder to right
-          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
-          SoAKernel<newton3, newton3, true>(interactionIndices, x1, y1, z1, x2, y2, z2, x2ptr, y2ptr, z2ptr,
-                                            type1ptr[i], type2ptr[j], type2ptr, ownedMask1, ownedMask2, ownedState2ptr,
-                                            drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
-                                            fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY,
-                                            virialSumZ, numAssignedRegisters);
+          // shift remaining interaction indices to right
+          interactionIndices = simde_mm512_alignr_epi64(_zeroMM512i, interactionIndices, 8 - numAssignedRegisters);
+          SoAKernelGatherScatter<newton3, newton3, true>(
+              interactionIndices, xi, yi, zi, x2, y2, z2, x2ptr, y2ptr, z2ptr, type1ptr[i], type2ptr[j], type2ptr,
+              ownedMaskI, ownedMask2, ownedState2ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc,
+              fyjacc, fzjacc, fx2ptr, fy2ptr, fz2ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ,
+              numAssignedRegisters);
         }
 
         if constexpr (newton3) {
@@ -1588,47 +1642,48 @@ class AxilrodTellerFunctorAVX512
     simde__m512d virialSumZ = simde_mm512_setzero_pd();
 
     if constexpr (not useMixing) {
-      _nuPd = simde_mm512_set1_pd(_nu);
+      _nu = simde_mm512_set1_pd(_nuAoS);
     }
 
     for (size_t i = 0; i < soa1.size(); ++i) {
       if (ownedState1ptr[i] == autopas::OwnershipState::dummy) {
+        // skip dummy particles
         continue;
       }
 
       // only required for calculating globals
       const simde__mmask8 ownedMask1 = ownedState1ptr[i] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-      const simde__m512d x1 = simde_mm512_set1_pd(x1ptr[i]);
-      const simde__m512d y1 = simde_mm512_set1_pd(y1ptr[i]);
-      const simde__m512d z1 = simde_mm512_set1_pd(z1ptr[i]);
+      const simde__m512d xi = simde_mm512_set1_pd(x1ptr[i]);
+      const simde__m512d yi = simde_mm512_set1_pd(y1ptr[i]);
+      const simde__m512d zi = simde_mm512_set1_pd(z1ptr[i]);
 
       simde__m512d fxiacc = simde_mm512_setzero_pd();
       simde__m512d fyiacc = simde_mm512_setzero_pd();
       simde__m512d fziacc = simde_mm512_setzero_pd();
 
-      // std::vector<size_t, autopas::AlignedAllocator<size_t, 64>> indicesJ;
       for (size_t j = 0; j < soa2.size(); ++j) {
         if (ownedState2ptr[j] == autopas::OwnershipState::dummy or
             not SoAParticlesInCutoff(x1ptr, y1ptr, z1ptr, x2ptr, y2ptr, z2ptr, i, j)) {
+          // skip dummy particles
           continue;
         }
 
         // only required for calculating globals
-        const simde__mmask8 ownedMask2 = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
+        const simde__mmask8 ownedMaskJ = ownedState2ptr[j] == autopas::OwnershipState::owned ? 0b11111111 : 0b00000000;
 
-        // TODO scalar operations and set1 ?
-        const simde__m512d x2 = simde_mm512_set1_pd(x2ptr[j]);
-        const simde__m512d y2 = simde_mm512_set1_pd(y2ptr[j]);
-        const simde__m512d z2 = simde_mm512_set1_pd(z2ptr[j]);
+        const simde__m512d xj = simde_mm512_set1_pd(x2ptr[j]);
+        const simde__m512d yj = simde_mm512_set1_pd(y2ptr[j]);
+        const simde__m512d zj = simde_mm512_set1_pd(z2ptr[j]);
 
         simde__m512d fxjacc = simde_mm512_setzero_pd();
         simde__m512d fyjacc = simde_mm512_setzero_pd();
         simde__m512d fzjacc = simde_mm512_setzero_pd();
 
-        const simde__m512d drxij = simde_mm512_sub_pd(x2, x1);
-        const simde__m512d dryij = simde_mm512_sub_pd(y2, y1);
-        const simde__m512d drzij = simde_mm512_sub_pd(z2, z1);
+        // calculate distance i-j
+        const simde__m512d drxij = simde_mm512_sub_pd(xj, xi);
+        const simde__m512d dryij = simde_mm512_sub_pd(yj, yi);
+        const simde__m512d drzij = simde_mm512_sub_pd(zj, zi);
 
         const simde__m512d drxij2 = simde_mm512_mul_pd(drxij, drxij);
         const simde__m512d dryij2 = simde_mm512_mul_pd(dryij, dryij);
@@ -1637,32 +1692,36 @@ class AxilrodTellerFunctorAVX512
         const simde__m512d drij2PART = simde_mm512_add_pd(drxij2, dryij2);
         const simde__m512d drij2 = simde_mm512_add_pd(drij2PART, drzij2);
 
-        simde__m512i interactionIndices = _zeroI;
+        simde__m512i interactionIndices = _zeroMM512i;
         int numAssignedRegisters = 0;
 
         size_t k = 0;
+        // loop up to multiple of vecLength
+        // only works if vecLength is a power of 2
         for (; k < (soa3.size() & ~(vecLength - 1)); k += vecLength) {
-          SoAKernelOuterCompressAlignr<newton3, newton3, false>(
-              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x3ptr, y3ptr, z3ptr, type1ptr[i],
-              type2ptr[j], type3ptr, ownedMask1, ownedMask2, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
-              fziacc, fxjacc, fyjacc, fzjacc, fx3ptr, fy3ptr, fz3ptr, potentialEnergySum, virialSumX, virialSumY,
+          SoAKernelCompressAlignr<newton3, newton3, false>(
+              interactionIndices, numAssignedRegisters, k, xi, yi, zi, xj, yj, zj, x3ptr, y3ptr, z3ptr, type1ptr[i],
+              type2ptr[j], type3ptr, ownedMask1, ownedMaskJ, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
+              fziacc, fxjacc, fyjacc, fzjacc, fx3ptr, nullptr, fz3ptr, potentialEnergySum, virialSumX, virialSumY,
               virialSumZ);
         }
+        // process remainder
         if (k < soa3.size()) {
-          SoAKernelOuterCompressAlignr<newton3, newton3, true>(
-              interactionIndices, numAssignedRegisters, k, x1, y1, z1, x2, y2, z2, x3ptr, y3ptr, z3ptr, type1ptr[i],
-              type2ptr[j], type3ptr, ownedMask1, ownedMask2, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
-              fziacc, fxjacc, fyjacc, fzjacc, fx3ptr, fy3ptr, fz3ptr, potentialEnergySum, virialSumX, virialSumY,
+          SoAKernelCompressAlignr<newton3, newton3, true>(
+              interactionIndices, numAssignedRegisters, k, xi, yi, zi, xj, yj, zj, x3ptr, y3ptr, z3ptr, type1ptr[i],
+              type2ptr[j], type3ptr, ownedMask1, ownedMaskJ, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc,
+              fziacc, fxjacc, fyjacc, fzjacc, fx3ptr, nullptr, fz3ptr, potentialEnergySum, virialSumX, virialSumY,
               virialSumZ, soa3.size() - k);
         }
+        // process remaining interaction indices
         if (numAssignedRegisters > 0) {
-          // shift remainder to right
-          interactionIndices = simde_mm512_alignr_epi64(_zeroI, interactionIndices, 8 - numAssignedRegisters);
-          SoAKernel<newton3, newton3, true>(interactionIndices, x1, y1, z1, x2, y2, z2, x3ptr, y3ptr, z3ptr,
-                                            type1ptr[i], type2ptr[j], type3ptr, ownedMask1, ownedMask2, ownedState3ptr,
-                                            drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc, fyjacc, fzjacc,
-                                            fx3ptr, fy3ptr, fz3ptr, potentialEnergySum, virialSumX, virialSumY,
-                                            virialSumZ, numAssignedRegisters);
+          // shift remaining interaction indices to right
+          interactionIndices = simde_mm512_alignr_epi64(_zeroMM512i, interactionIndices, 8 - numAssignedRegisters);
+          SoAKernelGatherScatter<newton3, newton3, true>(
+              interactionIndices, xi, yi, zi, xj, yj, zj, x3ptr, y3ptr, z3ptr, type1ptr[i], type2ptr[j], type3ptr,
+              ownedMask1, ownedMaskJ, ownedState3ptr, drxij, dryij, drzij, drij2, fxiacc, fyiacc, fziacc, fxjacc,
+              fyjacc, fzjacc, fx3ptr, fy3ptr, fz3ptr, potentialEnergySum, virialSumX, virialSumY, virialSumZ,
+              numAssignedRegisters);
         }
 
         if constexpr (newton3) {
@@ -1707,7 +1766,7 @@ class AxilrodTellerFunctorAVX512
    *
    * @param nu
    */
-  void setParticleProperties(SoAFloatPrecision nu) { _nu = nu; }
+  void setParticleProperties(SoAFloatPrecision nu) { _nuAoS = nu; }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
@@ -1865,10 +1924,12 @@ class AxilrodTellerFunctorAVX512
   // make sure of the size of AoSThreadData
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
 
-  const double _cutoffSquared;
+  const double _cutoffSquaredAoS;
+  const simde__m512d _cutoffSquared;
 
   // not const because they might be reset through PPL
-  double _nu = 0.0;
+  double _nuAoS = 0.0;
+  simde__m512d _nu;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
 
@@ -1885,21 +1946,20 @@ class AxilrodTellerFunctorAVX512
   bool _postProcessed;
 
   const simde__m512d _zero{simde_mm512_setzero_pd()};
-  const simde__m512i _zeroI{simde_mm512_setzero_si512()};
+  const simde__m512i _zeroMM512i{simde_mm512_setzero_si512()};
   const simde__m512d _three{simde_mm512_set1_pd(3.0)};
   const simde__m512d _third{simde_mm512_set1_pd(1.0 / 3.0)};
   const simde__m512d _five{simde_mm512_set1_pd(5.0)};
-  const simde__m512i _ownedStateOwnedEpi64{
-      simde_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::owned))};
-  simde__m512d _nuPd;
 
   static constexpr int vecLength = 8;
   const simde__mmask8 _masks[vecLength]{0b00000000, 0b00000001, 0b00000011, 0b00000111,
                                         0b00001111, 0b00011111, 0b00111111, 0b01111111};
 
   simde__m512i _ascendingIndices{simde_mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)};
-  const simde__m512d _cutoffSquaredPd;
-  const simde__m512i _ownedStateDummyEpi64{
+
+  const simde__m512i _ownedStateDummyMM512i{
       simde_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::dummy))};
+  const simde__m512i _ownedStateOwnedMM512i{
+      simde_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::owned))};
 };
 }  // namespace mdLib

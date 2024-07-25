@@ -840,7 +840,7 @@ class AxilrodTellerFunctor
    */
   template <bool newton3>
   void SoAFunctorTripleImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                                   autopas::SoAView<SoAArraysType> soa3) {
+                            autopas::SoAView<SoAArraysType> soa3) {
     if (soa1.size() == 0 or soa2.size() == 0 or soa3.size() == 0) {
       return;
     }
