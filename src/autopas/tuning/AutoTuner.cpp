@@ -299,7 +299,7 @@ bool AutoTuner::resetEnergy() {
 
 std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
     _energySensor.endMeasurement();
-  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getSeconds(), 0};
+  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getSeconds(), _energySensor.getTotal()};
 }
 
 
@@ -386,5 +386,5 @@ bool AutoTuner::inTuningPhase() const {
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
-bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
+bool AutoTuner::canMeasureEnergy()  { return _energySensor.getOption() != EnergySensorOption::none; }
 }  // namespace autopas

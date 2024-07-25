@@ -5,9 +5,7 @@
  */
 
 #pragma once
-#ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
 #include "pmt.h"
-#endif
 #include "autopas/options/EnergySensorOption.h"
 
 namespace autopas::utils {
@@ -20,32 +18,77 @@ namespace autopas::utils {
 
 class EnergySensor {
     public:
+
+    /**
+     * Cosntructor for energy sensor. Takes @param sensor as possible energy sensors to use
+     */
     EnergySensor(EnergySensorOption sensor);
 
+    /**
+     * Start measurements. Sets _start
+     * @return returns true if _sensor available. Otherwise false
+     */
     bool startMeasurement();
 
+    /**
+     * Ending measurement. Sets _end
+     * @return returns true if _sensor available. Otherwise false
+     */
     bool endMeasurement();
 
+    /**
+     * Get joules consumed between start and end state
+     * @return double for watts consumed
+     */
     double getJoules();
 
+    /**
+     * Get watts consumed between start and end state
+     * @return double for watts consumed 
+     */
     double getWatts();
 
+    /**
+     * Get seconds between current start and end state
+     * @return double for seconds between time stamps
+     */
     double getSeconds();
 
     /**
      * Getter for used sensor option
-     * @return
+     * @return EnergySensorOption displaying which energy sensor is used
      */
     const EnergySensorOption getOption();
 
+    /**
+     * Getter for total energy consumed
+     * @return long representing the total eneryg consumed
+     */
+    long getTotal();
+
 
 private:
-        #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
+
+        /**
+         * Pointer to the pmt instance to read the energy from
+         */
         std::unique_ptr<pmt::PMT> _sensor; 
+        /**
+         * Current start state. Marks beginning of current energy cycle
+         */
         pmt::State _start;
+        /**
+         * Current end state. Marks ending of current energy measurement cycle
+         */
         pmt::State _end;
-        #endif
+        /**
+         * Used energy sensor. Set in constuctor. 
+         */
         EnergySensorOption _option;
+        /**
+         * Total energy consumed so far
+         */
+        long _energyTotal ;
 
 };
 

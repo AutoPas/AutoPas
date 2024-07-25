@@ -14,7 +14,7 @@ tuning-max-evidence                  :  10
 tuning-metric                        :  energy
 functor                              :  Lennard-Jones (12-6) avx
 newton3                              :  [disabled, enabled]
-energy-sensor                        :  rapl
+energy-sensor                        :  none
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]

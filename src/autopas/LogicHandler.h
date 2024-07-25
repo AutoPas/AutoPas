@@ -856,7 +856,7 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
   timerRemainderTraversal.stop();
   functor.endTraversal(configuration.newton3);
 
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = _autoTuner.sampleEnergy();
+  const auto [energyWatts, energyJoules, energySeconds, energyTotal] = _autoTuner.sampleEnergy();
 
   timerTotal.stop();
 
@@ -867,9 +867,9 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
           energyMeasurementsPossible,
-          energyMeasurementsPossible ? energyPsys : nanD,
-          energyMeasurementsPossible ? energyPkg : nanD,
-          energyMeasurementsPossible ? energyRam : nanD,
+          energyMeasurementsPossible ? energyWatts : nanD,
+          energyMeasurementsPossible ? energyJoules : nanD,
+          energyMeasurementsPossible ? energySeconds : nanD,
           energyMeasurementsPossible ? energyTotal : nanL};
 }
 
@@ -1151,8 +1151,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", measurements.timeRebuild);
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {
-    AutoPasLog(DEBUG, "Energy Consumption: Psys: {} Joules Pkg: {} Joules Ram: {} Joules", measurements.energyPsys,
-               measurements.energyPkg, measurements.energyRam);
+    AutoPasLog(DEBUG, "Energy Consumption: Watts: {} Joules: {} Seconds: {} Total[J]: {}", measurements.energyWatts,
+               measurements.energyJoules, measurements.energySeconds, measurements.energyTotal);
   }
   _iterationLogger.logIteration(configuration, _iteration, stillTuning, tuningTimer.getTotalTime(), measurements);
 
