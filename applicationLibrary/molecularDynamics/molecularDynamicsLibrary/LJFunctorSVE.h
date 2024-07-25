@@ -38,13 +38,13 @@ namespace mdLib {
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
-class LJFunctorSVE
-    : public autopas::Functor<
-          Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+          bool countFLOPs = false, bool relevantForTuning = true>
+class LJFunctorSVE : public autopas::Functor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3,
+                                                                    calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -61,9 +61,8 @@ class LJFunctorSVE
    */
   explicit LJFunctorSVE(double cutoff, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
-      : autopas::Functor<
-            Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff),
+      : autopas::Functor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -73,11 +72,13 @@ class LJFunctorSVE
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
+    if constexpr (countFLOPs) {
+      AutoPasLog(DEBUG, "Using LJFunctorSVE with countFLOPs but FLOP counting is not implemented."););
+    }
   }
 #else
-      : autopas::Functor<
-            Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff) {
+      : autopas::Functor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                countFLOPs, relevantForTuning>>(cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
 #endif
