@@ -243,12 +243,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         if (config.tuningPhases.value < 0) {
           throw std::runtime_error("The number of tuning phases has to be a positive integer.");
         }
-      } else if (key == config.dontMeasureFlops.name) {
-        expected = "Boolean Value";
-        description = config.dontMeasureFlops.description;
-
-        // "not" needed because of semantics
-        config.dontMeasureFlops.value = not node[key].as<bool>();
       } else if (key == config.dontCreateEndConfig.name) {
         expected = "Boolean Value";
         description = config.dontCreateEndConfig.description;
@@ -281,6 +275,11 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           parseSequenceOneElementExpected(node[key], "Pass Exactly one energy sensor!")
         );
         config.energySensorOption.value = *parsedOptions.begin();
+      } else if (key == config.pauseSimulationDuringTuning.name) {
+        expected = "Boolean Value";
+        description = config.pauseSimulationDuringTuning.description;
+
+        config.pauseSimulationDuringTuning.value = node[key].as<bool>();
       } else if (key == config.sortingThreshold.name) {
         expected = "Unsigned Integer >= 0.";
         description = config.sortingThreshold.description;

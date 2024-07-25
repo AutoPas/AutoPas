@@ -480,10 +480,6 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"}) +
           " Default: {periodic, periodic, periodic}"};
   /**
-   * dontMeasureFlops
-   */
-  MDFlexOption<bool, __LINE__> dontMeasureFlops{true, "no-flops", false, "Set to omit the calculation of flops."};
-  /**
    * Omit the creation of a config file at the end of the Simulation.
    * This starts with a "not" such that it can be used as a flag with a sane default.
    */
@@ -500,6 +496,11 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
 
+  /**
+   * pauseSimulationDuringTuning
+   */
+  MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
+                                                           "Pauses the update of the simulation during tuning phases."};
   /**
    * sortingThreshold
    * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is

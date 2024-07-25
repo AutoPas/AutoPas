@@ -37,13 +37,13 @@ namespace mdLib {
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
+ * @tparam countFLOPs counts FLOPs and hitrate. Not implemented for this functor. Please use the AutoVec functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
-class LJFunctorAVX
-    : public autopas::Functor<
-          Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+          bool countFLOPs = false, bool relevantForTuning = true>
+class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3,
+                                                                    calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -60,9 +60,8 @@ class LJFunctorAVX
    */
   explicit LJFunctorAVX(double cutoff, void * /*dummy*/)
 #ifdef __AVX__
-      : autopas::Functor<
-            Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff),
+      : autopas::Functor<Particle, LJFunctorAVX<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
+                                                countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{_mm256_set1_pd(cutoff * cutoff)},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -71,6 +70,9 @@ class LJFunctorAVX
         _postProcessed{false} {
     if (calculateGlobals) {
       _aosThreadData.resize(autopas::autopas_get_max_threads());
+    }
+    if constexpr (countFLOPs) {
+      AutoPasLog(DEBUG, "Using LJFunctorAVX with countFLOPs but FLOP counting is not implemented.");
     }
   }
 #else
@@ -876,24 +878,6 @@ class LJFunctorAVX
    * @return useMixing
    */
   constexpr static bool getMixing() { return useMixing; }
-
-  /**
-   * Get the number of flops used per kernel call for a given particle pair. This should count the
-   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
-   * distance.
-   * @param molAType molecule A's type id
-   * @param molBType molecule B's type id
-   * @param newton3 is newton3 applied.
-   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other
-   * functors where they may.
-   * @return the number of floating point operations
-   */
-  static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
-    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale) sum
-    // Adding to particle forces: 6 or 3 depending newton3
-    // Total = 12 + (6 or 3) = 18 or 15
-    return newton3 ? 18ul : 15ul;
-  }
 
   /**
    * Reset the global values.
