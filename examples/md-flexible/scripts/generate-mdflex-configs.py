@@ -35,9 +35,9 @@ deltaT                           :  0.0
 boundary-type                    :  [periodic, periodic, periodic]
 Sites:
   0:
-    epsilon                          :  1.
-    sigma                            :  1.
-    mass                             :  1
+    epsilon                      :  1.
+    sigma                        :  1.
+    mass                         :  1
 Objects:                         
   CubeClosestPacked:
     0:
