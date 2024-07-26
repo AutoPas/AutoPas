@@ -239,8 +239,7 @@ namespace mdLib {
                         return reversed ? (long)i >= _vecLengthDouble/2 : (i < stop - _vecLengthDouble/2+1);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : Implement
-                        return false;
+                        return reversed ? (long)i >= _vecLengthDouble : (i < stop - _vecLengthDouble+1);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : Implement
@@ -262,7 +261,7 @@ namespace mdLib {
                         i -= _vecLengthDouble/2;
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : Implement
+                        i -= _vecLengthDouble;
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : Implement
@@ -283,7 +282,7 @@ namespace mdLib {
                         i += _vecLengthDouble/2;
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : Implement
+                        i += _vecLengthDouble;
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : Implement
@@ -309,8 +308,7 @@ namespace mdLib {
                         return j < (i & ~(1));
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : Implement
-                        return false;
+                        return j < i;
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : Implement
@@ -332,7 +330,7 @@ namespace mdLib {
                         j += 2;
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : Implement
+                        ++j;
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : Implement
@@ -353,8 +351,7 @@ namespace mdLib {
                         return (int)(i & (1));
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : implement
-                        return -1;
+                        return 0;
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : implement
@@ -424,7 +421,28 @@ namespace mdLib {
                         z1 = highway::ConcatLowerLower(tag_double, z1, z1);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : implement
+
+                        int index = reversed ? (remainder ? 0 : i-_vecLengthDouble+1) : i;
+
+                        if constexpr (remainder) {
+                            const auto maskDouble = restMasksDouble[restI-1];
+                            const auto maskLong = restMasksLong[restI-1];
+
+                            x1 = highway::MaskedLoad(maskDouble, tag_double, &xPtr[index]);
+                            y1 = highway::MaskedLoad(maskDouble, tag_double, &yPtr[index]);
+                            z1 = highway::MaskedLoad(maskDouble, tag_double, &zPtr[index]);
+                            
+                            const VectorLong ownedStateI = highway::MaskedLoad(maskLong, tag_long, reinterpret_cast<const int64_t* >(&ownedStatePtr[index]));
+                            ownedStateIDouble = highway::ConvertTo(tag_double, ownedStateI);
+                        }
+                        else {
+                            x1 = highway::LoadU(tag_double, &xPtr[index]);
+                            y1 = highway::LoadU(tag_double, &yPtr[index]);
+                            z1 = highway::LoadU(tag_double, &zPtr[index]);
+
+                            const VectorLong ownedStateI = highway::LoadU(tag_long, reinterpret_cast<const int64_t* >(&ownedStatePtr[index]));
+                            ownedStateIDouble = highway::ConvertTo(tag_double, ownedStateI);
+                        }
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : implement
@@ -501,14 +519,20 @@ namespace mdLib {
                             const auto upperFy = highway::UpperHalf(tag_double, fy);
                             const auto upperFz = highway::UpperHalf(tag_double, fz);
 
-                            fx2Ptr[j+1] -= highway::ReduceSum(tag_double, upperFx);
-                            fy2Ptr[j+1] -= highway::ReduceSum(tag_double, upperFy);
-                            fz2Ptr[j+1] -= highway::ReduceSum(tag_double, upperFz);
+                            const auto upperFxExt = highway::ZeroExtendVector(tag_double, upperFx);
+                            const auto upperFyExt = highway::ZeroExtendVector(tag_double, upperFy);
+                            const auto upperFzExt = highway::ZeroExtendVector(tag_double, upperFz);
+
+                            fx2Ptr[j+1] -= highway::ReduceSum(tag_double, upperFxExt);
+                            fy2Ptr[j+1] -= highway::ReduceSum(tag_double, upperFyExt);
+                            fz2Ptr[j+1] -= highway::ReduceSum(tag_double, upperFzExt);
                         }                        
                         
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : Implement
+                        fx2Ptr[j] -= highway::ReduceSum(tag_double, fx);
+                        fy2Ptr[j] -= highway::ReduceSum(tag_double, fy);
+                        fz2Ptr[j] -= highway::ReduceSum(tag_double, fz);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : Implement
@@ -585,7 +609,25 @@ namespace mdLib {
                         highway::BlendedStore(newFz, mask, tag_double, &fzPtr[index]);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
-                        // TODO : Implement
+                        
+                        const VectorDouble oldFx = remainder ? highway::MaskedLoad(restMasksDouble[restI-1], tag_double, &fxPtr[i])
+                                : highway::LoadU(tag_double, &fxPtr[i]);
+                        const VectorDouble oldFy = remainder ? highway::MaskedLoad(restMasksDouble[restI-1], tag_double, &fyPtr[i])
+                                : highway::LoadU(tag_double, &fyPtr[i]);
+                        const VectorDouble oldFz = remainder ? highway::MaskedLoad(restMasksDouble[restI-1], tag_double, &fzPtr[i])
+                                : highway::LoadU(tag_double, &fzPtr[i]);
+
+                        const VectorDouble fxNew = oldFx + fxAcc;
+                        const VectorDouble fyNew = oldFy + fyAcc;
+                        const VectorDouble fzNew = oldFz + fzAcc;
+
+                        remainder ? highway::BlendedStore(fxNew, restMasksDouble[restI-1], tag_double, &fxPtr[i])
+                                : highway::StoreU(fxNew, tag_double, &fxPtr[i]);
+                        remainder ? highway::BlendedStore(fyNew, restMasksDouble[restI-1], tag_double, &fyPtr[i])
+                                : highway::StoreU(fyNew, tag_double, &fyPtr[i]);
+                        remainder ? highway::BlendedStore(fzNew, restMasksDouble[restI-1], tag_double, &fzPtr[i])
+                                : highway::StoreU(fzNew, tag_double, &fzPtr[i]);
+                        
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         // TODO : Implement
@@ -896,6 +938,23 @@ namespace mdLib {
                                 }
                             }
                         }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
+                        // TODO : implement
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        for (int n = 0; n < (remainderI ? restI : _vecLengthDouble); ++n) {
+                            auto typeID1 = reversed ? typeID1Ptr-n : typeID1Ptr+n;
+                            epsilons[n] = _PPLibrary->getMixing24Epsilon(*typeID1, *typeID2Ptr);
+                            sigmas[n] = _PPLibrary->getMixingSigmaSquared(*typeID1, *typeID2Ptr);
+
+                            if constexpr (applyShift) {
+                                shifts[n] = _PPLibrary->getMixingShift6(*typeID1, *typeID2Ptr);
+                            }
+                        }
+                    }
+                    else if constexpr (vecPattern == VectorizationPattern::pVecx1) {
+                        // TODO : implement
                     }
 
                     epsilon24s = highway::Load(tag_double, epsilons);
