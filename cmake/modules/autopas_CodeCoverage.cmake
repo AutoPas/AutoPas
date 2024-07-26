@@ -57,10 +57,10 @@ if (AUTOPAS_ENABLE_COVERAGE)
     DEPENDS runTests
     # first run the tests
     COMMAND ${CMAKE_BINARY_DIR}/tests/testAutopas/runTests
-    # enable branch coverage and exclude the tests itself, the build folder and /usr from coverage reporting. 
+    # enable branch coverage and exclude uninteresting paths from coverage reporting.
     # If we do not use --ignore-errors mismatch the coverage report aborts, since there seem to be some inconsistent entries.
-    COMMAND ${LCOV_EXECUTABLE} --ignore-errors mismatch --rc branch_coverage=1 --directory . --capture --exclude */tests/* --exclude */build/* --exclude '/usr/*' --output-file coverage.info
-    # create the HTML output
+    COMMAND ${LCOV_EXECUTABLE} --ignore-errors mismatch --rc branch_coverage=1 --directory . --capture --exclude '*/tests/*' --exclude '/usr/*' --output-file coverage.info
+    # Convert .info output to html report
     COMMAND ${GENHTML_EXECUTABLE} --branch-coverage --demangle-cpp -o coverage coverage.info
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
   )
