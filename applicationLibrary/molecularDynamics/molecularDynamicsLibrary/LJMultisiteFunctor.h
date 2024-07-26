@@ -258,19 +258,13 @@ class LJMultisiteFunctor
           const auto threadNum = autopas::autopas_get_thread_num();
 
           if (particleA.isOwned()) {
-            if (newton3) {
-              _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-              _aosThreadData[threadNum].virialSumN3 += virial * 0.5;
-            } else {
-              // for non-newton3 the division is in the post-processing step.
-              _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergy6;
-              _aosThreadData[threadNum].virialSumNoN3 += virial;
-            }
+              _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
+              _aosThreadData[threadNum].virialSum += virial;
           }
           // for non-newton3 the second particle will be considered in a separate calculation
           if (newton3 and particleB.isOwned()) {
-            _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-            _aosThreadData[threadNum].virialSumN3 += virial * 0.5;
+            _aosThreadData[threadNum].potentialEnergySum += potentialEnergy6;
+            _aosThreadData[threadNum].virialSum += virial;
           }
         }
       }
@@ -589,17 +583,10 @@ class LJMultisiteFunctor
       const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if (newton3) {
-        _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadNum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadNum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadNum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadNum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadNum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadNum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum;
+      _aosThreadData[threadNum].virialSum[0] += virialSumX;
+      _aosThreadData[threadNum].virialSum[1] += virialSumY;
+      _aosThreadData[threadNum].virialSum[2] += virialSumZ;
     }
   }
   /**
@@ -744,22 +731,14 @@ class LJMultisiteFunctor
     if (calculateGlobals) {
       // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
       // Non-newton3 calls are accumulated temporarily and later divided by 2.
-      double potentialEnergySumNoN3Acc = 0;
-      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        potentialEnergySumNoN3Acc += _aosThreadData[i].potentialEnergySumNoN3;
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySumN3;
-
-        virialSumNoN3Acc += _aosThreadData[i].virialSumNoN3;
-        _virialSum += _aosThreadData[i].virialSumN3;
+        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
+        _virialSum += _aosThreadData[i].virialSum;
       }
       // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
       // here.
-      potentialEnergySumNoN3Acc *= 0.5;
-      virialSumNoN3Acc *= 0.5;
-
-      _potentialEnergySum += potentialEnergySumNoN3Acc;
-      _virialSum += virialSumNoN3Acc;
+      _potentialEnergySum *= 0.5;
+      _virialSum *= 0.5;
 
       // we have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
@@ -1153,17 +1132,10 @@ class LJMultisiteFunctor
       const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if constexpr (newton3) {
-        _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadNum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadNum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadNum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadNum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadNum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadNum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum;
+      _aosThreadData[threadNum].virialSum[0] += virialSumX;
+      _aosThreadData[threadNum].virialSum[1] += virialSumY;
+      _aosThreadData[threadNum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -1522,17 +1494,10 @@ class LJMultisiteFunctor
       const auto threadNum = autopas::autopas_get_thread_num();
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if (newton3) {
-        _aosThreadData[threadNum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadNum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadNum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadNum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadData[threadNum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadNum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadNum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadNum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadData[threadNum].potentialEnergySum += potentialEnergySum;
+      _aosThreadData[threadNum].virialSum[0] += virialSumX;
+      _aosThreadData[threadNum].virialSum[1] += virialSumY;
+      _aosThreadData[threadNum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -1542,27 +1507,21 @@ class LJMultisiteFunctor
   class AoSThreadData {
    public:
     AoSThreadData()
-        : virialSumNoN3{0., 0., 0.},
-          virialSumN3{0., 0., 0.},
-          potentialEnergySumNoN3{0.},
-          potentialEnergySumN3{0.},
+        : virialSum{0., 0., 0.},
+          potentialEnergySum{0.},
           __remainingTo64{} {}
     void setZero() {
-      virialSumNoN3 = {0., 0., 0.};
-      virialSumN3 = {0., 0., 0.};
-      potentialEnergySumNoN3 = 0.;
-      potentialEnergySumN3 = 0.;
+      virialSum = {0., 0., 0.};
+      potentialEnergySum = 0.;
     }
 
     // variables
-    std::array<double, 3> virialSumNoN3;
-    std::array<double, 3> virialSumN3;
-    double potentialEnergySumNoN3;
-    double potentialEnergySumN3;
+    std::array<double, 3> virialSum;
+    double potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
 
   static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size (should be multiple of 64)");

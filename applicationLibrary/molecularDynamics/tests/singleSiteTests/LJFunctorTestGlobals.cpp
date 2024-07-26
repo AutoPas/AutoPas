@@ -531,5 +531,9 @@ using MyTypes = ::testing::Types<LJFunShiftNoMixGlob
                                  ,
                                  LJFunAVXShiftNoMixGlob
 #endif
+#ifdef __ARM_FEATURE_SVE
+                                 ,
+                                 LJFunSVEShiftNoMixGlob
+#endif
                                  >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestGlobals, MyTypes);

@@ -174,19 +174,14 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       if (i.isOwned()) {
-        if (newton3) {
-          _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-          _aosThreadDataGlobals[threadnum].virialSumN3 += virial * 0.5;
-        } else {
-          // for non-newton3 the division is in the post-processing step.
-          _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergy6;
-          _aosThreadDataGlobals[threadnum].virialSumNoN3 += virial;
-        }
+        // for non-newton3 the division is in the post-processing step.
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3 += virial * 0.5;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
       }
       if constexpr (countFLOPs) {
         _aosThreadDataFLOPs[threadnum].numGlobalCalcs += 1;
@@ -360,17 +355,10 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
       // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if (newton3) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -559,17 +547,10 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     if (calculateGlobals) {
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if constexpr (newton3) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -677,21 +658,16 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     if (calculateGlobals) {
       // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
       // Non-newton3 calls are accumulated temporarily and later divided by 2.
-      double potentialEnergySumNoN3Acc = 0;
-      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
+      double potentialEnergySumAcc = 0;
+      std::array<double, 3> virialSumAcc = {0, 0, 0};
       for (const auto &data : _aosThreadDataGlobals) {
-        potentialEnergySumNoN3Acc += data.potentialEnergySumNoN3;
-        _potentialEnergySum += data.potentialEnergySumN3;
-        virialSumNoN3Acc += data.virialSumNoN3;
-        _virialSum += data.virialSumN3;
+        _potentialEnergySum += data.potentialEnergySum;
+        _virialSum += data.virialSum;
       }
       // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
       // here.
-      potentialEnergySumNoN3Acc *= 0.5;
-      virialSumNoN3Acc *= 0.5;
-
-      _potentialEnergySum += potentialEnergySumNoN3Acc;
-      _virialSum += virialSumNoN3Acc;
+      _potentialEnergySum *= 0.5;
+      _virialSum *= 0.5;
 
       // we have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
@@ -1115,18 +1091,10 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     if (calculateGlobals) {
       // SoAFunctorVerlet obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
       // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-
-      if (newton3) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -1137,27 +1105,21 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
   class AoSThreadDataGlobals {
    public:
     AoSThreadDataGlobals()
-        : virialSumNoN3{0., 0., 0.},
-          virialSumN3{0., 0., 0.},
-          potentialEnergySumNoN3{0.},
-          potentialEnergySumN3{0.},
+        : virialSum{0., 0., 0.},
+          potentialEnergySum{0.},
           __remainingTo64{} {}
     void setZero() {
-      virialSumNoN3 = {0., 0., 0.};
-      virialSumN3 = {0., 0., 0.};
-      potentialEnergySumNoN3 = 0.;
-      potentialEnergySumN3 = 0.;
+      virialSum = {0., 0., 0.};
+      potentialEnergySum = 0.;
     }
 
     // variables
-    std::array<double, 3> virialSumNoN3;
-    std::array<double, 3> virialSumN3;
-    double potentialEnergySumNoN3;
-    double potentialEnergySumN3;
+    std::array<double, 3> virialSum;
+    double potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
 
   /**
