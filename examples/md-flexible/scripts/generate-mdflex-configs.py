@@ -27,12 +27,11 @@ traversal                        :  [all]
 tuning-strategies                :  []
 tuning-interval                  :  5000
 tuning-samples                   :  3
-tuning-max-evidence              :  10
+tuning-phases                    :  1
 newton3                          :  [all]
 cutoff                           :  1
 cell-size                        :  [1]
 deltaT                           :  0.0
-iterations                       :  10
 boundary-type                    :  [periodic, periodic, periodic]
 Sites:
   0:
