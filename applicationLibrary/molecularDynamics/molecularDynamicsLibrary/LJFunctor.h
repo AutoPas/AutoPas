@@ -184,7 +184,11 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         _aosThreadDataGlobals[threadnum].virialSum += virial;
       }
       if constexpr (countFLOPs) {
-        _aosThreadDataFLOPs[threadnum].numGlobalCalcs += 1;
+        if (newton3) {
+          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
+        } else {
+          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
+        }
       }
     }
   }
@@ -335,7 +339,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           virialSumZ += virialz * energyFactor;
 
           if constexpr (countFLOPs) {
-            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask;
+            numGlobalCalcsSum += mask;
           }
         }
       }
@@ -348,7 +352,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcs += numGlobalCalcsSum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum; // Always N3 in Single SoAFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
@@ -415,7 +419,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
-    size_t numGlobalCalcsSum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
@@ -458,7 +463,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -530,7 +535,11 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           virialSumZ += virialz * energyFactor;
 
           if constexpr (countFLOPs) {
-            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask;
+            if constexpr (newton3) {
+              numGlobalCalcsN3Sum += mask;
+            } else {
+              numGlobalCalcsNoN3Sum += mask;
+            }
           }
         }
       }
@@ -542,7 +551,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcs += numGlobalCalcsSum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
     if (calculateGlobals) {
       // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
@@ -764,17 +774,22 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       const size_t numKernelCallsNoN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
-      const size_t numGlobalCalcsAcc =
+      const size_t numGlobalCalcsN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsN3; });
+      const size_t numGlobalCalcsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
 
       constexpr size_t numFLOPsPerDistanceCall = 8;
       constexpr size_t numFLOPsPerN3KernelCall = 18;
       constexpr size_t numFLOPsPerNoN3KernelCall = 15;
-      constexpr size_t numFLOPsPerGlobalCalc = applyShift ? 9 : 8;
+      constexpr size_t numFLOPsPerN3GlobalCalc = applyShift ? 13 : 12;
+      constexpr size_t numFLOPsPerNoN3GlobalCalc = applyShift ? 9 : 8;
 
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
-             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsAcc * numFLOPsPerGlobalCalc;
+             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
+             numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<size_t>::max();
@@ -831,7 +846,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
-    size_t numGlobalCalcsSum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
 
     SoAFloatPrecision fxacc = 0;
     SoAFloatPrecision fyacc = 0;
@@ -903,7 +919,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
@@ -974,7 +990,11 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
             virialSumZ += virialz * energyFactor;
 
             if constexpr (countFLOPs) {
-              _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask ? 1 : 0;
+              if constexpr (newton3) {
+                numGlobalCalcsN3Sum += mask;
+              } else {
+                numGlobalCalcsNoN3Sum += mask;
+              }
             }
           }
         }
@@ -1070,7 +1090,11 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         virialSumZ += virialz * energyFactor;
 
         if constexpr (countFLOPs) {
-          _aosThreadDataFLOPs[threadnum].numGlobalCalcs += 1;
+          if constexpr (newton3) {
+            ++numGlobalCalcsN3Sum;
+          } else {
+            ++numGlobalCalcsNoN3Sum;
+          }
         }
       }
     }
@@ -1085,7 +1109,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcs += numGlobalCalcsSum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
 
     if (calculateGlobals) {
@@ -1140,7 +1165,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       numKernelCallsNoN3 = 0;
       numKernelCallsN3 = 0;
       numDistCalls = 0;
-      numGlobalCalcs = 0;
+      numGlobalCalcsNoN3 = 0;
+      numGlobalCalcsN3 = 0;
     }
 
     /**
@@ -1165,13 +1191,19 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
      * Counter for the number of times the globals have been calculated. Excludes the special case that N3 is enabled
      * and we calculate globals for an owned-halo particle pair.
      */
-    size_t numGlobalCalcs = 0;
+    size_t numGlobalCalcsN3 = 0;
+
+    /**
+     * Counter for the number of times the globals have been calculated. Excludes the special case that N3 is enabled
+     * and we calculate globals for an owned-halo particle pair.
+     */
+    size_t numGlobalCalcsNoN3 = 0;
 
    private:
     /**
      * dummy parameter to get the right size (64 bytes)
      */
-    double __remainingTo64[(64 - 4 * sizeof(size_t)) / sizeof(size_t)];
+    double __remainingTo64[(64 - 5 * sizeof(size_t)) / sizeof(size_t)];
   };
 
   // make sure of the size of AoSThreadDataGlobals and AoSThreadDataFLOPs

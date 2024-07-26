@@ -126,17 +126,20 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   const auto expectedNoN3KernelCalls = newton3 ? 0 : (not isVerlet and isSoA ? 2 : 4);
   const auto expectedN3KernelCalls = newton3 ? 2 : (not isVerlet and isSoA ? 1 : 0);
 
-  const auto expectedGlobalsCalcs = calculateGlobals ? expectedN3KernelCalls + expectedNoN3KernelCalls : 0;
+  const auto expectedN3GlobalsCalcs = calculateGlobals ? expectedN3KernelCalls : 0;
+  const auto expectedNoN3GlobalsCalcs = calculateGlobals ? expectedNoN3KernelCalls : 0;
 
   // distance calculations cost 8 FLOPs, LJ kernel calls without Newton3 cost 15 FLOPs, with Newton 3 cost 18 FLOPs
-  // globals calculations cost 8 FLOPs, 9 with shift
+  // globals calculations without Newton3 cost 8 FLOPs, 9 with shift
+  // globals calculations with Newton3 cost 12 FLOPs, 13 with shift (+4 for adding energy and virial to Particle 2)
   constexpr int numFLOPsPerDistanceCalc = 8;
   constexpr int numFLOPsPerNoN3KernelCall = 15;
   constexpr int numFLOPsPerN3KernelCall = 18;
-  constexpr int numFLOPsPerGlobalsCall = applyShift ? 9 : 8;
+  constexpr int numFLOPsPerNoN3GlobalsCall = applyShift ? 9 : 8;
+  constexpr int numFLOPsPerN3GlobalsCall = applyShift ? 13 : 12;
   const auto expectedFlops =
       expectedDistanceCalculations * numFLOPsPerDistanceCalc + expectedN3KernelCalls * numFLOPsPerN3KernelCall +
-      expectedNoN3KernelCalls * numFLOPsPerNoN3KernelCall + expectedGlobalsCalcs * numFLOPsPerGlobalsCall;
+      expectedNoN3KernelCalls * numFLOPsPerNoN3KernelCall + expectedN3GlobalsCalcs * numFLOPsPerN3GlobalsCall + expectedNoN3GlobalsCalcs * numFLOPsPerNoN3GlobalsCall;
   ASSERT_EQ(expectedFlops, ljFunctor.getNumFLOPs());
 
   const auto expectedHitRate =
