@@ -1,5 +1,9 @@
 #!/usr/bin/python3
 import yaml
+# Make sure the library version is sufficient
+pyyaml_version = tuple(map(int, yaml.__version__.split('.')))
+if pyyaml_version < (5, 1):
+    raise ImportError('You need PyYAML version 5.1 or higher.')
 from yaml.loader import SafeLoader
 
 # if available use tqdm for a progress bar otherwise fall back to itertools
