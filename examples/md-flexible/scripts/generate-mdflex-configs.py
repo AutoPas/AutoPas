@@ -99,16 +99,30 @@ def generate(domainSize,
              numParticles,
              distribution,
              cutoff,
-             verletSkinToCutoffFactor,
-             rebuildFrequencySkinFactorFactor,
+             skinFactor,
+             invMaxParticleSpeed,
              functor,
              cellSizeFactor):
+
+    """
+    Generator for config files.
+
+    :param domainSize: Size of the domain .
+    :param numParticles: Number of particles.
+    :param distribution: Distribution of particles.
+    :param cutoff: Cutoff distance .
+    :param skinFactor: Total verlet skin as factor of the cutoff.
+    :param invMaxParticleSpeed: Inverse of the (expected) maximum particle speed (for rebuild frequency calculation).
+    :param functor: AutoPas Functor.
+    :param cellSizeFactor: CSF.
+    """
+
     data = yaml.load(template, Loader=SafeLoader)
     data['box-max'] = domainSize
     data['cutoff'] = cutoff
-    skin = cutoff * verletSkinToCutoffFactor
+    skin = cutoff * skinFactor
     data['verlet-skin-radius'] = skin
-    data['verlet-rebuild-frequency'] = int(rebuildFrequencySkinFactorFactor * verletSkinToCutoffFactor)
+    data['verlet-rebuild-frequency'] = int(invMaxParticleSpeed * skinFactor)
     data['functor'] = functor
     data['cell-size'] = [cellSizeFactor]
     data['Objects'] = make_object(domainSize, numParticles, distribution)
@@ -117,8 +131,8 @@ def generate(domainSize,
                     + '-' + str(numParticles)
                     + '-' + str(distribution)
                     + '-' + str(cutoff)
-                    + '-' + str(verletSkinToCutoffFactor)
-                    + '-' + str(rebuildFrequencySkinFactorFactor)
+                    + '-' + str(skinFactor)
+                    + '-' + str(invMaxParticleSpeed)
                     + '-' + functor
                     + '-' + str(cellSizeFactor)
                     + '.yaml')
@@ -137,10 +151,15 @@ def isInteresting(domainSize,
                   numParticles,
                   distribution,
                   cutoff,
-                  verletSkinToCutoffFactor,
-                  rebuildFrequencySkinFactorFactor,
+                  skinFactor,
+                  invMaxParticleSpeed,
                   functor,
                   cellSizeFactor):
+
+    """
+    Filter to judge if a config is worth to generate.
+    """
+
     tooDenseThreshold = 400  # particles per cell
     actualDomainSize = domainSizes[domainSize]
     numCells = actualDomainSize[0] * actualDomainSize[1] * actualDomainSize[2]
