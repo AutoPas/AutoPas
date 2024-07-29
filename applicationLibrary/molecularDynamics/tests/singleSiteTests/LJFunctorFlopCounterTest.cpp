@@ -139,7 +139,8 @@ void LJFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   constexpr int numFLOPsPerN3GlobalsCall = applyShift ? 13 : 12;
   const auto expectedFlops =
       expectedDistanceCalculations * numFLOPsPerDistanceCalc + expectedN3KernelCalls * numFLOPsPerN3KernelCall +
-      expectedNoN3KernelCalls * numFLOPsPerNoN3KernelCall + expectedN3GlobalsCalcs * numFLOPsPerN3GlobalsCall + expectedNoN3GlobalsCalcs * numFLOPsPerNoN3GlobalsCall;
+      expectedNoN3KernelCalls * numFLOPsPerNoN3KernelCall + expectedN3GlobalsCalcs * numFLOPsPerN3GlobalsCall +
+      expectedNoN3GlobalsCalcs * numFLOPsPerNoN3GlobalsCall;
   ASSERT_EQ(expectedFlops, ljFunctor.getNumFLOPs());
 
   const auto expectedHitRate =

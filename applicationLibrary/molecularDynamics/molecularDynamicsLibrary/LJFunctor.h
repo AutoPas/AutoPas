@@ -166,15 +166,13 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     }
 
     if constexpr (calculateGlobals) {
+      // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
+      // Potential energy has an additional factor of 6, which is also handled in endTraversal().
+
       auto virial = dr * f;
-      // Here we calculate either the potential energy * 6.
-      // For newton3, this potential energy contribution is distributed evenly to the two molecules.
-      // For non-newton3, the full potential energy is added to the one molecule.
-      // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       if (i.isOwned()) {
-        // for non-newton3 the division is in the post-processing step.
         _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
         _aosThreadDataGlobals[threadnum].virialSum += virial;
       }
@@ -216,8 +214,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
-    SoAFloatPrecision potentialEnergySum =
-        0.;  // Note: this is not the potential energy, but some fixed multiple of it.
+    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
@@ -328,8 +325,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           const SoAFloatPrecision virialz = drz * fz;
           const SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
-          // Add to the potential energy sum for each particle which is owned.
-          // This results in obtaining 12 * the potential energy for the SoA.
+          // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
           SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
                                            (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
@@ -352,13 +348,11 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum; // Always N3 in Single SoAFunctor
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
 
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
       _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
       _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
@@ -524,8 +518,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           SoAFloatPrecision virialz = drz * fz;
           SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
-          // Add to the potential energy sum for each particle which is owned.
-          // This results in obtaining 12 * the potential energy for the SoA.
+          // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
           const SoAFloatPrecision energyFactor =
               (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
               (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -555,8 +548,6 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
       _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
     if (calculateGlobals) {
-      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
       _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
       _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
@@ -666,20 +657,16 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
-      // Non-newton3 calls are accumulated temporarily and later divided by 2.
-      double potentialEnergySumAcc = 0;
-      std::array<double, 3> virialSumAcc = {0, 0, 0};
       for (const auto &data : _aosThreadDataGlobals) {
         _potentialEnergySum += data.potentialEnergySum;
         _virialSum += data.virialSum;
       }
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-      // here.
+      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
+      // contribution is only counted once per pair.
       _potentialEnergySum *= 0.5;
       _virialSum *= 0.5;
 
-      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
+      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
@@ -747,19 +734,15 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    * For the globals calculation, this is:
    * - virial: 3
    * - potential: 1, or 2 with shift
-   * - accumulation: 4
-   * - multiplications by 0.5 and second accumulations are not treated as useful FLOPs, as these are just workarounds
-   *   to avoid accumulating globals on owned/halo borders twice
-   * - Total: 8, or 9 with shift
+   * - accumulation: 4 without n3, 8 with n3
+   * - Total: 8 or 9 without n3, 12 or 13 with n3
    *
    * Caveats:
    *
-   * This function is supposed to return useful FLOPs, e.g. without counting masked vector instructions or
-   * workarounds for accumulating globals on owned/halo borders twice. You could argue that, strictly speaking, we
-   * redundantly calculate forces and globals twice in the newton3 case. This function does not treat such "redundant"
-   * calculations as useless.
-   *
-   * Similarly, this function does not treat halo-halo interactions as redundant useless calculations.
+   * This function is supposed to return useful FLOPs, e.g. without counting masked vector instructions.
+   * You could also argue that, strictly speaking, we redundantly calculate forces and globals twice in the newton3 case
+   * on a owned/halo boundary. This function does not treat such "redundant" calculations as useless. Similarly, this
+   * function does not treat halo-halo interactions as redundant useless calculations.
    *
    * @return number of FLOPs since initTraversal() is called.
    */
@@ -981,6 +964,8 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
             SoAFloatPrecision virialz = drz * fz;
             SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
+            // We add 6 times the potential energy for each owned particle. The total sum is corrected in
+            // endTraversal().
             const SoAFloatPrecision energyFactor =
                 (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
                 (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -1079,8 +1064,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
         SoAFloatPrecision virialz = drz * fz;
         SoAFloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6);
 
-        // Add to the potential energy sum for each particle which is owned.
-        // This results in obtaining 12 * the potential energy for the SoA.
+        // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
         const SoAFloatPrecision energyFactor =
             (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
             (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -1114,8 +1098,6 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
     }
 
     if (calculateGlobals) {
-      // SoAFunctorVerlet obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
       _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
       _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
       _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
@@ -1129,10 +1111,7 @@ class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShi
    */
   class AoSThreadDataGlobals {
    public:
-    AoSThreadDataGlobals()
-        : virialSum{0., 0., 0.},
-          potentialEnergySum{0.},
-          __remainingTo64{} {}
+    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;

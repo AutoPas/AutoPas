@@ -156,17 +156,16 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       j.subF(f);
     }
     if (calculateGlobals) {
+      // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
+      // Potential energy has an additional factor of 6, which is also handled in endTraversal().
+
       auto virial = dr * f;
-      // Here we calculate either the potential energy * 6 or the potential energy * 12.
-      // For newton3, this potential energy contribution is distributed evenly to the two molecules.
-      // For non-newton3, the full potential energy is added to the one molecule.
-      // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-          _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
-          _aosThreadData[threadnum].virialSum += virial;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
@@ -314,12 +313,10 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
-      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
-      // false, since for newton3 disabled we divide by two later on.
-        _aosThreadData[threadnum].virialSum[0] += globals[0];
-        _aosThreadData[threadnum].virialSum[1] += globals[1];
-        _aosThreadData[threadnum].virialSum[2] += globals[2];
-        _aosThreadData[threadnum].potentialEnergySum += globals[3];
+      _aosThreadData[threadnum].virialSum[0] += globals[0];
+      _aosThreadData[threadnum].virialSum[1] += globals[1];
+      _aosThreadData[threadnum].virialSum[2] += globals[2];
+      _aosThreadData[threadnum].potentialEnergySum += globals[3];
     }
 #endif
   }
@@ -430,12 +427,10 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
-      // we have duplicated calculations, i.e., we calculate interactions multiple times, so we have to take care
-      // that we do not add the energy multiple times!
-        _aosThreadData[threadnum].virialSum[0] += globals[0];
-        _aosThreadData[threadnum].virialSum[1] += globals[1];
-        _aosThreadData[threadnum].virialSum[2] += globals[2];
-        _aosThreadData[threadnum].potentialEnergySum += globals[3];
+      _aosThreadData[threadnum].virialSum[0] += globals[0];
+      _aosThreadData[threadnum].virialSum[1] += globals[1];
+      _aosThreadData[threadnum].virialSum[2] += globals[2];
+      _aosThreadData[threadnum].potentialEnergySum += globals[3];
     }
 #endif
   }
@@ -806,8 +801,6 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
       _mm_store_pd(&globals[0], hSumVirialxyVec);
       _mm_store_pd(&globals[2], hSumVirialzPotentialEnergyVec);
 
-      // we assume newton3 to be enabled in this function call, thus we multiply by two if the value of newton3 is
-      // false, since for newton3 disabled we divide by two later on.
       _aosThreadData[threadnum].virialSum[0] += globals[0];
       _aosThreadData[threadnum].virialSum[1] += globals[1];
       _aosThreadData[threadnum].virialSum[2] += globals[2];
@@ -876,18 +869,16 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
-      // Non-newton3 calls are accumulated temporarily and later divided by 2.
       for (size_t i = 0; i < _aosThreadData.size(); ++i) {
         _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
         _virialSum += _aosThreadData[i].virialSum;
       }
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-      // here.
+      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
+      // contribution is only counted once per pair.
       _potentialEnergySum *= 0.5;
       _virialSum *= 0.5;
 
-      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
+      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
@@ -987,10 +978,7 @@ class LJFunctorAVX : public autopas::Functor<Particle, LJFunctorAVX<Particle, ap
    */
   class AoSThreadData {
    public:
-    AoSThreadData()
-        : virialSum{0., 0., 0.},
-          potentialEnergySum{0.},
-          __remainingTo64{} {}
+    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;
