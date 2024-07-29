@@ -17,7 +17,8 @@ except ImportError:
 
 template = """
 functor                          :  Lennard-Jones (12-6) AVX
-container                        :  [all]
+# container                        :  [all]
+container                        :  [LinkedCells, VerletLists, VarVerletLists, VerletListsCells, PairwiseVerletLists, VerletClusterLists]
 verlet-rebuild-frequency         :  20
 verlet-skin-radius-per-timestep  :  0.0075
 verlet-cluster-size              :  4
@@ -186,7 +187,7 @@ if __name__ == "__main__":
     }
     rebuildFrequencySkinFactorFactor = 100
     functors = {
-        'lj-no-avx': 'Lennard-Jones (12-6)',
+        # 'lj-no-avx': 'Lennard-Jones (12-6)',
         'lj-avx': 'Lennard-Jones (12-6) AVX',
     }
     cellSizeFactors = {
