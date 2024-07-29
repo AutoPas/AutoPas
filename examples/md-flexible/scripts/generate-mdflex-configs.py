@@ -96,15 +96,29 @@ def generate(domainSize,
              numParticles,
              distribution,
              cutoff,
-             verletSkinToCutoffFactor,
-             rebuildFrequencySkinFactorFactor,
+             skinFactor,
+             invMaxParticleSpeed,
              functor,
              cellSizeFactor):
+
+    """
+    Generator for config files.
+
+    :param domainSize: Size of the domain .
+    :param numParticles: Number of particles.
+    :param distribution: Distribution of particles.
+    :param cutoff: Cutoff distance .
+    :param skinFactor: Total verlet skin as factor of the cutoff.
+    :param invMaxParticleSpeed: Inverse of the (expected) maximum particle speed (for rebuild frequency calculation).
+    :param functor: AutoPas Functor.
+    :param cellSizeFactor: CSF.
+    """
+
     data = yaml.load(template, Loader=SafeLoader)
     data['box-max'] = domainSize
     data['cutoff'] = cutoff
-    skin = cutoff * verletSkinToCutoffFactor
-    rebuildFrequency = int(rebuildFrequencySkinFactorFactor * verletSkinToCutoffFactor)
+    skin = cutoff * skinFactor
+    rebuildFrequency = int(invMaxParticleSpeed * skinFactor)
     data['verlet-skin-radius-per-timestep'] = skin / rebuildFrequency
     data['verlet-rebuild-frequency'] = rebuildFrequency
     data['functor'] = functor
@@ -115,8 +129,8 @@ def generate(domainSize,
                     + '-' + str(numParticles)
                     + '-' + str(distribution)
                     + '-' + str(cutoff)
-                    + '-' + str(verletSkinToCutoffFactor)
-                    + '-' + str(rebuildFrequencySkinFactorFactor)
+                    + '-' + str(skinFactor)
+                    + '-' + str(invMaxParticleSpeed)
                     + '-' + functor
                     + '-' + str(cellSizeFactor)
                     + '.yaml')
@@ -135,10 +149,15 @@ def isInteresting(domainSize,
                   numParticles,
                   distribution,
                   cutoff,
-                  verletSkinToCutoffFactor,
-                  rebuildFrequencySkinFactorFactor,
+                  skinFactor,
+                  invMaxParticleSpeed,
                   functor,
                   cellSizeFactor):
+
+    """
+    Filter to judge if a config is worth to generate.
+    """
+
     tooDenseThreshold = 400  # particles per cell
     actualDomainSize = domainSizes[domainSize]
     numCells = actualDomainSize[0] * actualDomainSize[1] * actualDomainSize[2]
@@ -180,12 +199,12 @@ if __name__ == "__main__":
         'normal': 1,
         'big': 2.5,
     }
-    verletSkinToCutoffFactors = {
+    skinFactors = {
         'small': 0.1,
         'normal': 0.2,
         'big': 0.4,
     }
-    rebuildFrequencySkinFactorFactor = 100
+    invMaxParticleSpeed = 100
     functors = {
         # 'lj-no-avx': 'Lennard-Jones (12-6)',
         'lj-avx': 'Lennard-Jones (12-6) AVX',
@@ -198,14 +217,14 @@ if __name__ == "__main__":
 
     numScenarios = 0
     # loop over cartesian product of all generator options
-    for domainSize, numParticles, distribution, cutoff, verletSkinToCutoffFactor, functor, cellSizeFactor in \
+    for domainSize, numParticles, distribution, cutoff, skinFactor, functor, cellSizeFactor in \
             itertools.product(domainSizes.items(), particleCounts.items(), distributions.items(), cutoffs.items(),
-                              verletSkinToCutoffFactors.items(), functors.items(), cellSizeFactors.items()):
+                              skinFactors.items(), functors.items(), cellSizeFactors.items()):
         # check if this combination is actually interesting to include in the benchmark
-        if isInteresting(domainSize[0], numParticles[0], distribution[0], cutoff[0], verletSkinToCutoffFactor[0],
-                         rebuildFrequencySkinFactorFactor, functor[0], cellSizeFactor[0]):
+        if isInteresting(domainSize[0], numParticles[0], distribution[0], cutoff[0], skinFactor[0],
+                         invMaxParticleSpeed, functor[0], cellSizeFactor[0]):
             numScenarios += 1
-            generate(domainSize[1], numParticles[1], distribution[1], cutoff[1], verletSkinToCutoffFactor[1],
-                     rebuildFrequencySkinFactorFactor, functor[1], cellSizeFactor[1])
+            generate(domainSize[1], numParticles[1], distribution[1], cutoff[1], skinFactor[1],
+                     invMaxParticleSpeed, functor[1], cellSizeFactor[1])
 
     print(str(numScenarios) + ' scenarios generated')
