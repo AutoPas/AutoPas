@@ -764,11 +764,6 @@ namespace mdLib {
 
                         fillIRegisters<remainderI, reversed>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI, restI);
 
-                        VectorDouble x2;
-                        VectorDouble y2;
-                        VectorDouble z2;
-                        VectorDouble ownedStateJDouble;
-
                         unsigned int j = 0;
                         for (; checkSecondLoopCondition(jStop, j); incrementSecondLoop(j)) {
 
@@ -776,10 +771,8 @@ namespace mdLib {
                                 prepareOverlap(i, j, ownedMaskI);
                             }
 
-                            fillJRegisters<false>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t*>(ownedStatePtr2), x2, y2, z2, ownedStateJDouble, -1);
-
-                            SoAKernel<newton3, remainderI, false, reversed>(i, j, ownedMaskI, highway::Ne(ownedStateJDouble, _zeroDouble),
-                                x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j],
+                            SoAKernel<newton3, remainderI, false, reversed>(i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j],
                                 fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
                         }
 
@@ -790,10 +783,8 @@ namespace mdLib {
                                 prepareOverlap(i, j, ownedMaskI);
                             }
 
-                            fillJRegisters<true>(j, xPtr2, yPtr2, zPtr2, reinterpret_cast<const int64_t*>(ownedStatePtr2), x2, y2, z2, ownedStateJDouble, restJ);
-                        
-                            SoAKernel<newton3, remainderI, true, reversed>(i, j, ownedMaskI, highway::Ne(ownedStateJDouble, _zeroDouble),
-                                x1, y1, z1, x2, y2, z2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j],
+                            SoAKernel<newton3, remainderI, true, reversed>(i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                                x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j],
                                 fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
                         }
 
@@ -1087,9 +1078,9 @@ namespace mdLib {
                 }
 
                 template <bool newton3, bool remainderI, bool remainderJ, bool reversed>
-                inline void SoAKernel(const size_t i, const size_t j, const MaskDouble& ownedMaskI, const MaskDouble& ownedMaskJ,
-                        const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1,
-                        const VectorDouble &x2, const VectorDouble &y2, const VectorDouble &z2,
+                inline void SoAKernel(const size_t i, const size_t j, const MaskDouble& ownedMaskI, const int64_t *const __restrict ownedStatePtr2,
+                        const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict x2Ptr,
+                        const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
                         double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
                         double *const __restrict fz2Ptr, const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
                         VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble& virialSumY,
@@ -1103,6 +1094,13 @@ namespace mdLib {
                         fillPhysicsRegisters<remainderI, remainderJ, reversed>(typeID1Ptr, typeID2Ptr, epsilon24s, sigmaSquareds, shift6s, j, restI, restJ);
                     }
 
+                    VectorDouble x2;
+                    VectorDouble y2;
+                    VectorDouble z2;
+                    VectorDouble ownedStateJDouble;
+
+                    fillJRegisters<remainderJ>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJDouble, restJ);
+
                     // distance calculations
                     const auto drX = x1 - x2;
                     const auto drY = y1 - y2;
@@ -1115,7 +1113,7 @@ namespace mdLib {
                     const auto dr2 = drX2 + drY2 + drZ2;
 
                     const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
-                    const auto dummyMask = highway::And(ownedMaskI, ownedMaskJ);
+                    const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
                     const auto cutoffDummyMask = highway::And(cutoffMask, dummyMask);
 
                     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
@@ -1255,12 +1253,11 @@ namespace mdLib {
                                 typeID2Tmp[vecIndex] = typeIDPtr[neighborList[j + vecIndex]];
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
-                            /*
+                            
                             SoAKernel<newton3, false, false, false>(0, 0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1,
                                 x2Tmp, y2Tmp, z2Tmp, fx2Tmp, fy2Tmp, fz2Tmp,
                                 &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX,
                                 virialSumY, virialSumZ, uPotSum, 0, 0);
-                            */
 
                             if constexpr (newton3) {
 
