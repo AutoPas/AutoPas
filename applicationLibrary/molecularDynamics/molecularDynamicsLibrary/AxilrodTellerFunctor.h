@@ -91,12 +91,13 @@ namespace mdLib {
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
+ * @tparam countFLOPs counts FLOPs and hitrate
  */
 template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
-          bool calculateGlobals = false>
+          bool calculateGlobals = false, bool countFLOPs = false>
 class AxilrodTellerFunctor
     : public autopas::TriwiseFunctor<Particle,
-                                     AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>> {
+                                     AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -120,15 +121,18 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals>>(
+      : autopas::TriwiseFunctor<Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
-        _aosThreadData(),
+        _aosThreadDataGlobals(),
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
-      _aosThreadData.resize(autopas::autopas_get_max_threads());
+      _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
+    }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
     }
   }
 
@@ -180,6 +184,12 @@ class AxilrodTellerFunctor
       return;
     }
 
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    if constexpr (countFLOPs) {
+      ++_aosThreadDataFLOPs[threadnum].numDistCalls;
+    }
+
     auto nu = _nu;
     if constexpr (useMixing) {
       nu = _PPLibrary->getMixingNu(i.getTypeId(), j.getTypeId(), k.getTypeId());
@@ -198,16 +208,17 @@ class AxilrodTellerFunctor
       return;
     }
 
+    // Calculate prefactor
+    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+    const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
+    const double factor = 3.0 * nu / allDistsTo5;
+
     // Dot products of both distance vectors going from one particle
     const double IJDotKI = autopas::utils::ArrayMath::dot(displacementIJ, displacementKI);
     const double IJDotJK = autopas::utils::ArrayMath::dot(displacementIJ, displacementJK);
     const double JKDotKI = autopas::utils::ArrayMath::dot(displacementJK, displacementKI);
 
     const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
-
-    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
-    const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-    const double factor = 3.0 * nu / allDistsTo5;
 
     const auto forceIDirectionJK = displacementJK * IJDotKI * (IJDotJK - JKDotKI);
     const auto forceIDirectionIJ =
@@ -234,6 +245,14 @@ class AxilrodTellerFunctor
       k.addF(forceK);
     }
 
+    if constexpr (countFLOPs) {
+      if (newton3) {
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
+      } else {
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
+      }
+    }
+
     if constexpr (calculateGlobals) {
       // Calculate third of total potential energy from triwise interaction
       const double potentialEnergy = factor * (allDistsSquared - 3.0 * allDotProducts) / 9.0;
@@ -241,21 +260,27 @@ class AxilrodTellerFunctor
       // Virial is calculated as f_i * r_i
       // see Thompson et al.: https://doi.org/10.1063/1.3245303
       const auto virialI = forceI * i.getR();
-      const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
-        _aosThreadData[threadnum].virialSum += virialI;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virialI;
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         const auto virialJ = forceJ * j.getR();
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
-        _aosThreadData[threadnum].virialSum += virialJ;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
         const auto virialK = forceK * k.getR();
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
-        _aosThreadData[threadnum].virialSum += virialK;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virialK;
+      }
+      if constexpr (countFLOPs) {
+        if (newton3) {
+          _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += 1;
+        } else {
+          _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += 1;
+        }
       }
     }
   }
@@ -303,27 +328,6 @@ class AxilrodTellerFunctor
   constexpr static bool getMixing() { return useMixing; }
 
   /**
-   * Get the number of flops used per kernel call for a given particle pair. This should count the
-   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
-   * distance.
-   * @param molAType molecule A's type id
-   * @param molBType molecule B's type id
-   * @param molCType molecule C's type id
-   * @param newton3 is newton3 applied.
-   * @note The molecule types make no difference for AxilrodTellerFunctor, but are kept to have a consistent interface
-   * for other functors where they may.
-   * @return the number of floating point operations
-   */
-  static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, size_t molCType, bool newton3) {
-    //
-    // Kernel: 56 = 18 (three dot products) + 9 (coefficients) + 29 (force calculation) sum
-    // Adding to particle forces: 3
-    // For Newton3: 29 (second force calculation) + 3 (adding force) + 6 (adding force to third p)
-    // Total = 56 + 3 + ( 29 + 3 + 6 ) = 59 or 97
-    return newton3 ? 97ul : 59ul;
-  }
-
-  /**
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
@@ -331,8 +335,8 @@ class AxilrodTellerFunctor
     _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
-    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-      _aosThreadData[i].setZero();
+    for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
+      _aosThreadDataGlobals[i].setZero();
     }
   }
 
@@ -349,9 +353,9 @@ class AxilrodTellerFunctor
     }
     if (calculateGlobals) {
       // Accumulate potential energy and virial values.
-      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
-        _virialSum += _aosThreadData[i].virialSum;
+      for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
+        _potentialEnergySum += _aosThreadDataGlobals[i].potentialEnergySum;
+        _virialSum += _aosThreadDataGlobals[i].virialSum;
       }
 
       _postProcessed = true;
@@ -396,6 +400,93 @@ class AxilrodTellerFunctor
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
+  /**
+   * Gets the number of useful FLOPs.
+   *
+   * For the three distance squared calculations, this is:
+   * - Displacement: 3
+   * - DistanceSquared: 5
+   * - Total: 8 * 3 = 24
+   *
+   * For the force kernel, this is:
+   * - calculation of prefactor: 7
+   * - dot products: 3 * 5 = 15
+   * - total product: 2
+   * - forceIDirectionJK: 6
+   * - forceIDirectionIJ: 9
+   * - forceIDirectionKI: 9
+   * - add force vectors and multiply: 9
+   * - add force to mol i: 3
+   * - If N3:
+   * - forceJDirectionKI: 6
+   * - forceJDirectionIJ: 9
+   * - forceJDirectionJK: 9
+   * - add force vectors and multiply: 9
+   * - add force to mol j: 3
+   * - sum forceK: 3 (don't count multiplication with -1.0)
+   * - add force to mol k: 3
+   * - Total: 60 without n3, 102 with n3
+   *
+   * For the globals calculation, this is:
+   * - potential: 4
+   * - virial: 3 without n3, 9 with n3
+   * - accumulation: 4 without n3, 12 with n3
+   * - Total: 11 without n3, 25 with n3
+   *
+   * @return number of FLOPs since initTraversal() is called.
+   */
+  [[nodiscard]] size_t getNumFLOPs() const override {
+    if constexpr (countFLOPs) {
+      const size_t numDistCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      const size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      const size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+      const size_t numGlobalCalcsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsN3; });
+      const size_t numGlobalCalcsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
+
+      constexpr size_t numFLOPsPerDistanceCall = 24;
+      constexpr size_t numFLOPsPerN3KernelCall = 102;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 60;
+      constexpr size_t numFLOPsPerN3GlobalCalc = 25;
+      constexpr size_t numFLOPsPerNoN3GlobalCalc = 11;
+
+      return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
+             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc + numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
+    } else {
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      return std::numeric_limits<size_t>::max();
+    }
+  }
+
+  [[nodiscard]] double getHitRate() const override {
+    if constexpr (countFLOPs) {
+      const size_t numDistCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      const size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      const size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+
+      return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
+             (static_cast<double>(numDistCallsAcc));
+    } else {
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      return std::numeric_limits<double>::quiet_NaN();
+    }
+  }
+
  private:
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
@@ -406,9 +497,9 @@ class AxilrodTellerFunctor
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
-  class AoSThreadData {
+  class AoSThreadDataGlobals {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
+    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;
@@ -422,8 +513,67 @@ class AxilrodTellerFunctor
     // dummy parameter to get the right size (64 bytes)
     double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
-  // make sure of the size of AoSThreadData
-  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
+
+  /**
+   * This class stores internal data for FLOP counters for each thread. Make sure that this data has proper size, i.e.
+   * k*64 Bytes!
+   * The FLOP count and HitRate are not counted/calculated directly, but through helper counters (numKernelCallsNoN3,
+   * numKernelCallsN3, numDistCalls, numGlobalCalcs) to reduce computational cost in the functors themselves and to
+   * improve maintainability (e.g. if the cost of a kernel call changes).
+   */
+  class AoSThreadDataFLOPs {
+   public:
+    AoSThreadDataFLOPs() : __remainingTo64{} {}
+
+    /**
+     * Set all counters to zero.
+     */
+    void setZero() {
+      numKernelCallsNoN3 = 0;
+      numKernelCallsN3 = 0;
+      numDistCalls = 0;
+      numGlobalCalcsN3 = 0;
+      numGlobalCalcsNoN3 = 0;
+    }
+
+    /**
+     * Number of calls to Lennard-Jones Kernel with newton3 disabled.
+     * Used for calculating number of FLOPs and hit rate.
+     */
+    size_t numKernelCallsNoN3 = 0;
+
+    /**
+     * Number of calls to Lennard-Jones Kernel with newton3 enabled.
+     * Used for calculating number of FLOPs and hit rate.
+     */
+    size_t numKernelCallsN3 = 0;
+
+    /**
+     * Number of distance calculations.
+     * Used for calculating number of FLOPs and hit rate.
+     */
+    size_t numDistCalls = 0;
+
+    /**
+     * Counter for the number of times the globals have been calculated with newton3 enabled.
+     */
+    size_t numGlobalCalcsN3 = 0;
+
+    /**
+     * Counter for the number of times the globals have been calculated without newton3 enabled.
+     */
+    size_t numGlobalCalcsNoN3 = 0;
+
+   private:
+    /**
+     * dummy parameter to get the right size (64 bytes)
+     */
+    double __remainingTo64[(64 - 5 * sizeof(size_t)) / sizeof(size_t)];
+  };
+
+  // make sure of the size of AoSThreadDataGlobals
+  static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
+  static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoffSquared;
 
@@ -440,7 +590,8 @@ class AxilrodTellerFunctor
   std::array<double, 3> _virialSum;
 
   // thread buffer for aos
-  std::vector<AoSThreadData> _aosThreadData;
+  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals;
+  std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs{};
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
