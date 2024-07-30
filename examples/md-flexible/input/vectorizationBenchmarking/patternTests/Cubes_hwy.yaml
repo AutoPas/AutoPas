@@ -1,5 +1,5 @@
 functor                          :  highway
-vectorizationPattern             :  2xVecDiv2
+vectorizationPattern             :  1xVec
 container                        :  [LinkedCells]
 newton3                          :  [enabled]
 cutoff                           :  6
@@ -39,3 +39,4 @@ Objects:
       particle-mass              :  1
 vtk-write-frequency              :  2000
 vtk-filename                     :  Cube_patterns_hwy
+load-balancer                    :  none

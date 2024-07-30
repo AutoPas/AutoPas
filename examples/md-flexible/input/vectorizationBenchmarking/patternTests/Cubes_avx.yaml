@@ -38,3 +38,4 @@ Objects:
       particle-mass              :  1
 vtk-write-frequency              :  2000
 vtk-filename                     :  Cube_patterns_avx
+load-balancer                    :  none
