@@ -169,30 +169,27 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
     }
 
     if constexpr (calculateGlobals) {
+      // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
+      // Potential energy has an additional factor of 6, which is also handled in endTraversal().
+
       auto virial = dr * f;
-      // Here we calculate either the potential energy * 6.
-      // For newton3, this potential energy contribution is distributed evenly to the two molecules.
-      // For non-newton3, the full potential energy is added to the one molecule.
-      // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
       if (i.isOwned()) {
-        if (newton3) {
-          _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-          _aosThreadDataGlobals[threadnum].virialSumN3 += virial * 0.5;
-        } else {
-          // for non-newton3 the division is in the post-processing step.
-          _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergy6;
-          _aosThreadDataGlobals[threadnum].virialSumNoN3 += virial;
-        }
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3 += virial * 0.5;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
       }
       if constexpr (countFLOPs) {
-        _aosThreadDataFLOPs[threadnum].numGlobalCalcs += 1;
+        if (newton3) {
+          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
+        } else {
+          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
+        }
       }
     }
   }
@@ -220,8 +217,7 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
-    SoAFloatPrecision potentialEnergySum =
-        0.;  // Note: this is not the potential energy, but some fixed multiple of it.
+    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
@@ -332,8 +328,7 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
           const SoAFloatPrecision virialz = drz * fz;
           const SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
-          // Add to the potential energy sum for each particle which is owned.
-          // This results in obtaining 12 * the potential energy for the SoA.
+          // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
           SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
                                            (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
@@ -343,7 +338,7 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
           virialSumZ += virialz * energyFactor;
 
           if constexpr (countFLOPs) {
-            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask;
+            numGlobalCalcsSum += mask;
           }
         }
       }
@@ -356,24 +351,15 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcs += numGlobalCalcsSum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
     }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
 
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if (newton3) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -430,7 +416,8 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
-    size_t numGlobalCalcsSum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
@@ -473,7 +460,7 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -534,8 +521,7 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
           SoAFloatPrecision virialz = drz * fz;
           SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
-          // Add to the potential energy sum for each particle which is owned.
-          // This results in obtaining 12 * the potential energy for the SoA.
+          // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
           const SoAFloatPrecision energyFactor =
               (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
               (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -545,7 +531,11 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
           virialSumZ += virialz * energyFactor;
 
           if constexpr (countFLOPs) {
-            _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask;
+            if constexpr (newton3) {
+              numGlobalCalcsN3Sum += mask;
+            } else {
+              numGlobalCalcsNoN3Sum += mask;
+            }
           }
         }
       }
@@ -557,22 +547,14 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcs += numGlobalCalcsSum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
     if (calculateGlobals) {
-      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if constexpr (newton3) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -678,25 +660,16 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
-      // Non-newton3 calls are accumulated temporarily and later divided by 2.
-      double potentialEnergySumNoN3Acc = 0;
-      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
       for (const auto &data : _aosThreadDataGlobals) {
-        potentialEnergySumNoN3Acc += data.potentialEnergySumNoN3;
-        _potentialEnergySum += data.potentialEnergySumN3;
-        virialSumNoN3Acc += data.virialSumNoN3;
-        _virialSum += data.virialSumN3;
+        _potentialEnergySum += data.potentialEnergySum;
+        _virialSum += data.virialSum;
       }
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-      // here.
-      potentialEnergySumNoN3Acc *= 0.5;
-      virialSumNoN3Acc *= 0.5;
+      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
+      // contribution is only counted once per pair.
+      _potentialEnergySum *= 0.5;
+      _virialSum *= 0.5;
 
-      _potentialEnergySum += potentialEnergySumNoN3Acc;
-      _virialSum += virialSumNoN3Acc;
-
-      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
+      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
@@ -764,19 +737,15 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
    * For the globals calculation, this is:
    * - virial: 3
    * - potential: 1, or 2 with shift
-   * - accumulation: 4
-   * - multiplications by 0.5 and second accumulations are not treated as useful FLOPs, as these are just workarounds
-   *   to avoid accumulating globals on owned/halo borders twice
-   * - Total: 8, or 9 with shift
+   * - accumulation: 4 without n3, 8 with n3
+   * - Total: 8 or 9 without n3, 12 or 13 with n3
    *
    * Caveats:
    *
-   * This function is supposed to return useful FLOPs, e.g. without counting masked vector instructions or
-   * workarounds for accumulating globals on owned/halo borders twice. You could argue that, strictly speaking, we
-   * redundantly calculate forces and globals twice in the newton3 case. This function does not treat such "redundant"
-   * calculations as useless.
-   *
-   * Similarly, this function does not treat halo-halo interactions as redundant useless calculations.
+   * This function is supposed to return useful FLOPs, e.g. without counting masked vector instructions.
+   * You could also argue that, strictly speaking, we redundantly calculate forces and globals twice in the newton3 case
+   * on a owned/halo boundary. This function does not treat such "redundant" calculations as useless. Similarly, this
+   * function does not treat halo-halo interactions as redundant useless calculations.
    *
    * @return number of FLOPs since initTraversal() is called.
    */
@@ -791,17 +760,22 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
       const size_t numKernelCallsNoN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
                           [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
-      const size_t numGlobalCalcsAcc =
+      const size_t numGlobalCalcsN3Acc =
           std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
-                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcs; });
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsN3; });
+      const size_t numGlobalCalcsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
 
       constexpr size_t numFLOPsPerDistanceCall = 8;
       constexpr size_t numFLOPsPerN3KernelCall = 18;
       constexpr size_t numFLOPsPerNoN3KernelCall = 15;
-      constexpr size_t numFLOPsPerGlobalCalc = applyShift ? 9 : 8;
+      constexpr size_t numFLOPsPerN3GlobalCalc = applyShift ? 13 : 12;
+      constexpr size_t numFLOPsPerNoN3GlobalCalc = applyShift ? 9 : 8;
 
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
-             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsAcc * numFLOPsPerGlobalCalc;
+             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
+             numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<size_t>::max();
@@ -858,7 +832,8 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
     size_t numDistanceCalculationSum = 0;
     size_t numKernelCallsN3Sum = 0;
     size_t numKernelCallsNoN3Sum = 0;
-    size_t numGlobalCalcsSum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
 
     SoAFloatPrecision fxacc = 0;
     SoAFloatPrecision fyacc = 0;
@@ -930,7 +905,7 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
@@ -992,6 +967,8 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
             SoAFloatPrecision virialz = drz * fz;
             SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
+            // We add 6 times the potential energy for each owned particle. The total sum is corrected in
+            // endTraversal().
             const SoAFloatPrecision energyFactor =
                 (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
                 (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -1001,7 +978,11 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
             virialSumZ += virialz * energyFactor;
 
             if constexpr (countFLOPs) {
-              _aosThreadDataFLOPs[threadnum].numGlobalCalcs += mask ? 1 : 0;
+              if constexpr (newton3) {
+                numGlobalCalcsN3Sum += mask;
+              } else {
+                numGlobalCalcsNoN3Sum += mask;
+              }
             }
           }
         }
@@ -1086,8 +1067,7 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
         SoAFloatPrecision virialz = drz * fz;
         SoAFloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6);
 
-        // Add to the potential energy sum for each particle which is owned.
-        // This results in obtaining 12 * the potential energy for the SoA.
+        // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
         const SoAFloatPrecision energyFactor =
             (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
             (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -1097,7 +1077,11 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
         virialSumZ += virialz * energyFactor;
 
         if constexpr (countFLOPs) {
-          _aosThreadDataFLOPs[threadnum].numGlobalCalcs += 1;
+          if constexpr (newton3) {
+            ++numGlobalCalcsN3Sum;
+          } else {
+            ++numGlobalCalcsNoN3Sum;
+          }
         }
       }
     }
@@ -1112,24 +1096,15 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
       _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
       _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
-      _aosThreadDataFLOPs[threadnum].numGlobalCalcs += numGlobalCalcsSum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
     }
 
     if (calculateGlobals) {
-      // SoAFunctorVerlet obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-
-      if (newton3) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadDataGlobals[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadDataGlobals[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadDataGlobals[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -1139,28 +1114,19 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
    */
   class AoSThreadDataGlobals {
    public:
-    AoSThreadDataGlobals()
-        : virialSumNoN3{0., 0., 0.},
-          virialSumN3{0., 0., 0.},
-          potentialEnergySumNoN3{0.},
-          potentialEnergySumN3{0.},
-          __remainingTo64{} {}
+    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
-      virialSumNoN3 = {0., 0., 0.};
-      virialSumN3 = {0., 0., 0.};
-      potentialEnergySumNoN3 = 0.;
-      potentialEnergySumN3 = 0.;
+      virialSum = {0., 0., 0.};
+      potentialEnergySum = 0.;
     }
 
     // variables
-    std::array<double, 3> virialSumNoN3;
-    std::array<double, 3> virialSumN3;
-    double potentialEnergySumNoN3;
-    double potentialEnergySumN3;
+    std::array<double, 3> virialSum;
+    double potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
 
   /**
@@ -1181,7 +1147,8 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
       numKernelCallsNoN3 = 0;
       numKernelCallsN3 = 0;
       numDistCalls = 0;
-      numGlobalCalcs = 0;
+      numGlobalCalcsNoN3 = 0;
+      numGlobalCalcsN3 = 0;
     }
 
     /**
@@ -1206,13 +1173,19 @@ class LJFunctor : public autopas::PairwiseFunctor<Particle, LJFunctor<Particle, 
      * Counter for the number of times the globals have been calculated. Excludes the special case that N3 is enabled
      * and we calculate globals for an owned-halo particle pair.
      */
-    size_t numGlobalCalcs = 0;
+    size_t numGlobalCalcsN3 = 0;
+
+    /**
+     * Counter for the number of times the globals have been calculated. Excludes the special case that N3 is enabled
+     * and we calculate globals for an owned-halo particle pair.
+     */
+    size_t numGlobalCalcsNoN3 = 0;
 
    private:
     /**
      * dummy parameter to get the right size (64 bytes)
      */
-    double __remainingTo64[(64 - 4 * sizeof(size_t)) / sizeof(size_t)];
+    double __remainingTo64[(64 - 5 * sizeof(size_t)) / sizeof(size_t)];
   };
 
   // make sure of the size of AoSThreadDataGlobals and AoSThreadDataFLOPs
