@@ -12,6 +12,8 @@
 #include "testingHelpers/commonTypedefs.h"
 #include "molecularDynamicsLibrary/LJFunctorHWY.h"
 
+using VectorizationPattern = autopas::VectorizationPatternOption::Value;
+
 using LJFunctorHWYTestingTuple = std::tuple<bool /*newton3*/, bool /*doDeleteSomeParticles*/, VectorizationPattern>;
 
 class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInterface<LJFunctorHWYTestingTuple> {
