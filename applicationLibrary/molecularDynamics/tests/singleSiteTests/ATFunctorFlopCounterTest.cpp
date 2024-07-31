@@ -53,12 +53,11 @@ void ATFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   autoPas.setAllowedTraversals({autopas::TraversalOption::ds_sequential});
 
   if (newton3) {
-    autoPas.setAllowedNewton3Options({autopas::Newton3Option::enabled}, autopas::InteractionTypeOption::triwise);
+    autoPas.setAllowedNewton3Options({autopas::Newton3Option::enabled});
   } else {
-    autoPas.setAllowedNewton3Options({autopas::Newton3Option::disabled}, autopas::InteractionTypeOption::triwise);
+    autoPas.setAllowedNewton3Options({autopas::Newton3Option::disabled});
   }
-  autoPas.setAllowedDataLayouts(std::set<autopas::DataLayoutOption>{dataLayoutOption},
-                                autopas::InteractionTypeOption::triwise);
+  autoPas.setAllowedDataLayouts(std::set<autopas::DataLayoutOption>{dataLayoutOption});
   autoPas.setAllowedInteractionTypeOptions({autopas::InteractionTypeOption::triwise});
 
   autoPas.init();
