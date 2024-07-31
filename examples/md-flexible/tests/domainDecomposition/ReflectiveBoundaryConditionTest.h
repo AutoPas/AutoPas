@@ -8,10 +8,13 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/Quaternion.h"
 #include "autopas/utils/WrapMPI.h"
+
 /**
  * Parameterized test case for reflective boundary conditions in RegularGridDecomposition
  * Quaternion parameter is not used for single-site compilations.

@@ -42,7 +42,7 @@ autopas::PredictionLogger::~PredictionLogger() {
 
 void autopas::PredictionLogger::logAllPredictions(
     const std::unordered_map<Configuration, long, ConfigHash> &predictions, long predictionErrorValue,
-    size_t tuningPhaseCounter) {
+    size_t tuningPhaseCounter) const {
 #ifdef AUTOPAS_LOG_PREDICTIONS
   for (const auto &[configuration, prediction] : predictions) {
     spdlog::get(_loggerName)

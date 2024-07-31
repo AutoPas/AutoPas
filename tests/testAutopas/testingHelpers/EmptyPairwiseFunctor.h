@@ -1,22 +1,22 @@
 /**
- * @file EmptyFunctor.h
+ * @file EmptyPairwiseFunctor.h
  * @author seckler
  * @date 26.03.20
  */
 
 #pragma once
 
+#include "autopas/baseFunctors/Functor.h"
 #include "autopas/cells/ParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletLists/VerletListHelpers.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 
 /**
  * Empty Functor, this functor is empty and can be used for testing purposes.
  * It returns that it is applicable for everything.
  */
 template <class Particle>
-class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
+class EmptyPairwiseFunctor : public autopas::PairwiseFunctor<Particle, EmptyPairwiseFunctor<Particle>> {
  private:
  public:
   /**
@@ -27,15 +27,15 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
   /**
    * Default constructor.
    */
-  EmptyFunctor() : autopas::Functor<Particle, EmptyFunctor<Particle>>(0.){};
+  EmptyPairwiseFunctor() : autopas::PairwiseFunctor<Particle, EmptyPairwiseFunctor<Particle>>(0.){};
 
   /**
-   * @copydoc autopas::Functor::AoSFunctor()
+   * @copydoc autopas::PairwiseFunctor::AoSFunctor()
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {}
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    */
   void SoAFunctorSingle(autopas::SoAView<typename Particle::SoAArraysType> soa, bool newton3) override {}
 
@@ -49,7 +49,7 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
                       autopas::SoAView<typename Particle::SoAArraysType> soa2, bool newton3) override {}
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   void SoAFunctorVerlet(autopas::SoAView<typename Particle::SoAArraysType> soa, size_t indexFirst,
                         const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
@@ -64,6 +64,11 @@ class EmptyFunctor : public autopas::Functor<Particle, EmptyFunctor<Particle>> {
    * @copydoc autopas::Functor::allowsNonNewton3()
    */
   bool allowsNonNewton3() override { return true; }
+
+  /**
+   * @copydoc autopas::Functor::getName()
+   */
+  std::string getName() override { return "EmptyPairwiseFunctor"; }
 
   /**
    * @copydoc autopas::Functor::isRelevantForTuning()

@@ -9,7 +9,7 @@
 
 #include <algorithm>
 
-#include "autopas/containers/cellPairTraversals/SlicedC02BasedTraversal.h"
+#include "autopas/containers/cellTraversals/SlicedC02BasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
@@ -52,7 +52,7 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
         VLCTraversalInterface<typename ParticleCell::ParticleType, NeighborList>(typeOfList),
         _functor(pairwiseFunctor) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override {
     switch (this->_typeOfList) {
@@ -73,7 +73,7 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
   }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setSortingThreshold(size_t sortingThreshold) override {}
@@ -83,7 +83,7 @@ class VLCSlicedC02Traversal : public SlicedC02BasedTraversal<ParticleCell, Pairw
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticlePairs() {
+inline void VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }

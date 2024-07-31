@@ -8,6 +8,7 @@
 
 #include <set>
 
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/Option.h"
 
 namespace autopas {
@@ -18,18 +19,19 @@ inline namespace options {
 class TraversalOption : public Option<TraversalOption> {
  public:
   /**
-   * Possible choices for the cell pair traversal. Try to maintain lexicographic ordering.
+   * Possible choices for the cell traversal. Traversals marked with '+' can be used for both pairwise and triwise
+   * interactions. Try to maintain lexicographic ordering.
    */
   enum Value {
     // DirectSum Traversals:
     /**
-     * DSSequentialTraversal : Sequential double loop over all particles.
+     * + DSSequentialTraversal : Sequential nested loop over all particles.
      */
     ds_sequential,
 
     // LinkedCell Traversals:
     /**
-     * LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
+     * + LCC01Traversal : Every cell interacts with all neighbors. Is not compatible with Newton3 thus embarrassingly
      * parallel. Good load balancing and no overhead.
      */
     lc_c01,
@@ -219,6 +221,60 @@ class TraversalOption : public Option<TraversalOption> {
    */
   static std::set<TraversalOption> getDiscouragedOptions() {
     return {Value::ds_sequential, Value::vcl_cluster_iteration};
+  }
+
+  /**
+   * Set of options that apply for pairwise interactions.
+   * @return
+   */
+  static std::set<TraversalOption> getAllPairwiseOptions() { return getAllOptions(); }
+
+  /**
+   * Set of options that apply for triwise interactions.
+   * @return
+   */
+  static std::set<TraversalOption> getAllTriwiseOptions() { return {Value::ds_sequential, Value::lc_c01}; }
+
+  /**
+   * Set of all pairwise traversals without discouraged options.
+   * @return
+   */
+  static std::set<TraversalOption> getMostPairwiseOptions() {
+    std::set<TraversalOption> mostPairwiseOptions;
+    auto allOptions = getAllOptions();
+    auto discouragedOptions = getDiscouragedOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
+                        std::inserter(mostPairwiseOptions, mostPairwiseOptions.begin()));
+    return mostPairwiseOptions;
+  }
+
+  /**
+   * Set of all triwise traversals without discouraged options.
+   * @return
+   */
+  static std::set<TraversalOption> getMostTriwiseOptions() {
+    std::set<TraversalOption> mostTriwiseOptions;
+    auto allOptions = getAllTriwiseOptions();
+    auto discouragedOptions = getDiscouragedOptions();
+    std::set_difference(allOptions.begin(), allOptions.end(), discouragedOptions.begin(), discouragedOptions.end(),
+                        std::inserter(mostTriwiseOptions, mostTriwiseOptions.begin()));
+    return mostTriwiseOptions;
+  }
+
+  /**
+   * Set of all options specific to an interaction type.
+   * @param interactionType
+   * @return
+   */
+  static std::set<TraversalOption> getAllOptionsOf(const autopas::InteractionTypeOption &interactionType) {
+    switch (interactionType) {
+      case autopas::InteractionTypeOption::pairwise:
+        return getAllPairwiseOptions();
+      case autopas::InteractionTypeOption::triwise:
+        return getAllTriwiseOptions();
+      default:
+        return {};
+    }
   }
 
   /**

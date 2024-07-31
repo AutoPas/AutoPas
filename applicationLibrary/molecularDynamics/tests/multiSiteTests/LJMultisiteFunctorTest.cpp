@@ -12,8 +12,10 @@
 #define AOS_VS_SOA_ACCURACY 1e-8
 
 void LJMultisiteFunctorTest::generatePPL(ParticlePropertiesLibrary<double, size_t> *PPL) {
-  PPL->addSiteType(0, 1, 1, 1);
-  PPL->addSiteType(1, 0.5, 0.5, 0.7);
+  PPL->addSiteType(0, 1.);
+  PPL->addLJParametersToSite(0, 1., 1.);
+  PPL->addSiteType(1, 0.7);
+  PPL->addLJParametersToSite(1, 0.5, 0.5);
   PPL->addMolType(0, {0}, {{0, 0, 0}}, {1, 1, 1});
   PPL->addMolType(1, {1, 0}, {{-0.05, 0, 0}, {0.05, 0, 0}}, {1, 1, 1});
   PPL->addMolType(2, {1, 0, 1, 0}, {{-0.025, 0, -0.025}, {-0.025, 0, 0.025}, {0.025, 0, -0.025}, {0.025, 0, 0.025}},
@@ -101,8 +103,8 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
         const auto displacement = sub(exactSitePositionA, exactSitePositionB);
         const auto distanceSquared = dot(displacement, displacement);
 
-        const auto sigmaSquared = PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).sigmaSquared;
-        const auto epsilon24 = PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).epsilon24;
+        const auto sigmaSquared = PPL.getLJMixingData(siteTypesA[siteA], siteTypesB[siteB]).sigmaSquared;
+        const auto epsilon24 = PPL.getLJMixingData(siteTypesA[siteA], siteTypesB[siteB]).epsilon24;
 
         const auto invDistSquared = 1. / distanceSquared;
         const auto lj2 = sigmaSquared * invDistSquared;
@@ -125,7 +127,7 @@ void LJMultisiteFunctorTest::testAoSForceCalculation(mdLib::MultisiteMoleculeLJ 
         }
 
         if constexpr (calculateGlobals) {
-          const auto shift6 = applyShift ? PPL.getMixingData(siteTypesA[siteA], siteTypesB[siteB]).shift6 : 0;
+          const auto shift6 = applyShift ? PPL.getLJMixingData(siteTypesA[siteA], siteTypesB[siteB]).shift6 : 0;
           const auto shift = shift6 / 6.;
           const auto epsilon4 = epsilon24 / 6.;
 
@@ -592,9 +594,10 @@ TEST_F(LJMultisiteFunctorTest, AoSTest) {
   const double cutoff = 2.5;
 
   ParticlePropertiesLibrary PPL(cutoff);
-  PPL.addSiteType(0, 1., 1., 1.);
-  PPL.addSiteType(1, 0.5, 0.5, 0.5);
-
+  PPL.addSiteType(0, 1.);
+  PPL.addLJParametersToSite(0, 1., 1.);
+  PPL.addSiteType(1, 0.5);
+  PPL.addLJParametersToSite(1, 0.5, 0.5);
   // Molecules to be used in the tests (explanation of choices documented when tests are run).
   // For ease of readability, each molecule has its own molType, even when duplicated.
   MultisiteMoleculeLJ mol0;
@@ -705,7 +708,8 @@ TEST_F(LJMultisiteFunctorTest, AoSDummyTest) {
   const double cutoff = 2.5;
 
   ParticlePropertiesLibrary PPL(cutoff);
-  PPL.addSiteType(0, 1., 1., 1.);
+  PPL.addSiteType(0, 1.);
+  PPL.addLJParametersToSite(0, 1., 1.);
   PPL.addMolType(0, {0}, {{0., 0., 0.}}, {1., 1., 1.});
   PPL.calculateMixingCoefficients();
 
@@ -782,8 +786,10 @@ TEST_F(LJMultisiteFunctorTest, singleSiteSanityCheck) {
   const double cutoff = 3.;
 
   ParticlePropertiesLibrary PPL(cutoff);
-  PPL.addSiteType(0, 1., 1., 1.);
-  PPL.addSiteType(1, 0.5, 0.5, 0.5);
+  PPL.addSiteType(0, 1.);
+  PPL.addLJParametersToSite(0, 1., 1.);
+  PPL.addSiteType(1, 0.5);
+  PPL.addLJParametersToSite(0, 0.5, 0.5);
 
   MultisiteMoleculeLJ mol0;
   mol0.setR({0., 0., 0.});

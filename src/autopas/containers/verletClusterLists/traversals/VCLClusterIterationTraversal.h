@@ -55,7 +55,7 @@ class VCLClusterIterationTraversal : public TraversalInterface,
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
 
     const auto _clusterTraverseFunctor = [this](internal::Cluster<Particle> &cluster) {
