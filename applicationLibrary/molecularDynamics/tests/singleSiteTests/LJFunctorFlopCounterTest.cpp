@@ -14,7 +14,7 @@
 #include "testingHelpers/commonTypedefs.h"
 
 // AutoPas is instantiated in AutoPasInstantiations.cpp
-// but iteratePairwise() versions with countFLOPs == true not,
+// but computeInteractions() versions with countFLOPs == true not,
 // so they have to be explicitly instantiated here.
 extern template class autopas::AutoPas<Molecule>;
 template bool autopas::AutoPas<Molecule>::computeInteractions(

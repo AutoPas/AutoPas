@@ -96,8 +96,8 @@ namespace mdLib {
 template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool countFLOPs = false>
 class AxilrodTellerFunctor
-    : public autopas::TriwiseFunctor<Particle,
-                                     AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>> {
+    : public autopas::TriwiseFunctor<
+          Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -121,7 +121,8 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctor(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle, AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
+      : autopas::TriwiseFunctor<Particle,
+                                AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -254,32 +255,33 @@ class AxilrodTellerFunctor
     }
 
     if constexpr (calculateGlobals) {
-      // Calculate third of total potential energy from triwise interaction
-      const double potentialEnergy = factor * (allDistsSquared - 3.0 * allDotProducts) / 9.0;
+      // Add 3 * potential energy to every owned particle of the interaction.
+      // Division to the correct value is handled in endTraversal().
+      const double potentialEnergy3 = factor * (allDistsSquared - 3.0 * allDotProducts);
 
       // Virial is calculated as f_i * r_i
       // see Thompson et al.: https://doi.org/10.1063/1.3245303
       const auto virialI = forceI * i.getR();
       if (i.isOwned()) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialI;
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         const auto virialJ = forceJ * j.getR();
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
         const auto virialK = forceK * k.getR();
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialK;
       }
       if constexpr (countFLOPs) {
         if (newton3) {
-          _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += 1;
+          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
         } else {
-          _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += 1;
+          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
         }
       }
     }
@@ -353,10 +355,17 @@ class AxilrodTellerFunctor
     }
     if (calculateGlobals) {
       // Accumulate potential energy and virial values.
-      for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
-        _potentialEnergySum += _aosThreadDataGlobals[i].potentialEnergySum;
-        _virialSum += _aosThreadDataGlobals[i].virialSum;
+      for (const auto &data : _aosThreadDataGlobals) {
+        _potentialEnergySum += data.potentialEnergySum;
+        _virialSum += data.virialSum;
       }
+
+      // For each interaction, we added the full contribution for all three particles. Divide by 3 here, so that each
+      // contribution is only counted once per triplet.
+      _potentialEnergySum /= 3.;
+
+      // Additionally, we have always calculated 3*potentialEnergy, so we divide by 3 again.
+      _potentialEnergySum /= 3.;
 
       _postProcessed = true;
 
@@ -411,27 +420,27 @@ class AxilrodTellerFunctor
    * For the force kernel, this is:
    * - calculation of prefactor: 7
    * - dot products: 3 * 5 = 15
-   * - total product: 2
-   * - forceIDirectionJK: 6
+   * - all dot products: 2
+   * - forceIDirectionJK: 5
    * - forceIDirectionIJ: 9
    * - forceIDirectionKI: 9
    * - add force vectors and multiply: 9
    * - add force to mol i: 3
    * - If N3:
-   * - forceJDirectionKI: 6
+   * - forceJDirectionKI: 5
    * - forceJDirectionIJ: 9
    * - forceJDirectionJK: 9
    * - add force vectors and multiply: 9
    * - add force to mol j: 3
    * - sum forceK: 3 (don't count multiplication with -1.0)
    * - add force to mol k: 3
-   * - Total: 60 without n3, 102 with n3
+   * - Total: 59 without n3, 100 with n3
    *
    * For the globals calculation, this is:
-   * - potential: 4
+   * - potential: 3
    * - virial: 3 without n3, 9 with n3
    * - accumulation: 4 without n3, 12 with n3
-   * - Total: 11 without n3, 25 with n3
+   * - Total: 10 without n3, 24 with n3
    *
    * @return number of FLOPs since initTraversal() is called.
    */
@@ -454,13 +463,14 @@ class AxilrodTellerFunctor
                           [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
 
       constexpr size_t numFLOPsPerDistanceCall = 24;
-      constexpr size_t numFLOPsPerN3KernelCall = 102;
-      constexpr size_t numFLOPsPerNoN3KernelCall = 60;
-      constexpr size_t numFLOPsPerN3GlobalCalc = 25;
-      constexpr size_t numFLOPsPerNoN3GlobalCalc = 11;
+      constexpr size_t numFLOPsPerN3KernelCall = 100;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 59;
+      constexpr size_t numFLOPsPerN3GlobalCalc = 24;
+      constexpr size_t numFLOPsPerNoN3GlobalCalc = 10;
 
       return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
-             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc + numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
+             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
+             numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
     } else {
       // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
       return std::numeric_limits<size_t>::max();

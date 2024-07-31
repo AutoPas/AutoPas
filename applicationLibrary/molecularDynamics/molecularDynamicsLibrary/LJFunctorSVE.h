@@ -43,8 +43,9 @@ namespace mdLib {
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class LJFunctorSVE : public autopas::PairwiseFunctor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3,
-                                                                    calculateGlobals, countFLOPs, relevantForTuning>> {
+class LJFunctorSVE
+    : public autopas::PairwiseFunctor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3,
+                                                             calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -62,7 +63,7 @@ class LJFunctorSVE : public autopas::PairwiseFunctor<Particle, LJFunctorSVE<Part
   explicit LJFunctorSVE(double cutoff, void * /*dummy*/)
 #ifdef __ARM_FEATURE_SVE
       : autopas::PairwiseFunctor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                countFLOPs, relevantForTuning>>(cutoff),
+                                                        countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _cutoffSquaredAoS(cutoff * cutoff),
         _potentialEnergySum{0.},
@@ -78,7 +79,7 @@ class LJFunctorSVE : public autopas::PairwiseFunctor<Particle, LJFunctorSVE<Part
   }
 #else
       : autopas::PairwiseFunctor<Particle, LJFunctorSVE<Particle, applyShift, useMixing, useNewton3, calculateGlobals,
-                                                countFLOPs, relevantForTuning>>(cutoff) {
+                                                        countFLOPs, relevantForTuning>>(cutoff) {
     autopas::utils::ExceptionHandler::exception("AutoPas was compiled without SVE support!");
   }
 #endif

@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <algorithm>
 #include <gtest/gtest.h>
+
+#include <algorithm>
 
 #include "AutoPasTestBase.h"
 #include "autopas/utils/ArrayUtils.h"
