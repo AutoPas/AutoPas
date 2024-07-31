@@ -28,7 +28,7 @@ template bool autopas::AutoPas<Molecule>::computeInteractions(
  * @tparam calculateGlobals
  * @param dataLayoutOption
  * @param newton3
- * @param isVerlet if true, uses VLC container and traversal. Otherwise used LC.
+ * @param isVerlet
  */
 template <bool calculateGlobals>
 void ATFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLayoutOption, bool newton3,
