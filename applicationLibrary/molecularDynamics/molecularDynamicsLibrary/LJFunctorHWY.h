@@ -193,11 +193,6 @@ namespace mdLib {
 
                 inline void initializeMasks() {
 
-                    for (size_t n = 0; n <_vecLengthDouble-1;++n) {
-                        restMasksDouble[n] = highway::FirstN(tag_double, n+1);
-                        restMasksLong[n] = highway::FirstN(tag_long, n+1);
-                    }
-
                     HWY_ALIGN std::array<double, _vecLengthDouble> equal {0.};
                     HWY_ALIGN std::array<double, _vecLengthDouble> overlap {0.};
 
@@ -420,15 +415,14 @@ namespace mdLib {
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
                         const int index = reversed ? (remainder ? 0 : i - _vecLengthDouble/2+1) : i;
-                        const auto mask = restMasksDouble[remainder ? restI-1 : _vecLengthDouble/2-1];
-                        const auto maskLong = restMasksLong[remainder ? restI-1 : _vecLengthDouble/2-1];
+                        const int lanes = remainder ? restI : _vecLengthDouble/2;
                         
-                        const VectorLong ownedJ = highway::MaskedLoad(maskLong, tag_long, reinterpret_cast<const int64_t* >(&ownedStatePtr[index]));
+                        const VectorLong ownedJ = highway::LoadN(tag_long, reinterpret_cast<const int64_t* >(&ownedStatePtr[index]), lanes);
                         ownedStateIDouble = highway::ConvertTo(tag_double, ownedJ);
 
-                        x1 = highway::MaskedLoad(mask, tag_double, &xPtr[index]);
-                        y1 = highway::MaskedLoad(mask, tag_double, &yPtr[index]);
-                        z1 = highway::MaskedLoad(mask, tag_double, &zPtr[index]);
+                        x1 = highway::LoadN(tag_double, &xPtr[index], lanes);
+                        y1 = highway::LoadN(tag_double, &yPtr[index], lanes);
+                        z1 = highway::LoadN(tag_double, &zPtr[index], lanes);
 
                         ownedStateIDouble = highway::ConcatLowerLower(tag_double, ownedStateIDouble, ownedStateIDouble);
                         x1 = highway::ConcatLowerLower(tag_double, x1, x1);
@@ -440,14 +434,12 @@ namespace mdLib {
                         int index = reversed ? (remainder ? 0 : i-_vecLengthDouble+1) : i;
 
                         if constexpr (remainder) {
-                            const auto maskDouble = restMasksDouble[restI-1];
-                            const auto maskLong = restMasksLong[restI-1];
 
-                            x1 = highway::MaskedLoad(maskDouble, tag_double, &xPtr[index]);
-                            y1 = highway::MaskedLoad(maskDouble, tag_double, &yPtr[index]);
-                            z1 = highway::MaskedLoad(maskDouble, tag_double, &zPtr[index]);
+                            x1 = highway::LoadN(tag_double, &xPtr[index], restI);
+                            y1 = highway::LoadN(tag_double, &yPtr[index], restI);
+                            z1 = highway::LoadN(tag_double, &zPtr[index], restI);
                             
-                            const VectorLong ownedStateI = highway::MaskedLoad(maskLong, tag_long, reinterpret_cast<const int64_t* >(&ownedStatePtr[index]));
+                            const VectorLong ownedStateI = highway::LoadN(tag_long, reinterpret_cast<const int64_t* >(&ownedStatePtr[index]), restI);
                             ownedStateIDouble = highway::ConvertTo(tag_double, ownedStateI);
                         }
                         else {
@@ -469,22 +461,22 @@ namespace mdLib {
                         double *const __restrict fz2Ptr, const size_t i, const size_t j, const size_t rest) {
 
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
-                        const VectorDouble fx2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fx2Ptr[j])
+                        const VectorDouble fx2 = remainder ? highway::LoadN(tag_double, &fx2Ptr[j], rest)
                                 : highway::LoadU(tag_double, &fx2Ptr[j]);
-                        const VectorDouble fy2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fy2Ptr[j])
+                        const VectorDouble fy2 = remainder ? highway::LoadN(tag_double, &fy2Ptr[j], rest)
                                 : highway::LoadU(tag_double, &fy2Ptr[j]);
-                        const VectorDouble fz2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
+                        const VectorDouble fz2 = remainder ? highway::LoadN(tag_double, &fz2Ptr[j], rest)
                                 : highway::LoadU(tag_double, &fz2Ptr[j]);
 
                         const VectorDouble fx2New = fx2 - fx;
                         const VectorDouble fy2New = fy2 - fy;
                         const VectorDouble fz2New = fz2 - fz;
 
-                        remainder ? highway::BlendedStore(fx2New, restMasksDouble[rest-1], tag_double, &fx2Ptr[j])
+                        remainder ? highway::StoreN(fx2New, tag_double, &fx2Ptr[j], rest)
                                 : highway::StoreU(fx2New, tag_double, &fx2Ptr[j]);
-                        remainder ? highway::BlendedStore(fy2New, restMasksDouble[rest-1], tag_double, &fy2Ptr[j])
+                        remainder ? highway::StoreN(fy2New, tag_double, &fy2Ptr[j], rest)
                                 : highway::StoreU(fy2New, tag_double, &fy2Ptr[j]);
-                        remainder ? highway::BlendedStore(fz2New, restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
+                        remainder ? highway::StoreN(fz2New, tag_double, &fz2Ptr[j], rest)
                                 : highway::StoreU(fz2New, tag_double, &fz2Ptr[j]);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
@@ -503,19 +495,20 @@ namespace mdLib {
                         const auto fxCombinedExt = highway::ZeroExtendVector(tag_double, fxCombined);
                         const auto fyCombinedExt = highway::ZeroExtendVector(tag_double, fyCombined);
                         const auto fzCombinedExt = highway::ZeroExtendVector(tag_double, fzCombined);
+
+                        const int lanes = remainder ? rest : _vecLengthDouble/2;
                     
-                        const auto mask = restMasksDouble[remainder ? rest-1 : _vecLengthDouble/2-1];
-                        VectorDouble fx2 = highway::MaskedLoad(mask, tag_double, &fx2Ptr[j]);
-                        VectorDouble fy2 = highway::MaskedLoad(mask, tag_double, &fy2Ptr[j]);
-                        VectorDouble fz2 = highway::MaskedLoad(mask, tag_double, &fz2Ptr[j]);
+                        VectorDouble fx2 = highway::LoadN(tag_double, &fx2Ptr[j], lanes);
+                        VectorDouble fy2 = highway::LoadN(tag_double, &fy2Ptr[j], lanes);
+                        VectorDouble fz2 = highway::LoadN(tag_double, &fz2Ptr[j], lanes);
 
                         auto newFx = fx2 - fxCombinedExt;
                         auto newFy = fy2 - fyCombinedExt;
                         auto newFz = fz2 - fzCombinedExt;
 
-                        highway::BlendedStore(newFx, mask, tag_double, &fx2Ptr[j]);
-                        highway::BlendedStore(newFy, mask, tag_double, &fy2Ptr[j]);
-                        highway::BlendedStore(newFz, mask, tag_double, &fz2Ptr[j]);
+                        highway::StoreN(newFx, tag_double, &fx2Ptr[j], lanes);
+                        highway::StoreN(newFy, tag_double, &fy2Ptr[j], lanes);
+                        highway::StoreN(newFz, tag_double, &fz2Ptr[j], lanes);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
                         const auto lowerFx = highway::LowerHalf(fx);
@@ -568,11 +561,11 @@ namespace mdLib {
                         fz2Ptr[j] -= highway::ReduceSum(tag_double, fz);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
-                        const VectorDouble fx2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fx2Ptr[j])
+                        const VectorDouble fx2 = remainder ? highway::LoadN(tag_double, &fx2Ptr[j], rest)
                                 : highway::LoadU(tag_double, &fx2Ptr[j]);
-                        const VectorDouble fy2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fy2Ptr[j])
+                        const VectorDouble fy2 = remainder ? highway::LoadN(tag_double, &fy2Ptr[j], rest)
                                 : highway::LoadU(tag_double, &fy2Ptr[j]);
-                        const VectorDouble fz2 = remainder ? highway::MaskedLoad(restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
+                        const VectorDouble fz2 = remainder ? highway::LoadN(tag_double, &fz2Ptr[j], rest)
                                 : highway::LoadU(tag_double, &fz2Ptr[j]);
 
                         VectorDouble slidingFx = fx;
@@ -590,11 +583,11 @@ namespace mdLib {
                         const VectorDouble fy2New = fy2 - slidingFy;
                         const VectorDouble fz2New = fz2 - slidingFz;
 
-                        remainder ? highway::BlendedStore(fx2New, restMasksDouble[rest-1], tag_double, &fx2Ptr[j])
+                        remainder ? highway::StoreN(fx2New, tag_double, &fx2Ptr[j], rest)
                                 : highway::StoreU(fx2New, tag_double, &fx2Ptr[j]);
-                        remainder ? highway::BlendedStore(fy2New, restMasksDouble[rest-1], tag_double, &fy2Ptr[j])
+                        remainder ? highway::StoreN(fy2New, tag_double, &fy2Ptr[j], rest)
                                 : highway::StoreU(fy2New, tag_double, &fy2Ptr[j]);
-                        remainder ? highway::BlendedStore(fz2New, restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
+                        remainder ? highway::StoreN(fz2New, tag_double, &fz2Ptr[j], rest)
                                 : highway::StoreU(fz2New, tag_double, &fz2Ptr[j]);
                     }
                 }
@@ -655,37 +648,39 @@ namespace mdLib {
                         const auto fzAccExt = highway::ZeroExtendVector(tag_double, fzAccCombined);
 
                         const int index = reversed ? (remainder ? 0 : i -_vecLengthDouble/2+1) : i;
-                        const auto mask = restMasksDouble[remainder ? restI-1 : _vecLengthDouble/2-1];
-                        const VectorDouble oldFx = highway::MaskedLoad(mask, tag_double, &fxPtr[index]);
-                        const VectorDouble oldFy = highway::MaskedLoad(mask, tag_double, &fyPtr[index]);
-                        const VectorDouble oldFz = highway::MaskedLoad(mask, tag_double, &fzPtr[index]);
+
+                        const int lanes = remainder ? restI : _vecLengthDouble/2;
+
+                        const VectorDouble oldFx = highway::LoadN(tag_double, &fxPtr[index], lanes);
+                        const VectorDouble oldFy = highway::LoadN(tag_double, &fyPtr[index], lanes);
+                        const VectorDouble oldFz = highway::LoadN(tag_double, &fzPtr[index], lanes);
 
                         const auto newFx = oldFx + fxAccExt;
                         const auto newFy = oldFy + fyAccExt;
                         const auto newFz = oldFz + fzAccExt;
 
-                        highway::BlendedStore(newFx, mask, tag_double, &fxPtr[index]);
-                        highway::BlendedStore(newFy, mask, tag_double, &fyPtr[index]);
-                        highway::BlendedStore(newFz, mask, tag_double, &fzPtr[index]);
+                        highway::StoreN(newFx, tag_double, &fxPtr[index], lanes);
+                        highway::StoreN(newFy, tag_double, &fyPtr[index], lanes);
+                        highway::StoreN(newFz, tag_double, &fzPtr[index], lanes);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1 || vecPattern == VectorizationPattern::pVecxVec) {
                         
-                        const VectorDouble oldFx = remainder ? highway::MaskedLoad(restMasksDouble[restI-1], tag_double, &fxPtr[i])
+                        const VectorDouble oldFx = remainder ? highway::LoadN(tag_double, &fxPtr[i], restI)
                                 : highway::LoadU(tag_double, &fxPtr[i]);
-                        const VectorDouble oldFy = remainder ? highway::MaskedLoad(restMasksDouble[restI-1], tag_double, &fyPtr[i])
+                        const VectorDouble oldFy = remainder ? highway::LoadN(tag_double, &fyPtr[i], restI)
                                 : highway::LoadU(tag_double, &fyPtr[i]);
-                        const VectorDouble oldFz = remainder ? highway::MaskedLoad(restMasksDouble[restI-1], tag_double, &fzPtr[i])
+                        const VectorDouble oldFz = remainder ? highway::LoadN(tag_double, &fzPtr[i], restI)
                                 : highway::LoadU(tag_double, &fzPtr[i]);
 
                         const VectorDouble fxNew = oldFx + fxAcc;
                         const VectorDouble fyNew = oldFy + fyAcc;
                         const VectorDouble fzNew = oldFz + fzAcc;
 
-                        remainder ? highway::BlendedStore(fxNew, restMasksDouble[restI-1], tag_double, &fxPtr[i])
+                        remainder ? highway::StoreN(fxNew, tag_double, &fxPtr[i], restI)
                                 : highway::StoreU(fxNew, tag_double, &fxPtr[i]);
-                        remainder ? highway::BlendedStore(fyNew, restMasksDouble[restI-1], tag_double, &fyPtr[i])
+                        remainder ? highway::StoreN(fyNew, tag_double, &fyPtr[i], restI)
                                 : highway::StoreU(fyNew, tag_double, &fyPtr[i]);
-                        remainder ? highway::BlendedStore(fzNew, restMasksDouble[restI-1], tag_double, &fzPtr[i])
+                        remainder ? highway::StoreN(fzNew, tag_double, &fzPtr[i], restI)
                                 : highway::StoreU(fzNew, tag_double, &fzPtr[i]);
                         
                     }
@@ -899,14 +894,11 @@ namespace mdLib {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
 
                         if constexpr (remainder) {
-                            const auto restMaskDouble = restMasksDouble[rest-1];
-                            const auto restMaskLong = restMasksLong[rest-1];
+                            x2 = highway::LoadN(tag_double, &x2Ptr[j], rest);
+                            y2 = highway::LoadN(tag_double, &y2Ptr[j], rest);
+                            z2 = highway::LoadN(tag_double, &z2Ptr[j], rest);
 
-                            x2 = highway::MaskedLoad(restMaskDouble, tag_double, &x2Ptr[j]);
-                            y2 = highway::MaskedLoad(restMaskDouble, tag_double, &y2Ptr[j]);
-                            z2 = highway::MaskedLoad(restMaskDouble, tag_double, &z2Ptr[j]);
-
-                            const VectorLong ownedStateJ = highway::MaskedLoad(restMaskLong, tag_long, &ownedStatePtr2[j]);
+                            const VectorLong ownedStateJ = highway::LoadN(tag_long, &ownedStatePtr2[j], rest);
                             ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
                         }
                         else {
@@ -920,13 +912,12 @@ namespace mdLib {
                     }
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
 
-                        const auto restMaskDouble = restMasksDouble[remainder ? rest-1 : _vecLengthDouble/2-1];
-                        const auto restMaskLong = restMasksLong[remainder ? rest-1 : _vecLengthDouble/2-1];
+                        const int lanes = remainder ? rest : _vecLengthDouble/2;
 
-                        VectorLong ownedStateJ = highway::MaskedLoad(restMaskLong, tag_long, &ownedStatePtr2[j]);
-                        x2 = highway::MaskedLoad(restMaskDouble, tag_double, &x2Ptr[j]);
-                        y2 = highway::MaskedLoad(restMaskDouble, tag_double, &y2Ptr[j]);
-                        z2 = highway::MaskedLoad(restMaskDouble, tag_double, &z2Ptr[j]);
+                        VectorLong ownedStateJ = highway::LoadN(tag_long, &ownedStatePtr2[j], lanes);
+                        x2 = highway::LoadN(tag_double, &x2Ptr[j], lanes);
+                        y2 = highway::LoadN(tag_double, &y2Ptr[j], lanes);
+                        z2 = highway::LoadN(tag_double, &z2Ptr[j], lanes);
 
                         // "broadcast" lower half to upper half
                         ownedStateJ = highway::ConcatLowerLower(tag_long, ownedStateJ, ownedStateJ);
@@ -970,14 +961,12 @@ namespace mdLib {
                     else if constexpr (vecPattern == VectorizationPattern::pVecxVec) {
                         if (j % _vecLengthDouble == 0) {
                             if constexpr (remainder) {
-                                const auto restMaskDouble = restMasksDouble[rest-1];
-                                const auto restMaskLong = restMasksLong[rest-1];
 
-                                x2 = highway::MaskedLoad(restMaskDouble, tag_double, &x2Ptr[j]);
-                                y2 = highway::MaskedLoad(restMaskDouble, tag_double, &y2Ptr[j]);
-                                z2 = highway::MaskedLoad(restMaskDouble, tag_double, &z2Ptr[j]);
+                                x2 = highway::LoadN(tag_double, &x2Ptr[j], rest);
+                                y2 = highway::LoadN(tag_double, &y2Ptr[j], rest);
+                                z2 = highway::LoadN(tag_double, &z2Ptr[j], rest);
 
-                                const VectorLong ownedStateJ = highway::MaskedLoad(restMaskLong, tag_long, &ownedStatePtr2[j]);
+                                const VectorLong ownedStateJ = highway::LoadN(tag_long, &ownedStatePtr2[j], rest);
                                 ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
                             }
                             else {
@@ -1500,8 +1489,6 @@ namespace mdLib {
                 VectorDouble _epsilon24 {highway::Zero(tag_double)};
                 VectorDouble _sigmaSquared {highway::Zero(tag_double)};
 
-                MaskDouble restMasksDouble[_vecLengthDouble-1];
-                MaskLong restMasksLong[_vecLengthDouble-1];
                 MaskDouble equalMasks[_vecLengthDouble/2];
                 MaskDouble overlapMasks[_vecLengthDouble/2];
 
