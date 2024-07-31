@@ -16,6 +16,10 @@ if (AUTOPAS_ENABLE_COVERAGE)
 
   if (NOT GCOV_EXECUTABLE OR NOT LCOV_EXECUTABLE OR NOT GENHTML_EXECUTABLE)
     message(FATAL_ERROR ${COVERAGE_REQUIREMENTS_MSG})
+    else()
+    message(STATUS "GCOV found at: "${GCOV_EXECUTABLE})
+    message(STATUS "LCOV found at: "${LCOV_EXECUTABLE})
+    message(STATUS "GENHATML found at: "${GENHTML_EXECUTABLE})
   endif ()
 
   # check for lcov >= 2.0
@@ -59,7 +63,7 @@ if (AUTOPAS_ENABLE_COVERAGE)
     COMMAND ${CMAKE_BINARY_DIR}/tests/testAutopas/runTests
     # enable branch coverage and exclude uninteresting paths from coverage reporting.
     # If we do not use --ignore-errors mismatch the coverage report aborts, since there seem to be some inconsistent entries.
-    COMMAND ${LCOV_EXECUTABLE} --ignore-errors mismatch --rc branch_coverage=1 --directory . --capture --exclude '*/tests/*' --exclude '/usr/*' --output-file coverage.info
+    COMMAND ${LCOV_EXECUTABLE} --ignore-errors mismatch --ignore-errors inconsistent --rc branch_coverage=1 --directory . --capture --exclude '*/tests/*' --exclude '/usr/*' --exclude '*/build/*' --output-file coverage.info
     # Convert .info output to html report
     COMMAND ${GENHTML_EXECUTABLE} --branch-coverage --demangle-cpp -o coverage coverage.info
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
