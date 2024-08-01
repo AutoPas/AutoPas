@@ -262,6 +262,9 @@ class AxilrodTellerFunctorAVX512
   }
 
  private:
+  /**
+   * SoA kernel using masked simd intrinsics.
+   */
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
   void SoAKernelMasked(const size_t k, const __m512d &xi, const __m512d &yi, const __m512d &zi,
                        const __m512d &xj, const __m512d &yj, const __m512d &zj,
@@ -386,7 +389,7 @@ class AxilrodTellerFunctorAVX512
     const __m512d fziPART2 = _mm512_fmadd_pd(drzij, i_ijFactor, fziPART);
     const __m512d fziPART3 = _mm512_fnmadd_pd(drzki, i_kiFactor, fziPART2);
     const __m512d fzi = _mm512_mul_pd(invdr53, fziPART3);
-    fziacc = _mm512_mask_add_pd(fziacc, mask, fzi, fziacc);  // TODO mask everywhere
+    fziacc = _mm512_mask_add_pd(fziacc, mask, fzi, fziacc);
 
     if constexpr (calculateGlobals) {
       const __m512d virialXI = _mm512_mul_pd(fxi, xi);
@@ -913,6 +916,9 @@ class AxilrodTellerFunctorAVX512
   // TODO currently not used. remove completely or keep as an option?
   // -------------------------------------------------------------
 
+  /**
+   * SoA kernel using simd gather intrinsics to load predetermined batch of particles.
+   */
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
   void SoAKernelGatherScatter(const __m512i indicesK, const __m512d &xi, const __m512d &yi,
                               const __m512d &zi, const __m512d &xj, const __m512d &yj,
@@ -1128,6 +1134,10 @@ class AxilrodTellerFunctorAVX512
     }
   }
 
+  /**
+   * SoA kernel using simd compress and alignr instructions to compute a batch of particle indices relevant for
+   * force calculation, which are then passed to SoAKernelGatherScatter.
+   */
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
   void SoAKernelCompressAlignr(__m512i &interactionIndices, int &numAssignedRegisters, const size_t k,
                                const __m512d &xi, const __m512d &yi, const __m512d &zi,
@@ -1211,6 +1221,12 @@ class AxilrodTellerFunctorAVX512
     }
   }
 
+  /**
+   * Implementation function of SoAFunctorSingle(soa, newton3)
+   *
+   * @tparam newton3
+   * @param soa
+   */
   template <bool newton3>
   void SoAFunctorSingleImplCompressAlign(autopas::SoAView<SoAArraysType> soa) {
     if (soa.size() == 0) {
@@ -1333,6 +1349,13 @@ class AxilrodTellerFunctorAVX512
     }
   }
 
+  /**
+   * Implementation function of SoAFunctorPair(soa1, soa2, newton3)
+   *
+   * @tparam newton3
+   * @param soa1
+   * @param soa2
+   */
   template <bool newton3>
   void SoAFunctorPairImplCompressAlign(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     if (soa1.size() == 0 or soa2.size() == 0) {
@@ -1533,6 +1556,14 @@ class AxilrodTellerFunctorAVX512
     }
   }
 
+  /**
+   * Implementation function of SoAFunctorTriple(soa1, soa2, soa3, newton3)
+   *
+   * @tparam newton3
+   * @param soa1
+   * @param soa2
+   * @param soa3
+   */
   template <bool newton3>
   void SoAFunctorTripleImplCompressAlign(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                                          autopas::SoAView<SoAArraysType> soa3) {
