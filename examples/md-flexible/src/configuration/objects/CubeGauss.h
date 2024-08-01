@@ -76,15 +76,15 @@ class CubeGauss : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "distribution-mean"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionMean) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionMean) << "\n";
     output << std::setw(_valueOffset) << std::left << "distribution-stddeviation"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionStdDev) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionStdDev) << "\n";
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"
-           << ":  " << _numParticles << std::endl;
+           << ":  " << _numParticles << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << "\n";
     output << Object::to_string();
     return output.str();
   }

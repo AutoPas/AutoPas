@@ -80,11 +80,11 @@ class CubeClosestPacked : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "particle-spacing"
-           << ":  " << _particleSpacing << std::endl;
+           << ":  " << _particleSpacing << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << "\n";
     output << Object::to_string();
     return output.str();
   }
