@@ -94,25 +94,17 @@ class CubeClosestPacked : public Object {
    * @param particles: The container, where the new particles get stored.
    */
   void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+    // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
+    auto particlesWrapper = autopasTools::PseudoContainer(particles);
 
-    bool evenLayer = true;
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto boxMax = _bottomLeftCorner + _boxLength;
 
-    for (double z = _bottomLeftCorner[2]; z < _topRightCorner[2]; z += _spacingLayer) {
-      double starty = evenLayer ? _bottomLeftCorner[1] : _bottomLeftCorner[1] + _yOffset;
-      bool evenRow = evenLayer;  // To ensure layers are alternating as for hexagonal close packed.
-      for (double y = starty; y < _topRightCorner[1]; y += _spacingRow) {
-        double startx = evenRow ? _bottomLeftCorner[0] : _bottomLeftCorner[0] + _xOffset;
-        for (double x = startx; x < _topRightCorner[0]; x += _particleSpacing) {
-          particle.setR({x, y, z});
-          particles.push_back(particle);
+    // dummy particle used as a template with id of the first newly generated one
+    const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-          particle.setID(particle.getID() + 1);
-        }
-        evenRow = not evenRow;
-      }
-      evenLayer = not evenLayer;
-    }
+    autopasTools::generators::ClosestPackingGenerator::fillWithParticles(
+        particlesWrapper, _bottomLeftCorner, _topRightCorner, dummyParticle, _particleSpacing);
   }
 
  private:
