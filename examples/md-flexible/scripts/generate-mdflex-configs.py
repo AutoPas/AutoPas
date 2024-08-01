@@ -76,7 +76,7 @@ def make_object(domainSize, numParticles, distribution):
                                        'particle-type-id': 0,
                                       }}}
         return cubeGauss
-    elif distribution[0] == 'closest-packed':
+    elif distribution[0] == 'closestPacked':
         objectSize = [dSize * distribution[1] for dSize in domainSize]
         objectOffset = [dSize * distribution[2] for dSize in domainSize]
         particleSpacing = ((objectSize[0] * objectSize[1] * objectSize[2] * ((3 / 4) ** (1 / 2)) * (
@@ -193,7 +193,7 @@ if __name__ == "__main__":
         'uniform-whole': ('uniform', 1, 1, 1),
         'uniform-strip': ('uniform', 0.4, 0.6, 1),
         'concentrated-gauss': ('gauss', 0.75, 0.25),
-        'concentrated-closest-packed': ('closest-packed', 0.3, 0.25),
+        'concentrated-closest-packed': ('closestPacked', 0.3, 0.25),
     }
     cutoffs = {
         'normal': 1,
