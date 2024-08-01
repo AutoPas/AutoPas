@@ -33,6 +33,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX_STS) && defined(__AVX__)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAVXSTS *);
 #endif
+extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAVX512_MASK *);
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
     autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
 //! @endcond
@@ -668,6 +669,13 @@ T Simulation::applyWithChosenFunctor(F f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX512_Mask: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+      return f(LJFunctorTypeAVX512_MASK{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error("TODO : write message.");
 #endif
     }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {

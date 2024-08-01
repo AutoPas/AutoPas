@@ -21,7 +21,6 @@
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
 #include "molecularDynamicsLibrary/LJMultisiteFunctorAVX512_Mask.h"
 #endif
-
 #else
 
 #include "molecularDynamicsLibrary/MoleculeLJ.h"
@@ -39,6 +38,8 @@
 #endif
 
 #endif
+
+#include "molecularDynamicsLibrary/LJFunctorAVX512_Mask.h"
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
@@ -125,7 +126,7 @@ using LJFunctorTypeAVX512_GS = mdLib::LJMultisiteFunctorAVX512_GS<ParticleType, 
 #if MD_FLEXIBLE_MODE == MULTISITE
 using LJFunctorTypeAVX512_MASK = mdLib::LJMultisiteFunctorAVX512_Mask<ParticleType, false, autopas::FunctorN3Modes::Both, false, true>;
 #else
-#error "Single-Site Lennard-Jones Functor does not have AVX512 support!. "
+using LJFunctorTypeAVX512_MASK = mdLib::LJFunctorAVX512_Mask<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, true>;
 #endif
 #endif
 
