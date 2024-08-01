@@ -25,5 +25,4 @@ Objects:
       bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
-no-flops                         :  true
 no-end-config                    :  true

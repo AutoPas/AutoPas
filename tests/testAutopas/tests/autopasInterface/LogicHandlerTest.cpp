@@ -10,10 +10,6 @@
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
-using LJFunctorGlobals =
-    mdLib::LJFunctor<Molecule, /* shifting */ true, /*mixing*/ false, autopas::FunctorN3Modes::Both,
-                     /*globals*/ true, /*isRelevantForTuning*/ true>;
-
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Return;
