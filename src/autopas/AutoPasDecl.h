@@ -14,6 +14,7 @@
 #include "autopas/options/AcquisitionFunctionOption.h"
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
@@ -27,7 +28,6 @@
 #include "autopas/utils/NumberSet.h"
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/WrapMPI.h"
-#include "autopas/options/EnergySensorOption.h"
 
 namespace autopas {
 
@@ -931,7 +931,7 @@ class AutoPas {
   }
 
   /**
-   * Getter for the energy sensor 
+   * Getter for the energy sensor
    * @return
    */
   [[nodiscard]] const EnergySensorOption &getEnergySensorOption() const { return _autoTunerInfo.energySensor; }
@@ -943,7 +943,6 @@ class AutoPas {
   void setEnergySensorOption(EnergySensorOption energySensorOption) {
     _autoTunerInfo.energySensor = energySensorOption;
   }
-  
 
   /**
    * Setter for the maximal Difference for the bucket distribution.

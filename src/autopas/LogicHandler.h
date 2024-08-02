@@ -1172,8 +1172,8 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", measurements.timeRebuild);
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeTotal);
   if (measurements.energyMeasurementsPossible) {
-    AutoPasLog(DEBUG, "Energy Consumption: Watts: {} Joules: {} Seconds: {} Total[J]: {}", measurements.energyWatts,
-               measurements.energyJoules, measurements.energySeconds, measurements.energyTotal);
+    AutoPasLog(DEBUG, "Energy Consumption: Watts: {} Joules: {} Seconds: {}", measurements.energyWatts,
+               measurements.energyJoules, measurements.energySeconds);
   }
   _iterationLogger.logIteration(configuration, _iteration, stillTuning, tuningTimer.getTotalTime(), measurements);
 

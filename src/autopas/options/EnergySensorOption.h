@@ -17,97 +17,56 @@ namespace autopas {
  */
 
 class EnergySensorOption : public Option<EnergySensorOption> {
-    public:
+ public:
+  /**
+   * Possible choices for energy sensor
+   */
+  enum Value {
     /**
-     * Possible choices for energy sensor
+     * No energy sensor. Used when energy measurement not available
      */
-    enum Value {
-        /**
-         * No energy sensor. Used when energy measurement not available
-         */
-        none,
-        /**
-         * Use NVML
-         */
-        nvml,
-        /**
-         * Use NVIDIA
-         */
-        nvidia,
-        /**
-         * Use ROCM
-         */
-        rocm,
-        /**
-         * Use Cray
-         */
-        cray,
-        /**
-         * Use LIKWID
-         */
-        likwid,
-        /**
-         * Use RAPL
-         */
-        rapl,
-        /**
-         * Use TEGRA
-         */
-        tegra,
-        /**
-         * Use Xilinx
-         */
-        xilinx,
-        /**
-         * Use Powersensor2
-         */
-        powersensor2,
-        /**
-         * Use PowerSensor3
-         */
-        powersensor3,
+    none,
+    /**
+     * Use LIKWID
+     */
+    likwid,
+    /**
+     * Use RAPL
+     */
+    rapl,
+  };
+
+  /**
+   * Cosntructor
+   */
+  EnergySensorOption() = default;
+
+  /**
+   * Cosntructor with selected option
+   * @param option
+   */
+  constexpr EnergySensorOption(Value option) : _value(option) {}
+
+  /**
+   * Cast to value
+   * @return
+   */
+  constexpr operator Value() const { return _value; }
+
+  /**
+   * Provide a way to iterate over the options of EnergySensorOption
+   * @return map option -> string representation
+   */
+  static std::map<EnergySensorOption, std::string> getOptionNames() {
+    return {
+        {EnergySensorOption::none, "none"},
+        {EnergySensorOption::likwid, "likwid"},
+        {EnergySensorOption::rapl, "rapl"},
     };
+  };
 
-    /**
-     * Cosntructor
-     */
-    EnergySensorOption() = default;
-
-    /**
-     * Cosntructor with selected option
-     * @param option
-     */
-    constexpr EnergySensorOption(Value option) : _value(option) {}
-
-    /**
-     * Cast to value
-     * @return
-     */
-    constexpr operator Value() const {return _value;}
-
-    /**
-     * Provide a way to iterate over the options of EnergySensorOption
-     * @return map option -> string representation
-     */
-    static std::map<EnergySensorOption, std::string> getOptionNames() {
-        return {
-            {EnergySensorOption::none, "none"},
-            {EnergySensorOption::nvml, "nvml"},
-            {EnergySensorOption::nvidia, "nvidia"},
-            {EnergySensorOption::rocm, "rocm"},
-            {EnergySensorOption::cray, "cray"},
-            {EnergySensorOption::likwid, "likwid"},
-            {EnergySensorOption::rapl, "rapl"},
-            {EnergySensorOption::tegra, "tgera"},
-            {EnergySensorOption::xilinx, "xilinx"},
-            {EnergySensorOption::powersensor2, "powersensor2"},
-            {EnergySensorOption::powersensor3, "powersensor3"},
-        };
-    };
-
-
-    private:
-    Value _value{Value(-1)};
+ private:
+  Value _value{Value(-1)};
 };
 
-}
+}  // namespace autopas

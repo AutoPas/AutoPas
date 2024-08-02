@@ -272,8 +272,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         expected = "Exactly one energy sensor out of the possible options.";
         description = config.energySensorOption.description;
         const auto parsedOptions = autopas::EnergySensorOption::parseOptions(
-          parseSequenceOneElementExpected(node[key], "Pass Exactly one energy sensor!")
-        );
+            parseSequenceOneElementExpected(node[key], "Pass Exactly one energy sensor!"));
         config.energySensorOption.value = *parsedOptions.begin();
       } else if (key == config.pauseSimulationDuringTuning.name) {
         expected = "Boolean Value";

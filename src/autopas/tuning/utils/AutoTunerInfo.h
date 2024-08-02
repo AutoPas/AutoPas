@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "autopas/options/EnergySensorOption.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TuningMetricOption.h"
-#include "autopas/options/EnergySensorOption.h"
 namespace autopas {
 
 /**
@@ -32,7 +32,7 @@ struct AutoTunerInfo {
    */
   unsigned int maxSamples{3};
   /**
-   * Used energy sensor of energy metric selected 
+   * Used energy sensor of energy metric selected
    */
   EnergySensorOption energySensor{EnergySensorOption::none};
 };

@@ -292,16 +292,13 @@ bool AutoTuner::willRebuildNeighborLists() const {
   return (iterationBaseline % iterationsPerRebuild) == 0;
 }
 
-bool AutoTuner::resetEnergy() {
-    return _energySensor.startMeasurement();
-
-}
+bool AutoTuner::resetEnergy() { return _energySensor.startMeasurement(); }
 
 std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
-    _energySensor.endMeasurement();
-  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getSeconds(), _energySensor.getTotal()};
+  _energySensor.endMeasurement();
+  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getSeconds(),
+          _energySensor.getNanoJoules()};
 }
-
 
 size_t AutoTuner::getCurrentNumSamples() const {
   return _samplesNotRebuildingNeighborLists.size() + _samplesRebuildingNeighborLists.size();
@@ -386,5 +383,5 @@ bool AutoTuner::inTuningPhase() const {
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
-bool AutoTuner::canMeasureEnergy()  { return _energySensor.getOption() != EnergySensorOption::none; }
+bool AutoTuner::canMeasureEnergy() { return _energySensor.getOption() != EnergySensorOption::none; }
 }  // namespace autopas

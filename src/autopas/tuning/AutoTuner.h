@@ -17,10 +17,10 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 #include "autopas/tuning/tuningStrategy/TuningStrategyInterface.h"
 #include "autopas/tuning/utils/AutoTunerInfo.h"
+#include "autopas/utils/EnergySensor.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/logging/TuningDataLogger.h"
 #include "autopas/utils/logging/TuningResultLogger.h"
-#include "autopas/utils/EnergySensor.h"
 
 namespace autopas {
 
@@ -220,10 +220,9 @@ class AutoTuner {
    * Returns whether the AutoTuner can take energy measurements.
    * @return
    */
-  bool canMeasureEnergy() ;
+  bool canMeasureEnergy();
 
  private:
-
   /**
    * Sensor for energy measurement
    */
@@ -293,7 +292,6 @@ class AutoTuner {
    * Metric to use for tuning.
    */
   TuningMetricOption _tuningMetric;
-  
 
   /**
    * Is energy measurement possible.

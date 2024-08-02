@@ -55,6 +55,5 @@ struct IterationMeasurements {
    * Total energy consumed so far
    */
   long energyTotal{};
-
 };
 }  // namespace autopas
