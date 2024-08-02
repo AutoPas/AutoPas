@@ -10,7 +10,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 
@@ -89,9 +89,9 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVETwoCells(bool newton3, bool do
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell1SVE, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2SVE, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
   if (doDeleteSomeParticles) {
@@ -167,7 +167,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {
@@ -227,7 +227,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
   constexpr size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {
@@ -301,7 +301,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEAoS(bool newton3, bool doDelet
   constexpr size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {

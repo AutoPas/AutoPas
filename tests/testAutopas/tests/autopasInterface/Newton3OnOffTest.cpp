@@ -10,7 +10,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/logging/Logger.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 using ::testing::_;
 using ::testing::Combine;
@@ -91,7 +91,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   autopas::ParticleContainerInterface<Particle> &container = containerSelector.getCurrentContainer();
 
   Molecule defaultParticle;
-  autopasTools::generators::RandomGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(),
+  autopasTools::generators::UniformGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(),
                                                                container.getBoxMax(), 100);
   // Do not add any halo particles to this test!
   // Given an owned particle p1 and a halo particle p2 the following interactions are necessary:

@@ -7,7 +7,7 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 /**
  * Class describing an cuboid object filled with uniformly randomly distributed particles.
@@ -81,7 +81,7 @@ class CubeUniform : public Object {
     // dummy particle used as a template with id of the first newly generated one
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-    autopasTools::generators::RandomGenerator::fillWithParticles(particlesWrapper, dummyParticle, _bottomLeftCorner,
+    autopasTools::generators::UniformGenerator::fillWithParticles(particlesWrapper, dummyParticle, _bottomLeftCorner,
                                                                  boxMax, _numParticles);
   }
 

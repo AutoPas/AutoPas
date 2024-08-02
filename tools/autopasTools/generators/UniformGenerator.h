@@ -1,5 +1,5 @@
 /**
- * @file RandomGenerator.h
+ * @file UniformGenerator.h
  * @author seckler
  * @date 22.05.18
  */
@@ -15,8 +15,7 @@ namespace autopasTools::generators {
 /**
  * Generator class for uniform distributions
  */
-class RandomGenerator {
- private:
+class UniformGenerator {
   /**
    * Detail class for fillWithHaloParticles
    * @tparam Container
@@ -96,7 +95,7 @@ class RandomGenerator {
 };
 
 template <class Container, class Particle>
-void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
+void UniformGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                         unsigned long numParticles, unsigned int seed) {
   std::mt19937 generator(seed);
@@ -110,7 +109,7 @@ void RandomGenerator::fillWithParticles(Container &container, const Particle &de
 }
 
 template <class Container, class Particle, class HaloAddFunction>
-void RandomGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
+void UniformGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
                                             unsigned long numParticles, const HaloAddFunction &haloAddFunction,
                                             unsigned int seed) {
   std::mt19937 generator(seed);

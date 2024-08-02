@@ -1,16 +1,16 @@
 /**
- * @file RandomGenerator.cpp
+ * @file UniformGenerator.cpp
  * @author seckler
  * @date 22.05.18
  */
 
-#include "RandomGenerator.h"
-
 #include <random>
+
+#include "UniformGenerator.h"
 
 namespace autopasTools::generators {
 
-std::array<double, 3> RandomGenerator::randomPosition(std::mt19937 &generator, const std::array<double, 3> &boxMin,
+std::array<double, 3> UniformGenerator::randomPosition(std::mt19937 &generator, const std::array<double, 3> &boxMin,
                                                       const std::array<double, 3> &boxMax) {
   std::array<std::uniform_real_distribution<double>, 3> distributions = {
       std::uniform_real_distribution<double>{boxMin[0], boxMax[0]},
