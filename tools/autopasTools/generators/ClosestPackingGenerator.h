@@ -27,7 +27,7 @@ namespace autopasTools::generators::ClosestPackingGenerator {
  * @param spacing Distance between all neighboring particles
  */
 template <class Container>
-static void fillWithParticles(Container &container, const std::array<double, 3> &boxMin,
+void fillWithParticles(Container &container, const std::array<double, 3> &boxMin,
                               const std::array<double, 3> &boxMax,
                               const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
                                   typename autopas::utils::ParticleTypeTrait<Container>::value(),

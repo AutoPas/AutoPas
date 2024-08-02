@@ -20,7 +20,7 @@ namespace autopasTools::generators::GaussianGenerator {
  * Maximum number of attempts the random generator gets to find a valid position before considering the input to be
  * bad
  */
-constexpr static size_t _maxAttempts = 100;
+constexpr size_t _maxAttempts = 100;
 
 /**
  * Fills any container (also AutoPas object) with randomly 3D gaussian distributed particles.
