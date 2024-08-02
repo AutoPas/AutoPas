@@ -67,7 +67,7 @@ Objects:
       particle-type-id               :  0
   CubeGauss:
     0:
-      distribution-mean              :  [2, 2, 2]
+      distribution-mean              :  [17, 17, 17]
       distribution-stddeviation      :  [2, 2, 2]
       numberOfParticles              :  100
       box-length                     :  [8, 8, 8]
