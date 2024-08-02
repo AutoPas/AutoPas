@@ -37,8 +37,9 @@ TEST_P(AutoPasAllContainersTest, addParticlesTest) {
   // generate some random molecules
   std::vector<Molecule> mols;
   mols.reserve(numMols);
+  std::mt19937 generator(42);
   for (size_t i = 0; i < numMols; ++i) {
-    mols.emplace_back(autopasTools::generators::UniformGenerator::randomPosition(boxMin, boxMax),
+    mols.emplace_back(autopasTools::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax),
                       std::array<double, 3>{0., 0., 0.}, i, 0);
   }
 

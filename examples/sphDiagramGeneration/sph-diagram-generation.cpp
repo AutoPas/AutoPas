@@ -20,14 +20,14 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 void addParticles(AutoPasContainer &sph_system, int numParticles) {
   // Place SPH particles
 
-  srand(42);  // fixed seedpoint
+  std::mt19937 generator(42);
 
   std::array<double, 3> boxMin(sph_system.getBoxMin()), boxMax(sph_system.getBoxMax());
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    Particle particle(autopasTools::generators::UniformGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id,
-                      0.75, 0.012, 0.);
+    Particle particle(autopasTools::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax),
+                      {0., 0., 0.}, id, 0.75, 0.012, 0.);
     sph_system.addParticle(particle);
   }
 
