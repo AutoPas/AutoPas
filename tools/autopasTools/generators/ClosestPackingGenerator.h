@@ -27,11 +27,10 @@ namespace autopasTools::generators::ClosestPackingGenerator {
  * @param spacing Distance between all neighboring particles
  */
 template <class Container>
-void fillWithParticles(Container &container, const std::array<double, 3> &boxMin,
-                              const std::array<double, 3> &boxMax,
-                              const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
-                                  typename autopas::utils::ParticleTypeTrait<Container>::value(),
-                              const double spacing = 1.) {
+void fillWithParticles(Container &container, const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                       const typename autopas::utils::ParticleTypeTrait<Container>::value &defaultParticle =
+                           typename autopas::utils::ParticleTypeTrait<Container>::value(),
+                       const double spacing = 1.) {
   // Spacing in y direction when only moving 60° on the unit circle. Or the height in an equilateral triangle.
   const double spacingRow = spacing * sqrt(3. / 4.);
   // Spacing in z direction. Height in an equilateral tetraeder.
