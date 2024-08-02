@@ -4,9 +4,9 @@
  * @date 22.05.18
  */
 
-#include <random>
-
 #include "UniformGenerator.h"
+
+#include <random>
 
 namespace autopasTools::generators {
 

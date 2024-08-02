@@ -15,84 +15,69 @@ namespace autopasTools::generators {
 /**
  * Generator class for uniform distributions
  */
-class UniformGenerator {
-  /**
-   * Detail class for fillWithHaloParticles
-   * @tparam Container
-   * @tparam Particle
-   */
-  template <class Container, class Particle>
-  struct detail {
-    /**
-     * Default function to add halo particles to containers, uses function addHaloParticle().
-     */
-    constexpr static auto addHaloParticleF = [](Container &c, const Particle &p) { c.addHaloParticle(p); };
-  };
+namespace UniformGenerator {
+/**
+ * Generate a random position within a given box.
+ * @param generator Random engine
+ * @param boxMin
+ * @param boxMax
+ * @return 3D array with random values
+ */
+std::array<double, 3> randomPosition(std::mt19937 &generator, const std::array<double, 3> &boxMin,
+                                     const std::array<double, 3> &boxMax);
 
- public:
-  /**
-   * Generate a random position within a given box.
-   * @param generator Random engine
-   * @param boxMin
-   * @param boxMax
-   * @return 3D array with random values
-   */
-  static std::array<double, 3> randomPosition(std::mt19937 &generator, const std::array<double, 3> &boxMin,
-                                              const std::array<double, 3> &boxMax);
+/**
+ * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
+ * Particle properties will be used from the default particle. Particle IDs start from the default particle.
+ * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+ * @tparam Particle Type of the default particle.
+ * @param container
+ * @param defaultParticle
+ * @param boxMin
+ * @param boxMax
+ * @param numParticles
+ * @param seed
+ */
+template <class Container, class Particle>
+void fillWithParticles(Container &container, const Particle &defaultParticle, const std::array<double, 3> &boxMin,
+                       const std::array<double, 3> &boxMax, unsigned long numParticles = 100ul, unsigned int seed = 42);
 
-  /**
-   * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
-   * Particle properties will be used from the default particle. Particle IDs start from the default particle.
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
-   * @tparam Particle Type of the default particle.
-   * @param container
-   * @param defaultParticle
-   * @param boxMin
-   * @param boxMax
-   * @param numParticles
-   * @param seed
-   */
-  template <class Container, class Particle>
-  static void fillWithParticles(Container &container, const Particle &defaultParticle,
-                                const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                unsigned long numParticles = 100ul, unsigned int seed = 42);
+/**
+ * Fills the halo of a container (also AutoPas object) with randomly uniformly distributed particles.
+ * Use haloAddFunction to specify how to add particles to the container!
+ * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+ * @tparam Particle Type of the default particle.
+ * @tparam HaloAddFunction function with signature void(Container&, Particle)
+ * @param container
+ * @param defaultParticle
+ * @param haloWidth
+ * @param numParticles
+ * @param haloAddFunction the function of type HaloAddfunction that adds a halo particle to the container.
+ * @param seed
+ */
+template <class Container, class Particle, class HaloAddFunction>
+void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
+                           unsigned long numParticles, const HaloAddFunction &haloAddFunction, unsigned int seed = 42);
 
-  /**
-   * Fills the halo of a container (also AutoPas object) with randomly uniformly distributed particles.
-   * Use haloAddFunction to specify how to add particles to the container!
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
-   * @tparam Particle Type of the default particle.
-   * @tparam HaloAddFunction function with signature void(Container&, Particle)
-   * @param container
-   * @param defaultParticle
-   * @param haloWidth
-   * @param numParticles
-   * @param haloAddFunction the function of type HaloAddfunction that adds a halo particle to the container.
-   * @param seed
-   */
-  template <class Container, class Particle, class HaloAddFunction>
-  static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                    unsigned long numParticles, const HaloAddFunction &haloAddFunction,
-                                    unsigned int seed = 42);
-
-  /**
-   * Fills the halo of a container with randomly uniformly distributed particles.
-   * Container needs to support addHaloParticle(). If it does not support this, please use the version above.
-   * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
-   * @tparam Particle Type of the default particle.
-   * @param container
-   * @param defaultParticle
-   * @param haloWidth
-   * @param numParticles
-   * @param seed
-   */
-  template <class Container, class Particle>
-  static void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                    unsigned long numParticles, unsigned int seed = 42) {
-    fillWithHaloParticles(container, defaultParticle, haloWidth, numParticles,
-                          detail<Container, Particle>::addHaloParticleF, seed);
-  }
-};
+/**
+ * Fills the halo of a container with randomly uniformly distributed particles.
+ * Container needs to support addHaloParticle(). If it does not support this, please use the version above.
+ * @tparam Container Arbitrary container class that needs to support getBoxMax() and addParticle().
+ * @tparam Particle Type of the default particle.
+ * @param container
+ * @param defaultParticle
+ * @param haloWidth
+ * @param numParticles
+ * @param seed
+ */
+template <class Container, class Particle>
+void fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
+                           unsigned long numParticles, unsigned int seed = 42) {
+  fillWithHaloParticles(
+      container, defaultParticle, haloWidth, numParticles,
+      [](Container &c, const Particle &p) { c.addHaloParticle(p); }, seed);
+}
+};  // namespace UniformGenerator
 
 template <class Container, class Particle>
 void UniformGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,

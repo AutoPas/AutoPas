@@ -350,7 +350,7 @@ void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, b
   // sanity check for underflow
   if (maxBarWidth > terminalWidth) {
     std::cerr << "Warning! Terminal width appears to be too small or could not be read. Disabling progress bar."
-              << '\n';
+              << std::endl;
     _configuration.dontShowProgressBar.value = true;
     return;
   }

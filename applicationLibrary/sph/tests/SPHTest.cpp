@@ -222,9 +222,9 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSSingleCell) {
   {
     sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
-                                                                 {1., 1., 1.}, 30);
+                                                                  {1., 1., 1.}, 30);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
-                                                                 {1., 1., 1.}, 30);
+                                                                  {1., 1., 1.}, 30);
   }
 
   // declare functor
@@ -271,9 +271,9 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
   {
     sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA, defaultSphParticle, {0., 0., 0.},
-                                                                 {1., 1., 1.}, 30);
+                                                                  {1., 1., 1.}, 30);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS, defaultSphParticle, {0., 0., 0.},
-                                                                 {1., 1., 1.}, 30);
+                                                                  {1., 1., 1.}, 30);
   }
 
   // simulate density functor call by setting density to sth. between 0 and 1
@@ -344,13 +344,13 @@ TEST_F(SPHTest, testSPHCalcDensityFunctorSoAvsAoSCellPair) {
   {
     sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
-                                                                 {.5, 1., 1.}, 30);
+                                                                  {.5, 1., 1.}, 30);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
-                                                                 {.5, 1., 1.}, 30);
+                                                                  {.5, 1., 1.}, 30);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
-                                                                 {1., 1., 1.}, 20);
+                                                                  {1., 1., 1.}, 20);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
-                                                                 {1., 1., 1.}, 20);
+                                                                  {1., 1., 1.}, 20);
   }
 
   // declare functor
@@ -407,13 +407,13 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSCellPair) {
   {
     sphLib::SPHParticle defaultSphParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5, 0.7, 0.6);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA1, defaultSphParticle, {0., 0., 0.},
-                                                                 {.5, 1., 1.}, 30);
+                                                                  {.5, 1., 1.}, 30);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS1, defaultSphParticle, {0., 0., 0.},
-                                                                 {.5, 1., 1.}, 30);
+                                                                  {.5, 1., 1.}, 30);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingSoA2, defaultSphParticle, {0.5, 0., 0.},
-                                                                 {1., 1., 1.}, 20);
+                                                                  {1., 1., 1.}, 20);
     autopasTools::generators::UniformGenerator::fillWithParticles(cellUsingAoS2, defaultSphParticle, {0.5, 0., 0.},
-                                                                 {1., 1., 1.}, 20);
+                                                                  {1., 1., 1.}, 20);
   }
 
   // simulate density functor call by setting density to sth. between 0 and 1
@@ -702,8 +702,8 @@ void testVerLetVsLC(FunctorType &fnctr, InitType init, CheckType check, autopas:
 
   sphLib::SPHParticle defaultSPHParticle({0., 0., 0.}, {1., .5, .25}, 0, 2.5,
                                          cutoff / sphLib::SPHKernels::getKernelSupportRadius(), 0.6);
-  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, defaultSPHParticle, verletLists.getBoxMin(),
-                                                               verletLists.getBoxMax(), numMolecules);
+  autopasTools::generators::UniformGenerator::fillWithParticles(
+      verletLists, defaultSPHParticle, verletLists.getBoxMin(), verletLists.getBoxMax(), numMolecules);
 
   // init particles in verlet list container
   init(verletLists);
