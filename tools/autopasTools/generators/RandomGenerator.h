@@ -7,8 +7,7 @@
 #pragma once
 
 #include <array>
-#include <cmath>
-#include <functional>
+#include <random>
 
 #include "autopas/utils/inBox.h"
 
@@ -18,14 +17,6 @@ namespace autopasTools::generators {
  */
 class RandomGenerator {
  private:
-  /**
-   * Simple random function
-   * @param fMin
-   * @param fMax
-   * @return double between fMin and fMax
-   */
-  static double fRand(double fMin, double fMax);
-
   /**
    * Detail class for fillWithHaloParticles
    * @tparam Container
@@ -42,11 +33,13 @@ class RandomGenerator {
  public:
   /**
    * Generate a random position within a given box.
+   * @param generator Random engine
    * @param boxMin
    * @param boxMax
    * @return 3D array with random values
    */
-  static std::array<double, 3> randomPosition(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax);
+  static std::array<double, 3> randomPosition(std::mt19937 &generator, const std::array<double, 3> &boxMin,
+                                              const std::array<double, 3> &boxMax);
 
   /**
    * Fills any container (also AutoPas object) with randomly uniformly distributed particles.
@@ -106,11 +99,11 @@ template <class Container, class Particle>
 void RandomGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
                                         unsigned long numParticles, unsigned int seed) {
-  srand(seed);  // fixed seedpoint
+  std::mt19937 generator(seed);
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
     Particle particle(defaultParticle);
-    particle.setR(randomPosition(boxMin, boxMax));
+    particle.setR(randomPosition(generator, boxMin, boxMax));
     particle.setID(i);
     container.addParticle(particle);
   }
@@ -120,7 +113,7 @@ template <class Container, class Particle, class HaloAddFunction>
 void RandomGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
                                             unsigned long numParticles, const HaloAddFunction &haloAddFunction,
                                             unsigned int seed) {
-  srand(seed);  // fixed seedpoint
+  std::mt19937 generator(seed);
 
   auto haloBoxMin = container.getBoxMin();
   auto haloBoxMax = container.getBoxMax();
@@ -135,7 +128,7 @@ void RandomGenerator::fillWithHaloParticles(Container &container, const Particle
     auto pos = randomPosition(haloBoxMin, haloBoxMax);
     // we only want to add particles not in the actual box
     while (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) {
-      pos = randomPosition(haloBoxMin, haloBoxMax);
+      pos = randomPosition(generator, haloBoxMin, haloBoxMax);
     }
     Particle particle(defaultParticle);
     particle.setR(pos);

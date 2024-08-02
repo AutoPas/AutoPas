@@ -6,16 +6,21 @@
 
 #include "RandomGenerator.h"
 
-double autopasTools::generators::RandomGenerator::fRand(double fMin, double fMax) {
-  double f = static_cast<double>(rand()) / RAND_MAX;
-  return fMin + f * (fMax - fMin);
-}
+#include <random>
 
-std::array<double, 3> autopasTools::generators::RandomGenerator::randomPosition(const std::array<double, 3> &boxMin,
-                                                                                const std::array<double, 3> &boxMax) {
-  std::array<double, 3> r{0, 0, 0};
+namespace autopasTools::generators {
+
+std::array<double, 3> RandomGenerator::randomPosition(std::mt19937 &generator, const std::array<double, 3> &boxMin,
+                                                      const std::array<double, 3> &boxMax) {
+  std::array<std::uniform_real_distribution<double>, 3> distributions = {
+      std::uniform_real_distribution<double>{boxMin[0], boxMax[0]},
+      std::uniform_real_distribution<double>{boxMin[1], boxMax[1]},
+      std::uniform_real_distribution<double>{boxMin[2], boxMax[2]},
+  };
+  std::array<double, 3> r{};
   for (int d = 0; d < 3; ++d) {
-    r[d] = fRand(boxMin[d], boxMax[d]);
+    r[d] = distributions[d](generator);
   }
   return r;
 }
+}  // namespace autopasTools::generators
