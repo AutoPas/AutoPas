@@ -109,7 +109,7 @@ void UniformGenerator::fillWithHaloParticles(Container &container, const Particl
   }
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
-    auto pos = randomPosition(haloBoxMin, haloBoxMax);
+    auto pos = randomPosition(generator, haloBoxMin, haloBoxMax);
     // we only want to add particles not in the actual box
     while (autopas::utils::inBox(pos, container.getBoxMin(), container.getBoxMax())) {
       pos = randomPosition(generator, haloBoxMin, haloBoxMax);
