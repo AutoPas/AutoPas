@@ -328,9 +328,9 @@ TEST_P(VerletListsTest, SoAvsAoSLJ) {
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
-                                                               verletLists1.getBoxMax(), 100);
+                                                                verletLists1.getBoxMax(), 100);
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
-                                                               verletLists2.getBoxMax(), 100);
+                                                                verletLists2.getBoxMax(), 100);
   LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
   autopas::VLListIterationTraversal<FMCell, LJFunctorType<>> verletTraversal1(&ljFunctor,

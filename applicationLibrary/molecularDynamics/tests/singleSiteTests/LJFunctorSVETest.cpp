@@ -168,7 +168,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEOneCell(bool newton3, bool doD
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     for (auto &particle : cellSVE) {
@@ -228,7 +228,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEVerlet(bool newton3, bool doDe
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     // mark some particles as deleted to test if the functor handles them correctly
@@ -302,7 +302,7 @@ void LJFunctorSVETest::testLJFunctorVSLJFunctorSVEAoS(bool newton3, bool doDelet
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
   autopasTools::generators::UniformGenerator::fillWithParticles(cellSVE, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+                                                                numParticles);
 
   if (doDeleteSomeParticles) {
     // mark some particles as deleted to test if the functor handles them correctly

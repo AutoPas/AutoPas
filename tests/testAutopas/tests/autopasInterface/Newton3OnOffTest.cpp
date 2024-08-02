@@ -92,7 +92,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   Molecule defaultParticle;
   autopasTools::generators::UniformGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(),
-                                                               container.getBoxMax(), 100);
+                                                                container.getBoxMax(), 100);
   // Do not add any halo particles to this test!
   // Given an owned particle p1 and a halo particle p2 the following interactions are necessary:
   // Newton3   : p1 <-> p2

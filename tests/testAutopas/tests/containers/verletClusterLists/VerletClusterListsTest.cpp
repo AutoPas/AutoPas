@@ -334,7 +334,7 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
                                                     clusterSize);
 
   autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, autopas::Particle{}, boxMin, boxMax,
-                                                               numParticles);
+                                                                numParticles);
 
   CollectParticlesPerThreadFunctor functor;
   ColoringTraversalWithColorChangeNotify traversal(&functor, clusterSize,

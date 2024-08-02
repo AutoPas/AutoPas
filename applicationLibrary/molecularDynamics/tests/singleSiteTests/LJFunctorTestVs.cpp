@@ -26,9 +26,9 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   FMCell cell1NoPPL;
   FMCell cell2NoPPL;
   autopasTools::generators::UniformGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
-                                                               numParticlesPerCell, 42);
+                                                                numParticlesPerCell, 42);
   autopasTools::generators::UniformGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
-                                                               numParticlesPerCell, 43);
+                                                                numParticlesPerCell, 43);
 
   funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer, 0, /*skipSoAResize*/ false);
   funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer, 0, /*skipSoAResize*/ false);

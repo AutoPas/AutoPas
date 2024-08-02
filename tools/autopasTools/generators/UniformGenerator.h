@@ -81,8 +81,8 @@ void fillWithHaloParticles(Container &container, const Particle &defaultParticle
 
 template <class Container, class Particle>
 void UniformGenerator::fillWithParticles(Container &container, const Particle &defaultParticle,
-                                        const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                                        unsigned long numParticles, unsigned int seed) {
+                                         const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
+                                         unsigned long numParticles, unsigned int seed) {
   std::mt19937 generator(seed);
 
   for (unsigned long i = defaultParticle.getID(); i < defaultParticle.getID() + numParticles; ++i) {
@@ -95,8 +95,8 @@ void UniformGenerator::fillWithParticles(Container &container, const Particle &d
 
 template <class Container, class Particle, class HaloAddFunction>
 void UniformGenerator::fillWithHaloParticles(Container &container, const Particle &defaultParticle, double haloWidth,
-                                            unsigned long numParticles, const HaloAddFunction &haloAddFunction,
-                                            unsigned int seed) {
+                                             unsigned long numParticles, const HaloAddFunction &haloAddFunction,
+                                             unsigned int seed) {
   std::mt19937 generator(seed);
 
   auto haloBoxMin = container.getBoxMin();

@@ -82,7 +82,7 @@ class CubeUniform : public Object {
     const ParticleType dummyParticle = getDummyParticle(particles.size());
 
     autopasTools::generators::UniformGenerator::fillWithParticles(particlesWrapper, dummyParticle, _bottomLeftCorner,
-                                                                 boxMax, _numParticles);
+                                                                  boxMax, _numParticles);
   }
 
  private:
