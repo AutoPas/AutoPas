@@ -538,6 +538,16 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.tuningMetricOption.value = *parsedOptions.begin();
         break;
       }
+      case decltype(config.energySensorOption)::getoptChar: {
+        auto parsedOptions = autopas::EnergySensorOption::parseOptions(strArg);
+        if (parsedOptions.size() != 1) {
+          cerr << "Pass exactly one energy sensor option." << endl
+               << "Passed: " << strArg << endl
+               << "Parsed: " << autopas::utils::ArrayUtils::to_string(parsedOptions) << endl;
+          displayHelp = true;
+        }
+        config.energySensorOption.value = *parsedOptions.begin();
+      }
       case decltype(config.ruleFilename)::getoptChar: {
         config.ruleFilename.value = optarg;
         if (not checkFileExists(optarg)) {
