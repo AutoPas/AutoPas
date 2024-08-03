@@ -64,7 +64,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
       config.functorOption,
-      config.vecPatternOption,
+      config.vecPatternOptions,
       config.generatorOption,
       config.globalForce,
       config.iterations,
@@ -300,7 +300,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
-      case decltype(config.vecPatternOption)::getoptChar: {
+      case decltype(config.vecPatternOptions)::getoptChar: {
         // todo : implement
         break;
       }

@@ -57,9 +57,11 @@ class BayesianSearch final : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
+      size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
-      size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()());
+      size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()(),
+      const std::set<VectorizationPatternOption> &allowedVecPatternOptions = VectorizationPatternOption::getAllOptions());
 
   TuningStrategyOption getOptionType() override;
 
@@ -92,6 +94,7 @@ class BayesianSearch final : public TuningStrategyInterface {
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;
+  std::vector<VectorizationPatternOption> _vecPatternOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;
   FeatureVectorEncoder _encoder;

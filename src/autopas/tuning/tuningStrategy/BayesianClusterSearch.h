@@ -77,9 +77,11 @@ class BayesianClusterSearch : public TuningStrategyInterface {
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
       const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions = LoadEstimatorOption::getAllOptions(),
       const std::set<DataLayoutOption> &allowedDataLayoutOptions = DataLayoutOption::getAllOptions(),
-      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(), size_t maxEvidence = 10,
+      const std::set<Newton3Option> &allowedNewton3Options = Newton3Option::getAllOptions(),
+      size_t maxEvidence = 10,
       AcquisitionFunctionOption predAcqFunction = AcquisitionFunctionOption::upperConfidenceBound,
-      const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()());
+      const std::string &outputSuffix = "", size_t predNumLHSamples = 50, unsigned long seed = std::random_device()(),
+      const std::set<VectorizationPatternOption> &allowedVecPatternOptions = VectorizationPatternOption::getAllOptions());
 
   ~BayesianClusterSearch() override;
 
@@ -122,6 +124,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;
+  std::vector<VectorizationPatternOption> _vecPatternOptions;
   std::vector<DataLayoutOption> _dataLayoutOptions;
   std::vector<Newton3Option> _newton3Options;
   std::unique_ptr<NumberSet<double>> _cellSizeFactors;

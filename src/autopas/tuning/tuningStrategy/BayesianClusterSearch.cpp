@@ -18,8 +18,10 @@ autopas::BayesianClusterSearch::BayesianClusterSearch(const std::set<ContainerOp
                                                       const std::set<Newton3Option> &allowedNewton3Options,
                                                       size_t maxEvidence, AcquisitionFunctionOption predAcqFunction,
                                                       const std::string &outputSuffix, size_t predNumLHSamples,
-                                                      unsigned long seed)
+                                                      unsigned long seed,
+                                                      const std::set<VectorizationPatternOption> &allowedVecPatternOptions)
     : _containerOptionsSet(allowedContainerOptions),
+      _vecPatternOptions(allowedVecPatternOptions.begin(), allowedVecPatternOptions.end()),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
@@ -127,7 +129,7 @@ bool autopas::BayesianClusterSearch::searchSpaceIsEmpty() const {
 
 void autopas::BayesianClusterSearch::updateOptions() {
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, _vecPatternOptions);
 
   auto newRestrictions = _encoder.getDiscreteRestrictions();
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));

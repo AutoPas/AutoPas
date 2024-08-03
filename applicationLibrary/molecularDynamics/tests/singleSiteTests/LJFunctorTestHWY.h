@@ -22,13 +22,10 @@ class LJFunctorTestHWY : public AutoPasTestBase, public ::testing::WithParamInte
 
   constexpr static double _maxError = 1e-12;
 
-  template <VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
-  void testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
+  void testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews, VectorizationPattern pattern);
 
-  template <VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
-  void testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews);
+  void testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool doDeleteSomeParticles, bool useUnalignedViews, VectorizationPattern pattern);
 
-  template <VectorizationPattern vecPattern = VectorizationPattern::p1xVec>
   void testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool doDeleteSomeParticles);
 
   void testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDeleteSomeParticles);

@@ -185,6 +185,7 @@ SerializedConfiguration serializeConfiguration(Configuration configuration) {
   config[3] = castToByte(configuration.dataLayout);
   config[4] = castToByte(configuration.newton3);
   std::memcpy(&config[5], &configuration.cellSizeFactor, sizeof(double));
+  config[6] = castToByte(configuration.vecPattern);
   return config;
 }
 
@@ -206,7 +207,8 @@ Configuration deserializeConfiguration(SerializedConfiguration config) {
   std::memcpy(&cellSizeFactor, &config[5], sizeof(double));
   return {static_cast<ContainerOption::Value>(config[0]),  cellSizeFactor,
           static_cast<TraversalOption::Value>(config[1]),  static_cast<LoadEstimatorOption::Value>(config[2]),
-          static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4])};
+          static_cast<DataLayoutOption::Value>(config[3]), static_cast<Newton3Option::Value>(config[4]),
+          static_cast<VectorizationPatternOption::Value>(config[6])};
 }
 
 std::vector<Configuration> deserializeConfigurations(const std::vector<std::byte> &configurationsSerialized) {

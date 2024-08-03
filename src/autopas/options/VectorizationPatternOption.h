@@ -41,11 +41,11 @@ namespace autopas {
 
             static std::map<VectorizationPatternOption, std::string> getOptionNames() {
                 return {
-                    { VectorizationPatternOption::p1xVec, "1 x Vector Length"},
-                    { VectorizationPatternOption::p2xVecDiv2, "2 x Vector Length / 2"},
-                    { VectorizationPatternOption::pVecDiv2x2, "Vector Length / 2 x 2"},
-                    { VectorizationPatternOption::pVecx1, "Vector Length x 1"},
-                    { VectorizationPatternOption::pVecxVec, "Vector Length x Vector Length"},
+                    { VectorizationPatternOption::p1xVec, "1xVectorLength"},
+                    { VectorizationPatternOption::p2xVecDiv2, "2xVectorLengthDiv2"},
+                    { VectorizationPatternOption::pVecDiv2x2, "VectorLengthDiv2x2"},
+                    { VectorizationPatternOption::pVecx1, "VectorLengthx1"},
+                    { VectorizationPatternOption::pVecxVec, "VectorLengthxVectorLength"},
                 };
             }
         private:

@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
 
@@ -222,6 +223,8 @@ class Functor {
    * @return
    */
   double getCutoff() const { return _cutoff; }
+
+  virtual void setVecPattern(const VectorizationPatternOption::Value vecPattern) {}
 
  private:
   /**

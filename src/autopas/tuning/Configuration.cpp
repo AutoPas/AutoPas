@@ -11,7 +11,8 @@
 std::string autopas::Configuration::toString() const {
   return "{Container: " + container.to_string() + " , CellSizeFactor: " + std::to_string(cellSizeFactor) +
          " , Traversal: " + traversal.to_string() + " , Load Estimator: " + loadEstimator.to_string() +
-         " , Data Layout: " + dataLayout.to_string() + " , Newton 3: " + newton3.to_string() + "}";
+         " , Data Layout: " + dataLayout.to_string() + " , Newton 3: " + newton3.to_string() +
+         " , VectorizationPattern: " + vecPattern.to_string() + "}";
 }
 
 std::string autopas::Configuration::getCSVHeader() const { return getCSVRepresentation(true); }
@@ -85,6 +86,7 @@ bool autopas::Configuration::hasCompatibleValues() const {
       return false;
     }
   }
+  // TODO : add check about vecPattern
 
   return true;
 }
@@ -95,7 +97,7 @@ std::ostream &autopas::operator<<(std::ostream &os, const autopas::Configuration
 
 bool autopas::Configuration::equalsDiscreteOptions(const autopas::Configuration &rhs) const {
   return container == rhs.container and traversal == rhs.traversal and loadEstimator == rhs.loadEstimator and
-         dataLayout == rhs.dataLayout and newton3 == rhs.newton3;
+         dataLayout == rhs.dataLayout and newton3 == rhs.newton3 and vecPattern == rhs.vecPattern;
 }
 
 bool autopas::Configuration::equalsContinuousOptions(const autopas::Configuration &rhs, double epsilon) const {
@@ -111,8 +113,8 @@ bool autopas::operator!=(const autopas::Configuration &lhs, const autopas::Confi
 }
 
 bool autopas::operator<(const autopas::Configuration &lhs, const autopas::Configuration &rhs) {
-  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3) <
-         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3);
+  return std::tie(lhs.container, lhs.cellSizeFactor, lhs.traversal, lhs.loadEstimator, lhs.dataLayout, lhs.newton3, lhs.vecPattern) <
+         std::tie(rhs.container, rhs.cellSizeFactor, rhs.traversal, rhs.loadEstimator, rhs.dataLayout, rhs.newton3, rhs.vecPattern);
 }
 
 std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &configuration) {
@@ -129,5 +131,7 @@ std::istream &autopas::operator>>(std::istream &in, autopas::Configuration &conf
   in >> configuration.dataLayout;
   in.ignore(max, ':');
   in >> configuration.newton3;
+  in.ignore(max, ':');
+  in >> configuration.vecPattern;
   return in;
 }

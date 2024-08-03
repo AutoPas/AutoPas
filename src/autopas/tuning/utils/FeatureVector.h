@@ -46,8 +46,9 @@ class FeatureVector : public Configuration {
    * @param cellSizeFactor
    */
   FeatureVector(ContainerOption container, double cellSizeFactor, TraversalOption traversal,
-                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3)
-      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3) {}
+                LoadEstimatorOption loadEstimator, DataLayoutOption dataLayout, Newton3Option newton3,
+                VectorizationPatternOption vecPattern)
+      : Configuration(container, cellSizeFactor, traversal, loadEstimator, dataLayout, newton3, vecPattern) {}
 
   /**
    * Construct from Configuration.

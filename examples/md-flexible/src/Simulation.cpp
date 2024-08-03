@@ -126,6 +126,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
   _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
   _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
+  _autoPasContainer->setAllowedVecPatterns(_configuration.vecPatternOptions.value);
   _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
@@ -318,7 +319,8 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
         static const auto ret = autopas::SearchSpaceGenerators::cartesianProduct(
                                     _configuration.containerOptions.value, _configuration.traversalOptions.value,
                                     _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get())
+                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
+                                    _configuration.vecPatternOptions.value)
                                     .size();
         return ret;
       }
@@ -716,19 +718,8 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SIMDE=ON`.");
 #endif
     }  case MDFlexConfig::FunctorOption::lj12_6_HWY: {
-
-        switch (_configuration.vecPatternOption.value) {
-          case autopas::VectorizationPatternOption::p1xVec: {
-            return f(mdLib::LJFunctorHWY<autopas::VectorizationPatternOption::p1xVec, ParticleType, true, true>{cutoff, particlePropertiesLibrary});
-          }
-          case autopas::VectorizationPatternOption::p2xVecDiv2: {
-            return f(mdLib::LJFunctorHWY<autopas::VectorizationPatternOption::p2xVecDiv2, ParticleType, true, true>{cutoff, particlePropertiesLibrary});
-          }
-        }
-
-        throw std::runtime_error("Unknown vectorization pattern choice" +
-                              std::to_string(static_cast<int>(_configuration.vecPatternOption.value)));
-    }
+        return f(mdLib::LJFunctorHWY<ParticleType, true, true>{cutoff, particlePropertiesLibrary});
+      }
     }
 
     throw std::runtime_error("Unknown functor choice" +

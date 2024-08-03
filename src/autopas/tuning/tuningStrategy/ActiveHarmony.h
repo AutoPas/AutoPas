@@ -92,6 +92,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   std::set<LoadEstimatorOption> _allowedLoadEstimatorOptions;
   std::set<DataLayoutOption> _allowedDataLayoutOptions;
   std::set<Newton3Option> _allowedNewton3Options;
+  std::set<VectorizationPatternOption> _allowedVecPatterns;
 
   size_t _tuningPhase{0};
   bool _mpiDivideAndConquer;
@@ -144,6 +145,7 @@ class ActiveHarmony : public TuningStrategyInterface {
   static constexpr const char *dataLayoutOptionName = "dataLayoutOption";
   static constexpr const char *cellSizeFactorsName = "cellSizeFactor";
   static constexpr const char *newton3OptionName = "newton3Option";
+  static constexpr const char *vecPatternOptionName = "vectorPattern";
 };
 
 }  // namespace autopas

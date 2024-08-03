@@ -1132,7 +1132,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       std::tie(configuration, stillTuning) = _autoTuner.rejectConfig(configuration, rejectIndefinitely);
     }
   }
-
+  functor.setVecPattern(configuration.vecPattern);
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }
 

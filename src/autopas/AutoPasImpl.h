@@ -96,7 +96,8 @@ void AutoPas<Particle>::init() {
   }();
   const auto searchSpace =
       SearchSpaceGenerators::cartesianProduct(_allowedContainers, _allowedTraversals, _allowedLoadEstimators,
-                                              _allowedDataLayouts, _allowedNewton3Options, &cellSizeFactors);
+                                              _allowedDataLayouts, _allowedNewton3Options, &cellSizeFactors,
+                                              _allowedVecPatternsOptions);
 
   AutoTuner::TuningStrategiesListType tuningStrategies;
   tuningStrategies.reserve(_tuningStrategyOptions.size());

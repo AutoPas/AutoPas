@@ -17,6 +17,7 @@
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
+#include "autopas/options/VectorizationPatternOption.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningMetricOption.h"
@@ -887,6 +888,11 @@ class AutoPas {
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options) {
     _allowedNewton3Options = allowedNewton3Options;
   }
+
+  void setAllowedVecPatterns(const std::set<VectorizationPatternOption> &allowedVecPatterns) {
+    _allowedVecPatternsOptions = allowedVecPatterns;
+  }
+
   /**
    * Getter for the currently selected configuration.
    * @return Configuration object currently used.
@@ -1039,6 +1045,9 @@ class AutoPas {
    * Whether AutoPas is allowed to exploit Newton's third law of motion.
    */
   std::set<Newton3Option> _allowedNewton3Options{Newton3Option::getMostOptions()};
+
+  std::set<VectorizationPatternOption> _allowedVecPatternsOptions{VectorizationPatternOption::getMostOptions()};
+
   /**
    * Cell size factor to be used in this container (only relevant for LinkedCells, VerletLists and VerletListsCells).
    */

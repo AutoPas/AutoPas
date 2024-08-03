@@ -17,12 +17,15 @@ autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowed
                                         const std::set<TraversalOption> &allowedTraversalOptions,
                                         const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                                         const std::set<DataLayoutOption> &allowedDataLayoutOptions,
-                                        const std::set<Newton3Option> &allowedNewton3Options, size_t maxEvidence,
+                                        const std::set<Newton3Option> &allowedNewton3Options,
+                                        size_t maxEvidence,
                                         autopas::AcquisitionFunctionOption predAcqFunction, size_t predNumLHSamples,
-                                        unsigned long seed)
+                                        unsigned long seed,
+                                        const std::set<VectorizationPatternOption> &allowedVecPatternOptions)
     : _containerOptionsSet(allowedContainerOptions),
       _dataLayoutOptions(allowedDataLayoutOptions.begin(), allowedDataLayoutOptions.end()),
       _newton3Options(allowedNewton3Options.begin(), allowedNewton3Options.end()),
+      _vecPatternOptions(allowedVecPatternOptions.begin(), allowedVecPatternOptions.end()),
       _cellSizeFactors(allowedCellSizeFactors.clone()),
       _encoder(),
       _invalidConfigs(),
@@ -60,7 +63,7 @@ autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowed
   }
 
   _encoder.setAllowedOptions(_containerTraversalEstimatorOptions, _dataLayoutOptions, _newton3Options,
-                             *_cellSizeFactors);
+                             *_cellSizeFactors, _vecPatternOptions);
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
 }
 

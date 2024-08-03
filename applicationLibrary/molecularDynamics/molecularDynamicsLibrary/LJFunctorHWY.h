@@ -37,13 +37,13 @@ namespace mdLib {
 
     using VectorizationPattern = autopas::VectorizationPatternOption::Value;
 
-    template <VectorizationPattern vecPattern, class Particle, bool applyShift = false, bool useMixing = false,
+    template <class Particle, bool applyShift = false, bool useMixing = false,
         autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
         bool relevantForTuning = true>
 
     class LJFunctorHWY
         : public autopas::Functor<Particle,
-                         LJFunctorHWY<vecPattern, Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+                         LJFunctorHWY<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
         using SoAArraysType = typename Particle::SoAArraysType;
 
         public:
@@ -52,7 +52,7 @@ namespace mdLib {
         private:
             explicit LJFunctorHWY(double cutoff, void*)
                 : autopas::Functor<Particle,
-                LJFunctorHWY<vecPattern, Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
+                LJFunctorHWY<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
                 _cutoffSquared{highway::Set(tag_double, cutoff*cutoff)},
                 _cutoffSquareAoS{cutoff * cutoff},
                 _uPotSum{0.},
@@ -63,7 +63,7 @@ namespace mdLib {
                         _aosThreadData.resize(autopas::autopas_get_max_threads());
                     }
 
-                    initializeMasks();
+                    // initializeMasks();
 
                     // std::cout << hwy::TargetName(HWY_TARGET) << std::endl; // AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
                 }
@@ -168,11 +168,12 @@ namespace mdLib {
                  * This functor will always do a newton3 like traversal of the soa.
                  * However, it still needs to know about newton3 to correctly add up the global values.
                 */
-                inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
+                inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, const bool newton3) final {
+
                     if (newton3) {
-                        SoAFunctorSingleImpl<true>(soa);
+                        SoAFunctorSingleImpl<true, VectorizationPattern::p1xVec>(soa);
                     } else {
-                        SoAFunctorSingleImpl<false>(soa);
+                        SoAFunctorSingleImpl<false, VectorizationPattern::p1xVec>(soa);
                     }
                 }
 
@@ -181,17 +182,63 @@ namespace mdLib {
                  * @copydoc Functor::SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3)
                  */
                 // clang-format on
-                inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, const bool newton3) final {
-                    if (newton3) {
-                        SoAFunctorPairImpl<true>(soa1, soa2);
-                    } else {
-                        SoAFunctorPairImpl<false>(soa1, soa2);
+                inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2, bool newton3) final {
+                    
+                    switch (_vecPattern)
+                    {
+                    case VectorizationPattern::p1xVec: {
+                        if (newton3) {
+                            SoAFunctorPairImpl<true, VectorizationPattern::p1xVec>(soa1, soa2);
+                        }
+                        else {
+                            SoAFunctorPairImpl<false, VectorizationPattern::p1xVec>(soa1, soa2);
+                        }
+                        break;
                     }
+                    case VectorizationPattern::p2xVecDiv2: {
+                        if (newton3) {
+                            SoAFunctorPairImpl<true, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+                        }
+                        else {
+                            SoAFunctorPairImpl<false, VectorizationPattern::p2xVecDiv2>(soa1, soa2);
+                        }
+                        break;
+                    }
+                    case VectorizationPattern::pVecDiv2x2: {
+                        if (newton3) {
+                            SoAFunctorPairImpl<true, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+                        }
+                        else {
+                            SoAFunctorPairImpl<false, VectorizationPattern::pVecDiv2x2>(soa1, soa2);
+                        }
+                        break;
+                    }
+                    case VectorizationPattern::pVecx1: {
+                        if (newton3) {
+                            SoAFunctorPairImpl<true, VectorizationPattern::pVecx1>(soa1, soa2);
+                        }
+                        else {
+                            SoAFunctorPairImpl<false, VectorizationPattern::pVecx1>(soa1, soa2);
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                    }
+                    
+                    
                 }
+                
 
             private:
-
+                template <VectorizationPattern vecPattern>
                 inline void initializeMasks() {
+
+                    if (_masksInitialized) {
+                        return;
+                    }
+
+                    _masksInitialized = true;
 
                     HWY_ALIGN std::array<double, _vecLengthDouble> equal {0.};
                     HWY_ALIGN std::array<double, _vecLengthDouble> overlap {0.};
@@ -251,7 +298,7 @@ namespace mdLib {
                     vector = highway::InsertLane(vector, _vecLengthDouble-1, storage);
                 }
 
-                template <bool reversed>
+                template <bool reversed, VectorizationPattern vecPattern>
                 inline bool checkFirstLoopCondition(const size_t i, const size_t stop) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         return reversed ? (long)i >= 0 : (i < stop);
@@ -270,6 +317,7 @@ namespace mdLib {
                     }
                 }
 
+                template <VectorizationPattern vecPattern>
                 inline void decrementFirstLoop(size_t &i) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         --i;
@@ -288,6 +336,7 @@ namespace mdLib {
                     }
                 }
 
+                template <VectorizationPattern vecPattern>
                 inline void incrementFirstLoop(unsigned int &i) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         ++i;
@@ -311,6 +360,7 @@ namespace mdLib {
                     return reversed ? (i < 0 ? 0 : i+1) : stop-i;
                 }
 
+                template <VectorizationPattern vecPattern>
                 inline bool checkSecondLoopCondition(const size_t i, const size_t j) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         return j < (i & ~(_vecLengthDouble - 1));
@@ -332,6 +382,7 @@ namespace mdLib {
                     }
                 }
 
+                template <VectorizationPattern vecPattern>
                 inline void incrementSecondLoop(unsigned int &j) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         j += _vecLengthDouble;
@@ -350,6 +401,7 @@ namespace mdLib {
                     }
                 }
 
+                template <VectorizationPattern vecPattern>
                 inline int obtainSecondLoopRest(const size_t i) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         return (int)(i & (_vecLengthDouble - 1));
@@ -371,7 +423,7 @@ namespace mdLib {
                     }
                 }
 
-                template <bool remainder, bool reversed>
+                template <bool remainder, bool reversed, VectorizationPattern vecPattern>
                 inline void fillIRegisters(const size_t i, const double *const __restrict xPtr, const double *const __restrict yPtr,
                         const double *const __restrict zPtr, const autopas::OwnershipState *const __restrict ownedStatePtr,
                         VectorDouble& x1, VectorDouble& y1, VectorDouble& z1, MaskDouble& ownedMaskI, const size_t restI) {
@@ -455,7 +507,7 @@ namespace mdLib {
                     ownedMaskI = highway::Ne(ownedStateIDouble, _zeroDouble);
                 }
 
-                template <bool remainder, bool reversed>
+                template <bool remainder, bool reversed, VectorizationPattern vecPattern>
                 inline void handleNewton3Reduction(const VectorDouble& fx, const VectorDouble& fy, const VectorDouble& fz,
                         double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
                         double *const __restrict fz2Ptr, const size_t i, const size_t j, const size_t rest) {
@@ -592,7 +644,7 @@ namespace mdLib {
                     }
                 }
 
-                template <bool reversed, bool remainder>
+                template <bool reversed, bool remainder, VectorizationPattern vecPattern>
                 inline void reduceAccumulatedForce(const size_t i, double *const __restrict fxPtr, double *const __restrict fyPtr,
                         double *const __restrict fzPtr, const VectorDouble& fxAcc, const VectorDouble& fyAcc, const VectorDouble& fzAcc, const int restI) {
 
@@ -709,6 +761,7 @@ namespace mdLib {
                     _aosThreadData[threadnum].uPotSum += globals[3] * factor;
                 }
 
+                template <VectorizationPattern vecPattern>
                 inline void prepareOverlap(const size_t i, const unsigned int j, MaskDouble& ownedMaskI) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         return;
@@ -736,7 +789,7 @@ namespace mdLib {
                     ownedMaskI = highway::And(ownedMaskI, mask);
                 }
 
-                template <bool reversed, bool newton3, bool remainderI>
+                template <bool reversed, bool newton3, bool remainderI, VectorizationPattern vecPattern>
                 inline void handleILoopBody(const size_t i, const double *const __restrict xPtr1, const double *const __restrict yPtr1,
                         const double *const __restrict zPtr1, const autopas::OwnershipState *const __restrict ownedStatePtr1,
                         const double *const __restrict xPtr2, const double *const __restrict yPtr2,
@@ -757,36 +810,28 @@ namespace mdLib {
                         VectorDouble y1 = _zeroDouble;
                         VectorDouble z1 = _zeroDouble;
 
-                        fillIRegisters<remainderI, reversed>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI, restI);
+                        fillIRegisters<remainderI, reversed, vecPattern>(i, xPtr1, yPtr1, zPtr1, ownedStatePtr1, x1, y1, z1, ownedMaskI, restI);
 
                         unsigned int j = 0;
-                        for (; checkSecondLoopCondition(jStop, j); incrementSecondLoop(j)) {
+                        for (; checkSecondLoopCondition<vecPattern>(jStop, j); incrementSecondLoop<vecPattern>(j)) {
 
-                            if constexpr (reversed) {
-                                prepareOverlap(i, j, ownedMaskI);
-                            }
-
-                            SoAKernel<newton3, remainderI, false, reversed>(i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                            SoAKernel<newton3, remainderI, false, reversed, vecPattern>(i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j],
                                 fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, 0);
                         }
 
-                        const int restJ = obtainSecondLoopRest(jStop);
+                        const int restJ = obtainSecondLoopRest<vecPattern>(jStop);
                         if (restJ > 0) {
 
-                            if constexpr (reversed) {
-                                prepareOverlap(i, j, ownedMaskI);
-                            }
-
-                            SoAKernel<newton3, remainderI, true, reversed>(i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
+                            SoAKernel<newton3, remainderI, true, reversed, vecPattern>(i, j, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStatePtr2),
                                 x1, y1, z1, xPtr2, yPtr2, zPtr2, fxPtr2, fyPtr2, fzPtr2, &typeIDptr1[i], &typeIDptr2[j],
                                 fxAcc, fyAcc, fzAcc, virialSumX, virialSumY, virialSumZ, uPotSum, restI, restJ);
                         }
 
-                        reduceAccumulatedForce<reversed, remainderI>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
+                        reduceAccumulatedForce<reversed, remainderI, vecPattern>(i, fxPtr1, fyPtr1, fzPtr1, fxAcc, fyAcc, fzAcc, restI);
                 }
 
-                template <bool newton3>
+                template <bool newton3, VectorizationPattern vecPattern>
                 inline void SoAFunctorSingleImpl(autopas::SoAView<SoAArraysType> soa) {
 
                     if (soa.size() == 0) return;
@@ -811,11 +856,11 @@ namespace mdLib {
                     auto uPotSum = _zeroDouble;
 
                     size_t i = soa.size() - 1;
-                    for (; checkFirstLoopCondition<true>(i, 0); decrementFirstLoop(i)) {
+                    for (; checkFirstLoopCondition<true, vecPattern>(i, 0); decrementFirstLoop<vecPattern>(i)) {
                         static_assert(std::is_same_v<std::underlying_type_t<autopas::OwnershipState>, int64_t>,
                             "OwnershipStates underlying type should be int64_t!");
 
-                        handleILoopBody<true, true, false>(i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr,
+                        handleILoopBody<true, true, false, vecPattern>(i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr,
                             fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr, typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, i);
                     }
 
@@ -824,7 +869,7 @@ namespace mdLib {
                         const int restI = obtainFirstLoopRest<true>(i, -1);
                         
                         if (restI > 0) {
-                            handleILoopBody<true, true, true>(i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr,
+                            handleILoopBody<true, true, true, vecPattern>(i, xPtr, yPtr, zPtr, ownedStatePtr, xPtr, yPtr, zPtr, ownedStatePtr,
                                 fxPtr, fyPtr, fzPtr, fxPtr, fyPtr, fzPtr, typeIDptr, typeIDptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, i);
                         }
                     }
@@ -834,7 +879,7 @@ namespace mdLib {
                     }
                 }
 
-                template <bool newton3>
+                template <bool newton3, VectorizationPattern vecPattern>
                 inline void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
 
                     if (soa1.size() == 0 || soa2.size() == 0) {
@@ -867,8 +912,8 @@ namespace mdLib {
                     VectorDouble uPotSum = _zeroDouble;
 
                     unsigned int i = 0;
-                    for (; checkFirstLoopCondition<false>(i, soa1.size()); incrementFirstLoop(i)) {
-                        handleILoopBody<false, newton3, false>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2,
+                    for (; checkFirstLoopCondition<false, vecPattern>(i, soa1.size()); incrementFirstLoop<vecPattern>(i)) {
+                        handleILoopBody<false, newton3, false, vecPattern>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2,
                             fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, virialSumX, virialSumY, virialSumZ, uPotSum, 0, soa2.size());
                     }
 
@@ -876,7 +921,7 @@ namespace mdLib {
                         // Rest I can't occur in 1xVec case
                         const int restI = obtainFirstLoopRest<false>(i, soa1.size());
                         if (restI > 0) {
-                            handleILoopBody<false, newton3, true>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2,
+                            handleILoopBody<false, newton3, true, vecPattern>(i, x1Ptr, y1Ptr, z1Ptr, ownedStatePtr1, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2,
                                 fx1Ptr, fy1Ptr, fz1Ptr, fx2Ptr, fy2Ptr, fz2Ptr, typeID1ptr, typeID2ptr, virialSumX, virialSumY, virialSumZ, uPotSum, restI, soa2.size());
                         }
                     }
@@ -886,7 +931,7 @@ namespace mdLib {
                     }
                 }
 
-                template <bool remainder>
+                template <bool remainder, VectorizationPattern vecPattern>
                 inline void fillJRegisters(const size_t j, const double *const __restrict x2Ptr, const double *const __restrict y2Ptr,
                         const double *const __restrict z2Ptr, const int64_t *const __restrict ownedStatePtr2,
                         VectorDouble& x2, VectorDouble& y2, VectorDouble& z2, VectorDouble& ownedStateJDouble, const unsigned int rest) {
@@ -987,7 +1032,7 @@ namespace mdLib {
                     }
                 }
 
-                template <bool remainderI, bool remainderJ, bool reversed>
+                template <bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
                 inline void fillPhysicsRegisters(const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
                         VectorDouble& epsilon24s, VectorDouble& sigmaSquareds, VectorDouble& shift6s, const unsigned int j,
                         const unsigned int restI, const unsigned int restJ) {
@@ -1066,7 +1111,7 @@ namespace mdLib {
                     }
                 }
 
-                template <bool newton3, bool remainderI, bool remainderJ, bool reversed>
+                template <bool newton3, bool remainderI, bool remainderJ, bool reversed, VectorizationPattern vecPattern>
                 inline void SoAKernel(const size_t i, const size_t j, const MaskDouble& ownedMaskI, const int64_t *const __restrict ownedStatePtr2,
                         const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict x2Ptr,
                         const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
@@ -1080,7 +1125,7 @@ namespace mdLib {
                     VectorDouble shift6s = _shift6;
 
                     if constexpr (useMixing) {
-                        fillPhysicsRegisters<remainderI, remainderJ, reversed>(typeID1Ptr, typeID2Ptr, epsilon24s, sigmaSquareds, shift6s, j, restI, restJ);
+                        fillPhysicsRegisters<remainderI, remainderJ, reversed, vecPattern>(typeID1Ptr, typeID2Ptr, epsilon24s, sigmaSquareds, shift6s, j, restI, restJ);
                     }
 
                     VectorDouble x2;
@@ -1088,7 +1133,7 @@ namespace mdLib {
                     VectorDouble z2;
                     VectorDouble ownedStateJDouble;
 
-                    fillJRegisters<remainderJ>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJDouble, restJ);
+                    fillJRegisters<remainderJ, vecPattern>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJDouble, restJ);
 
                     // distance calculations
                     const auto drX = x1 - x2;
@@ -1131,7 +1176,7 @@ namespace mdLib {
                     fzAcc = fzAcc + fz;
 
                     if constexpr (newton3) {
-                        handleNewton3Reduction<remainderJ, reversed>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, i, j, restJ);
+                        handleNewton3Reduction<remainderJ, reversed, vecPattern>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, i, j, restJ);
                     }
 
                     if constexpr (calculateGlobals) {
@@ -1243,7 +1288,7 @@ namespace mdLib {
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
                             
-                            SoAKernel<newton3, false, false, false>(0, 0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1,
+                            SoAKernel<newton3, false, false, false, VectorizationPattern::p1xVec>(0, 0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1,
                                 x2Tmp, y2Tmp, z2Tmp, fx2Tmp, fy2Tmp, fz2Tmp,
                                 &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX,
                                 virialSumY, virialSumZ, uPotSum, 0, 0);
@@ -1274,12 +1319,10 @@ namespace mdLib {
                                 ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
                             }
 
-                            /*
-                            SoAKernel<newton3, false, true, false>(0, 0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1,
+                            SoAKernel<newton3, false, true, false, VectorizationPattern::p1xVec>(0, 0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp), x1, y1, z1,
                                 x2Tmp, y2Tmp, z2Tmp, fx2Tmp, fy2Tmp, fz2Tmp,
                                 &typeIDPtr[indexFirst], typeID2Tmp, fxAcc, fyAcc, fzAcc, virialSumX,
                                 virialSumY, virialSumZ, uPotSum, 0, rest);
-                            */
 
                             if constexpr (newton3) {
 
@@ -1458,6 +1501,10 @@ namespace mdLib {
                     }
                 }
 
+                void setVecPattern(const VectorizationPattern vecPattern) final {
+                    _vecPattern = vecPattern;
+                }
+
             private:
 
                 class AoSThreadData
@@ -1499,6 +1546,9 @@ namespace mdLib {
                 std::array<double, 3> _virialSum;
                 std::vector<AoSThreadData> _aosThreadData;
                 bool _postProcessed;
+                bool _masksInitialized {false};
+
+                VectorizationPattern _vecPattern;
     };
 // } // Highway
 } // mdLib

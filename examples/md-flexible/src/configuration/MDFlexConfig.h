@@ -240,6 +240,11 @@ class MDFlexConfig {
       autopas::Newton3Option::getMostOptions(), "newton3", true,
       "List of newton3 options to use. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::Newton3Option::getAllOptions(), " ", {"(", ")"})};
+
+  MDFlexOption<std::set<autopas::VectorizationPatternOption>, __LINE__> vecPatternOptions {
+      autopas::VectorizationPatternOption::getMostOptions(), "vectorizationPattern", true,
+      "Vectorization Pattern for HWY Functor."
+  };
   /**
    * cellSizeFactors
    */
@@ -450,10 +455,6 @@ class MDFlexConfig {
         "functor", true,
         "Force functor to use. Possible Values: (lennard-jones "
         "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"
-  };
-
-  MDFlexOption<autopas::VectorizationPatternOption, __LINE__> vecPatternOption {
-    autopas::VectorizationPatternOption::p1xVec, "vectorizationPattern", true, "Vectorization Pattern for HWY Functor."
   };
   /**
    * iterations

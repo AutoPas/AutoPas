@@ -317,7 +317,7 @@ std::string MDFlexConfig::to_string() const {
         os << "Lennard-Jones (12-6) Highway Wrapper" << endl;
     }
   }
-  printOption(vecPatternOption);
+  printOption(vecPatternOptions);
   printOption(newton3Options);
   printOption(cutoff);
   printOption(boxMin);

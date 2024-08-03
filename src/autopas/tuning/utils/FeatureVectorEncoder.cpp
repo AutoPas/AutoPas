@@ -11,8 +11,8 @@ autopas::FeatureVectorEncoder::FeatureVectorEncoder() = default;
 autopas::FeatureVectorEncoder::FeatureVectorEncoder(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors) {
-  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors);
+    const autopas::NumberSet<double> &cellSizeFactors, const std::vector<VectorizationPatternOption> &vecPatternOptions) {
+  setAllowedOptions(containerTraversalEstimatorOptions, dataLayoutOptions, newton3Options, cellSizeFactors, vecPatternOptions);
 }
 
 autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
@@ -20,10 +20,11 @@ autopas::FeatureVectorEncoder::~FeatureVectorEncoder() = default;
 void autopas::FeatureVectorEncoder::setAllowedOptions(
     const std::vector<FeatureVector::ContainerTraversalEstimatorOption> &containerTraversalEstimatorOptions,
     const std::vector<DataLayoutOption> &dataLayoutOptions, const std::vector<Newton3Option> &newton3Options,
-    const autopas::NumberSet<double> &cellSizeFactors) {
+    const autopas::NumberSet<double> &cellSizeFactors, const std::vector<VectorizationPatternOption> &vecPatternOptions) {
   _containerTraversalEstimatorOptions = containerTraversalEstimatorOptions;
   _dataLayoutOptions = dataLayoutOptions;
   _newton3Options = newton3Options;
+  _vecPatternOptions = vecPatternOptions;
 
   _oneHotDims = _containerTraversalEstimatorOptions.size() + _dataLayoutOptions.size() + _newton3Options.size() +
                 tunableContinuousDims;
@@ -32,6 +33,7 @@ void autopas::FeatureVectorEncoder::setAllowedOptions(
       _containerTraversalEstimatorOptions.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::dataLayout)] = _dataLayoutOptions.size();
   _discreteRestrictions[static_cast<size_t>(DiscreteIndices::newton3)] = _newton3Options.size();
+  _discreteRestrictions[static_cast<size_t>(DiscreteIndices::vecPattern)] = _vecPatternOptions.size();
 
   _continuousRestrictions[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = cellSizeFactors.clone();
 }
@@ -265,6 +267,7 @@ autopas::FeatureVectorEncoder::convertToTunable(const autopas::FeatureVector &ve
       getIndex(_containerTraversalEstimatorOptions, std::make_tuple(vec.container, vec.traversal, vec.loadEstimator));
   discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)] = getIndex(_dataLayoutOptions, vec.dataLayout);
   discreteValues[static_cast<size_t>(DiscreteIndices::newton3)] = getIndex(_newton3Options, vec.newton3);
+  discreteValues[static_cast<size_t>(DiscreteIndices::vecPattern)] = getIndex(_vecPatternOptions, vec.vecPattern);
 
   ContinuousDimensionType continuousValues;
   continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)] = vec.cellSizeFactor;
@@ -280,8 +283,9 @@ autopas::FeatureVector autopas::FeatureVectorEncoder::convertFromTunable(
           DiscreteIndices::containerTraversalEstimator)]];
   auto dataLayout = _dataLayoutOptions[discreteValues[static_cast<size_t>(DiscreteIndices::dataLayout)]];
   auto newton3 = _newton3Options[discreteValues[static_cast<size_t>(DiscreteIndices::newton3)]];
+  auto vecPattern = _vecPatternOptions[discreteValues[static_cast<size_t>(DiscreteIndices::vecPattern)]];
 
   auto cellSizeFactor = continuousValues[static_cast<size_t>(ContinuousIndices::cellSizeFactor)];
 
-  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3);
+  return FeatureVector(container, cellSizeFactor, traversal, estimator, dataLayout, newton3, vecPattern);
 }

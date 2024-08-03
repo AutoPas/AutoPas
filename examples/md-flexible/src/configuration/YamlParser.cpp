@@ -234,23 +234,6 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
         } else {
           throw std::runtime_error("Unrecognized functor!");
         }
-      } else if (key == config.vecPatternOption.name) {
-        expected = "One of the possible values.";
-        description = config.vecPatternOption.description;
-
-        auto strArg = node[key].as<std::string>();
-        transform(strArg.begin(), strArg.end(), strArg.begin(), ::tolower);
-
-        if (strArg.find("1xvec") != std::string::npos) {
-          config.vecPatternOption.value = autopas::VectorizationPatternOption::p1xVec;
-        }
-        else if (strArg.find("2xvecdiv2") != std::string::npos) {
-          config.vecPatternOption.value = autopas::VectorizationPatternOption::p2xVecDiv2;
-        }
-        else {
-          throw std::runtime_error("Unrecognized vectorization pattern!");
-        }
-
       } else if (key == config.iterations.name) {
         expected = "Unsigned Integer > 0";
         description = config.iterations.description;
@@ -293,6 +276,16 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
             autopas::Newton3Option::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
         if (config.newton3Options.value.empty()) {
           throw std::runtime_error("Unknown Newton3 option!");
+        }
+      } else if (key == config.vecPatternOptions.name) {
+        expected = "One of the possible values.";
+        description = config.vecPatternOptions.description;
+
+        config.vecPatternOptions.value
+          = autopas::VectorizationPatternOption::parseOptions(autopas::utils::ArrayUtils::to_string(node[key], ", ", {"", ""}));
+
+        if (config.vecPatternOptions.value.empty()) {
+          throw std::runtime_error("Unknown VectorizationPattern option!");
         }
       } else if (key == config.deltaT.name) {
         expected = "Positive floating point value.";

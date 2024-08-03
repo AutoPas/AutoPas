@@ -67,7 +67,8 @@ void MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
 Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::set<Configuration> &searchSpace) {
   Configuration fallBackConfig{ContainerOption::linkedCells, 1.,
                                TraversalOption::lc_c08,      LoadEstimatorOption::none,
-                               DataLayoutOption::aos,        Newton3Option::disabled};
+                               DataLayoutOption::aos,        Newton3Option::disabled,
+                               VectorizationPatternOption::p1xVec};
 
   // Go through the search space and see if SoA or N3 are allowed.
   bool foundSoA{false};

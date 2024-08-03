@@ -19,7 +19,7 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
     const std::set<ContainerOption> &allowedContainerOptions, const std::set<TraversalOption> &allowedTraversalOptions,
     const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
     const std::set<DataLayoutOption> &allowedDataLayoutOptions, const std::set<Newton3Option> &allowedNewton3Options,
-    const NumberSet<double> *allowedCellSizeFactors) {
+    const NumberSet<double> *allowedCellSizeFactors, const std::set<VectorizationPatternOption> &allowedVecPatternOptions) {
   if (allowedCellSizeFactors->isInterval()) {
     utils::ExceptionHandler::exception("Cross product does not work with continuous cell size factors!");
   }
@@ -44,10 +44,12 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
         for (const auto &loadEstimatorOption : allowedAndApplicableLoadEstimators) {
           for (const auto &dataLayoutOption : allowedDataLayoutOptions) {
             for (const auto &newton3Option : allowedNewton3Options) {
-              const Configuration configuration{containerOption,  csf,          traversalOption, loadEstimatorOption,
-                                                dataLayoutOption, newton3Option};
-              if (configuration.hasCompatibleValues()) {
-                searchSet.insert(configuration);
+              for (const auto &vecPatternOption : allowedVecPatternOptions) {
+                const Configuration configuration{containerOption,  csf,          traversalOption, loadEstimatorOption,
+                                                  dataLayoutOption, newton3Option, vecPatternOption};
+                if (configuration.hasCompatibleValues()) {
+                  searchSet.insert(configuration);
+                }
               }
             }
           }
@@ -65,13 +67,14 @@ std::set<Configuration> SearchSpaceGenerators::cartesianProduct(
 SearchSpaceGenerators::OptionSpace SearchSpaceGenerators::inferOptionDimensions(
     const std::set<Configuration> &searchSet) {
   OptionSpace optionSpace;
-  for (const auto &[container, traversal, loadEst, dataLayout, newton3, csf] : searchSet) {
+  for (const auto &[container, traversal, vecPattern, loadEst, dataLayout, newton3, csf] : searchSet) {
     optionSpace.containerOptions.insert(container);
     optionSpace.traversalOptions.insert(traversal);
     optionSpace.loadEstimatorOptions.insert(loadEst);
     optionSpace.dataLayoutOptions.insert(dataLayout);
     optionSpace.newton3Options.insert(newton3);
     optionSpace.cellSizeFactors.insert(csf);
+    optionSpace.vecPatternOptions.insert(vecPattern);
   }
   return optionSpace;
 }

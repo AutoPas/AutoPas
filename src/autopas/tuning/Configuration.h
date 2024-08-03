@@ -15,6 +15,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/Newton3Option.h"
 #include "autopas/options/TraversalOption.h"
+#include "autopas/options/VectorizationPatternOption.h"
 
 namespace autopas {
 
@@ -35,9 +36,11 @@ class Configuration {
    * @note needs constexpr (hence inline) constructor to be a literal.
    */
   constexpr Configuration(ContainerOption _container, double _cellSizeFactor, TraversalOption _traversal,
-                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3)
+                          LoadEstimatorOption _loadEstimator, DataLayoutOption _dataLayout, Newton3Option _newton3,
+                          VectorizationPatternOption _vecPattern)
       : container(_container),
         traversal(_traversal),
+        vecPattern(_vecPattern),
         loadEstimator(_loadEstimator),
         dataLayout(_dataLayout),
         newton3(_newton3),
@@ -115,6 +118,9 @@ class Configuration {
    * Traversal option.
    */
   TraversalOption traversal;
+  
+  VectorizationPatternOption vecPattern;
+  
   /**
    * Load Estimator option.
    */
