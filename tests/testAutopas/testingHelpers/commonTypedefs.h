@@ -38,28 +38,15 @@ using FMCell = autopas::FullParticleCell<Molecule>;
  */
 using MFunctor = MockFunctor<autopas::Particle>;
 
-namespace autopasTestingTypeDefs {
 /**
- * If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
- */
-constexpr bool countFLOPs =
-#ifdef AUTOPAS_LOG_FLOPS
-    true;
-#else
-    false;
-#endif
-}  // namespace autopasTestingTypeDefs
-
-/**
- * Helper alias for LJFunctor, which specifies Particle as Molecule (as defined above) and countFLOPs as defined above.
- * Primarily, this is useful to avoid specifying out default template when we just want to change countFLOPs, which we
- * need to do to avoid warnings/exceptions when the tests are compiled with AUTOPAS_LOG_FLOPS=ON.
+ * Helper alias for LJFunctor, with more defaults geared towards testing.
+ * This facilitates writing tests and tries to reduce the number of template instantiations.
  */
 template <bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
-using LJFunctorType = mdLib::LJFunctor<applyShift, useMixing, useNewton3, calculateGlobals,
-                                       autopasTestingTypeDefs::countFLOPs, relevantForTuning>;
+          bool countFLOPs = false, bool relevantForTuning = true>
+using LJFunctorType =
+    mdLib::LJFunctor<applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs, relevantForTuning>;
 
 /**
  * Helper alias for specialization of LJFunctorType with globals and shift enabled but mixing disabled.
