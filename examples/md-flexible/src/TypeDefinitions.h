@@ -37,9 +37,12 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+#include "molecularDynamicsLibrary/LJFunctorAVX512_Mask.h"
 #endif
 
-#include "molecularDynamicsLibrary/LJFunctorAVX512_Mask.h"
+#endif
+
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
