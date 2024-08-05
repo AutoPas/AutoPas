@@ -49,9 +49,9 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobals(LJFunctorTestGlobals<FuncTyp
   const std::array<double, 3> p1Pos{0. + xOffset, 0., 0.};
   const std::array<double, 3> p2Pos{0.1 + xOffset, 0.2, 0.3};
 
-  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
+  Molecule p1(p1Pos, {0., 0., 0.}, 0);
   p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1);
   p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
   functor.initTraversal();
 
@@ -109,11 +109,11 @@ void LJFunctorTestGlobals<FuncType>::testAoSGlobalsMixedN3(LJFunctorTestGlobals<
       FuncType functor(cutoff);
       functor.setParticleProperties(epsilon * 24, sigma);
 
-      Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0, 0);
+      Molecule p1({0. + xOffset, 0., 0.}, {0., 0., 0.}, 0);
       p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-      Molecule p2({0.9 + xOffset, 0, 0}, {0., 0., 0.}, 1, 0);
+      Molecule p2({0.9 + xOffset, 0, 0}, {0., 0., 0.}, 1);
       p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-      Molecule p3({0 + xOffset, 0.4, 0}, {0., 0., 0.}, 2, 0);
+      Molecule p3({0 + xOffset, 0.4, 0}, {0., 0., 0.}, 2);
       p3.setOwnershipState(owned3 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
 
       functor.initTraversal();
@@ -182,7 +182,7 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   constexpr double expectedEnergy = calculateLJPotential(p1Pos, p2Pos, cutoff, sigma, epsilon);
   constexpr double expectedVirial = calculateLJVirialTotal(p1Pos, p2Pos, cutoff, sigma, epsilon);
 
-  mdLib::LJFunctor<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(cutoff);
+  mdLib::LJFunctor<shifting, mixing, autopas::FunctorN3Modes::Both, true> functor(cutoff);
   functor.setParticleProperties(epsilon * 24, sigma);
   double xOffset;
   double whereFactor = 0.;
@@ -220,9 +220,9 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
       }
     }
 
-    Molecule p1({p1X + xOffset, p1Y + 2. * replicaID, p1Z}, {0., 0., 0.}, 2 * replicaID, 0);
+    Molecule p1({p1X + xOffset, p1Y + 2. * replicaID, p1Z}, {0., 0., 0.}, 2 * replicaID);
     p1.setOwnershipState(owned1 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-    Molecule p2({p2X + xOffset, p2Y + 2. * replicaID, p2Z}, {0., 0., 0.}, 2 * replicaID + 1, 0);
+    Molecule p2({p2X + xOffset, p2Y + 2. * replicaID, p2Z}, {0., 0., 0.}, 2 * replicaID + 1);
     p2.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
 
     // calculate whereFactor:
@@ -256,9 +256,9 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
   }
 
   if (interactionType == InteractionType::verlet) {
-    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, std::numeric_limits<uint64_t>::max(), 0);
+    Molecule pAdditional({1.2 + xOffset, 0., 0.}, {0., 0., 0.}, std::numeric_limits<uint64_t>::max());
     pAdditional.setOwnershipState(owned2 ? autopas::OwnershipState::owned : autopas::OwnershipState::halo);
-    // add dummy particles outside of the cutoff. this will only change the number of particles in the verlet lists,
+    // add dummy particles outside the cutoff. this will only change the number of particles in the verlet lists,
     // but will leave the desired result unchanged. the higher number of particles is useful to test the soa
     // functor version of verlet lists.
     for (size_t i = 0; i < additionalParticlesToVerletNumber; ++i) {
@@ -452,11 +452,11 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   constexpr std::array<double, 3> p3Pos{0., 2., 0.};
   constexpr std::array<double, 3> p4Pos{0.1, 2.2, 0.3};
 
-  Molecule p1(p1Pos, {0., 0., 0.}, 0, 0);
-  Molecule p2(p2Pos, {0., 0., 0.}, 1, 0);
+  Molecule p1(p1Pos, {0., 0., 0.}, 0);
+  Molecule p2(p2Pos, {0., 0., 0.}, 1);
 
-  Molecule p3(p3Pos, {0., 0., 0.}, 0, 0);
-  Molecule p4(p4Pos, {0., 0., 0.}, 1, 0);
+  Molecule p3(p3Pos, {0., 0., 0.}, 0);
+  Molecule p4(p4Pos, {0., 0., 0.}, 1);
   FuncType functor(this->cutoff);
   functor.setParticleProperties(this->epsilon * 24, 1);
 
