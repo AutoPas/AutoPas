@@ -123,7 +123,7 @@ class LJFunctorAVX512_Mask
     if (particleA.isDummy() or particleB.isDummy()) {
       return;
     }
-    const auto sigmaMixed = (particleA.getsigmaDiv2() + particleB.getsigmaDiv2());
+    const auto sigmaMixed = (particleA.getSigmaDiv2() + particleB.getSigmaDiv2());
     const auto sigmaSquared = sigmaMixed * sigmaMixed;
     const auto epsilon24 = 24 * particleA.getSquareRootEpsilon() * particleB.getSquareRootEpsilon();
     auto shift6 = _shift6AoS;
