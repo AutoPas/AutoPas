@@ -79,7 +79,6 @@ add_subdirectory(tests)
 # cmake-format: off
 
 # randomly generated imbalanced scenario tested with LC only
-# also tests the flop functor
 add_test(
         NAME md-flexible.test-static
         COMMAND
@@ -138,7 +137,6 @@ if (HAS_AVX)
             COMMAND
             md-flexible
             --no-end-config
-            --no-flops
             --functor "${TEST_FUNCTOR}"
             --deltaT 0
             --particle-generator uniform
@@ -171,7 +169,6 @@ add_test(
         --boundary-type periodic
         --deltaT 0.005
         --no-end-config
-        --no-flops
         --no-progress-bar
         CONFIGURATIONS checkExamples
 )

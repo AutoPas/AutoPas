@@ -19,12 +19,9 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam dataLayout
- * @tparam useNewton3
  * @tparam collapseDepth Set the depth of loop collapsion for OpenMP. Loop variables from outer to inner loop: z,y,x
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth = 3>
+template <class ParticleCell, class PairwiseFunctor, int collapseDepth = 3>
 class CBasedTraversal : public CellPairTraversal<ParticleCell> {
  protected:
   /**
@@ -34,13 +31,16 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
+   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   explicit CBasedTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                           const double interactionLength, const std::array<double, 3> &cellLength)
-      : CellPairTraversal<ParticleCell>(dims),
+                           double interactionLength, const std::array<double, 3> &cellLength,
+                           DataLayoutOption dataLayout, bool useNewton3)
+      : CellPairTraversal<ParticleCell>(dims, dataLayout, useNewton3),
         _interactionLength(interactionLength),
         _cellLength(cellLength),
-        _dataLayoutConverter(pairwiseFunctor) {
+        _dataLayoutConverter(pairwiseFunctor, dataLayout) {
     for (unsigned int d = 0; d < 3; d++) {
       _overlap[d] = std::ceil(_interactionLength / _cellLength[d]);
     }
@@ -121,13 +121,12 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
   /**
    * Data Layout Converter to be used with this traversal
    */
-  utils::DataLayoutConverter<PairwiseFunctor, dataLayout> _dataLayoutConverter;
+  utils::DataLayoutConverter<PairwiseFunctor> _dataLayoutConverter;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3,
-          int collapseDepth>
+template <class ParticleCell, class PairwiseFunctor, int collapseDepth>
 template <typename LoopBody>
-inline void CBasedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, collapseDepth>::cTraversal(
+inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTraversal(
     LoopBody &&loopBody, const std::array<unsigned long, 3> &end, const std::array<unsigned long, 3> &stride,
     const std::array<unsigned long, 3> &offset) {
   using namespace autopas::utils::ArrayMath::literals;

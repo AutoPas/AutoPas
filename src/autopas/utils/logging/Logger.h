@@ -14,30 +14,6 @@
 
 #include <iostream>
 
-#ifdef AUTOPAS_VERBOSE_LOG
-/**
- * Helper Macro to get only the basename
- */
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-
-/**
- * Macro for logging providing common meta information.
- * @param lvl Possible levels: trace, debug, info, warn, error, critical.
- * @param fmt Message with formatting tokens
- * @param ... Formatting arguments
- */
-#define AutoPasLog(lvl, fmt, ...)                                        \
-  {                                                                      \
-    size_t textwidth = 35; /* If filenames get cropped increase this! */ \
-    std::string s;                                                       \
-    s.reserve(textwidth);                                                \
-    s.append(__FILENAME__);                                              \
-    s.append(":");                                                       \
-    s.append(std::to_string(__LINE__));                                  \
-    s.resize(textwidth, ' ');                                            \
-    spdlog::get("AutoPasLog")->lvl("[{}] " fmt, s, ##__VA_ARGS__);       \
-  }
-#else
 /**
  * Macro for logging providing common meta information without filename.
  * @param lvl Possible levels: trace, debug, info, warn, error, critical.
@@ -46,7 +22,6 @@
  * @note A ';' is enforced at the end of the macro.
  */
 #define AutoPasLog(lvl, fmt, ...) SPDLOG_LOGGER_##lvl(spdlog::get("AutoPasLog"), fmt, ##__VA_ARGS__)
-#endif
 
 namespace autopas {
 /**

@@ -12,6 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/logging/FLOPLogger.h"
 
 namespace autopas {
 
@@ -223,6 +224,25 @@ class Functor {
    */
   double getCutoff() const { return _cutoff; }
 
+  /**
+   * Get the number of FLOPs. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()
+   * output as invalid and leaves "Not Implemented" the log.
+   * @return number of FLOPs
+   */
+  [[nodiscard]] virtual size_t getNumFLOPs() const { return std::numeric_limits<size_t>::max(); }
+
+  /**
+   * Get the hit rate. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default NaN output as invalid and
+   * leaves "Not Implemented" in the log.
+   *
+   * @return (number of kernel calls) / (number of distance calculations)
+   */
+  [[nodiscard]] virtual double getHitRate() const { return std::numeric_limits<double>::quiet_NaN(); }
+
  private:
   /**
    * Implements loading of SoA buffers.
@@ -243,7 +263,7 @@ class Functor {
       soa.resizeArrays(offset + cell.size());
     }
 
-    if (cell.size() == 0) return;
+    if (cell.isEmpty()) return;
 
     /**
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
@@ -276,7 +296,7 @@ class Functor {
    */
   template <typename cell_t, std::size_t... I>
   void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
-    if (cell.size() == 0) return;
+    if (cell.isEmpty()) return;
 
     /**
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups

@@ -15,24 +15,24 @@ Please keep in mind the following notes while working.
 * `const` wherever possible. 
 * `nullptr` instead of `NULL`.
 * `using` instead of `typedef`.
-* Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Descriptive error message")` instead.
+* Avoid `assert()` but use `autopas::utils::ExceptionHandler::exception("Meaningful error message")` instead.
 
 ### Code Style
 * Private attributes are prefixed with `_`.
 * Every (abstract) class gets its own file, named exactly like the class.
 * Class names start with a capital letter.
-* Use camelCase over snake_case.
+* Use `camelCase` over `snake_case`.
 * Google code style is enforced by the CI server.
 * To enable code formatting targets set the `cmake` variable `AUTOPAS_FORMATTING_TARGETS` to `ON`.
-* Clang format version 9 is enforced (Other versions might format slightly differently).
-* Use `make clangformat` before submitting a PR.
+* [Clang format](https://releases.llvm.org/14.0.0/tools/clang/docs/ClangFormat.html) version 14 is enforced (other versions might format slightly differently - you must use version 14 only).
+* Run `make clangformat` before submitting a PR for review.
 * [cmake format](https://github.com/cheshirekow/cmake_format) is enforced.
-* Use `make cmakeformat` before submitting a PR.
+* Run `make cmakeformat` before submitting a PR for review.
 
 ### Comment Style
 * Please write full sentences starting with a capital letter and ending with a period.
-* Doxygen (v1.8.11) is used in this project to create the documentation.
-* Documentation style is Javadoc style.
+* [Doxygen](https://www.doxygen.nl/) (> v1.8.11) is used in this project to create the documentation.
+* Documentation style is [Javadoc style](https://en.wikipedia.org/wiki/Javadoc).
 * All public methods and attributes need to be documented.
 * The first comment inside a comment block (`/** <comment> */`) is automatically treated as a brief comment and needs to end with a period. The `brief` keyword is omitted (please delete occurrences).
 * ToDos: All comments containing todos should be prefixed with `@todo`, thus they are visible in the global todo list.
@@ -69,15 +69,15 @@ docker run -v ${PathToAutoPasRoot}/:/autopas -it autopas/autopas-build-intel \
 ```
 The tests executed through Jenkins are using these docker images.
 
-## Jenkins/CI
+## CI
 A continuous integration setup (CI) is automatically run for each open pull request and for the master.
-The executed tests are defined within the Jenkinsfile in the root AutoPas directory.
+The executed tests are defined within the [GitHub workflow file](/.github/workflows/TestSuites.yaml).
 These tests include:
 * Formatting and documentation checks 
-* Builing of all targets and execution of the provided ctest tests.
+* Building of all targets and execution of the provided ctest tests.
 * Sanitizer runs (Address+Leak sanitizer, Thread Sanitizer)
 
-If you encounter problems within these tests check whether you can reproduce them locally. Have a look at the [Jenkinsfile](https://github.com/AutoPas/AutoPas/blob/master/Jenkinsfile) for how the tools are used with AutoPas. If you do not have the respective compiler installed you can use the [AutoPas docker images](https://hub.docker.com/u/autopas).
+If you encounter problems within these tests check whether you can reproduce them locally. Have a look at the workflow file for how the tools are used with AutoPas. If you do not have the respective compiler installed you can use the [AutoPas docker images](https://hub.docker.com/u/autopas).
 To circumvent "unknown module" problems with the thread sanitizer, a library to override `dlclose()` can be found in the `libs` directory. Said library can be used to get better stack traces that are caused by dynamically loaded libraries (using `dlopen()`).
 More details can be found [here](../libs/fake-dlclose/README.md).
 
@@ -109,11 +109,10 @@ Possible log levels are:`trace`, `debug`, `info`, `warn`, `err`, `critical`, `of
 * Go to [`TraversalOption`](/src/autopas/options/TraversalOption.h).
   * Add a new enum in `TraversalOption::Value`.
   * Add a new string representation in the `map` of `TraversalOption::getOptionNames()`.
-* Add the enum to every compatible container in [`CompatibleTraversals`](/src/autopas/containers/CompatibleTraversals.h).
-  * If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals (E.g. `CompatibleTraversals::allTraversalsSupportingOnlySoA()`).
+* If applicability of the traversal is restricted, add your new enum to any of the functions that return sets of restricted traversals in [`CompatibleTraversals`](/src/autopas/containers/CompatibleTraversals.h).
 * Add a case for the new traversal in [`TraversalSelector::generateTraversal()`](/src/autopas/tuning/selectors/TraversalSelector.h).
 * Check that the new option is working in the md-flexible example.
-* Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp) and [`OptionTest::parseTraversalOptionsTest`](/tests/testAutopas/tests/options/OptionTest.h)).
+* Adapt unit tests (e.g. expected number of iterations in [`AutoTunerTest::testAllConfigurations()`](/tests/testAutopas/tests/tuning/AutoTunerTest.cpp)).
 * Add new unit tests for your traversal.
 * Regenerate the [`RuleLanguage.g4`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/RuleLanguage.g4) via the [`generateRuleLanguage.sh`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning/generateRuleLanguage.sh) script, both located in [`ruleBasedTuning`](/src/autopas/tuning/tuningStrategy/ruleBasedTuning).
 
