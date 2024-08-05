@@ -667,6 +667,13 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::lj12_6_AVX512_Mask: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+      return f(LJFunctorTypeAVX512_MASK{cutoff});
+#else
+      throw std::runtime_error("TODO : write message.");
+#endif
+    }
     case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
       return f(LJFunctorTypeSVE{cutoff});

@@ -38,6 +38,10 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX512_MASK)
+#include "molecularDynamicsLibrary/LJFunctorAVX512_Mask.h"
+#endif
+
 #endif
 
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
@@ -93,7 +97,7 @@ using LJFunctorTypeAutovec =
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
                                                               true, mdFlexibleTypeDefs::countFLOPs>;
 #else
 using LJFunctorTypeAutovecGlobals =
@@ -105,8 +109,9 @@ using LJFunctorTypeAutovecGlobals =
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
  * Type of LJFunctorTypeAVX used in md-flexible.
- * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX512_GS as determined by CMake flag
- * MD_FLEXIBLE_MODE. The Multi-site variant uses cutoffs based on the distance between the center-of-masses.
+ * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
+ * MD_FLEXIBLE_MODE.
+ * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!. If your machine can use AVX512, consider using a variant of the AVX512 functor"

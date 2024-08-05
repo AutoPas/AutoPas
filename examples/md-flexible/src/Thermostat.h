@@ -31,7 +31,7 @@ double calcTemperature(const AutoPasTemplate &autopas, ParticlePropertiesLibrary
   // kinetic energy times 2
   double kineticEnergyMul2 = 0;
   AUTOPAS_OPENMP(parallel reduction(+ : kineticEnergyMul2) default(none) shared(autopas, particlePropertiesLibrary))
-  for (auto iter = autopas.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+  for (auto iter = autopas.begin(); iter.isValid(); ++iter) {
     const auto vel = iter->getV();
 #if MD_FLEXIBLE_MODE == MULTISITE
     const auto angVel = iter->getAngularVel();

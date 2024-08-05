@@ -293,6 +293,10 @@ std::string MDFlexConfig::to_string() const {
       os << "Lennard-Jones (12-6) AVX intrinsics using 0/1-Masks" << endl;
       break;
     }
+    case FunctorOption::lj12_6_AVX512_Mask: {
+      os << "Lennard-Jones (12-6) AVX512 intrinsics using Masks" << endl;
+      break;
+    }
     case FunctorOption::lj12_6_SVE: {
       os << "Lennard-Jones (12-6) SVE intrinsics" << endl;
       break;
