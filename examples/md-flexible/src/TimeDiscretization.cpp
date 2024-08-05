@@ -29,7 +29,12 @@ void calculatePositionsAndResetForces(autopas::AutoPas<ParticleType> &autoPasCon
 
   AUTOPAS_OPENMP(parallel reduction(|| : throwException))
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+#if MD_FLEXIBLE_MODE == SINGLESITE
+    const auto m = iter->getMass();
+#elif MD_FLEXIBLE_MODE == MULTISITE
     const auto m = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+#endif
+
     auto v = iter->getV();
     auto f = iter->getF();
     iter->setOldF(f);
@@ -146,7 +151,11 @@ void calculateVelocities(autopas::AutoPas<ParticleType> &autoPasContainer,
 
   AUTOPAS_OPENMP(parallel)
   for (auto iter = autoPasContainer.begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
+#if MD_FLEXIBLE_MODE == SINGLESITE
+    const auto molecularMass = iter->getMass();
+#elif MD_FLEXIBLE_MODE == MULTISITE
     const auto molecularMass = particlePropertiesLibrary.getMolMass(iter->getTypeId());
+#endif
     const auto force = iter->getF();
     const auto oldForce = iter->getOldF();
     const auto changeInVel = (force + oldForce) * (deltaT / (2 * molecularMass));

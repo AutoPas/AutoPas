@@ -11,6 +11,7 @@ mpi-strategy                         :  no-mpi
 tuning-interval                      :  5000
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
+tuning-metric                        :  time
 functor                              :  Lennard-Jones (12-6) avx
 newton3                              :  [disabled, enabled]
 cutoff                               :  1
@@ -18,6 +19,7 @@ box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]
 cell-size                            :  [1]
 deltaT                               :  0.000001
+pause-simulation-during-tuning       :  true
 sorting-threshold                    :  8
 iterations                           :  10
 boundary-type                        :  [periodic, periodic, periodic]
@@ -100,7 +102,6 @@ thermostat:
   thermostatInterval                 :  10
   addBrownianMotion                  :  true
 log-level                            :  info
-no-flops                             :  false
 no-end-config                        :  false
 no-progress-bar                      :  false
 vtk-filename                         :  AllOptionsSim

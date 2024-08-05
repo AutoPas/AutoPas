@@ -241,9 +241,9 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
 
   // changing type from Particle to Molecule
   auto oldBuildType = std::get<2>(params);
-  auto buildType = autopas::VerletListsCellsHelpers<Molecule>::VLCBuildType::aosBuild;
-  if (oldBuildType == autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild) {
-    buildType = autopas::VerletListsCellsHelpers<Molecule>::VLCBuildType::soaBuild;
+  auto buildType = autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild;
+  if (oldBuildType == autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild) {
+    buildType = autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild;
   }
 
   const autopas::LoadEstimatorOption loadEstimator = autopas::LoadEstimatorOption::none;
@@ -259,14 +259,14 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
                                                                verletLists1.getBoxMax(), 100);
   autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
                                                                verletLists2.getBoxMax(), 100);
-  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
+  LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
 
-  autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>>
-      verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
-                       verletLists1.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
-                       autopas::ContainerOption::Value::pairwiseVerletLists);
-  autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>> soaTraversal(
+  autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>> verletTraversal1(
+      verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
+      verletLists1.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
+      autopas::ContainerOption::Value::pairwiseVerletLists);
+  autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>> soaTraversal(
       verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
       verletLists2.getCellLength(), autopas::DataLayoutOption::soa, useNewton3,
       autopas::ContainerOption::Value::pairwiseVerletLists);
@@ -289,14 +289,13 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
   EXPECT_FALSE(iter2.isValid());
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    Generated, PairwiseVerletListsTest,
-    Values(std::make_tuple(1.0, true, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild),
-           std::make_tuple(2.0, true, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild),
-           std::make_tuple(1.0, false, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild),
-           std::make_tuple(2.0, false, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::aosBuild),
-           std::make_tuple(1.0, true, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild),
-           std::make_tuple(2.0, true, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild),
-           std::make_tuple(1.0, false, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild),
-           std::make_tuple(2.0, false, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild)),
-    PairwiseVerletListsTest::PrintToStringParamName());
+INSTANTIATE_TEST_SUITE_P(Generated, PairwiseVerletListsTest,
+                         Values(std::make_tuple(1.0, true, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild),
+                                std::make_tuple(2.0, true, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild),
+                                std::make_tuple(1.0, false, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild),
+                                std::make_tuple(2.0, false, autopas::VerletListsCellsHelpers::VLCBuildType::aosBuild),
+                                std::make_tuple(1.0, true, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild),
+                                std::make_tuple(2.0, true, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild),
+                                std::make_tuple(1.0, false, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild),
+                                std::make_tuple(2.0, false, autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild)),
+                         PairwiseVerletListsTest::PrintToStringParamName());

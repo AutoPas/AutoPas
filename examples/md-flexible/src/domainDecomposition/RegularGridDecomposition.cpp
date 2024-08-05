@@ -405,15 +405,14 @@ void RegularGridDecomposition::reflectParticlesAtBoundaries(AutoPasType &autoPas
             }
           }
 #else
-          const auto siteType = p->getTypeId();
           const auto mirrorPosition = [position, boundaryPosition, dimensionIndex]() {
             const auto displacementToBoundary = boundaryPosition - position[dimensionIndex];
             auto returnedPosition = position;
             returnedPosition[dimensionIndex] += 2 * displacementToBoundary;
             return returnedPosition;
           }();
-          const auto sigmaSquared = particlePropertiesLib.getMixingSigmaSquared(siteType, siteType);
-          const auto epsilon24 = particlePropertiesLib.getMixing24Epsilon(siteType, siteType);
+          const auto sigmaSquared = p->getSigma() * p->getSigma();
+          const auto epsilon24 = 24 * p->getEpsilon();
           const auto force = LJKernel(position, mirrorPosition, sigmaSquared, epsilon24);
           p->addF(force);
 #endif
@@ -510,9 +509,9 @@ void RegularGridDecomposition::collectHaloParticlesForLeftNeighbor(
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const std::array<double, _dimensionCount> boxMin = _localBoxMin - skinWidth;
+  const std::array<double, _dimensionCount> boxMin = _localBoxMin;
   const std::array<double, _dimensionCount> boxMax = [&]() {
-    auto boxMax = _localBoxMax + skinWidth;
+    auto boxMax = _localBoxMax;
     boxMax[direction] = _localBoxMin[direction] + _cutoffWidth + skinWidth;
     return boxMax;
   }();
@@ -528,9 +527,9 @@ void RegularGridDecomposition::collectHaloParticlesForRightNeighbor(
   using namespace autopas::utils::ArrayMath::literals;
 
   const auto skinWidth = _skinWidthPerTimestep * _rebuildFrequency;
-  const std::array<double, _dimensionCount> boxMax = _localBoxMax + skinWidth;
+  const std::array<double, _dimensionCount> boxMax = _localBoxMax;
   const std::array<double, _dimensionCount> boxMin = [&]() {
-    auto boxMin = _localBoxMin - skinWidth;
+    auto boxMin = _localBoxMin;
     boxMin[direction] = _localBoxMax[direction] - _cutoffWidth - skinWidth;
     return boxMin;
   }();

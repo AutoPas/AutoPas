@@ -11,7 +11,6 @@
 #include "AutoPasTestBase.h"
 #include "LJFunctorTest.h"
 #include "autopasTools/generators/RandomGenerator.h"
-#include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 template <class FuncType>
 class LJFunctorTestVs : public LJFunctorTest {

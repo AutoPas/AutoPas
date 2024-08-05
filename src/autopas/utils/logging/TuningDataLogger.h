@@ -6,8 +6,6 @@
 
 #pragma once
 
-#include <spdlog/async.h>
-
 #include "autopas/tuning/Configuration.h"
 
 namespace autopas {

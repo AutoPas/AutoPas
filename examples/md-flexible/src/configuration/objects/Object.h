@@ -63,7 +63,7 @@ class Object {
   [[nodiscard]] const std::array<double, 3> &getVelocity() const { return _velocity; }
 
   /**
-   * Getter for typeId of Particles in Objet
+   * Getter for the typeId of the particles in the object
    * @return typeId
    */
   [[nodiscard]] unsigned long getTypeId() const { return _typeId; }
