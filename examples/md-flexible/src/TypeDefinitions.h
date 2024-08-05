@@ -81,8 +81,8 @@ constexpr bool countFLOPs =
  * MD_FLEXIBLE_MODE.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false,
-                                                       mdFlexibleTypeDefs::countFLOPs>; // Todo change this
+using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, false,
+                                                       mdFlexibleTypeDefs::countFLOPs>;
 #else
 using LJFunctorTypeAutovec =
     mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
@@ -95,10 +95,9 @@ using LJFunctorTypeAutovec =
  * Type of LJFunctorTypeAutovecGlobals used in md-flexible.
  * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
  * MD_FLEXIBLE_MODE.
- * Todo remove useMixing
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true, autopas::FunctorN3Modes::Both,
                                                               true, mdFlexibleTypeDefs::countFLOPs>;
 #else
 using LJFunctorTypeAutovecGlobals =
