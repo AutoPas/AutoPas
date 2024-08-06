@@ -224,11 +224,6 @@ class AutoTuner {
 
  private:
   /**
-   * Sensor for energy measurement
-   */
-  utils::EnergySensor _energySensor;
-
-  /**
    * Total number of collected samples. This is the sum of the sizes of all sample vectors.
    * @return Sum of sizes of sample vectors.
    */
@@ -376,5 +371,10 @@ class AutoTuner {
    * CSV logger for all samples collected during a tuning phase.
    */
   TuningDataLogger _tuningDataLogger;
+
+  /**
+   * Sensor for energy measurement
+   */
+  utils::EnergySensor _energySensor;
 };
 }  // namespace autopas
