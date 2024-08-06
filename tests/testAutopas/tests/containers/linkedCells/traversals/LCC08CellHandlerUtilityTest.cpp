@@ -6,8 +6,6 @@
 
 #include "LCC08CellHandlerUtilityTest.h"
 
-#include "autopas/utils/StringUtils.h"
-
 using testing::ContainerEq;
 using testing::DoubleNear;
 using testing::Eq;
@@ -23,7 +21,7 @@ using autopas::LCC08CellHandlerUtility::computePairwiseCellOffsetsC08;
  */
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
   constexpr double interactionLength{1.0};
-  // Calculated by hand & checked with the legacy implementation
+  // Calculated by hand & checked with the legacy implementation (Commit ID: d560a7075)
   constexpr std::array<unsigned long, 14> expectedPairOffsetDifferences{
       0, 1, 11, 12, 13, 131, 132, 133, 143, 144, 145, 155, 156, 157,
   };
@@ -55,7 +53,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1) {
 
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1_Sorting) {
   constexpr double interactionLength{1.0};
-  // Checked & Computed with the legacy implementation
+  // Computed with the legacy implementation (assuming it has been correct), Commit ID: d560a7075
   constexpr std::array<std::array<double, 3>, 14> expectedSortingVectors{{
       {0.57735, 0.57735, 0.57735},
       {0, 0, -1},
@@ -93,7 +91,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_1x1x1_Sort
  */
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2) {
   constexpr double interactionLength{2.0};
-  // Checked & Computed with the legacy implementation
+  // Checked by Hand & Computed with the legacy implementation (Commit ID: d560a7075)
   constexpr std::array<unsigned long, 63> expectedPairOffsetDifferences{
       0,   1,   2,   10,  11,  12,  13,  14,  22,  23,  24,  25,  26,  118, 119, 120, 121, 122, 130, 131, 132,
       133, 134, 142, 143, 144, 145, 146, 154, 155, 156, 157, 158, 166, 167, 168, 169, 170, 262, 263, 264, 265,
@@ -113,7 +111,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2) {
 
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2_Sorting) {
   constexpr double interactionLength{2.0};
-  // Checked & Computed with the legacy implementation
+  // Computed with the legacy implementation (assuming it has been correct), Commit ID: d560a7075
   constexpr std::array<std::array<double, 3>, 63> expectedSortingVectors{{
       {0.57735, 0.57735, 0.57735},
       {0, 0, -1},
@@ -200,7 +198,7 @@ TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_2x2x2_Sort
  */
 TEST_F(LCC08CellHandlerUtilityTest, ComputePairwiseCellOffsetsC08Test_3x3x3) {
   constexpr double interactionLength{3.0};
-  // Calculated with the legacy implementation
+  // Calculated with the legacy implementation (Commit ID: d560a7075)
   constexpr std::array<unsigned long, 168> expectedPairOffsetDifferences{
       0,   1,   2,   3,   9,   10,  11,  12,  13,  14,  15,  21,  22,  23,  24,  25,  26,  27,  33,  34,  35,
       36,  37,  38,  39,  105, 106, 107, 108, 109, 110, 111, 117, 118, 119, 120, 121, 122, 123, 129, 130, 131,

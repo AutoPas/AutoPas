@@ -40,10 +40,10 @@ constexpr bool includeCellPair(const C08CellDirection &direction, const std::arr
 }
 
 std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offset1Vector,
-                                              const std::array<double, 3> &offset2Cartesian) {
+                                              const std::array<double, 3> &offset2Vector) {
   using namespace autopas::utils::ArrayMath::literals;
   // In case the sorting direction is 0, 0, 0 ==> fix to 1, 1, 1
-  std::array<double, 3> sortDir = offset1Vector - offset2Cartesian;
+  std::array<double, 3> sortDir = offset1Vector - offset2Vector;
   if (std::all_of(sortDir.begin(), sortDir.end(), [](const auto &val) { return val == 0; })) {
     sortDir = {1., 1., 1.};
   }
@@ -86,9 +86,6 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
       // Calculate the first partaking cell's offset relative to base cell. The first offset never has a z component
       // These vertical interactions (along the z-axis) are all incoperated by the second cell's index
       const int offset1 = threeToOneD(x, y, 0, cellsPerDimIntegral);
-      // Calculate the vector for offset1's cell from the base cell. z-index is zero as stated above
-      const std::array<double, 3> offset1Vector{
-          {static_cast<double>(x) * cellLength[0], static_cast<double>(y) * cellLength[1], 0.0}};
       for (int z = 0; z <= overlap[2]; ++z) {
         // The z component is always calculated in the same way and does not depend on the direction
         const double distVecZComponent = std::max(0.0, z - 1.0) * cellLength[2];
@@ -104,9 +101,9 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
             // The x and y values are dependent on the direction (non-zero-values), and the overlap (step-width)
             const int offset2 = threeToOneD(maskX * overlap[0], maskY * overlap[1], z, cellsPerDimIntegral);
 
-            // Calculate the vector of offset2's cell from the base cell
+            // The "distVec" is the direction between borders of cells.
             // Using masking for x, y: Either max(0, overlap - x - 1) or max(0, x - 1) --> the same holds for y
-            const std::array<double, 3> offset2Vector{
+            const std::array<double, 3> distVec{
                 std::max(0.0, (overlap[0] - x) * maskX + x * (1 - maskX) - 1.0) * cellLength[0],
                 std::max(0.0, (overlap[1] - y) * maskY + y * (1 - maskY) - 1.0) * cellLength[1],
                 distVecZComponent,
@@ -114,20 +111,25 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
 
             // 2. Exclusion Criteria to skip computations by not including certain cell-combinations
             //      if the distance between cell centers is actually in interactionLength
-            if (utils::ArrayMath::dot(offset2Vector, offset2Vector) <= interactionLengthSquare) {
+            if (utils::ArrayMath::dot(distVec, distVec) <= interactionLengthSquare) {
               // Calculate the sorting direction if sorting is enabled
               if constexpr (Mode == C08OffsetMode::c08CellPairsSorting) {
-                // Compute the vector along to sort between two cells, using the 3D coordinates of cell2 & offset1Vector
-                const auto sortDir = computeSortingDirection(offset1Vector, {
-                                                                                static_cast<double>(maskX * overlap[0]),
-                                                                                static_cast<double>(maskY * overlap[1]),
-                                                                                static_cast<double>(z),
-                                                                            });
+                // These are respectivley the 3D coordinates of the offsets of cell1 and cell2, as double elements
+                const auto sortDir = computeSortingDirection(
+                    {
+                        static_cast<double>(x),
+                        static_cast<double>(y),
+                        0.0,
+                    },
+                    {
+                        static_cast<double>(maskX * overlap[0]),
+                        static_cast<double>(maskY * overlap[1]),
+                        static_cast<double>(z),
+                    });
                 // Append the cell pairs & their sorting direction
                 resultOffsetsC08.emplace_back(offset2, offset1, sortDir);
               } else if constexpr (Mode == C08OffsetMode::c04CellPairs) {
-                // The c04CellPairs requires a vector of vector of pairs where the first vector is resolved in the
-                // x-axis
+                // The c04CellPairs requires a vector of vector of pairs where the first vector is resolved in x-axis
                 resultOffsetsC08[x].emplace_back(offset2, offset1);
               } else {
                 // Like c08CellPairsSorting, but without sorting

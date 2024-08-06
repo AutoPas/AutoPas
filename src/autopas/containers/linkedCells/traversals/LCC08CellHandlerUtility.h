@@ -130,12 +130,12 @@ constexpr bool includeCellPair(const C08CellDirection &direction, const std::arr
 /**
  * Computes the sorting direction between two cells from center of cell1 to center of cell2 using the 3D indices
  * of the cells.
- * @param offset1Vector the vector of cell1 from the origin
- * @param offset2Cartesian the relative coordinates of cell2 in 3D
- * @return a vector containing the sorting direction, i.e. the vector from center of cell1 to center of cell2
+ * @param offset1Vector the cartesianOffset of cell1
+ * @param offset2Vector the cartesianOffset of cell2
+ * @return normalized vector containing the sorting direction, i.e. the vector from cell1 to cell2
  */
 std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offset1Vector,
-                                              const std::array<double, 3> &offset2Cartesian);
+                                              const std::array<double, 3> &offset2Vector);
 
 }  // namespace internal
 
