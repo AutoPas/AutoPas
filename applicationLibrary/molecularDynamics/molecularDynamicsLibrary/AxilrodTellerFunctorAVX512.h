@@ -356,30 +356,24 @@ class AxilrodTellerFunctor
    * SoA kernel using masked simd intrinsics.
    */
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
-  void SoAKernelMasked(const size_t k, const __m512d &xi, const __m512d &yi, const __m512d &zi,
-                       const __m512d &xj, const __m512d &yj, const __m512d &zj,
-                       const double *const __restrict xkPtr, const double *const __restrict ykPtr,
-                       const double *const __restrict zkPtr, const size_t typeI, const size_t typeJ,
-                       const size_t *const __restrict typeKptr, const __mmask8 &ownedMaskI,
+  void SoAKernelMasked(const size_t k, const __m512d &xi, const __m512d &yi, const __m512d &zi, const __m512d &xj,
+                       const __m512d &yj, const __m512d &zj, const double *const __restrict xkPtr,
+                       const double *const __restrict ykPtr, const double *const __restrict zkPtr, const size_t typeI,
+                       const size_t typeJ, const size_t *const __restrict typeKptr, const __mmask8 &ownedMaskI,
                        const __mmask8 &ownedMaskJ, const autopas::OwnershipState *const ownedStateKptr,
-                       const __m512d &drxij, const __m512d &dryij, const __m512d &drzij,
-                       const __m512d &drij2, __m512d &fxiacc, __m512d &fyiacc, __m512d &fziacc,
-                       __m512d &fxjacc, __m512d &fyjacc, __m512d &fzjacc,
-                       double *const __restrict fxkPtr, double *const __restrict fykPtr,
+                       const __m512d &drxij, const __m512d &dryij, const __m512d &drzij, const __m512d &drij2,
+                       __m512d &fxiacc, __m512d &fyiacc, __m512d &fziacc, __m512d &fxjacc, __m512d &fyjacc,
+                       __m512d &fzjacc, double *const __restrict fxkPtr, double *const __restrict fykPtr,
                        double *const __restrict fzkPtr, __m512d &potentialEnergySum, __m512d &virialSumX,
                        __m512d &virialSumY, __m512d &virialSumZ, unsigned int rest = 0) {
-    const __m512d xk =
-        remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &xkPtr[k]) : _mm512_loadu_pd(&xkPtr[k]);
-    const __m512d yk =
-        remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &ykPtr[k]) : _mm512_loadu_pd(&ykPtr[k]);
-    const __m512d zk =
-        remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &zkPtr[k]) : _mm512_loadu_pd(&zkPtr[k]);
+    const __m512d xk = remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &xkPtr[k]) : _mm512_loadu_pd(&xkPtr[k]);
+    const __m512d yk = remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &ykPtr[k]) : _mm512_loadu_pd(&ykPtr[k]);
+    const __m512d zk = remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &zkPtr[k]) : _mm512_loadu_pd(&zkPtr[k]);
 
     // only required for calculating globals
     const __m512i ownedStateK = remainderIsMasked ? _mm512_maskz_loadu_epi64(_masks[rest], &ownedStateKptr[k])
-                                                       : _mm512_loadu_epi64(&ownedStateKptr[k]);
-    const __mmask8 ownedMaskK =
-        _mm512_cmp_epi64_mask(ownedStateK, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
+                                                  : _mm512_loadu_epi64(&ownedStateKptr[k]);
+    const __mmask8 ownedMaskK = _mm512_cmp_epi64_mask(ownedStateK, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
 
     // calculate distance k-i
     const __m512d drxki = _mm512_sub_pd(xi, xk);
@@ -408,9 +402,8 @@ class AxilrodTellerFunctor
     const __mmask8 dummyMask = _mm512_cmp_epi64_mask(ownedStateK, _ownedStateDummyMM512i, _MM_CMPINT_NE);
 
     // mask with bits set if particle is not a dummy and within cutoff of the first two particles
-    const __mmask8 mask = remainderIsMasked
-                                   ? _mm512_kand(_masks[rest], _mm512_kand(cutoffMask, dummyMask))
-                                   : _mm512_kand(cutoffMask, dummyMask);
+    const __mmask8 mask = remainderIsMasked ? _mm512_kand(_masks[rest], _mm512_kand(cutoffMask, dummyMask))
+                                            : _mm512_kand(cutoffMask, dummyMask);
 
     if (std::bitset<vecLength>(mask).count() == 0) {
       // early exit if all particles are ignored
@@ -440,15 +433,15 @@ class AxilrodTellerFunctor
     const __m512d dr5 = _mm512_mul_pd(dr5PART, dr2sqrt);
 
     if constexpr (useMixing) {
-      _nu = _mm512_set_pd(
-          not remainderIsMasked or rest > 7 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 7]) : 0,
-          not remainderIsMasked or rest > 6 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 6]) : 0,
-          not remainderIsMasked or rest > 5 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 5]) : 0,
-          not remainderIsMasked or rest > 4 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 4]) : 0,
-          not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 3]) : 0,
-          not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 2]) : 0,
-          not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 1]) : 0,
-          _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k]));
+      _nu =
+          _mm512_set_pd(not remainderIsMasked or rest > 7 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 7]) : 0,
+                        not remainderIsMasked or rest > 6 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 6]) : 0,
+                        not remainderIsMasked or rest > 5 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 5]) : 0,
+                        not remainderIsMasked or rest > 4 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 4]) : 0,
+                        not remainderIsMasked or rest > 3 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 3]) : 0,
+                        not remainderIsMasked or rest > 2 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 2]) : 0,
+                        not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k + 1]) : 0,
+                        _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[k]));
     }
     const __m512d invdr5 = _mm512_maskz_div_pd(mask, _nu, dr5);
     const __m512d invdr53 = _mm512_mul_pd(_three, invdr5);
@@ -559,15 +552,12 @@ class AxilrodTellerFunctor
       // Division to the correct value is handled in endTraversal().
       // invdr53 is zero if particles are not within cutoff, so no cutoff mask is needed here.
       const __m512d potentialEnergy3 = _mm512_mul_pd(invdr53, _mm512_fnmadd_pd(dr2, _three, drijk2));
-      potentialEnergySum =
-          _mm512_mask_add_pd(potentialEnergySum, ownedMaskI, potentialEnergySum, potentialEnergy3);
+      potentialEnergySum = _mm512_mask_add_pd(potentialEnergySum, ownedMaskI, potentialEnergySum, potentialEnergy3);
       if constexpr (newton3j) {
-        potentialEnergySum =
-            _mm512_mask_add_pd(potentialEnergySum, ownedMaskJ, potentialEnergySum, potentialEnergy3);
+        potentialEnergySum = _mm512_mask_add_pd(potentialEnergySum, ownedMaskJ, potentialEnergySum, potentialEnergy3);
       }
       if constexpr (newton3k) {
-        potentialEnergySum =
-            _mm512_mask_add_pd(potentialEnergySum, ownedMaskK, potentialEnergySum, potentialEnergy3);
+        potentialEnergySum = _mm512_mask_add_pd(potentialEnergySum, ownedMaskK, potentialEnergySum, potentialEnergy3);
       }
     }
   }
@@ -1012,34 +1002,32 @@ class AxilrodTellerFunctor
    * SoA kernel using simd gather intrinsics to load predetermined batch of particles.
    */
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
-  void SoAKernelGatherScatter(const __m512i indicesK, const __m512d &xi, const __m512d &yi,
-                              const __m512d &zi, const __m512d &xj, const __m512d &yj,
-                              const __m512d &zj, const double *const __restrict xkPtr,
-                              const double *const __restrict ykPtr, const double *const __restrict zkPtr,
-                              const size_t typeI, const size_t typeJ, const size_t *const __restrict typeKptr,
-                              const __mmask8 &ownedMaskI, const __mmask8 &ownedMaskJ,
+  void SoAKernelGatherScatter(const __m512i indicesK, const __m512d &xi, const __m512d &yi, const __m512d &zi,
+                              const __m512d &xj, const __m512d &yj, const __m512d &zj,
+                              const double *const __restrict xkPtr, const double *const __restrict ykPtr,
+                              const double *const __restrict zkPtr, const size_t typeI, const size_t typeJ,
+                              const size_t *const __restrict typeKptr, const __mmask8 &ownedMaskI,
+                              const __mmask8 &ownedMaskJ,
                               const autopas::OwnershipState *const __restrict ownedStateKptr, const __m512d &drxij,
-                              const __m512d &dryij, const __m512d &drzij, const __m512d &drij2,
-                              __m512d &fxiacc, __m512d &fyiacc, __m512d &fziacc, __m512d &fxjacc,
-                              __m512d &fyjacc, __m512d &fzjacc, double *const __restrict fxkPtr,
-                              double *const __restrict fykPtr, double *const __restrict fzkPtr,
-                              __m512d &potentialEnergySum, __m512d &virialSumX, __m512d &virialSumY,
-                              __m512d &virialSumZ, unsigned int rest = 0) {
+                              const __m512d &dryij, const __m512d &drzij, const __m512d &drij2, __m512d &fxiacc,
+                              __m512d &fyiacc, __m512d &fziacc, __m512d &fxjacc, __m512d &fyjacc, __m512d &fzjacc,
+                              double *const __restrict fxkPtr, double *const __restrict fykPtr,
+                              double *const __restrict fzkPtr, __m512d &potentialEnergySum, __m512d &virialSumX,
+                              __m512d &virialSumY, __m512d &virialSumZ, unsigned int rest = 0) {
     const __m512d xk = remainderIsMasked ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, xkPtr, 8)
-                                              : _mm512_i64gather_pd(indicesK, xkPtr, 8);
+                                         : _mm512_i64gather_pd(indicesK, xkPtr, 8);
     const __m512d yk = remainderIsMasked ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, ykPtr, 8)
-                                              : _mm512_i64gather_pd(indicesK, ykPtr, 8);
+                                         : _mm512_i64gather_pd(indicesK, ykPtr, 8);
     const __m512d zk = remainderIsMasked ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, zkPtr, 8)
-                                              : _mm512_i64gather_pd(indicesK, zkPtr, 8);
+                                         : _mm512_i64gather_pd(indicesK, zkPtr, 8);
 
     // only required for calculating globals
     const __m512i ownedStateK =
         remainderIsMasked
             ? _mm512_mask_i64gather_epi64(_ownedStateDummyMM512i, _masks[rest], indicesK,
-                                               reinterpret_cast<const long long *const>(ownedStateKptr), 8)
+                                          reinterpret_cast<const long long *const>(ownedStateKptr), 8)
             : _mm512_i64gather_epi64(indicesK, reinterpret_cast<const long long *const>(ownedStateKptr), 8);
-    const __mmask8 ownedMaskK =
-        _mm512_cmp_epi64_mask(ownedStateK, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
+    const __mmask8 ownedMaskK = _mm512_cmp_epi64_mask(ownedStateK, _ownedStateOwnedMM512i, _MM_CMPINT_EQ);
 
     // calculate distance j-k
     const __m512d drxjk = _mm512_sub_pd(xk, xj);
@@ -1092,8 +1080,7 @@ class AxilrodTellerFunctor
           not remainderIsMasked or rest > 1 ? _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[1]]) : 0,
           _PPLibrary->getMixingNu(typeI, typeJ, typeKptr[indicesK[0]]));
     }
-    const __m512d invdr5 =
-        remainderIsMasked ? _mm512_maskz_div_pd(_masks[rest], _nu, dr5) : _mm512_div_pd(_nu, dr5);
+    const __m512d invdr5 = remainderIsMasked ? _mm512_maskz_div_pd(_masks[rest], _nu, dr5) : _mm512_div_pd(_nu, dr5);
     const __m512d invdr53 = _mm512_mul_pd(_three, invdr5);
 
     const __m512d drj2_drk2 = _mm512_sub_pd(drj2, drk2);
@@ -1177,15 +1164,12 @@ class AxilrodTellerFunctor
         const __m512d nfyk = _mm512_add_pd(fyi, fyj);
         const __m512d nfzk = _mm512_add_pd(fzi, fzj);
 
-        const __m512d fxk_old = remainderIsMasked
-                                         ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fxkPtr, 8)
-                                         : _mm512_i64gather_pd(indicesK, fxkPtr, 8);
-        const __m512d fyk_old = remainderIsMasked
-                                         ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fykPtr, 8)
-                                         : _mm512_i64gather_pd(indicesK, fykPtr, 8);
-        const __m512d fzk_old = remainderIsMasked
-                                         ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fzkPtr, 8)
-                                         : _mm512_i64gather_pd(indicesK, fzkPtr, 8);
+        const __m512d fxk_old = remainderIsMasked ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fxkPtr, 8)
+                                                  : _mm512_i64gather_pd(indicesK, fxkPtr, 8);
+        const __m512d fyk_old = remainderIsMasked ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fykPtr, 8)
+                                                  : _mm512_i64gather_pd(indicesK, fykPtr, 8);
+        const __m512d fzk_old = remainderIsMasked ? _mm512_mask_i64gather_pd(_zero, _masks[rest], indicesK, fzkPtr, 8)
+                                                  : _mm512_i64gather_pd(indicesK, fzkPtr, 8);
 
         const __m512d fxk_new = _mm512_sub_pd(fxk_old, nfxk);
         const __m512d fyk_new = _mm512_sub_pd(fyk_old, nfyk);
@@ -1216,15 +1200,12 @@ class AxilrodTellerFunctor
       // Division to the correct value is handled in endTraversal().
       // invdr53 is zero if particles are not within cutoff, so no cutoff mask is needed here.
       const __m512d potentialEnergy3 = _mm512_mul_pd(invdr53, _mm512_fnmadd_pd(dr2, _three, drijk2));
-      potentialEnergySum =
-          _mm512_mask_add_pd(potentialEnergySum, ownedMaskI, potentialEnergySum, potentialEnergy3);
+      potentialEnergySum = _mm512_mask_add_pd(potentialEnergySum, ownedMaskI, potentialEnergySum, potentialEnergy3);
       if constexpr (newton3j) {
-        potentialEnergySum =
-            _mm512_mask_add_pd(potentialEnergySum, ownedMaskJ, potentialEnergySum, potentialEnergy3);
+        potentialEnergySum = _mm512_mask_add_pd(potentialEnergySum, ownedMaskJ, potentialEnergySum, potentialEnergy3);
       }
       if constexpr (newton3k) {
-        potentialEnergySum =
-            _mm512_mask_add_pd(potentialEnergySum, ownedMaskK, potentialEnergySum, potentialEnergy3);
+        potentialEnergySum = _mm512_mask_add_pd(potentialEnergySum, ownedMaskK, potentialEnergySum, potentialEnergy3);
       }
     }
   }
@@ -1235,25 +1216,21 @@ class AxilrodTellerFunctor
    */
   template <bool newton3j, bool newton3k, bool remainderIsMasked>
   void SoAKernelCompressAlignr(__m512i &interactionIndices, int &numAssignedRegisters, const size_t k,
-                               const __m512d &xi, const __m512d &yi, const __m512d &zi,
-                               const __m512d &xj, const __m512d &yj, const __m512d &zj,
-                               const double *const xkPtr, const double *const ykPtr, const double *const zkPtr,
-                               const size_t typeI, const size_t typeJ, const size_t *const typeKptr,
-                               const __mmask8 &ownedMaskI, const __mmask8 &ownedMaskJ,
-                               const autopas::OwnershipState *const ownedStateKptr, const __m512d &drxij,
-                               const __m512d &dryij, const __m512d &drzij, const __m512d &drij2,
-                               __m512d &fxiacc, __m512d &fyiacc, __m512d &fziacc, __m512d &fxjacc,
-                               __m512d &fyjacc, __m512d &fzjacc, double *const fxkPtr, double *const fykPtr,
-                               double *const fzkPtr, __m512d &potentialEnergySum, __m512d &virialSumX,
-                               __m512d &virialSumY, __m512d &virialSumZ, unsigned int rest = 0) {
+                               const __m512d &xi, const __m512d &yi, const __m512d &zi, const __m512d &xj,
+                               const __m512d &yj, const __m512d &zj, const double *const xkPtr,
+                               const double *const ykPtr, const double *const zkPtr, const size_t typeI,
+                               const size_t typeJ, const size_t *const typeKptr, const __mmask8 &ownedMaskI,
+                               const __mmask8 &ownedMaskJ, const autopas::OwnershipState *const ownedStateKptr,
+                               const __m512d &drxij, const __m512d &dryij, const __m512d &drzij, const __m512d &drij2,
+                               __m512d &fxiacc, __m512d &fyiacc, __m512d &fziacc, __m512d &fxjacc, __m512d &fyjacc,
+                               __m512d &fzjacc, double *const fxkPtr, double *const fykPtr, double *const fzkPtr,
+                               __m512d &potentialEnergySum, __m512d &virialSumX, __m512d &virialSumY,
+                               __m512d &virialSumZ, unsigned int rest = 0) {
     const __m512i loopIndices = _mm512_add_epi64(_mm512_set1_epi64(k), _ascendingIndices);
 
-    const __m512d xk =
-        remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &xkPtr[k]) : _mm512_loadu_pd(&xkPtr[k]);
-    const __m512d yk =
-        remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &ykPtr[k]) : _mm512_loadu_pd(&ykPtr[k]);
-    const __m512d zk =
-        remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &zkPtr[k]) : _mm512_loadu_pd(&zkPtr[k]);
+    const __m512d xk = remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &xkPtr[k]) : _mm512_loadu_pd(&xkPtr[k]);
+    const __m512d yk = remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &ykPtr[k]) : _mm512_loadu_pd(&ykPtr[k]);
+    const __m512d zk = remainderIsMasked ? _mm512_maskz_loadu_pd(_masks[rest], &zkPtr[k]) : _mm512_loadu_pd(&zkPtr[k]);
 
     // calculate distance k-i
     const __m512d drxki = _mm512_sub_pd(xi, xk);
@@ -1283,9 +1260,8 @@ class AxilrodTellerFunctor
     const __mmask8 dummyMask = _mm512_cmp_epi64_mask(ownedStateK, _ownedStateDummyMM512i, _MM_CMPINT_NE);
 
     // mask with bits set if particle is not a dummy and within cutoff of the first two particles
-    const __mmask8 mask = remainderIsMasked
-                                   ? _mm512_kand(_masks[rest], _mm512_kand(cutoffMask, dummyMask))
-                                   : _mm512_kand(cutoffMask, dummyMask);
+    const __mmask8 mask = remainderIsMasked ? _mm512_kand(_masks[rest], _mm512_kand(cutoffMask, dummyMask))
+                                            : _mm512_kand(cutoffMask, dummyMask);
 
     const int popCountMask = std::bitset<vecLength>(mask).count();
 
@@ -2017,7 +1993,8 @@ class AxilrodTellerFunctor
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                             const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList) {
-    autopas::utils::ExceptionHandler::exception("AxilrodTellerFunctorAVX512::SoAFunctorVerletImpl() is not implemented.");
+    autopas::utils::ExceptionHandler::exception(
+        "AxilrodTellerFunctorAVX512::SoAFunctorVerletImpl() is not implemented.");
   }
 
   /**
@@ -2131,13 +2108,11 @@ class AxilrodTellerFunctor
 
   static constexpr int vecLength = 8;
   const __mmask8 _masks[vecLength]{0b00000000, 0b00000001, 0b00000011, 0b00000111,
-                                        0b00001111, 0b00011111, 0b00111111, 0b01111111};
+                                   0b00001111, 0b00011111, 0b00111111, 0b01111111};
 
   __m512i _ascendingIndices{_mm512_set_epi64(7, 6, 5, 4, 3, 2, 1, 0)};
 
-  const __m512i _ownedStateDummyMM512i{
-      _mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::dummy))};
-  const __m512i _ownedStateOwnedMM512i{
-      _mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::owned))};
+  const __m512i _ownedStateDummyMM512i{_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::dummy))};
+  const __m512i _ownedStateOwnedMM512i{_mm512_set1_epi64(static_cast<int64_t>(autopas::OwnershipState::owned))};
 };
 }  // namespace mdLib
