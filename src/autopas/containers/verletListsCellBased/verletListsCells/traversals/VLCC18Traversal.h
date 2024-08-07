@@ -57,7 +57,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
         return TraversalOption::vlp_c18;
       default:
         utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: {}",
-                                                    this->_typeOfList.to_string());
+                                           this->_typeOfList.to_string());
     }
     // should never be reached.
     return TraversalOption();
