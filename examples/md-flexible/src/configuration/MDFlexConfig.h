@@ -500,7 +500,8 @@ class MDFlexConfig {
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller, axilrod-teller-AVX512)"};
+      FunctorOption3B::none, "functor-3b", true,
+      "Triwise force functor to use. Possible Values: (axilrod-teller, axilrod-teller-AVX512)"};
   /**
    * iterations
    */
