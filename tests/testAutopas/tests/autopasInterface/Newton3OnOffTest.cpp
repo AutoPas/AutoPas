@@ -36,7 +36,7 @@ INSTANTIATE_TEST_SUITE_P(
               applicableCombinations;
 
           // container factory
-          autopas::ContainerSelector<Particle> containerSelector({0., 0., 0.}, {10., 10., 10.}, 1.);
+          autopas::ContainerSelector<Particle> containerSelector(Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff());
           autopas::ContainerSelectorInfo containerInfo(
               Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkinPerTimestep(),
               Newton3OnOffTest::getRebuildFrequency(), Newton3OnOffTest::getClusterSize(),
@@ -83,14 +83,14 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
   autopas::ContainerSelector<Particle> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
-  autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkinPerTimestep(), getRebuildFrequency(),
+  const autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkinPerTimestep(), getRebuildFrequency(),
                                                getClusterSize(), autopas::LoadEstimatorOption::none);
 
   containerSelector.selectContainer(containerOption, containerInfo);
 
   autopas::ParticleContainerInterface<Particle> &container = containerSelector.getCurrentContainer();
 
-  Molecule defaultParticle;
+  const Molecule defaultParticle{};
   autopasTools::generators::UniformGenerator::fillWithParticles(container, defaultParticle, container.getBoxMin(),
                                                                 container.getBoxMax(), 100);
   // Do not add any halo particles to this test!
@@ -139,7 +139,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
   EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair)
       << "Mismatch in cell pair interactions for container option: " << containerOption;
 
-  if (::testing::Test::HasFailure()) {
+  if (HasFailure()) {
     std::cerr << "Failures for Container: " << containerOption.to_string()
               << ", Traversal: " << traversalOption.to_string() << ", Data Layout: " << dataLayout.to_string()
               << std::endl;
@@ -162,7 +162,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
 
   auto traversalSelectorInfo = container.getTraversalSelectorInfo();
 
-  // depending on the layout set up expectations on what Functors are called
+  // depending on the layout, set up some expectations on what Functors are called
   switch (dataLayout) {
     case autopas::DataLayoutOption::soa: {
       // some containers actually use different SoA functor calls so expect them instead of the regular ones
@@ -171,7 +171,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
           container.getContainerType() == autopas::ContainerOption::verletListsCells) {
         EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, useNewton3))
             .Times(testing::AtLeast(1))
-            .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
+            .WillRepeatedly(testing::InvokeWithoutArgs([&]() { ++callsPair; }));
 
         // non useNewton3 variant should not happen
         EXPECT_CALL(mockFunctor, SoAFunctorVerlet(_, _, _, not useNewton3)).Times(0);
@@ -180,12 +180,12 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
         // single cell
         EXPECT_CALL(mockFunctor, SoAFunctorSingle(_, useNewton3))
             .Times(testing::AtLeast(1))
-            .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsSC++; }));
+            .WillRepeatedly(testing::InvokeWithoutArgs([&]() { ++callsSC; }));
 
         // pair of cells
         EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, useNewton3))
             .Times(testing::AtLeast(1))
-            .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
+            .WillRepeatedly(testing::InvokeWithoutArgs([&]() { ++callsPair; }));
 
         // non useNewton3 variant should not happen
         EXPECT_CALL(mockFunctor, SoAFunctorPair(_, _, not useNewton3)).Times(0);
@@ -195,7 +195,7 @@ std::pair<size_t, size_t> Newton3OnOffTest::eval(autopas::DataLayoutOption dataL
     case autopas::DataLayoutOption::aos: {
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, useNewton3))
           .Times(testing::AtLeast(1))
-          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { callsPair++; }));
+          .WillRepeatedly(testing::InvokeWithoutArgs([&]() { ++callsPair; }));
 
       // non useNewton3 variant should not happen
       EXPECT_CALL(mockFunctor, AoSFunctor(_, _, not useNewton3)).Times(0);

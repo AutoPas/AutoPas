@@ -7,9 +7,7 @@
 #pragma once
 
 #include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
-#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -58,7 +56,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
       case (ContainerOption::pairwiseVerletLists):
         return TraversalOption::vlp_c18;
       default:
-        autopas::utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: {}",
+        utils::ExceptionHandler::exception("Traversal was created with an unsupported neighborlist type: {}",
                                                     this->_typeOfList.to_string());
     }
     // should never be reached.
@@ -80,7 +78,7 @@ class VLCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
 };
 
 template <class ParticleCell, class PairwiseFunctor, class NeighborList>
-inline void VLCC18Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticlePairs() {
+void VLCC18Traversal<ParticleCell, PairwiseFunctor, NeighborList>::traverseParticlePairs() {
   if (this->_dataLayout == DataLayoutOption::soa) {
     this->loadSoA(_functor, *(this->_verletList));
   }
