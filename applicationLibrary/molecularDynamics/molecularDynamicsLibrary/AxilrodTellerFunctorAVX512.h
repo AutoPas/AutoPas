@@ -291,21 +291,6 @@ class AxilrodTellerFunctorAVX512
     }
   }
 
-  inline bool SoAParticlesInCutoff(const double *const x1ptr, const double *const y1ptr, const double *const z1ptr,
-                                   const double *const x2ptr, const double *const y2ptr, const double *const z2ptr,
-                                   size_t index1, size_t index2) {
-    const SoAFloatPrecision drxij = x2ptr[index2] - x1ptr[index1];
-    const SoAFloatPrecision dryij = y2ptr[index2] - y1ptr[index1];
-    const SoAFloatPrecision drzij = z2ptr[index2] - z1ptr[index1];
-
-    const SoAFloatPrecision drxij2 = drxij * drxij;
-    const SoAFloatPrecision dryij2 = dryij * dryij;
-    const SoAFloatPrecision drzij2 = drzij * drzij;
-
-    const SoAFloatPrecision drij2 = drxij2 + dryij2 + drzij2;
-    return drij2 <= _cutoffSquaredAoS;
-  }
-
   /**
    * @copydoc autopas::TriwiseFunctor::SoAFunctorSingle()
    * This functor will always use a newton3 like traversal of the soa.
@@ -352,6 +337,33 @@ class AxilrodTellerFunctorAVX512
   }
 
  private:
+  /**
+   * Test if two particles are within cutoff.
+   *
+   * @param x1ptr Pointer to the x coordinates of the SoA struct of the first particle.
+   * @param y1ptr Pointer to the y coordinates of the SoA struct of the first particle.
+   * @param z1ptr Pointer to the z coordinates of the SoA struct of the first particle.
+   * @param x2ptr Pointer to the x coordinates of the SoA struct of the second particle.
+   * @param y2ptr Pointer to the y coordinates of the SoA struct of the second particle.
+   * @param z2ptr Pointer to the z coordinates of the SoA struct of the second particle.
+   * @param index1 Index of the first particle.
+   * @param index2 Index of the second particle.
+   */
+  inline bool SoAParticlesInCutoff(const double *const x1ptr, const double *const y1ptr, const double *const z1ptr,
+                                   const double *const x2ptr, const double *const y2ptr, const double *const z2ptr,
+                                   size_t index1, size_t index2) {
+    const SoAFloatPrecision drxij = x2ptr[index2] - x1ptr[index1];
+    const SoAFloatPrecision dryij = y2ptr[index2] - y1ptr[index1];
+    const SoAFloatPrecision drzij = z2ptr[index2] - z1ptr[index1];
+
+    const SoAFloatPrecision drxij2 = drxij * drxij;
+    const SoAFloatPrecision dryij2 = dryij * dryij;
+    const SoAFloatPrecision drzij2 = drzij * drzij;
+
+    const SoAFloatPrecision drij2 = drxij2 + dryij2 + drzij2;
+    return drij2 <= _cutoffSquaredAoS;
+  }
+
   /**
    * SoA kernel using masked simd intrinsics.
    */
