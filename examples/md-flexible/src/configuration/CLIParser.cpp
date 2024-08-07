@@ -312,7 +312,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.functorOption3B)::getoptChar: {
-        if (strArg.find("at") != string::npos or strArg.find("axi") != string::npos) {
+        if (strArg.find("avx512") != string::npos) {
+          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at_AVX512;
+        } else if (strArg.find("at") != string::npos or strArg.find("axi") != string::npos) {
           config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
         } else {
           cerr << "Unknown triwise functor: " << strArg << endl;
