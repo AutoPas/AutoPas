@@ -1,5 +1,4 @@
 functor                          :  highway
-vectorizationPattern             :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
 data-layout                      :  [SoA]
 container                        :  [LinkedCells]
 newton3                          :  [enabled]
@@ -10,9 +9,9 @@ boundary-type                    :  [none, none, none]
 Objects:
   CubeGrid:
     0:
-      particles-per-dimension    :  [40, 40, 40]
-      particle-spacing           :  0.5
-      bottomLeftCorner           :  [19, 19, 19]
+      particles-per-dimension    :  [30, 30, 30]
+      particle-spacing           :  1
+      bottomLeftCorner           :  [0, 0, 0]
       velocity                   :  [0, 0, 0]
       particle-type-id           :  0
       particle-epsilon           :  1

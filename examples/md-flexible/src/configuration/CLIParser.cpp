@@ -301,7 +301,11 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         break;
       }
       case decltype(config.vecPatternOptions)::getoptChar: {
-        // todo : implement
+        config.vecPatternOptions.value = autopas::VectorizationPatternOption::parseOptions(strArg);
+        if (config.vecPatternOptions.value.empty()) {
+          cerr << "Unknown Pattern: " << strArg << endl;
+          displayHelp = true;
+        }
         break;
       }
       case decltype(config.dontMeasureFlops)::getoptChar: {
