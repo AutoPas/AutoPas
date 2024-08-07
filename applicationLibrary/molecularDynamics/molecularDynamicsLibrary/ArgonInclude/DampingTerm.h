@@ -31,8 +31,7 @@ template <typename T>
   T result{0};
   auto x = beta * r;
   for (size_t n = from; n <= to; n++) {
-    result += std::pow(x, n) / factorial(n);
-    result *= (beta - n / r);
+    result += std::pow(x, n) / factorial(n) * (beta - n / r);
   }
   return result;
 }

@@ -58,6 +58,9 @@ template <size_t ID>
 [[nodiscard]] nabla sin_theta_derive_wrt(const CosineHandle &cosine) {
   const auto cos_theta = cosine.getCos();
   const auto cos_deriv = cosine.derive_wrt<ID>();
+  if (cos_deriv == std::array<double, 3>{{0, 0, 0}}) {
+    return cos_deriv;
+  }
   return -cos_theta / sin_theta(cos_theta) * cos_deriv;
 }
 

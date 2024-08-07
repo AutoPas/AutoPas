@@ -51,9 +51,24 @@ template <class T>
  */
 template <class T>
 [[nodiscard]] constexpr T derivativeLegendre(const T &x, size_t d) {
-  auto Legendre_order_minus_1 = (d == 0) ? 0 : LegendrePol(x, d - 1);
-  auto num{Legendre_order_minus_1 - x * LegendrePol(x, d)};
-  return d * num / (1 - Math::pow<2>(x));
+  switch (d) {
+    case 0:
+      return 0;
+    case 1:
+      return 1;
+    case 2:
+      return 3 * x;
+    case 3:
+      return 0.5 * (15 * Math::pow<2>(x) - 3);
+    case 4:
+      return 0.125 * (140 * Math::pow<3>(x) - 60 * x);
+    case 5:
+      return 0.125 * (315 * Math::pow<4>(x) - 210 * Math::pow<2>(x) + 15);
+    case 6:
+      return 0.0625 * (1386 * Math::pow<5>(x) - 1260 * Math::pow<3>(x) + 210 * x);
+  }
+  throw ExceptionHandler::AutoPasException(
+      "Argon Simulation: asked to compute derivative of Legendre polynomial of order higher than 6.");
 }
 
 /**
