@@ -22,12 +22,9 @@ namespace autopas {
  *
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
- * @tparam dataLayout
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise,
-                                                   dataLayout, useNewton3>,
+template <class ParticleCell, class PairwiseFunctor>
+class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor>,
                         public VCLTraversalInterface<typename ParticleCell::ParticleType> {
  private:
   using Particle = typename ParticleCell::ParticleType;
@@ -57,36 +54,34 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
    * Constructor of the VCLClusterIterationTraversal.
    * @param pairwiseFunctor The functor to use for the traversal.
    * @param clusterSize Number of particles per cluster.
+   * @param dataLayout The data layout with which this traversal should be initialized.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
-  explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize)
-      : ColorBasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(
-            {0, 0, 0}, pairwiseFunctor, 0, {}),
+  explicit VCLC06Traversal(PairwiseFunctor *pairwiseFunctor, size_t clusterSize, DataLayoutOption dataLayout,
+                           bool useNewton3)
+      : ColorBasedTraversal<ParticleCell, PairwiseFunctor>({0, 0, 0}, pairwiseFunctor, 0, {}, dataLayout, useNewton3),
         _functor(pairwiseFunctor),
-        _clusterFunctor(pairwiseFunctor, clusterSize) {}
+        _clusterFunctor(pairwiseFunctor, clusterSize, dataLayout, useNewton3) {}
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vcl_c06; }
 
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
-
   [[nodiscard]] bool isApplicable() const override {
-    return (dataLayout == DataLayoutOption::aos || dataLayout == DataLayoutOption::soa);
+    return (this->_dataLayout == DataLayoutOption::aos || this->_dataLayout == DataLayoutOption::soa);
   }
 
   void initTraversal() override {
-    if constexpr (dataLayout == DataLayoutOption::soa) {
+    if (this->_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<Particle>::_verletClusterLists->loadParticlesIntoSoAs(_functor);
     }
   }
 
   void endTraversal() override {
-    if constexpr (dataLayout == DataLayoutOption::soa) {
+    if (this->_dataLayout == DataLayoutOption::soa) {
       VCLTraversalInterface<Particle>::_verletClusterLists->extractParticlesFromSoAs(_functor);
     }
   }
 
-  void traverseParticlePairs() override {
+  void traverseParticles() override {
     auto &clusterList = *VCLTraversalInterface<Particle>::_verletClusterLists;
 
     const auto towersPerColoringCell = clusterList.getNumTowersPerInteractionLength();
@@ -114,12 +109,14 @@ class VCLC06Traversal : public ColorBasedTraversal<ParticleCell, PairwiseFunctor
 
  private:
   PairwiseFunctor *_functor;
-  internal::VCLClusterFunctor<Particle, PairwiseFunctor, dataLayout, useNewton3> _clusterFunctor;
+  internal::VCLClusterFunctor<Particle, PairwiseFunctor> _clusterFunctor;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processColorCell(
-    unsigned long xColorCell, unsigned long yColorCell, unsigned long zColorCell, int towersPerColoringCell) {
+template <class ParticleCell, class PairwiseFunctor>
+void VCLC06Traversal<ParticleCell, PairwiseFunctor>::processColorCell(unsigned long xColorCell,
+                                                                      unsigned long yColorCell,
+                                                                      unsigned long zColorCell,
+                                                                      int towersPerColoringCell) {
   // We are only doing a 2D coloring.
   if (zColorCell != 0) {
     autopas::utils::ExceptionHandler::exception("Coloring should only be 2D, not in z-direction!");
@@ -139,12 +136,14 @@ void VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::pro
       }
 
       auto &currentTower = clusterList.getTowerByIndex(x, y);
-      for (auto &cluster : currentTower.getClusters()) {
-        _clusterFunctor.traverseCluster(cluster);
-
-        for (auto *neighborClusterPtr : *cluster.getNeighbors()) {
-          _clusterFunctor.traverseClusterPair(cluster, *neighborClusterPtr);
-        }
+      for (auto clusterIter = this->_useNewton3 ? currentTower.getClusters().begin()
+                                                : currentTower.getFirstOwnedCluster();
+           clusterIter <
+           (this->_useNewton3 ? currentTower.getClusters().end() : currentTower.getFirstTailHaloCluster());
+           ++clusterIter) {
+        const auto isHaloCluster =
+            clusterIter < currentTower.getFirstOwnedCluster() or clusterIter >= currentTower.getFirstTailHaloCluster();
+        _clusterFunctor.processCluster(*clusterIter, isHaloCluster);
       }
     }
   }

@@ -92,6 +92,16 @@ class Simulation {
   size_t _numTuningPhasesCompleted = 0;
 
   /**
+   * Indicator if the current iteration was a tuning iteration.
+   */
+  bool _currentIterationIsTuningIteration = false;
+
+  /**
+   * Indicator if the simulation is paused due to the PauseDuringTuning option.
+   */
+  bool _simulationIsPaused = false;
+
+  /**
    * Indicator if the previous iteration was used for tuning.
    */
   bool _previousIterationWasTuningIteration = false;
@@ -100,11 +110,6 @@ class Simulation {
    * Precision of floating point numbers printed.
    */
   constexpr static auto _floatStringPrecision = 3;
-
-  /**
-   * Homogeneity of the scenario, calculated by the standard deviation of the density.
-   */
-  double _homogeneity = 0;
 
   /**
    * Struct containing all timers used for the simulation.
@@ -134,11 +139,6 @@ class Simulation {
      * Records the time used for the triwise force update of all particles.
      */
     autopas::utils::Timer forceUpdateTriwise;
-
-    /**
-     * Records the time used for the update of the global forces of all particles.
-     */
-    autopas::utils::Timer forceUpdateGlobal;
 
     /**
      * Records the time used for the force update of all particles during the tuning iterations.
@@ -234,8 +234,10 @@ class Simulation {
 
  private:
   /**
-   * Estimates the number of tuning iterations which ocurred during the simulation so far.
-   * @return an estimation of the number of tuning iterations which occured so far.
+   * Returns the number of expected maximum number of iterations of the Simulation.
+   * This is exact if the number of iterations was specified, or an estimate based on the number of tuning iterations if
+   * the number of tuning phases is specified.
+   * @return <size_t, bool> Max number of iterations, bool whether it is an estimate.
    */
   [[nodiscard]] std::tuple<size_t, bool> estimateNumberOfIterations() const;
 
@@ -259,9 +261,10 @@ class Simulation {
                                                  long maxTime = 0ul);
 
   /**
-   * Updates the position of particles in the local AutoPas container.
+   * Updates the position of particles in the local AutoPas container. In addition, the oldForce is set to the value of
+   * the current forces and the force buffers of the particles are reset to the global force.
    */
-  void updatePositions();
+  void updatePositionsAndResetForces();
 
   /**
    * Update the quaternion orientation of the particles in the local AutoPas container.
@@ -272,7 +275,7 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  void updateForces();
+  void updateInteractionForces();
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
@@ -303,6 +306,11 @@ class Simulation {
   [[nodiscard]] static long accumulateTime(const long &time);
 
   /**
+   * Handles the pausing of the simulation and updates the _simulationIsPaused flag.
+   */
+  void updateSimulationPauseState();
+
+  /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.
    */
   void logSimulationState();
@@ -321,7 +329,7 @@ class Simulation {
   bool calculatePairwiseForces();
 
   /**
-   * Calculates the 3-body forces between particles in the autopas container.
+   * Calculates the triwise forces between particles in the autopas container.
    * @return Tells the user if the current iteration of force calculations was a tuning iteration.
    */
   bool calculateTriwiseForces();

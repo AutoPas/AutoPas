@@ -44,11 +44,11 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     // Use SoA traversal for generation and AoS traversal for validation check.
     constexpr auto dataLayout = validationMode ? DataLayoutOption::aos : DataLayoutOption::soa;
     auto traversal = C08TraversalColorChangeNotify<FullParticleCell<Particle>,
-                                                   internal::AsBuildPairGeneratorFunctor<Particle, validationMode>,
-                                                   dataLayout, useNewton3>(
+                                                   internal::AsBuildPairGeneratorFunctor<Particle, validationMode>>(
         _baseLinkedCells->getCellBlock().getCellsPerDimensionWithHalo(), &generatorFunctor,
-        _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this);
-    _baseLinkedCells->iteratePairwise(&traversal);
+        _baseLinkedCells->getInteractionLength(), _baseLinkedCells->getCellBlock().getCellLength(), this, dataLayout,
+        useNewton3);
+    _baseLinkedCells->computeInteractions(&traversal);
   }
 
  public:
@@ -169,12 +169,8 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
     for (int color = 0; color < _numColors; color++) {
       unsigned int numThreads = _aosNeighborList[color].size();
       _soaNeighborList[color].resize(numThreads);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel num_threads(numThreads)
-#endif
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(static)
-#endif
+      AUTOPAS_OPENMP(parallel num_threads(numThreads))
+      AUTOPAS_OPENMP(for schedule(static))
       for (unsigned int thread = 0; thread < numThreads; thread++) {
         auto &currentThreadList = _soaNeighborList[color][thread];
         currentThreadList.clear();
@@ -203,10 +199,20 @@ class VerletNeighborListAsBuild : public VerletNeighborListInterface<Particle>, 
   template <class TFunctor>
   auto *loadSoA(TFunctor *f) {
     _soa.clear();
-    size_t offset = 0;
-    for (auto &cell : _baseLinkedCells->getCells()) {
-      f->SoALoader(cell, _soa, offset);
-      offset += cell.size();
+
+    // First resize the SoA to the required number of elements to store. This avoids resizing successively the SoA in
+    // SoALoader.
+    auto &cells = _baseLinkedCells->getCells();
+    std::vector<size_t> offsets(cells.size() + 1);
+    std::inclusive_scan(
+        cells.begin(), cells.end(), offsets.begin() + 1,
+        [](const size_t &partialSum, const auto &cell) { return partialSum + cell.size(); }, 0);
+
+    _soa.resizeArrays(offsets.back());
+
+    AUTOPAS_OPENMP(parallel for)
+    for (size_t i = 0; i < cells.size(); ++i) {
+      f->SoALoader(cells[i], _soa, offsets[i], /*skipSoAResize*/ true);
     }
 
     return &_soa;

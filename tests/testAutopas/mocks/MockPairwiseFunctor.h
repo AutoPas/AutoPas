@@ -39,11 +39,11 @@ class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle, MockPairwi
 
   MOCK_METHOD(void, SoALoader,
               (autopas::FullParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
-               size_t offset));
+               size_t offset, bool skipSoAResize));
 
   MOCK_METHOD(void, SoALoader,
               (autopas::ReferenceParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
-               size_t offset));
+               size_t offset, bool skipSoAResize));
 
   MOCK_METHOD(void, SoAExtractor,
               (autopas::FullParticleCell<Particle> & cell, autopas::SoA<typename Particle::SoAArraysType> &soa,
@@ -61,4 +61,7 @@ class MockPairwiseFunctor : public autopas::PairwiseFunctor<Particle, MockPairwi
 
   //  bool isRelevantForTuning() { return true; }
   MOCK_METHOD(bool, isRelevantForTuning, (), (override));
+
+  //  std::string getName() { return "functorName"; }
+  MOCK_METHOD(std::string, getName, (), (override));
 };

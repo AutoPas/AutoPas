@@ -11,6 +11,7 @@
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -24,13 +25,9 @@ namespace autopas {
  *
  * @tparam ParticleCell the type of cells
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
- * @tparam useSoA
- * @tparam useNewton3
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-class LCC04HCPTraversal
-    : public C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>,
-      public LCTraversalInterface<ParticleCell> {
+template <class ParticleCell, class PairwiseFunctor>
+class LCC04HCPTraversal : public C08BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of c04hcp
@@ -39,22 +36,22 @@ class LCC04HCPTraversal
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length.
    * @param cellLength cell length.
+   * @param dataLayout The data layout with which this traversal should be initialized.
+   * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   LCC04HCPTraversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                    const double interactionLength, const std::array<double, 3> &cellLength)
-      : C08BasedTraversal<ParticleCell, PairwiseFunctor, InteractionTypeOption::pairwise, dataLayout, useNewton3>(
-            dims, pairwiseFunctor, interactionLength, cellLength),
-        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap),
+                    const double interactionLength, const std::array<double, 3> &cellLength,
+                    DataLayoutOption dataLayout, bool useNewton3)
+      : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
+                                                         dataLayout, useNewton3),
+        _cellHandler(pairwiseFunctor, this->_cellsPerDimension, interactionLength, cellLength, this->_overlap,
+                     dataLayout, useNewton3),
         _end(utils::ArrayMath::subScalar(utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension),
                                          1l)) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::lc_c04_HCP; }
-
-  [[nodiscard]] DataLayoutOption getDataLayout() const override { return dataLayout; }
-
-  [[nodiscard]] bool getUseNewton3() const override { return useNewton3; }
 
   [[nodiscard]] bool isApplicable() const override {
     // The cellsize cannot be smaller than the cutoff, if OpenMP is used.
@@ -74,14 +71,14 @@ class LCC04HCPTraversal
 
   void processBasePack6(std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex);
 
-  LCC08CellHandler<ParticleCell, PairwiseFunctor, dataLayout, useNewton3> _cellHandler;
+  LCC08CellHandler<ParticleCell, PairwiseFunctor> _cellHandler;
 
   const std::array<long, 3> _end;
 };
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::processBasePack6(
-    std::vector<ParticleCell> &cells, const std::array<long, 3> &base3DIndex) {
+template <class ParticleCell, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::processBasePack6(std::vector<ParticleCell> &cells,
+                                                                        const std::array<long, 3> &base3DIndex) {
   using utils::ThreeDimensionalMapping::threeToOneD;
   std::array<long, 3> index{};
   const std::array<long, 3> signedDims = utils::ArrayUtils::static_cast_copy_array<long>(this->_cellsPerDimension);
@@ -108,21 +105,16 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::p
   }
 }
 
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseParticlePairs() {
+template <class ParticleCell, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
-#if defined(AUTOPAS_OPENMP)
-#pragma omp parallel
-#endif
-  {
+  AUTOPAS_OPENMP(parallel) {
     for (int color = 0; color < 4; ++color) {
       traverseSingleColor(cells, color);
 
-#if defined(AUTOPAS_OPENMP)
       if (color < 3) {
-#pragma omp barrier
+        AUTOPAS_OPENMP(barrier)
       }
-#endif
     }
   }  // close parallel region
 }
@@ -133,14 +125,12 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::t
  *
  * @tparam ParticleCell
  * @tparam PairwiseFunctor
- * @tparam dataLayout
- * @tparam useNewton3
  * @param cells
  * @param color
  */
-template <class ParticleCell, class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::traverseSingleColor(
-    std::vector<ParticleCell> &cells, int color) {
+template <class ParticleCell, class PairwiseFunctor>
+void LCC04HCPTraversal<ParticleCell, PairwiseFunctor>::traverseSingleColor(std::vector<ParticleCell> &cells,
+                                                                           int color) {
   // determine a starting point of one of the grids
   std::array<long, 3> startOfThisColor{};  // coordinates: {x,y,z}
 
@@ -170,9 +160,7 @@ void LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>::t
   const long startZ = startOfThisColor[2], endZ = _end[2];
 
   // iterate over cartesian grid
-#if defined(AUTOPAS_OPENMP)
-#pragma omp for schedule(dynamic, 1) collapse(3) nowait
-#endif
+  AUTOPAS_OPENMP(for schedule(dynamic, 1) collapse(3) nowait)
   for (long z = startZ; z < endZ; z += 4) {
     for (long y = startY; y < endY; y++) {
       /* color starts every 6th column again, the +4 is needed to prevent ending too early, since it

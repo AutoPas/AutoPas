@@ -28,6 +28,7 @@
 #include "autopas/utils/CompileInfo.h"
 #include "autopas/utils/NumberInterval.h"
 #include "autopas/utils/NumberSetFinite.h"
+#include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
 
@@ -56,8 +57,7 @@ AutoPas<Particle>::~AutoPas() {
 
 template <class Particle>
 AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
-  _autoTuner = std::move(other._autoTuner);
-  _autoTuner3B = std::move(other._autoTuner3B);
+  _autoTuners = std::move(other._autoTuners);
   _logicHandler = std::move(other._logicHandler);
   return *this;
 }
@@ -66,12 +66,6 @@ template <class Particle>
 void AutoPas<Particle>::init() {
   AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
   AutoPasLog(INFO, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
-  if (_autoTunerInfo.maxSamples % _verletRebuildFrequency != 0) {
-    AutoPasLog(WARN,
-               "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
-               "when multiple AutoPas instances interact (e.g. via MPI).",
-               _autoTunerInfo.maxSamples, _verletRebuildFrequency);
-  }
 
   if (_tuningStrategyFactoryInfo.autopasMpiCommunicator == AUTOPAS_MPI_COMM_NULL) {
     AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_tuningStrategyFactoryInfo.autopasMpiCommunicator);
@@ -84,8 +78,6 @@ void AutoPas<Particle>::init() {
   }
 
   _logicHandlerInfo.sortingThreshold = _sortingThreshold;
-  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
-      _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 
   // If an interval was given for the cell size factor, change it to the relevant values.
   // Don't modify _allowedCellSizeFactors to preserve the initial (type) information.
@@ -101,53 +93,31 @@ void AutoPas<Particle>::init() {
     }
   }();
 
-  for (auto &interactionType : _allowedInteractionTypeOptions) {
-    switch (interactionType) {
-      case InteractionTypeOption::pairwise: {
-        const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
-            _allowedContainers, _allowedTraversals, _allowedLoadEstimators, _allowedDataLayouts, _allowedNewton3Options,
-            &cellSizeFactors, InteractionTypeOption::pairwise);
+  // Create autotuners for each interaction type
+  for (const auto &interactionType : _allowedInteractionTypeOptions) {
+    const auto searchSpace = SearchSpaceGenerators::cartesianProduct(
+        _allowedContainers, _allowedTraversals[interactionType], _allowedLoadEstimators,
+        _allowedDataLayouts[interactionType], _allowedNewton3Options[interactionType], &cellSizeFactors,
+        interactionType);
 
-        AutoTuner::TuningStrategiesListType tuningStrategies;
-        tuningStrategies.reserve(_tuningStrategyOptions.size());
-        for (const auto &strategy : _tuningStrategyOptions) {
-          tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
-              searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
-        }
-        if (_useTuningStrategyLoggerProxy) {
-          tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
-        }
-        _autoTuner = std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
-                                                          _verletRebuildFrequency, _outputSuffix);
-        _logicHandler->initPairwise(_autoTuner.get());
-        _autoTuners.insert({InteractionTypeOption::pairwise, *_autoTuner});
-        break;
-      }
-      case InteractionTypeOption::threeBody: {
-        const auto searchSpace3B = SearchSpaceGenerators::cartesianProduct(
-            _allowedContainers, _allowedTraversals3B, _allowedLoadEstimators, _allowedDataLayouts3B,
-            _allowedNewton3Options3B, &cellSizeFactors, InteractionTypeOption::threeBody);
-        AutoTuner::TuningStrategiesListType tuningStrategies3B;
-        tuningStrategies3B.reserve(_tuningStrategyOptions.size());
-        for (const auto &strategy : _tuningStrategyOptions) {
-          tuningStrategies3B.emplace_back(TuningStrategyFactory::generateTuningStrategy(
-              searchSpace3B, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
-        }
-        if (_useTuningStrategyLoggerProxy) {
-          tuningStrategies3B.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
-        }
-        _autoTuner3B = std::make_unique<autopas::AutoTuner>(tuningStrategies3B, searchSpace3B, _autoTunerInfo,
-                                                            _verletRebuildFrequency, _outputSuffix);
-        _logicHandler->initTriwise(_autoTuner3B.get());
-        _autoTuners.insert({InteractionTypeOption::threeBody, *_autoTuner3B});
-        break;
-      }
-      default: {
-        utils::ExceptionHandler::exception("Invalid interactionType ({}) that cannot be handled by autopas.",
-                                           interactionType.to_string());
-      }
+    AutoTuner::TuningStrategiesListType tuningStrategies;
+    tuningStrategies.reserve(_tuningStrategyOptions.size());
+    for (const auto &strategy : _tuningStrategyOptions) {
+      tuningStrategies.emplace_back(TuningStrategyFactory::generateTuningStrategy(
+          searchSpace, strategy, _tuningStrategyFactoryInfo, _outputSuffix));
     }
+    if (_useTuningStrategyLoggerProxy) {
+      tuningStrategies.emplace_back(std::make_unique<TuningStrategyLogger>(_outputSuffix));
+    }
+    auto tunerOutputSuffix = _outputSuffix + "_" + interactionType.to_string();
+    _autoTuners.emplace(interactionType,
+                        std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, _autoTunerInfo,
+                                                             _verletRebuildFrequency, tunerOutputSuffix));
   }
+
+  // Create logic handler
+  _logicHandler = std::make_unique<std::remove_reference_t<decltype(*_logicHandler)>>(
+      _autoTuners, _logicHandlerInfo, _verletRebuildFrequency, _outputSuffix);
 }
 
 template <class Particle>
@@ -163,12 +133,12 @@ bool AutoPas<Particle>::computeInteractions(Functor *f) {
   }
 
   if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    return _logicHandler->iteratePairwisePipeline(f);
+    return _logicHandler->template computeInteractionsPipeline<Functor>(f, InteractionTypeOption::pairwise);
   } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-    return _logicHandler->iterateTriwisePipeline(f);
+    return _logicHandler->template computeInteractionsPipeline<Functor>(f, InteractionTypeOption::triwise);
   } else {
     utils::ExceptionHandler::exception(
-        "Functor is not valid. Only 2-body and 3-body functors are supported. Please use a functor derived from "
+        "Functor is not valid. Only pairwise and triwise functors are supported. Please use a functor derived from "
         "PairwiseFunctor or TriwiseFunctor.");
   }
   return false;
@@ -208,9 +178,7 @@ void AutoPas<Particle>::addParticlesAux(size_t numParticlesToAdd, size_t numHalo
                                         F loopBody) {
   reserve(getNumberOfParticles(IteratorBehavior::owned) + numParticlesToAdd,
           getNumberOfParticles(IteratorBehavior::halo) + numHalosToAdd);
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads()))
-#endif
+  AUTOPAS_OPENMP(parallel for schedule(static, std::max(1ul, collectionSize / omp_get_max_threads())))
   for (auto i = 0; i < collectionSize; ++i) {
     loopBody(i);
   }
@@ -232,9 +200,7 @@ template <class Collection, class F>
 void AutoPas<Particle>::addParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(+ : numTrue)
-#endif
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
@@ -272,7 +238,9 @@ std::vector<Particle> AutoPas<Particle>::resizeBox(const std::array<double, 3> &
 
 template <class Particle>
 void AutoPas<Particle>::forceRetune() {
-  _autoTuner->forceRetune();
+  for (auto &[interaction, tuner] : _autoTuners) {
+    tuner->forceRetune();
+  }
 }
 
 template <class Particle>
@@ -291,9 +259,7 @@ template <class Collection, class F>
 void AutoPas<Particle>::addHaloParticlesIf(Collection &&particles, F predicate) {
   std::vector<char> predicateMask(particles.size());
   int numTrue = 0;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel for reduction(+ : numTrue)
-#endif
+  AUTOPAS_OPENMP(parallel for reduction(+ : numTrue))
   for (auto i = 0; i < particles.size(); ++i) {
     if (predicate(particles[i])) {
       predicateMask[i] = static_cast<char>(true);
@@ -389,20 +355,10 @@ const autopas::ParticleContainerInterface<Particle> &AutoPas<Particle>::getConta
 template <class Particle>
 bool AutoPas<Particle>::searchSpaceIsTrivial() {
   bool isTrivial = true;
-  for (auto [interaction, tuner] : _autoTuners) {
-    isTrivial = isTrivial && tuner.searchSpaceIsTrivial();
+  for (auto &[interaction, tuner] : _autoTuners) {
+    isTrivial = isTrivial and tuner->searchSpaceIsTrivial();
   }
   return isTrivial;
-}
-
-template <class Particle>
-void AutoPas<Particle>::incrementIterationCounters() {
-  _logicHandler->bumpIterationCounters();
-  for (auto [interaction, tuner] : _autoTuners) {
-    // Check if we need to synchronize multiple tuners
-    bool needToWait = _logicHandler->checkTuningStates(interaction);
-    tuner.bumpIterationCounters(needToWait);
-  }
 }
 
 }  // namespace autopas

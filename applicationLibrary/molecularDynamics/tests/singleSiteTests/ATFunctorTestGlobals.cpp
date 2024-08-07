@@ -5,7 +5,6 @@
  */
 
 #include "ATFunctorTestGlobals.h"
-//#include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 
 TYPED_TEST_SUITE_P(ATFunctorTestGlobals);
 
@@ -19,7 +18,7 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestG
   std::string where_str;
   bool owned1, owned2, owned3;
   switch (where) {
-    case inside:
+    case allInside:
       whereFactor = 1.;
       where_str = "inside";
       owned1 = owned2 = owned3 = true;
@@ -36,7 +35,7 @@ void ATFunctorTestGlobals<FuncType>::ATFunctorTestGlobalsNoMixing(ATFunctorTestG
       owned2 = true;
       owned1 = owned3 = false;
       break;
-    case outside:
+    case allOutside:
       whereFactor = 0.;
       where_str = "outside";
       owned1 = owned2 = owned3 = false;
@@ -105,27 +104,14 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobalsOpenMPParallel) {
   std::string msg = "";
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
-#if defined(AUTOPAS_OPENMP)
-// reduction for appending strings: "abc" + "def" -> "abcdef"
-#pragma omp declare reduction(stringAppend : std::string : omp_out.append(omp_in))
-
-#pragma omp parallel reduction(stringAppend : msg)
-#endif
-  {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp sections
-#endif
-    {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
-      {
+  // reduction for appending strings: "abc" + "def" -> "abcdef"
+  AUTOPAS_OPENMP(declare reduction(stringAppend : std::string : omp_out.append(omp_in)))
+  AUTOPAS_OPENMP(parallel reduction(stringAppend : msg)) {
+    AUTOPAS_OPENMP(sections) {
+      AUTOPAS_OPENMP(section) {
         msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p1, p2, p3, newton3); });
       }  // pragma omp section
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
-      {
+      AUTOPAS_OPENMP(section) {
         msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p4, p5, p6, newton3); });
       }  // pragma omp section
     }    // pragma omp sections
@@ -177,8 +163,8 @@ TYPED_TEST_P(ATFunctorTestGlobals, testAoSATFunctorGlobals) {
   using FuncType = TypeParam;
   using TestType = ATFunctorTestGlobals<FuncType>;
 
-  for (typename TestType::where_type where : {TestType::where_type::inside, TestType::where_type::ininout,
-                                              TestType::where_type::inoutout, TestType::where_type::outside}) {
+  for (typename TestType::where_type where : {TestType::where_type::allInside, TestType::where_type::ininout,
+                                              TestType::where_type::inoutout, TestType::where_type::allOutside}) {
     for (bool newton3 : {false, true}) {
       if (auto msg = this->shouldSkipIfNotImplemented([&]() { this->ATFunctorTestGlobalsNoMixing(where, newton3); });
           msg != "") {

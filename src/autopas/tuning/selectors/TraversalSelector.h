@@ -11,13 +11,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/containers/directSum/traversals/DSSequentialTraversal.h"
-#include "autopas/containers/directSum/traversals/DSSequentialTraversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC01Traversal.h"
-#include "autopas/containers/linkedCells/traversals/LCC01Traversal3B.h"
 #include "autopas/containers/linkedCells/traversals/LCC04CombinedSoATraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04HCPTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCC04Traversal.h"
@@ -39,6 +35,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC01Traversal.h"
+#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairC08Traversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCSlicedBalancedTraversal.h"
@@ -61,219 +58,244 @@ namespace autopas {
  * Selector for a container traversal.
  * @tparam ParticleCell
  */
-template <class ParticleCell, InteractionTypeOption::Value interactionType>
+template <class ParticleCell>
 class TraversalSelector {
  public:
   /**
    * Generates a given Traversal for the given properties.
    * @tparam Functor
-   * @tparam dataLayout
-   * @tparam useNewton3
    * @param traversalType
    * @param functor
-   * @param info
-   * @return Smartpointer to the traversal.
-   */
-  template <class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-  static std::unique_ptr<TraversalInterface<interactionType>> generateTraversal(TraversalOption traversalType,
-                                                                                Functor &functor,
-                                                                                const TraversalSelectorInfo &info);
-
-  /**
-   * Generates a given Traversal for the given properties.
-   * Requires less templates but calls the templated version after a decision tree.
-   * @tparam Functor
-   * @param traversalType
-   * @param functor
-   * @param info
+   * @param traversalInfo
    * @param dataLayout
    * @param useNewton3
    * @return Smartpointer to the traversal.
    */
   template <class Functor>
-  static std::unique_ptr<TraversalInterface<interactionType>> generateTraversal(TraversalOption traversalType,
-                                                                                Functor &functor,
-                                                                                const TraversalSelectorInfo &info,
-                                                                                DataLayoutOption dataLayout,
-                                                                                Newton3Option useNewton3);
+  static std::unique_ptr<TraversalInterface> generateTraversal(TraversalOption traversalType, Functor &functor,
+                                                               const TraversalSelectorInfo &traversalInfo,
+                                                               DataLayoutOption dataLayout, bool useNewton3);
 
- private:
-  template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-  static std::unique_ptr<TraversalInterface<InteractionTypeOption::pairwise>> generatePairwiseTraversal(
-      TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &info);
+  /**
+   * Generates a given pairwise Traversal for the given properties.
+   * @tparam PairwiseFunctor
+   * @param traversalType
+   * @param pairwiseFunctor
+   * @param traversalInfo
+   * @param dataLayout
+   * @param useNewton3
+   * @return Smartpointer to the traversal.
+   */
+  template <class PairwiseFunctor>
+  static std::unique_ptr<TraversalInterface> generatePairwiseTraversal(TraversalOption traversalType,
+                                                                       PairwiseFunctor &pairwiseFunctor,
+                                                                       const TraversalSelectorInfo &traversalInfo,
+                                                                       DataLayoutOption dataLayout, bool useNewton3);
 
-  template <class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-  static std::unique_ptr<TraversalInterface<InteractionTypeOption::threeBody>> generateTriwiseTraversal(
-      TraversalOption traversalType, TriwiseFunctor &triwiseFunctor, const TraversalSelectorInfo &info);
+  /**
+   * Generates a given triwise Traversal for the given properties.
+   * @tparam TriwiseFunctor
+   * @param traversalType
+   * @param triwiseFunctor
+   * @param traversalInfo
+   * @param dataLayout
+   * @param useNewton3
+   * @return Smartpointer to the traversal.
+   */
+  template <class TriwiseFunctor>
+  static std::unique_ptr<TraversalInterface> generateTriwiseTraversal(TraversalOption traversalType,
+                                                                      TriwiseFunctor &triwiseFunctor,
+                                                                      const TraversalSelectorInfo &traversalInfo,
+                                                                      DataLayoutOption dataLayout, bool useNewton3);
 };
 
-template <class ParticleCell, InteractionTypeOption::Value interactionType>
-template <class PairwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-std::unique_ptr<TraversalInterface<InteractionTypeOption::pairwise>>
-TraversalSelector<ParticleCell, interactionType>::generatePairwiseTraversal(TraversalOption traversalType,
-                                                                            PairwiseFunctor &pairwiseFunctor,
-                                                                            const TraversalSelectorInfo &info) {
+template <class ParticleCell>
+template <class PairwiseFunctor>
+std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generatePairwiseTraversal(
+    TraversalOption traversalType, PairwiseFunctor &pairwiseFunctor, const TraversalSelectorInfo &traversalInfo,
+    DataLayoutOption dataLayout, bool useNewton3) {
   switch (traversalType) {
     // Direct sum
     case TraversalOption::ds_sequential: {
-      return std::make_unique<DSSequentialTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
+      return std::make_unique<DSSequentialTraversal<ParticleCell, PairwiseFunctor>>(
           &pairwiseFunctor,
-          info.interactionLength /*this is the cutoff, as generated by DirectSum::getTraversalSelectorInfo()!*/);
+          traversalInfo
+              .interactionLength /*this is the cutoff, as generated by DirectSum::getTraversalSelectorInfo()!*/,
+          dataLayout, useNewton3);
     }
     // Linked cell
     case TraversalOption::lc_sliced: {
-      return std::make_unique<LCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCSlicedTraversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_sliced_c02: {
-      return std::make_unique<LCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCSlicedC02Traversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_sliced_balanced: {
-      return std::make_unique<LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_c01: {
-      return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, false>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, false>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_c01_combined_SoA: {
-      return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3, true>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCC01Traversal<ParticleCell, PairwiseFunctor, true>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_c04_combined_SoA: {
-      return std::make_unique<LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCC04CombinedSoATraversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_c04: {
-      return std::make_unique<LCC04Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCC04Traversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_c04_HCP: {
-      return std::make_unique<LCC04HCPTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCC04HCPTraversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_c08: {
-      return std::make_unique<LCC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCC08Traversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     case TraversalOption::lc_c18: {
-      return std::make_unique<LCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<LCC18Traversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     // Verlet
     case TraversalOption::vl_list_iteration: {
-      return std::make_unique<VLListIterationTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor);
+      return std::make_unique<VLListIterationTraversal<ParticleCell, PairwiseFunctor>>(&pairwiseFunctor, dataLayout,
+                                                                                       useNewton3);
     }
     // Var Verlet Lists
     case TraversalOption::vvl_as_built: {
-      return std::make_unique<VVLAsBuildTraversal<ParticleCell, typename ParticleCell::ParticleType, PairwiseFunctor,
-                                                  dataLayout, useNewton3>>(&pairwiseFunctor);
+      return std::make_unique<VVLAsBuildTraversal<ParticleCell, typename ParticleCell::ParticleType, PairwiseFunctor>>(
+          &pairwiseFunctor, dataLayout, useNewton3);
     }
     // Verlet List Cells
     case TraversalOption::vlc_sliced: {
-      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                                 VLCAllCellsNeighborList<typename ParticleCell::ParticleType>,
-                                                 ContainerOption::verletListsCells>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor,
+                                                 VLCAllCellsNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::verletListsCells);
     }
     case TraversalOption::vlc_sliced_c02: {
-      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                                    VLCAllCellsNeighborList<typename ParticleCell::ParticleType>,
-                                                    ContainerOption::verletListsCells>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor,
+                                                    VLCAllCellsNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::verletListsCells);
     }
     case TraversalOption::vlc_sliced_balanced: {
-      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                                         VLCAllCellsNeighborList<typename ParticleCell::ParticleType>,
-                                                         ContainerOption::verletListsCells>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor,
+                                                         VLCAllCellsNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::verletListsCells);
     }
     case TraversalOption::vlc_c01: {
-      return std::make_unique<VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                              VLCAllCellsNeighborList<typename ParticleCell::ParticleType>,
-                                              ContainerOption::verletListsCells>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<
+          VLCC01Traversal<ParticleCell, PairwiseFunctor, VLCAllCellsNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::verletListsCells);
     }
     case TraversalOption::vlc_c18: {
-      return std::make_unique<VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                              VLCAllCellsNeighborList<typename ParticleCell::ParticleType>,
-                                              ContainerOption::verletListsCells>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<
+          VLCC18Traversal<ParticleCell, PairwiseFunctor, VLCAllCellsNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::verletListsCells);
+    }
+    case TraversalOption::vlc_c08: {
+      return std::make_unique<
+          VLCC08Traversal<ParticleCell, PairwiseFunctor, VLCAllCellsNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     // Verlet Cluster Lists
     case TraversalOption::vcl_cluster_iteration: {
-      return std::make_unique<VCLClusterIterationTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor, info.clusterSize);
+      return std::make_unique<VCLClusterIterationTraversal<ParticleCell, PairwiseFunctor>>(
+          &pairwiseFunctor, traversalInfo.clusterSize, dataLayout, useNewton3);
     }
     case TraversalOption::vcl_c01_balanced: {
-      return std::make_unique<
-          VCLC01BalancedTraversal<typename ParticleCell::ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor, info.clusterSize);
+      return std::make_unique<VCLC01BalancedTraversal<typename ParticleCell::ParticleType, PairwiseFunctor>>(
+          &pairwiseFunctor, traversalInfo.clusterSize, dataLayout, useNewton3);
     }
     case TraversalOption::vcl_sliced: {
-      return std::make_unique<VCLSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength, info.clusterSize);
+      return std::make_unique<VCLSlicedTraversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          traversalInfo.clusterSize, dataLayout, useNewton3);
     }
     case TraversalOption::vcl_sliced_c02: {
-      return std::make_unique<VCLSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength, info.clusterSize);
+      return std::make_unique<VCLSlicedC02Traversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          traversalInfo.clusterSize, dataLayout, useNewton3);
     }
     case TraversalOption::vcl_sliced_balanced: {
-      return std::make_unique<VCLSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength, info.clusterSize);
+      return std::make_unique<VCLSlicedBalancedTraversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          traversalInfo.clusterSize, dataLayout, useNewton3);
     }
     case TraversalOption::vcl_c06: {
-      return std::make_unique<VCLC06Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(&pairwiseFunctor,
-                                                                                                      info.clusterSize);
+      return std::make_unique<VCLC06Traversal<ParticleCell, PairwiseFunctor>>(
+          &pairwiseFunctor, traversalInfo.clusterSize, dataLayout, useNewton3);
     }
     // Pairwise Verlet Lists
     case TraversalOption::vlp_sliced: {
-      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                                 VLCCellPairNeighborList<typename ParticleCell::ParticleType>,
-                                                 ContainerOption::pairwiseVerletLists>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<VLCSlicedTraversal<ParticleCell, PairwiseFunctor,
+                                                 VLCCellPairNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::pairwiseVerletLists);
     }
     case TraversalOption::vlp_sliced_c02: {
-      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                                    VLCCellPairNeighborList<typename ParticleCell::ParticleType>,
-                                                    ContainerOption::pairwiseVerletLists>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<VLCSlicedC02Traversal<ParticleCell, PairwiseFunctor,
+                                                    VLCCellPairNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::pairwiseVerletLists);
     }
     case TraversalOption::vlp_sliced_balanced: {
-      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                                         VLCCellPairNeighborList<typename ParticleCell::ParticleType>,
-                                                         ContainerOption::pairwiseVerletLists>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<VLCSlicedBalancedTraversal<ParticleCell, PairwiseFunctor,
+                                                         VLCCellPairNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::pairwiseVerletLists);
     }
     case TraversalOption::vlp_c01: {
-      return std::make_unique<VLCC01Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                              VLCCellPairNeighborList<typename ParticleCell::ParticleType>,
-                                              ContainerOption::pairwiseVerletLists>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<
+          VLCC01Traversal<ParticleCell, PairwiseFunctor, VLCCellPairNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::pairwiseVerletLists);
     }
     case TraversalOption::vlp_c18: {
-      return std::make_unique<VLCC18Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3,
-                                              VLCCellPairNeighborList<typename ParticleCell::ParticleType>,
-                                              ContainerOption::pairwiseVerletLists>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<
+          VLCC18Traversal<ParticleCell, PairwiseFunctor, VLCCellPairNeighborList<typename ParticleCell::ParticleType>>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3, ContainerOption::pairwiseVerletLists);
     }
     case TraversalOption::vlp_c08: {
-      return std::make_unique<VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &pairwiseFunctor, info.interactionLength, info.cellLength);
+      return std::make_unique<VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor>>(
+          traversalInfo.cellsPerDim, &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     // Octree
     case TraversalOption::ot_c18: {
       using ParticleType = typename ParticleCell::ParticleType;
-      return std::make_unique<OTC18Traversal<ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor, info.interactionLength, info.interactionLength);
+      return std::make_unique<OTC18Traversal<ParticleType, PairwiseFunctor>>(
+          &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
     }
 
     case TraversalOption::ot_c01: {
       using ParticleType = typename ParticleCell::ParticleType;
-      return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor, dataLayout, useNewton3>>(
-          &pairwiseFunctor, info.interactionLength, info.interactionLength);
+      return std::make_unique<OTC01Traversal<ParticleType, PairwiseFunctor>>(
+          &pairwiseFunctor, traversalInfo.interactionLength, traversalInfo.interactionLength, dataLayout, useNewton3);
     }
     default: {
       autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known pairwise traversal type!",
@@ -283,74 +305,50 @@ TraversalSelector<ParticleCell, interactionType>::generatePairwiseTraversal(Trav
   }
 }
 
-template <class ParticleCell, InteractionTypeOption::Value interactionType>
-template <class TriwiseFunctor, DataLayoutOption::Value dataLayout, bool useNewton3>
-std::unique_ptr<TraversalInterface<InteractionTypeOption::threeBody>>
-TraversalSelector<ParticleCell, interactionType>::generateTriwiseTraversal(TraversalOption traversalType,
-                                                                           TriwiseFunctor &triwiseFunctor,
-                                                                           const TraversalSelectorInfo &info) {
+template <class ParticleCell>
+template <class TriwiseFunctor>
+std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTriwiseTraversal(
+    TraversalOption traversalType, TriwiseFunctor &triwiseFunctor, const TraversalSelectorInfo &traversalInfo,
+    DataLayoutOption dataLayout, bool useNewton3) {
   switch (traversalType) {
     // Direct sum
-    case TraversalOption::ds_sequential_3b: {
-      return std::make_unique<DSSequentialTraversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
+    case TraversalOption::ds_sequential: {
+      return std::make_unique<DSSequentialTraversal<ParticleCell, TriwiseFunctor>>(
           &triwiseFunctor,
-          info.interactionLength /*this is the cutoff, as generated by DirectSum::getTraversalSelectorInfo()!*/);
+          traversalInfo
+              .interactionLength /*this is the cutoff, as generated by DirectSum::getTraversalSelectorInfo()!*/,
+          dataLayout, useNewton3);
     }
       // Linked Cells
-    case TraversalOption::lc_c01_3b: {
-      return std::make_unique<LCC01Traversal3B<ParticleCell, TriwiseFunctor, dataLayout, useNewton3>>(
-          info.cellsPerDim, &triwiseFunctor, info.interactionLength, info.cellLength);
+    case TraversalOption::lc_c01: {
+      return std::make_unique<LCC01Traversal<ParticleCell, TriwiseFunctor, /*combineSoA*/ false>>(
+          traversalInfo.cellsPerDim, &triwiseFunctor, traversalInfo.interactionLength, traversalInfo.cellLength,
+          dataLayout, useNewton3);
     }
     default: {
-      autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known 3-body traversal type!",
+      autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known triwise traversal type!",
                                                   traversalType.to_string());
       return {nullptr};
     }
   }
 }
 
-template <class ParticleCell, InteractionTypeOption::Value interactionType>
-template <class Functor, DataLayoutOption::Value dataLayout, bool useNewton3>
-std::unique_ptr<TraversalInterface<interactionType>>
-TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOption traversalType, Functor &functor,
-                                                                    const TraversalSelectorInfo &info) {
-  if constexpr (utils::isPairwiseFunctor<Functor>()) {
-    return generatePairwiseTraversal<Functor, dataLayout, useNewton3>(traversalType, functor, info);
-  } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
-    return generateTriwiseTraversal<Functor, dataLayout, useNewton3>(traversalType, functor, info);
-  }
-  return {nullptr};
-}
-
-template <class ParticleCell, InteractionTypeOption::Value interactionType>
+template <class ParticleCell>
 template <class Functor>
-std::unique_ptr<TraversalInterface<interactionType>>
-TraversalSelector<ParticleCell, interactionType>::generateTraversal(TraversalOption traversalType, Functor &functor,
-                                                                    const TraversalSelectorInfo &traversalInfo,
-                                                                    DataLayoutOption dataLayout,
-                                                                    Newton3Option newton3) {
-  switch (dataLayout) {
-    case DataLayoutOption::aos: {
-      if (newton3 == Newton3Option::enabled) {
-        return TraversalSelector<ParticleCell, interactionType>::template generateTraversal<
-            Functor, DataLayoutOption::aos, true>(traversalType, functor, traversalInfo);
-      } else {
-        return TraversalSelector<ParticleCell, interactionType>::template generateTraversal<
-            Functor, DataLayoutOption::aos, false>(traversalType, functor, traversalInfo);
-      }
-    }
-    case DataLayoutOption::soa: {
-      if (newton3 == Newton3Option::enabled) {
-        return TraversalSelector<ParticleCell, interactionType>::template generateTraversal<
-            Functor, DataLayoutOption::soa, true>(traversalType, functor, traversalInfo);
-      } else {
-        return TraversalSelector<ParticleCell, interactionType>::template generateTraversal<
-            Functor, DataLayoutOption::soa, false>(traversalType, functor, traversalInfo);
-      }
-    }
+std::unique_ptr<TraversalInterface> TraversalSelector<ParticleCell>::generateTraversal(
+    TraversalOption traversalType, Functor &functor, const TraversalSelectorInfo &traversalInfo,
+    DataLayoutOption dataLayout, bool useNewton3) {
+  if constexpr (utils::isPairwiseFunctor<Functor>()) {
+    auto pairTraversal =
+        generatePairwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
+    return std::unique_ptr<TraversalInterface>(dynamic_cast<TraversalInterface *>(pairTraversal.release()));
+  } else if constexpr (utils::isTriwiseFunctor<Functor>()) {
+    auto triTraversal =
+        generateTriwiseTraversal<Functor>(traversalType, functor, traversalInfo, dataLayout, useNewton3);
+    return std::unique_ptr<TraversalInterface>(dynamic_cast<TraversalInterface *>(triTraversal.release()));
   }
-
-  autopas::utils::ExceptionHandler::exception("Traversal type {} is not a known type!", traversalType.to_string());
+  autopas::utils::ExceptionHandler::exception(
+      "TraversalSelector::generateTraversal(): No Traversals exist for the given Functor: {}", functor.getName());
   return {nullptr};
 }
 }  // namespace autopas

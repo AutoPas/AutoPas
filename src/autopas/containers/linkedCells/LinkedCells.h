@@ -14,6 +14,7 @@
 #include "autopas/containers/LeavingParticleCollector.h"
 #include "autopas/containers/LoadEstimators.h"
 #include "autopas/containers/cellTraversals/BalancedTraversal.h"
+#include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/containers/linkedCells/traversals/LCTraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/DataLayoutOption.h"
@@ -62,7 +63,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   LinkedCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
               const double skinPerTimestep, const unsigned int rebuildFrequency, const double cellSizeFactor = 1.0,
               LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell)
-      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep * rebuildFrequency),
+      : CellBasedParticleContainer<ParticleCell>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency),
         _cellBlock(this->_cells, boxMin, boxMax, cutoff + skinPerTimestep * rebuildFrequency, cellSizeFactor),
         _loadEstimator(loadEstimator) {}
 
@@ -102,7 +103,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   void deleteHaloParticles() override { _cellBlock.clearHaloCells(); }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     // nothing to do.
   }
 
@@ -128,43 +129,11 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     }
   }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
-    // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellPairTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
-      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
-    }
-    if (traversalInterface && cellPairTraversal) {
-      cellPairTraversal->setCellsToTraverse(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iteratePairwise. TraversalID: {}",
-          traversal->getTraversalType());
-    }
+  void computeInteractions(TraversalInterface *traversal) override {
+    prepareTraversal(traversal);
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
-    traversal->endTraversal();
-  }
-
-  void iterateTriwise(TraversalInterface<InteractionTypeOption::threeBody> *traversal) override {
-    // Check if traversal is allowed for this container and give it the data it needs.
-    auto *traversalInterface = dynamic_cast<LCTraversalInterface<ParticleCell> *>(traversal);
-    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
-    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
-      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
-    }
-    if (traversalInterface && cellTraversal) {
-      cellTraversal->setCellsToTraverse(this->_cells);
-    } else {
-      autopas::utils::ExceptionHandler::exception(
-          "Trying to use a traversal of wrong type in LinkedCells::iterateTriwise. TraversalID: {}",
-          traversal->getTraversalType());
-    }
-
-    traversal->initTraversal();
-    traversal->traverseParticleTriplets();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -176,18 +145,13 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     this->deleteHaloParticles();
 
     std::vector<ParticleType> invalidParticles;
-#ifdef AUTOPAS_OPENMP
-#pragma omp parallel
-#endif  // AUTOPAS_OPENMP
-    {
+    AUTOPAS_OPENMP(parallel) {
       // private for each thread!
       std::vector<ParticleType> myInvalidParticles{}, myInvalidNotOwnedParticles{};
       // TODO: needs smarter heuristic than this.
       myInvalidParticles.reserve(128);
       myInvalidNotOwnedParticles.reserve(128);
-#ifdef AUTOPAS_OPENMP
-#pragma omp for
-#endif  // AUTOPAS_OPENMP
+      AUTOPAS_OPENMP(for)
       for (size_t cellId = 0; cellId < this->getCells().size(); ++cellId) {
         // Delete dummy particles of each cell.
         this->getCells()[cellId].deleteDummyParticles();
@@ -222,10 +186,7 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
           myInvalidNotOwnedParticles.push_back(p);
         }
       }
-#ifdef AUTOPAS_OPENMP
-#pragma omp critical
-#endif
-      {
+      AUTOPAS_OPENMP(critical) {
         // merge private vectors to global one.
         invalidParticles.insert(invalidParticles.end(), myInvalidNotOwnedParticles.begin(),
                                 myInvalidNotOwnedParticles.end());
@@ -272,10 +233,22 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
                                                                IteratorBehavior iteratorBehavior,
                                                                const std::array<double, 3> &boxMin,
                                                                const std::array<double, 3> &boxMax) const {
+    using namespace autopas::utils::ArrayMath::literals;
+
+    std::array<double, 3> boxMinWithSafetyMargin = boxMin;
+    std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
+    if constexpr (regionIter) {
+      // We extend the search box for cells here since particles might have moved
+      boxMinWithSafetyMargin -= (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+      boxMaxWithSafetyMargin += (this->_skinPerTimestep * static_cast<double>(this->getStepsSinceLastRebuild()));
+    }
+
     // first and last relevant cell index
     const auto [startCellIndex, endCellIndex] = [&]() -> std::tuple<size_t, size_t> {
       if constexpr (regionIter) {
-        return {_cellBlock.get1DIndexOfPosition(boxMin), _cellBlock.get1DIndexOfPosition(boxMax)};
+        // We extend the search box for cells here since particles might have moved
+        return {_cellBlock.get1DIndexOfPosition(boxMinWithSafetyMargin),
+                _cellBlock.get1DIndexOfPosition(boxMaxWithSafetyMargin)};
       } else {
         if (not(iteratorBehavior & IteratorBehavior::halo)) {
           // only potentially owned region
@@ -302,7 +275,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
             this->_cells[cellIndex][particleIndex], iteratorBehavior, boxMin, boxMax)) {
       // either advance them to something interesting or invalidate them.
       std::tie(cellIndex, particleIndex) =
-          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax, endCellIndex);
+          advanceIteratorIndices<regionIter>(cellIndex, particleIndex, iteratorBehavior, boxMin, boxMax,
+                                             boxMinWithSafetyMargin, boxMaxWithSafetyMargin, endCellIndex);
     }
 
     // shortcut if the given index doesn't exist
@@ -392,13 +366,14 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
   [[nodiscard]] ContainerIterator<ParticleType, true, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors) override {
+      typename ContainerIterator<ParticleType, true, true>::ParticleVecType *additionalVectors = nullptr) override {
     return ContainerIterator<ParticleType, true, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
   [[nodiscard]] ContainerIterator<ParticleType, false, true> getRegionIterator(
       const std::array<double, 3> &lowerCorner, const std::array<double, 3> &higherCorner, IteratorBehavior behavior,
-      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors) const override {
+      typename ContainerIterator<ParticleType, false, true>::ParticleVecType *additionalVectors =
+          nullptr) const override {
     return ContainerIterator<ParticleType, false, true>(*this, behavior, additionalVectors, lowerCorner, higherCorner);
   }
 
@@ -505,16 +480,18 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
    * @param cellIndex
    * @param particleIndex
    * @param iteratorBehavior
-   * @param boxMin
-   * @param boxMax
+   * @param boxMin The actual search box min
+   * @param boxMax The actual search box max
+   * @param boxMinWithSafetyMargin Search box min that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
+   * @param boxMaxWithSafetyMargin Search box max that includes a surrounding of skinPerTimestep * stepsSinceLastRebuild
    * @param endCellIndex Last relevant cell index
    * @return tuple<cellIndex, particleIndex>
    */
   template <bool regionIter>
-  std::tuple<size_t, size_t> advanceIteratorIndices(size_t cellIndex, size_t particleIndex,
-                                                    IteratorBehavior iteratorBehavior,
-                                                    const std::array<double, 3> &boxMin,
-                                                    const std::array<double, 3> &boxMax, size_t endCellIndex) const {
+  std::tuple<size_t, size_t> advanceIteratorIndices(
+      size_t cellIndex, size_t particleIndex, IteratorBehavior iteratorBehavior, const std::array<double, 3> &boxMin,
+      const std::array<double, 3> &boxMax, std::array<double, 3> boxMinWithSafetyMargin,
+      std::array<double, 3> boxMaxWithSafetyMargin, size_t endCellIndex) const {
     // Finding the indices for the next particle
     const size_t stride = (iteratorBehavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads();
 
@@ -529,10 +506,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
         if (isRelevant) {
           // is the cell in the region?
           const auto [cellLowCorner, cellHighCorner] = _cellBlock.getCellBoundingBox(cellIndex);
-          // particles can move over cell borders. Calculate the volume this cell's particles can be.
-          const auto cellLowCornerSkin = utils::ArrayMath::subScalar(cellLowCorner, this->getVerletSkin() * 0.5);
-          const auto cellHighCornerSkin = utils::ArrayMath::addScalar(cellHighCorner, this->getVerletSkin() * 0.5);
-          isRelevant = utils::boxesOverlap(cellLowCornerSkin, cellHighCornerSkin, boxMin, boxMax);
+          isRelevant =
+              utils::boxesOverlap(cellLowCorner, cellHighCorner, boxMinWithSafetyMargin, boxMaxWithSafetyMargin);
         }
       }
       return isRelevant;
@@ -561,6 +536,27 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
 
     // the indices returned at this point should always be valid
     return {cellIndex, particleIndex};
+  }
+
+  /**
+   * Checks if a given traversal is allowed for LinkedCells and sets it up for the force interactions.
+   * @tparam Traversal Traversal type. E.g. pairwise, triwise
+   * @param traversal
+   */
+  template <typename Traversal>
+  void prepareTraversal(Traversal &traversal) {
+    auto *traversalInterface = dynamic_cast<LCTraversalInterface *>(traversal);
+    auto *cellTraversal = dynamic_cast<CellTraversal<ParticleCell> *>(traversal);
+    if (auto *balancedTraversal = dynamic_cast<BalancedTraversal *>(traversal)) {
+      balancedTraversal->setLoadEstimator(getLoadEstimatorFunction());
+    }
+    if (traversalInterface && cellTraversal) {
+      cellTraversal->setCellsToTraverse(this->_cells);
+    } else {
+      autopas::utils::ExceptionHandler::exception(
+          "The selected traversal is not compatible with the LinkedCells container. TraversalID: {}",
+          traversal->getTraversalType());
+    }
   }
 
   /**

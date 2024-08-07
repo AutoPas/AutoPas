@@ -70,6 +70,8 @@ class AsBuildPairGeneratorFunctor
         _list(neighborList),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
 
+  std::string getName() override { return "AsBuildPairGeneratorFunctor"; }
+
   [[nodiscard]] bool isRelevantForTuning() override { return false; }
 
   /**

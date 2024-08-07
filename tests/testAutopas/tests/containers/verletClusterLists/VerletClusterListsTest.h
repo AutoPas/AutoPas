@@ -38,14 +38,13 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Par
         not autopas::utils::inBox(i.getR(), _min, _max) or not autopas::utils::inBox(j.getR(), _min, _max))
       return;
 
-#if defined(AUTOPAS_OPENMP)
-#pragma omp critical
-#endif
-    {
+    AUTOPAS_OPENMP(critical) {
       _pairs.emplace_back(&i, &j);
       if (newton3) _pairs.emplace_back(&j, &i);
     };
   }
+
+  std::string getName() override { return "CollectParticlePairsFunctor"; }
 
   bool isRelevantForTuning() override { return false; }
 
@@ -55,7 +54,7 @@ class CollectParticlePairsFunctor : public autopas::PairwiseFunctor<autopas::Par
   auto getParticlePairs() { return _pairs; }
 };
 
-#if defined(AUTOPAS_OPENMP)
+#if defined(AUTOPAS_USE_OPENMP)
 class CollectParticlesPerThreadFunctor
     : public autopas::PairwiseFunctor<autopas::Particle, CollectParticlesPerThreadFunctor> {
  public:
@@ -81,6 +80,8 @@ class CollectParticlesPerThreadFunctor
     _particlesPerThreadPerColor[_currentColor][threadNum].insert(&j);
   }
 
+  std::string getName() override { return "CollectParticlesPerThreadFunctor"; }
+
   bool isRelevantForTuning() override { return false; }
 
   bool allowsNewton3() override { return true; }
@@ -90,12 +91,12 @@ class CollectParticlesPerThreadFunctor
 };
 
 class ColoringTraversalWithColorChangeNotify
-    : public autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos, true> {
+    : public autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor> {
  public:
   ColoringTraversalWithColorChangeNotify(CollectParticlesPerThreadFunctor *functor, size_t clusterSize,
                                          std::function<void(int)> whenColorChanges)
-      : autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor, autopas::DataLayoutOption::aos, true>(
-            functor, clusterSize) {
+      : autopas::VCLC06Traversal<FPCell, CollectParticlesPerThreadFunctor>(functor, clusterSize,
+                                                                           autopas::DataLayoutOption::aos, true) {
     _whenColorChanges = std::move(whenColorChanges);
   }
 

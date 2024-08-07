@@ -56,24 +56,25 @@ namespace containerIteratorUtils {
 template <bool regionIter, class Particle, class Arr>
 [[nodiscard]] bool particleFulfillsIteratorRequirements(const Particle &p, IteratorBehavior behavior,
                                                         const Arr &regionMin, const Arr &regionMax) {
-  bool particleOk = false;
+  // If this is a region iterator check box condition first, otherwise race conditions can occur
+  // if multiple region iterator overlap and ownership state is touched.
+  // (e.g. during collection of leaving particles)
+  if constexpr (regionIter) {
+    if (not utils::inBox(p.getR(), regionMin, regionMax)) {
+      return false;
+    }
+  }
+
   // Check ownership
   // Dummy is not in sync with iterator behavior because it needs to be 0.
   // `a & b == b` idiom is to check a == b disregarding any bits beyond b. This is needed due to e.g. forceSequential.
   if (((behavior & IteratorBehavior::ownedOrHaloOrDummy) == IteratorBehavior::ownedOrHaloOrDummy) or
       (behavior & IteratorBehavior::dummy and p.isDummy())) {
-    particleOk = true;
+    return true;
   } else {
     // relies on both enums having the same encoding. This should be guaranteed statically in IteratorBehaviorTest!
-    particleOk = static_cast<unsigned int>(p.getOwnershipState()) & static_cast<unsigned int>(behavior);
+    return static_cast<unsigned int>(p.getOwnershipState()) & static_cast<unsigned int>(behavior);
   }
-  if constexpr (regionIter) {
-    // If this is a region iterator check if the particle is in the box.
-    if (particleOk and not utils::inBox(p.getR(), regionMin, regionMax)) {
-      particleOk = false;
-    }
-  }
-  return particleOk;
 }
 }  // namespace containerIteratorUtils
 
@@ -240,7 +241,6 @@ class ContainerIterator {
                     ParticleVecType *additionalVectorsToIterate, const std::array<double, 3> &regionMin,
                     const std::array<double, 3> &regionMax)
       : _container(&container),
-        _currentVectorIndex(0),
         _behavior(behavior),
         _vectorIndexOffset((behavior & IteratorBehavior::forceSequential) ? 1 : autopas_get_num_threads()) {
     if (additionalVectorsToIterate) {
@@ -296,6 +296,10 @@ class ContainerIterator {
 
   /**
    * Checks if the current iterator has a given validity.
+   *
+   * @note This is what is used implicitly in range-based loops because AutoPas::end()
+   * and ParticleContainerInterface::end() returns false.
+   *
    * @param input
    * @return
    */

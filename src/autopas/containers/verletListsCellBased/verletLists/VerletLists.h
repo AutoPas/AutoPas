@@ -71,7 +71,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return ContainerOption::verletLists; }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     // Check if traversal is allowed for this container and give it the data it needs.
     auto *verletTraversalInterface = dynamic_cast<VLTraversalInterface<LinkedParticleCell> *>(traversal);
     if (verletTraversalInterface) {
@@ -83,7 +83,7 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -95,10 +95,10 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
 
   /**
    * Rebuilds the verlet lists, marks them valid and resets the internal counter.
-   * @note This function will be called in iteratePairwiseAoS() and iteratePairwiseSoA() appropriately!
+   * @note This function will be called in computeInteractions()!
    * @param traversal
    */
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     this->updateVerletListsAoS(traversal->getUseNewton3());
     // the neighbor list is now valid
@@ -121,34 +121,20 @@ class VerletLists : public VerletListsLinkedBase<Particle> {
                                                                        this->getCutoff() + this->getVerletSkin());
 
     /// @todo autotune traversal
-    switch (_buildVerletListType) {
-      case BuildVerletListType::VerletAoS: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
-                             DataLayoutOption::aos, theBool>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&traversal);
-        });
-        break;
-      }
-      case BuildVerletListType::VerletSoA: {
-        utils::withStaticBool(useNewton3, [&](auto theBool) {
-          auto traversal =
-              LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor,
-                             DataLayoutOption::soa, theBool>(
-                  this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
-                  this->_linkedCells.getCellBlock().getCellLength());
-          this->_linkedCells.iteratePairwise(&traversal);
-        });
-        break;
-      }
-      default:
-        utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
-                                           _buildVerletListType);
-        break;
+    DataLayoutOption dataLayout;
+    if (_buildVerletListType == BuildVerletListType::VerletAoS) {
+      dataLayout = DataLayoutOption::aos;
+    } else if (_buildVerletListType == BuildVerletListType::VerletSoA) {
+      dataLayout = DataLayoutOption::soa;
+    } else {
+      utils::ExceptionHandler::exception("VerletLists::updateVerletListsAoS(): unsupported BuildVerletListType: {}",
+                                         _buildVerletListType);
     }
+    auto traversal =
+        LCC08Traversal<LinkedParticleCell, typename VerletListHelpers<Particle>::VerletListGeneratorFunctor>(
+            this->_linkedCells.getCellBlock().getCellsPerDimensionWithHalo(), &f, this->getInteractionLength(),
+            this->_linkedCells.getCellBlock().getCellLength(), dataLayout, useNewton3);
+    this->_linkedCells.computeInteractions(&traversal);
 
     _soaListIsValid = false;
   }

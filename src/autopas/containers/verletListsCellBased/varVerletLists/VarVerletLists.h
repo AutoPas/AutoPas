@@ -40,7 +40,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   [[nodiscard]] ContainerOption getContainerType() const override { return _neighborList.getContainerType(); }
 
-  void iteratePairwise(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void computeInteractions(TraversalInterface *traversal) override {
     auto *traversalInterface = dynamic_cast<VVLTraversalInterface<NeighborList> *>(traversal);
     if (traversalInterface) {
       traversalInterface->setNeighborListToTraverse(_neighborList);
@@ -50,7 +50,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
     }
 
     traversal->initTraversal();
-    traversal->traverseParticlePairs();
+    traversal->traverseParticles();
     traversal->endTraversal();
   }
 
@@ -60,7 +60,7 @@ class VarVerletLists : public VerletListsLinkedBase<Particle> {
    */
   long getNumberOfNeighborPairs() const { return _neighborList.getNumberOfNeighborPairs(); }
 
-  void rebuildNeighborLists(TraversalInterface<InteractionTypeOption::pairwise> *traversal) override {
+  void rebuildNeighborLists(TraversalInterface *traversal) override {
     this->_verletBuiltNewton3 = traversal->getUseNewton3();
     _neighborList.buildAoSNeighborList(this->_linkedCells, traversal->getUseNewton3());
     // the neighbor list is now valid

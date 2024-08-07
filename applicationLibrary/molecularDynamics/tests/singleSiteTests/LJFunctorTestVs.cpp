@@ -16,7 +16,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   funNoPPL.setParticleProperties(24 * this->epsilon, this->sigma);
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1);
+  particlePropertiesLibrary.addSiteType(0, 1);
+  particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
   particlePropertiesLibrary.calculateMixingCoefficients();
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 
@@ -30,8 +31,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLSoA) {
   autopasTools::generators::RandomGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
                                                                numParticlesPerCell, 43);
 
-  funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer, 0);
-  funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer, 0);
+  funNoPPL.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  funNoPPL.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   FMCell cell1PPL(cell1NoPPL);
   FMCell cell2PPL(cell2NoPPL);
@@ -63,7 +64,8 @@ TYPED_TEST_P(LJFunctorTestVs, testSetPropertiesVSPPLAoS) {
   funNoPPL.setParticleProperties(24 * this->epsilon, this->sigma);
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1);
+  particlePropertiesLibrary.addSiteType(0, 1);
+  particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
   particlePropertiesLibrary.calculateMixingCoefficients();
   FunPPL funPPL(this->cutoff, particlePropertiesLibrary);
 

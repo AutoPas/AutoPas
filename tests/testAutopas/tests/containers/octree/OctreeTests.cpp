@@ -464,7 +464,7 @@ TEST_F(OctreeTest, testAbleToSplit) {
   }
 }
 
-#if !defined(AUTOPAS_OPENMP)
+#if !defined(AUTOPAS_USE_OPENMP)
 std::pair<OctreeTest::Vector3DList, std::vector<std::tuple<unsigned long, unsigned long, double>>>
 OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, autopas::TraversalOption traversalOption,
                                     autopas::DataLayoutOption dataLayoutOption, autopas::Newton3Option newton3Option,
@@ -486,8 +486,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   auto &container = selector.getCurrentContainer();
 
   // Create a functor that is able to calculate forces
-  mdLib::LJFunctor<Molecule, true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both,
-                   false /*calculateGlobals*/>
+  LJFunctorType<true /*applyShift*/, false /*useMixing*/, autopas::FunctorN3Modes::Both, false /*calculateGlobals*/>
       ljFunctor{cutoff};
   ljFunctor.setParticleProperties(_eps * 24, _sig * _sig);
 
@@ -506,7 +505,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   // Obtain a compatible traversal
   auto traversal = autopas::utils::withStaticCellType<
       Molecule>(container.getParticleCellTypeEnum(), [&](auto particleCellDummy) {
-    return autopas::TraversalSelector<decltype(particleCellDummy), InteractionTypeOption::pairwise>::generateTraversal(
+    return autopas::TraversalSelector<decltype(particleCellDummy)>::template generateTraversal<decltype(mockFunctor)>(
         traversalOption, mockFunctor, container.getTraversalSelectorInfo(), dataLayoutOption, newton3Option);
   });
 
@@ -538,7 +537,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
 
   // Perform the traversal
   mockFunctor.initTraversal();
-  container.iteratePairwise(traversal.get());
+  container.computeInteractions(traversal.get());
   mockFunctor.endTraversal(newton3Option);
 
   // NOTE(johannes): This is an interesting metric, find out whether there is "turning" point in which the octree has
@@ -737,7 +736,7 @@ TEST_F(OctreeTest, testLeafIDs) {
   // Get leaves
   std::vector<OctreeLeafNode<ParticleFP64> *> leaves;
   root->appendAllLeaves(leaves);
-  OTC18Traversal<ParticleFP64, mdLib::LJFunctor<ParticleFP64>, DataLayoutOption::aos, true>::assignIDs(leaves);
+  OTC18Traversal<ParticleFP64, mdLib::LJFunctor<ParticleFP64>>::assignIDs(leaves);
 
   std::vector<int> ids, expected;
   for (int i = 0; i < leaves.size(); ++i) {

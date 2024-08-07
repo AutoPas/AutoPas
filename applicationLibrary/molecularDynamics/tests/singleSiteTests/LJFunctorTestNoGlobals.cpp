@@ -16,10 +16,12 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testAoSNoGlobals) {
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   std::unique_ptr<FuncType> functor;
 
-  particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1.0);
+  particlePropertiesLibrary.addSiteType(0, 1.0);
+  particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
   if constexpr (mixing) {
     functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
-    particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0);
+    particlePropertiesLibrary.addSiteType(1, 1.0);
+    particlePropertiesLibrary.addLJParametersToSite(1, this->epsilon2, this->sigma2);
   } else {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->epsilon * 24, 1);
@@ -98,8 +100,12 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     std::unique_ptr<FuncType> functor;
 
     if constexpr (mixing) {
-      particlePropertiesLibrary.addSiteType(0, this->epsilon, this->sigma, 1.0);
-      particlePropertiesLibrary.addSiteType(1, this->epsilon2, this->sigma2, 1.0);
+      particlePropertiesLibrary.addSiteType(0, 1.0);
+      particlePropertiesLibrary.addLJParametersToSite(0, this->epsilon, this->sigma);
+
+      particlePropertiesLibrary.addSiteType(1, 1.0);
+      particlePropertiesLibrary.addLJParametersToSite(1, this->epsilon2, this->sigma2);
+
       particlePropertiesLibrary.calculateMixingCoefficients();
       functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     } else {
@@ -131,8 +137,8 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
       }
     }
     // Load the particles into the soa.
-    functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-    functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
+    functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
     if (auto msg = this->shouldSkipIfNotImplemented([&]() {
           switch (interactionType) {
@@ -205,8 +211,8 @@ TYPED_TEST_P(LJFunctorTestNoGlobals, testSoANoGlobals) {
     }
 
     if (interactionType == TestType::InteractionType::pair) {
-      functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-      functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
+      functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+      functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
       functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, newton3);
       functor->SoAExtractor(cell1, cell1._particleSoABuffer, 0);
       functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);

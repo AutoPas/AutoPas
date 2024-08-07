@@ -12,6 +12,7 @@
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/logging/FLOPLogger.h"
 
 namespace autopas {
 
@@ -25,8 +26,7 @@ enum class FunctorN3Modes {
 };
 
 /**
- * Functor class. This class describes the pairwise interactions between
- * particles.
+ * Functor base class.
  * Both an array of structure (AoS) and a structure of array (SoA) are supported
  * to be used with functors.
  * Newton3: A functor does not have to implement both a newton3 and a
@@ -101,13 +101,16 @@ class Functor {
    *
    * @param cell Cell from where the data is loaded.
    * @param soa  Structure of arrays where the data is copied to.
-   * @param offset Offset within the SoA. The data of the cell should be added
-   * to the SoA with the specified offset.
+   * @param offset Offset within the SoA. The data of the cell should be added to the SoA with the specified offset.
+   * @param skipSoAResize If resizing of the SoA buffers should be skipped or not. If this is called with true, it must
+   * be ensured before the call that there is sufficient capacity in the SoA.
+   * @note The parameter skipSoAResize is usually set to false, only for VerletListsCellBased Containers it is set to
+   * true, since they resize the SoA before the call to SoALoader.
    * @tparam ParticleCell Type of the cell.
    */
   template <class ParticleCell>
-  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
-    SoALoaderImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+  void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize) {
+    SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
   }
 
   /**
@@ -156,13 +159,32 @@ class Functor {
    * computeInteractions using different functors in the logs.
    * @return name of functor.
    */
-  virtual std::string getName() { return "Functor"; }
+  virtual std::string getName() = 0;
 
   /**
    * Getter for the functor's cutoff
    * @return
    */
-  double getCutoff() const { return _cutoff; }
+  [[nodiscard]] double getCutoff() const { return _cutoff; }
+
+  /**
+   * Get the number of FLOPs. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()
+   * output as invalid and leaves "Not Implemented" the log.
+   * @return number of FLOPs
+   */
+  [[nodiscard]] virtual size_t getNumFLOPs() const { return std::numeric_limits<size_t>::max(); }
+
+  /**
+   * Get the hit rate. Implementation required if FLOPLogger used.
+   *
+   * If derived class provides no implementation, the FLOPLogger interprets the default NaN output as invalid and
+   * leaves "Not Implemented" in the log.
+   *
+   * @return (number of kernel calls) / (number of distance calculations)
+   */
+  [[nodiscard]] virtual double getHitRate() const { return std::numeric_limits<double>::quiet_NaN(); }
 
  private:
   /**
@@ -172,14 +194,19 @@ class Functor {
    * @param cell Cell from where the data is loaded.
    * @param soa  Structure of arrays where the data is copied to.
    * @param offset Offset within the SoA. The data of the cell should be added
+   * @param skipSoAResize If resizing of the SoA buffers should be skipped or not. If this is called with true, it must
+   * be ensured before the call that there is sufficient capacity in the SoA.
    * to the SoA with the specified offset.
    */
 
   template <typename cell_t, std::size_t... I>
-  void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
-    soa.resizeArrays(offset + cell.size());
+  void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize,
+                     std::index_sequence<I...>) {
+    if (not skipSoAResize) {
+      soa.resizeArrays(offset + cell.size());
+    }
 
-    if (cell.size() == 0) return;
+    if (cell.isEmpty()) return;
 
     /**
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
@@ -212,7 +239,7 @@ class Functor {
    */
   template <typename cell_t, std::size_t... I>
   void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
-    if (cell.size() == 0) return;
+    if (cell.isEmpty()) return;
 
     /**
      * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups

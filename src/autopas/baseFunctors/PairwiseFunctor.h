@@ -1,8 +1,8 @@
 /**
  * @file PairwiseFunctor.h
  *
- * @date 17 Jan 2018
- * @author tchipevn
+ * @date 12.08.2023
+ * @author muehlhaeusser
  */
 
 #pragma once
@@ -22,11 +22,7 @@ class VerletListHelpers;
 /**
  * PairwiseFunctor class. This class describes the pairwise interactions between
  * particles.
- * Both an array of structure (AoS) and a structure of array (SoA) are supported
- * to be used with functors.
- * Newton3: A functor does not have to implement both a newton3 and a
- * non-newton3 version. Instead you can specify, which version you use by
- * overriding allowsNonNewton3 resp. allowsNewton3
+ * @copydoc autopas::Functor
  *
  * @tparam Particle the type of Particle
  * @tparam CRTP_T the actual type of the functor
@@ -58,7 +54,7 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void AoSFunctor(Particle &i, Particle &j, bool newton3) {
-    utils::ExceptionHandler::exception("PairwiseFunctor::AoSFunctor: not yet implemented");
+    utils::ExceptionHandler::exception("{}::AoSFunctor: not implemented", this->getName());
   }
 
   /**
@@ -72,7 +68,7 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) {
-    utils::ExceptionHandler::exception("PairwiseFunctor::SoAFunctorSingle: not yet implemented");
+    utils::ExceptionHandler::exception("{}::SoAFunctorSingle: not implemented", this->getName());
   }
 
   /**
@@ -89,7 +85,7 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
    */
   virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
                                 const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
-    utils::ExceptionHandler::exception("PairwiseFunctor::SoAFunctorVerlet: not yet implemented");
+    utils::ExceptionHandler::exception("{}::SoAFunctorVerlet: not implemented", this->getName());
   }
 
   /**
@@ -104,21 +100,8 @@ class PairwiseFunctor : public Functor<Particle, CRTP_T> {
    * @param newton3 defines whether or whether not to use newton 3
    */
   virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
-    utils::ExceptionHandler::exception("PairwiseFunctor::SoAFunctorPair: not yet implemented");
+    utils::ExceptionHandler::exception("{}::SoAFunctorPair: not implemented", this->getName());
   }
-
-  /**
-   * Returns name of functor. Intended for use with the iteration logger, to differentiate between calls to
-   * computeInteractions using different functors in the logs.
-   * @return name of functor.
-   */
-  virtual std::string getName() { return "PairwiseFunctor"; }
-
-  /**
-   * Return number of interacting bodies. Required to determine the relevant traversals.
-   * @return number of interacting bodies of the functor
-   */
-  static constexpr unsigned int getNBody() { return 2; }
 };
 
 }  // namespace autopas

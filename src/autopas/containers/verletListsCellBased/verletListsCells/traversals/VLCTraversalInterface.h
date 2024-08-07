@@ -26,6 +26,14 @@ namespace autopas {
 template <class Particle, class NeighborList>
 class VLCTraversalInterface {
  public:
+  VLCTraversalInterface() = delete;
+
+  /**
+   * Constructor of the VLCTraversalInterface.
+   * @param typeOfList indicates the type of neighbor list as an enum value, currently only used for getTraversalType
+   */
+  VLCTraversalInterface(ContainerOption typeOfList) : _typeOfList(typeOfList) {}
+
   /**
    * Sets the verlet list for the traversal to iterate over.
    * @param verlet The verlet list to iterate over.
@@ -36,16 +44,16 @@ class VLCTraversalInterface {
   /**
    * Iterate over all neighbor lists list of a given cell.
    * @tparam PairwiseFunctor
-   * @tparam useNewton3
    * @param neighborLists A suitable neighbor list.
    * @param cellIndex
    * @param pairwiseFunctor
    * @param dataLayout
+   * @param useNewton3
    */
-  template <class PairwiseFunctor, bool useNewton3>
+  template <class PairwiseFunctor>
   void processCellLists(NeighborList &neighborLists, unsigned long cellIndex, PairwiseFunctor *pairwiseFunctor,
-                        DataLayoutOption::Value dataLayout) {
-    processCellListsImpl<PairwiseFunctor, useNewton3>(neighborLists, cellIndex, pairwiseFunctor, dataLayout);
+                        DataLayoutOption dataLayout, bool useNewton3) {
+    processCellListsImpl<PairwiseFunctor>(neighborLists, cellIndex, pairwiseFunctor, dataLayout, useNewton3);
   }
 
   /**
@@ -83,22 +91,27 @@ class VLCTraversalInterface {
    */
   SoA<typename Particle::SoAArraysType> *_soa;
 
+  /**
+   * The type of neighbor list as an enum value.
+   */
+  ContainerOption _typeOfList;
+
  private:
   /**
    * Processing of the VLCAllCellsNeighborList type of neighbor list (neighbor list for every cell).
    * @tparam PairwiseFunctor
-   * @tparam useNewton3
    * @param neighborList
    * @param cellIndex
    * @param pairwiseFunctor
    * @param dataLayout
+   * @param useNewton3
    */
-  template <class PairwiseFunctor, bool useNewton3>
+  template <class PairwiseFunctor>
   void processCellListsImpl(VLCAllCellsNeighborList<Particle> &neighborList, unsigned long cellIndex,
-                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
-    if (dataLayout == DataLayoutOption::Value::aos) {
-      auto &internalList = neighborList.getAoSNeighborList();
-      for (auto &[particlePtr, neighbors] : internalList[cellIndex]) {
+                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
+    if (dataLayout == DataLayoutOption::aos) {
+      auto &aosList = neighborList.getAoSNeighborList();
+      for (auto &[particlePtr, neighbors] : aosList[cellIndex]) {
         Particle &particle = *particlePtr;
         for (auto neighborPtr : neighbors) {
           Particle &neighbor = *neighborPtr;
@@ -108,8 +121,8 @@ class VLCTraversalInterface {
     }
 
     else if (dataLayout == DataLayoutOption::soa) {
-      auto &_soaList = neighborList.getSoANeighborList();
-      for (auto &[particleIndex, neighbors] : _soaList[cellIndex]) {
+      auto &soaList = neighborList.getSoANeighborList();
+      for (auto &[particleIndex, neighbors] : soaList[cellIndex]) {
         if (not neighbors.empty()) {
           pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);
         }
@@ -120,18 +133,18 @@ class VLCTraversalInterface {
   /**
    * Processing of the pairwise Verlet type of neighbor list (neighbor list for every pair of neighboring cells).
    * @tparam PairwiseFunctor
-   * @tparam useNewton3
    * @param neighborList
    * @param cellIndex
    * @param pairwiseFunctor
    * @param dataLayout
+   * @param useNewton3
    */
-  template <class PairwiseFunctor, bool useNewton3>
+  template <class PairwiseFunctor>
   void processCellListsImpl(VLCCellPairNeighborList<Particle> &neighborList, unsigned long cellIndex,
-                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption::Value dataLayout) {
-    if (dataLayout == DataLayoutOption::Value::aos) {
-      auto &internalList = neighborList.getAoSNeighborList();
-      for (auto &cellPair : internalList[cellIndex]) {
+                            PairwiseFunctor *pairwiseFunctor, DataLayoutOption dataLayout, bool useNewton3) {
+    if (dataLayout == DataLayoutOption::aos) {
+      auto &aosList = neighborList.getAoSNeighborList();
+      for (auto &cellPair : aosList[cellIndex]) {
         for (auto &[particlePtr, neighbors] : cellPair) {
           Particle &particle = *particlePtr;
           for (auto neighborPtr : neighbors) {
@@ -142,10 +155,10 @@ class VLCTraversalInterface {
       }
     }
 
-    else if (dataLayout == DataLayoutOption::Value::soa) {
-      auto &_soaList = neighborList.getSoANeighborList();
+    else if (dataLayout == DataLayoutOption::soa) {
+      auto &soaList = neighborList.getSoANeighborList();
       // iterate over soa and call soaFunctorVerlet for each of the neighbor lists
-      for (auto &cellPair : _soaList[cellIndex]) {
+      for (auto &cellPair : soaList[cellIndex]) {
         for (auto &[particleIndex, neighbors] : cellPair) {
           if (not neighbors.empty()) {
             pairwiseFunctor->SoAFunctorVerlet(*_soa, particleIndex, neighbors, useNewton3);

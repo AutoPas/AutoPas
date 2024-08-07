@@ -16,11 +16,15 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
   std::unique_ptr<FuncType> functor;
 
-  particlePropertiesLibrary.addSiteType(0, this->nu, 1.0);
+  particlePropertiesLibrary.addSiteType(0, 1.0);
+  particlePropertiesLibrary.addATParametersToSite(0, this->nu);
   if constexpr (mixing) {
     functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
-    particlePropertiesLibrary.addSiteType(1, this->nu2, 1.0);
-    particlePropertiesLibrary.addSiteType(2, this->nu3, 1.0);
+    particlePropertiesLibrary.addSiteType(1, 1.0);
+    particlePropertiesLibrary.addATParametersToSite(1, this->nu2);
+    particlePropertiesLibrary.addSiteType(2, 1.0);
+    particlePropertiesLibrary.addATParametersToSite(2, this->nu3);
+
   } else {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->nu);
@@ -35,9 +39,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
     GTEST_SKIP() << msg;
   }
 
-  auto f1one = p1.getF();
-  auto f2one = p2.getF();
-  auto f3one = p3.getF();
+  const auto f1one = p1.getF();
+  const auto f2one = p2.getF();
+  const auto f3one = p3.getF();
 
   if (mixing) {
     EXPECT_NEAR(f1one[0], this->expectedForceMixingP1[0], this->absDelta);
@@ -75,9 +79,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
 
   functor->AoSFunctor(p2, p1, p3, newton3);
 
-  auto f1two = p1.getF();
-  auto f2two = p2.getF();
-  auto f3two = p3.getF();
+  const auto f1two = p1.getF();
+  const auto f2two = p2.getF();
+  const auto f3two = p3.getF();
 
   double factor = newton3 ? 2. : 1.;
   if (mixing) {
@@ -115,9 +119,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
 
   functor->AoSFunctor(p3, p1, p2, newton3);
 
-  auto f1three = p1.getF();
-  auto f2three = p2.getF();
-  auto f3three = p3.getF();
+  const auto f1three = p1.getF();
+  const auto f2three = p2.getF();
+  const auto f3three = p3.getF();
 
   factor = newton3 ? 3. : 1.;
   if (mixing) {
@@ -152,9 +156,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   p3.setF({0., 0., 0.});
   functor->AoSFunctor(p1, p3, p2, newton3);
 
-  auto f1four = p1.getF();
-  auto f2four = p2.getF();
-  auto f3four = p3.getF();
+  const auto f1four = p1.getF();
+  const auto f2four = p2.getF();
+  const auto f3four = p3.getF();
 
   if (mixing) {
     EXPECT_NEAR(f1one[0], this->expectedForceMixingP1[0], this->absDelta);
@@ -205,9 +209,12 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     std::unique_ptr<FuncType> functor;
 
     if constexpr (mixing) {
-      particlePropertiesLibrary.addSiteType(0, this->nu, 1.0);
-      particlePropertiesLibrary.addSiteType(1, this->nu2, 1.0);
-      particlePropertiesLibrary.addSiteType(2, this->nu3, 1.0);
+      particlePropertiesLibrary.addSiteType(0, 1.0);
+      particlePropertiesLibrary.addATParametersToSite(0, this->nu);
+      particlePropertiesLibrary.addSiteType(1, 1.0);
+      particlePropertiesLibrary.addATParametersToSite(1, this->nu2);
+      particlePropertiesLibrary.addSiteType(2, 1.0);
+      particlePropertiesLibrary.addATParametersToSite(2, this->nu3);
       particlePropertiesLibrary.calculateMixingCoefficients();
       functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
     } else {
@@ -266,9 +273,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
       }
     }
     // Load the particles into the soa.
-    functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-    functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
-    functor->SoALoader(cell3, cell3._particleSoABuffer, 0);
+    functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+    functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
     if (auto msg = this->shouldSkipIfNotImplemented([&]() {
           switch (interactionType) {
@@ -399,9 +406,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
 
     // Second cell interaction for types with multiple cells
     if (interactionType != TestType::InteractionType::own and interactionType != TestType::InteractionType::verlet) {
-      functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-      functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
-      functor->SoALoader(cell3, cell3._particleSoABuffer, 0);
+      functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+      functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+      functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
       switch (interactionType) {
         case TestType::InteractionType::pair12:
           // Interaction of a cell pair
@@ -491,9 +498,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
 
       // Third interaction for 3 cells
       if (interactionType == TestType::InteractionType::triple) {
-        functor->SoALoader(cell1, cell1._particleSoABuffer, 0);
-        functor->SoALoader(cell2, cell2._particleSoABuffer, 0);
-        functor->SoALoader(cell3, cell3._particleSoABuffer, 0);
+        functor->SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+        functor->SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+        functor->SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
         functor->SoAFunctorTriple(cell3._particleSoABuffer, cell1._particleSoABuffer, cell2._particleSoABuffer,
                                   newton3);

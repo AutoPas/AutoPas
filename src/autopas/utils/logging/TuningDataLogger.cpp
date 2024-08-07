@@ -6,6 +6,8 @@
 
 #include "TuningDataLogger.h"
 
+#include <spdlog/async.h>
+
 #include "utils/Timer.h"
 
 autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string &outputSuffix)
@@ -14,7 +16,7 @@ autopas::TuningDataLogger::TuningDataLogger(size_t numSamples, const std::string
   const auto *fillerAfterSuffix = outputSuffix.empty() or outputSuffix.back() == '_' ? "" : "_";
   auto outputFileName("AutoPas_tuningData_" + outputSuffix + fillerAfterSuffix + utils::Timer::getDateStamp() + ".csv");
   // Start of workaround: Because we want to use an asynchronous logger we can't quickly switch patterns for the header.
-  // create and register a non-asychronous logger to write the header
+  // create and register a non-asynchronous logger to write the header
   auto headerLoggerName = _loggerName + "header";
   auto headerLogger = spdlog::basic_logger_mt(headerLoggerName, outputFileName);
   // set the pattern to the message only
@@ -44,7 +46,7 @@ autopas::TuningDataLogger::~TuningDataLogger() {
 void autopas::TuningDataLogger::logTuningData(const autopas::Configuration &configuration,
                                               const std::vector<long> &samplesRebuildingNeighborLists,
                                               const std::vector<long> &samplesNotRebuildingNeighborLists,
-                                              size_t iteration, long reducedValue, long smoothedValue) {
+                                              size_t iteration, long reducedValue, long smoothedValue) const {
 #ifdef AUTOPAS_LOG_TUNINGDATA
   spdlog::get(_loggerName)
       ->info("{},{},{},{},{},{}", iteration, configuration.getCSVLine(),

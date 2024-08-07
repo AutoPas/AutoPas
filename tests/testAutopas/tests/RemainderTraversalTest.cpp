@@ -65,9 +65,11 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
         autopas::InteractionTypeOption::pairwise}});
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::pairwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -85,14 +87,14 @@ void testIteratePairwiseSteps(std::vector<Molecule> &particlesContainerOwned,
       << numParticlesHaloBuffers << ")";
 
   // create a functor that calculates globals!
-  mdLib::LJFunctor<Molecule, /*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true>
-      functor(logicHandlerInfo.cutoff);
+  LJFunctorType</*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ true> functor(
+      logicHandlerInfo.cutoff);
   // Choose sigma != distance so we get Upot != 0
   constexpr double sigma = 2.;
   constexpr double epsilon = 1.;
   functor.setParticleProperties(24 * epsilon, sigma * sigma);
   // do the actual test
-  logicHandler.iteratePairwisePipeline(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::pairwise);
   constexpr double expectedDist = 1.;
   const double expectedAbsForce =
       std::abs((24 * epsilon) / (expectedDist * expectedDist) *
@@ -189,7 +191,7 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_pa
 }
 
 // This test is not possible without OpenMP because there only exists one buffer
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPAS_USE_OPENMP
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferB_NoN3) {
   NumThreadGuard threadGuard(2);
   std::vector<Molecule> particlesContainerOwned{};
@@ -287,7 +289,7 @@ TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_pa
                            autopas::Newton3Option::enabled);
 }
 
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPAS_USE_OPENMP
 TEST_F(RemainderTraversalTest, testRemainderTraversalDirectly_particleBufferA_particleBufferB_N3) {
   NumThreadGuard threadGuard(2);
   std::vector<Molecule> particlesContainerOwned{};
@@ -346,9 +348,11 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
       {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c08,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::enabled,
         autopas::InteractionTypeOption::pairwise}});
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initPairwise(&autoTuner);
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::pairwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {
@@ -364,10 +368,10 @@ void testRemainderTraversal(const std::vector<Molecule> &particles, const std::v
 
   logicHandler.setParticleBuffers(particlesBuffer, haloParticlesBuffer);
 
-  mdLib::LJFunctor<Molecule> functor(logicHandlerInfo.cutoff);
+  LJFunctorType<> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(24, 1);
   // do the actual test
-  logicHandler.iteratePairwisePipeline(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::pairwise);
 
   for (const auto &p : logicHandler.getContainer()) {
     EXPECT_THAT(p.getF(), testing::Not(::testing::ElementsAreArray({0., 0., 0.})))

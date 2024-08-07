@@ -74,6 +74,10 @@ Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::se
                                Newton3Option::disabled,
                                interactionType};
 
+  if (interactionType == InteractionTypeOption::triwise) {
+    fallBackConfig.traversal = TraversalOption::lc_c01;
+  }
+
   // Go through the search space and see if SoA or N3 are allowed.
   bool foundSoA{false};
   bool foundN3Enabled{false};
@@ -142,5 +146,7 @@ void MPIParallelizedStrategy::receiveSmoothedHomogeneityAndMaxDensity(double hom
 
 const AutoPas_MPI_Comm &MPIParallelizedStrategy::getBucket() const { return _bucket; }
 
-TuningStrategyOption MPIParallelizedStrategy::getOptionType() { return TuningStrategyOption::mpiDivideAndConquer; }
+TuningStrategyOption MPIParallelizedStrategy::getOptionType() const {
+  return TuningStrategyOption::mpiDivideAndConquer;
+}
 }  // namespace autopas

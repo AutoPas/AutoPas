@@ -15,8 +15,8 @@
 #include "testingHelpers/commonTypedefs.h"
 
 /**
- * Can test all individual steps of iterateTriwise. Expects exactly three particles that form an equilateral triangle of
- * side length sqrt(2).
+ * Can test all individual steps of computeInteractions. Expects exactly three particles that form an equilateral
+ * triangle of side length sqrt(2).
  *
  * @note Tests invoking this function should have AutoPas logger instantiated (e.g. by inheriting from AutoPasTestBase).
  * @note Buffers need to have at least one (empty) cell. They must not be empty.
@@ -62,12 +62,14 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const std::set<autopas::Configuration> searchSpace(
-      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01_3b,
+      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, n3,
-        autopas::InteractionTypeOption::threeBody}});
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initTriwise(&autoTuner);
+        autopas::InteractionTypeOption::triwise}});
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::triwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
   // Add particles. Calling add(Halo)Particle on a fresh logicHandler should place the particles directly in the
   // container.
@@ -91,7 +93,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
   functor.setParticleProperties(nu);
 
   // do the actual test
-  logicHandler.iterateTriwisePipeline(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::triwise);
 
   // Expected displacements of particles. Signs can differ
   using namespace autopas::utils::ArrayMath::literals;
@@ -135,7 +137,7 @@ void testIterateTriwiseSteps(std::vector<Molecule> &particlesContainerOwned,
           << "p1.f[" << dim << "] + p2.f[" << dim << "] + p3.f[" << dim << "] does not add up to zero!";
     }
   }
-  // if halo particles are involved only expect one or two thirds of Upot
+  // if halo particles are involved only expect one or two thirds of the potential energy
   const double energyFactor =
       (3.0 - static_cast<double>(numParticlesHaloBuffers + particlesContainerHalo.size())) / 3.0;
   const double expectedPotentialEnergy = energyFactor * (distSix - 3.0 * cosAll) * invdr5;
@@ -233,7 +235,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_
 }
 
 // This test is not possible without OpenMP because there only exists one buffer
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPAS_USE_OPENMP
 TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_particleBufferB_NoN3_3B) {
   NumThreadGuard threadGuard(3);
   std::vector<Molecule> particlesContainerOwned{};
@@ -377,7 +379,7 @@ TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_
 }
 
 // This test is not possible without OpenMP because there only exists one buffer
-#ifdef AUTOPAS_OPENMP
+#ifdef AUTOPAS_USE_OPENMP
 TEST_F(RemainderTraversalTest3B, testRemainderTraversalDirectly_particleBufferA_particleBufferB_N3_3B) {
   NumThreadGuard threadGuard(3);
   std::vector<Molecule> particlesContainerOwned{};
@@ -449,12 +451,14 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
 
   const std::set<autopas::Configuration> searchSpace(
-      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01_3b,
+      {{autopas::ContainerOption::linkedCells, cellSizeFactor, autopas::TraversalOption::lc_c01,
         autopas::LoadEstimatorOption::none, autopas::DataLayoutOption::aos, autopas::Newton3Option::disabled,
-        autopas::InteractionTypeOption::threeBody}});
-  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
-  autopas::LogicHandler<Molecule> logicHandler(logicHandlerInfo, verletRebuildFrequency, "");
-  logicHandler.initTriwise(&autoTuner);
+        autopas::InteractionTypeOption::triwise}});
+  std::unordered_map<autopas::InteractionTypeOption::Value, std::unique_ptr<autopas::AutoTuner>> tunerMap;
+  tunerMap.emplace(
+      autopas::InteractionTypeOption::triwise,
+      std::make_unique<autopas::AutoTuner>(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, ""));
+  autopas::LogicHandler<Molecule> logicHandler(tunerMap, logicHandlerInfo, verletRebuildFrequency, "");
 
   // fill the container with the given particles
   for (const auto &p : particles) {
@@ -473,7 +477,7 @@ void testRemainderTraversal3B(const std::vector<Molecule> &particles, const std:
   mdLib::AxilrodTellerFunctor<Molecule> functor(logicHandlerInfo.cutoff);
   functor.setParticleProperties(1.);
   // do the actual test
-  logicHandler.iterateTriwisePipeline(&functor);
+  logicHandler.computeInteractionsPipeline<decltype(functor)>(&functor, autopas::InteractionTypeOption::triwise);
 
   for (const auto &p : logicHandler.getContainer()) {
     if (p.isOwned()) {

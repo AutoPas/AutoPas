@@ -270,10 +270,10 @@ void LJFunctorTestGlobals<FuncType>::testSoAGlobals(LJFunctorTestGlobals<FuncTyp
 
   functor.initTraversal();
 
-  functor.SoALoader(cell1, cell1._particleSoABuffer, 0);
-  functor.SoALoader(cell2, cell2._particleSoABuffer, 0);
-  functor.SoALoader(cell3, cell3._particleSoABuffer, 0);
-  functor.SoALoader(cell4, cell4._particleSoABuffer, 0);
+  functor.SoALoader(cell1, cell1._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell2, cell2._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell3, cell3._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  functor.SoALoader(cell4, cell4._particleSoABuffer, 0, /*skipSoAResize*/ false);
 
   switch (interactionType) {
     case InteractionType::verlet: {
@@ -465,27 +465,14 @@ TYPED_TEST_P(LJFunctorTestGlobals, testAoSFunctorGlobalsOpenMPParallel) {
   std::string msg = "";
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
-#if defined(AUTOPAS_OPENMP)
-// reduction for appending strings: "abc" + "def" -> "abcdef"
-#pragma omp declare reduction(stringAppend : std::string : omp_out.append(omp_in))
-
-#pragma omp parallel reduction(stringAppend : msg)
-#endif
-  {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp sections
-#endif
-    {
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
-      {
+  // reduction for appending strings: "abc" + "def" -> "abcdef"
+  AUTOPAS_OPENMP(declare reduction(stringAppend : std::string : omp_out.append(omp_in)))
+  AUTOPAS_OPENMP(parallel reduction(stringAppend : msg)) {
+    AUTOPAS_OPENMP(sections) {
+      AUTOPAS_OPENMP(section) {
         msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p1, p2, newton3); });
       }  // pragma omp section
-#if defined(AUTOPAS_OPENMP)
-#pragma omp section
-#endif
-      {
+      AUTOPAS_OPENMP(section) {
         msg += this->shouldSkipIfNotImplemented([&]() { functor.AoSFunctor(p3, p4, newton3); });
       }  // pragma omp section
     }    // pragma omp sections
@@ -543,6 +530,10 @@ using MyTypes = ::testing::Types<LJFunShiftNoMixGlob
 #ifdef __AVX__
                                  ,
                                  LJFunAVXShiftNoMixGlob
+#endif
+#ifdef __ARM_FEATURE_SVE
+                                 ,
+                                 LJFunSVEShiftNoMixGlob
 #endif
                                  >;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, LJFunctorTestGlobals, MyTypes);

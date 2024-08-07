@@ -80,7 +80,9 @@ class CellIterator {
    * Dereference operator.
    * @return Pointer to the current particle.
    */
-  inline ParticleType *operator->() const { return &operator*(); }
+  inline std::conditional_t<modifiable, ParticleType *, const ParticleType *> operator->() const {
+    return &operator*();
+  }
 
   /**
    * Increment the iterator.
