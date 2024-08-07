@@ -97,9 +97,9 @@ namespace mdLib {
  */
 template <class Particle, bool useMixing = false, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool countFLOPs = false>
-class AxilrodTellerFunctor
+class AxilrodTellerFunctorAVX512
     : public autopas::TriwiseFunctor<
-          Particle, AxilrodTellerFunctorAVX512<Particle, useMixing, useNewton3, calculateGlobals, countFLOPS>> {
+          Particle, AxilrodTellerFunctorAVX512<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -123,8 +123,8 @@ class AxilrodTellerFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit AxilrodTellerFunctorAVX512(double cutoff, void * /*dummy*/)
-      : autopas::TriwiseFunctor<Particle,
-                                AxilrodTellerFunctor<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
+      : autopas::TriwiseFunctor<
+            Particle, AxilrodTellerFunctorAVX512<Particle, useMixing, useNewton3, calculateGlobals, countFLOPs>>(
             cutoff),
         _cutoffSquaredAoS{cutoff * cutoff},
         _potentialEnergySum{0.},
