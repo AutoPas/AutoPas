@@ -64,10 +64,10 @@ class AxilrodTellerFunctor
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
-        _aosThreadData(),
+        _aosThreadDataGlobals(),
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
-      _aosThreadData.resize(autopas::autopas_get_max_threads());
+      _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
     }
   }
 
@@ -180,19 +180,19 @@ class AxilrodTellerFunctor
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
-        _aosThreadData[threadnum].virialSum += virialI;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virialI;
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         auto virialJ = fj * j.getR();
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
-        _aosThreadData[threadnum].virialSum += virialJ;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
         auto virialK = fk * k.getR();
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
-        _aosThreadData[threadnum].virialSum += virialK;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadDataGlobals[threadnum].virialSum += virialK;
       }
     }
   }
@@ -439,10 +439,10 @@ class AxilrodTellerFunctor
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
-      _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -823,10 +823,10 @@ class AxilrodTellerFunctor
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
-      _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -1055,10 +1055,10 @@ class AxilrodTellerFunctor
 
     if constexpr (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
-      _aosThreadData[threadnum].potentialEnergySum += potentialEnergySum;
-      _aosThreadData[threadnum].virialSum[0] += virialSumX;
-      _aosThreadData[threadnum].virialSum[1] += virialSumY;
-      _aosThreadData[threadnum].virialSum[2] += virialSumZ;
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -1147,8 +1147,8 @@ class AxilrodTellerFunctor
     _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
-    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-      _aosThreadData[i].setZero();
+    for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
+      _aosThreadDataGlobals[i].setZero();
     }
   }
 
@@ -1165,9 +1165,9 @@ class AxilrodTellerFunctor
     }
     if (calculateGlobals) {
       // Accumulate potential energy and virial values.
-      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
-        _virialSum += _aosThreadData[i].virialSum;
+      for (size_t i = 0; i < _aosThreadDataGlobals.size(); ++i) {
+        _potentialEnergySum += _aosThreadDataGlobals[i].potentialEnergySum;
+        _virialSum += _aosThreadDataGlobals[i].virialSum;
       }
 
       _postProcessed = true;
@@ -1222,9 +1222,9 @@ class AxilrodTellerFunctor
   /**
    * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
    */
-  class AoSThreadData {
+  class AoSThreadDataGlobals {
    public:
-    AoSThreadData() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
+    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
       virialSum = {0., 0., 0.};
       potentialEnergySum = 0.;
@@ -1239,7 +1239,7 @@ class AxilrodTellerFunctor
     double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
   // make sure of the size of AoSThreadData
-  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
+  static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadData has wrong size");
 
   const double _cutoffSquared;
 
@@ -1255,7 +1255,7 @@ class AxilrodTellerFunctor
   std::array<double, 3> _virialSum;
 
   // thread buffer for aos
-  std::vector<AoSThreadData> _aosThreadData;
+  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals;
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;
