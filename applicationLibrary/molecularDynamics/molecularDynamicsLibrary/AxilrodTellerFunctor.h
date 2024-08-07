@@ -514,10 +514,24 @@ class AxilrodTellerFunctor
             // Add 3 * potential energy to every owned particle of the interaction.
             // Division to the correct value is handled in endTraversal().
             const double potentialEnergy3 = invdr53 * (dr2 - 3.0 * drijk2);
-            potentialEnergySum += potentialEnergy3;
-            virialSumX += fxi * xi + fxj * xj - nfxk * xk;
-            virialSumY += fyi * yi + fyj * yj - nfyk * yk;
-            virialSumZ += fzi * zi + fzj * zj - nfzk * zk;
+            if (ownedStatePtr[i] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += fxi * xi;
+              virialSumY += fyi * yi;
+              virialSumZ += fzi * zi;
+            }
+            if (ownedStatePtr[j] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += fxj * xj;
+              virialSumY += fyj * yj;
+              virialSumZ += fzj * zj;
+            }
+            if (ownedStatePtr[k] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX -= nfxk * xk;
+              virialSumY -= nfyk * yk;
+              virialSumZ -= nfzk * zk;
+            }
           }
         }
         fxptr[j] += fxjacc;
@@ -729,7 +743,7 @@ class AxilrodTellerFunctor
             fy2ptr[k] -= nfyk;
             fz2ptr[k] -= nfzk;
 
-            if constexpr (calculateGlobals) {
+            if (calculateGlobals and ownedState2ptr[k] == autopas::OwnershipState::owned) {
               virialSumX -= nfxk * xk;
               virialSumY -= nfyk * yk;
               virialSumZ -= nfzk * zk;
@@ -739,11 +753,22 @@ class AxilrodTellerFunctor
           if constexpr (calculateGlobals) {
             // Add 3 * potential energy to every owned particle of the interaction.
             // Division to the correct value is handled in endTraversal().
-            const double potentialEnergy3 = (newton3 ? 3.0 : 2.0) * invdr53 * (dr2 - 3.0 * drijk2);
-            potentialEnergySum += potentialEnergy3;
-            virialSumX += fxi * xi + fxj * xj;
-            virialSumY += fyi * yi + fyj * yj;
-            virialSumZ += fzi * zi + fzj * zj;
+            const double potentialEnergy3 = invdr53 * (dr2 - 3.0 * drijk2);
+            if (ownedState1ptr[i] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += fxi * xi;
+              virialSumY += fyi * yi;
+              virialSumZ += fzi * zi;
+            }
+            if (ownedState1ptr[j] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += fxj * xj;
+              virialSumY += fyj * yj;
+              virialSumZ += fzj * zj;
+            }
+            if (newton3 and ownedState2ptr[k] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+            }
           }
         }
         fx1ptr[j] += fxjacc;
@@ -888,21 +913,36 @@ class AxilrodTellerFunctor
             fy2ptr[k] -= nfyk;
             fz2ptr[k] -= nfzk;
 
-            if constexpr (calculateGlobals) {
-              virialSumX += fxj * xj - nfxk * xk;
-              virialSumY += fyj * yj - nfyk * yk;
-              virialSumZ += fzj * zj - nfzk * zk;
+            if (calculateGlobals) {
+              if (ownedState2ptr[j] == autopas::OwnershipState::owned) {
+                virialSumX += fxj * xj;
+                virialSumY += fyj * yj;
+                virialSumZ += fzj * zj;
+              }
+              if (ownedState2ptr[k] == autopas::OwnershipState::owned) {
+                virialSumX -= nfxk * xk;
+                virialSumY -= nfyk * yk;
+                virialSumZ -= nfzk * zk;
+              }
             }
           }
 
           if constexpr (calculateGlobals) {
             // Add 3 * potential energy to every owned particle of the interaction.
             // Division to the correct value is handled in endTraversal().
-            const double potentialEnergy3 = (newton3 ? 3.0 : 1.0) * invdr53 * (dr2 - 3.0 * drijk2);
-            potentialEnergySum += potentialEnergy3;
-            virialSumX += fxi * xi;
-            virialSumY += fyi * yi;
-            virialSumZ += fzi * zi;
+            const double potentialEnergy3 = invdr53 * (dr2 - 3.0 * drijk2);
+            if (ownedState1ptr[i] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += fxi * xi;
+              virialSumY += fyi * yi;
+              virialSumZ += fzi * zi;
+            }
+            if (newton3 and ownedState2ptr[j] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+            }
+            if (newton3 and ownedState2ptr[k] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+            }
           }
         }
         if constexpr (newton3) {
@@ -1124,9 +1164,16 @@ class AxilrodTellerFunctor
             fz3ptr[k] -= nfzk;
 
             if constexpr (calculateGlobals) {
-              virialSumX += fxj * xj - nfxk * xk;
-              virialSumY += fyj * yj - nfyk * yk;
-              virialSumZ += fzj * zj - nfzk * zk;
+              if (ownedState2ptr[j] == autopas::OwnershipState::owned) {
+                virialSumX += fxj * xj;
+                virialSumY += fyj * yj;
+                virialSumZ += fzj * zj;
+              }
+              if (ownedState2ptr[k] == autopas::OwnershipState::owned) {
+                virialSumX -= nfxk * xk;
+                virialSumY -= nfyk * yk;
+                virialSumZ -= nfzk * zk;
+              }
             }
           }
 
@@ -1134,10 +1181,12 @@ class AxilrodTellerFunctor
             // Add 3 * potential energy to every owned particle of the interaction.
             // Division to the correct value is handled in endTraversal().
             const double potentialEnergy3 = (newton3 ? 3.0 : 1.0) * invdr53 * (dr2 - 3.0 * drijk2);
-            potentialEnergySum += potentialEnergy3;
-            virialSumX += fxi * xi;
-            virialSumY += fyi * yi;
-            virialSumZ += fzi * zi;
+            if (ownedState1ptr[i] == autopas::OwnershipState::owned) {
+              potentialEnergySum += potentialEnergy3;
+              virialSumX += fxi * xi;
+              virialSumY += fyi * yi;
+              virialSumZ += fzi * zi;
+            }
           }
         }
         if constexpr (newton3) {
@@ -1159,7 +1208,6 @@ class AxilrodTellerFunctor
       _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
-
 
  public:
   /**
