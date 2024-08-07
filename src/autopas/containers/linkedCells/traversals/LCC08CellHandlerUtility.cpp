@@ -40,7 +40,8 @@ constexpr bool includeCellPair(const C08CellDirection &direction, const std::arr
 }
 
 std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offset1Vector,
-                                              const std::array<double, 3> &offset2Vector) {
+                                              const std::array<double, 3> &offset2Vector,
+                                              const std::array<double, 3> &cellLength) {
   using namespace autopas::utils::ArrayMath::literals;
   // In case the sorting direction is 0, 0, 0 ==> fix to 1, 1, 1
   std::array<double, 3> sortDir = offset1Vector - offset2Vector;
@@ -49,7 +50,7 @@ std::array<double, 3> computeSortingDirection(const std::array<double, 3> &offse
   }
 
   // Normalize and return
-  return utils::ArrayMath::normalize(sortDir);
+  return utils::ArrayMath::normalize(sortDir * cellLength);
 }
 
 }  // namespace internal
@@ -115,6 +116,8 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
               // Calculate the sorting direction if sorting is enabled
               if constexpr (Mode == C08OffsetMode::c08CellPairsSorting) {
                 // These are respectivley the 3D coordinates of the offsets of cell1 and cell2, as double elements
+                // The cellLength is utuilized to modfiy the direction of the sortingVector in case the cells
+                // are less squarish, but more lengthy
                 const auto sortDir = computeSortingDirection(
                     {
                         static_cast<double>(x),
@@ -125,7 +128,8 @@ OffsetPairType<Mode> computePairwiseCellOffsetsC08(const std::array<unsigned lon
                         static_cast<double>(maskX * overlap[0]),
                         static_cast<double>(maskY * overlap[1]),
                         static_cast<double>(z),
-                    });
+                    },
+                    cellLength);
                 // Append the cell pairs & their sorting direction
                 resultOffsetsC08.emplace_back(offset2, offset1, sortDir);
               } else if constexpr (Mode == C08OffsetMode::c04CellPairs) {
