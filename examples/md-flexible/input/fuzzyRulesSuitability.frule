@@ -12,7 +12,7 @@
 FuzzySystemSettings:
 	defuzzificationMethod: "CoG"
 	interpretOutputAs: "Suitability"
-	suitabilityThreshold: "0.2"
+	suitabilityThreshold: "0.3"
 
 
 # Fuzzy Variables
