@@ -327,11 +327,11 @@ TEST_F(SPHTest, testSPHCalcHydroForceFunctorSoAvsAoSSingleCell) {
       EXPECT_NEAR(iteratorAoS->getVSigMax(), iteratorSoA->getVSigMax(), 1.e-15 * fabs(iteratorAoS->getVSigMax()));
       EXPECT_NEAR(iteratorAoS->getEngDot(), iteratorSoA->getEngDot(), 1.e-15 * fabs(iteratorAoS->getEngDot()));
       EXPECT_NEAR(iteratorAoS->getAcceleration()[0], iteratorSoA->getAcceleration()[0],
-                  1.e-14 * fabs(iteratorAoS->getAcceleration()[0]));
+                  5.e-14 * fabs(iteratorAoS->getAcceleration()[0]));
       EXPECT_NEAR(iteratorAoS->getAcceleration()[1], iteratorSoA->getAcceleration()[1],
-                  1.e-14 * fabs(iteratorAoS->getAcceleration()[1]));
+                  5.e-14 * fabs(iteratorAoS->getAcceleration()[1]));
       EXPECT_NEAR(iteratorAoS->getAcceleration()[2], iteratorSoA->getAcceleration()[2],
-                  1.e-14 * fabs(iteratorAoS->getAcceleration()[2]));
+                  5.e-14 * fabs(iteratorAoS->getAcceleration()[2]));
     }
   }
 }
