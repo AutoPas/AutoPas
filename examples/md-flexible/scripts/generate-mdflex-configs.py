@@ -1,5 +1,7 @@
 #!/usr/bin/python3
+import math
 import yaml
+
 # Make sure the library version is sufficient
 pyyaml_version = tuple(map(int, yaml.__version__.split('.')))
 if pyyaml_version < (5, 1):
@@ -145,23 +147,25 @@ def generate(domainSize,
         yaml.dump(data, fileOutput, sort_keys=False)
 
 
-def isInteresting(domainSize,
-                  numParticles,
-                  distribution,
-                  cutoff,
-                  skinFactor,
+def isInteresting(domainSizeName,
+                  numParticlesName,
+                  distributionName,
+                  cutoffName,
+                  skinFactorName,
                   invMaxParticleSpeed,
                   functor,
-                  cellSizeFactor):
+                  cellSizeFactorName):
 
     """
     Filter to judge if a config is worth to generate.
     """
 
-    tooDenseThreshold = 400  # particles per cell
-    actualDomainSize = domainSizes[domainSize]
-    numCells = actualDomainSize[0] * actualDomainSize[1] * actualDomainSize[2]
-    uniformAvgParticlesPerCell = particleCounts[numParticles] / numCells
+    cellSizeFactor = cellSizeFactors[cellSizeFactorName]
+    domainSize = domainSizes[domainSizeName]
+    cellSize = cutoffs[cutoffName] * (1 + skinFactors[skinFactorName]) * cellSizeFactor
+    cellsPerDimension = [math.floor(d / cellSize) for d in domainSize]
+    numCells = math.prod(cellsPerDimension)
+    uniformAvgParticlesPerCell = particleCounts[numParticlesName] / numCells
 
     return not (uniformAvgParticlesPerCell > tooDenseThreshold
                 or (numParticles == 'very-few' and functor == 'lj-avx')
