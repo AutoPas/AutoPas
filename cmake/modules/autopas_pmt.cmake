@@ -19,8 +19,8 @@ include(FetchContent)
 FetchContent_Declare(
     pmt
     URL
-        ${AUTOPAS_SOURCE_DIR}/libs/pmt-1.3.1_custom.zip
-        URL_HASH MD5=f0ddc620a2dc6566fc411d038a46ce05
+        ${AUTOPAS_SOURCE_DIR}/libs/pmt_stable_1.0.zip
+        URL_HASH MD5=9a3e1d5c73bb672ff93ce9ffb3f277b7
 )
 
 FetchContent_MakeAvailable(pmt)
