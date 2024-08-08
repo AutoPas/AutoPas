@@ -164,15 +164,29 @@ def isInteresting(domainSizeName,
     domainSize = domainSizes[domainSizeName]
     cellSize = cutoffs[cutoffName] * (1 + skinFactors[skinFactorName]) * cellSizeFactor
     cellsPerDimension = [math.floor(d / cellSize) for d in domainSize]
+    # If cells are larger than the domain in any dimension the scenario doesn't make sense
+    if any(item == 0 for item in cellsPerDimension):
+        return False
     numCells = math.prod(cellsPerDimension)
     uniformAvgParticlesPerCell = particleCounts[numParticlesName] / numCells
+    # Currently unused:
+    # volume=math.prod(domainSize)
+    # density=particleCounts[numParticlesName]/volume
 
-    return not (uniformAvgParticlesPerCell > tooDenseThreshold
-                or (numParticles == 'very-few' and functor == 'lj-avx')
-                or (numParticles == 'huge' and distribution != 'uniform-whole')
-                # or (cellSizeFactor == 'big')
-                # or (cutoff == 'big')
-                # or (functor == 'lj-no-avx')
+    # Exclusion rules. Mostly to avoid scenarios that take forever to test.
+    return not (False
+                # avoid insanely dense scenarios
+                or uniformAvgParticlesPerCell > 150
+                # be even stricter for gauss because of their dense core
+                or (distributionName == 'concentrated-gauss' and uniformAvgParticlesPerCell > 75)
+                # bigger CSFs are for less dense scenarios
+                or (uniformAvgParticlesPerCell > 50 and cellSizeFactor > 1)
+                # smaller CSFs are for non-sparse scenarios
+                or (uniformAvgParticlesPerCell < 10 and cellSizeFactor < 1)
+                # for huge particle counts only maximal spread is interesting otherwise there are too many interactions
+                or (numParticlesName == 'huge' and distributionName != 'uniform-whole')
+                # only avx functor is relevant
+                or (not functor == 'lj-avx')
                 )
 
 
@@ -200,8 +214,8 @@ if __name__ == "__main__":
         'concentrated-closest-packed': ('closestPacked', 0.3, 0.25),
     }
     cutoffs = {
-        'normal': 1,
-        'big': 2.5,
+        'normal': 2.5,
+        'big': 3.5,
     }
     skinFactors = {
         'small': 0.1,
@@ -210,10 +224,11 @@ if __name__ == "__main__":
     }
     invMaxParticleSpeed = 100
     functors = {
-        # 'lj-no-avx': 'Lennard-Jones (12-6)',
+        'lj-no-avx': 'Lennard-Jones (12-6)',
         'lj-avx': 'Lennard-Jones (12-6) AVX',
     }
     cellSizeFactors = {
+        'small': 0.5,
         'normal': 1.0,
         'big': 2.0,
     }
