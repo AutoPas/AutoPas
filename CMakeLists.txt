@@ -78,7 +78,6 @@ endif ()
 include(autopas_ccache)
 include(autopas_clang-sanitizers)
 include(autopas_clang-tidy)
-include(autopas_CodeCoverage)
 include(autopas_OpenMP)
 include(autopas_mpi)
 
@@ -117,3 +116,6 @@ write_basic_package_version_file(
     COMPATIBILITY ExactVersion
     # for now ExactVersion is used, as the interface might change.
 )
+
+# We have to include coverage target after the CMakeFiles for the tests
+include(autopas_CodeCoverage)
