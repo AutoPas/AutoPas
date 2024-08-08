@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+import sys
+# Python version check
+if sys.version_info < (3, 8):
+    sys.exit("This script requires Python 3.8 or higher for 'math.prod'!")
 import math
 import yaml
 
