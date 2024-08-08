@@ -2,7 +2,7 @@
 ## md-flexible compiled for multi-site molecules.
 container                        :  [LinkedCells, VerletLists, VerletListsCells, VerletClusterLists]
 verlet-rebuild-frequency         :  10
-verlet-skin-radius-per-timestep  :  0.1
+verlet-skin-radius               :  1.0
 verlet-cluster-size              :  4
 selector-strategy                :  Fastest-Absolute-Value
 data-layout                      :  [AoS, SoA]

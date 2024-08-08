@@ -27,7 +27,7 @@ namespace autopas {
  * to calculate pairwise interactions of particles.
  * It is optimized for a constant, i.e. particle independent, cutoff radius of
  * the interaction.
- * Cells are created using a cell size of at least cutoff + skinPerTimestep*rebuildFrequency.
+ * Cells are created using a cell size of at least cutoff + skin.
  * @tparam Particle
  * @tparam NeighborList The neighbor list used by this container.
  */
@@ -44,18 +44,17 @@ class VerletListsCells : public VerletListsLinkedBase<Particle> {
    * @param boxMax The upper corner of the domain.
    * @param cutoff The cutoff radius of the interaction.
    * @param rebuildFrequency The rebuild Frequency.
-   * @param skinPerTimestep The skin radius per Timestep.
+   * @param skin The skin radius.
    * @param cellSizeFactor Cell size factor relative to cutoff.
    * @param loadEstimator Load estimation algorithm for balanced traversals.
    * @param dataLayoutDuringListRebuild Data layout during the list generation. Has no influence on list layout.
    */
   VerletListsCells(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
-                   const double skinPerTimestep = 0, const unsigned int rebuildFrequency = 2,
-                   const double cellSizeFactor = 1.0,
+                   const double skin = 0, const unsigned int rebuildFrequency = 2, const double cellSizeFactor = 1.0,
                    const LoadEstimatorOption loadEstimator = LoadEstimatorOption::squaredParticlesPerCell,
                    typename VerletListsCellsHelpers::VLCBuildType dataLayoutDuringListRebuild =
                        VerletListsCellsHelpers::VLCBuildType::soaBuild)
-      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency,
+      : VerletListsLinkedBase<Particle>(boxMin, boxMax, cutoff, skin, rebuildFrequency,
                                         compatibleTraversals::allVLCCompatibleTraversals(), cellSizeFactor),
         _loadEstimator(loadEstimator),
         _dataLayoutDuringListRebuild(dataLayoutDuringListRebuild) {}

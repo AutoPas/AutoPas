@@ -6,6 +6,7 @@
 
 #include "LinkedCellsTest.h"
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/ArrayUtils.h"
 
 TYPED_TEST_SUITE_P(LinkedCellsTest);
@@ -18,9 +19,9 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   const std::array<double, 3> boxMax{4.5, 4.5, 4.5};
   // set values so we have 3x3x3 cells + halo = 5x5x5
   const double cutoff{1.0};
-  const double skinPerTimestep{0.1};
+  const double skin{0.5};
   const double rebuildFrequency{5.};
-  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency);
+  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skin, rebuildFrequency);
 
   // create owned particles
   const std::vector<autopas::Particle> ownedParticles{
@@ -34,7 +35,7 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   };
 
   // These are going to be halo particles
-  const std::vector<autopas::Particle> haloParticles{
+  std::vector<autopas::Particle> haloParticles{
       {{-0.5, +1.5, +1.5}, zero, 5},
       {{+5.0, +1.5, +1.5}, zero, 6},
       {{+1.5, -0.5, +1.5}, zero, 7},
@@ -56,15 +57,18 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   // we insert owned and halo particles alternating. This way we can check if references are updated correctly when
   // using LinkedCellsReferences
   linkedCells.addParticle(ownedParticles[0]);
+  haloParticles[0].setOwnershipState(autopas::OwnershipState::halo);
   linkedCells.addHaloParticle(haloParticles[0]);
   linkedCells.addParticle(ownedParticles[1]);
+  haloParticles[1].setOwnershipState(autopas::OwnershipState::halo);
   linkedCells.addHaloParticle(haloParticles[1]);
   linkedCells.addParticle(ownedParticles[2]);
+  haloParticles[2].setOwnershipState(autopas::OwnershipState::halo);
   linkedCells.addHaloParticle(haloParticles[2]);
   linkedCells.addParticle(ownedParticles[3]);
+  haloParticles[3].setOwnershipState(autopas::OwnershipState::halo);
   linkedCells.addHaloParticle(haloParticles[3]);
   linkedCells.addParticle(ownedParticles[4]);
-
   this->checkParticleIDsInCells(
       linkedCells,
       {{particleIdToCellIdMap[8], {{8, autopas::OwnershipState::halo}}},
@@ -85,7 +89,6 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
 
   std::vector<Particle> invalidParticles;
   EXPECT_NO_THROW(invalidParticles = linkedCells.updateContainer(this->_keepListsValid));
-
   EXPECT_EQ(invalidParticles.size(), 1);
   EXPECT_EQ(invalidParticles[0].getID(), 3);
 
@@ -124,9 +127,9 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainerCloseToBoundary) {
   const std::array<double, 3> boxMin{0., 0., 0.};
   const std::array<double, 3> boxMax{10., 10., 10.};
   const double cutoff{1.5};
-  const double skinPerTimestep{1.};  // particles are moved by up to 0.5 and lists might be kept valid
+  const double skin{1.};  // particles are moved by up to 0.5 and lists might be kept valid
   const double rebuildFrequency{1.};
-  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skinPerTimestep, rebuildFrequency);
+  typename TestFixture::LinkedCellsType linkedCells(boxMin, boxMax, cutoff, skin, rebuildFrequency);
 
   int id = 1;
   for (const double x : {0., 5., 9.999}) {
