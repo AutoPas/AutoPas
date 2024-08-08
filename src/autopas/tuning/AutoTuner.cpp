@@ -26,7 +26,6 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _tuningInterval(autoTunerInfo.tuningInterval),
       _iterationsSinceTuning(autoTunerInfo.tuningInterval),  // init to max so that tuning happens in first iteration
       _tuningMetric(autoTunerInfo.tuningMetric),
-      _energyMeasurementPossible(initEnergy()),
       _rebuildFrequency(rebuildFrequency),
       _maxSamples(autoTunerInfo.maxSamples),
       _needsHomogeneityAndMaxDensity(std::transform_reduce(
@@ -38,7 +37,8 @@ AutoTuner::AutoTuner(TuningStrategiesListType &tuningStrategies, const SearchSpa
       _searchSpace(searchSpace),
       _configQueue(searchSpace.begin(), searchSpace.end()),
       _tuningResultLogger(outputSuffix),
-      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix) {
+      _tuningDataLogger(autoTunerInfo.maxSamples, outputSuffix),
+      _energySensor(autopas::utils::EnergySensor(autoTunerInfo.energySensor)) {
   _samplesRebuildingNeighborLists.reserve(autoTunerInfo.maxSamples);
   _homogeneitiesOfLastTenIterations.reserve(10);
   _maxDensitiesOfLastTenIterations.reserve(10);
@@ -292,44 +292,12 @@ bool AutoTuner::willRebuildNeighborLists() const {
   return (iterationBaseline % iterationsPerRebuild) == 0;
 }
 
-bool AutoTuner::initEnergy() {
-  // Try to initialize the raplMeter
-  return _raplMeter.init(_tuningMetric == TuningMetricOption::energy);
-}
-
-bool AutoTuner::resetEnergy() {
-  if (_energyMeasurementPossible) {
-    try {
-      _raplMeter.reset();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      /**
-       * very unlikely to happen, as check was performed at initialisation of autotuner
-       * but may occur if permissions are changed during runtime.
-       */
-      AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
-      _energyMeasurementPossible = false;
-      if (_tuningMetric == TuningMetricOption::energy) {
-        utils::ExceptionHandler::exception(e);
-      }
-    }
-  }
-  return _energyMeasurementPossible;
-}
+bool AutoTuner::resetEnergy() { return _energySensor.startMeasurement(); }
 
 std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
-  if (_energyMeasurementPossible) {
-    try {
-      _raplMeter.sample();
-    } catch (const utils::ExceptionHandler::AutoPasException &e) {
-      AutoPasLog(WARN, "Energy Measurement no longer possible:\n\t{}", e.what());
-      _energyMeasurementPossible = false;
-      if (_tuningMetric == TuningMetricOption::energy) {
-        utils::ExceptionHandler::exception(e);
-      }
-    }
-  }
-  return {_raplMeter.get_psys_energy(), _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy(),
-          _raplMeter.get_total_energy()};
+  _energySensor.endMeasurement();
+  return {_energySensor.getWatts(), _energySensor.getJoules(), _energySensor.getSeconds(),
+          _energySensor.getNanoJoules()};
 }
 
 size_t AutoTuner::getCurrentNumSamples() const {
@@ -415,5 +383,5 @@ bool AutoTuner::inTuningPhase() const {
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
-bool AutoTuner::canMeasureEnergy() const { return _energyMeasurementPossible; }
+bool AutoTuner::canMeasureEnergy() { return _energySensor.getOption() != EnergySensorOption::none; }
 }  // namespace autopas
