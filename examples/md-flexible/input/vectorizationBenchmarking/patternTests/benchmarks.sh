@@ -1,8 +1,6 @@
 #!/bin/bash
-#spacings= ( 1 1.5 2 2.5 3 3.5 4 4.5 )
-#patterns= ( 1xVectorLength 2xVectorLengthDiv2 VectorLengthDiv2 VectorLengthx1 )
 
-for i in {2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0}
+for i in {1.0,1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9,2.0,2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8,2.9,3.0,3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8,3.9}
 do
     sed -i "13s/.*/      particle-spacing           :  ${i}/" ./Cubes_hwy_A.yaml
     echo "Running Cube experiment with ${i} spacing"
