@@ -816,7 +816,7 @@ class LogicHandler {
    * Tells if dynamic rebuild is necessary currently
    * neighborListInvalidDoDynamicRebuild - true if a particle has moved more than skin/2
    */
-  std::atomic<bool> _neighborListInvalidDoDynamicRebuild{false};
+  bool _neighborListInvalidDoDynamicRebuild{false};
 
   /**
    * updating position at rebuild for every particle
@@ -861,7 +861,7 @@ void LogicHandler<Particle>::checkMinimalSize() const {
 
 template <typename Particle>
 bool LogicHandler<Particle>::getNeighborListsInvalidDoDynamicRebuild() {
-  return _neighborListInvalidDoDynamicRebuild.load(std::memory_order_relaxed);
+  return _neighborListInvalidDoDynamicRebuild;
 }
 
 template <typename Particle>
@@ -881,20 +881,20 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
   // The owned particles in buffer are ignored because they do not rely on the structure of the particle containers,
   // e.g. neighbour list, and these are iterated over using the region iterator. Movement of particles in buffer doesn't
   // require a rebuild of neighbor lists.
-  AUTOPAS_OPENMP(parallel)
+  AUTOPAS_OPENMP(parallel reduction(| : _neighborListInvalidDoDynamicRebuild))
   for (auto iter = this->begin(IteratorBehavior::owned | IteratorBehavior::containerOnly); iter.isValid(); ++iter) {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
     if (distanceSquare >= halfSkinSquare) {
-      _neighborListInvalidDoDynamicRebuild.store(true, std::memory_order_relaxed);
+      _neighborListInvalidDoDynamicRebuild = true;
     }
   }
 }
 
 template <typename Particle>
 void LogicHandler<Particle>::resetNeighborListsInvalidDoDynamicRebuild() {
-  _neighborListInvalidDoDynamicRebuild.store(false, std::memory_order_relaxed);
+  _neighborListInvalidDoDynamicRebuild = false;
 }
 
 template <typename Particle>
