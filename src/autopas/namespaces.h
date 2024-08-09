@@ -127,4 +127,16 @@ namespace RuleSyntax {}
  */
 namespace AutopasGeneratedRuleSyntax {}
 
+/**
+ * Helper function and type aliases for the C08 base step traversal
+ */
+namespace LCC08CellHandlerUtility {
+
+/**
+ * Internal namespace of LCC08CellHandlerUtility containing private functions
+ */
+namespace internal {}
+
+}  // namespace LCC08CellHandlerUtility
+
 }  // namespace autopas

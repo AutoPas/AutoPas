@@ -255,18 +255,18 @@ TEST_P(PairwiseVerletListsTest, SoAvsAoSLJ) {
       min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
-                                                               verletLists1.getBoxMax(), 100);
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
-                                                               verletLists2.getBoxMax(), 100);
-  mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
+                                                                verletLists1.getBoxMax(), 100);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
+                                                                verletLists2.getBoxMax(), 100);
+  LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
 
-  autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>>
-      verletTraversal1(verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
-                       verletLists1.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
-                       autopas::ContainerOption::Value::pairwiseVerletLists);
-  autopas::VLCC18Traversal<FMCell, mdLib::LJFunctor<Molecule>, autopas::VLCCellPairNeighborList<Molecule>> soaTraversal(
+  autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>> verletTraversal1(
+      verletLists1.getCellsPerDimension(), &ljFunctor, verletLists1.getInteractionLength(),
+      verletLists1.getCellLength(), autopas::DataLayoutOption::aos, useNewton3,
+      autopas::ContainerOption::Value::pairwiseVerletLists);
+  autopas::VLCC18Traversal<FMCell, LJFunctorType<>, autopas::VLCCellPairNeighborList<Molecule>> soaTraversal(
       verletLists2.getCellsPerDimension(), &ljFunctor, verletLists2.getInteractionLength(),
       verletLists2.getCellLength(), autopas::DataLayoutOption::soa, useNewton3,
       autopas::ContainerOption::Value::pairwiseVerletLists);
