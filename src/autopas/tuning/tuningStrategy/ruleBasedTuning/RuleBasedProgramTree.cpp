@@ -7,7 +7,7 @@ ConfigurationPattern::ConfigurationPattern(const ConfigurationPattern &configura
 
 ConfigurationPattern::~ConfigurationPattern() noexcept = default;
 
-namespace rule_syntax {
+namespace RuleSyntax {
 void Variable::generateCode(CodeGenerationContext &context, RuleVM::Program &program) const {
   program.instructions.emplace_back(RuleVM::LOADA, context.addressOf(definition->variable));
   context.allocateStack(1);
@@ -219,5 +219,5 @@ RuleVM::Program RuleBasedProgramTree::generateCode(CodeGenerationContext &contex
   program.instructions.emplace_back(RuleVM::HALT);
   return program;
 }
-}  // namespace rule_syntax
+}  // namespace RuleSyntax
 }  // namespace autopas

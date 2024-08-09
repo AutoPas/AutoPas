@@ -5,8 +5,8 @@
 #include "parser_generated/autopas_generated_rule_syntax/RuleLanguageLexer.h"
 #include "parser_generated/autopas_generated_rule_syntax/RuleLanguageParser.h"
 
-namespace autopas::rule_syntax {
-using namespace autopas_generated_rule_syntax;
+namespace autopas::RuleSyntax {
+using namespace AutopasGeneratedRuleSyntax;
 
 /**
  * The antlr visitor that produces the AST.
@@ -325,4 +325,4 @@ std::pair<RuleBasedProgramTree, CodeGenerationContext> RuleBasedProgramParser::p
   return {ownTree, context};
 }
 
-}  // namespace autopas::rule_syntax
+}  // namespace autopas::RuleSyntax

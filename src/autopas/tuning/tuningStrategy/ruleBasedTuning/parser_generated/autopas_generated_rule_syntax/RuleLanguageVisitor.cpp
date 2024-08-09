@@ -4,4 +4,4 @@
 
 #include "RuleLanguageVisitor.h"
 
-using namespace autopas_generated_rule_syntax;
+using namespace AutopasGeneratedRuleSyntax;

@@ -95,11 +95,11 @@ bool AutoTuner::tuneConfiguration() {
   auto restoreConfigQueueIfEmpty = [&](const auto &configQueueBackup, const TuningStrategyOption &stratOpt) {
     if (_configQueue.empty()) {
       _configQueue = configQueueBackup;
+      AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}",
+                 stratOpt.to_string(), _configQueue.size(),
+                 utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
+                                              [](const auto &conf) { return conf.toShortString(false); }));
     }
-    AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}", stratOpt.to_string(),
-               _configQueue.size(), utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"}, [](const auto &conf) {
-                 return conf.toShortString(false);
-               }));
   };
 
   // Determine where in a tuning phase we are

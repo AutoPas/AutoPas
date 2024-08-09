@@ -6,7 +6,7 @@
 
 #include "antlr4-runtime.h"
 
-namespace autopas_generated_rule_syntax {
+namespace AutopasGeneratedRuleSyntax {
 
 class RuleLanguageLexer : public antlr4::Lexer {
  public:
@@ -88,4 +88,4 @@ class RuleLanguageLexer : public antlr4::Lexer {
   static Initializer _init;
 };
 
-}  // namespace autopas_generated_rule_syntax
+}  // namespace AutopasGeneratedRuleSyntax

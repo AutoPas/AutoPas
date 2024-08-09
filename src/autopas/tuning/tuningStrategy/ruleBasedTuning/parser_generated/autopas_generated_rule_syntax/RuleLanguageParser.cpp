@@ -7,7 +7,7 @@
 #include "RuleLanguageVisitor.h"
 
 using namespace antlrcpp;
-using namespace autopas_generated_rule_syntax;
+using namespace AutopasGeneratedRuleSyntax;
 using namespace antlr4;
 
 RuleLanguageParser::RuleLanguageParser(TokenStream *input) : Parser(input) {
