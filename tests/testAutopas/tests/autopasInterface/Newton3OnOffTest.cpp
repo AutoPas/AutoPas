@@ -10,7 +10,6 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/logging/Logger.h"
-#include "autopasTools/generators/RandomGenerator.h"
 
 using ::testing::_;
 using ::testing::Combine;
@@ -85,7 +84,7 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
                                          autopas::DataLayoutOption dataLayout) {
   autopas::ContainerSelector<Particle> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
   const autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), getRebuildFrequency(),
-                                               getClusterSize(), autopas::LoadEstimatorOption::none);
+                                                     getClusterSize(), autopas::LoadEstimatorOption::none);
 
   containerSelector.selectContainer(containerOption, containerInfo);
 
