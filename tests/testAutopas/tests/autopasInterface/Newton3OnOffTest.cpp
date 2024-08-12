@@ -10,6 +10,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/logging/Logger.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 using ::testing::_;
 using ::testing::Combine;
