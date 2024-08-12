@@ -23,15 +23,10 @@ class Newton3OnOffTest
       public ::testing::WithParamInterface<
           std::tuple<autopas::ContainerOption, autopas::TraversalOption, autopas::DataLayoutOption>> {
  public:
-  Newton3OnOffTest() : mockFunctor() {}
+  Newton3OnOffTest() {}
 
-  void SetUp() override {}
-
-  void TearDown() override {}
-
-  std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
-
-  std::array<double, 3> getBoxMax() const { return {10.0, 10.0, 10.0}; }
+  static std::array<double, 3> getBoxMin() { return {0.0, 0.0, 0.0}; }
+  static std::array<double, 3> getBoxMax() { return {10.0, 10.0, 10.0}; }
 
   static double getCutoff() { return 1.0; }
   static double getCellSizeFactor() { return 1.0; }
@@ -45,7 +40,7 @@ class Newton3OnOffTest
   template <class Container, class Traversal>
   void iterate(Container &container, Traversal traversal);
 
-  MockFunctor<Particle> mockFunctor;
+  MockFunctor<Particle> mockFunctor{};
 
   /**
    * Determines how often the functor is called for single cells and pairs of cells und run additional checks.

@@ -271,7 +271,7 @@ void Simulation::run() {
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
-                << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
+                << autopas::memoryProfiler::currentMemoryUsage() << " kB\n";
     }
 
     if (_domainDecomposition->getDomainIndex() == 0) {
@@ -384,7 +384,7 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
   if (maxTime != 0) {
     ss << " =" << std::setw(7) << std::right << ((double)timeNS / (double)maxTime * 100) << "%";
   }
-  ss << std::endl;
+  ss << "\n";
   return ss.str();
 }
 
@@ -496,21 +496,20 @@ void Simulation::logSimulationState() {
     std::cout << "\n\n"
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
-              << "Halo : " << haloParticles << std::endl;
+              << "Halo : " << haloParticles << "\n";
   }
 }
 
 void Simulation::updateSimulationPauseState() {
   // If we are at the beginning of a tuning phase, we need to freeze the simulation
-  if (_currentIterationIsTuningIteration && (!_previousIterationWasTuningIteration)) {
-    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase..."
-              << std::endl;
+  if (_currentIterationIsTuningIteration and (not _previousIterationWasTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase...\n";
     _simulationIsPaused = true;
   }
 
   // If we are at the end of a tuning phase, we need to resume the simulation
-  if (_previousIterationWasTuningIteration && (!_currentIterationIsTuningIteration)) {
-    std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase." << std::endl;
+  if (_previousIterationWasTuningIteration and (not _currentIterationIsTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase.\n";
 
     // reset the forces which accumulated during the tuning phase
     for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
@@ -546,7 +545,7 @@ void Simulation::logMeasurements() {
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const auto maximumNumberOfDigits = static_cast<int>(std::to_string(total).length());
-    std::cout << "Measurements:" << std::endl;
+    std::cout << "Measurements:\n";
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
@@ -585,17 +584,17 @@ void Simulation::logMeasurements() {
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time             ", wallClockTime,
                                static_cast<int>(std::to_string(wallClockTime).length()), total);
-    std::cout << std::endl;
+    std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
               << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
-              << std::endl;
+              << "\n";
 
     auto mfups =
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
-    std::cout << "MFUPs/sec                          : " << mfups << std::endl;
-    std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << std::endl;
+    std::cout << "MFUPs/sec                          : " << mfups << "\n";
+    std::cout << "Mean Rebuild Frequency               : " << _autoPasContainer->getMeanRebuildFrequency() << "\n";
   }
 }
 

@@ -261,6 +261,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(MPITuningMaxDifferenceForBucket);
     printOption(MPITuningWeightForMaxDensity);
   }
+  printOption(tuningMetricOption);
   printOption(tuningInterval);
   printOption(tuningSamples);
   if (tuningStrategyOptionsContainAnyOf({

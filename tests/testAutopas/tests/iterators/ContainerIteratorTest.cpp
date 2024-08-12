@@ -11,7 +11,7 @@
 #include "autopas/containers/CompatibleTraversals.h"
 #include "autopas/options/IteratorBehavior.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "testingHelpers/EmptyFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
