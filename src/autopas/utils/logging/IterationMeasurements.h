@@ -14,11 +14,6 @@ struct IterationMeasurements {
   /**
    * Time it takes for the LogicHandler's iteratePairwise() function.
    */
-  long timerCheckForDynamicRebuild{};
-
-  /**
-   * Time it takes for the LogicHandler's iteratePairwise() function.
-   */
   long timeIteratePairwise{};
 
   /**
