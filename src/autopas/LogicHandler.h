@@ -152,6 +152,7 @@ class LogicHandler {
    * @copydoc AutoPas::updateContainer()
    */
   [[nodiscard]] std::vector<Particle> updateContainer() {
+    this->checkNeighborListsInvalidDoDynamicRebuild();
     bool doDataStructureUpdate = not neighborListsAreValid();
 
     // The next call also adds particles to the container if doDataStructureUpdate is true.
@@ -944,12 +945,8 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
   autopas::utils::Timer timerRebuild;
   autopas::utils::Timer timerIteratePairwise;
   autopas::utils::Timer timerRemainderTraversal;
-  autopas::utils::Timer timerCheckForDynamicRebuild;
 
   timerTotal.start();
-  timerCheckForDynamicRebuild.start();
-  this->checkNeighborListsInvalidDoDynamicRebuild();
-  timerCheckForDynamicRebuild.stop();
 
   const bool doListRebuild = not neighborListsAreValid();
   const auto &configuration = _autoTuner.getCurrentConfig();
@@ -986,8 +983,7 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
   constexpr auto nanL = std::numeric_limits<long>::quiet_NaN();
-  return {timerCheckForDynamicRebuild.getTotalTime(),
-          timerIteratePairwise.getTotalTime(),
+  return {timerIteratePairwise.getTotalTime(),
           timerRemainderTraversal.getTotalTime(),
           timerRebuild.getTotalTime(),
           timerTotal.getTotalTime(),
@@ -1278,7 +1274,6 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
   };
   AutoPasLog(TRACE, "particleBuffer     size : {}", bufferSizeListing(_particleBuffer));
   AutoPasLog(TRACE, "haloParticleBuffer size : {}", bufferSizeListing(_haloParticleBuffer));
-  AutoPasLog(DEBUG, "CheckForDynamicRebuild took {} ns", measurements.timerCheckForDynamicRebuild);
   AutoPasLog(DEBUG, "Container::iteratePairwise took {} ns", measurements.timeIteratePairwise);
   AutoPasLog(DEBUG, "RemainderTraversal         took {} ns", measurements.timeRemainderTraversal);
   AutoPasLog(DEBUG, "RebuildNeighborLists       took {} ns", measurements.timeRebuild);
