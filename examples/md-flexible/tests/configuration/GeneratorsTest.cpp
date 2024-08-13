@@ -32,6 +32,14 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
  * This test expects multipleObjectsWithMultipleTypesTest.yaml to be placed in md-flexible/tests/yamlTestFiles
  */
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
+  int myRank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank != 0) {
+    GTEST_SKIP() << "[Rank " << myRank
+                 << "] MultipleObjectGeneration test works only on rank 0 because MDFlexConfig only generates "
+                    "particles on rank 0.";
+  }
+
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
