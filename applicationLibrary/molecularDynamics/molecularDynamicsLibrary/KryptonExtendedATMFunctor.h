@@ -109,10 +109,12 @@ class KryptonExtendedATMFunctor
       return;
     }
 
+    // Actual distances
     const double distIJ = std::sqrt(distSquaredIJ);
     const double distJK = std::sqrt(distSquaredJK);
     const double distKI = std::sqrt(distSquaredKI);
 
+    // Numerators of cosine representation (cos_i = (r_ij^2 + r_ik^2 - r_jk^2) / (2 * r_ij * r_ik)
     const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
     const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
     const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
@@ -123,18 +125,22 @@ class KryptonExtendedATMFunctor
     const double allDists = distIJ * distJK * distKI;
     const double allDistsTripled = allDistsSquared * allDists;
 
+    // Gradient factors of 1. / (rrr)^3
     const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
     const double allDistsTriplesGradientKI = - 3. / (allDistsTripled * distSquaredKI);
 
-    const double ATMTerm = (3. / 8.) * numerator / allDistsSquared;
-    const double ATMGradientIJ = (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
-    const double ATMGradientKI = (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+    // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
+    const double cosines = (3. / 8.) * numerator / allDistsSquared;
+    const double cosinesGradientIJ = (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+    const double cosinesGradientKI = (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
 
-    const auto fullATMGradientIJ = _nu * ((1. + ATMTerm) * allDistsTriplesGradientIJ + ATMGradientIJ / allDistsTripled);
-    const auto fullATMGradientKI = _nu * ((1. + ATMTerm) * allDistsTriplesGradientKI + ATMGradientKI / allDistsTripled);
+    // Gradient factors corresponding to the normal ATM term
+    const auto fullATMGradientIJ = _nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled);
+    const auto fullATMGradientKI = _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
 
     const double expTerm = std::exp(-_alpha * (distIJ + distJK + distKI));
 
+    // Calculate factors and sum for: \sum_{n=0}^5 A_{2n}(r_ij*r_jk*r_ki)^(2n/3)
     std::array<double, 6> sumFactors{};
     double sum = 0.0;
     for (auto n = 0; n < sumFactors.size(); n++) {
@@ -142,19 +148,23 @@ class KryptonExtendedATMFunctor
       sum += sumFactors[n];
     }
 
+    // Gradient factor of the sum in ij-direction
     double ijSum = 0.0;
     for (auto n = 0; n < sumFactors.size(); n++) {
       ijSum += sumFactors[n] * (2. * n / (3. * distIJ) + 1.);
     }
 
+    // Gradient factor of the sum in ki-direction
     double kiSum = 0.0;
     for (auto n = 0; n < sumFactors.size(); n++) {
       kiSum += sumFactors[n] * (2. * n / (3. * distKI) + 1.);
     }
 
-    const double fullExpGradientIJ = - (1. + ATMTerm) * ijSum / distIJ - ATMGradientIJ * expTerm * sum;
-    const double fullExpGradientKI = (1. + ATMTerm) * kiSum / distKI + ATMGradientKI * expTerm * sum;
+    // Total gradient factors for the exponential term times the cosines term
+    const double fullExpGradientIJ = - (1. + cosines) * ijSum / distIJ - cosinesGradientIJ * expTerm * sum;
+    const double fullExpGradientKI = (1. + cosines) * kiSum / distKI + cosinesGradientKI * expTerm * sum;
 
+    // Assembling the forces
     const auto forceIDirectionIJ = displacementIJ * (fullATMGradientIJ + fullExpGradientIJ);
     const auto forceIDirecationKI = displacementKI * (fullATMGradientKI + fullExpGradientKI);
 
@@ -165,22 +175,25 @@ class KryptonExtendedATMFunctor
     auto forceJ = forceI;
     auto forceK = forceI;
     if (newton3) {
+      // Calculate all components for jk-direction
       const double allDistsTriplesGradientJK = 3. / (allDistsTripled * distSquaredJK);
-      const double ATMGradientJK = (3. / 4.) * ((numerator / distSquaredJK + numKI * numIJ - numJK * numIJ - numJK * numKI) / allDistsSquared);
-      const auto fullATMGradientJK = _nu * ((1. + ATMTerm) * allDistsTriplesGradientJK + ATMGradientJK / allDistsTripled);
+      const double cosinesGradientJK = (3. / 4.) * ((numerator / distSquaredJK + numKI * numIJ - numJK * numIJ - numJK * numKI) / allDistsSquared);
+      const auto fullATMGradientJK = _nu * ((1. + cosines) * allDistsTriplesGradientJK + cosinesGradientJK / allDistsTripled);
 
       double jkSum = 0.0;
       for (auto n = 0; n < sumFactors.size(); n++) {
         jkSum += sumFactors[n] * (2. * n / (3. * distJK) + 1.);
       }
-      const double fullExpGradientJK = - (1. + ATMTerm) * jkSum / distJK - ATMGradientJK * expTerm * sum;
+      const double fullExpGradientJK = - (1. + cosines) * jkSum / distJK - cosinesGradientJK * expTerm * sum;
 
+      // Assembling the forces
       const auto forceJDirectionIJ = displacementIJ * ( - fullATMGradientIJ - fullExpGradientIJ);
       const auto forceJDirectionJK = displacementJK * (fullATMGradientJK + fullExpGradientJK);
 
       forceJ = (forceJDirectionIJ + forceJDirectionJK) * (- 1.0);
       j.addF(forceJ);
 
+      // Using newton's third law for the force on particle k
       forceK = (forceI + forceJ) * (-1.0);
       k.addF(forceK);
     }
@@ -196,24 +209,24 @@ class KryptonExtendedATMFunctor
     if constexpr (calculateGlobals) {
       // Add 3 * potential energy to every owned particle of the interaction.
       // Division to the correct value is handled in endTraversal().
-      const double potentialEnergy3 = (1.0 + ATMTerm) * (_nu / allDistsTripled + expTerm * sum);
+      const double potentialEnergy = (1.0 + cosines) * (_nu / allDistsTripled + expTerm * sum);
 
       // Virial is calculated as f_i * r_i
       // see Thompson et al.: https://doi.org/10.1063/1.3245303
       const auto virialI = forceI * i.getR();
       if (i.isOwned()) {
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadDataGlobals[threadnum].virialSum += virialI;
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         const auto virialJ = forceJ * j.getR();
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadDataGlobals[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
         const auto virialK = forceK * k.getR();
-        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy;
         _aosThreadDataGlobals[threadnum].virialSum += virialK;
       }
       if constexpr (countFLOPs) {
@@ -286,9 +299,6 @@ class KryptonExtendedATMFunctor
 
       // For each interaction, we added the full contribution for all three particles. Divide by 3 here, so that each
       // contribution is only counted once per triplet.
-      _potentialEnergySum /= 3.;
-
-      // Additionally, we have always calculated 3*potentialEnergy, so we divide by 3 again.
       _potentialEnergySum /= 3.;
 
       _postProcessed = true;
