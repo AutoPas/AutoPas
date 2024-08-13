@@ -36,6 +36,7 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 
 #include <iostream>
 
+#include "ParticleCommunicator.h"
 #include "Thermostat.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
@@ -133,8 +134,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
-  int rank{};
-  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+  const auto rank = _domainDecomposition->getDomainIndex();
   const auto *fillerBeforeSuffix =
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
   const auto *fillerAfterSuffix =
@@ -152,13 +152,61 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         "Search space must not be trivial if the simulation time is limited by the number tuning phases");
   }
 
-  // @todo: the object generators should only generate particles relevant for the current rank's domain
-  _autoPasContainer->addParticlesIf(_configuration.getParticles(),
-                                    [&](const auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
+  // When loading checkpoints, the config file might contain particles that do not belong to this rank,
+  // because rank boundaries don't align with those at the end of the previous simulation due to dynamic load balancing.
+  // Idea: Only load what belongs here and send the rest away.
+  _autoPasContainer->addParticlesIf(_configuration.particles, [&](auto &p) {
+    const auto belongsHere = _domainDecomposition->isInsideLocalDomain(p.getR());
+    // Mark particle in vector as dummy, so we know it has been inserted.
+    p.setOwnershipState(autopas::OwnershipState::dummy);
+    return belongsHere;
+  });
 
+  // Remove what has been inserted. Everything that remains does not belong into this rank.
+  _configuration.particles.erase(std::remove_if(_configuration.particles.begin(), _configuration.particles.end(),
+                                                 [&](const auto &p) { return p.isDummy(); }),
+                                  _configuration.particles.end());
+
+  // Send all remaining particles to all ranks
+  // TODO: This is not optimal but since this only happens once upon initialization it is not too bad.
+  //       Nevertheless it could be improved by determining which particle has to go to which rank.
+  ParticleCommunicator particleCommunicator(AUTOPAS_MPI_COMM_WORLD);
+  for (int receiverRank = 0; receiverRank < _domainDecomposition->getSubdomainCount(); ++receiverRank) {
+    // don't send to ourselves
+    if (receiverRank == rank) {
+      continue;
+    }
+    particleCommunicator.sendParticles(_configuration.particles, receiverRank);
+  }
+  // Erase all locally stored particles. They don't belong to this rank and have been sent away.
   _configuration.flushParticles();
-  std::cout << "Total number of particles at the initialization: "
-            << _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) << "\n";
+
+  // Receive particles from all other ranks.
+  for (int senderRank = 0; senderRank < _domainDecomposition->getSubdomainCount(); ++senderRank) {
+    // don't send to ourselves
+    if (senderRank == rank) {
+      continue;
+    }
+    particleCommunicator.receiveParticles(_configuration.particles, senderRank);
+  }
+
+  // Remove duplicates. This is a safety mechanism for the odd case that two ranks loaded the same particle.
+  std::sort(_configuration.particles.begin(), _configuration.particles.end(),
+            [](const auto &p1, const auto &p2) { return p1.getID() < p2.getID(); });
+  _configuration.particles.erase(std::unique(_configuration.particles.begin(), _configuration.particles.end()),
+                                  _configuration.particles.end());
+
+  // Add all new particles that belong in this rank
+  _autoPasContainer->addParticlesIf(_configuration.particles,
+                                    [&](auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
+  // cleanup
+  _configuration.flushParticles();
+
+  std::cout << "Total number of particles at the initialization "
+#ifdef AUTOPAS_INCLUDE_MPI
+            << "on rank " << rank
+#endif
+            << ": " << _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) << "\n";
 
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {

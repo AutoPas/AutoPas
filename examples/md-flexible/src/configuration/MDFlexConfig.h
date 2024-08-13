@@ -126,12 +126,6 @@ class MDFlexConfig {
   void calcSimulationBox();
 
   /**
-   * Returns the particles generated based on the provided configuration file.
-   * @return a vector containing the generated particles.
-   */
-  std::vector<ParticleType> getParticles() { return _particles; }
-
-  /**
    * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
    * @return the ParticlePropertiesLibrary
    */
@@ -760,13 +754,14 @@ class MDFlexConfig {
    */
   static constexpr int valueOffset{33};
 
- private:
   /**
    * Stores the particles generated based on the provided configuration file
    * These particles can be added to the respective autopas container,
    * but have to be converted to the respective particle type, first.
    */
-  std::vector<ParticleType> _particles;
+  std::vector<ParticleType> particles{};
+
+ private:
 
   /**
    * Stores the physical properties of the particles used in the an MDFlexSimulation

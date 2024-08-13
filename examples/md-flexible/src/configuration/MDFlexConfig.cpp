@@ -490,7 +490,7 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
 #endif
 }
 
-void MDFlexConfig::flushParticles() { _particles.clear(); }
+void MDFlexConfig::flushParticles() { particles.clear(); }
 
 void MDFlexConfig::initializeParticlePropertiesLibrary() {
   _particlePropertiesLibrary = std::make_shared<ParticlePropertiesLibraryType>(cutoff.value);
@@ -524,20 +524,26 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
 }
 
 void MDFlexConfig::initializeObjects() {
-  for (const auto &object : cubeGridObjects) {
-    object.generate(_particles);
-  }
-  for (const auto &object : cubeGaussObjects) {
-    object.generate(_particles);
-  }
-  for (const auto &object : cubeUniformObjects) {
-    object.generate(_particles);
-  }
-  for (const auto &object : sphereObjects) {
-    object.generate(_particles);
-  }
-  for (const auto &object : cubeClosestPackedObjects) {
-    object.generate(_particles);
+  // @todo: the object generators should only generate particles relevant for the current rank's domain
+  // All objects are generated on rank one. Particles are then distributed upon insertion.
+  int myRank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank == 0) {
+    for (const auto &object : cubeGridObjects) {
+      object.generate(particles);
+    }
+    for (const auto &object : cubeGaussObjects) {
+      object.generate(particles);
+    }
+    for (const auto &object : cubeUniformObjects) {
+      object.generate(particles);
+    }
+    for (const auto &object : sphereObjects) {
+      object.generate(particles);
+    }
+    for (const auto &object : cubeClosestPackedObjects) {
+      object.generate(particles);
+    }
   }
 }
 
@@ -555,12 +561,13 @@ void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t 
   size_t numCheckpointPieces{getNumPiecesInCheckpoint(filename)};
   // If the number of currently used ranks matches the number of pieces in the checkpoint,
   // we assume that the domain layout matches and each rank only loads their own piece.
+  // If it doesn't match the overlap will be redistributed when particles are inserted into the AutoPas containers.
   if (numRanks == numCheckpointPieces) {
-    loadParticlesFromRankRecord(filename, rank, _particles);
-  } else {
-    // Otherwise, each rank loads everything.
+    loadParticlesFromRankRecord(filename, rank, particles);
+  } else if (rank == 0) {
+    // Otherwise, each rank 0 loads everything and distributes it later.
     for (size_t i = 0; i < numCheckpointPieces; ++i) {
-      loadParticlesFromRankRecord(filename, i, _particles);
+      loadParticlesFromRankRecord(filename, i, particles);
     }
   }
 }
