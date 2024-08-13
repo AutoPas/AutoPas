@@ -53,7 +53,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   int closestCounter = 0;
 
   const std::array<double, 3> velocity = {0., 0., 0.};
-  for (auto &particle : configuration.getParticles()) {
+  for (auto &particle : configuration.particles) {
     EXPECT_EQ(velocity, particle.getV());  // velocity set to {0.,0.,0.} in parsingFile
     switch (particle.getTypeId()) {
       case 0: {
@@ -89,10 +89,10 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   EXPECT_EQ(closestCounter, configuration.cubeClosestPackedObjects.at(0).getParticlesTotal());
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
-  for (auto &particle : configuration.getParticles()) {
+  for (auto &particle : configuration.particles) {
     const auto particleId = particle.getID();
     ASSERT_EQ(ids.count(particleId), 0) << "Two particles have the same ID " << particleId;
     ids.insert(particleId);
   }
-  EXPECT_EQ(ids.size(), configuration.getParticles().size());
+  EXPECT_EQ(ids.size(), configuration.particles.size());
 }
