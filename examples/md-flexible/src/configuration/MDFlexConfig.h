@@ -762,7 +762,6 @@ class MDFlexConfig {
   std::vector<ParticleType> particles{};
 
  private:
-
   /**
    * Stores the physical properties of the particles used in the an MDFlexSimulation
    */

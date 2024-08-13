@@ -152,55 +152,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         "Search space must not be trivial if the simulation time is limited by the number tuning phases");
   }
 
-  // When loading checkpoints, the config file might contain particles that do not belong to this rank,
-  // because rank boundaries don't align with those at the end of the previous simulation due to dynamic load balancing.
-  // Idea: Only load what belongs here and send the rest away.
-  _autoPasContainer->addParticlesIf(_configuration.particles, [&](auto &p) {
-    const auto belongsHere = _domainDecomposition->isInsideLocalDomain(p.getR());
-    // Mark particle in vector as dummy, so we know it has been inserted.
-    p.setOwnershipState(autopas::OwnershipState::dummy);
-    return belongsHere;
-  });
-
-  // Remove what has been inserted. Everything that remains does not belong into this rank.
-  _configuration.particles.erase(std::remove_if(_configuration.particles.begin(), _configuration.particles.end(),
-                                                 [&](const auto &p) { return p.isDummy(); }),
-                                  _configuration.particles.end());
-
-  // Send all remaining particles to all ranks
-  // TODO: This is not optimal but since this only happens once upon initialization it is not too bad.
-  //       Nevertheless it could be improved by determining which particle has to go to which rank.
-  ParticleCommunicator particleCommunicator(AUTOPAS_MPI_COMM_WORLD);
-  for (int receiverRank = 0; receiverRank < _domainDecomposition->getSubdomainCount(); ++receiverRank) {
-    // don't send to ourselves
-    if (receiverRank == rank) {
-      continue;
-    }
-    particleCommunicator.sendParticles(_configuration.particles, receiverRank);
-  }
-  // Erase all locally stored particles. They don't belong to this rank and have been sent away.
-  _configuration.flushParticles();
-
-  // Receive particles from all other ranks.
-  for (int senderRank = 0; senderRank < _domainDecomposition->getSubdomainCount(); ++senderRank) {
-    // don't send to ourselves
-    if (senderRank == rank) {
-      continue;
-    }
-    particleCommunicator.receiveParticles(_configuration.particles, senderRank);
-  }
-
-  // Remove duplicates. This is a safety mechanism for the odd case that two ranks loaded the same particle.
-  std::sort(_configuration.particles.begin(), _configuration.particles.end(),
-            [](const auto &p1, const auto &p2) { return p1.getID() < p2.getID(); });
-  _configuration.particles.erase(std::unique(_configuration.particles.begin(), _configuration.particles.end()),
-                                  _configuration.particles.end());
-
-  // Add all new particles that belong in this rank
-  _autoPasContainer->addParticlesIf(_configuration.particles,
-                                    [&](auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
-  // cleanup
-  _configuration.flushParticles();
+  // Load particles from the config file (object generators, checkpoint)
+  loadParticles();
 
   std::cout << "Total number of particles at the initialization "
 #ifdef AUTOPAS_INCLUDE_MPI
@@ -677,6 +630,59 @@ void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t num
       throw std::runtime_error(ss.str());
     }
   }
+}
+
+void Simulation::loadParticles() {
+  // When loading checkpoints, the config file might contain particles that do not belong to this rank,
+  // because rank boundaries don't align with those at the end of the previous simulation due to dynamic load balancing.
+  // Idea: Only load what belongs here and send the rest away.
+  _autoPasContainer->addParticlesIf(_configuration.particles, [&](auto &p) {
+    const auto belongsHere = _domainDecomposition->isInsideLocalDomain(p.getR());
+    // Mark particle in vector as dummy, so we know it has been inserted.
+    p.setOwnershipState(autopas::OwnershipState::dummy);
+    return belongsHere;
+  });
+
+  // Remove what has been inserted. Everything that remains does not belong into this rank.
+  _configuration.particles.erase(std::remove_if(_configuration.particles.begin(), _configuration.particles.end(),
+                                                [&](const auto &p) { return p.isDummy(); }),
+                                 _configuration.particles.end());
+
+  // Send all remaining particles to all ranks
+  // TODO: This is not optimal but since this only happens once upon initialization it is not too bad.
+  //       Nevertheless it could be improved by determining which particle has to go to which rank.
+  const auto rank = _domainDecomposition->getDomainIndex();
+  ParticleCommunicator particleCommunicator(_domainDecomposition->getCommunicator());
+  for (int receiverRank = 0; receiverRank < _domainDecomposition->getSubdomainCount(); ++receiverRank) {
+    // don't send to ourselves
+    if (receiverRank == rank) {
+      continue;
+    }
+    particleCommunicator.sendParticles(_configuration.particles, receiverRank);
+  }
+  // Erase all locally stored particles. They don't belong to this rank and have been sent away.
+  _configuration.flushParticles();
+
+  // Receive particles from all other ranks.
+  for (int senderRank = 0; senderRank < _domainDecomposition->getSubdomainCount(); ++senderRank) {
+    // don't send to ourselves
+    if (senderRank == rank) {
+      continue;
+    }
+    particleCommunicator.receiveParticles(_configuration.particles, senderRank);
+  }
+
+  // Remove duplicates. This is a safety mechanism for the odd case that two ranks loaded the same particle.
+  std::sort(_configuration.particles.begin(), _configuration.particles.end(),
+            [](const auto &p1, const auto &p2) { return p1.getID() < p2.getID(); });
+  _configuration.particles.erase(std::unique(_configuration.particles.begin(), _configuration.particles.end()),
+                                 _configuration.particles.end());
+
+  // Add all new particles that belong in this rank
+  _autoPasContainer->addParticlesIf(_configuration.particles,
+                                    [&](auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
+  // cleanup
+  _configuration.flushParticles();
 }
 
 template <class T, class F>
