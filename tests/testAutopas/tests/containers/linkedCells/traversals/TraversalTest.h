@@ -13,7 +13,7 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/GridGenerator.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 

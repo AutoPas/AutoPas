@@ -59,7 +59,7 @@ TEST_F(VerletClusterListsTest, testAddParticlesAndBuildTwice) {
   const size_t clusterSize = 4;
   autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockFunctor<Particle> emptyFunctor;
@@ -81,7 +81,7 @@ TEST_F(VerletClusterListsTest, testIterator) {
   const size_t clusterSize = 4;
   autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
   MockFunctor<Particle> emptyFunctor;
@@ -143,7 +143,7 @@ TEST_F(VerletClusterListsTest, testNeighborListsValidAfterMovingLessThanHalfSkin
   autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
   // Fill the container with random particles and build neighbor lists
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
   CollectParticlePairsFunctor functor{cutoff, boxMin, boxMax};
   autopas::VCLClusterIterationTraversal<FPCell, CollectParticlePairsFunctor> verletTraversal(
@@ -231,7 +231,7 @@ TEST_F(VerletClusterListsTest, testNewton3NeighborList) {
   for (bool newton3 : {true, false}) {
     autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-    autopasTools::generators::RandomGenerator::fillWithParticles(
+    autopasTools::generators::UniformGenerator::fillWithParticles(
         verletLists, autopas::Particle{}, verletLists.getBoxMin(), verletLists.getBoxMax(), numParticles);
 
     MockFunctor<Particle> functor;
@@ -326,8 +326,8 @@ TEST_F(VerletClusterListsTest, testVerletListColoringTraversalNewton3NoDataRace)
   const size_t clusterSize = 4;
   autopas::VerletClusterLists<Particle> verletLists(boxMin, boxMax, cutoff, skin, rebuildFrequency, clusterSize);
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists, autopas::Particle{}, boxMin, boxMax,
-                                                               numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists, autopas::Particle{}, boxMin, boxMax,
+                                                                numParticles);
 
   CollectParticlesPerThreadFunctor functor;
   ColoringTraversalWithColorChangeNotify traversal(&functor, clusterSize,
