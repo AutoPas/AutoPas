@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
@@ -107,7 +109,57 @@ class KryptonExtendedATMFunctor
       return;
     }
 
-    const auto forceI = 0.0;
+    const double distIJ = std::sqrt(distSquaredIJ);
+    const double distJK = std::sqrt(distSquaredJK);
+    const double distKI = std::sqrt(distSquaredKI);
+
+    const double numKI = distSquaredIJ + distSquaredJK - distSquaredKI;
+    const double numJK = distSquaredIJ + distSquaredKI - distSquaredJK;
+    const double numIJ = distSquaredJK + distSquaredKI - distSquaredIJ;
+
+    const double numerator = numKI * numJK * numIJ;
+
+    const double allDistsSquared = distSquaredIJ * distSquaredJK * distSquaredKI;
+    const double allDists = distIJ * distJK * distKI;
+    const double allDistsTripled = allDistsSquared * allDists;
+
+    const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
+    const double allDistsTriplesGradientKI = - 3. / (allDistsTripled * distSquaredKI);
+
+    const double ATMTerm = (3. / 8.) * numerator / allDistsSquared;
+    const double ATMGradientIJ = (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+    const double ATMGradientKI = (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+
+    const auto fullATMGradientIJ = _nu * ((1. + ATMTerm) * allDistsTriplesGradientIJ + ATMGradientIJ / allDistsTripled);
+    const auto fullATMGradientKI = _nu * ((1. + ATMTerm) * allDistsTriplesGradientKI + ATMGradientKI / allDistsTripled);
+
+    const double expTerm = std::exp(-_alpha * (distIJ + distJK + distKI));
+
+    std::array<double, 6> sumFactors{};
+    double sum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      sumFactors[n] = _constantsA[n] * std::pow((distIJ * distJK * distKI), 2. * n / 3.);
+      sum += sumFactors[n];
+    }
+
+    double ijSum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      ijSum += sumFactors[n] * (2. * n / (3. * distIJ) + 1.);
+    }
+
+    double kiSum = 0.0;
+    for (auto n = 0; n < sumFactors.size(); n++) {
+      kiSum += sumFactors[n] * (2. * n / (3. * distKI) + 1.);
+    }
+
+    const double fullExpGradientIJ = (1. + ATMTerm) * ijSum / distIJ + ATMGradientIJ * expTerm * sum;
+    const double fullExpGradientKI = (1. + ATMTerm) * kiSum / distKI + ATMGradientKI * expTerm * sum;
+
+    const auto forceIDirectionIJ = displacementIJ * (fullATMGradientIJ + fullExpGradientIJ);
+    const auto forceIDirecationKI = displacementKI * (fullATMGradientKI + fullExpGradientKI);
+
+    const auto forceI = (forceIDirectionIJ + forceIDirecationKI) * (- 1.0);
+
     i.addF(forceI);
 
     auto forceJ = forceI;
@@ -129,24 +181,24 @@ class KryptonExtendedATMFunctor
     if constexpr (calculateGlobals) {
       // Add 3 * potential energy to every owned particle of the interaction.
       // Division to the correct value is handled in endTraversal().
-      const double potentialEnergy3 = 0.0;
+      const double potentialEnergy3 = (1.0 + ATMTerm) * (_nu / allDistsTripled + expTerm * sum);
 
       // Virial is calculated as f_i * r_i
       // see Thompson et al.: https://doi.org/10.1063/1.3245303
       const auto virialI = forceI * i.getR();
       if (i.isOwned()) {
-        //        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialI;
       }
       // for non-newton3 particles j and/or k will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
         const auto virialJ = forceJ * j.getR();
-        //        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialJ;
       }
       if (newton3 and k.isOwned()) {
         const auto virialK = forceK * k.getR();
-        //        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy3;
         _aosThreadDataGlobals[threadnum].virialSum += virialK;
       }
       if constexpr (countFLOPs) {
