@@ -637,10 +637,12 @@ void Simulation::loadParticles() {
   // because rank boundaries don't align with those at the end of the previous simulation due to dynamic load balancing.
   // Idea: Only load what belongs here and send the rest away.
   _autoPasContainer->addParticlesIf(_configuration.particles, [&](auto &p) {
-    const auto belongsHere = _domainDecomposition->isInsideLocalDomain(p.getR());
-    // Mark particle in vector as dummy, so we know it has been inserted.
-    p.setOwnershipState(autopas::OwnershipState::dummy);
-    return belongsHere;
+    if (_domainDecomposition->isInsideLocalDomain(p.getR())) {
+      // Mark particle in vector as dummy, so we know it has been inserted.
+      p.setOwnershipState(autopas::OwnershipState::dummy);
+      return true;
+    }
+    return false;
   });
 
   // Remove what has been inserted. Everything that remains does not belong into this rank.
@@ -671,6 +673,7 @@ void Simulation::loadParticles() {
     }
     particleCommunicator.receiveParticles(_configuration.particles, senderRank);
   }
+  particleCommunicator.waitForSendRequests();
 
   // Remove duplicates. This is a safety mechanism for the odd case that two ranks loaded the same particle.
   std::sort(_configuration.particles.begin(), _configuration.particles.end(),
