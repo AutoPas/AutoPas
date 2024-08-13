@@ -125,6 +125,8 @@ TEST_F(LogicHandlerTest, testParticleInContainerMoveAcrossPeriodicBoundaryForDyn
   functor.setParticleProperties(24.0, 1);
 
   // iterate once so that neighbor lists are valid
+  leavingParticles = _logicHandler->updateContainer();
+  EXPECT_EQ(leavingParticles.size(), 0) << "No particle has the container \n";
   _logicHandler->iteratePairwisePipeline(&functor);
 
   // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
@@ -149,7 +151,7 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
   auto boxMinY = _logicHandler->getContainer().getBoxMin()[1];
   auto &container = _logicHandler->getContainer();
   auto skin = container.getVerletSkin();
-  std::array<double, 3> moveVec{0, skin * 0.6, 0};
+  std::array<double, 3> moveVec{0, skin * 0.3, 0};
   // periodic boundary shift
   std::array<double, 3> shiftVecPeriodicY{0, boxMinY - boxMaxY, 0};
 
@@ -169,22 +171,22 @@ TEST_F(LogicHandlerTest, testParticleInBufferMoveAcrossPeriodicBoundaryForDynami
   functor.setParticleProperties(24.0, 1);
 
   // iterate once so that neighbor lists are valid
+  auto leavingParticles = _logicHandler->updateContainer();
   _logicHandler->iteratePairwisePipeline(&functor);
 
   // After one iteration, neighbor lists are rebuilt, and neighborListsAreValid is false
   ASSERT_TRUE(_logicHandler->neighborListsAreValid()) << "After one iteration, neighbor lists are valid.";
 
-  _logicHandler->resetNeighborListsInvalidDoDynamicRebuild();
   _logicHandler->checkNeighborListsInvalidDoDynamicRebuild();
   ASSERT_FALSE(_logicHandler->getNeighborListsInvalidDoDynamicRebuild())
       << " The neighbor list is rebuilt as previously neighbor lists were invalid.\n";
 
-  // 0.6 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.45 skim -> particle is outside the boundary and has travelled more
+  // 0.3 skin + (boxMaxY - 0.15 skin) = boxMaxY + 0.15 skim -> particle is outside the boundary and has travelled less
   // than skin/2
   for (auto iter = _logicHandler->begin(autopas::IteratorBehavior::owned); iter.isValid(); ++iter) {
     iter->addR(moveVec);
   }
-  auto leavingParticles = _logicHandler->updateContainer();
+  leavingParticles = _logicHandler->updateContainer();
   EXPECT_EQ(leavingParticles.size(), 1) << "Exactly one particle has left the container \n";
   EXPECT_EQ(_logicHandler->getContainer().getNumberOfParticles(), 0) << "No particle left in the container \n";
 
