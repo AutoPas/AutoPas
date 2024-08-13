@@ -83,7 +83,7 @@ class KryptonExtendedATMFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
+  void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
 
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
@@ -127,16 +127,20 @@ class KryptonExtendedATMFunctor
 
     // Gradient factors of 1. / (rrr)^3
     const double allDistsTriplesGradientIJ = 3. / (allDistsTripled * distSquaredIJ);
-    const double allDistsTriplesGradientKI = - 3. / (allDistsTripled * distSquaredKI);
+    const double allDistsTriplesGradientKI = -3. / (allDistsTripled * distSquaredKI);
 
     // Product of all cosines multiplied with 3: 3 * cos(a)cos(b)cos(c)
     const double cosines = (3. / 8.) * numerator / allDistsSquared;
-    const double cosinesGradientIJ = (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
-    const double cosinesGradientKI = (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+    const double cosinesGradientIJ =
+        (3. / 4.) * ((numerator / distSquaredIJ - numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
+    const double cosinesGradientKI =
+        (3. / 4.) * ((-numerator / distSquaredKI + numKI * numIJ - numJK * numIJ + numJK * numKI) / allDistsSquared);
 
     // Gradient factors corresponding to the normal ATM term
-    const auto fullATMGradientIJ = _nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled);
-    const auto fullATMGradientKI = _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
+    const auto fullATMGradientIJ =
+        _nu * ((1. + cosines) * allDistsTriplesGradientIJ + cosinesGradientIJ / allDistsTripled);
+    const auto fullATMGradientKI =
+        _nu * ((1. + cosines) * allDistsTriplesGradientKI + cosinesGradientKI / allDistsTripled);
 
     const double expTerm = std::exp(-_alpha * (distIJ + distJK + distKI));
 
@@ -151,24 +155,24 @@ class KryptonExtendedATMFunctor
     // Gradient factor of the sum in ij-direction
     double ijSum = 0.0;
     for (auto n = 0; n < sumFactors.size(); n++) {
-      ijSum += sumFactors[n] * (2. * n / (3. * distIJ) + 1.);
+      ijSum += sumFactors[n] * (2. * n / (3. * distIJ) - _alpha);
     }
 
     // Gradient factor of the sum in ki-direction
     double kiSum = 0.0;
     for (auto n = 0; n < sumFactors.size(); n++) {
-      kiSum += sumFactors[n] * (2. * n / (3. * distKI) + 1.);
+      kiSum += sumFactors[n] * (2. * n / (3. * distKI) - _alpha);
     }
 
     // Total gradient factors for the exponential term times the cosines term
-    const double fullExpGradientIJ = - (1. + cosines) * ijSum / distIJ - cosinesGradientIJ * expTerm * sum;
-    const double fullExpGradientKI = (1. + cosines) * kiSum / distKI + cosinesGradientKI * expTerm * sum;
+    const double fullExpGradientIJ = expTerm * (-(1. + cosines) * ijSum / distIJ + cosinesGradientIJ * sum);
+    const double fullExpGradientKI = expTerm * ((1. + cosines) * kiSum / distKI + cosinesGradientKI * sum);
 
     // Assembling the forces
     const auto forceIDirectionIJ = displacementIJ * (fullATMGradientIJ + fullExpGradientIJ);
     const auto forceIDirecationKI = displacementKI * (fullATMGradientKI + fullExpGradientKI);
 
-    const auto forceI = (forceIDirectionIJ + forceIDirecationKI) * (- 1.0);
+    const auto forceI = (forceIDirectionIJ + forceIDirecationKI) * (-1.0);
 
     i.addF(forceI);
 
@@ -177,20 +181,22 @@ class KryptonExtendedATMFunctor
     if (newton3) {
       // Calculate all components for jk-direction
       const double allDistsTriplesGradientJK = 3. / (allDistsTripled * distSquaredJK);
-      const double cosinesGradientJK = (3. / 4.) * ((numerator / distSquaredJK + numKI * numIJ - numJK * numIJ - numJK * numKI) / allDistsSquared);
-      const auto fullATMGradientJK = _nu * ((1. + cosines) * allDistsTriplesGradientJK + cosinesGradientJK / allDistsTripled);
+      const double cosinesGradientJK =
+          (3. / 4.) * ((numerator / distSquaredJK + numKI * numIJ - numJK * numIJ - numJK * numKI) / allDistsSquared);
+      const auto fullATMGradientJK =
+          _nu * ((1. + cosines) * allDistsTriplesGradientJK + cosinesGradientJK / allDistsTripled);
 
       double jkSum = 0.0;
       for (auto n = 0; n < sumFactors.size(); n++) {
-        jkSum += sumFactors[n] * (2. * n / (3. * distJK) + 1.);
+        jkSum += sumFactors[n] * (2. * n / (3. * distJK) - _alpha);
       }
-      const double fullExpGradientJK = - (1. + cosines) * jkSum / distJK - cosinesGradientJK * expTerm * sum;
+      const double fullExpGradientJK = expTerm * (-(1. + cosines) * jkSum / distJK + cosinesGradientJK * sum);
 
       // Assembling the forces
-      const auto forceJDirectionIJ = displacementIJ * ( - fullATMGradientIJ - fullExpGradientIJ);
+      const auto forceJDirectionIJ = displacementIJ * (-fullATMGradientIJ - fullExpGradientIJ);
       const auto forceJDirectionJK = displacementJK * (fullATMGradientJK + fullExpGradientJK);
 
-      forceJ = (forceJDirectionIJ + forceJDirectionJK) * (- 1.0);
+      forceJ = (forceJDirectionIJ + forceJDirectionJK) * (-1.0);
       j.addF(forceJ);
 
       // Using newton's third law for the force on particle k
