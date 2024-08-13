@@ -670,6 +670,8 @@ void RegularGridDecomposition::balanceWithInvertedPressureLoadBalancer(double wo
   }
 }
 
+autopas::AutoPas_MPI_Comm RegularGridDecomposition::getCommunicator() const { return _communicator; }
+
 #if defined(MD_FLEXIBLE_ENABLE_ALLLBL)
 void RegularGridDecomposition::balanceWithAllLoadBalancer(const double &work) {
   std::vector<ALL::Point<double>> domain(2, ALL::Point<double>(3));

@@ -143,6 +143,12 @@ class RegularGridDecomposition final : public DomainDecomposition {
    */
   void reflectParticlesAtBoundaries(AutoPasType &autoPasContainer, ParticlePropertiesLibraryType &PPL);
 
+  /**
+   * Getter for the communicator that encompasses the whole decomposition.
+   * @return
+   */
+  autopas::AutoPas_MPI_Comm getCommunicator() const;
+
  private:
   /**
    * The number of neighbors of a rectangular domain.
