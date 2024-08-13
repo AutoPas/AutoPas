@@ -9,8 +9,8 @@
 #include <array>
 #include <random>
 
-#include "autopas/utils/inBox.h"
 #include "autopas/particles/OwnershipState.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopasTools::generators {
 /**
@@ -78,8 +78,10 @@ void fillWithHaloParticles(Container &container, const Particle &defaultParticle
       container, defaultParticle, haloWidth, numParticles,
       [](Container &c, Particle &p) {
         p.setOwnershipState(autopas::OwnershipState::halo);
-        c.addHaloParticle(p); }, seed);
-  }
+        c.addHaloParticle(p);
+      },
+      seed);
+}
 };  // namespace UniformGenerator
 
 template <class Container, class Particle>
