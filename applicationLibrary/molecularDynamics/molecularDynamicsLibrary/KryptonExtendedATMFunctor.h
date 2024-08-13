@@ -152,7 +152,7 @@ class KryptonExtendedATMFunctor
       kiSum += sumFactors[n] * (2. * n / (3. * distKI) + 1.);
     }
 
-    const double fullExpGradientIJ = (1. + ATMTerm) * ijSum / distIJ + ATMGradientIJ * expTerm * sum;
+    const double fullExpGradientIJ = - (1. + ATMTerm) * ijSum / distIJ - ATMGradientIJ * expTerm * sum;
     const double fullExpGradientKI = (1. + ATMTerm) * kiSum / distKI + ATMGradientKI * expTerm * sum;
 
     const auto forceIDirectionIJ = displacementIJ * (fullATMGradientIJ + fullExpGradientIJ);
@@ -165,8 +165,23 @@ class KryptonExtendedATMFunctor
     auto forceJ = forceI;
     auto forceK = forceI;
     if (newton3) {
+      const double allDistsTriplesGradientJK = 3. / (allDistsTripled * distSquaredJK);
+      const double ATMGradientJK = (3. / 4.) * ((numerator / distSquaredJK + numKI * numIJ - numJK * numIJ - numJK * numKI) / allDistsSquared);
+      const auto fullATMGradientJK = _nu * ((1. + ATMTerm) * allDistsTriplesGradientJK + ATMGradientJK / allDistsTripled);
+
+      double jkSum = 0.0;
+      for (auto n = 0; n < sumFactors.size(); n++) {
+        jkSum += sumFactors[n] * (2. * n / (3. * distJK) + 1.);
+      }
+      const double fullExpGradientJK = - (1. + ATMTerm) * jkSum / distJK - ATMGradientJK * expTerm * sum;
+
+      const auto forceJDirectionIJ = displacementIJ * ( - fullATMGradientIJ - fullExpGradientIJ);
+      const auto forceJDirectionJK = displacementJK * (fullATMGradientJK + fullExpGradientJK);
+
+      forceJ = (forceJDirectionIJ + forceJDirectionJK) * (- 1.0);
       j.addF(forceJ);
 
+      forceK = (forceI + forceJ) * (-1.0);
       k.addF(forceK);
     }
 
