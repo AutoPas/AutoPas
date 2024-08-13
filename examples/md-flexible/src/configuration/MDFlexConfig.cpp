@@ -89,17 +89,19 @@ size_t getNumPiecesInCheckpoint(const std::string &filename) {
  * @param particles Container for the particles recorded in the respective vts file.
  */
 void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, std::vector<ParticleType> &particles) {
+  // Parse filename into path and filename: some/long/path/filename
   const size_t endOfPath = filename.find_last_of('/');
   const auto filePath = filename.substr(0ul, endOfPath);
   const auto fileBasename = filename.substr(endOfPath + 1);
 
-  // infer checkpoint data from the filename
+  // infer checkpoint data from the filename: scenario_name_iteration.xxx
   const size_t endOfScenarioName = fileBasename.find_last_of('_');
   const auto checkpointScenarioName = fileBasename.substr(0, endOfScenarioName);
   // +1 because we want to skip the separating '_'
   const auto checkpointIteration =
       fileBasename.substr(endOfScenarioName + 1, fileBasename.find_last_of('.') - endOfScenarioName - 1);
 
+  // Reconstruct the expected vtu (=piece) name from what we parsed.
   std::string rankFilename{};
   rankFilename.append(filePath)
       .append("/data/")
@@ -129,39 +131,40 @@ void loadParticlesFromRankRecord(std::string_view filename, const size_t &rank, 
 
   findWord(inputStream, "velocities");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto velocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto velocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
   findWord(inputStream, "forces");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto forces = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto forces = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
 #if MD_FLEXIBLE_MODE == MULTISITE
   findWord(inputStream, "quaternions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto quaternions = readPayload<std::array<double, 4>, 4>(inputStream, numParticles);
+  const auto quaternions = readPayload<std::array<double, 4>, 4>(inputStream, numParticles);
 
   findWord(inputStream, "angularVelocities");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto angularVelocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto angularVelocities = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
   findWord(inputStream, "torques");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto torques = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto torques = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 #endif
 
   findWord(inputStream, "typeIds");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
+  const auto typeIds = readPayload<size_t, 1>(inputStream, numParticles);
 
   findWord(inputStream, "ids");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto ids = readPayload<size_t, 1>(inputStream, numParticles);
+  const auto ids = readPayload<size_t, 1>(inputStream, numParticles);
 
   findWord(inputStream, "positions");
   inputStream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-  auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
+  const auto positions = readPayload<std::array<double, 3>, 3>(inputStream, numParticles);
 
   // creating Particles from checkpoint:
+  particles.reserve(particles.size() + numParticles);
   for (auto i = 0ul; i < numParticles; ++i) {
     ParticleType particle;
 
@@ -538,7 +541,7 @@ void MDFlexConfig::initializeObjects() {
   }
 }
 
-void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &communicatorSize) {
+void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t &numRanks) {
   const std::string &filename = checkpointfile.value;
 
   std::ifstream inputStream(filename);
@@ -547,11 +550,16 @@ void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t 
     return;
   }
 
-  size_t checkpointCommunicatorSize{getNumPiecesInCheckpoint(filename)};
-  if (communicatorSize == checkpointCommunicatorSize) {
+  // If the checkpoint was written by a MPI parallel simulation the checkpoint is a pvtu file,
+  // that points to several vtu files, called pieces.
+  size_t numCheckpointPieces{getNumPiecesInCheckpoint(filename)};
+  // If the number of currently used ranks matches the number of pieces in the checkpoint,
+  // we assume that the domain layout matches and each rank only loads their own piece.
+  if (numRanks == numCheckpointPieces) {
     loadParticlesFromRankRecord(filename, rank, _particles);
   } else {
-    for (size_t i = 0; i < checkpointCommunicatorSize; ++i) {
+    // Otherwise, each rank loads everything.
+    for (size_t i = 0; i < numCheckpointPieces; ++i) {
       loadParticlesFromRankRecord(filename, i, _particles);
     }
   }
