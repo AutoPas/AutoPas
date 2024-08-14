@@ -61,6 +61,9 @@ template <size_t ID>
   if (cos_deriv == std::array<double, 3>{{0, 0, 0}}) {
     return cos_deriv;
   }
+  if (sin_theta(cos_theta) == 0) {
+    return std::array<double, 3>{{0, 0, 0}};
+  }
   return -cos_theta / sin_theta(cos_theta) * cos_deriv;
 }
 
