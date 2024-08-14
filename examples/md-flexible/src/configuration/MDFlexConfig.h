@@ -214,7 +214,7 @@ class MDFlexConfig {
   /**
    * Choice of the Triwise functor
    */
-  enum class FunctorOption3B { none, at };
+  enum class FunctorOption3B { none, at, krypton };
 
   /**
    * Choice of the particle generators specified in the command line

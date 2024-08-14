@@ -32,6 +32,9 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonFunctor3B *);
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -759,6 +762,15 @@ T Simulation::applyWithChosenFunctor3B(F f) {
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
+#endif
+    }
+    case MDFlexConfig::FunctorOption3B::krypton: {
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+      return f(KryptonFunctor3B{cutoff});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for Krypton 3Body Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_KRYPTON=ON`.");
 #endif
     }
     default: {
