@@ -245,8 +245,8 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
     std::array<double, 3> boxMaxWithSafetyMargin = boxMax;
     if constexpr (regionIter) {
       // We extend the search box for cells here since particles might have moved
-      boxMinWithSafetyMargin -= this->getVerletSkin();
-      boxMaxWithSafetyMargin += this->getVerletSkin();
+      boxMinWithSafetyMargin -= 0.5 * this->getVerletSkin();
+      boxMaxWithSafetyMargin += 0.5 * this->getVerletSkin();
     }
 
     // first and last relevant cell index
