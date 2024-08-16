@@ -28,11 +28,8 @@ class Newton3OnOffTest
 
   void SetUp() override {}
 
-  void TearDown() override {}
-
-  std::array<double, 3> getBoxMin() const { return {0.0, 0.0, 0.0}; }
-
-  std::array<double, 3> getBoxMax() const { return {10.0, 10.0, 10.0}; }
+  static std::array<double, 3> getBoxMin() { return {0.0, 0.0, 0.0}; }
+  static std::array<double, 3> getBoxMax() { return {10.0, 10.0, 10.0}; }
 
   static double getCutoff() { return 1.0; }
   static double getCellSizeFactor() { return 1.0; }

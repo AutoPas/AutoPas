@@ -121,11 +121,11 @@ class Sphere : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "center"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_center) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_center) << "\n";
     output << std::setw(_valueOffset) << std::left << "radius"
-           << ":  " << _radius << std::endl;
+           << ":  " << _radius << "\n";
     output << std::setw(_valueOffset) << std::left << "particle-spacing"
-           << ":  " << _particleSpacing << std::endl;
+           << ":  " << _particleSpacing << "\n";
     output << Object::to_string();
     return output.str();
   }

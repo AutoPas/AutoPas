@@ -11,7 +11,7 @@
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCAllCellsNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCC18Traversal.h"
 #include "autopas/particles/Particle.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "mocks/MockPairwiseFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
@@ -79,10 +79,10 @@ void soaTest(const double cellSizeFactor, autopas::VerletListsCellsHelpers::VLCB
       min, max, cutoff, 0.01, 30, cellSizeFactor, loadEstimator, buildType);
 
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
-                                                               verletLists1.getBoxMax(), 100);
-  autopasTools::generators::RandomGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
-                                                               verletLists2.getBoxMax(), 100);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists1, defaultParticle, verletLists1.getBoxMin(),
+                                                                verletLists1.getBoxMax(), 100);
+  autopasTools::generators::UniformGenerator::fillWithParticles(verletLists2, defaultParticle, verletLists2.getBoxMin(),
+                                                                verletLists2.getBoxMax(), 100);
   LJFunctorType<> ljFunctor(cutoff);
   ljFunctor.setParticleProperties(1., 1.);
 

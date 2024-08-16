@@ -12,6 +12,7 @@
 #include "autopas/tuning/selectors/TraversalSelector.h"
 #include "autopas/utils/StaticCellSelector.h"
 #include "autopas/utils/StringUtils.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 /**
  * Generates a random 3d shift with the given magnitude. The shift is uniformly distributed on a sphere with radius
@@ -148,10 +149,10 @@ std::tuple<std::vector<std::array<double, 3>>, TraversalComparison::Globals> Tra
                                                           autopas::LoadEstimatorOption::none});
   auto &container = selector.getCurrentContainer();
 
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       container, Molecule({0., 0., 0.}, {0., 0., 0.}, 0), container.getBoxMin(), container.getBoxMax(), numParticles);
   EXPECT_EQ(container.size(), numParticles) << "Wrong number of molecules inserted!";
-  autopasTools::generators::RandomGenerator::fillWithHaloParticles(
+  autopasTools::generators::UniformGenerator::fillWithHaloParticles(
       container, Molecule({0., 0., 0.}, {0., 0., 0.}, numParticles /*initial ID*/), container.getCutoff(),
       numHaloParticles);
   EXPECT_EQ(container.size(), numParticles + numHaloParticles) << "Wrong number of halo molecules inserted!";

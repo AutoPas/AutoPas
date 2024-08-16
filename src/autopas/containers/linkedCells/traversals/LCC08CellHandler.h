@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
@@ -43,14 +44,14 @@ class LCC08CellHandler {
                             const std::array<unsigned long, 3> &overlap, DataLayoutOption dataLayout, bool useNewton3)
       : _cellFunctor(pairwiseFunctor, interactionLength /*should use cutoff here, if not used to build verlet-lists*/,
                      dataLayout, useNewton3),
-        _cellPairOffsets{},
         _interactionLength(interactionLength),
         _cellLength(cellLength),
         _overlap(overlap),
         _dataLayout(dataLayout),
-        _useNewton3(useNewton3) {
-    computeOffsets(cellsPerDimension);
-  }
+        _useNewton3(useNewton3),
+        _cellPairOffsets{LCC08CellHandlerUtility::computePairwiseCellOffsetsC08<
+            LCC08CellHandlerUtility::C08OffsetMode::c08CellPairsSorting>(cellsPerDimension, cellLength,
+                                                                         interactionLength)} {}
 
   /**
    * Computes one interaction for each spacial direction based on the lower left
@@ -70,15 +71,7 @@ class LCC08CellHandler {
    * Pair sets for processBaseCell().
    * Values are: offset of first cell, offset of second cell, sorting direction.
    */
-  std::vector<std::tuple<unsigned long, unsigned long, std::array<double, 3>>> _cellPairOffsets;
-
-  /**
-   * Computes pairs for the block used in processBaseCell().
-   * The algorithm used to generate the cell pairs can be visualized with a python script, which can be found in
-   * docs/C08TraversalScheme.py
-   * @param cellsPerDimension
-   */
-  void computeOffsets(const std::array<unsigned long, 3> &cellsPerDimension);
+  std::vector<LCC08CellHandlerUtility::OffsetPairSorting> _cellPairOffsets;
 
   /**
    * Overlap of interacting cells. Array allows asymmetric cell sizes.
@@ -128,136 +121,6 @@ inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::processBaseCell(std
       this->_cellFunctor.processCell(cell1);
     } else {
       this->_cellFunctor.processCellPair(cell1, cell2, r);
-    }
-  }
-}
-
-template <class ParticleCell, class PairwiseFunctor>
-inline void LCC08CellHandler<ParticleCell, PairwiseFunctor>::computeOffsets(
-    const std::array<unsigned long, 3> &cellsPerDimension) {
-  using namespace autopas::utils::ArrayMath::literals;
-  using std::make_pair;
-
-  //////////////////////////////
-  // @TODO: Replace following lines with vector to support asymmetric cells
-  const unsigned long ov1 = _overlap[0] + 1;
-  const unsigned long ov1_squared = ov1 * ov1;
-  //////////////////////////////
-
-  const std::array<unsigned long, 3> overlap_1 = _overlap + 1ul;
-
-  std::vector<unsigned long> cellOffsets;
-  cellOffsets.reserve(overlap_1[0] * overlap_1[1] * overlap_1[2]);
-
-  _cellPairOffsets.clear();
-
-  const auto interactionLengthSquare(this->_interactionLength * this->_interactionLength);
-
-  // constants 0.0 and 1.0 with correct type
-  const double zero = 0.0;
-  const double one = 1.0;
-
-  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
-        cellOffsets.push_back(utils::ThreeDimensionalMapping::threeToOneD(x, y, z, cellsPerDimension));
-      }
-    }
-  }
-  for (unsigned long x = 0ul; x <= _overlap[0]; ++x) {
-    for (unsigned long y = 0ul; y <= _overlap[1]; ++y) {
-      for (unsigned long z = 0ul; z <= _overlap[2]; ++z) {
-        const unsigned long offset = cellOffsets[ov1_squared * x + ov1 * y];
-        const std::array<double, 3> offsetVec =
-            utils::ArrayUtils::static_cast_copy_array<double>(
-                utils::ThreeDimensionalMapping::oneToThreeD(offset, cellsPerDimension)) *
-            this->_cellLength;
-        // origin
-        {
-          // check whether cell is within interaction length. distVec is the direction between borders of cells.
-          const auto distVec =
-              std::array<double, 3>{std::max(zero, x - one), std::max(zero, y - one), std::max(zero, z - one)} *
-              _cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            const auto baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
-                utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[z], cellsPerDimension));
-
-            // Calculate the sorting direction from the base cell to the other cell.
-            auto sortingDir = offsetVec - baseCellVec;
-            if (x == 0 and y == 0 and z == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-
-            _cellPairOffsets.push_back(
-                std::make_tuple(cellOffsets[z], offset, utils::ArrayMath::normalize(sortingDir)));
-          }
-        }
-        // back left
-        if (y != _overlap[1] and z != 0) {
-          // check whether cell is within interaction length
-          const auto distVec = std::array<double, 3>{std::max(zero, x - one), std::max(zero, _overlap[1] - y - one),
-                                                     std::max(zero, z - one)} *
-                               _cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            const auto baseCellVec = utils::ArrayUtils::static_cast_copy_array<double>(
-                utils::ThreeDimensionalMapping::oneToThreeD(cellOffsets[ov1_squared - ov1 + z], cellsPerDimension));
-
-            // Calculate the sorting direction from the base cell to the other cell.
-            auto sortingDir = offsetVec - baseCellVec;
-            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-            _cellPairOffsets.emplace_back(cellOffsets[ov1_squared - ov1 + z], offset,
-                                          utils::ArrayMath::normalize(sortingDir));
-          }
-        }
-        // front right
-        if (x != _overlap[0] and (y != 0 or z != 0)) {
-          // check whether cell is within interaction length
-          const auto distVec = std::array<double, 3>{std::max(zero, _overlap[0] - x - one), std::max(zero, y - one),
-                                                     std::max(zero, z - one)} *
-                               _cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            const auto baseCellVec =
-                utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
-                    cellOffsets[ov1_squared * _overlap[0] + z], cellsPerDimension));
-
-            // Calculate the sorting direction from the base cell to the other cell.
-            auto sortingDir = offsetVec - baseCellVec;
-            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-            sortingDir = utils::ArrayMath::normalize(sortingDir);
-            _cellPairOffsets.emplace_back(cellOffsets[ov1_squared * _overlap[0] + z], offset,
-                                          utils::ArrayMath::normalize(sortingDir));
-          }
-        }
-        // back right
-        if (y != _overlap[1] and x != _overlap[0] and z != 0) {
-          // check whether cell is within interaction length
-          const auto distVec = std::array<double, 3>{std::max(zero, _overlap[0] - x - one),
-                                                     std::max(zero, _overlap[1] - y - one), std::max(zero, z - one)} *
-                               _cellLength;
-          const auto distSquare = utils::ArrayMath::dot(distVec, distVec);
-          if (distSquare <= interactionLengthSquare) {
-            const auto baseCellVec =
-                utils::ArrayUtils::static_cast_copy_array<double>(utils::ThreeDimensionalMapping::oneToThreeD(
-                    cellOffsets[ov1_squared * ov1 - ov1 + z], cellsPerDimension));
-
-            // Calculate the sorting direction from the base cell to the other cell.
-            auto sortingDir = offsetVec - baseCellVec;
-            if (sortingDir[0] == 0 and sortingDir[1] == 0 and sortingDir[2] == 0) {
-              sortingDir = {1., 1., 1.};
-            }
-
-            _cellPairOffsets.emplace_back(cellOffsets[ov1_squared * ov1 - ov1 + z], offset,
-                                          utils::ArrayMath::normalize(sortingDir));
-          }
-        }
-      }
     }
   }
 }

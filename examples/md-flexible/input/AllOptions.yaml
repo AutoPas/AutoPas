@@ -16,12 +16,11 @@ verlet-rebuild-frequency             :  20
 verlet-skin-radius-per-timestep      :  0.01
 verlet-cluster-size                  :  4
 selector-strategy                    :  Fastest-Absolute-Value
-tuning-strategies                    :  [full-Search]
-mpi-strategy                         :  no-mpi
+tuning-metric                        :  time
+tuning-strategies                    :  [slow-config-filter, rule-based-tuning, predictive-tuning]
 tuning-interval                      :  5000
 tuning-samples                       :  3
 tuning-max-evidence                  :  10
-tuning-metric                        :  time
 cutoff                               :  1
 box-min                              :  [-1.75, -1.75, -1.75]
 box-max                              :  [7.25, 7.25, 7.25]
@@ -29,11 +28,11 @@ cell-size                            :  [1]
 deltaT                               :  0.000001
 pause-simulation-during-tuning       :  true
 sorting-threshold                    :  8
+tuning-phases                        :  0
 iterations                           :  10
 boundary-type                        :  [periodic, periodic, periodic]
 subdivide-dimension                  :  [true, true, true]
 load-balancing-interval              :  100
-tuning-phases                        :  0
 load-estimator                       :  [none, squared-particles-per-cell, neighbor-list-length]
 relative-optimum-range               :  1.2
 max-tuning-phases-without-test       :  5
@@ -75,7 +74,7 @@ Objects:
       particle-type-id               :  0
   CubeGauss:
     0:
-      distribution-mean              :  [2, 2, 2]
+      distribution-mean              :  [17, 17, 17]
       distribution-stddeviation      :  [2, 2, 2]
       numberOfParticles              :  100
       box-length                     :  [8, 8, 8]
