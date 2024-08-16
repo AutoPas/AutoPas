@@ -70,6 +70,8 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
     using namespace autopas::utils::ArrayMath::literals;
     // 1 owned and 6 halo cells
     this->_cells.resize(7);
+    this->cells[0].setPossibleParticleOwnership(OwnershipState::owned);
+    std::for_each(++this->_cells.begin(), this->_cells.end(), [&] (auto &cell) {cell.setPossibleParticleOwnerships(OwnershipState::halo);});
     auto boxLength = boxMax - boxMin;
     this->_cells[0].setCellLength(boxLength);
   }
