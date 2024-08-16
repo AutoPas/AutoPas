@@ -9,7 +9,6 @@
 #include <gtest/gtest.h>
 
 #include "ATFunctorTest.h"
-#include "autopasTools/generators/RandomGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 template <class FuncType>

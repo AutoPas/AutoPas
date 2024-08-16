@@ -40,13 +40,13 @@ INSTANTIATE_TEST_SUITE_P(
                              autopas::InteractionTypeOption>>
           applicableCombinations;
 
-          // container factory
-          autopas::ContainerSelector<Particle> containerSelector(
-              Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff());
-          autopas::ContainerSelectorInfo containerInfo(
-              Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkinPerTimestep(),
-              Newton3OnOffTest::getRebuildFrequency(), Newton3OnOffTest::getClusterSize(),
-              autopas::LoadEstimatorOption::none);
+      // container factory
+      autopas::ContainerSelector<Particle> containerSelector(
+          Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff());
+      autopas::ContainerSelectorInfo containerInfo(
+          Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkinPerTimestep(),
+          Newton3OnOffTest::getRebuildFrequency(), Newton3OnOffTest::getClusterSize(),
+          autopas::LoadEstimatorOption::none);
 
       // generate for all containers
       for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
@@ -173,15 +173,19 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
 
   if (dataLayout == autopas::DataLayoutOption::soa) {
     // within one cell no N3 optimization
-    EXPECT_EQ(callsNewton3SC, callsNonNewton3SC) << "Mismatch in number of interactions within cells for container option: " << containerOption;
+    EXPECT_EQ(callsNewton3SC, callsNonNewton3SC)
+        << "Mismatch in number of interactions within cells for container option: " << containerOption;
     // two times the calls for no N3, once for each "owning" cell
-    EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "Mismatch in number of interactions between cell pairs for container option: " << containerOption;
+    EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair)
+        << "Mismatch in number of interactions between cell pairs for container option: " << containerOption;
     // three times the calls for no N3, once for each "owning" cell
-    EXPECT_EQ(callsNewton3Triple * 3, callsNonNewton3Triple) << "Mismatch in number of interactions between cell triplets for container option: " << containerOption;
+    EXPECT_EQ(callsNewton3Triple * 3, callsNonNewton3Triple)
+        << "Mismatch in number of interactions between cell triplets for container option: " << containerOption;
 
   } else {  // aos
     // should be called exactly two times
-    EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair) << "Mismatch in number of interactions between cell pairs for container option: " << containerOption;
+    EXPECT_EQ(callsNewton3Pair * 2, callsNonNewton3Pair)
+        << "Mismatch in number of interactions between cell pairs for container option: " << containerOption;
     // should be called exactly three times
     EXPECT_EQ(callsNewton3Triple * 3, callsNonNewton3Triple) << "for container option: " << containerOption;
   }

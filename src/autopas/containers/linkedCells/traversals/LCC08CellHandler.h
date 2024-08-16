@@ -7,8 +7,8 @@
 #pragma once
 
 #include "autopas/baseFunctors/CellFunctor.h"
-#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
 #include "autopas/containers/cellTraversals/CellTraversal.h"
+#include "autopas/containers/linkedCells/traversals/LCC08CellHandlerUtility.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 
 namespace autopas {
