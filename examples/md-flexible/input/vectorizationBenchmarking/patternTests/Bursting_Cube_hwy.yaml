@@ -1,0 +1,31 @@
+functor                          :  highway
+vectorizationPattern             :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthx1]
+data-layout                      :  [SoA]
+container                        :  [LinkedCells]
+newton3                          :  [enabled,disabled]
+tuning-interval                  :  2500
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+cutoff                           :  4
+verlet-rebuild-frequency         :  10
+verlet-skin-radius-per-timestep  :  0.1
+deltaT                           :  0.0005
+iterations                       :  15000
+boundary-type                    :  [none,none,none]
+globalForce                      :  [0,0,-12]
+box-min                          :  [0, 0, 0]
+box-max                          :  [40, 40, 40]
+Objects:
+  CubeGrid:
+    0:
+      particles-per-dimension    :  [20, 20, 20]
+      particle-spacing           :  1
+      bottomLeftCorner           :  [10, 10, 40]
+      velocity                   :  [0, 0, 0]
+      particle-type-id           :  0
+      particle-epsilon           :  1
+      particle-sigma             :  1
+      particle-mass              :  1
+vtk-write-frequency              :  200
+vtk-filename                     :  Bursting_Cube_hwy
+load-balancer                    :  none
