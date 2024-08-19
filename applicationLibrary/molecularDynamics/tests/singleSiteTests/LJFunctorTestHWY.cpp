@@ -129,10 +129,10 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYTwoCells(bool newton3, bool
     FMCell cell2NoHWY(cell2HWY);
 
     constexpr bool shifting = true;
-    constexpr bool mixing = true;
-    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
+    constexpr bool mixing = false;
+    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
     ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff, PPL);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff);
     ljFunctorHWY.setVecPattern(pattern);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
@@ -212,10 +212,10 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYOneCell(bool newton3, bool 
     // copy cells
     FMCell cellNoHWY(cellHWY);
     constexpr bool shifting = true;
-    constexpr bool mixing = true;
-    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
+    constexpr bool mixing = false;
+    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
     ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff, PPL);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff);
     ljFunctorHWY.setVecPattern(pattern);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
@@ -301,11 +301,11 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYVerlet(bool newton3, bool d
     // copy cells
     FMCell cellHWY(cellAVX);
     constexpr bool shifting = true;
-    constexpr bool mixing = true;
+    constexpr bool mixing = false;
     constexpr bool calculateGlobals = true;
-    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff, PPL);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(_cutoff, PPL);
+    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, calculateGlobals> ljFunctorAVX(_cutoff);
     ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ASSERT_TRUE(AoSParticlesEqual(cellAVX, cellHWY)) << "Cells not equal after copy initialization.";
@@ -370,10 +370,10 @@ void LJFunctorTestHWY::testLJFunctorAVXvsLJFunctorHWYAoS(bool newton3, bool doDe
     // copy cells
     FMCell cellNoHWY(cellHWY);
     constexpr bool shifting = true;
-    constexpr bool mixing = true;
-    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff, PPL);
+    constexpr bool mixing = false;
+    mdLib::LJFunctorAVX<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true> ljFunctorAVX(_cutoff);
     ljFunctorAVX.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
-    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff, PPL);
+    mdLib::LJFunctorHWY<Molecule, shifting, mixing, autopas::FunctorN3Modes::Both, true, false> ljFunctorHWY(_cutoff);
     ljFunctorHWY.setParticleProperties(_epsilon * 24.0, _sigma * _sigma);
 
     ASSERT_TRUE(AoSParticlesEqual(cellHWY, cellNoHWY)) << "Cells not equal after copy initialization.";
@@ -438,7 +438,7 @@ std::vector<VectorizationPattern> patterns {
     VectorizationPattern::p2xVecDiv2,
     VectorizationPattern::pVecDiv2x2,
     VectorizationPattern::pVecx1,
-    // VectorizationPattern::pVecxVec
+    VectorizationPattern::pVecxVec
 };
 
 std::map<VectorizationPattern, std::string> patternsToString {

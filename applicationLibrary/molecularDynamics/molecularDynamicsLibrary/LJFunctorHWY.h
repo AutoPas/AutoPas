@@ -222,6 +222,15 @@ namespace mdLib {
                         }
                         break;
                     }
+                    case VectorizationPattern::pVecxVec: {
+                        if (newton3) {
+                            SoAFunctorPairImpl<true, VectorizationPattern::pVecxVec>(soa1, soa2);
+                        }
+                        else {
+                            SoAFunctorPairImpl<false, VectorizationPattern::pVecxVec>(soa1, soa2);
+                        }
+                        break;
+                    }
                     default:
                         break;
                     }
@@ -310,6 +319,7 @@ namespace mdLib {
                         return reversed ? (long)i >= _vecLengthDouble/2 : (i < stop - _vecLengthDouble/2+1);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1 || vecPattern == VectorizationPattern::pVecxVec) {
+
                         return reversed ? (long)i >= _vecLengthDouble : (i < stop - _vecLengthDouble+1);
                     }
                     else {
@@ -1022,7 +1032,7 @@ namespace mdLib {
                                 const VectorLong ownedStateJ = highway::LoadU(tag_long, &ownedStatePtr2[j]);
                                 ownedStateJDouble = highway::ConvertTo(tag_double, ownedStateJ);
                             }
-                            }
+                        }
                         else {
                             rotateUpDouble(x2, 1);
                             rotateUpDouble(y2, 1);
@@ -1051,29 +1061,29 @@ namespace mdLib {
                     }
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         for (int i = 0; i < (remainderI ? 1 : 2); ++i) {
-                            for (int j = 0; j < (remainderJ ? restJ : _vecLengthDouble/2); ++j) {
-                                int index = i* (_vecLengthDouble/2) + j;
+                            for (int k = 0; k < (remainderJ ? restJ : _vecLengthDouble/2); ++k) {
+                                int index = i* (_vecLengthDouble/2) + k;
                                 auto typeID1 = reversed ? typeID1Ptr-i : typeID1Ptr+i;
-                                epsilons[index] = _PPLibrary->getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
-                                sigmas[index] = _PPLibrary->getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
+                                epsilons[index] = _PPLibrary->getMixing24Epsilon(*typeID1, *(typeID2Ptr + k));
+                                sigmas[index] = _PPLibrary->getMixingSigmaSquared(*typeID1, *(typeID2Ptr + k));
 
                                 if constexpr (applyShift) {
-                                    shifts[index] = _PPLibrary->getMixingShift6(*typeID1, *(typeID2Ptr + j));
+                                    shifts[index] = _PPLibrary->getMixingShift6(*typeID1, *(typeID2Ptr + k));
                                 }
                             }
                         }
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
                         for (int i = 0; i < (remainderI ? restI : _vecLengthDouble/2); ++i) {
-                            for (int j = 0; j < (remainderJ ? 1 : 2); ++j) {
-                                int index = i + _vecLengthDouble/2*j;
+                            for (int k = 0; k < (remainderJ ? 1 : 2); ++k) {
+                                int index = i + _vecLengthDouble/2*k;
                                 auto typeID1 = reversed ? typeID1Ptr-i : typeID1Ptr+i;
 
-                                epsilons[index] = _PPLibrary->getMixing24Epsilon(*typeID1, *(typeID2Ptr + j));
-                                sigmas[index] = _PPLibrary->getMixingSigmaSquared(*typeID1, *(typeID2Ptr + j));
+                                epsilons[index] = _PPLibrary->getMixing24Epsilon(*typeID1, *(typeID2Ptr + k));
+                                sigmas[index] = _PPLibrary->getMixingSigmaSquared(*typeID1, *(typeID2Ptr + k));
 
                                 if constexpr (applyShift) {
-                                    shifts[index] = _PPLibrary->getMixingShift6(*typeID1, *(typeID2Ptr + j));
+                                    shifts[index] = _PPLibrary->getMixingShift6(*typeID1, *(typeID2Ptr + k));
                                 }
                             }
                         }
