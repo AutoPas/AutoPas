@@ -23,17 +23,25 @@ namespace autopas {
  */
 template <class ParticleCell>
 class CellBasedParticleContainer : public ParticleContainerInterface<typename ParticleCell::ParticleType> {
+  using Particle = typename ParticleCell::ParticleType;
+
  public:
   /**
    * Constructor of CellBasedParticleContainer
    * @param boxMin
    * @param boxMax
    * @param cutoff
-   * @param skin
+   * @param skinPerTimestep
+   * @param rebuildFrequency
    */
   CellBasedParticleContainer(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax,
-                             const double cutoff, const double skin)
-      : _cells(), _boxMin(boxMin), _boxMax(boxMax), _cutoff(cutoff), _skin(skin) {}
+                             const double cutoff, double skinPerTimestep, unsigned int rebuildFrequency)
+      : ParticleContainerInterface<Particle>(skinPerTimestep),
+        _cells(),
+        _boxMin(boxMin),
+        _boxMax(boxMax),
+        _cutoff(cutoff),
+        _skin(skinPerTimestep * rebuildFrequency) {}
 
   /**
    * Destructor of CellBasedParticleContainer.

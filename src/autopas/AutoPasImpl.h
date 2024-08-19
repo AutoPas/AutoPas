@@ -64,12 +64,6 @@ template <class Particle>
 void AutoPas<Particle>::init() {
   AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
   AutoPasLog(INFO, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
-  if (_autoTunerInfo.maxSamples % _verletRebuildFrequency != 0) {
-    AutoPasLog(WARN,
-               "Number of samples ({}) is not a multiple of the rebuild frequency ({}). This can lead to problems "
-               "when multiple AutoPas instances interact (e.g. via MPI).",
-               _autoTunerInfo.maxSamples, _verletRebuildFrequency);
-  }
 
   if (_tuningStrategyFactoryInfo.autopasMpiCommunicator == AUTOPAS_MPI_COMM_NULL) {
     AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_tuningStrategyFactoryInfo.autopasMpiCommunicator);

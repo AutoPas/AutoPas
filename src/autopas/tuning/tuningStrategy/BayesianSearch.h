@@ -63,7 +63,7 @@ class BayesianSearch final : public TuningStrategyInterface {
       size_t predNumLHSamples = 1000, unsigned long seed = std::random_device()(),
       const std::set<VectorizationPatternOption> &allowedVecPatternOptions = VectorizationPatternOption::getAllOptions());
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 

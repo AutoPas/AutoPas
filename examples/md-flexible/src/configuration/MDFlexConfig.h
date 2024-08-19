@@ -171,9 +171,9 @@ class MDFlexConfig {
   /**
    * Loads the particles from the checkpoint file defined in the configuration file.
    * If the checkpoint has been recorded using multiple processes, the rank of the current process needs to be passed.
-   * The provided rank also needs to respect the domain decomposition. E. g. if the a regular grid decomposition is
-   * used,   * don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
-   * scheme. The wrong rank might result in a very bad network topology and therefore increase communication cost.
+   * The provided rank also needs to respect the domain decomposition. E. g. if the regular grid decomposition is
+   * used, don't pass the MPI_COMM_WORLD rank, as it might differ from the grid rank derived in the decomposition
+   * scheme. The wrong rank might result in a very bad network topology and therefore increase communication costs.
    * @param rank: The MPI rank of the current process.
    * @param communicatorSize: The size of the MPI communicator used for the simulation.
    */
@@ -477,10 +477,6 @@ class MDFlexConfig {
           autopas::utils::ArrayUtils::to_string(options::BoundaryTypeOption::getAllOptions(), " ", {"(", ")"}) +
           " Default: {periodic, periodic, periodic}"};
   /**
-   * dontMeasureFlops
-   */
-  MDFlexOption<bool, __LINE__> dontMeasureFlops{true, "no-flops", false, "Set to omit the calculation of flops."};
-  /**
    * Omit the creation of a config file at the end of the Simulation.
    * This starts with a "not" such that it can be used as a flag with a sane default.
    */
@@ -497,6 +493,11 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
 
+  /**
+   * pauseSimulationDuringTuning
+   */
+  MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
+                                                           "Pauses the update of the simulation during tuning phases."};
   /**
    * sortingThreshold
    * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is

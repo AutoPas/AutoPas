@@ -7,7 +7,6 @@
 #include "SlicedTraversalTest.h"
 
 #include "autopas/containers/linkedCells/traversals/LCSlicedTraversal.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopasTools/generators/GridGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/NumThreadGuard.h"
@@ -16,8 +15,9 @@
 using ::testing::_;
 
 void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
-  mdLib::LJFunctor<Molecule> ljFunctor(1.);
-  autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>> f(ljFunctor, 1.);
+  // Get LJ Functor with FLOP Counting enabled
+  LJFunctorType</*shift*/ false, /*mixing*/ false, autopas::FunctorN3Modes::Both, /*globals*/ false, /*flops*/ true>
+      ljFunctor(1.);
   std::vector<FMCell> cells;
   cells.resize(edgeLength[0] * edgeLength[1] * edgeLength[2]);
 
@@ -27,8 +27,8 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
 
   NumThreadGuard numThreadGuard(4);
 
-  autopas::LCSlicedTraversal<FMCell, autopas::FlopCounterFunctor<Molecule, mdLib::LJFunctor<Molecule>>> slicedTraversal(
-      edgeLength, &f, 1., {1., 1., 1.}, autopas::DataLayoutOption::aos, true);
+  autopas::LCSlicedTraversal<FMCell, decltype(ljFunctor)> slicedTraversal(edgeLength, &ljFunctor, 1., {1., 1., 1.},
+                                                                          autopas::DataLayoutOption::aos, true);
 
   EXPECT_TRUE(slicedTraversal.isApplicable());
   slicedTraversal.setCellsToTraverse(cells);
@@ -50,39 +50,48 @@ void testSlicedTraversal(const std::array<size_t, 3> &edgeLength) {
    *  6: six faces
    *  12: twelve edges
    *  8: eight vertices
-   *  Center point interacts with 6 particles (s. visualization above)
-   *  "Face points" interact with 5 particles each (s. vis/ above wo/ particle a)
-   *  "Edge points" interact with 4 particles each (s. vis/ above wo/ particles a and b)
-   *  "Vertex points" interact with 3 particles each (s. vis/ above wo/ a, b, c)
-   *  This leads to (1 * 6) + (6 * 5) + (12 * 4) + (8 * 3) = 108 interactions, since
-   *  particles are in interaction length iff their position difference is a unit vector (see vis/ above).
-   *  Newton3 is enabled, so there should be 108/2 = 54 kernel calls (actually less, see below).
+   *
+   *
+   *  Center point calculates distances to 26 particles but only interacts with 6 particles
+   *  "Face points" calculate distances to 17 particles but only interacts with 5 particles each
+   *  "Edge points" calculate distances to 11 particles but only interacts with 4 particles each
+   *  "Vertex points" calculate distances to 7 particles but only interacts with 3 particles each
+   *
+   *  See visualizations above for particle interaction numbers stated.
+   *
+   *  This leads to
+   *  (1 * 26) + (6 * 17) + (12 * 11) + (8 * 7) = 316 distances calculations and
+   *  (1 * 6) + (6 * 5) + (12 * 4) + (8 * 3) = 108 interactions/kernel calls.
+   *  Newton3 is enabled, so there should be 316/2 = 158 distance calculations and 108/2 = 54 kernel calls (actually
+   *  less, see below).
    *
    *  But: the cells in the last layer (i.e. in [2,3] for x, y, z) are considered as halo cells.
    *  This means that interactions with them have to be calculated, but not in between them.
    *  For a visualization, see https://www.geogebra.org/3d/cnuekxyk
-   *  This means that we can reduce the following amounts of calculations:
-   *  2 * 5 = 10 x-directed interactions
-   *  2 * 5 = 10 y-directed interactions
-   *  2 * 5 = 10 z-directed interactions
-   *  This yields a reduction of 30 interactions. So we expect 54 - 30 = 24 interactions.
    *
-   *     z-directed            x-directed             y-directed
-   *                |  1         1   2    3                __  __  5
-   *              | |  2      1  /   /   / 4           __  __  4
-   *      |  |  | |          2  /   /   // 5        __  __  3
-   *      |  |  |                       //          __  __  2
-   *      1  2  3 4 5                   /           __  __  1
-   *                                                1   2
+   *  - Per halo "face", there are 8 distance calculations that lead to kernel calls that are not shared with another
+   *    halo "face" (see horizontal (---) and vertical ( | ) lines in visualization below)
+   *  - Per halo "face", there are 8 "diagonal" distance calculations without kernel calls (see diagonal ( x ) lines in
+   *    visualization below, each x = 2 lines)
+   *  - => Per halo "face" there are 16 "unshared" distance calculations and 8 "unshared" kernel calls.
+   *  - => 48 "unshared" distance calculations and 24 "unshared" kernel calls.
+   *  - There are a further 2 distance calculations that lead to kernel calls per shared edge (see dotted lines (:, ...)
+   *    in visualization below)
+   *  - => 3x2 = 6 distance calculations and kernel calls
+   *  - => A total of 54 distance calculations and 30 kernel calls are not calculated, as they are pure halo
+   *    interactions.
    *
-   *  In case you have an algorithm also calculating interactions in halo cells, consider accepting values between
-   *  24 and 54 instead of exactly 24. Two suggestions for replacing ASSERT_EQ(expectedKernelCalls, f.getKernelCalls()):
-   *  1. ASSERT_NEAR(expectedKernelCalls, 39, 15.5); (one-liner)
-   *  2. ASSERT_GE(expectedKernelCalls, 24);
-   *     ASSERT_LE(expectedKernelCalls, 54);
+   *                      o...o...o
+   *                      | x | x :
+   *                      o---o---o
+   *                      | x | x :
+   *                      o---o---o
+   *
+   * So we expect 158-54 = 104 distance calculations, 54-30 = 24 kernel calls, leading to a hit rate of
+   * 24/104=0.23076923076923078
    */
-  auto expectedKernelCalls = 24;
-  ASSERT_EQ(expectedKernelCalls, f.getKernelCalls());
+  const double expectedHitRate = 0.23076923076923078;
+  ASSERT_NEAR(expectedHitRate, ljFunctor.getHitRate(), 1e-10);
 }
 
 /**

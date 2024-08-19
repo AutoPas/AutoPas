@@ -59,7 +59,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
-      config.dontMeasureFlops,
       config.dontShowProgressBar,
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
@@ -308,10 +307,12 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      /*
       case decltype(config.dontMeasureFlops)::getoptChar: {
         config.dontMeasureFlops.value = false;
         break;
       }
+      */
       case decltype(config.generatorOption)::getoptChar: {
         if (strArg.find("grid") != string::npos) {
           config.generatorOption.value = MDFlexConfig::GeneratorOption::grid;

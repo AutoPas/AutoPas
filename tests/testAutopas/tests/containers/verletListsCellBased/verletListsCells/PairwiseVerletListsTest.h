@@ -12,15 +12,14 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/particles/Particle.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 class PairwiseVerletListsTest
     : public AutoPasTestBase,
-      public ::testing::WithParamInterface<
-          std::tuple<double, bool, autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value>> {
+      public ::testing::WithParamInterface<std::tuple<double, bool, autopas::VerletListsCellsHelpers::VLCBuildType>> {
  public:
   struct PrintToStringParamName {
     template <class ParamType>
@@ -38,8 +37,8 @@ class PairwiseVerletListsTest
       }
     }
 
-    std::string buildTypeToString(autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::Value buildType) const {
-      if (buildType == autopas::VerletListsCellsHelpers<Particle>::VLCBuildType::soaBuild) {
+    std::string buildTypeToString(autopas::VerletListsCellsHelpers::VLCBuildType buildType) const {
+      if (buildType == autopas::VerletListsCellsHelpers::VLCBuildType::soaBuild) {
         return "buildSoA";
       } else {
         return "buildAoS";
