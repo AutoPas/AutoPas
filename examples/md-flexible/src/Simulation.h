@@ -92,6 +92,16 @@ class Simulation {
   size_t _numTuningPhasesCompleted = 0;
 
   /**
+   * Indicator if the current iteration was a tuning iteration.
+   */
+  bool _currentIterationIsTuningIteration = false;
+
+  /**
+   * Indicator if the simulation is paused due to the PauseDuringTuning option.
+   */
+  bool _simulationIsPaused = false;
+
+  /**
    * Indicator if the previous iteration was used for tuning.
    */
   bool _previousIterationWasTuningIteration = false;
@@ -100,11 +110,6 @@ class Simulation {
    * Precision of floating point numbers printed.
    */
   constexpr static auto _floatStringPrecision = 3;
-
-  /**
-   * Homogeneity of the scenario, calculated by the standard deviation of the density.
-   */
-  double _homogeneity = 0;
 
   /**
    * Struct containing all timers used for the simulation.
@@ -129,11 +134,6 @@ class Simulation {
      * Records the time used for the pairwise force update of all particles.
      */
     autopas::utils::Timer forceUpdatePairwise;
-
-    /**
-     * Records the time used for the update of the global forces of all particles.
-     */
-    autopas::utils::Timer forceUpdateGlobal;
 
     /**
      * Records the time used for the force update of all particles during the tuning iterations.
@@ -254,9 +254,10 @@ class Simulation {
                                                  long maxTime = 0ul);
 
   /**
-   * Updates the position of particles in the local AutoPas container.
+   * Updates the position of particles in the local AutoPas container. In addition, the oldForce is set to the value of
+   * the current forces and the force buffers of the particles are reset to the global force.
    */
-  void updatePositions();
+  void updatePositionsAndResetForces();
 
   /**
    * Update the quaternion orientation of the particles in the local AutoPas container.
@@ -267,7 +268,7 @@ class Simulation {
    * Updates the forces of particles in the local AutoPas container. Includes torque updates (if an appropriate functor
    * is used).
    */
-  void updateForces();
+  void updateInteractionForces();
 
   /**
    * Updates the velocities of particles in the local AutoPas container.
@@ -296,6 +297,11 @@ class Simulation {
    * @return the accumulated time of all ranks.
    */
   [[nodiscard]] static long accumulateTime(const long &time);
+
+  /**
+   * Handles the pausing of the simulation and updates the _simulationIsPaused flag.
+   */
+  void updateSimulationPauseState();
 
   /**
    * Logs the number of total/owned/halo particles in the simulation, aswell as the standard deviation of Homogeneity.

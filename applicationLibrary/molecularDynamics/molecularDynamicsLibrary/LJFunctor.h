@@ -30,14 +30,14 @@ namespace mdLib {
  * If set to false, _epsilon and _sigma need to be set and the constructor with PPL can be omitted.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
+ * @tparam countFLOPs counts FLOPs and hitrate
  * @tparam relevantForTuning Whether or not the auto-tuner should consider this functor.
  */
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
-          bool relevantForTuning = true>
-class LJFunctor
-    : public autopas::Functor<
-          Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>> {
+          bool countFLOPs = false, bool relevantForTuning = true>
+class LJFunctor : public autopas::Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3,
+                                                              calculateGlobals, countFLOPs, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -61,16 +61,17 @@ class LJFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit LJFunctor(double cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle,
-                         LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff),
+      : autopas::Functor<Particle, LJFunctor<Particle, applyShift, useMixing, useNewton3, calculateGlobals, countFLOPs,
+                                             relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
-        _aosThreadData(),
         _postProcessed{false} {
     if constexpr (calculateGlobals) {
-      _aosThreadData.resize(autopas::autopas_get_max_threads());
+      _aosThreadDataGlobals.resize(autopas::autopas_get_max_threads());
+    }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs.resize(autopas::autopas_get_max_threads());
     }
   }
 
@@ -119,6 +120,13 @@ class LJFunctor
     if (i.isDummy() or j.isDummy()) {
       return;
     }
+
+    const auto threadnum = autopas::autopas_get_thread_num();
+
+    if constexpr (countFLOPs) {
+      ++_aosThreadDataFLOPs[threadnum].numDistCalls;
+    }
+
     auto sigmaSquared = _sigmaSquared;
     auto epsilon24 = _epsilon24;
     auto shift6 = _shift6;
@@ -148,29 +156,37 @@ class LJFunctor
       // only if we use newton 3 here, we want to
       j.subF(f);
     }
-    if (calculateGlobals) {
+
+    if constexpr (countFLOPs) {
+      if (newton3) {
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsN3;
+      } else {
+        ++_aosThreadDataFLOPs[threadnum].numKernelCallsNoN3;
+      }
+    }
+
+    if constexpr (calculateGlobals) {
+      // We always add the full contribution for each owned particle and divide the sums by 2 in endTraversal().
+      // Potential energy has an additional factor of 6, which is also handled in endTraversal().
+
       auto virial = dr * f;
-      // Here we calculate either the potential energy * 6.
-      // For newton3, this potential energy contribution is distributed evenly to the two molecules.
-      // For non-newton3, the full potential energy is added to the one molecule.
-      // The division by 6 is handled in endTraversal, as well as the division by two needed if newton3 is not used.
       double potentialEnergy6 = epsilon24 * lj12m6 + shift6;
 
-      const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-        if (newton3) {
-          _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-          _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
-        } else {
-          // for non-newton3 the division is in the post-processing step.
-          _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergy6;
-          _aosThreadData[threadnum].virialSumNoN3 += virial;
-        }
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergy6 * 0.5;
-        _aosThreadData[threadnum].virialSumN3 += virial * 0.5;
+        _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergy6;
+        _aosThreadDataGlobals[threadnum].virialSum += virial;
+      }
+      if constexpr (countFLOPs) {
+        if (newton3) {
+          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsN3;
+        } else {
+          ++_aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3;
+        }
       }
     }
   }
@@ -182,6 +198,8 @@ class LJFunctor
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {
     if (soa.size() == 0) return;
+
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     const auto *const __restrict xptr = soa.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict yptr = soa.template begin<Particle::AttributeNames::posY>();
@@ -196,11 +214,15 @@ class LJFunctor
     // the local redeclaration of the following values helps the SoAFloatPrecision-generation of various compilers.
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
 
-    SoAFloatPrecision potentialEnergySum =
-        0.;  // Note: this is not the potential energy, but some fixed multiple of it.
+    SoAFloatPrecision potentialEnergySum = 0.;  // Note: This is not the potential energy but some fixed multiple of it.
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
+
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numGlobalCalcsSum = 0;
 
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> sigmaSquareds;
     std::vector<SoAFloatPrecision, autopas::AlignedAllocator<SoAFloatPrecision>> epsilon24s;
@@ -243,7 +265,7 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsSum)
       for (unsigned int j = i + 1; j < soa.size(); ++j) {
         SoAFloatPrecision shift6 = const_shift6;
         SoAFloatPrecision sigmaSquared = const_sigmaSquared;
@@ -277,7 +299,7 @@ class LJFunctor
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+        const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -292,14 +314,18 @@ class LJFunctor
         fyptr[j] -= fy;
         fzptr[j] -= fz;
 
+        if constexpr (countFLOPs) {
+          numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+          numKernelCallsN3Sum += mask;
+        }
+
         if (calculateGlobals) {
           const SoAFloatPrecision virialx = drx * fx;
           const SoAFloatPrecision virialy = dry * fy;
           const SoAFloatPrecision virialz = drz * fz;
-          const SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
+          const SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
-          // Add to the potential energy sum for each particle which is owned.
-          // This results in obtaining 12 * the potential energy for the SoA.
+          // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
           SoAFloatPrecision energyFactor = (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
                                            (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.);
           potentialEnergySum += potentialEnergy6 * energyFactor;
@@ -307,6 +333,10 @@ class LJFunctor
           virialSumX += virialx * energyFactor;
           virialSumY += virialy * energyFactor;
           virialSumZ += virialz * energyFactor;
+
+          if constexpr (countFLOPs) {
+            numGlobalCalcsSum += mask;
+          }
         }
       }
 
@@ -314,22 +344,19 @@ class LJFunctor
       fyptr[i] += fyacc;
       fzptr[i] += fzacc;
     }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsSum;  // Always N3 in Single SoAFunctor
+    }
     if (calculateGlobals) {
       const int threadnum = autopas::autopas_get_thread_num();
 
-      // SoAFunctorSingle obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if (newton3) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -357,6 +384,8 @@ class LJFunctor
   void SoAFunctorPairImpl(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2) {
     if (soa1.size() == 0 || soa2.size() == 0) return;
 
+    const auto threadnum = autopas::autopas_get_thread_num();
+
     const auto *const __restrict x1ptr = soa1.template begin<Particle::AttributeNames::posX>();
     const auto *const __restrict y1ptr = soa1.template begin<Particle::AttributeNames::posY>();
     const auto *const __restrict z1ptr = soa1.template begin<Particle::AttributeNames::posZ>();
@@ -380,6 +409,12 @@ class LJFunctor
     SoAFloatPrecision virialSumX = 0.;
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
+
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
 
     const SoAFloatPrecision cutoffSquared = _cutoffSquared;
     SoAFloatPrecision shift6 = _shift6;
@@ -422,7 +457,7 @@ class LJFunctor
 
 // icpc vectorizes this.
 // g++ only with -ffast-math or -funsafe-math-optimizations
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum)
       for (unsigned int j = 0; j < soa2.size(); ++j) {
         if constexpr (useMixing) {
           sigmaSquared = sigmaSquareds[j];
@@ -453,7 +488,7 @@ class LJFunctor
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         const SoAFloatPrecision lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 * mask : 0.;
+        const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
         const SoAFloatPrecision fx = drx * fac;
         const SoAFloatPrecision fy = dry * fac;
@@ -468,14 +503,22 @@ class LJFunctor
           fz2ptr[j] -= fz;
         }
 
+        if constexpr (countFLOPs) {
+          numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+          if constexpr (newton3) {
+            numKernelCallsN3Sum += mask;
+          } else {
+            numKernelCallsNoN3Sum += mask;
+          }
+        }
+
         if constexpr (calculateGlobals) {
           SoAFloatPrecision virialx = drx * fx;
           SoAFloatPrecision virialy = dry * fy;
           SoAFloatPrecision virialz = drz * fz;
-          SoAFloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6) * mask;
+          SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
-          // Add to the potential energy sum for each particle which is owned.
-          // This results in obtaining 12 * the potential energy for the SoA.
+          // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
           const SoAFloatPrecision energyFactor =
               (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
               (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -483,28 +526,32 @@ class LJFunctor
           virialSumX += virialx * energyFactor;
           virialSumY += virialy * energyFactor;
           virialSumZ += virialz * energyFactor;
+
+          if constexpr (countFLOPs) {
+            if constexpr (newton3) {
+              numGlobalCalcsN3Sum += mask;
+            } else {
+              numGlobalCalcsNoN3Sum += mask;
+            }
+          }
         }
       }
       fx1ptr[i] += fxacc;
       fy1ptr[i] += fyacc;
       fz1ptr[i] += fzacc;
     }
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+    }
     if (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_thread_num();
-
-      // SoAFunctorPairImpl obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-      if constexpr (newton3) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
@@ -579,24 +626,6 @@ class LJFunctor
   constexpr static bool getMixing() { return useMixing; }
 
   /**
-   * Get the number of flops used per kernel call for a given particle pair. This should count the
-   * floating point operations needed for two particles that lie within a cutoff radius, having already calculated the
-   * distance.
-   * @param molAType molecule A's type id
-   * @param molBType molecule B's type id
-   * @param newton3 is newton3 applied.
-   * @note molAType and molBType make no difference for LJFunctor, but are kept to have a consistent interface for other
-   * functors where they may.
-   * @return the number of floating point operations
-   */
-  static unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
-    // Kernel: 12 = 1 (inverse R squared) + 8 (compute scale) + 3 (apply scale) sum
-    // Adding to particle forces: 6 or 3 depending newton3
-    // Total = 12 + (6 or 3) = 18 or 15
-    return newton3 ? 18ul : 15ul;
-  }
-
-  /**
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
@@ -604,8 +633,15 @@ class LJFunctor
     _potentialEnergySum = 0.;
     _virialSum = {0., 0., 0.};
     _postProcessed = false;
-    for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-      _aosThreadData[i].setZero();
+    if constexpr (calculateGlobals) {
+      for (auto &data : _aosThreadDataGlobals) {
+        data.setZero();
+      }
+    }
+    if constexpr (countFLOPs) {
+      for (auto &data : _aosThreadDataFLOPs) {
+        data.setZero();
+      }
     }
   }
 
@@ -621,26 +657,16 @@ class LJFunctor
           "Already postprocessed, endTraversal(bool newton3) was called twice without calling initTraversal().");
     }
     if (calculateGlobals) {
-      // We distinguish between non-newton3 and newton3 functor calls. Newton3 calls are accumulated directly.
-      // Non-newton3 calls are accumulated temporarily and later divided by 2.
-      double potentialEnergySumNoN3Acc = 0;
-      std::array<double, 3> virialSumNoN3Acc = {0, 0, 0};
-      for (size_t i = 0; i < _aosThreadData.size(); ++i) {
-        potentialEnergySumNoN3Acc += _aosThreadData[i].potentialEnergySumNoN3;
-        _potentialEnergySum += _aosThreadData[i].potentialEnergySumN3;
-
-        virialSumNoN3Acc += _aosThreadData[i].virialSumNoN3;
-        _virialSum += _aosThreadData[i].virialSumN3;
+      for (const auto &data : _aosThreadDataGlobals) {
+        _potentialEnergySum += data.potentialEnergySum;
+        _virialSum += data.virialSum;
       }
-      // if the newton3 optimization is disabled we have added every energy contribution twice, so we divide by 2
-      // here.
-      potentialEnergySumNoN3Acc *= 0.5;
-      virialSumNoN3Acc *= 0.5;
+      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
+      // contribution is only counted once per pair.
+      _potentialEnergySum *= 0.5;
+      _virialSum *= 0.5;
 
-      _potentialEnergySum += potentialEnergySumNoN3Acc;
-      _virialSum += virialSumNoN3Acc;
-
-      // we have always calculated 6*potentialEnergy, so we divide by 6 here!
+      // We have always calculated 6*potentialEnergy, so we divide by 6 here!
       _potentialEnergySum /= 6.;
       _postProcessed = true;
 
@@ -684,6 +710,95 @@ class LJFunctor
     return _virialSum[0] + _virialSum[1] + _virialSum[2];
   }
 
+  /**
+   * Gets the number of useful FLOPs.
+   *
+   * For the distance squared calculation, this is:
+   * - Displacement: 3
+   * - DistanceSquared in each dimension: 3
+   * - DistanceSquared Total: 2
+   * - Total: 8
+   *
+   * For the force kernel, this is:
+   * - inverse distance squared: 1 (assume division is 1 FLOP)
+   * - lj2: 1
+   * - lj6: 2
+   * - lj12: 1
+   * - lj12m6: 1
+   * - scalar factor: 3
+   * - force: 3
+   * - accumulate force on mol i: 3
+   * - accumulate force on mol j if n3: 3
+   * - Total: 15 without n3, 18 with n3
+   *
+   * For the globals calculation, this is:
+   * - virial: 3
+   * - potential: 1, or 2 with shift
+   * - accumulation: 4 without n3, 8 with n3
+   * - Total: 8 or 9 without n3, 12 or 13 with n3
+   *
+   * Caveats:
+   *
+   * This function is supposed to return useful FLOPs, e.g. without counting masked vector instructions.
+   * You could also argue that, strictly speaking, we redundantly calculate forces and globals twice in the newton3 case
+   * on a owned/halo boundary. This function does not treat such "redundant" calculations as useless. Similarly, this
+   * function does not treat halo-halo interactions as redundant useless calculations.
+   *
+   * @return number of FLOPs since initTraversal() is called.
+   */
+  [[nodiscard]] size_t getNumFLOPs() const override {
+    if constexpr (countFLOPs) {
+      const size_t numDistCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      const size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      const size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+      const size_t numGlobalCalcsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsN3; });
+      const size_t numGlobalCalcsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numGlobalCalcsNoN3; });
+
+      constexpr size_t numFLOPsPerDistanceCall = 8;
+      constexpr size_t numFLOPsPerN3KernelCall = 18;
+      constexpr size_t numFLOPsPerNoN3KernelCall = 15;
+      constexpr size_t numFLOPsPerN3GlobalCalc = applyShift ? 13 : 12;
+      constexpr size_t numFLOPsPerNoN3GlobalCalc = applyShift ? 9 : 8;
+
+      return numDistCallsAcc * numFLOPsPerDistanceCall + numKernelCallsN3Acc * numFLOPsPerN3KernelCall +
+             numKernelCallsNoN3Acc * numFLOPsPerNoN3KernelCall + numGlobalCalcsN3Acc * numFLOPsPerN3GlobalCalc +
+             numGlobalCalcsNoN3Acc * numFLOPsPerNoN3GlobalCalc;
+    } else {
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      return std::numeric_limits<size_t>::max();
+    }
+  }
+
+  [[nodiscard]] double getHitRate() const override {
+    if constexpr (countFLOPs) {
+      const size_t numDistCallsAcc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numDistCalls; });
+      const size_t numKernelCallsN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsN3; });
+      const size_t numKernelCallsNoN3Acc =
+          std::accumulate(_aosThreadDataFLOPs.begin(), _aosThreadDataFLOPs.end(), 0ul,
+                          [](size_t sum, const auto &data) { return sum + data.numKernelCallsNoN3; });
+
+      return (static_cast<double>(numKernelCallsNoN3Acc) + static_cast<double>(numKernelCallsN3Acc)) /
+             (static_cast<double>(numDistCallsAcc));
+    } else {
+      // This is needed because this function still gets called with FLOP logging disabled, just nothing is done with it
+      return std::numeric_limits<double>::quiet_NaN();
+    }
+  }
+
  private:
   template <bool newton3>
   void SoAFunctorVerletImpl(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
@@ -710,6 +825,13 @@ class LJFunctor
     SoAFloatPrecision virialSumY = 0.;
     SoAFloatPrecision virialSumZ = 0.;
 
+    // Counters for when countFLOPs is activated
+    size_t numDistanceCalculationSum = 0;
+    size_t numKernelCallsN3Sum = 0;
+    size_t numKernelCallsNoN3Sum = 0;
+    size_t numGlobalCalcsN3Sum = 0;
+    size_t numGlobalCalcsNoN3Sum = 0;
+
     SoAFloatPrecision fxacc = 0;
     SoAFloatPrecision fyacc = 0;
     SoAFloatPrecision fzacc = 0;
@@ -721,6 +843,8 @@ class LJFunctor
     if (ownedStateI == autopas::OwnershipState::dummy) {
       return;
     }
+
+    const auto threadnum = autopas::autopas_get_thread_num();
 
     // this is a magic number, that should correspond to at least
     // vectorization width*N have testet multiple sizes:
@@ -778,7 +902,7 @@ class LJFunctor
           ownedStateArr[tmpj] = ownedStatePtr[neighborListPtr[joff + tmpj]];
         }
         // do omp simd with reduction of the interaction
-#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ) safelen(vecsize)
+#pragma omp simd reduction(+ : fxacc, fyacc, fzacc, potentialEnergySum, virialSumX, virialSumY, virialSumZ, numDistanceCalculationSum, numKernelCallsN3Sum, numKernelCallsNoN3Sum, numGlobalCalcsN3Sum, numGlobalCalcsNoN3Sum) safelen(vecsize)
         for (size_t j = 0; j < vecsize; j++) {
           if constexpr (useMixing) {
             sigmaSquared = sigmaSquareds[j];
@@ -810,7 +934,7 @@ class LJFunctor
           const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
           const SoAFloatPrecision lj12 = lj6 * lj6;
           const SoAFloatPrecision lj12m6 = lj12 - lj6;
-          const SoAFloatPrecision fac = mask ? epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+          const SoAFloatPrecision fac = mask * epsilon24 * (lj12 + lj12m6) * invdr2;
 
           const SoAFloatPrecision fx = drx * fac;
           const SoAFloatPrecision fy = dry * fac;
@@ -824,12 +948,24 @@ class LJFunctor
             fyArr[j] = fy;
             fzArr[j] = fz;
           }
+
+          if constexpr (countFLOPs) {
+            numDistanceCalculationSum += ownedStateJ != autopas::OwnershipState::dummy ? 1 : 0;
+            if constexpr (newton3) {
+              numKernelCallsN3Sum += mask;
+            } else {
+              numKernelCallsNoN3Sum += mask;
+            }
+          }
+
           if (calculateGlobals) {
             SoAFloatPrecision virialx = drx * fx;
             SoAFloatPrecision virialy = dry * fy;
             SoAFloatPrecision virialz = drz * fz;
-            SoAFloatPrecision potentialEnergy6 = mask ? (epsilon24 * lj12m6 + shift6) : 0.;
+            SoAFloatPrecision potentialEnergy6 = mask * (epsilon24 * lj12m6 + shift6);
 
+            // We add 6 times the potential energy for each owned particle. The total sum is corrected in
+            // endTraversal().
             const SoAFloatPrecision energyFactor =
                 (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
                 (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -837,6 +973,14 @@ class LJFunctor
             virialSumX += virialx * energyFactor;
             virialSumY += virialy * energyFactor;
             virialSumZ += virialz * energyFactor;
+
+            if constexpr (countFLOPs) {
+              if constexpr (newton3) {
+                numGlobalCalcsN3Sum += mask;
+              } else {
+                numGlobalCalcsNoN3Sum += mask;
+              }
+            }
           }
         }
         // scatter the forces to where they belong, this is only needed for newton3
@@ -878,6 +1022,10 @@ class LJFunctor
 
       const SoAFloatPrecision dr2 = drx2 + dry2 + drz2;
 
+      if constexpr (countFLOPs) {
+        numDistanceCalculationSum += 1;
+      }
+
       if (dr2 > cutoffSquared) {
         continue;
       }
@@ -901,14 +1049,22 @@ class LJFunctor
         fyptr[j] -= fy;
         fzptr[j] -= fz;
       }
+
+      if constexpr (countFLOPs) {
+        if constexpr (newton3) {
+          numKernelCallsN3Sum += 1;
+        } else {
+          numKernelCallsNoN3Sum += 1;
+        }
+      }
+
       if (calculateGlobals) {
         SoAFloatPrecision virialx = drx * fx;
         SoAFloatPrecision virialy = dry * fy;
         SoAFloatPrecision virialz = drz * fz;
         SoAFloatPrecision potentialEnergy6 = (epsilon24 * lj12m6 + shift6);
 
-        // Add to the potential energy sum for each particle which is owned.
-        // This results in obtaining 12 * the potential energy for the SoA.
+        // We add 6 times the potential energy for each owned particle. The total sum is corrected in endTraversal().
         const SoAFloatPrecision energyFactor =
             (ownedStateI == autopas::OwnershipState::owned ? 1. : 0.) +
             (newton3 ? (ownedStateJ == autopas::OwnershipState::owned ? 1. : 0.) : 0.);
@@ -916,6 +1072,14 @@ class LJFunctor
         virialSumX += virialx * energyFactor;
         virialSumY += virialy * energyFactor;
         virialSumZ += virialz * energyFactor;
+
+        if constexpr (countFLOPs) {
+          if constexpr (newton3) {
+            ++numGlobalCalcsN3Sum;
+          } else {
+            ++numGlobalCalcsNoN3Sum;
+          }
+        }
       }
     }
 
@@ -925,56 +1089,105 @@ class LJFunctor
       fzptr[indexFirst] += fzacc;
     }
 
+    if constexpr (countFLOPs) {
+      _aosThreadDataFLOPs[threadnum].numDistCalls += numDistanceCalculationSum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsNoN3 += numKernelCallsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numKernelCallsN3 += numKernelCallsN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsNoN3 += numGlobalCalcsNoN3Sum;
+      _aosThreadDataFLOPs[threadnum].numGlobalCalcsN3 += numGlobalCalcsN3Sum;
+    }
+
     if (calculateGlobals) {
-      const int threadnum = autopas::autopas_get_thread_num();
-
-      // SoAFunctorVerlet obtains the potential energy * 12. For non-newton3, this sum is divided by 12 in
-      // post-processing. For newton3, this sum is only divided by 6 in post-processing, so must be divided by 2 here.
-
-      if (newton3) {
-        _aosThreadData[threadnum].potentialEnergySumN3 += potentialEnergySum * 0.5;
-        _aosThreadData[threadnum].virialSumN3[0] += virialSumX * 0.5;
-        _aosThreadData[threadnum].virialSumN3[1] += virialSumY * 0.5;
-        _aosThreadData[threadnum].virialSumN3[2] += virialSumZ * 0.5;
-      } else {
-        _aosThreadData[threadnum].potentialEnergySumNoN3 += potentialEnergySum;
-        _aosThreadData[threadnum].virialSumNoN3[0] += virialSumX;
-        _aosThreadData[threadnum].virialSumNoN3[1] += virialSumY;
-        _aosThreadData[threadnum].virialSumNoN3[2] += virialSumZ;
-      }
+      _aosThreadDataGlobals[threadnum].potentialEnergySum += potentialEnergySum;
+      _aosThreadDataGlobals[threadnum].virialSum[0] += virialSumX;
+      _aosThreadDataGlobals[threadnum].virialSum[1] += virialSumY;
+      _aosThreadDataGlobals[threadnum].virialSum[2] += virialSumZ;
     }
   }
 
   /**
-   * This class stores internal data of each thread, make sure that this data has proper size, i.e. k*64 Bytes!
+   * This class stores internal data for global calculations for each thread. Make sure that this data has proper size,
+   * i.e. k*64 Bytes!
    */
-  class AoSThreadData {
+  class AoSThreadDataGlobals {
    public:
-    AoSThreadData()
-        : virialSumNoN3{0., 0., 0.},
-          virialSumN3{0., 0., 0.},
-          potentialEnergySumNoN3{0.},
-          potentialEnergySumN3{0.},
-          __remainingTo64{} {}
+    AoSThreadDataGlobals() : virialSum{0., 0., 0.}, potentialEnergySum{0.}, __remainingTo64{} {}
     void setZero() {
-      virialSumNoN3 = {0., 0., 0.};
-      virialSumN3 = {0., 0., 0.};
-      potentialEnergySumNoN3 = 0.;
-      potentialEnergySumN3 = 0.;
+      virialSum = {0., 0., 0.};
+      potentialEnergySum = 0.;
     }
 
     // variables
-    std::array<double, 3> virialSumNoN3;
-    std::array<double, 3> virialSumN3;
-    double potentialEnergySumNoN3;
-    double potentialEnergySumN3;
+    std::array<double, 3> virialSum;
+    double potentialEnergySum;
 
    private:
     // dummy parameter to get the right size (64 bytes)
-    double __remainingTo64[(64 - 8 * sizeof(double)) / sizeof(double)];
+    double __remainingTo64[(64 - 4 * sizeof(double)) / sizeof(double)];
   };
-  // make sure of the size of AoSThreadData
-  static_assert(sizeof(AoSThreadData) % 64 == 0, "AoSThreadData has wrong size");
+
+  /**
+   * This class stores internal data for FLOP counters for each thread. Make sure that this data has proper size, i.e.
+   * k*64 Bytes!
+   * The FLOP count and HitRate are not counted/calculated directly, but through helper counters (numKernelCallsNoN3,
+   * numKernelCallsN3, numDistCalls, numGlobalCalcs) to reduce computational cost in the functors themselves and to
+   * improve maintainability (e.g. if the cost of a kernel call changes).
+   */
+  class AoSThreadDataFLOPs {
+   public:
+    AoSThreadDataFLOPs() : __remainingTo64{} {}
+
+    /**
+     * Set all counters to zero.
+     */
+    void setZero() {
+      numKernelCallsNoN3 = 0;
+      numKernelCallsN3 = 0;
+      numDistCalls = 0;
+      numGlobalCalcsNoN3 = 0;
+      numGlobalCalcsN3 = 0;
+    }
+
+    /**
+     * Number of calls to Lennard-Jones Kernel with newton3 disabled.
+     * Used for calculating number of FLOPs and hit rate.
+     */
+    size_t numKernelCallsNoN3 = 0;
+
+    /**
+     * Number of calls to Lennard-Jones Kernel with newton3 enabled.
+     * Used for calculating number of FLOPs and hit rate.
+     */
+    size_t numKernelCallsN3 = 0;
+
+    /**
+     * Number of distance calculations.
+     * Used for calculating number of FLOPs and hit rate.
+     */
+    size_t numDistCalls = 0;
+
+    /**
+     * Counter for the number of times the globals have been calculated. Excludes the special case that N3 is enabled
+     * and we calculate globals for an owned-halo particle pair.
+     */
+    size_t numGlobalCalcsN3 = 0;
+
+    /**
+     * Counter for the number of times the globals have been calculated. Excludes the special case that N3 is enabled
+     * and we calculate globals for an owned-halo particle pair.
+     */
+    size_t numGlobalCalcsNoN3 = 0;
+
+   private:
+    /**
+     * dummy parameter to get the right size (64 bytes)
+     */
+    double __remainingTo64[(64 - 5 * sizeof(size_t)) / sizeof(size_t)];
+  };
+
+  // make sure of the size of AoSThreadDataGlobals and AoSThreadDataFLOPs
+  static_assert(sizeof(AoSThreadDataGlobals) % 64 == 0, "AoSThreadDataGlobals has wrong size");
+  static_assert(sizeof(AoSThreadDataFLOPs) % 64 == 0, "AoSThreadDataFLOPs has wrong size");
 
   const double _cutoffSquared;
   // not const because they might be reset through PPL
@@ -989,7 +1202,8 @@ class LJFunctor
   std::array<double, 3> _virialSum;
 
   // thread buffer for aos
-  std::vector<AoSThreadData> _aosThreadData;
+  std::vector<AoSThreadDataGlobals> _aosThreadDataGlobals{};
+  std::vector<AoSThreadDataFLOPs> _aosThreadDataFLOPs{};
 
   // defines whether or whether not the global values are already preprocessed
   bool _postProcessed;

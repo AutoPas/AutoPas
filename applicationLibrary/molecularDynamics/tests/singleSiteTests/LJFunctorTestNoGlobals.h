@@ -9,7 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "LJFunctorTest.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 template <class FuncType>

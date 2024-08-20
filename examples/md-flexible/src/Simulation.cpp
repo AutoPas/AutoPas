@@ -9,7 +9,6 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -30,8 +29,6 @@ extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTy
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeSVE *);
 #endif
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -147,6 +144,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + fillerBeforeSuffix +
                                      _configuration.outputSuffix.value + fillerAfterSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
+
   _autoPasContainer->init();
 
   // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
@@ -188,10 +186,6 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-  _homogeneity =
-      autopas::utils::calculateHomogeneityAndMaxDensity(*_autoPasContainer, _domainDecomposition->getGlobalBoxMin(),
-                                                        _domainDecomposition->getGlobalBoxMax())
-          .first;
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -201,8 +195,8 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    if (_configuration.deltaT.value != 0) {
-      updatePositions();
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
+      updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -257,9 +251,14 @@ void Simulation::run() {
       _timers.computationalLoad.start();
     }
 
-    updateForces();
+    updateInteractionForces();
 
-    if (_configuration.deltaT.value != 0) {
+    if (_configuration.pauseSimulationDuringTuning.value) {
+      // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
+      updateSimulationPauseState();
+    }
+
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateAngularVelocities();
@@ -268,11 +267,13 @@ void Simulation::run() {
     }
     _timers.computationalLoad.stop();
 
-    ++_iteration;
+    if (not _simulationIsPaused) {
+      ++_iteration;
+    }
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
-                << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
+                << autopas::memoryProfiler::currentMemoryUsage() << " kB\n";
     }
 
     if (_domainDecomposition->getDomainIndex() == 0) {
@@ -385,11 +386,11 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
   if (maxTime != 0) {
     ss << " =" << std::setw(7) << std::right << ((double)timeNS / (double)maxTime * 100) << "%";
   }
-  ss << std::endl;
+  ss << "\n";
   return ss.str();
 }
 
-void Simulation::updatePositions() {
+void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
@@ -405,16 +406,16 @@ void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.stop();
 }
 
-void Simulation::updateForces() {
+void Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.start();
 
   _timers.forceUpdatePairwise.start();
-  const bool isTuningIteration = calculatePairwiseForces();
-
+  _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
+  _currentIterationIsTuningIteration = calculatePairwiseForces();
   const auto timeIteration = _timers.forceUpdatePairwise.stop();
 
   // count time spent for tuning
-  if (isTuningIteration) {
+  if (_currentIterationIsTuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
     ++_numTuningIterations;
   } else {
@@ -425,13 +426,6 @@ void Simulation::updateForces() {
       ++_numTuningPhasesCompleted;
     }
   }
-  _previousIterationWasTuningIteration = isTuningIteration;
-
-  _timers.forceUpdateGlobal.start();
-  if (not _configuration.globalForceIsZero()) {
-    calculateGlobalForces(_configuration.globalForce.value);
-  }
-  _timers.forceUpdateGlobal.stop();
 
   _timers.forceUpdateTotal.stop();
 }
@@ -500,18 +494,34 @@ void Simulation::logSimulationState() {
   autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
-  double squaredHomogeneity = _homogeneity * _homogeneity;
-  double standardDeviationOfHomogeneity{};
-  autopas::AutoPas_MPI_Allreduce(&squaredHomogeneity, &standardDeviationOfHomogeneity, 1, AUTOPAS_MPI_DOUBLE,
-                                 AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-  standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
-
   if (_domainDecomposition->getDomainIndex() == 0) {
     std::cout << "\n\n"
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
-              << "Halo : " << haloParticles << "\n"
-              << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+              << "Halo : " << haloParticles << "\n";
+  }
+}
+
+void Simulation::updateSimulationPauseState() {
+  // If we are at the beginning of a tuning phase, we need to freeze the simulation
+  if (_currentIterationIsTuningIteration and (not _previousIterationWasTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase...\n";
+    _simulationIsPaused = true;
+  }
+
+  // If we are at the end of a tuning phase, we need to resume the simulation
+  if (_previousIterationWasTuningIteration and (not _currentIterationIsTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase.\n";
+
+    // reset the forces which accumulated during the tuning phase
+    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      particle->setF(_configuration.globalForce.value);
+    }
+
+    // calculate the forces of the latest iteration again
+    updateInteractionForces();
+
+    _simulationIsPaused = false;
   }
 }
 
@@ -521,7 +531,6 @@ void Simulation::logMeasurements() {
   const long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
   const long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   const long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
-  const long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
   const long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
   const long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
   const long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
@@ -538,7 +547,7 @@ void Simulation::logMeasurements() {
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const auto maximumNumberOfDigits = static_cast<int>(std::to_string(total).length());
-    std::cout << "Measurements:" << std::endl;
+    std::cout << "Measurements:\n";
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
@@ -559,8 +568,6 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotal, maximumNumberOfDigits, simulate);
     std::cout << timerToString("      Tuning                      ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
-    std::cout << timerToString("      ForceUpdateGlobalForces     ", forceUpdateGlobalForces, maximumNumberOfDigits,
-                               forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
@@ -579,31 +586,16 @@ void Simulation::logMeasurements() {
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time             ", wallClockTime,
                                static_cast<int>(std::to_string(wallClockTime).length()), total);
-    std::cout << std::endl;
+    std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
               << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
-              << std::endl;
+              << "\n";
 
     auto mfups =
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
-    std::cout << "MFUPs/sec                          : " << mfups << std::endl;
-
-    if (_configuration.dontMeasureFlops.value) {
-      LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-      autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
-          ljFunctor, _autoPasContainer->getCutoff());
-      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
-
-      const auto flops = flopCounterFunctor.getFlops();
-
-      std::cout << "Statistics for Force Calculation at end of simulation:" << std::endl;
-      std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-      std::cout << "  GFLOPs/sec                         : "
-                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
-    }
+    std::cout << "MFUPs/sec                          : " << mfups << "\n";
   }
 }
 

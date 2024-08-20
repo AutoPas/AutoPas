@@ -42,6 +42,11 @@ The critical elements to implement are:
   Indicator functions that return a `std::array` of all `AttributeNames`, which the functor needs to load from the particle to perform the calculation, as well as which fields are written.
 - `isRelevantForTuning()`:
   Indicator function to tell the tuning mechanism if iterations using this functor should be considered or not.
+- `getNumFLOPs()` and `getHitRate()`:
+  These functions return the number of FLOPs per traversal of the container and the hit-rate (the ratio of distance calculations
+  that lead to functor interactions e.g. force contributions.) These functions are only used if `AUTOPAS_LOG_FLOPS` is
+  set to `ON`. If unimplemented, these functions return 0, making the statistics produced by the FLOP logger useless, but
+  otherwise not affecting the simulation.
 
 As an example see [`SPHCalcDensityFunctor`](https://github.com/AutoPas/AutoPas/blob/master/applicationLibrary/sph/SPHLibrary/SPHCalcDensityFunctor.h).
 
@@ -51,7 +56,7 @@ A demonstration of that is the [sph example](https://github.com/AutoPas/AutoPas/
 There exist some caveats that have to be considered when using multiple functors:
 * All functors need to support the same Newton3 options.
   If there is one functor not supporting Newton3, you have to disable Newton3 support for AutoPas by calling
-  ```cpp
+  ```c++
   autopas.setAllowedNewton3Options({false});
   ```
   Otherwise, the algorithm selection might choose a configuration with Newton3 and fail to apply the functor that does not support it.
