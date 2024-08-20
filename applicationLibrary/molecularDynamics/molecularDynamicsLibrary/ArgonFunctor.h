@@ -6,10 +6,9 @@
 
 #pragma once
 
-#include "ArgonInclude/CosineHandle.h"
 #include "ArgonInclude/DisplacementHandle.h"
-#include "ArgonInclude/Legendre.h"
-#include "ArgonInclude/Parameters.h"
+#include "ArgonInclude/RepulsiveTerm.h"
+#include "ArgonInclude/DispersionTerm.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
@@ -68,13 +67,28 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
     const auto displacementJK = DisplacementHandle(j.getR(), k.getR(), J, K);
     const auto displacementKI = DisplacementHandle(k.getR(), i.getR(), K, I);
 
-    const auto IJ = displacementIJ.getDisplacement();
-    const auto JK = displacementJK.getDisplacement();
-    const auto KI = displacementKI.getDisplacement();
+    const auto distSquaredIJ = autopas::utils::ArrayMath::dot(displacementIJ.getDisplacement(), displacementIJ.getDisplacement());
+    const auto distSquaredJK = autopas::utils::ArrayMath::dot(displacementJK.getDisplacement(), displacementJK.getDisplacement());
+    const auto distSquaredKI = autopas::utils::ArrayMath::dot(displacementKI.getDisplacement(), displacementKI.getDisplacement());
 
-    const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
-    const auto cosineJ = CosineHandle(displacementIJ.getInv(), displacementJK);
-    const auto cosineK = Cosinehandle(displacementKI, displacementJK.getInv());
+    if (distSquaredIJ > _cutoffSquared or distSquaredJK > _cutoffSquared or distSquaredKI > _cutoffSquared) {
+      return;
+    }
+
+    const auto forceI_repulsive = autopas::utils::ArrayMath::Argon::F_repulsive<I>(A, alpha, displacementIJ, displacementJK, displacementKI);
+    const auto forceI_disperisve = autopas::utils::ArrayMath::Argon::F_dispersive<I>(Z, beta, displacementIJ, displacementJK, displacementKI);
+    const auto forceI = forceI_repulsive + forceI_disperisve;
+    i.addF(forceI);
+
+    const auto forceJ_repulsive = autopas::utils::ArrayMath::Argon::F_repulsive<J>(A, alpha, displacementIJ, displacementJK, displacementKI);
+    const auto forceJ_disperisve = autopas::utils::ArrayMath::Argon::F_dispersive<J>(Z, beta, displacementIJ, displacementJK, displacementKI);
+    const auto forceJ = forceJ_repulsive + forceJ_disperisve;
+    j.addF(forceJ);
+
+    const auto forceK_repulsive = autopas::utils::ArrayMath::Argon::F_repulsive<K>(A, alpha, displacementIJ, displacementJK, displacementKI);
+    const auto forceK_disperisve = autopas::utils::ArrayMath::Argon::F_dispersive<K>(Z, beta, displacementIJ, displacementJK, displacementKI);
+    const auto forceK = forceK_repulsive + forceK_disperisve;
+    k.addF(forceK);
   }
 
   /**
