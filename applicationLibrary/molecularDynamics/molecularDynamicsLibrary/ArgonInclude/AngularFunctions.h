@@ -58,6 +58,12 @@ template <size_t ID>
 [[nodiscard]] nabla sin_theta_derive_wrt(const CosineHandle &cosine) {
   const auto cos_theta = cosine.getCos();
   const auto cos_deriv = cosine.derive_wrt<ID>();
+  if (cos_deriv == std::array<double, 3>{{0, 0, 0}}) {
+    return cos_deriv;
+  }
+  if (sin_theta(cos_theta) == 0) {
+    return std::array<double, 3>{{0, 0, 0}};
+  }
   return -cos_theta / sin_theta(cos_theta) * cos_deriv;
 }
 
@@ -295,7 +301,7 @@ template <size_t ID>
   const auto nablaCosineTerm =
       9. * nablaCosK - 25. * nablaCos3K + 6. * nablaCosIminusJ * (3 + 5. * cos2K) + 30. * cosIminusJ * nablaCos2K;
 
-  return 3. / 16 / (Math::pow<3>(IJ) + Math::pow<4>(JK) + Math::pow<4>(KI)) *
+  return 3. / 16 / (Math::pow<3>(IJ) * Math::pow<4>(JK) * Math::pow<4>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
 }
 
@@ -349,7 +355,7 @@ template <size_t ID>
                                60. * cosJminusK * nablaCos2I + 70. * nablaCos2JminusK * cosI +
                                70. * cos2JminusK * nablaCosI;
 
-  return 15. / 64 / (Math::pow<4>(IJ) + Math::pow<5>(JK) + Math::pow<4>(KI)) *
+  return 15. / 64 / (Math::pow<4>(IJ) * Math::pow<5>(JK) * Math::pow<4>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
 }
 
@@ -411,7 +417,7 @@ template <size_t ID>
       490. * (nablaCos2I * cos2J * cos2K + cos2I * nablaCos2J * cos2K + cos2I * cos2J * nablaCos2K);
   const auto nablaCosineTerm3 = 175. * (nablaCos2IminusJ + nablaCos2JminusK + nablaCos2KminusI);
 
-  return 15. / 128 / (Math::pow<5>(IJ) + Math::pow<5>(JK) + Math::pow<5>(KI)) *
+  return 15. / 128 / (Math::pow<5>(IJ) * Math::pow<5>(JK) * Math::pow<5>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm1 + nablaCosineTerm2 + nablaCosineTerm3);
 }
 
@@ -446,7 +452,7 @@ template <size_t ID>
   const auto nablaCosineTerm = 8. * nablaCos2K - 49. * nablaCos4K + 6. * nablaCosIminusJ * (9. * cosK + 7. * cos3K) +
                                6. * cosIminusJ * (9. * nablaCosK + 7. * nablaCos3K);
 
-  return 5. / 32 / (Math::pow<3>(IJ) + Math::pow<5>(JK) + Math::pow<5>(KI)) *
+  return 5. / 32 / (Math::pow<3>(IJ) * Math::pow<5>(JK) * Math::pow<5>(KI)) *
          (nablaDisplacementTerm * cosineTerm + nablaCosineTerm);
 }
 
