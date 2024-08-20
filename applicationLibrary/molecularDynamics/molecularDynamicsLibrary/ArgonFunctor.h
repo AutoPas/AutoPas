@@ -6,9 +6,9 @@
 
 #pragma once
 
+#include "ArgonInclude/DispersionTerm.h"
 #include "ArgonInclude/DisplacementHandle.h"
 #include "ArgonInclude/RepulsiveTerm.h"
-#include "ArgonInclude/DispersionTerm.h"
 #include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
@@ -55,8 +55,6 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
    * @param newton3
    */
   void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
-    const auto A_000{A[index<param::A>(0, 0, 0)]};
-
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
       return;
     }
@@ -67,28 +65,70 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
     const auto displacementJK = DisplacementHandle(j.getR(), k.getR(), J, K);
     const auto displacementKI = DisplacementHandle(k.getR(), i.getR(), K, I);
 
-    const auto distSquaredIJ = autopas::utils::ArrayMath::dot(displacementIJ.getDisplacement(), displacementIJ.getDisplacement());
-    const auto distSquaredJK = autopas::utils::ArrayMath::dot(displacementJK.getDisplacement(), displacementJK.getDisplacement());
-    const auto distSquaredKI = autopas::utils::ArrayMath::dot(displacementKI.getDisplacement(), displacementKI.getDisplacement());
+    const auto distSquaredIJ =
+        autopas::utils::ArrayMath::dot(displacementIJ.getDisplacement(), displacementIJ.getDisplacement());
+    const auto distSquaredJK =
+        autopas::utils::ArrayMath::dot(displacementJK.getDisplacement(), displacementJK.getDisplacement());
+    const auto distSquaredKI =
+        autopas::utils::ArrayMath::dot(displacementKI.getDisplacement(), displacementKI.getDisplacement());
 
     if (distSquaredIJ > _cutoffSquared or distSquaredJK > _cutoffSquared or distSquaredKI > _cutoffSquared) {
       return;
     }
 
-    const auto forceI_repulsive = autopas::utils::ArrayMath::Argon::F_repulsive<I>(A, alpha, displacementIJ, displacementJK, displacementKI);
-    const auto forceI_disperisve = autopas::utils::ArrayMath::Argon::F_dispersive<I>(Z, beta, displacementIJ, displacementJK, displacementKI);
+    const auto forceI_repulsive =
+        autopas::utils::ArrayMath::Argon::F_repulsive<I>(A, alpha, displacementIJ, displacementJK, displacementKI);
+    const auto forceI_disperisve =
+        autopas::utils::ArrayMath::Argon::F_dispersive<I>(Z, beta, displacementIJ, displacementJK, displacementKI);
     const auto forceI = forceI_repulsive + forceI_disperisve;
     i.addF(forceI);
 
-    const auto forceJ_repulsive = autopas::utils::ArrayMath::Argon::F_repulsive<J>(A, alpha, displacementIJ, displacementJK, displacementKI);
-    const auto forceJ_disperisve = autopas::utils::ArrayMath::Argon::F_dispersive<J>(Z, beta, displacementIJ, displacementJK, displacementKI);
-    const auto forceJ = forceJ_repulsive + forceJ_disperisve;
-    j.addF(forceJ);
+    const std::array<double, 3> forceJ{};
+    const std::array<double, 3> forceK{};
+    if (newton3) {
+      const auto forceJ_repulsive =
+          autopas::utils::ArrayMath::Argon::F_repulsive<J>(A, alpha, displacementIJ, displacementJK, displacementKI);
+      const auto forceJ_disperisve =
+          autopas::utils::ArrayMath::Argon::F_dispersive<J>(Z, beta, displacementIJ, displacementJK, displacementKI);
+      forceJ = forceJ_repulsive + forceJ_disperisve;
+      j.addF(forceJ);
 
-    const auto forceK_repulsive = autopas::utils::ArrayMath::Argon::F_repulsive<K>(A, alpha, displacementIJ, displacementJK, displacementKI);
-    const auto forceK_disperisve = autopas::utils::ArrayMath::Argon::F_dispersive<K>(Z, beta, displacementIJ, displacementJK, displacementKI);
-    const auto forceK = forceK_repulsive + forceK_disperisve;
-    k.addF(forceK);
+      const auto forceK_repulsive =
+          autopas::utils::ArrayMath::Argon::F_repulsive<K>(A, alpha, displacementIJ, displacementJK, displacementKI);
+      const auto forceK_disperisve =
+          autopas::utils::ArrayMath::Argon::F_dispersive<K>(Z, beta, displacementIJ, displacementJK, displacementKI);
+      forceK = forceK_repulsive + forceK_disperisve;
+      k.addF(forceK);
+    }
+
+    if constexpr (calculateGlobals) {
+      // Calculate third of total potential energy from 3-body interaction
+      const auto potentialEnergy_repulsive =
+          autopas::utils::ArrayMath::Argon::U_repulsive(A, alpha, displacementIJ, displacementJK, displacementKI);
+      const auto potentialEnergy_disperisve =
+          autopas::utils::ArrayMath::Argon::U_dispersive(Z, beta, displacementIJ, displacementJK, displacementKI);
+      const double potentialEnergy = potentialEnergy_repulsive + potentialEnergy_disperisve;
+
+      // Virial is calculated as f_i * r_i
+      // see Thompson et al.: https://doi.org/10.1063/1.3245303
+      const auto virialI = forceI * i.getR();
+      const int threadnum = autopas::autopas_get_thread_num();
+      if (i.isOwned()) {
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadData[threadnum].virialSum += virialI;
+      }
+      // for non-newton3 particles j and/or k will be considered in a separate calculation
+      if (newton3 and j.isOwned()) {
+        const auto virialJ = forceJ * j.getR();
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadData[threadnum].virialSum += virialJ;
+      }
+      if (newton3 and k.isOwned()) {
+        const auto virialK = forceK * k.getR();
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadData[threadnum].virialSum += virialK;
+      }
+    }
   }
 
   /**
