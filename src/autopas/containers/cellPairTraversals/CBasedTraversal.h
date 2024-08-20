@@ -10,15 +10,9 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/DataLayoutConverter.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
-#include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
 
 namespace autopas {
-
-/**
- * ID for tracking OpenMP traversal loops.
- */
-static int LoopID = 0;
 
 /**
  * This class provides the base for traversals using base steps based on cell coloring.
@@ -106,7 +100,7 @@ class CBasedTraversal : public CellPairTraversal<ParticleCell> {
    *
    * @param newColor The new current color.
    */
-  virtual void notifyColorChange(unsigned long newColor) {};
+  virtual void notifyColorChange(unsigned long newColor){};
 
   /**
    * Interaction length (cutoff + skin).
@@ -155,7 +149,6 @@ inline void CBasedTraversal<ParticleCell, PairwiseFunctor, collapseDepth>::cTrav
       const unsigned long start_x = start[0], start_y = start[1], start_z = start[2];
       const unsigned long end_x = end[0], end_y = end[1], end_z = end[2];
       const unsigned long stride_x = stride[0], stride_y = stride[1], stride_z = stride[2];
-
       if (collapseDepth == 2) {
         AUTOPAS_OPENMP(for schedule(runtime) collapse(2))
         for (unsigned long z = start_z; z < end_z; z += stride_z) {
