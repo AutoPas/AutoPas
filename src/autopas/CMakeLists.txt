@@ -67,7 +67,6 @@ target_include_directories(autopas PUBLIC ${AUTOPAS_SOURCE_DIR}/src/)
 target_include_directories(autopas PUBLIC ${AUTOPAS_BINARY_DIR}/src/)
 
 if (AUTOPAS_AUTO4OMP)
-    #add_dependencies(autopas auto4omp)
     target_include_directories(autopas BEFORE PUBLIC ${auto4omp_SOURCE_DIR}/runtime/src) # For kmp.h, etc.
     target_include_directories(autopas BEFORE PUBLIC ${auto4omp_BINARY_DIR}/runtime/src) # For kmp_config.h.
 

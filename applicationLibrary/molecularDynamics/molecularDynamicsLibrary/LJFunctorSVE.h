@@ -7,8 +7,7 @@
 #pragma once
 
 #ifndef __ARM_FEATURE_SVE
-// Suppress this warning to get cleaner build messages on intel machines. Will re-enable before merging back to master.
-//#pragma message "Requested to compile LJFunctorSVE but SVE is not available!"
+#pragma message "Requested to compile LJFunctorSVE but SVE is not available!"
 #else
 #include <arm_sve.h>
 #endif
