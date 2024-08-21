@@ -37,24 +37,24 @@ class CosineHandle {
   [[nodiscard]] nabla derive_wrt() const;
 
  private:
-  DisplacementHandle displacementAB_;
-  DisplacementHandle displacementAC_;
   std::array<double, 3> AB_;
   std::array<double, 3> AC_;
   double cos_;
   size_t id_;
+  size_t B_;
+  size_t C_;
 };
 
 CosineHandle::CosineHandle(const DisplacementHandle &displacementAB, const DisplacementHandle &displacementAC) {
   if (displacementAB.getIdStartVertex() != displacementAC.getIdStartVertex()) {
     throw autopas::utils::ExceptionHandler::AutoPasException("cannot build cosine");
   }
-  displacementAB_ = displacementAB;
-  displacementAC_ = displacementAC;
-  AB_ = displacementAB_.getDisplacement();
-  AC_ = displacementAC_.getDisplacement();
+  AB_ = displacementAB.getDisplacement();
+  AC_ = displacementAC.getDisplacement();
   cos_ = ArrayMath::dot(AB_, AC_) / (ArrayMath::L2Norm(AB_) * ArrayMath::L2Norm(AC_));
   id_ = displacementAB.getIdStartVertex();
+  B_ = displacementAB.getIdEndVertex();
+  C_ = displacementAC.getIdEndVertex();
 }
 
 template <size_t ID>
@@ -65,11 +65,11 @@ template <size_t ID>
     auto secondTerm{cos_ / (ArrayMath::L2Norm(AC_) * ArrayMath::L2Norm(AC_)) -
                     1. / (ArrayMath::L2Norm(AB_) * ArrayMath::L2Norm(AC_))};
     return AB_ * firstTerm + AC_ * secondTerm;
-  } else if (ID == displacementAB_.getIdEndVertex()) {
+  } else if (ID == B_) {
     auto firstTerm{-cos_ / (ArrayMath::L2Norm(AB_) * ArrayMath::L2Norm(AB_))};
     auto secondTerm{1. / (ArrayMath::L2Norm(AB_) * ArrayMath::L2Norm(AC_))};
     return AB_ * firstTerm + AC_ * secondTerm;
-  } else if (ID == displacementAC_.getIdEndVertex()) {
+  } else if (ID == C_) {
     auto firstTerm{-cos_ / (ArrayMath::L2Norm(AC_) * ArrayMath::L2Norm(AC_))};
     auto secondTerm{1. / (ArrayMath::L2Norm(AB_) * ArrayMath::L2Norm(AC_))};
     return AC_ * firstTerm + AB_ * secondTerm;
