@@ -16,7 +16,6 @@
 #pragma once
 
 #if defined(AUTOPAS_USE_OPENMP)
-
 #include <omp.h>
 #ifdef AUTOPAS_USE_LB4OMP
 #include <kmp.h>
@@ -24,7 +23,6 @@
 
 #include <cstddef>  // for size_t
 #include <vector>
-
 #else
 #include "ExceptionHandler.h"
 #endif
@@ -158,14 +156,14 @@ class AutoPasLock {
  * Wrapper for omp_sched_t, same as in custom Auto4OMP's omp.h.
  */
 typedef enum omp_sched_t {
-  omp_sched_static  = 1,
+  omp_sched_static = 1,
   omp_sched_dynamic = 2,
-  omp_sched_guided  = 3,
-  omp_sched_auto    = 4,
+  omp_sched_guided = 3,
+  omp_sched_auto = 4,
   omp_sched_trapezoidal = 101,
   omp_sched_static_steal = 102,
 
-  //LB4OMP's extensions:
+  // LB4OMP's extensions:
   omp_sched_fsc = 103,
   omp_sched_tap = 104,
   omp_sched_fac = 105,
@@ -182,7 +180,7 @@ typedef enum omp_sched_t {
   omp_sched_af_a = 116,
   omp_sched_profiling = 117,
   omp_sched_awf = 118,
-  omp_sched_pls=119,
+  omp_sched_pls = 119,
   omp_sched_tfss = 120,
   omp_sched_mfsc = 121,
   omp_sched_fiss = 122,
@@ -237,7 +235,7 @@ inline void autopas_auto4omp_set_schedule(omp_sched_t kind, int chunkSize) {}
  * Wrapper for omp_get_schedule().
  * Puts the values of OpenMP's scheduling runtime variables at the given pointers.
  */
-inline void autopas_get_schedule(omp_sched_t* /* kind */, int* /* chunkSize */) {}
+inline void autopas_get_schedule(omp_sched_t * /* kind */, int * /* chunkSize */) {}
 
 /**
  * AutoPasLock for the sequential case.

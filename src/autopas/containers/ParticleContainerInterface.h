@@ -18,8 +18,8 @@
 #include "autopas/options/TraversalOption.h"
 #include "autopas/tuning/selectors/TraversalSelectorInfo.h"
 #include "autopas/utils/AutoPasMacros.h"
-#include "autopas/utils/inBox.h"
 #include "autopas/utils/OpenMPConfigurator.h"
+#include "autopas/utils/inBox.h"
 
 namespace autopas {
 
@@ -442,9 +442,7 @@ class ParticleContainerInterface {
   /**
    * OpenMP configurator setter. The ompConfig member is meant to reference the TraversalInterface's OMP configurator.
    */
-  virtual void setOmpConfig(OpenMPConfigurator &ompConfig) {
-    _ompConfig = &ompConfig;
-  }
+  virtual void setOmpConfig(OpenMPConfigurator &ompConfig) { _ompConfig = &ompConfig; }
 };
 
 }  // namespace autopas

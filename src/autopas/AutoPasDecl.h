@@ -1003,9 +1003,9 @@ class AutoPas {
   void setOpenMPDefaultChunkSize(int s) { openMPDefaultChunkSize = s; }
 
   /**
-    * OpenMP default scheduling kind setter.
-    * @param k OpenMP default kind
-    */
+   * OpenMP default scheduling kind setter.
+   * @param k OpenMP default kind
+   */
   void setOpenMPDefaultKind(OpenMPKindOption k) { openMPDefaultKind = k; }
 
   /**

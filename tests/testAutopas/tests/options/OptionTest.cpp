@@ -10,10 +10,10 @@
 #include "autopas/options/ContainerOption.h"
 #include "autopas/options/DataLayoutOption.h"
 #include "autopas/options/Newton3Option.h"
+#include "autopas/options/OpenMPKindOption.h"
 #include "autopas/options/SelectorStrategyOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopas/options/TuningStrategyOption.h"
-#include "autopas/options/OpenMPKindOption.h"
 #include "tests/utils/StringUtilsTest.h"
 
 // parseOptions tests
@@ -209,8 +209,8 @@ TYPED_TEST_P(OptionTest, to_stringTest) {
 REGISTER_TYPED_TEST_SUITE_P(OptionTest, parseExactOptionsTest, to_stringTest);
 
 // instantiate tests for all option types
-using OptionTypes = ::testing::Types<autopas::AcquisitionFunctionOption, autopas::ContainerOption,
-                                     autopas::DataLayoutOption, autopas::Newton3Option, autopas::SelectorStrategyOption,
-                                     autopas::TraversalOption, autopas::TuningStrategyOption,
-                                     autopas::OpenMPKindOption>;
+using OptionTypes =
+    ::testing::Types<autopas::AcquisitionFunctionOption, autopas::ContainerOption, autopas::DataLayoutOption,
+                     autopas::Newton3Option, autopas::SelectorStrategyOption, autopas::TraversalOption,
+                     autopas::TuningStrategyOption, autopas::OpenMPKindOption>;
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, OptionTest, OptionTypes);

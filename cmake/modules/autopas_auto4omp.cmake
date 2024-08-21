@@ -461,7 +461,7 @@ else ()
 
     # Define an alias to Auto4OMP's imported targets.
     add_library(auto4omp::omp ALIAS omp)
-    add_library(auto4omp::omptarget ALIAS omptarget)
+    #add_library(auto4omp::omptarget ALIAS omptarget)
 
     # Mark Auto4OMP's variables advanced. [***]
     mark_as_advanced(
