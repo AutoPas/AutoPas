@@ -61,16 +61,17 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
 
     enum IJK { I, J, K };
 
-    const auto displacementIJ = DisplacementHandle(i.getR(), j.getR(), I, J);
-    const auto displacementJK = DisplacementHandle(j.getR(), k.getR(), J, K);
-    const auto displacementKI = DisplacementHandle(k.getR(), i.getR(), K, I);
+    const auto IJ = j.getR() - i.getR();
+    const auto JK = k.getR() - j.getR();
+    const auto KI = i.getR() - k.getR();
 
-    const auto distSquaredIJ =
-        autopas::utils::ArrayMath::dot(displacementIJ.getDisplacement(), displacementIJ.getDisplacement());
-    const auto distSquaredJK =
-        autopas::utils::ArrayMath::dot(displacementJK.getDisplacement(), displacementJK.getDisplacement());
-    const auto distSquaredKI =
-        autopas::utils::ArrayMath::dot(displacementKI.getDisplacement(), displacementKI.getDisplacement());
+    const auto displacementIJ = DisplacementHandle(IJ, I, J);
+    const auto displacementJK = DisplacementHandle(JK, J, K);
+    const auto displacementKI = DisplacementHandle(KI, K, I);
+
+    const auto distSquaredIJ = autopas::utils::ArrayMath::dot(IJ, IJ);
+    const auto distSquaredJK = autopas::utils::ArrayMath::dot(JK, JK);
+    const auto distSquaredKI = autopas::utils::ArrayMath::dot(KI, KI);
 
     if (distSquaredIJ > _cutoffSquared or distSquaredJK > _cutoffSquared or distSquaredKI > _cutoffSquared) {
       return;

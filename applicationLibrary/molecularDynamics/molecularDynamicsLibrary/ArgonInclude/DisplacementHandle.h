@@ -17,7 +17,8 @@ class DisplacementHandle {
   DisplacementHandle() = default;
 
   /**
-   * Constructor for DisplacementHandle. It stores the ids of start and end vertices and the displacement vector between the two
+   * Constructor for DisplacementHandle. It stores the ids of start and end vertices and the displacement vector between
+   * the two
    * @param displacement displacement vector
    * @param idStartVertex id of the start vertex
    * @param idEndVertex id of the end vertex
@@ -65,12 +66,10 @@ class DisplacementHandle {
 
 DisplacementHandle::DisplacementHandle(const std::array<double, 3> &displacement, const size_t &idStartVertex,
                                        const size_t &idEndVertex)
-    : displacement_(displacement),
-      idStartVertex_(idStartVertex),
-      idEndVertex_(idEndVertex) {}
+    : displacement_(displacement), idStartVertex_(idStartVertex), idEndVertex_(idEndVertex) {}
 
 [[nodiscard]] DisplacementHandle DisplacementHandle::getInv() const {
-  return DisplacementHandle(-1.*displacement_, idEndVertex_, idStartVertex_);
+  return DisplacementHandle(-1. * displacement_, idEndVertex_, idStartVertex_);
 }
 
 template <size_t ID>
