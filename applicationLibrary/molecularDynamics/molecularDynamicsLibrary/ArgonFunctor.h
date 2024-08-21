@@ -56,25 +56,7 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
    * @param newton3
    */
   void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
-    const auto A_000{A[index<param::A>(0, 0, 0)]};
 
-    if (i.isDummy() or j.isDummy() or k.isDummy()) {
-      return;
-    }
-
-    enum IJK { I, J, K };
-
-    const auto displacementIJ = DisplacementHandle(i.getR(), j.getR(), I, J);
-    const auto displacementJK = DisplacementHandle(j.getR(), k.getR(), J, K);
-    const auto displacementKI = DisplacementHandle(k.getR(), i.getR(), K, I);
-
-    const auto IJ = displacementIJ.getDisplacement();
-    const auto JK = displacementJK.getDisplacement();
-    const auto KI = displacementKI.getDisplacement();
-
-    const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
-    const auto cosineJ = CosineHandle(displacementIJ.getInv(), displacementJK);
-    const auto cosineK = Cosinehandle(displacementKI, displacementJK.getInv());
   }
 
   /**
