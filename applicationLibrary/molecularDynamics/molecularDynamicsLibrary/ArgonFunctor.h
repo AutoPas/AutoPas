@@ -93,11 +93,7 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
       forceJ = forceJ_repulsive + forceJ_disperisve;
       j.addF(forceJ);
 
-      const auto forceK_repulsive =
-          autopas::utils::ArrayMath::Argon::F_repulsive<K>(A, alpha, displacementIJ, displacementJK, displacementKI);
-      const auto forceK_disperisve =
-          autopas::utils::ArrayMath::Argon::F_dispersive<K>(Z, beta, displacementIJ, displacementJK, displacementKI);
-      forceK = forceK_repulsive + forceK_disperisve;
+      forceK = (forceI + forceJ) * (-1.0);
       k.addF(forceK);
     }
 
