@@ -86,8 +86,8 @@ class VerletClusterListsRebuilder {
     const auto numTowersNew = numTowersPerDim[0] * numTowersPerDim[1];
 
     // collect all particles that are now not in the right tower anymore
-    auto invalidParticles = collectOutOfBoundsParticlesFromTowers();
-    // collect all remaining particles that are not yet assigned to towers
+    std::vector<std::vector<Particle>> invalidParticles;
+    //  collect all particles that are not yet assigned to towers
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
     // if we have less towers than before, collect all particles from the unused towers.
@@ -98,6 +98,11 @@ class VerletClusterListsRebuilder {
     // resize to number of towers.
     // Attention! This uses the dummy constructor so we still need to set the desired cluster size.
     _towerBlock.resize(towerSideLength, numTowersPerDim);
+
+    // after resizing the towers we collect all the particles that are out of bounds
+    const auto collectedParticlesFromTowers = collectOutOfBoundsParticlesFromTowers();
+    invalidParticles.insert(invalidParticles.end(), collectedParticlesFromTowers.begin(),
+                            collectedParticlesFromTowers.end());
 
     // create more towers if needed and make an estimate for how many particles memory needs to be allocated
     // Factor is more or less a random guess.
