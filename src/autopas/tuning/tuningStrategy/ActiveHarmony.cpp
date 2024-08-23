@@ -122,7 +122,9 @@ void ActiveHarmony::rejectConfiguration(const Configuration &configuration, bool
 #endif
 }
 
-void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) {
+void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                        const EvidenceCollection &evidenceCollection,
+                                        std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
 #ifdef AUTOPAS_ENABLE_HARMONY
   // get configurations from server until new configuration with valid newton3 option is found
   bool skipConfig;
@@ -185,7 +187,8 @@ void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, con
 }
 
 void ActiveHarmony::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                          const EvidenceCollection &evidenceCollection) {
+                          const EvidenceCollection &evidenceCollection,
+                          std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   resetHarmony();
 }
 

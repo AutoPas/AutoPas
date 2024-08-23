@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <functional>
+#include <optional>
+
 #include "autopas/options/TuningStrategyOption.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/searchSpace/Evidence.h"
@@ -51,8 +54,9 @@ class TuningStrategyInterface {
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
    */
-  virtual void optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                   const EvidenceCollection &evidenceCollection) = 0;
+  virtual void optimizeSuggestions(
+      std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
+      std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) = 0;
 
   /**
    * Reset all internal parameters to the beginning of a new tuning phase.
@@ -65,7 +69,8 @@ class TuningStrategyInterface {
    * @param evidenceCollection All collected evidence until now.
    */
   virtual void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                     const autopas::EvidenceCollection &evidenceCollection) = 0;
+                     const autopas::EvidenceCollection &evidenceCollection,
+                     std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) = 0;
 
   /**
    * Returns whether this tuning strategy wants to get a LiveInfo object passed before a new tuning phase.

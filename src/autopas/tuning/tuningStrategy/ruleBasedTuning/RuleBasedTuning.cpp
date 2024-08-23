@@ -52,7 +52,8 @@ void RuleBasedTuning::addEvidence(const Configuration &configuration, const Evid
 }
 
 void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                            const EvidenceCollection &evidenceCollection) {
+                            const EvidenceCollection &evidenceCollection,
+                            std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   if (_verifyModeEnabled and _tuningTime > 0) {
     // It is fine to leave this log statement on Info level because it is behind if (_verificationModeEnabled).
@@ -80,7 +81,8 @@ long RuleBasedTuning::getLifetimeWouldHaveSkippedTuningTime() const { return _wo
 long RuleBasedTuning::getLifetimeTuningTime() const { return _tuningTimeLifetime; }
 
 void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                          const EvidenceCollection &evidenceCollection) {
+                                          const EvidenceCollection &evidenceCollection,
+                                          std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   _lastApplicableConfigurationOrders = applyRules(configQueue);
 

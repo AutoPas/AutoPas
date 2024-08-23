@@ -9,7 +9,8 @@
 #include <algorithm>
 
 void autopas::SlowConfigFilter::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                    const EvidenceCollection &evidenceCollection) {
+                                                    const EvidenceCollection &evidenceCollection,
+                                                    std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   // if there is not yet any evidence we can't do anything.
   if (evidenceCollection.empty()) {
     return;
@@ -36,7 +37,8 @@ void autopas::SlowConfigFilter::optimizeSuggestions(std::vector<Configuration> &
 }
 void autopas::SlowConfigFilter::reset(size_t /*iteration*/, size_t /*tuningPhase*/,
                                       std::vector<Configuration> &configQueue,
-                                      const autopas::EvidenceCollection &evidenceCollection) {
+                                      const autopas::EvidenceCollection &evidenceCollection,
+                                      std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   optimizeSuggestions(configQueue, evidenceCollection);
 }
 

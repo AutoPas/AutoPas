@@ -34,11 +34,12 @@ class TuningStrategyLogger final : public TuningStrategyInterface {
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
-                           const EvidenceCollection &evidenceCollection) override;
+  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
+                           std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
 
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-             const autopas::EvidenceCollection &evidenceCollection) override;
+             const autopas::EvidenceCollection &evidenceCollection,
+             std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
 
   [[nodiscard]] bool needsLiveInfo() const override;
 

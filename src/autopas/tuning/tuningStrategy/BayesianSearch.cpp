@@ -65,10 +65,14 @@ autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowed
 }
 
 void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                  const EvidenceCollection &evidence) {
+                                                  const EvidenceCollection &evidenceCollection,
+                                                  std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   // if enough evidence was collected abort the tuning process.
   if (_gaussianProcess.numEvidence() >= _maxEvidence) {
     configQueue.clear();
+    if (intentionalConfigWipe) {
+      intentionalConfigWipe->get() = true;
+    }
     return;
   }
 
@@ -155,7 +159,8 @@ void autopas::BayesianSearch::addEvidence(const Configuration &configuration, co
 }
 
 void autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                                    const autopas::EvidenceCollection &evidenceCollection) {
+                                    const autopas::EvidenceCollection &evidenceCollection,
+                                    std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   _gaussianProcess.clear();
   optimizeSuggestions(configQueue, evidenceCollection);
 }

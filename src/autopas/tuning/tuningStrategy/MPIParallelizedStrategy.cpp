@@ -25,7 +25,8 @@ MPIParallelizedStrategy::MPIParallelizedStrategy(const Configuration &fallbackCo
       _mpiTuningWeightForMaxDensity(mpiTuningWeightForMaxDensity) {}
 
 void MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                  const EvidenceCollection &evidence) {
+                                                  const EvidenceCollection &evidenceCollection,
+                                                  std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   // sanity check
   if (_bucket == AUTOPAS_MPI_COMM_NULL) {
     AutoPasLog(WARN, "_bucket was AUTOPAS_MPI_COMM_NULL");
@@ -34,7 +35,7 @@ void MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
 
   // All ranks should stay in tuning mode equally long so that none settles on an optimum
   // before the other's data is there.
-  const auto [myBestConf, myBestEvidence] = evidence.getLatestOptimalConfiguration();
+  const auto [myBestConf, myBestEvidence] = evidenceCollection.getLatestOptimalConfiguration();
   const auto globallyBestConfig =
       utils::AutoPasConfigurationCommunicator::findGloballyBestConfiguration(_bucket, myBestConf, myBestEvidence.value);
 
@@ -93,7 +94,8 @@ void MPIParallelizedStrategy::rejectConfiguration(const Configuration &configura
 }
 
 void MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                                    const EvidenceCollection &evidenceCollection) {
+                                    const EvidenceCollection &evidenceCollection,
+                                    std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   // clear rejects since they now might be valid.
   _rejectedConfigurations.clear();
 

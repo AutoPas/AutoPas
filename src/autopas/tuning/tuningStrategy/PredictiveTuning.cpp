@@ -349,10 +349,12 @@ long PredictiveTuning::lastResult(size_t tuningPhase, const Configuration &confi
 }
 
 void PredictiveTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                           const EvidenceCollection &evidence) {}
+                                           const EvidenceCollection &evidenceCollection,
+                                           std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {}
 
 void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                             const EvidenceCollection &evidenceCollection) {
+                             const EvidenceCollection &evidenceCollection,
+                             std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   // collect all configurations that were not tested for too long
   for (const auto &conf : configQueue) {
     const auto *evidenceVec = evidenceCollection.getEvidence(conf);

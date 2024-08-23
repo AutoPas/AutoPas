@@ -20,10 +20,11 @@ class SortByName : public TuningStrategyInterface {
  public:
   TuningStrategyOption getOptionType() const override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
-                           const EvidenceCollection &evidenceCollection) override;
+  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
+                           std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-             const EvidenceCollection &evidenceCollection) override;
+             const EvidenceCollection &evidenceCollection,
+             std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
 };
 
 }  // namespace autopas

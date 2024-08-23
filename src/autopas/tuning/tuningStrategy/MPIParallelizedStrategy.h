@@ -50,13 +50,14 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
 
   TuningStrategyOption getOptionType() const override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
-                           const EvidenceCollection &evidenceCollection) override;
+  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
+                           std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
 
   void receiveSmoothedHomogeneityAndMaxDensity(double homogeneity, double maxDensity) override;
 
   void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-             const autopas::EvidenceCollection &evidenceCollection) override;
+             const autopas::EvidenceCollection &evidenceCollection,
+             std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
 
   [[nodiscard]] inline bool needsSmoothedHomogeneityAndMaxDensity() const override;
 

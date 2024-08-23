@@ -96,7 +96,8 @@ void autopas::BayesianClusterSearch::addEvidence(const Configuration &configurat
 
 void autopas::BayesianClusterSearch::reset(size_t iteration, size_t tuningPhase,
                                            std::vector<Configuration> &configQueue,
-                                           const autopas::EvidenceCollection &evidenceCollection) {
+                                           const autopas::EvidenceCollection &evidenceCollection,
+                                           std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   const auto iterationSinceLastEvidence = iteration - _currentIteration;
   if (static_cast<double>(iterationSinceLastEvidence) * _iterationScale > suggestedMaxDistance) {
     AutoPasLog(WARN,
@@ -133,8 +134,9 @@ void autopas::BayesianClusterSearch::updateOptions() {
   _gaussianCluster.setDimensions(std::vector<int>(newRestrictions.begin(), newRestrictions.end()));
 }
 
-void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                         const EvidenceCollection &evidence) {
+void autopas::BayesianClusterSearch::optimizeSuggestions(
+    std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
+    std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   // In the first tuning phase do nothing since we first need some data.
   if (_firstTuningPhase) {
     return;
@@ -144,6 +146,9 @@ void autopas::BayesianClusterSearch::optimizeSuggestions(std::vector<Configurati
   if (_currentNumEvidence >= _maxEvidence) {
     // select best config of current tuning phase
     configQueue.clear();
+    if (intentionalConfigWipe) {
+      intentionalConfigWipe->get() = true;
+    }
     return;
   }
 
