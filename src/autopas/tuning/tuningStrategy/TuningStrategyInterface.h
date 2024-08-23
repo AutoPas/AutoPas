@@ -53,6 +53,8 @@ class TuningStrategyInterface {
    *
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
+   * @param intentionalConfigWipe Optional flag that is used by tuning strategies to signal they have intentionally
+   * wiped the config queue
    */
   virtual void optimizeSuggestions(
       std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
@@ -67,6 +69,8 @@ class TuningStrategyInterface {
    * @param tuningPhase Gives the current tuning phase to the tuning strategy.
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
+   * @param intentionalConfigWipe Optional flag that is used by tuning strategies to signal they have intentionally
+   * wiped the config queue
    */
   virtual void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                      const autopas::EvidenceCollection &evidenceCollection,

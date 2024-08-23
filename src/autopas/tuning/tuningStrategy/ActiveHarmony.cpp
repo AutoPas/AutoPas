@@ -135,7 +135,7 @@ void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
     }
     const auto potentialConf = fetchConfiguration();
     // If we already know the performance for this config in this tuning phase skip it.
-    if (const auto *potentialConfEvidence = evidence.getEvidence(potentialConf);
+    if (const auto *potentialConfEvidence = evidenceCollection.getEvidence(potentialConf);
         potentialConfEvidence and not potentialConfEvidence->empty() and
         potentialConfEvidence->back().tuningPhase == _tuningPhase) {
       addEvidence(potentialConf, potentialConfEvidence->back());
