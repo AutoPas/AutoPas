@@ -86,8 +86,14 @@ class VerletClusterListsRebuilder {
     const auto numTowersNew = numTowersPerDim[0] * numTowersPerDim[1];
 
     // collect all particles that are now not in the right tower anymore
-    std::vector<std::vector<Particle>> invalidParticles;
-    //  collect all particles that are not yet assigned to towers
+    std::vector<std::vector<Particle>> invalidParticles{};
+    // Reserve for:
+    //   - _particlesToAdd (+1)
+    //   - surplus towers (+max(0, numTowersNew - numTowersOld))
+    //   - particles out of bounds of new towers (+numTowersNew)
+    invalidParticles.reserve(1 + std::max(0, static_cast<int>(numTowersNew) - static_cast<int>(numTowersOld)) +
+                             numTowersNew);
+    // collect all particles that are not yet assigned to towers
     invalidParticles.push_back(std::move(_particlesToAdd));
     _particlesToAdd.clear();
     // if we have less towers than before, collect all particles from the unused towers.
