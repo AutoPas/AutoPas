@@ -34,8 +34,9 @@ Objects:
   CubeClosestPacked:
     0:
       particle-type-id           :  0
-      box-length                 :  [15, 6, 15]
-      bottomLeftCorner           :  [0, 27, 0]
+      box-length                 :  [14, 6, 14]
+      # Move particles half spacing away from domain border to prevent automatic border extension
+      bottomLeftCorner           :  [0.5, 27, 0.5]
       particle-spacing           :  1.
       velocity                   :  [0, 0, 0]
 no-end-config                    :  true
