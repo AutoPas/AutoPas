@@ -155,11 +155,22 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // Load particles from the config file (object generators, checkpoint)
   loadParticles();
 
-  std::cout << "Total number of particles at the initialization "
-#ifdef AUTOPAS_INCLUDE_MPI
-            << "on rank " << rank
-#endif
-            << ": " << _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) << "\n";
+  // Not const because it will be updated to the global number of particles by MPI
+  size_t numParticles = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
+  std::cout << "Number of particles at initialization "
+            << "on rank " << rank << ": " << numParticles << "\n";
+
+  // Let rank 0 also report the global number of particles
+  if (rank == 0) {
+    autopas::AutoPas_MPI_Reduce(AUTOPAS_MPI_IN_PLACE, &numParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
+                                _domainDecomposition->getCommunicator());
+    std::cout << "Number of particles at initialization globally: "
+              << "\n";
+  } else {
+    // In-place reduce needs different calls on root vs rest...
+    autopas::AutoPas_MPI_Reduce(&numParticles, nullptr, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
+                                _domainDecomposition->getCommunicator());
+  }
 
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {
