@@ -29,7 +29,6 @@ void autopas::RandomSearch::optimizeSuggestions(std::vector<Configuration> &conf
     std::uniform_int_distribution<std::mt19937::result_type> distribution(0, configQueue.size() - 1);
     const auto selectedIndex = distribution(_rng);
     std::swap(configQueue.back(), configQueue[selectedIndex]);
-    ++_numEvidenceCollected;
   }
 }
 
@@ -38,6 +37,10 @@ void autopas::RandomSearch::reset(size_t, size_t tuningPhase, std::vector<Config
                                   std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
   _numEvidenceCollected = 0;
 }
+
+void autopas::RandomSearch::addEvidence(const Configuration &configuration, const Evidence &evidence) {
+  ++_numEvidenceCollected;
+};
 
 autopas::TuningStrategyOption autopas::RandomSearch::getOptionType() const {
   return TuningStrategyOption::randomSearch;

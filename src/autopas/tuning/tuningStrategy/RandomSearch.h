@@ -37,6 +37,8 @@ class RandomSearch final : public TuningStrategyInterface {
   void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
                            std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
 
+  void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
+
  private:
   /**
    * Random engine for selecting configurations.
