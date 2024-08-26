@@ -117,8 +117,7 @@ bool AutoTuner::tuneConfiguration() {
     // then let the strategies filter and sort it
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       const auto configQueueBackup = _configQueue;
-      bool intentionalWipe{false};
-      tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection, intentionalWipe);
+      const auto intentionalWipe = tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::reset(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
@@ -134,8 +133,7 @@ bool AutoTuner::tuneConfiguration() {
                                             [](const auto &conf) { return conf.toShortString(false); }));
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       const auto configQueueBackup = _configQueue;
-      bool intentionalWipe{false};
-      tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection, intentionalWipe);
+      const auto intentionalWipe = tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},

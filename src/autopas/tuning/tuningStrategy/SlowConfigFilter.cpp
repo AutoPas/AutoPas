@@ -8,12 +8,11 @@
 
 #include <algorithm>
 
-void autopas::SlowConfigFilter::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                    const EvidenceCollection &evidenceCollection,
-                                                    std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
+bool autopas::SlowConfigFilter::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                                    const EvidenceCollection &evidenceCollection) {
   // if there is not yet any evidence we can't do anything.
   if (evidenceCollection.empty()) {
-    return;
+    return false;
   }
 
   const auto [bestConfig, bestEvidence] = evidenceCollection.getLatestOptimalConfiguration();
@@ -34,11 +33,12 @@ void autopas::SlowConfigFilter::optimizeSuggestions(std::vector<Configuration> &
   configQueue.erase(std::remove_if(configQueue.begin(), configQueue.end(),
                                    [&](const auto &conf) { return _blacklist.count(conf) > 0; }),
                     configQueue.end());
+  // SlowConfigFilter does no intentional config wipes
+  return false;
 }
-void autopas::SlowConfigFilter::reset(size_t /*iteration*/, size_t /*tuningPhase*/,
+bool autopas::SlowConfigFilter::reset(size_t /*iteration*/, size_t /*tuningPhase*/,
                                       std::vector<Configuration> &configQueue,
-                                      const autopas::EvidenceCollection &evidenceCollection,
-                                      std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
+                                      const autopas::EvidenceCollection &evidenceCollection) {
   optimizeSuggestions(configQueue, evidenceCollection);
 }
 

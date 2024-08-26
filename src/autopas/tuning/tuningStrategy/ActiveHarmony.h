@@ -60,8 +60,8 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
-                           std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
+                           const EvidenceCollection &evidenceCollection) override;
 
   /**
    * Indicate if the search space contains only one configuration.
@@ -77,9 +77,8 @@ class ActiveHarmony : public TuningStrategyInterface {
 
   bool needsSmoothedHomogeneityAndMaxDensity() const override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-             const autopas::EvidenceCollection &evidenceCollection,
-             std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+             const autopas::EvidenceCollection &evidenceCollection) override;
 
  private:
 #ifdef AUTOPAS_ENABLE_HARMONY

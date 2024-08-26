@@ -53,12 +53,9 @@ class TuningStrategyInterface {
    *
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
-   * @param intentionalConfigWipe Optional flag that is used by tuning strategies to signal they have intentionally
-   * wiped the config queue
    */
-  virtual void optimizeSuggestions(
-      std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
-      std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) = 0;
+  virtual bool optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                   const EvidenceCollection &evidenceCollection) = 0;
 
   /**
    * Reset all internal parameters to the beginning of a new tuning phase.
@@ -69,12 +66,9 @@ class TuningStrategyInterface {
    * @param tuningPhase Gives the current tuning phase to the tuning strategy.
    * @param configQueue Queue of configurations to be tested. The tuning strategy should edit this queue.
    * @param evidenceCollection All collected evidence until now.
-   * @param intentionalConfigWipe Optional flag that is used by tuning strategies to signal they have intentionally
-   * wiped the config queue
    */
-  virtual void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                     const autopas::EvidenceCollection &evidenceCollection,
-                     std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) = 0;
+  virtual bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+                     const autopas::EvidenceCollection &evidenceCollection) = 0;
 
   /**
    * Returns whether this tuning strategy wants to get a LiveInfo object passed before a new tuning phase.

@@ -64,16 +64,12 @@ autopas::BayesianSearch::BayesianSearch(const std::set<ContainerOption> &allowed
   _gaussianProcess.setDimension(_encoder.getOneHotDims());
 }
 
-void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                  const EvidenceCollection &evidenceCollection,
-                                                  std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
+bool autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                                  const EvidenceCollection &evidenceCollection) {
   // if enough evidence was collected abort the tuning process.
   if (_gaussianProcess.numEvidence() >= _maxEvidence) {
     configQueue.clear();
-    if (intentionalConfigWipe) {
-      intentionalConfigWipe->get() = true;
-    }
-    return;
+    return true;
   }
 
   // Sample the search space, check that the samples are in the available configurations, and
@@ -111,6 +107,7 @@ void autopas::BayesianSearch::optimizeSuggestions(std::vector<Configuration> &co
       break;
     }
   }
+  return false;
 }
 
 std::vector<autopas::FeatureVector> autopas::BayesianSearch::sampleAcquisitions(size_t n,
@@ -158,11 +155,10 @@ void autopas::BayesianSearch::addEvidence(const Configuration &configuration, co
   _gaussianProcess.addEvidence(_encoder.oneHotEncode(configuration), -evidence.value * secondsPerMicroseconds, true);
 }
 
-void autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                                    const autopas::EvidenceCollection &evidenceCollection,
-                                    std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
+bool autopas::BayesianSearch::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+                                    const autopas::EvidenceCollection &evidenceCollection) {
   _gaussianProcess.clear();
-  optimizeSuggestions(configQueue, evidenceCollection);
+  return optimizeSuggestions(configQueue, evidenceCollection);
 }
 
 bool autopas::BayesianSearch::needsSmoothedHomogeneityAndMaxDensity() const { return false; }

@@ -114,9 +114,8 @@ class RuleBasedTuning : public TuningStrategyInterface {
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-             const autopas::EvidenceCollection &evidenceCollection,
-             std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+             const autopas::EvidenceCollection &evidenceCollection) override;
 
   /**
    * @returns the total time that would have been skipped if verify mode was disabled and thus
@@ -129,8 +128,8 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   [[nodiscard]] long getLifetimeTuningTime() const;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidenceCollection,
-                           std::optional<std::reference_wrapper<bool>> intentionalConfigWipe = std::nullopt) override;
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
+                           const EvidenceCollection &evidenceCollection) override;
 
  private:
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING

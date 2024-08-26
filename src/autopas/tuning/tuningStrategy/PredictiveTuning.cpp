@@ -348,13 +348,14 @@ long PredictiveTuning::lastResult(size_t tuningPhase, const Configuration &confi
   }
 }
 
-void PredictiveTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                           const EvidenceCollection &evidenceCollection,
-                                           std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {}
+bool PredictiveTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                           const EvidenceCollection &evidenceCollection) {
+  // PredictiveTuning does no intentional config wipes to stop the tuning phase
+  return false;
+}
 
-void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
-                             const EvidenceCollection &evidenceCollection,
-                             std::optional<std::reference_wrapper<bool>> intentionalConfigWipe) {
+bool PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+                             const EvidenceCollection &evidenceCollection) {
   // collect all configurations that were not tested for too long
   for (const auto &conf : configQueue) {
     const auto *evidenceVec = evidenceCollection.getEvidence(conf);
@@ -370,7 +371,7 @@ void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<C
   const auto predictions = calculatePredictions(iteration, tuningPhase, configQueue, evidenceCollection);
   // if there is not enough data to make any predictions yet do nothing.
   if (predictions.empty()) {
-    return;
+    return false;
   }
   // find the best prediction
   const auto &[bestConf, bestPrediction] =
@@ -411,6 +412,9 @@ void PredictiveTuning::reset(size_t iteration, size_t tuningPhase, std::vector<C
 
   // Then, insert all worthy configurations so that the most promising is now at the back of the fifo queue.
   configQueue.insert(configQueue.end(), worthyConfigurations.begin(), worthyConfigurations.end());
+
+  // PredictiveTuning does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 void PredictiveTuning::addEvidence(const Configuration &configuration, const Evidence & /*evidence*/) {
