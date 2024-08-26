@@ -164,8 +164,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   if (rank == 0) {
     autopas::AutoPas_MPI_Reduce(AUTOPAS_MPI_IN_PLACE, &numParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
                                 _domainDecomposition->getCommunicator());
-    std::cout << "Number of particles at initialization globally: "
-              << "\n";
+    std::cout << "Number of particles at initialization globally: " << numParticles << "\n";
   } else {
     // In-place reduce needs different calls on root vs rest...
     autopas::AutoPas_MPI_Reduce(&numParticles, nullptr, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
