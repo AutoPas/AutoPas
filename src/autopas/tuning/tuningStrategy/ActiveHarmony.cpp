@@ -152,7 +152,7 @@ bool ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
       if (std::find(configQueue.begin(), configQueue.end(), potentialConf) == configQueue.end()) {
         skipConfig = true;
       } else {
-        return;
+        return false;
       }
     }
 
@@ -160,7 +160,7 @@ bool ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
       // When using a non-local server, it is possible that only tested configurations are fetched before the search
       // converges.
       // Because this is difficult to test for, the loop is simply ignored for non-local servers.
-      return;
+      return false;
     }
   } while (skipConfig);
 #endif
