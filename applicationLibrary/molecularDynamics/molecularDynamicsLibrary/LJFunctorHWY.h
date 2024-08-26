@@ -308,19 +308,32 @@ namespace mdLib {
                 }
 
                 template <bool reversed, VectorizationPattern vecPattern>
-                inline bool checkFirstLoopCondition(const size_t i, const size_t stop) {
+                inline bool checkFirstLoopCondition(const long i, const long stop) {
                     if constexpr (vecPattern == VectorizationPattern::p1xVec) {
                         return reversed ? (long)i >= 0 : (i < stop);
                     }
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
-                        return reversed ? (long)i >= 1 : (i < stop - 1);
+                        return reversed ? (long)i >= 1 : (i < (stop - 1));
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecDiv2x2) {
-                        return reversed ? (long)i >= _vecLengthDouble/2 : (i < stop - _vecLengthDouble/2+1);
+
+                        if constexpr (reversed) {
+                            return (long)i >= _vecLengthDouble/2;
+                        }
+                        else {
+                            const long criterion = stop - _vecLengthDouble/2+1;
+                            return i < criterion;
+                        }
                     }
                     else if constexpr (vecPattern == VectorizationPattern::pVecx1 || vecPattern == VectorizationPattern::pVecxVec) {
 
-                        return reversed ? (long)i >= _vecLengthDouble : (i < stop - _vecLengthDouble+1);
+                        if constexpr (reversed) {
+                            return (long)i >= _vecLengthDouble;
+                        }
+                        else {
+                            const long criterion = stop - _vecLengthDouble+1;
+                            return i < criterion;
+                        }
                     }
                     else {
                         return false;
