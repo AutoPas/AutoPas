@@ -39,7 +39,7 @@ bool autopas::SlowConfigFilter::optimizeSuggestions(std::vector<Configuration> &
 bool autopas::SlowConfigFilter::reset(size_t /*iteration*/, size_t /*tuningPhase*/,
                                       std::vector<Configuration> &configQueue,
                                       const autopas::EvidenceCollection &evidenceCollection) {
-  optimizeSuggestions(configQueue, evidenceCollection);
+  return optimizeSuggestions(configQueue, evidenceCollection);
 }
 
 autopas::TuningStrategyOption autopas::SlowConfigFilter::getOptionType() const {
