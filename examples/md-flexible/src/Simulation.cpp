@@ -194,6 +194,13 @@ void Simulation::run() {
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
+      // if we are in the first iteration we need an initial force calculation for Störmer Verlet (for details see:
+      // Griebel et al., Numerical simulation in molecular dynamics: numerics, algorithms, parallelization,
+      // applications, 2007)
+      if (_iteration == 0) {
+        updateInteractionForces();
+      }
+
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
