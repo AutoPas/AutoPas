@@ -31,13 +31,13 @@ TEST(MathTest, isNearTest) {
 }
 
 TEST(MathTest, roundFixed) {
-    const double n = 123.123456789;
-    EXPECT_EQ(autopas::utils::Math::roundFixed(n, -3), 0.);
-    EXPECT_EQ(autopas::utils::Math::roundFixed(n, -2), 100.);
-    EXPECT_EQ(autopas::utils::Math::roundFixed(n, -1), 120.);
-    EXPECT_EQ(autopas::utils::Math::roundFixed(n, 0), 123.);
-    EXPECT_EQ(autopas::utils::Math::roundFixed(n, 2), 123.12);
-    EXPECT_EQ(autopas::utils::Math::roundFixed(n, 5), 123.12346);
+  const double n = 123.123456789;
+  EXPECT_EQ(autopas::utils::Math::roundFixed(n, -3), 0.);
+  EXPECT_EQ(autopas::utils::Math::roundFixed(n, -2), 100.);
+  EXPECT_EQ(autopas::utils::Math::roundFixed(n, -1), 120.);
+  EXPECT_EQ(autopas::utils::Math::roundFixed(n, 0), 123.);
+  EXPECT_EQ(autopas::utils::Math::roundFixed(n, 2), 123.12);
+  EXPECT_EQ(autopas::utils::Math::roundFixed(n, 5), 123.12346);
 }
 
 TEST(MathTest, roundFloating) {
