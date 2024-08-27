@@ -1,5 +1,5 @@
 /**
- * @file KryptonFunctor.h
+ * @file KryptonPairFunctor.h
  *
  * @date 27.04.2024
  * @author muehlhaeusser
@@ -19,9 +19,9 @@
 
 namespace mdLib {
 /**
- * A functor to handle interactions between two krypton atoms.
- * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
- * scheme.
+ * A functor to handle interactions between two krypton atoms based on the ab-initio potential given by Jäger et al.
+ * (2016) https://doi.org/10.1063/1.4943959. The parameters are This functor assumes that duplicated calculations are always happening,
+ * which is characteristic for a Full-Shell scheme.
  * @tparam Particle The type of particle.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
@@ -30,8 +30,8 @@ namespace mdLib {
 template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
 class KryptonPairFunctor
-    : public autopas::PairwiseFunctor<
-          Particle, KryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>> {
+    : public autopas::PairwiseFunctor<Particle,
+                                      KryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
    */
@@ -48,16 +48,13 @@ class KryptonPairFunctor
    */
   KryptonPairFunctor() = delete;
 
- private:
   /**
-   * Internal, actual constructor.
+   * Constructor.
    * @param cutoff
-   * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
-  explicit KryptonPairFunctor(double cutoff, void * /*dummy*/)
-      : autopas::PairwiseFunctor<
-            Particle, KryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>>(
-            cutoff),
+  explicit KryptonPairFunctor(double cutoff)
+      : autopas::PairwiseFunctor<Particle,
+                                 KryptonPairFunctor<Particle, useNewton3, calculateGlobals, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
         _virialSum{0., 0., 0.},
@@ -67,17 +64,6 @@ class KryptonPairFunctor
       _aosThreadData.resize(autopas::autopas_get_max_threads());
     }
   }
-
- public:
-  /**
-   * Constructor for Functor with mixing disabled. When using this functor it is necessary to call
-   * setParticleProperties() to set internal constants because it does not use a particle properties library.
-   *
-   * @note Only to be used with mixing == false.
-   *
-   * @param cutoff
-   */
-  explicit KryptonPairFunctor(double cutoff) : KryptonPairFunctor(cutoff, nullptr) {}
 
   std::string getName() final { return "KryptonPairFunctor"; }
 
@@ -119,9 +105,9 @@ class KryptonPairFunctor
     const double expAlphaTerm = std::exp(_alpha1 * dist + _alpha2 * dist2 + _alphaInv1 * distInv);
     const double alphaTerm = _alpha1 + 2 * _alpha2 * dist - _alphaInv1 * distInv2;
 
-    const double firstTerm = (-_A * alphaTerm * expAlphaTerm) * distInv;
+    const double firstTerm = (-_constA * alphaTerm * expAlphaTerm) * distInv;
 
-    const double bdist = _b * dist;
+    const double bdist = _constb * dist;
     const double bdist2 = bdist * bdist;
     const double bdist3 = bdist2 * bdist;
     const double bdist4 = bdist3 * bdist;
@@ -175,23 +161,6 @@ class KryptonPairFunctor
     const double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16) * distInv2;
     auto f = displacement * (firstTerm + secondTerm);
 
-    if (calculateGlobals) {
-      double potentialEnergy =
-          _A * expAlphaTerm - _constC6 * distInv6 * (1. - expbr * ksumacc6) -
-          _constC8 * distNeg8 * (1. - expbr * ksumacc8) - _constC10 * distNeg10 * (1. - expbr * ksumacc10) -
-          _constC12 * distNeg12 * (1. - expbr * ksumacc12) - _constC14 * distNeg14 * (1. - expbr * ksumacc14) -
-          _constC16 * distNeg16 * (1. - expbr * ksumacc16);
-
-      const int threadnum = autopas::autopas_get_thread_num();
-      if (i.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy * 0.5;
-      }
-      // for non-newton3 the second particle will be considered in a separate calculation
-      if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy * 0.5;
-      }
-    }
-
     i.addF(f);
     if (newton3) {
       // only if we use newton 3 here, we want to
@@ -199,15 +168,22 @@ class KryptonPairFunctor
     }
 
     if (calculateGlobals) {
+      double potentialEnergy =
+          _constA * expAlphaTerm - _constC6 * distInv6 * (1. - expbr * ksumacc6) -
+          _constC8 * distNeg8 * (1. - expbr * ksumacc8) - _constC10 * distNeg10 * (1. - expbr * ksumacc10) -
+          _constC12 * distNeg12 * (1. - expbr * ksumacc12) - _constC14 * distNeg14 * (1. - expbr * ksumacc14) -
+          _constC16 * distNeg16 * (1. - expbr * ksumacc16);
       auto virial = displacement * f;
 
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
-        _aosThreadData[threadnum].virialSum += virial * 0.5;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadData[threadnum].virialSum += virial;
       }
       // for non-newton3 the second particle will be considered in a separate calculation
       if (newton3 and j.isOwned()) {
-        _aosThreadData[threadnum].virialSum += virial * 0.5;
+        _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
+        _aosThreadData[threadnum].virialSum += virial;
       }
     }
   }
@@ -311,6 +287,11 @@ class KryptonPairFunctor
         _potentialEnergySum += _aosThreadData[i].potentialEnergySum;
       }
 
+      // For each interaction, we added the full contribution for both particles. Divide by 2 here, so that each
+      // contribution is only counted once per pair.
+      _potentialEnergySum *= 0.5;
+      _virialSum *= 0.5;
+
       _postProcessed = true;
 
       AutoPasLog(TRACE, "Final potential energy {}", _potentialEnergySum);
@@ -392,25 +373,17 @@ class KryptonPairFunctor
 
   // helper constants
 
-  const double _A = 0.3200711798e8;
+  const double _constA = 0.3200711798e8;
   const double _alpha1 = -0.2430565544e1;
   const double _alpha2 = -0.1435536209;
   const double _alphaInv1 = -0.4532273868;
-  const double _b = 0.2786344368e1;
+  const double _constb = 0.2786344368e1;
   const double _constC6 = 0.8992209265e6;
   const double _constC8 = 0.7316713603e7;
   const double _constC10 = 0.7835488511e8;
   const double _constC12 = 1.1043747590e9;
   const double _constC14 = 2.0486474980e10;
   const double _constC16 = 5.0017084700e11;
-
-  const std::array<double, 17> _bPots = [&] {
-    std::array<double, 17> pots{1.0};
-    for (size_t k = 1; k < 17; k++) {
-      pots[k] = pots[k - 1] * _b;
-    }
-    return pots;
-  }();
 
   const std::array<double, 17> _invFactorials = {1.,
                                                  1.,
@@ -429,8 +402,5 @@ class KryptonPairFunctor
                                                  1. / 87178291200.,
                                                  1. / 1307674368000.,
                                                  1. / 20922789888000.};
-
-  std::array<double, 18> _rInvFactors{};
-  std::array<double, 6> _rInvFactorsOuter{};
 };
 }  // namespace mdLib
