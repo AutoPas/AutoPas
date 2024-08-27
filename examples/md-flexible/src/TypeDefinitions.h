@@ -135,7 +135,7 @@ using LJFunctorTypeSVE =
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-using KryptonFunctorType = mdLib::KryptonPairFunctor<ParticleType, false, autopas::FunctorN3Modes::Both, true>;
+using KryptonFunctorType = mdLib::KryptonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
