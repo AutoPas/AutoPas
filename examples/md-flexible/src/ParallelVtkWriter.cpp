@@ -139,9 +139,47 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 
   // print positions
   timestepFile << "        <DataArray Name=\"positions\" NumberOfComponents=\"3\" format=\"ascii\" type=\"Float32\">\n";
+  const auto boxMax = autoPasContainer.getBoxMax();
   for (auto particle = autoPasContainer.begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    auto pos = particle->getR();
-    timestepFile << "        " << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+    // When we write to the file in ASCII, values are rounded to the precision of the filestream.
+    // Since a higher precision results in larger files because more characters are written,
+    // and mdflex is not intended as a perfectly precice tool for application scientists,
+    // we are fine with the rather low default precision.
+    // However, if a particle is very close to the domain border it can happen that the particle position is rounded
+    // exactly to the boundary position. This then causes problems when the checkpoint is loaded because boxMax is
+    // considered to be not part of the domain, hence such a particle would not be loaded and thus be lost.
+    // This function identifies these problematic values and raises the write precision just for this value high enough
+    // to be distinguishable from the boundary.
+    const auto writeWithDynamicPrecision = [&](double d, double border) {
+      const auto initialPrecision = timestepFile.precision();
+      // Simple and cheap check if we even need to do anything.
+      if (border - d < 0.1) {
+        using autopas::utils::Math::roundFloating;
+        // As long as the used precision results in the two values being the same increase it
+        while (roundFloating(d, timestepFile.precision()) == border) {
+          timestepFile << std::setprecision(timestepFile.precision() + 1);
+          // Abort if the numbers are indistinguishable
+          if (timestepFile.precision() > 20) {
+            throw std::runtime_error(
+                "ParallelVtkWriter::writeWithDynamicPrecision(): "
+                "The two given numbers are identical up to 20 digits of precision!\n"
+                "Number: " +
+                std::to_string(d) + "\n" + particle->toString());
+          }
+        }
+      }
+      // Write with the new precision and then reset it
+      timestepFile << d << std::setprecision(initialPrecision);
+    };
+
+    const auto pos = particle->getR();
+    timestepFile << "        ";
+    writeWithDynamicPrecision(pos[0], boxMax[0]);
+    timestepFile << " ";
+    writeWithDynamicPrecision(pos[1], boxMax[1]);
+    timestepFile << " ";
+    writeWithDynamicPrecision(pos[2], boxMax[2]);
+    timestepFile << "\n";
   }
   timestepFile << "        </DataArray>\n";
 
