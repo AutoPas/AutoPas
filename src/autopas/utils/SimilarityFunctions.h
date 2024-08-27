@@ -65,10 +65,32 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   for (auto particleItr = container.begin(autopas::IteratorBehavior::owned); particleItr.isValid(); ++particleItr) {
     const auto &particleLocation = particleItr->getR();
 
-    const auto binIndex3d =
+    const auto binIndex3dUnsafe =
         autopas::utils::ArrayMath::floorToInt((particleLocation - container.getBoxMin()) / binDimensions);
+
+    // It is possible that floating point errors result in out of bounds indices.
+    // e.g. if there are 7 bins in the x dimension, and that particle is close to the right domain boundary, the
+    // division above might result in 7.0, which gets floored to 7 corresponding to a bin index that is out of bounds!
+
+    // We therefore check for particle indices that are out of bounds and, if the particle is within the domain we
+    // adjust the index. We don't care about floating point errors causing incorrect indices internally in the
+    // domain as, for particles so close to a boundary, it is somewhat arbitrary which bin they fall into.
+
+    const auto binIndex3DSafe = [&]() {
+      auto newBinIndex3D = binIndex3dUnsafe;
+      for (int dim = 0; dim < 3; ++dim) {
+        if (particleLocation[dim] > container.getBoxMin()[dim] or particleLocation[dim] < container.getBoxMax()[dim]) {
+          newBinIndex3D[dim] = std::clamp(binIndex3dUnsafe[dim], 0, numberOfBinsPerDim - 1);
+        } else {
+          autopas::utils::ExceptionHandler::exception(
+              "calculateHomogeneityAndMaxDensity: Particle is outside the container!");
+        }
+      }
+      return newBinIndex3D;
+    }();
+
     const auto binIndex1d = autopas::utils::ThreeDimensionalMapping::threeToOneD(
-        binIndex3d, {numberOfBinsPerDim, numberOfBinsPerDim, numberOfBinsPerDim});
+        binIndex3DSafe, {numberOfBinsPerDim, numberOfBinsPerDim, numberOfBinsPerDim});
 
     particlesPerBin[binIndex1d] += 1;
   }
@@ -77,7 +99,7 @@ std::pair<double, double> calculateHomogeneityAndMaxDensity(const ParticleContai
   double maxDensity{0.};
   std::vector<double> densityPerBin{};
   densityPerBin.reserve(numberOfBins);
-  for (size_t i = 0; i < numberOfBins; i++) {
+  for (auto i = 0; i < numberOfBins; i++) {
     densityPerBin.push_back(static_cast<double>(particlesPerBin[i]) / binVolume);
     maxDensity = std::max(maxDensity, densityPerBin[i]);
   }

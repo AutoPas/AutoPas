@@ -82,7 +82,7 @@ if (AUTOPAS_BUILD_TESTS)
             "${TEST_EXE_UNIQUE_PATH}/*.h"
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.cpp"
             "molecularDynamics/tests/particlePropertiesLibraryTests/*.h"
-            "molecularDynamics/tests/templateInstatiations/AutoPasInstantiations.cpp"
+            "molecularDynamics/tests/templateInstantiations/AutoPasInstantiations.cpp"
     )
     add_executable(${TEST_EXE_NAME} ${TEST_SRC} mdLibTests.cpp)
 

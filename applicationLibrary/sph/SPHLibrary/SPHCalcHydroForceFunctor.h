@@ -532,15 +532,6 @@ class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCa
         Particle::AttributeNames::vsigmax, Particle::AttributeNames::engDot, Particle::AttributeNames::accX,
         Particle::AttributeNames::accY,    Particle::AttributeNames::accZ,   Particle::AttributeNames::ownershipState};
   }
-
-  /**
-   * Get the number of floating point operations used in one full kernel call
-   * @return the number of floating point operations
-   */
-  static uint64_t getNumFlopsPerKernelCall() {
-    ///@todo return correct flopcount
-    return 1ul;
-  }
 };
 
 }  // namespace sphLib

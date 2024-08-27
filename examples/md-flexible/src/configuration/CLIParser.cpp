@@ -60,7 +60,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
-      config.dontMeasureFlops,
       config.dontShowProgressBar,
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
@@ -321,10 +320,6 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           displayHelp = true;
         }
         config.addInteractionType(autopas::InteractionTypeOption::triwise);
-        break;
-      }
-      case decltype(config.dontMeasureFlops)::getoptChar: {
-        config.dontMeasureFlops.value = false;
         break;
       }
       case decltype(config.generatorOption)::getoptChar: {

@@ -386,7 +386,7 @@ class AutoPas {
 
   /**
    * Iterate over all particles in a specified region
-   * ```cpp
+   * ```c++
    * for (auto iter = container.getRegionIterator(lowCorner, highCorner); iter.isValid(); ++iter) { }
    * ```
    * @param lowerCorner lower corner of the region
