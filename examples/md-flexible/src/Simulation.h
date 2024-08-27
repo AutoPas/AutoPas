@@ -111,6 +111,9 @@ class Simulation {
    */
   constexpr static auto _floatStringPrecision = 3;
 
+  /**
+   * Is set to true if the initial force calculation is a tuning iteration
+   */
   bool _initialTuningIterationRecorded{false};
 
   /**
