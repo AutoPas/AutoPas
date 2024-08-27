@@ -315,6 +315,7 @@ std::string MDFlexConfig::to_string() const {
         os << "Krypton Pair Potential" << endl;
         break;
       }
+    }
     os << indent;
     printOption(traversalOptions, -indentWidth);
     os << indent;

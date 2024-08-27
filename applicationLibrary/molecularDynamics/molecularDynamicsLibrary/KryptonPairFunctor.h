@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -46,7 +46,7 @@ namespace mdLib {
 template <class Particle, bool preCompute, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false, bool relevantForTuning = true>
 class KryptonPairFunctor
-    : public autopas::Functor<
+    : public autopas::PairwiseFunctor<
           Particle, KryptonPairFunctor<Particle, preCompute, useNewton3, calculateGlobals, relevantForTuning>> {
   /**
    * Structure of the SoAs defined by the particle.
@@ -71,8 +71,8 @@ class KryptonPairFunctor
    * @note param dummy is unused, only there to make the signature different from the public constructor.
    */
   explicit KryptonPairFunctor(double cutoff, void * /*dummy*/)
-      : autopas::Functor<Particle,
-                         KryptonPairFunctor<Particle, preCompute, useNewton3, calculateGlobals, relevantForTuning>>(
+      : autopas::PairwiseFunctor<
+            Particle, KryptonPairFunctor<Particle, preCompute, useNewton3, calculateGlobals, relevantForTuning>>(
             cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -97,6 +97,8 @@ class KryptonPairFunctor
    * @param cutoff
    */
   explicit KryptonPairFunctor(double cutoff) : KryptonPairFunctor(cutoff, nullptr) {}
+
+  std::string getName() final { return "KryptonPairFunctor"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
@@ -501,7 +503,7 @@ class KryptonPairFunctor
     return pots;
   }();
 
-  const std::array<double, 6> _cConstants = {0.8992209265e6,    0.7316713603e7, 0.7835488511e8,
+  const std::array<double, 6> _cConstants = {0.8992209265e6, 0.7316713603e7,  0.7835488511e8,
                                              1.1043747590e9, 2.0486474980e10, 5.0017084700e11};
 
   const std::array<double, 17> _invFactorials = {1.,

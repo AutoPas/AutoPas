@@ -491,10 +491,11 @@ class MDFlexConfig {
   /**
    * functorOption
    */
-  MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
-                                                      FunctorOption::none, "functor", true,
-                                                      "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals krypton)"};
+  MDFlexOption<FunctorOption, __LINE__> functorOption{
+      // Default is a dummy option
+      FunctorOption::none, "functor", true,
+      "Pairwise force functor to use. Possible Values: (lennard-jones "
+      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals krypton)"};
   /**
    * functorOption3B
    */
