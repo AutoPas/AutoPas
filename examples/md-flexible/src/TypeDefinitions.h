@@ -30,6 +30,10 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+#include "molecularDynamicsLibrary/KryptonPairFunctor.h"
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 #include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #endif
@@ -132,6 +136,10 @@ using LJFunctorTypeSVE =
     mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+using KryptonFunctorType = mdLib::KryptonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
