@@ -111,6 +111,8 @@ class Simulation {
    */
   constexpr static auto _floatStringPrecision = 3;
 
+  bool _initialTuningIterationRecorded{false};
+
   /**
    * Struct containing all timers used for the simulation.
    */

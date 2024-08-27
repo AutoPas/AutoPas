@@ -422,7 +422,11 @@ void Simulation::updateInteractionForces() {
   // count time spent for tuning
   if (_currentIterationIsTuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
-    ++_numTuningIterations;
+    if (_iteration == 0 and (not _initialTuningIterationRecorded)) {
+      _initialTuningIterationRecorded = true;
+    } else {
+      ++_numTuningIterations;
+    }
   } else {
     _timers.forceUpdateNonTuning.addTime(timeIteration);
     // if the previous iteration was a tuning iteration and the current one is not
@@ -595,7 +599,7 @@ void Simulation::logMeasurements() {
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
               << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
-              << "\n";
+              << (_initialTuningIterationRecorded ? " (+1 initial tuning)" : "") << "\n";
 
     auto mfups =
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
