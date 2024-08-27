@@ -30,6 +30,28 @@ TEST(MathTest, isNearTest) {
   }
 }
 
+TEST(MathTest, roundFixed) {
+    const double n = 123.123456789;
+    EXPECT_EQ(autopas::utils::Math::roundFixed(n, -3), 0.);
+    EXPECT_EQ(autopas::utils::Math::roundFixed(n, -2), 100.);
+    EXPECT_EQ(autopas::utils::Math::roundFixed(n, -1), 120.);
+    EXPECT_EQ(autopas::utils::Math::roundFixed(n, 0), 123.);
+    EXPECT_EQ(autopas::utils::Math::roundFixed(n, 2), 123.12);
+    EXPECT_EQ(autopas::utils::Math::roundFixed(n, 5), 123.12346);
+}
+
+TEST(MathTest, roundFloating) {
+  const double n = 123.456789;
+  EXPECT_EQ(autopas::utils::Math::roundFloating(n, -2), 0.);
+  EXPECT_EQ(autopas::utils::Math::roundFloating(n, -1), 0.);
+  EXPECT_EQ(autopas::utils::Math::roundFloating(n, 0), 0.);
+  EXPECT_EQ(autopas::utils::Math::roundFloating(n, 1), 100.);
+  EXPECT_EQ(autopas::utils::Math::roundFloating(n, 2), 120.);
+  EXPECT_EQ(autopas::utils::Math::roundFloating(n, 3), 123.);
+  EXPECT_EQ(autopas::utils::Math::roundFloating(n, 4), 123.5);
+  EXPECT_EQ(autopas::utils::Math::roundFloating(n, 5), 123.46);
+}
+
 TYPED_TEST_SUITE_P(MathTest);
 
 TYPED_TEST_P(MathTest, safeAddTest) {
