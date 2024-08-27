@@ -17,15 +17,13 @@ class DisplacementHandle {
   DisplacementHandle() = default;
 
   /**
-   * Constructor for DisplacementHandle. It stores the ids and the positions of the start and end vertices, as well as
-   * the displacement vector between the two (i.e. positionEndVertex - positionStartVertex)
-   * @param positionStartVertex position of the start vertex
-   * @param positionEndVertex position of the end vertex
+   * Constructor for DisplacementHandle. It stores the ids of start and end vertices and the displacement vector between
+   * the two
+   * @param displacement displacement vector
    * @param idStartVertex id of the start vertex
    * @param idEndVertex id of the end vertex
    */
-  explicit DisplacementHandle(const std::array<double, 3> &positionStartVertex,
-                              const std::array<double, 3> &positionEndVertex, const size_t &idStartVertex,
+  explicit DisplacementHandle(const std::array<double, 3> &displacement, const size_t &idStartVertex,
                               const size_t &idEndVertex);
 
   /**
@@ -61,24 +59,17 @@ class DisplacementHandle {
   [[nodiscard]] nabla derive_wrt() const;
 
  private:
-  std::array<double, 3> positionStartVertex_;
-  std::array<double, 3> positionEndVertex_;
   std::array<double, 3> displacement_;
   size_t idStartVertex_;
   size_t idEndVertex_;
 };
 
-DisplacementHandle::DisplacementHandle(const std::array<double, 3> &positionStartVertex,
-                                       const std::array<double, 3> &positionEndVertex, const size_t &idStartVertex,
+DisplacementHandle::DisplacementHandle(const std::array<double, 3> &displacement, const size_t &idStartVertex,
                                        const size_t &idEndVertex)
-    : positionStartVertex_(positionStartVertex),
-      positionEndVertex_(positionEndVertex),
-      displacement_(positionEndVertex - positionStartVertex),
-      idStartVertex_(idStartVertex),
-      idEndVertex_(idEndVertex) {}
+    : displacement_(displacement), idStartVertex_(idStartVertex), idEndVertex_(idEndVertex) {}
 
 [[nodiscard]] DisplacementHandle DisplacementHandle::getInv() const {
-  return DisplacementHandle(positionEndVertex_, positionStartVertex_, idEndVertex_, idStartVertex_);
+  return DisplacementHandle(-1. * displacement_, idEndVertex_, idStartVertex_);
 }
 
 template <size_t ID>
