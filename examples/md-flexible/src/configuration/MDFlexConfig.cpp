@@ -340,6 +340,10 @@ std::string MDFlexConfig::to_string() const {
         os << "Axilrod-Teller" << endl;
         break;
       }
+      case FunctorOption3B::kr: {
+        os << "Krypton extended ATM Potential" << endl;
+        break;
+      }
     }
     os << indent;
     printOption(traversalOptions3B, -indentWidth);

@@ -772,7 +772,7 @@ T Simulation::applyWithChosenFunctor3B(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
 #endif
     }
-    case MDFlexConfig::FunctorOption3B::krypton: {
+    case MDFlexConfig::FunctorOption3B::kr: {
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
       return f(KryptonFunctor3B{cutoff});
 #else

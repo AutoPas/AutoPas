@@ -162,8 +162,8 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Krypton functor does not have support for multisite molecules!"
 #else
-using KryptonFunctor3B = mdLib::KryptonExtendedATMFunctor<ParticleType, autopas::FunctorN3Modes::Both, true,
-                                              mdFlexibleTypeDefs::countFLOPs>;
+using KryptonFunctor3B =
+    mdLib::KryptonExtendedATMFunctor<ParticleType, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
