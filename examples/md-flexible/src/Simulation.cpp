@@ -539,7 +539,10 @@ void Simulation::logMeasurements() {
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
 
   if (_domainDecomposition->getDomainIndex() == 0) {
-    const auto maximumNumberOfDigits = static_cast<int>(std::to_string(total).length());
+    const long wallClockTime = _timers.total.getTotalTime();
+    // use the two potentially largest timers to determine the number of chars needed
+    const auto maximumNumberOfDigits =
+        static_cast<int>(std::max(std::to_string(total).length(), std::to_string(wallClockTime).length()));
     std::cout << "Measurements:\n";
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
@@ -576,9 +579,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
                                maximumNumberOfDigits, total);
 
-    const long wallClockTime = _timers.total.getTotalTime();
-    std::cout << timerToString("Total wall-clock time             ", wallClockTime,
-                               static_cast<int>(std::to_string(wallClockTime).length()), total);
+    std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
     std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
