@@ -8,7 +8,7 @@ AutoPas provides three interfaces to do this:
    They support restriction to certain particle types and regions, as well as parallelization and particle deletion but not addition.
 2. `forEach`-style functions (Experimental, no parallelization yet!).
    Similar to iterators, but prohibit interfering with flow control.
-3. Functor application functions like `AutoPas::iteratePairwise()`.
+3. Functor application functions like `AutoPas::computeInteractions()`.
    Applies the given functor to all particle pairs that are within the cutoff distance.
    
 This documentation page shall primarily focus on the first and slightly touch upon the second point.
@@ -20,7 +20,7 @@ For the third, refer to [`SimulationLoop.md`](https://github.com/AutoPas/AutoPas
 
 The easiest way to iterate over all (= owned and halo) particles of an AutoPas instance is with a [range-based for loop](https://en.cppreference.com/w/cpp/language/range-for):
 
-```cpp
+```c++
 for(auto& particle : autoPas) {
   // user code:
   auto position = particle.getR();
@@ -31,7 +31,7 @@ for(auto& particle : autoPas) {
 
 If more fine-grained control is needed over the iteration sequence, the iterator can be accessed and advanced manually:
 
-```cpp
+```c++
 for(auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
   // user code:
   auto position = iter->getR();
@@ -55,7 +55,7 @@ AutoPas supports the deletion of particles while iterating without invalidating 
 However, this needs to be done through the member function `AutoPas::deleteParticle()`.
 This function also leaves the iterator in a state so that `ContainerIterator::operator++()` needs to be called.
 
-```cpp
+```c++
 for(auto iter = autoPas.begin(); iter != autoPas.end(); ++iter) {
   autoPas.deleteParticle(iterator);
 }
@@ -67,7 +67,7 @@ Iterators can be restricted to only return particles of a given ownership type.
 The default is to cover owned and halo particles.
 See [ParticleOwnershipModel.md](https://github.com/AutoPas/AutoPas/blob/master/docs/userdoc/ParticleOwnershipModel.md) for particle ownership types.
 
-```cpp
+```c++
 // only iterate owned particles
 for(auto iter = autoPas.begin(autopas::IteratorBehavior::owned);
     iter != autoPas.end();
@@ -83,7 +83,7 @@ Depending on the container, this might be more efficient than iterating everythi
 Iterators can be restricted to only return particles inside of a given region.
 Regions are always cuboids defined by their left-lower-frontal and right-upper-back corner.
 
-```cpp
+```c++
 // only iterate particles in a given box
 const std::array<double, 3> lowCorner = ...;
 const std::array<double, 3> highCorner = ...;
@@ -101,7 +101,7 @@ Region Iterators also take an `IteratorBehavior` as an optional third argument.
 Iteration of the AutoPas object can also be done in parallel via OpenMP.
 For this, place any of the examples above in a parallel region.
 
-```cpp
+```c++
 AUTOPAS_OPENMP(parallel)
 for(auto& particle : autoPas) {
   // user code
@@ -116,7 +116,7 @@ All features described above also work in parallel, including particle deletion.
 
 If iterators are nested, inner loops should not spawn multiple iterators to avoid spreading the work too thin.
 This can be achieved by adapting the `IteratorBehavior`, which works similar to a bit vector:
-```cpp
+```c++
 AUTOPAS_OPENMP(parallel)
 for(auto& particle : autoPas) {   // spawns N iterators
   for(auto iter = autoPas.begin(autopas::IteratorBehavior::ownedOrHalo | autopas::IteratorBehavior::forceSequential);
@@ -145,7 +145,7 @@ For this, multiple member functions are available:
 Here, `Lambda` stands for a function of the signature `(Particle &) -> void`.
 All of those functions also exist in a `const` version with the otherwise same signature.
 
-```cpp
+```c++
 autoPas.forEachInRegionParallel([](auto &particle) {
   // user code (here e.g. calculating newR)
   particle.setR(newR);
@@ -156,7 +156,7 @@ autoPas.forEachInRegionParallel([](auto &particle) {
 
 On top of that, for every `forEach`-style function, there is also a corresponding `reduce[inRegion][Parallel]()` function.
 Here, the lambda function has the form `(Particle &, ResultT &) -> void`
-```cpp
+```c++
 size_t result = 0;
 autoPas.reduceInRegionParallel([](auto &particle, auto &accumulator) {
   // user code

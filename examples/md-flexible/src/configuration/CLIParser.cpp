@@ -54,16 +54,17 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.containerOptions,
       config.cutoff,
       config.dataLayoutOptions,
+      config.dataLayoutOptions3B,
       config.deltaT,
       config.sortingThreshold,
       config.distributionMean,
       config.distributionStdDev,
       config.dontCreateEndConfig,
-      config.dontMeasureFlops,
       config.dontShowProgressBar,
       config.evidenceFirstPrediction,
       config.extrapolationMethodOption,
       config.functorOption,
+      config.functorOption3B,
       config.generatorOption,
       config.globalForce,
       config.iterations,
@@ -76,6 +77,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.MPITuningMaxDifferenceForBucket,
       config.MPITuningWeightForMaxDensity,
       config.newton3Options,
+      config.newton3Options3B,
       config.outputSuffix,
       config.particleSpacing,
       config.particlesPerDim,
@@ -85,6 +87,7 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
       config.ruleFilename,
       config.selectorStrategy,
       config.traversalOptions,
+      config.traversalOptions3B,
       config.tuningInterval,
       config.tuningMaxEvidence,
       config.tuningMetricOption,
@@ -146,6 +149,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.newton3Options.value = autopas::Newton3Option::parseOptions(strArg);
         if (config.newton3Options.value.empty()) {
           cerr << "Unknown Newton3 option: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.newton3Options3B)::getoptChar: {
+        config.newton3Options3B.value = autopas::Newton3Option::parseOptions(strArg);
+        if (config.newton3Options3B.value.empty()) {
+          cerr << "Unknown Newton3 option for triwise interactions: " << strArg << endl;
           displayHelp = true;
         }
         break;
@@ -229,6 +240,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         }
         break;
       }
+      case decltype(config.dataLayoutOptions3B)::getoptChar: {
+        config.dataLayoutOptions3B.value = autopas::DataLayoutOption::parseOptions(strArg);
+        if (config.dataLayoutOptions3B.value.empty()) {
+          cerr << "Unknown data layouts for triwise interactions: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
       case decltype(config.dontCreateEndConfig)::getoptChar: {
         config.dontCreateEndConfig.value = false;
         break;
@@ -289,10 +308,18 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
                << endl;
           displayHelp = true;
         }
+        config.addInteractionType(autopas::InteractionTypeOption::pairwise);
         break;
       }
-      case decltype(config.dontMeasureFlops)::getoptChar: {
-        config.dontMeasureFlops.value = false;
+      case decltype(config.functorOption3B)::getoptChar: {
+        if (strArg.find("at") != string::npos or strArg.find("axi") != string::npos) {
+          config.functorOption3B.value = MDFlexConfig::FunctorOption3B::at;
+        } else {
+          cerr << "Unknown triwise functor: " << strArg << endl;
+          cerr << "Please use 'Axilrod-Teller'" << endl;
+          displayHelp = true;
+        }
+        config.addInteractionType(autopas::InteractionTypeOption::triwise);
         break;
       }
       case decltype(config.generatorOption)::getoptChar: {
@@ -514,6 +541,14 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
         config.traversalOptions.value = autopas::TraversalOption::parseOptions(strArg);
         if (config.traversalOptions.value.empty()) {
           cerr << "Unknown Traversal: " << strArg << endl;
+          displayHelp = true;
+        }
+        break;
+      }
+      case decltype(config.traversalOptions3B)::getoptChar: {
+        config.traversalOptions3B.value = autopas::TraversalOption::parseOptions(strArg);
+        if (config.traversalOptions3B.value.empty()) {
+          cerr << "Unknown triwise Traversal: " << strArg << endl;
           displayHelp = true;
         }
         break;

@@ -17,14 +17,16 @@ namespace sphLib {
  * @tparam ParticleCell
  */
 template <class Particle>
-class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroForceFunctor<Particle>> {
+class SPHCalcHydroForceFunctor : public autopas::PairwiseFunctor<Particle, SPHCalcHydroForceFunctor<Particle>> {
  public:
   /// soa arrays type
   using SoAArraysType = typename Particle::SoAArraysType;
 
   SPHCalcHydroForceFunctor()
       // the actual cutoff used is dynamic. 0 is used to pass the sanity check.
-      : autopas::Functor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
+      : autopas::PairwiseFunctor<Particle, SPHCalcHydroForceFunctor<Particle>>(0.){};
+
+  virtual std::string getName() override { return "SPHHydroForceFunctor"; }
 
   bool isRelevantForTuning() override { return true; }
 
@@ -103,7 +105,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorSingle()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorSingle()
    * This functor ignores the newton3 value, as we do not expect any benefit from disabling newton3.
    */
   void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) override {
@@ -223,7 +225,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
 
   /**
-   * @copydoc autopas::Functor::SoAFunctorPair()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorPair()
    */
   void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
                       bool newton3) override {
@@ -365,7 +367,7 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
   }
   // clang-format off
   /**
-   * @copydoc autopas::Functor::SoAFunctorVerlet()
+   * @copydoc autopas::PairwiseFunctor::SoAFunctorVerlet()
    */
   // clang-format on
   void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
@@ -529,15 +531,6 @@ class SPHCalcHydroForceFunctor : public autopas::Functor<Particle, SPHCalcHydroF
     return std::array<typename Particle::AttributeNames, 6>{
         Particle::AttributeNames::vsigmax, Particle::AttributeNames::engDot, Particle::AttributeNames::accX,
         Particle::AttributeNames::accY,    Particle::AttributeNames::accZ,   Particle::AttributeNames::ownershipState};
-  }
-
-  /**
-   * Get the number of floating point operations used in one full kernel call
-   * @return the number of floating point operations
-   */
-  static uint64_t getNumFlopsPerKernelCall() {
-    ///@todo return correct flopcount
-    return 1ul;
   }
 };
 

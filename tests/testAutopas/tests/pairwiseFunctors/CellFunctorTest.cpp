@@ -8,43 +8,43 @@
 
 // Type aliases via inheritance for more readable test names (using declarations do not work for this)
 struct CellFunctor_AoS_NoN3_NoBi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, false> {
-  CellFunctor_AoS_NoN3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, false> {
+  CellFunctor_AoS_NoN3_NoBi(LJFunctorType<> *f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
 struct CellFunctor_AoS_NoN3_Bi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, true> {
-  CellFunctor_AoS_NoN3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, true> {
+  CellFunctor_AoS_NoN3_Bi(LJFunctorType<> *f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, false) {}
 };
 struct CellFunctor_AoS_N3_NoBi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, false> {
-  CellFunctor_AoS_N3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, false> {
+  CellFunctor_AoS_N3_NoBi(LJFunctorType<> *f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 struct CellFunctor_AoS_N3_Bi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, true> {
-  CellFunctor_AoS_N3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, true> {
+  CellFunctor_AoS_N3_Bi(LJFunctorType<> *f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::aos, true) {}
 };
 struct CellFunctor_SoA_NoN3_NoBi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, false> {
-  CellFunctor_SoA_NoN3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, false> {
+  CellFunctor_SoA_NoN3_NoBi(LJFunctorType<> *f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_NoN3_Bi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, true> {
-  CellFunctor_SoA_NoN3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, true> {
+  CellFunctor_SoA_NoN3_Bi(LJFunctorType<> *f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, false) {}
 };
 struct CellFunctor_SoA_N3_NoBi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, false> {
-  CellFunctor_SoA_N3_NoBi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, false> {
+  CellFunctor_SoA_N3_NoBi(LJFunctorType<> *f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 struct CellFunctor_SoA_N3_Bi
-    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, mdLib::LJFunctor<Molecule>, true> {
-  CellFunctor_SoA_N3_Bi(mdLib::LJFunctor<Molecule> *f, const double sortingCutoff)
+    : public autopas::internal::CellFunctor<autopas::FullParticleCell<Molecule>, LJFunctorType<>, true> {
+  CellFunctor_SoA_N3_Bi(LJFunctorType<> *f, const double sortingCutoff)
       : CellFunctor(f, sortingCutoff, autopas::DataLayoutOption::soa, true) {}
 };
 
@@ -100,7 +100,7 @@ std::tuple<double, double> ownedHaloInteractionHelper(T &cellFunctor, const auto
                                                       const autopas::OwnershipState ownershipCell1,
                                                       const autopas::OwnershipState ownershipCell2,
                                                       const autopas::DataLayoutOption dataLayout,
-                                                      mdLib::LJFunctor<Molecule> &ljFunctor, bool singleCell) {
+                                                      LJFunctorType<> &ljFunctor, bool singleCell) {
   // create two particles
   Molecule p1({0.6, 0.5, 0.5}, {0., 0., 0.}, 0);
   p1.setOwnershipState(ownershipParticle1);
@@ -171,60 +171,64 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
   constexpr autopas::OwnershipState halo = autopas::OwnershipState::halo;
   constexpr autopas::OwnershipState ownedOrHalo = autopas::OwnershipState::owned | autopas::OwnershipState::halo;
 
-  // Test all reasonable combinations of owned / halo particles and cells
-  for (const auto ownershipParticleA : {owned, halo}) {
-    for (const auto ownershipParticleB : {owned, halo}) {
-      for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
-        for (const auto ownerShipStateCellB : {ownershipParticleB, ownedOrHalo}) {
-          mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
-          ljFunctor.setParticleProperties(sigma, epsilon);
+  // Test with and without sorting
+  for (const auto sortingThreshold : {0, 100}) {
+    // Test all reasonable combinations of owned / halo particles and cells
+    for (const auto ownershipParticleA : {owned, halo}) {
+      for (const auto ownershipParticleB : {owned, halo}) {
+        for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
+          for (const auto ownerShipStateCellB : {ownershipParticleB, ownedOrHalo}) {
+            LJFunctorType<> ljFunctor(cutoff);
+            ljFunctor.setParticleProperties(sigma, epsilon);
 
-          ljFunctor.initTraversal();
+            ljFunctor.initTraversal();
 
-          CellFunctorType cellFunctor(&ljFunctor, cutoff);
+            CellFunctorType cellFunctor(&ljFunctor, cutoff);
+            cellFunctor.setSortingThreshold(sortingThreshold);
 
-          const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
-              cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownerShipStateCellB,
-              cellFunctor.getDataLayout(), ljFunctor, false);
+            const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
+                cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownerShipStateCellB,
+                cellFunctor.getDataLayout(), ljFunctor, false);
 
-          ljFunctor.endTraversal(cellFunctor.getNewton3());
+            ljFunctor.endTraversal(cellFunctor.getNewton3());
 
-          // EXPECTATIONS
-          if (ownershipCellA == halo and ownerShipStateCellB == halo) {
-            EXPECT_EQ(forceParticleA, 0)
-                << "Particle in Cell1 is experiencing force with both cells containing only halo particles."
-                   "\nCell1: "
-                << ownershipCellA << "\nCell2: " << ownerShipStateCellB << "\nParticle in Cell1: " << ownershipParticleA
-                << "\nParticle in Cell2: " << ownershipParticleB;
-            EXPECT_EQ(forceParticleB, 0)
-                << "Particle in Cell2 is experiencing force with with both cells containing only halo particles."
-                   "\nCell1: "
-                << ownershipCellA << "\nCell2: " << ownerShipStateCellB << "\nParticle in Cell1: " << ownershipParticleA
-                << "\nParticle in Cell2: " << ownershipParticleB;
-          } else if (ownershipCellA == halo and (not cellFunctor.getNewton3()) and
-                     (not cellFunctor.getBidirectional())) {
-            // if cell1 is halo, and NoN3 and no bidirectional we can skip the interaction
-            EXPECT_EQ(forceParticleA, 0) << "Particle in Cell1 is experiencing force with "
-                                            "OwnershipState halo, no newton3 and bidirectional off."
-                                            "\nCell1: "
-                                         << ownershipCellA << "\nCell2: " << ownerShipStateCellB
-                                         << "\nParticle in Cell1: " << ownershipParticleA
-                                         << "\nParticle in Cell2: " << ownershipParticleB;
-          } else {
-            // in all other cases we expect force on particle in Cell1
-            EXPECT_GT(forceParticleA, 0) << "Particle in Cell1 does not experience force."
-                                            "\nCell1: "
-                                         << ownershipCellA << "\nCell2: " << ownerShipStateCellB
-                                         << "\nParticle in Cell1: " << ownershipParticleA
-                                         << "\nParticle in Cell2: " << ownershipParticleB;
-
-            // if bidirectional or newton3=true we expect also force on particle in Cell2
-            if ((cellFunctor.getBidirectional() or cellFunctor.getNewton3()) and containsOwned(ownershipParticleB)) {
-              EXPECT_GT(forceParticleB, 0)
-                  << "Particle in Cell2 does not experience force."
+            // EXPECTATIONS
+            if (ownershipCellA == halo and ownerShipStateCellB == halo) {
+              EXPECT_EQ(forceParticleA, 0)
+                  << "Particle in Cell1 is experiencing force with both cells containing only halo particles."
                      "\nCell1: "
                   << ownershipCellA << "\nCell2: " << ownerShipStateCellB
                   << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+              EXPECT_EQ(forceParticleB, 0)
+                  << "Particle in Cell2 is experiencing force with with both cells containing only halo particles."
+                     "\nCell1: "
+                  << ownershipCellA << "\nCell2: " << ownerShipStateCellB
+                  << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+            } else if (ownershipCellA == halo and (not cellFunctor.getNewton3()) and
+                       (not cellFunctor.getBidirectional())) {
+              // if cell1 is halo, and NoN3 and no bidirectional we can skip the interaction
+              EXPECT_EQ(forceParticleA, 0)
+                  << "Particle in Cell1 is experiencing force with "
+                     "OwnershipState halo, no newton3 and bidirectional off."
+                     "\nCell1: "
+                  << ownershipCellA << "\nCell2: " << ownerShipStateCellB
+                  << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+            } else {
+              // in all other cases we expect force on particle in Cell1
+              EXPECT_GT(forceParticleA, 0)
+                  << "Particle in Cell1 does not experience force."
+                     "\nCell1: "
+                  << ownershipCellA << "\nCell2: " << ownerShipStateCellB
+                  << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+
+              // if bidirectional or newton3=true we expect also force on particle in Cell2
+              if ((cellFunctor.getBidirectional() or cellFunctor.getNewton3()) and containsOwned(ownershipParticleB)) {
+                EXPECT_GT(forceParticleB, 0)
+                    << "Particle in Cell2 does not experience force."
+                       "\nCell1: "
+                    << ownershipCellA << "\nCell2: " << ownerShipStateCellB
+                    << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+              }
             }
           }
         }
@@ -250,55 +254,59 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
   constexpr autopas::OwnershipState halo = autopas::OwnershipState::halo;
   constexpr autopas::OwnershipState ownedOrHalo = autopas::OwnershipState::owned | autopas::OwnershipState::halo;
 
-  // Test all reasonable combinations of owned / halo particles and cells
-  for (const auto ownershipParticleA : {owned, halo}) {
-    for (const auto ownershipParticleB : {owned, halo}) {
-      for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
-        // skip inapplicable cases
-        if (ownershipCellA == owned and ownershipParticleB == halo) {
-          continue;
-        }
-        if (ownershipCellA == halo and ownershipParticleB == owned) {
-          continue;
-        }
-
-        mdLib::LJFunctor<Molecule> ljFunctor(cutoff);
-        ljFunctor.setParticleProperties(sigma, epsilon);
-
-        ljFunctor.initTraversal();
-
-        CellFunctorType cellFunctor(&ljFunctor, cutoff);
-
-        const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
-            cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownershipCellA,
-            cellFunctor.getDataLayout(), ljFunctor, true);
-
-        ljFunctor.endTraversal(cellFunctor.getNewton3());
-
-        // EXPECTATIONS
-        if (ownershipCellA == halo) {
-          EXPECT_EQ(forceParticleA, 0) << "Particle 1 is experiencing force."
-                                          "\nCell1: "
-                                       << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
-                                       << "\nParticle 2 in Cell1: " << ownershipParticleB;
-          EXPECT_EQ(forceParticleB, 0) << "Particle 2 is experiencing force."
-                                          "\nCell1: "
-                                       << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
-                                       << "\nParticle 2 in Cell1: " << ownershipParticleB;
-        } else {
-          // in all other cases we expect force on particle A in Cell1 as long as it is owned.
-          if (containsOwned(ownershipParticleA)) {
-            EXPECT_GT(forceParticleA, 0) << "Particle 1 in Cell1 does not experience force."
-                                            "\nCell1: "
-                                         << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
-                                         << "\nParticle 2 in Cell1: " << ownershipParticleB;
+  // Test with and without sorting
+  for (const auto sortingThreshold : {0, 100}) {
+    // Test all reasonable combinations of owned / halo particles and cells
+    for (const auto ownershipParticleA : {owned, halo}) {
+      for (const auto ownershipParticleB : {owned, halo}) {
+        for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
+          // skip inapplicable cases
+          if (ownershipCellA == owned and ownershipParticleB == halo) {
+            continue;
           }
-          // if bidirectional or newton3=true we expect also force on particle in Cell2
-          if ((cellFunctor.getBidirectional() or cellFunctor.getNewton3()) and containsOwned(ownershipParticleB)) {
-            EXPECT_GT(forceParticleB, 0) << "Particle 2 does not experience force."
+          if (ownershipCellA == halo and ownershipParticleB == owned) {
+            continue;
+          }
+
+          LJFunctorType<> ljFunctor(cutoff);
+          ljFunctor.setParticleProperties(sigma, epsilon);
+
+          ljFunctor.initTraversal();
+
+          CellFunctorType cellFunctor(&ljFunctor, cutoff);
+          cellFunctor.setSortingThreshold(sortingThreshold);
+
+          const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
+              cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownershipCellA,
+              cellFunctor.getDataLayout(), ljFunctor, true);
+
+          ljFunctor.endTraversal(cellFunctor.getNewton3());
+
+          // EXPECTATIONS
+          if (ownershipCellA == halo) {
+            EXPECT_EQ(forceParticleA, 0) << "Particle 1 is experiencing force."
                                             "\nCell1: "
                                          << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
                                          << "\nParticle 2 in Cell1: " << ownershipParticleB;
+            EXPECT_EQ(forceParticleB, 0) << "Particle 2 is experiencing force."
+                                            "\nCell1: "
+                                         << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
+                                         << "\nParticle 2 in Cell1: " << ownershipParticleB;
+          } else {
+            // in all other cases we expect force on particle A in Cell1 as long as it is owned.
+            if (containsOwned(ownershipParticleA)) {
+              EXPECT_GT(forceParticleA, 0) << "Particle 1 in Cell1 does not experience force."
+                                              "\nCell1: "
+                                           << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
+                                           << "\nParticle 2 in Cell1: " << ownershipParticleB;
+            }
+            // for a single cell always expect force on particle 2 too
+            if (containsOwned(ownershipParticleB)) {
+              EXPECT_GT(forceParticleB, 0) << "Particle 2 does not experience force."
+                                              "\nCell1: "
+                                           << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
+                                           << "\nParticle 2 in Cell1: " << ownershipParticleB;
+            }
           }
         }
       }

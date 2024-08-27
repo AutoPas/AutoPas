@@ -64,10 +64,19 @@ void MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
   }
 }
 
-Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::set<Configuration> &searchSpace) {
-  Configuration fallBackConfig{ContainerOption::linkedCells, 1.,
-                               TraversalOption::lc_c08,      LoadEstimatorOption::none,
-                               DataLayoutOption::aos,        Newton3Option::disabled};
+Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::set<Configuration> &searchSpace,
+                                                                   const InteractionTypeOption &interactionType) {
+  Configuration fallBackConfig{ContainerOption::linkedCells,
+                               1.,
+                               TraversalOption::lc_c08,
+                               LoadEstimatorOption::none,
+                               DataLayoutOption::aos,
+                               Newton3Option::disabled,
+                               interactionType};
+
+  if (interactionType == InteractionTypeOption::triwise) {
+    fallBackConfig.traversal = TraversalOption::lc_c01;
+  }
 
   // Go through the search space and see if SoA or N3 are allowed.
   bool foundSoA{false};
@@ -137,5 +146,7 @@ void MPIParallelizedStrategy::receiveSmoothedHomogeneityAndMaxDensity(double hom
 
 const AutoPas_MPI_Comm &MPIParallelizedStrategy::getBucket() const { return _bucket; }
 
-TuningStrategyOption MPIParallelizedStrategy::getOptionType() { return TuningStrategyOption::mpiDivideAndConquer; }
+TuningStrategyOption MPIParallelizedStrategy::getOptionType() const {
+  return TuningStrategyOption::mpiDivideAndConquer;
+}
 }  // namespace autopas

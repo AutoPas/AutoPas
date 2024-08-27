@@ -133,13 +133,13 @@ do
                             --box-length 10 \
                             --cell-size ${cellSizeFactor} \
                             --container ${container} \
+                            --functor lj \
                             --cutoff 1 \
                             --data-layout ${dataLayout} \
                             --deltaT 0. \
                             --iterations ${thisReps} \
                             --newton3 ${newton3Opt} \
                             --no-end-config \
-                            --no-flops \
                             --no-progress-bar \
                             --particle-generator uniform \
                             --particles-total ${Mols[$i]} \

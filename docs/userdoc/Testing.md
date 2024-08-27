@@ -84,4 +84,15 @@ Explanation:
 | `-xterm -1!`        | Open an `xTerm` console window for ranks. `-1` indicates that it should be done for all ranks, no matter the count, `!` ensures the windows do not immediately close when the program stops or crashes so that you can read the output. |
 | `gdb --args`        | Launches the debugger. Everything that follows is treated as arguments to `gdb`.                                                                                                                                                   |
 
+## Creating Coverage Reports
+The following commands can be used to create a coverage report in the form of HTML output. Please note that this is only supported with GCC, and debugging mode must be enabled to create coverage reports. Furthermore, LCOV version >= 2.0 must be installed.
+
+```bash
+cd $BUILD_DIR
+cmake -DCMAKE_BUILD_TYPE=Debug -DAUTOPAS_BUILD_TESTS=ON -DAUTOPAS_ENABLE_COVERAGE=ON ..
+make coverage
+```
+
+After these commands have been executed, a folder named `$BUILD_DIR/coverage` can be found which contains the HTML output. This can be downloaded and viewed in a browser.
+
 ## Related Files and Folders

@@ -9,7 +9,7 @@
 
 #include "SPHLibrary/autopassph.h"
 #include "autopas/AutoPas.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 using Particle = sphLib::SPHParticle;
 using AutoPasContainer = autopas::AutoPas<Particle>;
@@ -20,14 +20,14 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
 void addParticles(AutoPasContainer &sph_system, int numParticles) {
   // Place SPH particles
 
-  srand(42);  // fixed seedpoint
+  std::mt19937 generator(42);
 
   std::array<double, 3> boxMin(sph_system.getBoxMin()), boxMax(sph_system.getBoxMax());
 
   for (int i = 0; i < numParticles; ++i) {
     auto id = static_cast<unsigned long>(i);
-    Particle particle(autopasTools::generators::RandomGenerator::randomPosition(boxMin, boxMax), {0., 0., 0.}, id, 0.75,
-                      0.012, 0.);
+    Particle particle(autopasTools::generators::UniformGenerator::randomPosition(generator, boxMin, boxMax),
+                      {0., 0., 0.}, id, 0.75, 0.012, 0.);
     sph_system.addParticle(particle);
   }
 
@@ -162,14 +162,14 @@ void measureContainer(Container *cont, Functor *func, int numParticles, int numI
   autopas::utils::Timer t;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
+  for (int i = 0; i < numIterations; ++i) cont->computeInteractions(func);
 
   double elapsedTime = t.stop();
 
   double MFUPS_aos = numParticles * numIterations / elapsedTime * 1e-9;
 
   t.start();
-  for (int i = 0; i < numIterations; ++i) cont->iteratePairwise(func);
+  for (int i = 0; i < numIterations; ++i) cont->computeInteractions(func);
 
   elapsedTime = t.stop();
 

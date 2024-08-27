@@ -19,8 +19,9 @@ target_link_libraries(md-flexible PUBLIC autopas autopasTools molecularDynamicsL
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." ON)
-option(MD_FLEXIBLE_FUNCTOR_KRYPTON "Compile Krypton Pair Functor as defined in src/TypeDefinitions.h." ON)
+option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AT "Compile auto vectorized Axilrod Teller Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_KRYPTON "Compile Krypton Pair Functor as defined in src/TypeDefinitions.h." OFF)
 
 target_compile_definitions(
         md-flexible
@@ -29,6 +30,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT}>:MD_FLEXIBLE_FUNCTOR_AT>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_KRYPTON}>:MD_FLEXIBLE_FUNCTOR_KRYPTON>
 )
 
@@ -40,6 +42,9 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     endif()
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
+    endif()
+    if (MD_FLEXIBLE_FUNCTOR_AT)
+        message(WARNING "Axilrod Teller functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()
 
@@ -66,7 +71,6 @@ add_subdirectory(tests)
 # cmake-format: off
 
 # randomly generated imbalanced scenario tested with LC only
-# also tests the flop functor
 add_test(
         NAME md-flexible.test-static
         COMMAND
@@ -125,7 +129,6 @@ if (HAS_AVX)
             COMMAND
             md-flexible
             --no-end-config
-            --no-flops
             --functor "${TEST_FUNCTOR}"
             --deltaT 0
             --particle-generator uniform
@@ -158,7 +161,6 @@ add_test(
         --boundary-type periodic
         --deltaT 0.005
         --no-end-config
-        --no-flops
         --no-progress-bar
         CONFIGURATIONS checkExamples
 )

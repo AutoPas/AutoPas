@@ -9,29 +9,29 @@
 
 #include "TypeDefinitions.h"
 #include "autopas/AutoPasDecl.h"
-#include "autopas/pairwiseFunctors/FlopCounterFunctor.h"
 #include "autopas/utils/SimilarityFunctions.h"
 #include "autopas/utils/WrapMPI.h"
 #include "autopas/utils/WrapOpenMP.h"
 
-// Declare the main AutoPas class and the iteratePairwise() methods with all used functors as extern template
+// Declare the main AutoPas class and the computeInteractions() methods with all used functors as extern template
 // instantiation. They are instantiated in the respective cpp file inside the templateInstantiations folder.
 //! @cond Doxygen_Suppress
 extern template class autopas::AutoPas<ParticleType>;
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovec *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovec *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAutovecGlobals *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAutovecGlobals *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeAVX *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeAVX *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(LJFunctorTypeSVE *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
 #endif
-extern template bool autopas::AutoPas<ParticleType>::iteratePairwise(
-    autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> *);
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
+#endif
 //! @endcond
 
 #include <sys/ioctl.h>
@@ -109,10 +109,39 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
   _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
   _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
-  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value);
-  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value);
-  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value);
+
+  if (_configuration.getInteractionTypes().empty()) {
+    std::string functorName{};
+    std::tie(_configuration.functorOption.value, functorName) =
+#if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6_AVX, "Lennard-Jones AVX Functor.");
+#elif defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6_SVE, "Lennard-Jones SVE Functor.");
+#else
+        std::make_pair(MDFlexConfig::FunctorOption::lj12_6, "Lennard-Jones AutoVec Functor.");
+#endif
+    _configuration.addInteractionType(autopas::InteractionTypeOption::pairwise);
+    std::cout << "WARNING: No functor was specified. Defaulting to " << functorName << std::endl;
+  }
+
+  _autoPasContainer->setAllowedInteractionTypeOptions(_configuration.getInteractionTypes());
+
+  // Pairwise specific options
+  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions.value,
+                                           autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options.value,
+                                              autopas::InteractionTypeOption::pairwise);
+  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions.value,
+                                          autopas::InteractionTypeOption::pairwise);
   _autoPasContainer->setAllowedLoadEstimators(_configuration.loadEstimatorOptions.value);
+  // Triwise specific options
+  _autoPasContainer->setAllowedDataLayouts(_configuration.dataLayoutOptions3B.value,
+                                           autopas::InteractionTypeOption::triwise);
+  _autoPasContainer->setAllowedNewton3Options(_configuration.newton3Options3B.value,
+                                              autopas::InteractionTypeOption::triwise);
+  _autoPasContainer->setAllowedTraversals(_configuration.traversalOptions3B.value,
+                                          autopas::InteractionTypeOption::triwise);
+  // General options
   _autoPasContainer->setBoxMin(_domainDecomposition->getLocalBoxMin());
   _autoPasContainer->setBoxMax(_domainDecomposition->getLocalBoxMax());
   _autoPasContainer->setCutoff(_configuration.cutoff.value);
@@ -136,6 +165,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
+
   int rank{};
   autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
   const auto *fillerBeforeSuffix =
@@ -145,6 +175,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setOutputSuffix("Rank" + std::to_string(rank) + fillerBeforeSuffix +
                                      _configuration.outputSuffix.value + fillerAfterSuffix);
   autopas::Logger::get()->set_level(_configuration.logLevel.value);
+
   _autoPasContainer->init();
 
   // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
@@ -186,10 +217,6 @@ void Simulation::finalize() {
 }
 
 void Simulation::run() {
-//  _homogeneity =
-//      autopas::utils::calculateHomogeneityAndMaxDensity(*_autoPasContainer, _domainDecomposition->getGlobalBoxMin(),
-//                                                        _domainDecomposition->getGlobalBoxMax())
-//          .first;
   _timers.simulate.start();
   while (needsMoreIterations()) {
     if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
@@ -199,8 +226,8 @@ void Simulation::run() {
     }
 
     _timers.computationalLoad.start();
-    if (_configuration.deltaT.value != 0) {
-      updatePositions();
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
+      updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
 #endif
@@ -217,19 +244,23 @@ void Simulation::run() {
         _domainDecomposition->update(computationalLoad);
         auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
                                                                 _domainDecomposition->getLocalBoxMax());
-        // because boundaries shifted, particles that were thrown out by the updateContainer previously might now be in
-        // the container again
+        // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
+        // container again.
+        // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
+        // so that remove_if can erase them after.
         const auto &boxMin = _autoPasContainer->getBoxMin();
         const auto &boxMax = _autoPasContainer->getBoxMax();
         _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
           if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+            // This only changes the ownership state in the emigrants vector, not in AutoPas
             p.setOwnershipState(autopas::OwnershipState::dummy);
             return true;
           }
           return false;
         });
 
-        std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); });
+        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
+                        emigrants.end());
 
         emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
         _timers.loadBalancing.stop();
@@ -251,9 +282,14 @@ void Simulation::run() {
       _timers.computationalLoad.start();
     }
 
-    updateForces();
+    updateInteractionForces();
 
-    if (_configuration.deltaT.value != 0) {
+    if (_configuration.pauseSimulationDuringTuning.value) {
+      // If PauseSimulationDuringTuning is enabled we need to update the _simulationIsPaused flag
+      updateSimulationPauseState();
+    }
+
+    if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateAngularVelocities();
@@ -262,11 +298,13 @@ void Simulation::run() {
     }
     _timers.computationalLoad.stop();
 
-    ++_iteration;
+    if (not _simulationIsPaused) {
+      ++_iteration;
+    }
 
     if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::debug) {
       std::cout << "Current Memory usage on rank " << _domainDecomposition->getDomainIndex() << ": "
-                << autopas::memoryProfiler::currentMemoryUsage() << " kB" << std::endl;
+                << autopas::memoryProfiler::currentMemoryUsage() << " kB\n";
     }
 
     if (_domainDecomposition->getDomainIndex() == 0) {
@@ -296,16 +334,31 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
         return static_cast<size_t>(_configuration.tuningMaxEvidence.value);
       } else {
         // @TODO: this can be improved by considering the tuning strategy
-        //  or averaging number of iterations per tuning phase and dynamically adapt prediction
+        // or averaging number of iterations per tuning phase and dynamically adapt prediction
 
         // This estimate is only valid for full search and no restrictions on the cartesian product.
         // add static to only evaluate this once
-        static const auto ret = autopas::SearchSpaceGenerators::cartesianProduct(
-                                    _configuration.containerOptions.value, _configuration.traversalOptions.value,
-                                    _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                                    _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get())
-                                    .size();
-        return ret;
+        size_t searchSpaceSizePairwise = 0;
+        size_t searchSpaceSizeTriwise = 0;
+        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise) > 0) {
+          searchSpaceSizePairwise =
+              autopas::SearchSpaceGenerators::cartesianProduct(
+                  _configuration.containerOptions.value, _configuration.traversalOptions.value,
+                  _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
+                  _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
+                  autopas::InteractionTypeOption::pairwise)
+                  .size();
+        }
+        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) > 0) {
+          searchSpaceSizeTriwise =
+              autopas::SearchSpaceGenerators::cartesianProduct(
+                  _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
+                  _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
+                  _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
+                  autopas::InteractionTypeOption::triwise)
+                  .size();
+        }
+        return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
       }
     }();
     // non-tuning iterations + tuning iterations + one iteration after last phase
@@ -379,11 +432,11 @@ std::string Simulation::timerToString(const std::string &name, long timeNS, int 
   if (maxTime != 0) {
     ss << " =" << std::setw(7) << std::right << ((double)timeNS / (double)maxTime * 100) << "%";
   }
-  ss << std::endl;
+  ss << "\n";
   return ss.str();
 }
 
-void Simulation::updatePositions() {
+void Simulation::updatePositionsAndResetForces() {
   _timers.positionUpdate.start();
   TimeDiscretization::calculatePositionsAndResetForces(
       *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
@@ -399,16 +452,28 @@ void Simulation::updateQuaternions() {
   _timers.quaternionUpdate.stop();
 }
 
-void Simulation::updateForces() {
+void Simulation::updateInteractionForces() {
   _timers.forceUpdateTotal.start();
 
-  _timers.forceUpdatePairwise.start();
-  const bool isTuningIteration = calculatePairwiseForces();
+  _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
+  _currentIterationIsTuningIteration = false;
+  long timeIteration = 0;
 
-  const auto timeIteration = _timers.forceUpdatePairwise.stop();
+  // Calculate pairwise forces
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
+    _timers.forceUpdatePairwise.start();
+    _currentIterationIsTuningIteration |= calculatePairwiseForces();
+    timeIteration += _timers.forceUpdatePairwise.stop();
+  }
+  // Calculate triwise forces
+  if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise)) {
+    _timers.forceUpdateTriwise.start();
+    _currentIterationIsTuningIteration |= calculateTriwiseForces();
+    timeIteration += _timers.forceUpdateTriwise.stop();
+  }
 
   // count time spent for tuning
-  if (isTuningIteration) {
+  if (_currentIterationIsTuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
     ++_numTuningIterations;
   } else {
@@ -419,13 +484,6 @@ void Simulation::updateForces() {
       ++_numTuningPhasesCompleted;
     }
   }
-  _previousIterationWasTuningIteration = isTuningIteration;
-
-  _timers.forceUpdateGlobal.start();
-  if (not _configuration.globalForceIsZero()) {
-    calculateGlobalForces(_configuration.globalForce.value);
-  }
-  _timers.forceUpdateGlobal.stop();
 
   _timers.forceUpdateTotal.stop();
 }
@@ -468,12 +526,13 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto functor) {
-        auto stilltuning = _autoPasContainer->template iteratePairwise(&functor);
-        _ePot = functor.getPotentialEnergy();
-        _virialSum = functor.getVirial();
-        return stilltuning;
-      });
+      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+  return wasTuningIteration;
+}
+
+bool Simulation::calculateTriwiseForces() {
+  const auto wasTuningIteration =
+      applyWithChosenFunctor3B<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
@@ -499,18 +558,34 @@ void Simulation::logSimulationState() {
   autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
                                  AUTOPAS_MPI_COMM_WORLD);
 
-  double squaredHomogeneity = _homogeneity * _homogeneity;
-  double standardDeviationOfHomogeneity{};
-  autopas::AutoPas_MPI_Allreduce(&squaredHomogeneity, &standardDeviationOfHomogeneity, 1, AUTOPAS_MPI_DOUBLE,
-                                 AUTOPAS_MPI_SUM, AUTOPAS_MPI_COMM_WORLD);
-  standardDeviationOfHomogeneity = std::sqrt(standardDeviationOfHomogeneity);
-
   if (_domainDecomposition->getDomainIndex() == 0) {
     std::cout << "\n\n"
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
-              << "Halo : " << haloParticles << "\n"
-              << "Standard Deviation of Homogeneity: " << standardDeviationOfHomogeneity << std::endl;
+              << "Halo : " << haloParticles << "\n";
+  }
+}
+
+void Simulation::updateSimulationPauseState() {
+  // If we are at the beginning of a tuning phase, we need to freeze the simulation
+  if (_currentIterationIsTuningIteration and (not _previousIterationWasTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase...\n";
+    _simulationIsPaused = true;
+  }
+
+  // If we are at the end of a tuning phase, we need to resume the simulation
+  if (_previousIterationWasTuningIteration and (not _currentIterationIsTuningIteration)) {
+    std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase.\n";
+
+    // reset the forces which accumulated during the tuning phase
+    for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+      particle->setF(_configuration.globalForce.value);
+    }
+
+    // calculate the forces of the latest iteration again
+    updateInteractionForces();
+
+    _simulationIsPaused = false;
   }
 }
 
@@ -520,7 +595,7 @@ void Simulation::logMeasurements() {
   const long updateContainer = accumulateTime(_timers.updateContainer.getTotalTime());
   const long forceUpdateTotal = accumulateTime(_timers.forceUpdateTotal.getTotalTime());
   const long forceUpdatePairwise = accumulateTime(_timers.forceUpdatePairwise.getTotalTime());
-  const long forceUpdateGlobalForces = accumulateTime(_timers.forceUpdateGlobal.getTotalTime());
+  const long forceUpdateTriwise = accumulateTime(_timers.forceUpdateTriwise.getTotalTime());
   const long forceUpdateTuning = accumulateTime(_timers.forceUpdateTuning.getTotalTime());
   const long forceUpdateNonTuning = accumulateTime(_timers.forceUpdateNonTuning.getTotalTime());
   const long velocityUpdate = accumulateTime(_timers.velocityUpdate.getTotalTime());
@@ -537,7 +612,7 @@ void Simulation::logMeasurements() {
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     const auto maximumNumberOfDigits = static_cast<int>(std::to_string(total).length());
-    std::cout << "Measurements:" << std::endl;
+    std::cout << "Measurements:\n";
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
@@ -558,8 +633,6 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("    ForceUpdateTotal              ", forceUpdateTotal, maximumNumberOfDigits, simulate);
     std::cout << timerToString("      Tuning                      ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
-    std::cout << timerToString("      ForceUpdateGlobalForces     ", forceUpdateGlobalForces, maximumNumberOfDigits,
-                               forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateTuning           ", forceUpdateTuning, maximumNumberOfDigits,
                                forceUpdateTotal);
     std::cout << timerToString("      ForceUpdateNonTuning        ", forceUpdateNonTuning, maximumNumberOfDigits,
@@ -578,36 +651,16 @@ void Simulation::logMeasurements() {
     const long wallClockTime = _timers.total.getTotalTime();
     std::cout << timerToString("Total wall-clock time             ", wallClockTime,
                                static_cast<int>(std::to_string(wallClockTime).length()), total);
-    std::cout << std::endl;
+    std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
               << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
-              << std::endl;
+              << "\n";
 
     auto mfups =
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
         1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
-    std::cout << "MFUPs/sec                          : " << mfups << std::endl;
-
-    if (_configuration.dontMeasureFlops.value) {
-      LJFunctorTypeAbstract ljFunctor(_configuration.cutoff.value, *_configuration.getParticlePropertiesLibrary());
-      autopas::FlopCounterFunctor<ParticleType, LJFunctorTypeAbstract> flopCounterFunctor(
-          ljFunctor, _autoPasContainer->getCutoff());
-      _autoPasContainer->iteratePairwise(&flopCounterFunctor);
-
-      const auto flops = flopCounterFunctor.getFlops();
-
-      std::cout << "Statistics for Force Calculation at end of simulation:" << std::endl;
-      std::cout << "  GFLOPs                             : " << static_cast<double>(flops) * 1e-9 << std::endl;
-      std::cout << "  GFLOPs/sec                         : "
-                << static_cast<double>(flops) * 1e-9 / (static_cast<double>(simulate) * 1e-9) << std::endl;
-      std::cout << "  Hit rate                           : " << flopCounterFunctor.getHitRate() << std::endl;
-    }
-
-    std::cout << "Global statistics at the end of simulation:" << std::endl;
-    std::cout << "  Potential Energy                             : " << _ePot << std::endl;
-    std::cout << "  Virial Sum                                   : " << _virialSum << std::endl;
-
+    std::cout << "MFUPs/sec                          : " << mfups << "\n";
   }
 }
 
@@ -695,7 +748,30 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-MD_FLEXIBLE_FUNCTOR_KRYPTON=ON`.");
 #endif
     }
+    default: {
+      throw std::runtime_error("Unknown pairwise functor choice" +
+                               std::to_string(static_cast<int>(_configuration.functorOption.value)));
+    }
   }
-  throw std::runtime_error("Unknown functor choice" +
-                           std::to_string(static_cast<int>(_configuration.functorOption.value)));
+}
+
+template <class T, class F>
+T Simulation::applyWithChosenFunctor3B(F f) {
+  const double cutoff = _configuration.cutoff.value;
+  auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
+  switch (_configuration.functorOption3B.value) {
+    case MDFlexConfig::FunctorOption3B::at: {
+#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+      return f(ATFunctor{cutoff, particlePropertiesLibrary});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
+          "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
+#endif
+    }
+    default: {
+      throw std::runtime_error("Unknown triwise functor choice" +
+                               std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
+    }
+  }
 }

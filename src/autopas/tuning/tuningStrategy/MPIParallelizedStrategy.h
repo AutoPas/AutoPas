@@ -48,7 +48,7 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
   MPIParallelizedStrategy(const Configuration &fallbackConfiguration, const AutoPas_MPI_Comm &comm,
                           double mpiTuningMaxDifferenceForBucket, double mpiTuningWeightForMaxDensity);
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
@@ -74,9 +74,11 @@ class MPIParallelizedStrategy : public TuningStrategyInterface {
    * The idea is to pick some configuration that is basically always applicable (lc_c08) and guess from the search space
    * which options Newton3 and Data Layout options are allowed.
    * @param searchSpace
+   * @param interactionType
    * @return The fall back configuration.
    */
-  static Configuration createFallBackConfiguration(const std::set<Configuration> &searchSpace);
+  static Configuration createFallBackConfiguration(const std::set<Configuration> &searchSpace,
+                                                   const InteractionTypeOption &interactionType);
 
  private:
   /**

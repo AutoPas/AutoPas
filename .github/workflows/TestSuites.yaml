@@ -122,8 +122,11 @@ jobs:
             -DMD_FLEXIBLE_FUNCTOR_AVX=${{ matrix.config[8] }} \
             -DMD_FLEXIBLE_FUNCTOR_SVE=OFF \
             -DAUTOPAS_ENABLE_ALLLBL=${UseMPI} \
+            -DAUTOPAS_ENABLE_HARMONY=ON \
+            -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON \
+            -DAUTOPAS_ENABLE_ENERGY_MEASUREMENTS=ON \
             ..
-          entrypoint.sh cmake --build . --parallel 8 
+          entrypoint.sh cmake --build . --parallel 8
       - name: Run tests ${{ matrix.part }}/2
         run: |
           # If single-site & No MPI, run every other AutoPas and example test

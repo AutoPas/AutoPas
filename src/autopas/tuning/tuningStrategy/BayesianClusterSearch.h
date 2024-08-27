@@ -59,6 +59,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
  public:
   /**
    * Constructor
+   * @param interactionType
    * @param allowedContainerOptions
    * @param allowedCellSizeFactors
    * @param allowedTraversalOptions
@@ -72,6 +73,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * @param seed Seed of random number generator (should only be used for tests)
    */
   explicit BayesianClusterSearch(
+      const InteractionTypeOption &interactionType,
       const std::set<ContainerOption> &allowedContainerOptions = ContainerOption::getAllOptions(),
       const NumberSet<double> &allowedCellSizeFactors = NumberInterval<double>(1., 2.),
       const std::set<TraversalOption> &allowedTraversalOptions = TraversalOption::getAllOptions(),
@@ -83,7 +85,7 @@ class BayesianClusterSearch : public TuningStrategyInterface {
 
   ~BayesianClusterSearch() override;
 
-  TuningStrategyOption getOptionType() override;
+  TuningStrategyOption getOptionType() const override;
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
@@ -119,6 +121,8 @@ class BayesianClusterSearch : public TuningStrategyInterface {
    * to update encoder and clusters.
    */
   void updateOptions();
+
+  const InteractionTypeOption _interactionType;
 
   std::set<ContainerOption> _containerOptionsSet;
   std::vector<FeatureVector::ContainerTraversalEstimatorOption> _containerTraversalEstimatorOptions;

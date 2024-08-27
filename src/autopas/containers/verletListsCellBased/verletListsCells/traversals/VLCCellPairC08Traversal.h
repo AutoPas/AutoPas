@@ -5,10 +5,9 @@
  */
 
 #pragma once
-#include "autopas/containers/cellPairTraversals/C08BasedTraversal.h"
+#include "autopas/containers/cellTraversals/C08BasedTraversal.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/neighborLists/VLCCellPairNeighborList.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCCellPairC08CellHandler.h"
-#include "autopas/containers/verletListsCellBased/verletListsCells/traversals/VLCTraversalInterface.h"
 #include "autopas/options/DataLayoutOption.h"
 
 namespace autopas {
@@ -41,9 +40,9 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
       : C08BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
         _functor(pairwiseFunctor),
-        _cellHandler(dims, pairwiseFunctor, interactionLength, cellLength, this->_overlap, dataLayout, useNewton3) {}
+        _cellHandler(dims, interactionLength, cellLength) {}
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   [[nodiscard]] bool isApplicable() const override {
     return (this->_dataLayout == DataLayoutOption::aos or this->_dataLayout == DataLayoutOption::soa);
@@ -52,7 +51,7 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
   [[nodiscard]] TraversalOption getTraversalType() const override { return TraversalOption::vlp_c08; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    * This traversal does not use the CellFunctor, so the function has no effect here
    */
   void setSortingThreshold(size_t sortingThreshold) override {}
@@ -67,19 +66,19 @@ class VLCCellPairC08Traversal : public C08BasedTraversal<ParticleCell, PairwiseF
 };
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void VLCCellPairC08Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   if (this->_dataLayout == DataLayoutOption::soa) {
-    _soa = (*(this->_cellPairVerletList)).loadSoA(_functor);
+    _soa = this->_cellPairVerletList->loadSoA(_functor);
   }
 
   this->c08Traversal([&](unsigned long x, unsigned long y, unsigned long z) {
     const auto baseIndex = utils::ThreeDimensionalMapping::threeToOneD(x, y, z, this->_cellsPerDimension);
     _cellHandler.processCellListsC08(*(this->_cellPairVerletList), baseIndex, _functor, this->_dataLayout, _soa,
-                                     this->_cellsPerDimension);
+                                     this->_useNewton3);
   });
 
   if (this->_dataLayout == DataLayoutOption::soa) {
-    (*(this->_cellPairVerletList)).extractSoA(_functor);
+    this->_cellPairVerletList->extractSoA(_functor);
     _soa = nullptr;
   }
 }

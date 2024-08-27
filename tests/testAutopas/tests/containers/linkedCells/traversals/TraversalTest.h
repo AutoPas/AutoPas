@@ -13,8 +13,8 @@
 #include "autopas/options/LoadEstimatorOption.h"
 #include "autopas/options/TraversalOption.h"
 #include "autopasTools/generators/GridGenerator.h"
-#include "autopasTools/generators/RandomGenerator.h"
-#include "mocks/MockFunctor.h"
+#include "autopasTools/generators/UniformGenerator.h"
+#include "mocks/MockPairwiseFunctor.h"
 #include "testingHelpers/commonTypedefs.h"
 
 /**
@@ -41,13 +41,16 @@ class TraversalTest
     }
   };
 
-  class CountFunctor : public autopas::Functor<Particle, CountFunctor> {
+  class CountFunctor : public autopas::PairwiseFunctor<Particle, CountFunctor> {
    public:
     using SoAArraysType = Particle::SoAArraysType;
     using ParticleCell = FPCell;
     using floatType = double;
 
-    CountFunctor(floatType cutoff) : autopas::Functor<Particle, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
+    CountFunctor(floatType cutoff)
+        : autopas::PairwiseFunctor<Particle, CountFunctor>(cutoff), _cutoffSquare(cutoff * cutoff){};
+
+    std::string getName() override { return "TraversalTestCountFunctor"; }
 
     bool isRelevantForTuning() override { return true; }
 

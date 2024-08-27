@@ -4,8 +4,9 @@
  * @date 05.12.2020
  */
 
+#include "autopas/baseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
-#include "autopas/pairwiseFunctors/Functor.h"
 
 #pragma once
 
@@ -16,8 +17,8 @@ namespace autopas {
  */
 template <class Particle>
 
-class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
-  using PairwiseNeighborListsType = typename VerletListsCellsHelpers<Particle>::PairwiseNeighborListsType;
+class VLCCellPairGeneratorFunctor : public PairwiseFunctor<Particle, VLCCellPairGeneratorFunctor<Particle>> {
+  using PairwiseNeighborListsType = typename VerletListsCellsHelpers::PairwiseNeighborListsType<Particle>;
   using SoAArraysType = typename Particle::SoAArraysType;
 
  public:
@@ -31,11 +32,13 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
   VLCCellPairGeneratorFunctor(PairwiseNeighborListsType &neighborLists,
                               std::unordered_map<Particle *, std::pair<size_t, size_t>> &particleToCellMap,
                               std::vector<std::unordered_map<size_t, size_t>> &globalToLocalIndex, double cutoffskin)
-      : Functor<Particle, VLCCellPairGeneratorFunctor<Particle>>(0.),
+      : PairwiseFunctor<Particle, VLCCellPairGeneratorFunctor<Particle>>(0.),
         _neighborLists(neighborLists),
         _particleToCellMap(particleToCellMap),
         _globalToLocalIndex(globalToLocalIndex),
         _cutoffskinsquared(cutoffskin * cutoffskin) {}
+
+  std::string getName() override { return "VLCCellPairGeneratorFunctor"; }
 
   bool isRelevantForTuning() override { return false; }
 
@@ -52,7 +55,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
   }
 
   /**
-   * @copydoc Functor::AoSFunctor()
+   * @copydoc PairwiseFunctor::AoSFunctor()
    */
   void AoSFunctor(Particle &i, Particle &j, bool newton3) override {
     using namespace autopas::utils::ArrayMath::literals;
@@ -84,7 +87,7 @@ class VLCCellPairGeneratorFunctor : public Functor<Particle, VLCCellPairGenerato
   }
 
   /**
-   * @copydoc Functor::SoAFunctorSingle()
+   * @copydoc PairwiseFunctor::SoAFunctorSingle()
    */
   void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) override {
     if (soa.size() == 0) return;

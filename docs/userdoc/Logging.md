@@ -10,12 +10,12 @@ It supports all spdlog-levels, which are also accessible via the type alias `aut
 These levels can be (de)activated at compile time via the `CMake` variable `AUTOPAS_MIN_LOG_LVL`.
 At run time, this logger's compiled levels can be set, e.g., via:
 
-```cpp
+```c++
 autopas::Logger::get()->set_level(autopas::Logger::LogLevel::debug);
 ```
 
 To conveniently use this logger, a macro is provided that takes the log level in all caps, a message string which will be formatted by [fmt](https://github.com/fmtlib/fmt) followed by any number of arguments:
-```cpp
+```c++
 AutoPasLog(INFO, "Message with two arguments: {} {}", arg0, arg1);
 ```
 
@@ -24,7 +24,7 @@ Creates a graph representation of the Gaussian cluster model that was created du
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_GAUSSIANCLUSTER`.
 
 ## IterationLogger
-Creates a CSV file containing information about the configuration and timings of every single call to `iteratePairwise()`.
+Creates a CSV file containing information about the configuration and timings of every single call to `computeInteractions()`.
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_ITERATIONS`.
 
 ## OctreeLogger
@@ -45,6 +45,16 @@ This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGDATA`
 Creates a CSV containing the results of every tuning phase.
 It is beneficial if only the high-level end results are of interest.
 This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_TUNINGRESULTS`.
+
+## FLOPLogger
+Creates a CSV containing the "useful" FLOP count and hit rate per particle interaction.
+By "useful" FLOPs, we mean avoiding anything which does not contribute to the particle interaction 
+e.g. FLOPs spent on masked vector registers.
+As this is subjective, please refer to the documentation of the Functor you are using for more details.
+By hit rate, we mean the proportion of distance calculations that are within the cutoff.
+If a functor has not implemented `getNumFLOPs` or `getHitRate`, "Not Implemented" will be outputted instead.
+This logger is switched on/off via the `CMake` variable `AUTOPAS_LOG_FLOPS`.
+
 
 ## Related Files and Folders
 - src/autopas/utils/logging/

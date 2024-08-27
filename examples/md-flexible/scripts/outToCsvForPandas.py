@@ -78,7 +78,7 @@ for datafile in datafiles:
 
     regexConf = '.*Iterating with configuration: +({.*})'
     regexCellSizeFactor = '.* CellSizeFactor +({.*})'
-    regexIterTook = '.* AutoTuner::iteratePairwise +took +([0-9]+) .*'
+    regexIterTook = '.* AutoTuner::computeInteractions +took +([0-9]+) .*'
     regexNumOfParticles = '.*particles-per-dimension*'
     regexNumOfParticlesAbsolute = '.*numberOfParticles*'
     regexBoxMin = '.*box-min*'

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "autopas/options/DataLayoutOption.h"
+#include "autopas/options/InteractionTypeOption.h"
 #include "autopas/options/TraversalOption.h"
 
 namespace autopas {
@@ -23,7 +24,7 @@ class TraversalInterface {
 
   /**
    * Constructor of the TraversalInterface.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    */
   TraversalInterface(DataLayoutOption dataLayout, bool useNewton3) : _dataLayout(dataLayout), _useNewton3(useNewton3) {}
@@ -46,14 +47,14 @@ class TraversalInterface {
   virtual void initTraversal() = 0;
 
   /**
+   * Traverse the particles by pairs, triplets etc. as determined by the Functor type.
+   */
+  virtual void traverseParticles() = 0;
+
+  /**
    * Finalizes the traversal. Should be called after traverse().
    */
   virtual void endTraversal() = 0;
-
-  /**
-   * Traverses all particle pairs.
-   */
-  virtual void traverseParticlePairs() = 0;
 
   /**
    * Return whether the traversal uses newton 3.
@@ -78,5 +79,4 @@ class TraversalInterface {
    */
   bool _useNewton3;
 };
-
 }  // namespace autopas

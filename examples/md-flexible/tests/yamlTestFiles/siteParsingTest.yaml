@@ -1,5 +1,6 @@
 # Yaml input for MDFlexConfigTests.correctSiteParsing
 # Used to test correct parsing of site information, in the case that the site information is correctly given.
+# contains a mix of Lennard-Jones and Axilrod-Teller sites
 Sites:
   1:
     epsilon: 1.
@@ -9,3 +10,11 @@ Sites:
     epsilon: 1.2
     sigma:   0.8
     mass:    0.5
+  3:
+    mass:    1.
+    epsilon: 0.8
+    sigma:   1.2
+    nu:      0.1
+  4:
+    mass:    2.
+    nu:      0.2

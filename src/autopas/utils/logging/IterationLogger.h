@@ -8,12 +8,13 @@
 
 #include <spdlog/async.h>
 
+#include "IterationMeasurements.h"
 #include "autopas/tuning/Configuration.h"
 
 namespace autopas {
 
 /**
- * Helper to log performance data of AutoPas::iteratePairwise() to a csv file for easier analysis.
+ * Helper to log performance data of AutoPas::computeInteractions() to a csv file for easier analysis.
  *
  * It uses an asynchronous spd logger to write a csv file named "AutoPas_iterationPerformance_<dateStamp>.csv".
  *
@@ -25,8 +26,9 @@ class IterationLogger {
   /**
    * Constructor initializes the logger and sets the output file name.
    * @param outputSuffix Suffix for all output files produced by this class.
+   * @param energyMeasurements Should the logger include energy measurements?
    */
-  explicit IterationLogger(const std::string &outputSuffix = "");
+  explicit IterationLogger(const std::string &outputSuffix = "", bool energyMeasurements = false);
 
   /**
    * Destructor drops the logger from the spd registry.
@@ -37,20 +39,13 @@ class IterationLogger {
    * Log the given arguments and the internal buffer to the csv file.
    * @param configuration
    * @param iteration
+   * @param functorName
    * @param inTuningPhase True if the logged iteration is in a tuning phase.
-   * @param timeIteratePairwise Time for Container::iteratePairwise().
-   * @param timeRemainderTraversal Time for LogicHandler::doRemainderTraversal().
-   * @param timeRebuildNeighborLists Time for Container::rebuildNeighborLists().
-   * @param timeIteratePairwiseTotal Time for LogicHandler::iteratePairwise(). This is slightly more than the sum of the
-   * above. Additional steps, only included in this timer are e.g. Functor::initTraversal() and Functor::endTraversal().
    * @param timeTuning Time for finding the next configuration.
-   * @param energyPsys Energy in Joules for the entire measured system since the last measurement.
-   * @param energyPkg Energy in Joules for the CPU package since the last measurement.
-   * @param energyRam Energy in Joules for the RAM since the last measurement.
+   * @param measurements Struct that holds all measurements from a computeInteractions() iteration.
    */
-  void logIteration(const Configuration &configuration, size_t iteration, bool inTuningPhase, long timeIteratePairwise,
-                    long timeRemainderTraversal, long timeRebuildNeighborLists, long timeIteratePairwiseTotal,
-                    long timeTuning, double energyPsys, double energyPkg, double energyRam);
+  void logIteration(const Configuration &configuration, size_t iteration, const std::string &functorName,
+                    bool inTuningPhase, long timeTuning, const IterationMeasurements &measurements) const;
 
  private:
   std::string _loggerName;
