@@ -671,12 +671,6 @@ void Simulation::loadParticles() {
   }
   particleCommunicator.waitForSendRequests();
 
-  // Remove duplicates. This is a safety mechanism for the odd case that two ranks loaded the same particle.
-  std::sort(_configuration.particles.begin(), _configuration.particles.end(),
-            [](const auto &p1, const auto &p2) { return p1.getID() < p2.getID(); });
-  _configuration.particles.erase(std::unique(_configuration.particles.begin(), _configuration.particles.end()),
-                                 _configuration.particles.end());
-
   // Add all new particles that belong in this rank
   _autoPasContainer->addParticlesIf(_configuration.particles,
                                     [&](auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
