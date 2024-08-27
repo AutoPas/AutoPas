@@ -859,7 +859,7 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
 #endif
     }
-    case MDFlexConfig::FunctorOption3B::krypton: {
+    case MDFlexConfig::FunctorOption3B::kr: {
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
       return f(KryptonFunctor3B{cutoff});
 #else

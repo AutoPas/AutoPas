@@ -343,8 +343,8 @@ std::string MDFlexConfig::to_string() const {
         os << "Axilrod-Teller" << endl;
         break;
       }
-      case FunctorOption::kr: {
-        os << "Krypton Pair Potential" << endl;
+      case FunctorOption3B::kr: {
+        os << "Krypton extended ATM Potential" << endl;
         break;
       }
     }
