@@ -739,6 +739,15 @@ T Simulation::applyWithChosenFunctor(F f) {
           "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
     }
+    case MDFlexConfig::FunctorOption::kr: {
+#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+      return f(KryptonFunctorType{cutoff});
+#else
+      throw std::runtime_error(
+          "MD-Flexible was not compiled with support for the Krypton Pair Functor. Activate it via `cmake "
+          "-MD_FLEXIBLE_FUNCTOR_KRYPTON=ON`.");
+#endif
+    }
     default: {
       throw std::runtime_error("Unknown pairwise functor choice" +
                                std::to_string(static_cast<int>(_configuration.functorOption.value)));
