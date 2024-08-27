@@ -155,22 +155,6 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   // Load particles from the config file (object generators, checkpoint)
   loadParticles();
 
-  // Not const because it will be updated to the global number of particles by MPI
-  size_t numParticles = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
-  std::cout << "Number of particles at initialization "
-            << "on rank " << rank << ": " << numParticles << "\n";
-
-  // Let rank 0 also report the global number of particles
-  if (rank == 0) {
-    autopas::AutoPas_MPI_Reduce(AUTOPAS_MPI_IN_PLACE, &numParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
-                                _domainDecomposition->getCommunicator());
-    std::cout << "Number of particles at initialization globally: " << numParticles << "\n";
-  } else {
-    // In-place reduce needs different calls on root vs rest...
-    autopas::AutoPas_MPI_Reduce(&numParticles, nullptr, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
-                                _domainDecomposition->getCommunicator());
-  }
-
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {
       Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
@@ -643,6 +627,8 @@ void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t num
 }
 
 void Simulation::loadParticles() {
+  // Store how many particles are in this config object before removing them.
+  const auto numParticlesInConfigLocally = _configuration.particles.size();
   // When loading checkpoints, the config file might contain particles that do not belong to this rank,
   // because rank boundaries don't align with those at the end of the previous simulation due to dynamic load balancing.
   // Idea: Only load what belongs here and send the rest away.
@@ -696,6 +682,38 @@ void Simulation::loadParticles() {
                                     [&](auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
   // cleanup
   _configuration.flushParticles();
+
+  // Output and sanity checks
+  const size_t numParticlesLocally = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
+  std::cout << "Number of particles at initialization "
+            << "on rank " << rank << ": " << numParticlesLocally << "\n";
+
+  // Local unnamed struct to pack data for MPI
+  struct {
+    size_t numParticlesAdded;
+    size_t numParticlesInConfig;
+  } dataPackage{numParticlesLocally, numParticlesInConfigLocally};
+  // Let rank 0 also report the global number of particles
+  if (rank == 0) {
+    autopas::AutoPas_MPI_Reduce(AUTOPAS_MPI_IN_PLACE, &dataPackage, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
+                                _domainDecomposition->getCommunicator());
+    std::cout << "Number of particles at initialization globally: " << dataPackage.numParticlesAdded << "\n";
+    // Sanity check that on a global scope all particles have been loaded
+    if (dataPackage.numParticlesAdded != dataPackage.numParticlesInConfig) {
+      throw std::runtime_error(
+          "Simulation::loadParticles(): "
+          "Not all particles from the configuration file could be added to AutoPas!\n"
+          "Configuration : " +
+          std::to_string(dataPackage.numParticlesInConfig) +
+          "\n"
+          "Added globally: " +
+          std::to_string(dataPackage.numParticlesAdded));
+    }
+  } else {
+    // In-place reduce needs different calls on root vs rest...
+    autopas::AutoPas_MPI_Reduce(&dataPackage, nullptr, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
+                                _domainDecomposition->getCommunicator());
+  }
 }
 
 template <class T, class F>
