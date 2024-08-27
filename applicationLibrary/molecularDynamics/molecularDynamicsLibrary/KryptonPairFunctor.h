@@ -20,8 +20,9 @@
 namespace mdLib {
 /**
  * A functor to handle interactions between two krypton atoms based on the ab-initio potential given by Jäger et al.
- * (2016) https://doi.org/10.1063/1.4943959. The parameters are This functor assumes that duplicated calculations are always happening,
- * which is characteristic for a Full-Shell scheme.
+ * (2016) https://doi.org/10.1063/1.4943959. The parameters are given in Kelvin (K) and Angström (A).
+ * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
+ * scheme.
  * @tparam Particle The type of particle.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
