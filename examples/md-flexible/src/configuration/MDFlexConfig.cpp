@@ -565,7 +565,7 @@ void MDFlexConfig::loadParticlesFromCheckpoint(const size_t &rank, const size_t 
   if (numRanks == numCheckpointPieces) {
     loadParticlesFromRankRecord(filename, rank, particles);
   } else if (rank == 0) {
-    // Otherwise, each rank 0 loads everything and distributes it later.
+    // Otherwise, rank 0 loads everything and distributes it later.
     for (size_t i = 0; i < numCheckpointPieces; ++i) {
       loadParticlesFromRankRecord(filename, i, particles);
     }
