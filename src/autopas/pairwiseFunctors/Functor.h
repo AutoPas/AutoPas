@@ -1,331 +1,326 @@
 /**
-* @file CellFunctor.h
+* @file Functor.h
 *
-* @date 22 Jan 2018
+* @date 17 Jan 2018
 * @author tchipevn
 */
 
 #pragma once
 
-#include "autopas/cells/SortedCellView.h"
-#include "autopas/options/DataLayoutOption.h"
-#include "autopas/utils/ExceptionHandler.h"
+#include <type_traits>
 
-namespace autopas::internal {
+#include "autopas/options/DataLayoutOption.h"
+#include "autopas/utils/AlignedAllocator.h"
+#include "autopas/utils/SoAView.h"
+#include "autopas/utils/logging/FLOPLogger.h"
+
+namespace autopas {
+
 /**
-* A cell functor. This functor is built from the normal Functor of the template
-* type ParticleFunctor. It is an internal object to handle interactions between
-* two cells of particles.
-* @tparam ParticleCell
-* @tparam ParticleFunctor the functor which
-* @tparam dataLayout the dataLayout to be used
-* @tparam bidirectional if no newton3 is used processCellPair(cell1, cell2) should also handle processCellPair(cell2,
-* cell1)
+* Newton 3 modes for the LJFunctor.
 */
-template <class ParticleCell, class ParticleFunctor, bool bidirectional = true>
-class CellFunctor {
+enum class FunctorN3Modes {
+ Newton3Only,
+ Newton3Off,
+ Both,
+};
+
+template <class Particle>
+class VerletListHelpers;
+
+/**
+* Functor class. This class describes the pairwise interactions between
+* particles.
+* Both an array of structure (AoS) and a structure of array (SoA) are supported
+* to be used with functors.
+* Newton3: A functor does not have to implement both a newton3 and a
+* non-newton3 version. Instead you can specify, which version you use by
+* overriding allowsNonNewton3 resp. allowsNewton3
+*
+* @tparam Particle the type of Particle
+* @tparam ParticleCell_t the type of ParticleCell
+*/
+template <class Particle, class CRTP_T>
+class Functor {
 public:
  /**
-  * The constructor of CellFunctor.
-  * @param f The ParticleFunctor which should be used for the interaction.
-  * @param sortingCutoff This parameter indicates the maximal distance the sorted particles are to interact. This
-  * parameter is only relevant for optimization (sorting). This parameter normally should be the cutoff, for building
-  * verlet lists, this should be cutoff+skin.
-  * @param dataLayout The data layout to be used.
-  * @param useNewton3 Parameter to specify whether newton3 is used or not.
+  * Structure of the SoAs defined by the particle.
   */
- explicit CellFunctor(ParticleFunctor *f, double sortingCutoff, DataLayoutOption dataLayout, bool useNewton3)
-     : _functor(f), _sortingCutoff(sortingCutoff), _dataLayout(dataLayout), _useNewton3(useNewton3) {}
+ using SoAArraysType = typename Particle::SoAArraysType;
 
  /**
-  * Process the interactions inside one cell.
-  * @param cell All pairwise interactions of particles inside this cell are calculated.
+  * Make the Implementation type template publicly available.
   */
- void processCell(ParticleCell &cell);
+ using Functor_T = CRTP_T;
+ /**
+  * Constructor
+  * @param cutoff
+  */
+ explicit Functor(double cutoff) : _cutoff(cutoff){};
+
+ virtual ~Functor() = default;
 
  /**
-  * Process the interactions between the particles of cell1 with particles of cell2.
-  * @param cell1
-  * @param cell2
-  * @param sortingDirection Normalized vector connecting centers of cell1 and cell2. If no parameter or {0, 0, 0} is
-  * given, sorting will be disabled.
+  * This function is called at the start of each traversal.
+  * Use it for resetting global values or initializing them.
   */
- void processCellPair(ParticleCell &cell1, ParticleCell &cell2,
-                      const std::array<double, 3> &sortingDirection = {0., 0., 0.});
+ virtual void initTraversal(){};
 
  /**
-  * Getter
+  * This function is called at the end of each traversal.
+  * You may accumulate values in this step.
+  * @param newton3
+  */
+ virtual void endTraversal(bool newton3){};
+
+ /**
+  * Functor for arrays of structures (AoS).
+  *
+  * This functor should calculate the forces or any other pair-wise interaction
+  * between two particles.
+  * This should include a cutoff check if needed!
+  * @param i Particle i
+  * @param j Particle j
+  * @param newton3 defines whether or whether not to use newton 3
+  */
+ virtual void AoSFunctor(Particle &i, Particle &j, bool newton3) {
+   utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
+ }
+
+ /**
+  * Get attributes needed for computation.
+  * @return Attributes needed for computation.
+  * @todo C++20: make this function virtual
+  */
+ constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
+   return std::array<typename Particle::AttributeNames, 0>{};
+ }
+
+ /**
+  * Get attributes needed for computation without N3 optimization.
+  * @return Attributes needed for computation.
+  * @todo C++20: make this function virtual
+  */
+ constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
+   return Functor_T::getNeededAttr();
+ }
+
+ /**
+  * Get attributes computed by this functor.
+  * @return Attributes computed by this functor.
+  * @todo C++20: make this function virtual
+  */
+ constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
+   return std::array<typename Particle::AttributeNames, 0>{};
+ }
+
+ /**
+  * Functor for structure of arrays (SoA)
+  *
+  * This functor should calculate the forces or any other pair-wise interaction
+  * between all particles in an soa.
+  * This should include a cutoff check if needed!
+  *
+  * @param soa Structure of arrays
+  * @param newton3 defines whether or whether not to use newton 3
+  */
+ virtual void SoAFunctorSingle(SoAView<SoAArraysType> soa, bool newton3) {
+   utils::ExceptionHandler::exception("Functor::SoAFunctorSingle: not yet implemented");
+ }
+
+ /**
+  * Functor for structure of arrays (SoA) for neighbor lists
+  *
+  * This functor should calculate the forces or any other pair-wise interaction
+  * between the particle in the SoA with index indexFirst and all particles with indices in the neighborList.
+  * This should include a cutoff check if needed!
+  *
+  * @param soa Structure of arrays
+  * @param indexFirst The index of the first particle for each interaction
+  * @param neighborList The list of neighbors
+  * @param newton3 defines whether or whether not to use newton 3
+  */
+ virtual void SoAFunctorVerlet(SoAView<SoAArraysType> soa, const size_t indexFirst,
+                               const std::vector<size_t, AlignedAllocator<size_t>> &neighborList, bool newton3) {
+   utils::ExceptionHandler::exception("Functor::SoAFunctorVerlet: not yet implemented");
+ }
+
+ /**
+  * Functor for structure of arrays (SoA)
+  *
+  * This functor should calculate the forces or any other pair-wise interaction
+  * between all particles of soa1 and soa2.
+  * This should include a cutoff check if needed!
+  *
+  * @param soa1 First structure of arrays.
+  * @param soa2 Second structure of arrays.
+  * @param newton3 defines whether or whether not to use newton 3
+  */
+ virtual void SoAFunctorPair(SoAView<SoAArraysType> soa1, SoAView<SoAArraysType> soa2, bool newton3) {
+   utils::ExceptionHandler::exception("Functor::SoAFunctorPair: not yet implemented");
+ }
+
+ /**
+  * Copies the AoS data of the given cell in the given soa.
+  *
+  * @param cell Cell from where the data is loaded.
+  * @param soa  Structure of arrays where the data is copied to.
+  * @param offset Offset within the SoA. The data of the cell should be added to the SoA with the specified offset.
+  * @param skipSoAResize If resizing of the SoA buffers should be skipped or not. If this is called with true, it must
+  * be ensured before the call that there is sufficient capacity in the SoA.
+  * @note The parameter skipSoAResize is usually set to false, only for VerletListsCellBased Containers it is set to
+  * true, since they resize the SoA before the call to SoALoader.
+  * @tparam ParticleCell Type of the cell.
+  */
+ template <class ParticleCell>
+ void SoALoader(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize) {
+   SoALoaderImpl(cell, soa, offset, skipSoAResize, std::make_index_sequence<Functor_T::getNeededAttr().size()>{});
+ }
+
+ /**
+  * Copies the data stored in the soa back into the cell.
+  *
+  * @param cell Cell where the data should be stored.
+  * @param soa  Structure of arrays from where the data is loaded.
+  * @param offset Offset within the SoA. The data of the soa should be
+  * extracted starting at offset.
+  * @tparam ParticleCell Type of the cell.
+  */
+ template <typename ParticleCell>
+ void SoAExtractor(ParticleCell &cell, SoA<SoAArraysType> &soa, size_t offset) {
+   SoAExtractorImpl(cell, soa, offset, std::make_index_sequence<Functor_T::getComputedAttr().size()>{});
+ }
+
+ /**
+  * Specifies whether the functor is capable of Newton3-like functors.
+  * If the functor provides an interface to soa or aos functions that utilize
+  * Newton's third law of motion (actio = reactio) to reduce the computational
+  * complexity this function should return true. If this is not the case this
+  * function should return false.
+  * @return true if and only if this functor provides an interface to
+  * Newton3-like functions.
+  */
+ virtual bool allowsNewton3() = 0;
+
+ /**
+  * Specifies whether the functor is capable of non-Newton3-like functors.
+  * If the functor provides an interface to soa or aos functions that do not
+  * utilize Newton's third law of motion (actio = reactio) this function should
+  * return true. If this is not the case this function should return false.
+  * @return true if and only if this functor provides an interface to functions
+  * that do not utilize Newton3.
+  */
+ virtual bool allowsNonNewton3() = 0;
+
+ /**
+  * Specifies whether the functor should be considered for the auto-tuning process.
+  * @return true if and only if this functor is relevant for auto-tuning.
+  */
+ virtual bool isRelevantForTuning() = 0;
+
+ /**
+  * Getter for the functor's cutoff
   * @return
   */
- [[nodiscard]] DataLayoutOption getDataLayout() const { return _dataLayout; }
+ double getCutoff() const { return _cutoff; }
 
  /**
-  * Getter
-  * @return
+  * Get the number of FLOPs. Implementation required if FLOPLogger used.
+  *
+  * If derived class provides no implementation, the FLOPLogger interprets the default numeric_limits<size_t>::max()
+  * output as invalid and leaves "Not Implemented" the log.
+  * @return number of FLOPs
   */
- [[nodiscard]] bool getNewton3() const { return _useNewton3; }
+ [[nodiscard]] virtual size_t getNumFLOPs() const { return std::numeric_limits<size_t>::max(); }
 
  /**
-  * Getter
-  * @return
+  * Get the hit rate. Implementation required if FLOPLogger used.
+  *
+  * If derived class provides no implementation, the FLOPLogger interprets the default NaN output as invalid and
+  * leaves "Not Implemented" in the log.
+  *
+  * @return (number of kernel calls) / (number of distance calculations)
   */
- [[nodiscard]] bool getBidirectional() const { return bidirectional; }
-
- /**
-  * Set the sorting-threshold
-  * If the sum of the number of particles in two cells is greater or equal to that value, the CellFunctor creates a
-  * sorted view of the particles to avoid unnecessary distance checks.
-  * @param sortingThreshold Sum of the number of particles in two cells from which sorting should be enabled
-  */
- void setSortingThreshold(size_t sortingThreshold);
+ [[nodiscard]] virtual double getHitRate() const { return std::numeric_limits<double>::quiet_NaN(); }
 
 private:
  /**
-  * Applies the functor to all particle pairs exploiting newtons third law of
-  * motion.
-  * There is only one version of this function as newton3 is always allowed to be applied inside of a cell.
-  * The value of newton3 defines whether or whether not to apply the aos version functor in a newton3 fashion or not:
-  * - if newton3 is true: the aos functor will be applied once for each pair (only i,j), passing newton3=true.
-  * - if newton3 is false: the aos functor will be applied twice for each pair (i,j and j,i), passing newton3=false.
-  * @tparam newton3 defines whether or not to use newton3
-  * @param cell
+  * Implements loading of SoA buffers.
+  * @tparam cell_t Cell type.
+  * @tparam I Attribute.
+  * @param cell Cell from where the data is loaded.
+  * @param soa  Structure of arrays where the data is copied to.
+  * @param offset Offset within the SoA. The data of the cell should be added
+  * @param skipSoAResize If resizing of the SoA buffers should be skipped or not. If this is called with true, it must
+  * be ensured before the call that there is sufficient capacity in the SoA.
+  * to the SoA with the specified offset.
   */
- void processCellAoS(ParticleCell &cell);
+
+ template <typename cell_t, std::size_t... I>
+ void SoALoaderImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, bool skipSoAResize,
+                    std::index_sequence<I...>) {
+   if (not skipSoAResize) {
+     soa.resizeArrays(offset + cell.size());
+   }
+
+   if (cell.isEmpty()) return;
+
+   /**
+    * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+    * in the following loop.
+    */
+   // maybe_unused necessary because gcc doesn't understand that pointer is used later
+   [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getNeededAttr()[I]>()...);
+
+   auto cellIter = cell.begin();
+   // load particles in SoAs
+   for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
+     /**
+      * The following statement writes the values of all attributes defined in neededAttr into the respective position
+      * inside the SoA buffer. I represents the index inside neededAttr. The whole expression is folded sizeof...(I)
+      * times over the comma operator. E.g. like this (std::index_sequence<I...> = 0, 1):
+      * ((std::get<0>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[0]>()),
+      * (std::get<1>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[1]>()))
+      */
+     ((std::get<I>(pointer)[i] = cellIter->template get<Functor_T::getNeededAttr()[I]>()), ...);
+   }
+ }
 
  /**
-  * Applies the functor to all particle pairs between cell1 and cell2
-  * exploiting newtons third law of motion.
-  * @param cell1
-  * @param cell2
-  * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
+  * Implements extraction of SoA buffers.
+  * @tparam cell_t Cell type.
+  * @tparam I Attribute.
+  * @param cell Cell.
+  * @param soa SoA buffer.
+  * @param offset Offset
   */
- void processCellPairAoSN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+ template <typename cell_t, std::size_t... I>
+ void SoAExtractorImpl(cell_t &cell, ::autopas::SoA<SoAArraysType> &soa, size_t offset, std::index_sequence<I...>) {
+   if (cell.isEmpty()) return;
 
- /**
-  * Applies the functor to all particle pairs between cell1 and cell2
-  * without exploiting newtons third law of motion.
-  * @param cell1
-  * @param cell2
-  * @param sortingDirection Normalized vector connecting centers of cell1 and cell2.
-  */
- void processCellPairAoSNoN3(ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection);
+   /**
+    * Store the start address of all needed arrays inside the SoA buffer in a tuple. This avoids unnecessary look ups
+    * in the following loop.
+    */
+   // maybe_unused necessary because gcc doesn't understand that pointer is used later
+   [[maybe_unused]] auto const pointer = std::make_tuple(soa.template begin<Functor_T::getComputedAttr()[I]>()...);
 
- void processCellPairSoAN3(ParticleCell &cell1, ParticleCell &cell2);
+   auto cellIter = cell.begin();
+   // write values in SoAs back to particles
+   for (size_t i = offset; cellIter != cell.end(); ++cellIter, ++i) {
+     /**
+      * The following statement writes the value of all attributes defined in computedAttr back into the particle.
+      * I represents the index inside computedAttr.
+      * The whole expression is folded sizeof...(I) times over the comma operator. E.g. like this
+      * (std::index_sequence<I...> = 0, 1):
+      * (cellIter->template set<Functor_T::getComputedAttr()[0]>(std::get<0>(pointer)[i]),
+      * cellIter->template set<Functor_T::getComputedAttr()[1]>(std::get<1>(pointer)[i]))
+      */
+     (cellIter->template set<Functor_T::getComputedAttr()[I]>(std::get<I>(pointer)[i]), ...);
+   }
+ }
 
- void processCellPairSoANoN3(ParticleCell &cell1, ParticleCell &cell2);
-
- void processCellSoAN3(ParticleCell &cell);
-
- void processCellSoANoN3(ParticleCell &cell);
-
- ParticleFunctor *_functor;
-
- const double _sortingCutoff;
-
- /**
-  * Min. number of particles to start sorting. This is the sum of the number of particles in two cells.
-  * For details on the chosen default threshold see: https://github.com/AutoPas/AutoPas/pull/619
-  */
- size_t _sortingThreshold{8};
-
- DataLayoutOption _dataLayout;
-
- bool _useNewton3;
+ double _cutoff;
 };
 
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::setSortingThreshold(size_t sortingThreshold) {
- _sortingThreshold = sortingThreshold;
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCell(ParticleCell &cell) {
- if ((_dataLayout == DataLayoutOption::soa and cell._particleSoABuffer.size() == 0) or
-     (_dataLayout == DataLayoutOption::aos and cell.isEmpty())) {
-   return;
- }
-
- // avoid force calculations if the cell contains only halo particles or if the cell is empty (=dummy)
- const bool cellHasOwnedParticles = toInt64(cell.getPossibleParticleOwnerships() & OwnershipState::owned);
- if (not cellHasOwnedParticles) {
-   return;
- }
-
- // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
- switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
-   case DataLayoutOption::aos:
-     processCellAoS(cell);
-     break;
-   case DataLayoutOption::soa:
-     if (_useNewton3) {
-       processCellSoAN3(cell);
-     } else {
-       processCellSoANoN3(cell);
-     }
-     break;
- }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPair(
-
-   ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
- if ((_dataLayout == DataLayoutOption::soa and
-      (cell1._particleSoABuffer.size() == 0 and cell2._particleSoABuffer.size() == 0)) or
-     (_dataLayout == DataLayoutOption::aos and (cell1.isEmpty() and cell2.isEmpty()))) {
-   return;
- }
-
- // avoid force calculations if both cells can not contain owned particles or if newton3==false and cell1 does not
- // contain owned particles
- const bool cell1HasOwnedParticles = toInt64(cell1.getPossibleParticleOwnerships() & OwnershipState::owned);
- const bool cell2HasOwnedParticles = toInt64(cell2.getPossibleParticleOwnerships() & OwnershipState::owned);
-
- if (((not cell1HasOwnedParticles) and (not _useNewton3) and (not bidirectional)) or
-     ((not cell1HasOwnedParticles) and (not cell2HasOwnedParticles))) {
-   return;
- }
-
- // (Explicit) static cast required for Apple Clang (last tested version: 15.0.0)
- switch (static_cast<DataLayoutOption::Value>(_dataLayout)) {
-   case DataLayoutOption::aos:
-     if (_useNewton3) {
-       processCellPairAoSN3(cell1, cell2, sortingDirection);
-     } else {
-       processCellPairAoSNoN3(cell1, cell2, sortingDirection);
-     }
-     break;
-   case DataLayoutOption::soa:
-     if (_useNewton3) {
-       processCellPairSoAN3(cell1, cell2);
-     } else {
-       processCellPairSoANoN3(cell1, cell2);
-     }
-     break;
- }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellAoS(ParticleCell &cell) {
- // helper function
- const auto interactParticles = [&](auto &p1, auto &p2) {
-   if (_useNewton3) {
-     _functor->AoSFunctor(p1, p2, true);
-   } else {
-     if (not p1.isHalo()) {
-       _functor->AoSFunctor(p1, p2, false);
-     }
-     if (not p2.isHalo()) {
-       _functor->AoSFunctor(p2, p1, false);
-     }
-   }
- };
-
- if (cell.size() > _sortingThreshold) {
-   SortedCellView<ParticleCell> cellSorted(cell, utils::ArrayMath::normalize(cell.getCellLength()));
-
-   for (auto cellIter1 = cellSorted._particles.begin(); cellIter1 != cellSorted._particles.end(); ++cellIter1) {
-     auto &[p1Projection, p1Ptr] = *cellIter1;
-     // start inner loop ahead of the outer loop
-     for (auto cellIter2 = std::next(cellIter1); cellIter2 != cellSorted._particles.end(); ++cellIter2) {
-       auto &[p2Projection, p2Ptr] = *cellIter2;
-       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
-         break;
-       }
-       interactParticles(*p1Ptr, *p2Ptr);
-     }
-   }
- } else {
-   for (auto cellIter1 = cell.begin(); cellIter1 != cell.end(); ++cellIter1) {
-     auto cellIter2 = cellIter1;
-     ++cellIter2;
-     for (; cellIter2 != cell.end(); ++cellIter2) {
-       interactParticles(*cellIter1, *cellIter2);
-     }
-   }
- }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSN3(
-   ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
- if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
-   SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
-   SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
-
-   for (auto &[p1Projection, p1Ptr] : cell1Sorted._particles) {
-     for (auto &[p2Projection, p2Ptr] : cell2Sorted._particles) {
-       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
-         break;
-       }
-       _functor->AoSFunctor(*p1Ptr, *p2Ptr, true);
-     }
-   }
- } else {
-   for (auto &p1 : cell1) {
-     for (auto &p2 : cell2) {
-       _functor->AoSFunctor(p1, p2, true);
-     }
-   }
- }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairAoSNoN3(
-   ParticleCell &cell1, ParticleCell &cell2, const std::array<double, 3> &sortingDirection) {
- // helper function
- const auto interactParticlesNoN3 = [&](auto &p1, auto &p2) {
-   _functor->AoSFunctor(p1, p2, false);
-   if constexpr (bidirectional) {
-     if (p2.isOwned()) {
-       _functor->AoSFunctor(p2, p1, false);
-     }
-   }
- };
-
- if ((cell1.size() + cell2.size() > _sortingThreshold) and (sortingDirection != std::array<double, 3>{0., 0., 0.})) {
-   SortedCellView<ParticleCell> cell1Sorted(cell1, sortingDirection);
-   SortedCellView<ParticleCell> cell2Sorted(cell2, sortingDirection);
-
-   for (auto &[p1Projection, p1] : cell1Sorted._particles) {
-     for (auto &[p2Projection, p2] : cell2Sorted._particles) {
-       if (std::abs(p1Projection - p2Projection) > _sortingCutoff) {
-         break;
-       }
-       interactParticlesNoN3(*p1, *p2);
-     }
-   }
- } else {
-   for (auto &p1 : cell1) {
-     for (auto &p2 : cell2) {
-       interactParticlesNoN3(p1, p2);
-     }
-   }
- }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoAN3(ParticleCell &cell1,
-                                                                                    ParticleCell &cell2) {
- _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, true);
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellPairSoANoN3(ParticleCell &cell1,
-                                                                                      ParticleCell &cell2) {
- _functor->SoAFunctorPair(cell1._particleSoABuffer, cell2._particleSoABuffer, false);
- if constexpr (bidirectional) {
-   _functor->SoAFunctorPair(cell2._particleSoABuffer, cell1._particleSoABuffer, false);
- }
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellSoAN3(ParticleCell &cell) {
- _functor->SoAFunctorSingle(cell._particleSoABuffer, true);
-}
-
-template <class ParticleCell, class ParticleFunctor, bool bidirectional>
-void CellFunctor<ParticleCell, ParticleFunctor, bidirectional>::processCellSoANoN3(ParticleCell &cell) {
- _functor->SoAFunctorSingle(cell._particleSoABuffer, false);  // the functor has to enable this...
-}
-}  // namespace autopas::internal
+}  // namespace autopas
