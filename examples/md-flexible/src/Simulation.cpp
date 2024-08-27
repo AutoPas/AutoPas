@@ -665,7 +665,7 @@ void Simulation::loadParticles() {
   //       Nevertheless it could be improved by determining which particle has to go to which rank.
   const auto rank = _domainDecomposition->getDomainIndex();
   ParticleCommunicator particleCommunicator(_domainDecomposition->getCommunicator());
-  for (int receiverRank = 0; receiverRank < _domainDecomposition->getSubdomainCount(); ++receiverRank) {
+  for (int receiverRank = 0; receiverRank < _domainDecomposition->getNumberOfSubdomains(); ++receiverRank) {
     // don't send to ourselves
     if (receiverRank == rank) {
       continue;
@@ -676,7 +676,7 @@ void Simulation::loadParticles() {
   _configuration.flushParticles();
 
   // Receive particles from all other ranks.
-  for (int senderRank = 0; senderRank < _domainDecomposition->getSubdomainCount(); ++senderRank) {
+  for (int senderRank = 0; senderRank < _domainDecomposition->getNumberOfSubdomains(); ++senderRank) {
     // don't send to ourselves
     if (senderRank == rank) {
       continue;

@@ -102,10 +102,6 @@ void RegularGridDecomposition::update(const double &work) {
   }
 }
 
-int RegularGridDecomposition::getNumberOfSubdomains() const {
-  return std::accumulate(_decomposition.begin(), _decomposition.end(), 1, std::multiplies<>());
-}
-
 void RegularGridDecomposition::initializeMPICommunicator() {
   // have to cast away const because MPI requires it
   autopas::AutoPas_MPI_Cart_create(AUTOPAS_MPI_COMM_WORLD, _dimensionCount, _decomposition.data(),
