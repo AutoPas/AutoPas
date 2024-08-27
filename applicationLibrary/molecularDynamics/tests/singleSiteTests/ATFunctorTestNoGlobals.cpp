@@ -509,6 +509,34 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
         functor->SoAExtractor(cell2, cell2._particleSoABuffer, 0);
         functor->SoAExtractor(cell3, cell3._particleSoABuffer, 0);
 
+        std::array<double, 3> f1 = cell1.begin()->getF();
+        std::array<double, 3> f2 = {0., 0., 0.};
+        switch (interactionType) {
+          case TestType::InteractionType::pair21:
+            f2 = (++cell1.begin())->getF();
+            break;
+          case TestType::InteractionType::pair12:
+          case TestType::InteractionType::triple:
+            f2 = cell2.begin()->getF();
+            break;
+          default:
+            break;
+        }
+        std::array<double, 3> f3 = {0., 0., 0.};
+        switch (interactionType) {
+          case TestType::InteractionType::pair21:
+            f3 = cell2.begin()->getF();
+            break;
+          case TestType::InteractionType::pair12:
+            f3 = (++cell2.begin())->getF();
+            break;
+          case TestType::InteractionType::triple:
+            f3 = cell3.begin()->getF();
+            break;
+          default:
+            break;
+        }
+
         double factor = newton3 ? 3. : 1.;
         if (mixing) {
           EXPECT_NEAR(f1[0], factor * this->expectedForceMixingP1[0], this->absDelta);
