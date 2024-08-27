@@ -149,7 +149,7 @@ TEST(FuzzyTuningTest, testSigmoidFiniteFuzzySetDecreasing) {
 }
 
 /**
- * Tests whether the negation operation on a fuzzy sets calculates the correct membership values.
+ * Tests whether the negation operation on a fuzzy set calculates the correct membership values.
  * The negation of a fuzzy set is defined as 1 - membership.
  */
 TEST(FuzzyTuningTest, testNegationOfFuzzySet) {
