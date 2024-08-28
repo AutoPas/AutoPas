@@ -114,7 +114,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
   /**
@@ -128,7 +128,7 @@ class RuleBasedTuning : public TuningStrategyInterface {
    */
   [[nodiscard]] long getLifetimeTuningTime() const;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
 
  private:
