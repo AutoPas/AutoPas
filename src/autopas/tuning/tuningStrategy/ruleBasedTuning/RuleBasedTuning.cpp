@@ -91,7 +91,7 @@ bool RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueu
   if (_rulesTooHarsh or (_searchSpace.empty() and _tuningTime == 0)) {
     _rulesTooHarsh = true;
     AutoPasLog(WARN, "Rules would remove all available options! Not applying them until next reset.");
-    return;
+    return false;
   }
 
   if (not _verifyModeEnabled) {
