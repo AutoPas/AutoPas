@@ -51,7 +51,7 @@ void RuleBasedTuning::addEvidence(const Configuration &configuration, const Evid
 #endif
 }
 
-void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                             const EvidenceCollection &evidenceCollection) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   if (_verifyModeEnabled and _tuningTime > 0) {
@@ -73,13 +73,16 @@ void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Co
   _rulesTooHarsh = false;
   optimizeSuggestions(configQueue, evidenceCollection);
 #endif
+
+  // RuleBasedTuning does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 long RuleBasedTuning::getLifetimeWouldHaveSkippedTuningTime() const { return _wouldHaveSkippedTuningTimeLifetime; }
 
 long RuleBasedTuning::getLifetimeTuningTime() const { return _tuningTimeLifetime; }
 
-void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+bool RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                           const EvidenceCollection &evidenceCollection) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_TUNING
   _lastApplicableConfigurationOrders = applyRules(configQueue);
@@ -96,6 +99,8 @@ void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueu
     std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
   }
 #endif
+  // RuleBasedTuning does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 TuningStrategyOption RuleBasedTuning::getOptionType() const { return TuningStrategyOption::ruleBasedTuning; }

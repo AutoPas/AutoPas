@@ -7,6 +7,8 @@
 
 #include "Object.h"
 #include "autopas/utils/ArrayMath.h"
+#include "autopasTools/PseudoContainer.h"
+#include "autopasTools/generators/GaussianGenerator.h"
 
 /**
  * Class describing an cuboid object filled with gaussian randomly distributed particles.
@@ -74,15 +76,15 @@ class CubeGauss : public Object {
     std::ostringstream output;
 
     output << std::setw(_valueOffset) << std::left << "distribution-mean"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionMean) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionMean) << "\n";
     output << std::setw(_valueOffset) << std::left << "distribution-stddeviation"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionStdDev) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_distributionStdDev) << "\n";
     output << std::setw(_valueOffset) << std::left << "numberOfParticles"
-           << ":  " << _numParticles << std::endl;
+           << ":  " << _numParticles << "\n";
     output << std::setw(_valueOffset) << std::left << "box-length"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_boxLength) << "\n";
     output << std::setw(_valueOffset) << std::left << "bottomLeftCorner"
-           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << std::endl;
+           << ":  " << autopas::utils::ArrayUtils::to_string(_bottomLeftCorner) << "\n";
     output << Object::to_string();
     return output.str();
   }
@@ -92,22 +94,18 @@ class CubeGauss : public Object {
    * @param particles The container where the new particles will be stored.
    */
   void generate(std::vector<ParticleType> &particles) const override {
-    ParticleType particle = getDummyParticle(particles.size());
+    // Wrapper so that std::vector can be used as an AutoPas::ParticleContainer
+    auto particlesWrapper = autopasTools::PseudoContainer(particles);
 
-    std::default_random_engine generator(42);
-    std::array<std::normal_distribution<double>, 3> distributions = {
-        std::normal_distribution<double>{_distributionMean[0], _distributionStdDev[0]},
-        std::normal_distribution<double>{_distributionMean[1], _distributionStdDev[1]},
-        std::normal_distribution<double>{_distributionMean[2], _distributionStdDev[2]}};
+    using namespace autopas::utils::ArrayMath::literals;
+    const auto boxMax = _bottomLeftCorner + _boxLength;
 
-    for (int i = 0; i < _numParticles; ++i) {
-      particle.setR({_bottomLeftCorner[0] + distributions[0](generator),
-                     _bottomLeftCorner[1] + distributions[1](generator),
-                     _bottomLeftCorner[2] + distributions[2](generator)});
+    // dummy particle used as a template with id of the first newly generated one
+    const ParticleType dummyParticle = getDummyParticle(particles.size());
 
-      particles.push_back(particle);
-      particle.setID(particle.getID() + 1);
-    }
+    autopasTools::generators::GaussianGenerator::fillWithParticles(particlesWrapper, _bottomLeftCorner, boxMax,
+                                                                   _numParticles, dummyParticle, _distributionMean,
+                                                                   _distributionStdDev);
   }
 
  private:

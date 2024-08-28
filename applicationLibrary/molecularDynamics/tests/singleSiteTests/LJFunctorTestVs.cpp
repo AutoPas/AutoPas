@@ -25,10 +25,10 @@ TYPED_TEST_P(LJFunctorTestVs, testMixingVsNoMixingSoA) {
   Molecule defaultParticle({0., 0., 0.}, {0., 0., 0.}, 0, 0, std::sqrt(this->epsilon), this->sigma / 2);
   FMCell cell1NoPPL;
   FMCell cell2NoPPL;
-  autopasTools::generators::RandomGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
-                                                               numParticlesPerCell, 42);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
-                                                               numParticlesPerCell, 43);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell1NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
+                                                                numParticlesPerCell, 42);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cell2NoPPL, defaultParticle, {0, 0, 0}, {5, 5, 5},
+                                                                numParticlesPerCell, 43);
 
   funNoMixing.SoALoader(cell1NoPPL, cell1NoPPL._particleSoABuffer, 0, /*skipSoAResize*/ false);
   funNoMixing.SoALoader(cell2NoPPL, cell2NoPPL._particleSoABuffer, 0, /*skipSoAResize*/ false);

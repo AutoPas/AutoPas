@@ -229,9 +229,9 @@ std::string MDFlexConfig::to_string() const {
   printOption(containerOptions);
 
   // since all containers are rebuilt only periodically print Verlet config always.
+  printOption(fastParticlesThrow);
   printOption(verletRebuildFrequency);
   printOption(verletSkinRadiusPerTimestep);
-  printOption(fastParticlesThrow);
   const auto passedContainerOptionsStr = autopas::utils::ArrayUtils::to_string(containerOptions.value);
   if (passedContainerOptionsStr.find("luster") != std::string::npos) {
     printOption(verletClusterSize);
@@ -262,6 +262,7 @@ std::string MDFlexConfig::to_string() const {
     printOption(MPITuningMaxDifferenceForBucket);
     printOption(MPITuningWeightForMaxDensity);
   }
+  printOption(tuningMetricOption);
   printOption(tuningInterval);
   printOption(tuningSamples);
   if (tuningStrategyOptionsContainAnyOf({
