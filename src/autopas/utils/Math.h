@@ -228,6 +228,15 @@ double sigmoid(double x);
 bool isNearRel(double a, double b, double maxRelativeDifference = 1e-9);
 
 /**
+ * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
+ * @param a
+ * @param b
+ * @param maxAbsoluteDifference inclusive
+ * @return
+ */
+bool isNearAbs(double a, double b, double maxAbsoluteDifference);
+
+/**
  * Round a floating point number to a given number of decimal digits.
  * @param d Number to round.
  * @param fixedPrecision Number of decimal digits. Negative values lead to rounding of digits left of the decimal.
