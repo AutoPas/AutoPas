@@ -30,10 +30,10 @@ double sigmoid(double x) {
 }
 
 bool isNearRel(double a, double b, double maxRelativeDifference) {
-  const auto [smallerNumber, biggerNumber] = std::minmax(a, b);
-  const auto maxAbsoluteDifference = maxRelativeDifference * biggerNumber;
-  const auto diff = biggerNumber - smallerNumber;
-  return diff <= maxAbsoluteDifference;
+  const auto greaterNumber = std::max(std::abs(a), std::abs(b));
+  const auto absoluteDifference = maxRelativeDifference * greaterNumber;
+  const auto diff = std::abs(a - b);
+  return diff <= absoluteDifference;
 }
 
 bool isNearAbs(double a, double b, double maxAbsoluteDifference) { return std::abs(a - b) <= maxAbsoluteDifference; }

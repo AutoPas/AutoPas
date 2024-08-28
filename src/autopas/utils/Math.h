@@ -222,7 +222,7 @@ double sigmoid(double x);
  * Determines if two doubles are near each other. This function should be preferred to comparing with ==.
  * @param a
  * @param b
- * @param maxRelativeDifference inclusive
+ * @param maxRelativeDifference inclusive, relative to max(|a|, |b|).
  * @return
  */
 bool isNearRel(double a, double b, double maxRelativeDifference = 1e-9);
