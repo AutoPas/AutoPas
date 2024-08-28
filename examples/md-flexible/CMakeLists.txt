@@ -21,7 +21,7 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calcula
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AT "Compile auto vectorized Axilrod Teller Functor." OFF)
-option(MD_FLEXIBLE_FUNCTOR_KRYPTON "Compile Krypton Pair Functor as defined in src/TypeDefinitions.h." OFF)
+option(MD_FLEXIBLE_FUNCTOR_KRYPTON "Compile auto vectorized Krypton Functors." OFF)
 
 target_compile_definitions(
         md-flexible
