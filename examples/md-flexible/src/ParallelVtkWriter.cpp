@@ -150,14 +150,15 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
     // considered to be not part of the domain, hence such a particle would not be loaded and thus be lost.
     // This function identifies these problematic values and raises the write precision just for this value high enough
     // to be distinguishable from the boundary.
-    const auto writeWithDynamicPrecision = [&](double d, double border) {
+    const auto writeWithDynamicPrecision = [&](double position, double border) {
       const auto initialPrecision = timestepFile.precision();
       // Simple and cheap check if we even need to do anything.
-      if (border - d < 0.1) {
+      if (border - position < 0.1) {
         using autopas::utils::Math::roundFloating;
         using autopas::utils::Math::isNearAbs;
         // As long as the used precision results in the two values being indistinguishable increase the precision
-        while (isNearAbs(roundFloating(d, timestepFile.precision()), border, std::pow(10, -timestepFile.precision()))) {
+        while (isNearAbs(roundFloating(position, timestepFile.precision()), border,
+                         std::pow(10, -timestepFile.precision()))) {
           timestepFile << std::setprecision(timestepFile.precision() + 1);
           // Abort if the numbers are indistinguishable beyond machine precision
           if (timestepFile.precision() > 20) {
@@ -165,12 +166,12 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
                 "ParallelVtkWriter::writeWithDynamicPrecision(): "
                 "The two given numbers are identical up to 20 digits of precision!\n"
                 "Number: " +
-                std::to_string(d) + "\n" + particle->toString());
+                std::to_string(position) + "\n" + particle->toString());
           }
         }
       }
       // Write with the new precision and then reset it
-      timestepFile << d << std::setprecision(initialPrecision);
+      timestepFile << position << std::setprecision(initialPrecision);
     };
 
     const auto pos = particle->getR();
