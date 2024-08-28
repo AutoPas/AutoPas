@@ -155,10 +155,11 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
       // Simple and cheap check if we even need to do anything.
       if (border - d < 0.1) {
         using autopas::utils::Math::roundFloating;
-        // As long as the used precision results in the two values being the same increase it
-        while (roundFloating(d, timestepFile.precision()) == border) {
+        using autopas::utils::Math::isNearAbs;
+        // As long as the used precision results in the two values being indistinguishable increase the precision
+        while (isNearAbs(roundFloating(d, timestepFile.precision()), border, std::pow(10, -timestepFile.precision()))) {
           timestepFile << std::setprecision(timestepFile.precision() + 1);
-          // Abort if the numbers are indistinguishable
+          // Abort if the numbers are indistinguishable beyond machine precision
           if (timestepFile.precision() > 20) {
             throw std::runtime_error(
                 "ParallelVtkWriter::writeWithDynamicPrecision(): "
