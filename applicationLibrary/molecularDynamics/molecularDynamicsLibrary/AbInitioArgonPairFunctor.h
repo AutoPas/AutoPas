@@ -9,7 +9,7 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/pairwiseFunctors/Functor.h"
+#include "autopas/baseFunctors/Functor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -74,7 +74,7 @@ class AbInitioArgonPairFunctor : public autopas::Functor<Particle, AbInitioArgon
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  inline void AoSFunctor(Particle &i, Particle &j, bool newton3) final {
+  inline void AoSFunctor(Particle &i, Particle &j, bool newton3) {
     using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy()) {
       return;
@@ -187,7 +187,7 @@ class AbInitioArgonPairFunctor : public autopas::Functor<Particle, AbInitioArgon
    * This functor will always do a newton3 like traversal of the soa.
    * However, it still needs to know about newton3 to correctly add up the global values.
    */
-  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) final {}
+  inline void SoAFunctorSingle(autopas::SoAView<SoAArraysType> soa, bool newton3) {}
 
   // clang-format off
   /**
@@ -195,7 +195,7 @@ class AbInitioArgonPairFunctor : public autopas::Functor<Particle, AbInitioArgon
    */
   // clang-format on
   inline void SoAFunctorPair(autopas::SoAView<SoAArraysType> soa1, autopas::SoAView<SoAArraysType> soa2,
-                             const bool newton3) final { }
+                             const bool newton3) { }
 
   // clang-format off
   /**
@@ -206,7 +206,7 @@ class AbInitioArgonPairFunctor : public autopas::Functor<Particle, AbInitioArgon
   // clang-format on
   inline void SoAFunctorVerlet(autopas::SoAView<SoAArraysType> soa, const size_t indexFirst,
                                const std::vector<size_t, autopas::AlignedAllocator<size_t>> &neighborList,
-                               bool newton3) final {}
+                               bool newton3) {}
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
