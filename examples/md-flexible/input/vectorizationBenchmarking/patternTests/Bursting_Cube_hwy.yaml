@@ -1,9 +1,9 @@
 functor                          :  highway
-vectorizationPattern             :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthx1]
+vectorizationPattern             :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
 data-layout                      :  [SoA]
 container                        :  [LinkedCells]
-newton3                          :  [enabled,disabled]
-tuning-interval                  :  2500
+newton3                          :  [enabled]
+tuning-interval                  :  2000
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 cutoff                           :  4
@@ -11,21 +11,27 @@ verlet-rebuild-frequency         :  10
 verlet-skin-radius-per-timestep  :  0.1
 deltaT                           :  0.0005
 iterations                       :  15000
-boundary-type                    :  [none,none,none]
+boundary-type                    :  [reflective,reflective,reflective]
 globalForce                      :  [0,0,-12]
 box-min                          :  [0, 0, 0]
-box-max                          :  [40, 40, 40]
+box-max                          :  [90, 90, 65]
 Objects:
-  CubeGrid:
+  CubeClosestPacked:
     0:
-      particles-per-dimension    :  [20, 20, 20]
-      particle-spacing           :  1
-      bottomLeftCorner           :  [10, 10, 40]
-      velocity                   :  [0, 0, 0]
-      particle-type-id           :  0
-      particle-epsilon           :  1
-      particle-sigma             :  1
-      particle-mass              :  1
+      particle-spacing           : 1
+      bottomLeftCorner           : [ 35, 35, 15 ]
+      box-length                 : [ 30, 30, 30 ]
+      velocity                   : [ 0, 0, -10 ]
+      particle-type-id           : 0
+      particle-epsilon           : 1
+      particle-sigma             : 1.5
+      particle-mass              : 1
+thermostat:
+  initialTemperature             :  20
+  targetTemperature              :  20
+  deltaTemperature               :  2
+  thermostatInterval             :  20
+  addBrownianMotion              :  false
 vtk-write-frequency              :  200
 vtk-filename                     :  Bursting_Cube_hwy
 load-balancer                    :  none
