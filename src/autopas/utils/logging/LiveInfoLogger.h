@@ -12,7 +12,6 @@
 #include "autopas/tuning/tuningStrategy/LiveInfo.h"
 
 namespace autopas {
-
 /**
  * Helper to log the collected LiveInfo data during tuning to a csv file for easier analysis.
  *
@@ -44,7 +43,8 @@ class LiveInfoLogger {
  private:
   std::string _loggerName;
   std::string _outputFileName;
+#ifdef AUTOPAS_LOG_LIVEINFO
   bool headerWritten = false;
+#endif
 };
-
 }  // namespace autopas
