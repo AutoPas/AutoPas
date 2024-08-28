@@ -8,25 +8,25 @@
 
 #include "autopas/utils/Math.h"
 
-TEST(MathTest, isNearTest) {
+TEST(MathTest, isNearRelTest) {
   {
     const double a = 0;
-    EXPECT_TRUE(autopas::utils::Math::isNear(a, a));
+    EXPECT_TRUE(autopas::utils::Math::isNearRel(a, a));
   }
   {
     const double a = 0;
     const double b = -0;
-    EXPECT_TRUE(autopas::utils::Math::isNear(a, b));
+    EXPECT_TRUE(autopas::utils::Math::isNearRel(a, b));
   }
   {
     const double a = 1. / 3.;
     const double b = std::nextafter(a, a + 1);
-    EXPECT_TRUE(autopas::utils::Math::isNear(a, b));
+    EXPECT_TRUE(autopas::utils::Math::isNearRel(a, b));
   }
   {
     const double a = 1. / 3.;
     const double b = a + 1e-8;
-    EXPECT_FALSE(autopas::utils::Math::isNear(a, b));
+    EXPECT_FALSE(autopas::utils::Math::isNearRel(a, b));
   }
 }
 

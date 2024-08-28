@@ -451,9 +451,9 @@ void MDFlexConfig::addSiteType(unsigned long siteId, double epsilon, double sigm
   // check if siteId is already existing and if there is no error in input
   if (epsilonMap.value.count(siteId) == 1) {
     // check if type is already added
-    if (autopas::utils::Math::isNear(epsilonMap.value.at(siteId), epsilon) and
-        autopas::utils::Math::isNear(sigmaMap.value.at(siteId), sigma) and
-        autopas::utils::Math::isNear(massMap.value.at(siteId), mass)) {
+    if (autopas::utils::Math::isNearRel(epsilonMap.value.at(siteId), epsilon) and
+        autopas::utils::Math::isNearRel(sigmaMap.value.at(siteId), sigma) and
+        autopas::utils::Math::isNearRel(massMap.value.at(siteId), mass)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same siteId for different properties");
@@ -473,8 +473,8 @@ void MDFlexConfig::addMolType(unsigned long molId, const std::vector<unsigned lo
   if (molToSiteIdMap.count(molId) == 1) {
     // check if type is already added
     if (autopas::utils::ArrayMath::isEqual(molToSiteIdMap.at(molId), siteIds) and
-        autopas::utils::ArrayMath::isNear(molToSitePosMap.at(molId), relSitePos) and
-        autopas::utils::ArrayMath::isNear(momentOfInertiaMap.at(molId), momentOfInertia)) {
+        autopas::utils::ArrayMath::isNearRel(molToSitePosMap.at(molId), relSitePos) and
+        autopas::utils::ArrayMath::isNearRel(momentOfInertiaMap.at(molId), momentOfInertia)) {
       return;
     } else {  // wrong initialization:
       throw std::runtime_error("Wrong Particle initialization: using same molId for different properties");
