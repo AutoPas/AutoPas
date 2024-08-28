@@ -10,11 +10,6 @@ AutoPas assumes that any (short-range) particle simulation boils down to three h
 ## Code Example
 A conceptual example of a primary simulation loop:
 ```c++
-
-// Initial force calculation
-YourFunctor functor();                       // User code
-autopas->iteratePairwise(&functor);          // Tuning and parallelization happens here
-
 // main simulation loop
 while (needsMoreIterations()) {
    // 1. Particles movement as a result of interactions or simulation forces.
