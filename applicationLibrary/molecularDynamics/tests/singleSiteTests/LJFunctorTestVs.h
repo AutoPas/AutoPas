@@ -10,7 +10,7 @@
 
 #include "AutoPasTestBase.h"
 #include "LJFunctorTest.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 template <class FuncType>
 class LJFunctorTestVs : public LJFunctorTest {

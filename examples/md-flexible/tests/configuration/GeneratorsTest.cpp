@@ -8,7 +8,7 @@
 
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/GridGenerator.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "src/configuration/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
