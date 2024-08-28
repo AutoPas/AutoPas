@@ -422,7 +422,7 @@ void Simulation::updateInteractionForces() {
   // count time spent for tuning
   if (_currentIterationIsTuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
-    if (_iteration == 0 and (not _initialTuningIterationRecorded)) {
+    if (_iteration == 0 and not _initialTuningIterationRecorded) {
       _initialTuningIterationRecorded = true;
     } else {
       ++_numTuningIterations;
