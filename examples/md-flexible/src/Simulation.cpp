@@ -681,7 +681,9 @@ void Simulation::loadParticles() {
   // Output and sanity checks
   const size_t numParticlesLocally = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
   std::cout << "Number of particles at initialization "
-            << "on rank " << rank << ": " << numParticlesLocally << "\n";
+            // align outputs based on the max number of ranks
+            << "on rank " << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length())
+            << std::right << rank << ": " << numParticlesLocally << "\n";
 
   // Local unnamed struct to pack data for MPI
   struct {
@@ -692,7 +694,10 @@ void Simulation::loadParticles() {
   if (rank == 0) {
     autopas::AutoPas_MPI_Reduce(AUTOPAS_MPI_IN_PLACE, &dataPackage, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
                                 _domainDecomposition->getCommunicator());
-    std::cout << "Number of particles at initialization globally: " << dataPackage.numParticlesAdded << "\n";
+    std::cout << "Number of particles at initialization globally"
+              // align ":" with the messages above
+              << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length()) << ""
+              << ": " << dataPackage.numParticlesAdded << "\n";
     // Sanity check that on a global scope all particles have been loaded
     if (dataPackage.numParticlesAdded != dataPackage.numParticlesInConfig) {
       throw std::runtime_error(
