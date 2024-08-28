@@ -1,8 +1,8 @@
 /**
- * @file MDFlexConfig.h
- * @author F. Gratl
- * @date 18.10.2019
- */
+* @file MDFlexConfig.h
+* @author F. Gratl
+* @date 18.10.2019
+*/
 
 #pragma once
 
@@ -34,96 +34,96 @@
 #include "src/options/BoundaryTypeOption.h"
 
 /**
- * Class containing all necessary parameters for configuring a md-flexible simulation.
- */
+* Class containing all necessary parameters for configuring a md-flexible simulation.
+*/
 class MDFlexConfig {
- public:
-  /**
-   * Constructor that initializes the configuration from the CLI arguments (incl. yaml file argument).
-   * @param argc: the argument count of the arguments passed to the main function.
-   * @param argv: the argument vector passed to the main function.
-   */
-  MDFlexConfig(int argc, char **argv);
+public:
+ /**
+  * Constructor that initializes the configuration from the CLI arguments (incl. yaml file argument).
+  * @param argc: the argument count of the arguments passed to the main function.
+  * @param argv: the argument vector passed to the main function.
+  */
+ MDFlexConfig(int argc, char **argv);
 
-  /**
-   * Constructor using only default values.
-   * Useful for testing but might require setting some values before this is valid.
-   */
-  MDFlexConfig() = default;
+ /**
+  * Constructor using only default values.
+  * Useful for testing but might require setting some values before this is valid.
+  */
+ MDFlexConfig() = default;
 
-  /**
-   * Struct to bundle information for options.
-   * @tparam T Datatype of the option
-   * @tparam getOptChar int for the switch case that is used during cli argument parsing with getOpt.
-   * @note ints should be unique so they can be used for a switch case.
-   * @note getOptChar should never be -1 because getopt uses this value to indicate that there are no more cli arguments
-   * @note use __LINE__ as a cheap generator for unique ints.
-   * @todo c++20: With support for non-type template parameters replace the template getOptChar with the name string
-   * Then the getOptChar can be generated from that (e.g. with a hash) at compile time. Discussed here:
-   * https://github.com/AutoPas/AutoPas/pull/469#discussion_r431270944
-   */
-  template <class T, int getOptChar>
-  struct MDFlexOption {
-    /**
-     * Value of this option.
-     */
-    T value;
+ /**
+  * Struct to bundle information for options.
+  * @tparam T Datatype of the option
+  * @tparam getOptChar int for the switch case that is used during cli argument parsing with getOpt.
+  * @note ints should be unique so they can be used for a switch case.
+  * @note getOptChar should never be -1 because getopt uses this value to indicate that there are no more cli arguments
+  * @note use __LINE__ as a cheap generator for unique ints.
+  * @todo c++20: With support for non-type template parameters replace the template getOptChar with the name string
+  * Then the getOptChar can be generated from that (e.g. with a hash) at compile time. Discussed here:
+  * https://github.com/AutoPas/AutoPas/pull/469#discussion_r431270944
+  */
+ template <class T, int getOptChar>
+ struct MDFlexOption {
+   /**
+    * Value of this option.
+    */
+   T value;
 
-    /**
-     * Indicate whether this option is a flag or takes arguments.
-     */
-    bool requiresArgument;
+   /**
+    * Indicate whether this option is a flag or takes arguments.
+    */
+   bool requiresArgument;
 
-    /**
-     * String representation of the option name.
-     */
-    std::string name;
+   /**
+    * String representation of the option name.
+    */
+   std::string name;
 
-    /**
-     * String describing this option. This is displayed when md-flexible is invoked with --help.
-     */
-    std::string description;
+   /**
+    * String describing this option. This is displayed when md-flexible is invoked with --help.
+    */
+   std::string description;
 
-    /**
-     * Member to access the template parameter.
-     */
-    constexpr static int getoptChar{getOptChar};
+   /**
+    * Member to access the template parameter.
+    */
+   constexpr static int getoptChar{getOptChar};
 
-    /**
-     * Constructor
-     * @param value Default value for this option.
-     * @param newName String representation of the option name.
-     * @param requiresArgument Indicate whether this option is a flag or takes arguments.
-     * @param newDescription String describing this option. This is displayed when md-flexible is invoked with --help.
-     */
-    MDFlexOption(T value, std::string newName, bool requiresArgument, std::string newDescription)
-        : requiresArgument(requiresArgument),
-          name(std::move(newName)),
-          value(std::move(value)),
-          description(std::move(newDescription)) {}
+   /**
+    * Constructor
+    * @param value Default value for this option.
+    * @param newName String representation of the option name.
+    * @param requiresArgument Indicate whether this option is a flag or takes arguments.
+    * @param newDescription String describing this option. This is displayed when md-flexible is invoked with --help.
+    */
+   MDFlexOption(T value, std::string newName, bool requiresArgument, std::string newDescription)
+       : requiresArgument(requiresArgument),
+         name(std::move(newName)),
+         value(std::move(value)),
+         description(std::move(newDescription)) {}
 
-    /**
-     * Returns a getopt option struct for this object.
-     * @return
-     */
-    [[nodiscard]] auto toGetoptOption() const {
-      struct option retStruct {
-        name.c_str(), requiresArgument, nullptr, getOptChar
-      };
-      return retStruct;
-    }
-  };
+   /**
+    * Returns a getopt option struct for this object.
+    * @return
+    */
+   [[nodiscard]] auto toGetoptOption() const {
+     struct option retStruct {
+       name.c_str(), requiresArgument, nullptr, getOptChar
+     };
+     return retStruct;
+   }
+ };
 
-  /**
-   * Convert the content of the config to a string representation.
-   * @return
-   */
-  [[nodiscard]] std::string to_string() const;
+ /**
+  * Convert the content of the config to a string representation.
+  * @return
+  */
+ [[nodiscard]] std::string to_string() const;
 
-  /**
-   * Checks parsed Objects and determines the necessary size of the simulation box.
-   */
-  void calcSimulationBox();
+ /**
+  * Checks parsed Objects and determines the necessary size of the simulation box.
+  */
+ void calcSimulationBox();
 
   /**
    * Returns the ParticlePropertiesLibrary containing the properties of the particle types used in this simulation.
@@ -131,63 +131,63 @@ class MDFlexConfig {
    */
   std::shared_ptr<ParticlePropertiesLibraryType> getParticlePropertiesLibrary() { return _particlePropertiesLibrary; }
 
-  /**
-   * Returns the used interaction types as deducted from the used functor(s).
-   * @return set of used interaction types.
-   */
-  std::set<autopas::InteractionTypeOption> getInteractionTypes() const { return _interactionTypes; }
+ /**
+  * Returns the used interaction types as deducted from the used functor(s).
+  * @return set of used interaction types.
+  */
+ std::set<autopas::InteractionTypeOption> getInteractionTypes() const { return _interactionTypes; }
 
-  /**
-   * Add interaction type after recognizing a certain functor.
-   * @param interactionType
-   */
-  void addInteractionType(autopas::InteractionTypeOption interactionType) { _interactionTypes.insert(interactionType); }
+ /**
+  * Add interaction type after recognizing a certain functor.
+  * @param interactionType
+  */
+ void addInteractionType(autopas::InteractionTypeOption interactionType) { _interactionTypes.insert(interactionType); }
 
-  /**
-   * Adds a new site with specified mass and checks if the siteId already exists.
-   * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
-   *
-   * @param siteId unique site type id
-   * @param mass
-   */
-  void addSiteType(unsigned long siteId, double mass);
+ /**
+  * Adds a new site with specified mass and checks if the siteId already exists.
+  * For single site simulations, the molecule's molId is used to look up the site with siteId = molId.
+  *
+  * @param siteId unique site type id
+  * @param mass
+  */
+ void addSiteType(unsigned long siteId, double mass);
 
-  /**
-   * Adds Lennard-Jones parameters to the specified site.
-   * Checks if the given site exists and if the parameters were already specified.
-   *
-   * @param siteId unique site type id
-   * @param epsilon
-   * @param sigma
-   */
-  void addLJParametersToSite(unsigned long siteId, double epsilon, double sigma);
+ /**
+  * Adds Lennard-Jones parameters to the specified site.
+  * Checks if the given site exists and if the parameters were already specified.
+  *
+  * @param siteId unique site type id
+  * @param epsilon
+  * @param sigma
+  */
+ void addLJParametersToSite(unsigned long siteId, double epsilon, double sigma);
 
-  /**
-   * Adds the Axilrod-Teller parameter nu to the specified site.
-   * Checks if the given site exists and if the parameter was already specified.
-   *
-   * @param siteId unique site type id
-   * @param nu
-   */
-  void addATParametersToSite(unsigned long siteId, double nu);
+ /**
+  * Adds the Axilrod-Teller parameter nu to the specified site.
+  * Checks if the given site exists and if the parameter was already specified.
+  *
+  * @param siteId unique site type id
+  * @param nu
+  */
+ void addATParametersToSite(unsigned long siteId, double nu);
 
-  /**
-   * Adds site positions and types for a given molecule type and checks if the molId already exists
-   *
-   * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
-   *
-   * @param molId unique mol type id
-   * @param siteIds vector of ids of site types
-   * @param relSitePos vector of relative site positions
-   * @param momentOfInertia diagonalized moment of inertia as a length 3 array of double representing diagonal elements
-   */
-  void addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
-                  const std::vector<std::array<double, 3>> &relSitePos, std::array<double, 3> momentOfInertia);
+ /**
+  * Adds site positions and types for a given molecule type and checks if the molId already exists
+  *
+  * @note When md-flexible is compiled for only single-site molecules, calls to this function return errors.
+  *
+  * @param molId unique mol type id
+  * @param siteIds vector of ids of site types
+  * @param relSitePos vector of relative site positions
+  * @param momentOfInertia diagonalized moment of inertia as a length 3 array of double representing diagonal elements
+  */
+ void addMolType(unsigned long molId, const std::vector<unsigned long> &siteIds,
+                 const std::vector<std::array<double, 3>> &relSitePos, std::array<double, 3> momentOfInertia);
 
-  /**
-   * Flushes the particles.
-   */
-  void flushParticles();
+ /**
+  * Flushes the particles.
+  */
+ void flushParticles();
 
   /**
    * Loads the particles from the checkpoint file defined in the configuration file.
@@ -203,25 +203,25 @@ class MDFlexConfig {
   /**
    * Choice of the pairwise functor
    */
-  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE };
+  enum class FunctorOption { none, lj12_6, lj12_6_AVX, lj12_6_SVE, argon_pairwise };
 
   /**
    * Choice of the Triwise functor
    */
-  enum class FunctorOption3B { none, at };
+  enum class FunctorOption3B { none, at, argon_triwise };
 
-  /**
-   * Choice of the particle generators specified in the command line
-   */
-  enum class GeneratorOption { grid, uniform, gaussian, sphere, closestPacked };
+ /**
+  * Choice of the particle generators specified in the command line
+  */
+ enum class GeneratorOption { grid, uniform, gaussian, sphere, closestPacked };
 
-  //  All options in the config
-  //  Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`!
+ //  All options in the config
+ //  Make sure that the description is parsable by `CLIParser::createZSHCompletionFile()`!
 
-  /**
-   * yamlFilename
-   */
-  MDFlexOption<std::string, __LINE__> yamlFilename{"", "yaml-filename", true, "Path to a .yaml input file."};
+ /**
+  * yamlFilename
+  */
+ MDFlexOption<std::string, __LINE__> yamlFilename{"", "yaml-filename", true, "Path to a .yaml input file."};
 
   // AutoPas options:
   /**
@@ -329,11 +329,11 @@ class MDFlexConfig {
       "Metric to use for tuning. Possible Values: " +
           autopas::utils::ArrayUtils::to_string(autopas::TuningMetricOption::getAllOptions(), " ", {"(", ")"})};
 
-  /**
-   * ruleFilename
-   */
-  MDFlexOption<std::string, __LINE__> ruleFilename{
-      "", "rule-filename", true, "Path to a .rule file containing rules for the rule-based tuning method."};
+ /**
+  * ruleFilename
+  */
+ MDFlexOption<std::string, __LINE__> ruleFilename{
+     "", "rule-filename", true, "Path to a .rule file containing rules for the rule-based tuning method."};
 
   /**
    * fuzzyRuleFilename
@@ -349,12 +349,12 @@ class MDFlexConfig {
       "For MPI-tuning: Maximum of the relative difference in the comparison metric for two ranks which exchange their "
       "tuning information."};
 
-  /**
-   * MPITuningWeightForMaxDensity
-   */
-  MDFlexOption<double, __LINE__> MPITuningWeightForMaxDensity{
-      0.1, "mpi-tuning-weight-for-max-density", true,
-      "For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution."};
+ /**
+  * MPITuningWeightForMaxDensity
+  */
+ MDFlexOption<double, __LINE__> MPITuningWeightForMaxDensity{
+     0.1, "mpi-tuning-weight-for-max-density", true,
+     "For MPI-tuning: Weight for maxDensity in the calculation for bucket distribution."};
 
   /**
    * tuningInterval
@@ -447,46 +447,46 @@ class MDFlexConfig {
       "Skin added to the cutoff to form the interaction length. The total skin width is this number times "
       "verletRebuildFrequency."};
 
-  /**
-   * fastParticlesThrow
-   */
-  MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
-                                                  "Decide if particles that move farther than skin/2/rebuildFrequency "
-                                                  "will throw an exception during the position update or not."};
-  /**
-   * boxMin
-   */
-  MDFlexOption<std::array<double, 3>, 0> boxMin{
-      {0, 0, 0}, "box-min", true, "Lower front left corner of the simulation box."};
-  /**
-   * boxMax
-   */
-  MDFlexOption<std::array<double, 3>, 0> boxMax{
-      {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
+ /**
+  * fastParticlesThrow
+  */
+ MDFlexOption<bool, __LINE__> fastParticlesThrow{false, "fastParticlesThrow", false,
+                                                 "Decide if particles that move farther than skin/2/rebuildFrequency "
+                                                 "will throw an exception during the position update or not."};
+ /**
+  * boxMin
+  */
+ MDFlexOption<std::array<double, 3>, 0> boxMin{
+     {0, 0, 0}, "box-min", true, "Lower front left corner of the simulation box."};
+ /**
+  * boxMax
+  */
+ MDFlexOption<std::array<double, 3>, 0> boxMax{
+     {1, 1, 1}, "box-max", true, "Upper back right corner of the simulation box."};
 
-  /**
-   * loadBalancingInterval
-   */
-  MDFlexOption<unsigned int, __LINE__> loadBalancingInterval{
-      100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
+ /**
+  * loadBalancingInterval
+  */
+ MDFlexOption<unsigned int, __LINE__> loadBalancingInterval{
+     100, "load-balancing-interval", true, "Defines the iteration interval at which load balancing should occur."};
 
-  /**
-   * subdivideDimension
-   */
-  MDFlexOption<std::array<bool, 3>, 0> subdivideDimension{
-      {true, true, true},
-      "subdivide-dimension",
-      true,
-      "Indicates in which dimensions the global domain can be subdivided by the MPI decomposition"};
+ /**
+  * subdivideDimension
+  */
+ MDFlexOption<std::array<bool, 3>, 0> subdivideDimension{
+     {true, true, true},
+     "subdivide-dimension",
+     true,
+     "Indicates in which dimensions the global domain can be subdivided by the MPI decomposition"};
 
-  /**
-   * acquisitionFunctionOption
-   */
-  MDFlexOption<autopas::AcquisitionFunctionOption, __LINE__> acquisitionFunctionOption{
-      autopas::AcquisitionFunctionOption::upperConfidenceBound, "tuning-acquisition-function", true,
-      "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
-      "configuration. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
+ /**
+  * acquisitionFunctionOption
+  */
+ MDFlexOption<autopas::AcquisitionFunctionOption, __LINE__> acquisitionFunctionOption{
+     autopas::AcquisitionFunctionOption::upperConfidenceBound, "tuning-acquisition-function", true,
+     "For Bayesian based tuning strategies: Function to determine the predicted knowledge gain when testing a given "
+     "configuration. Possible Values: " +
+         autopas::utils::ArrayUtils::to_string(autopas::AcquisitionFunctionOption::getAllOptions(), " ", {"(", ")"})};
 
   // Simulation Options:
   /**
@@ -499,13 +499,13 @@ class MDFlexConfig {
   MDFlexOption<FunctorOption, __LINE__> functorOption{// Default is a dummy option
                                                       FunctorOption::none, "functor", true,
                                                       "Pairwise force functor to use. Possible Values: (lennard-jones "
-                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals)"};
+                                                      "lennard-jones-AVX lennard-jones-SVE lennard-jones-globals argon-pairwise)"};
   /**
    * functorOption3B
    */
   MDFlexOption<FunctorOption3B, __LINE__> functorOption3B{
       // Default is a dummy option
-      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller)"};
+      FunctorOption3B::none, "functor-3b", true, "Triwise force functor to use. Possible Values: (axilrod-teller argon-triwise)"};
   /**
    * iterations
    */
@@ -543,283 +543,283 @@ class MDFlexConfig {
   MDFlexOption<double, __LINE__> deltaT{0.001, "deltaT", true,
                                         "Length of a timestep. Set to 0 to deactivate time integration."};
 
-  /**
-   * pauseSimulationDuringTuning
-   */
-  MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
-                                                           "Pauses the update of the simulation during tuning phases."};
-  /**
-   * sortingThreshold
-   * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is
-   * greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid unnecessary
-   * distance checks.
-   */
-  MDFlexOption<size_t, __LINE__> sortingThreshold{
-      8, "sorting-threshold", true,
-      "Threshold for traversals that use the CellFunctor to start sorting. If the sum of the number of particles in "
-      "two cells is greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid "
-      "unnecessary distance checks."};
+ /**
+  * pauseSimulationDuringTuning
+  */
+ MDFlexOption<bool, __LINE__> pauseSimulationDuringTuning{false, "pause-simulation-during-tuning", false,
+                                                          "Pauses the update of the simulation during tuning phases."};
+ /**
+  * sortingThreshold
+  * This value is used in traversal that use the CellFunctor. If the sum of the number of particles in two cells is
+  * greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid unnecessary
+  * distance checks.
+  */
+ MDFlexOption<size_t, __LINE__> sortingThreshold{
+     8, "sorting-threshold", true,
+     "Threshold for traversals that use the CellFunctor to start sorting. If the sum of the number of particles in "
+     "two cells is greater or equal to that value, the CellFunctor creates a sorted view of the particles to avoid "
+     "unnecessary distance checks."};
 
-  // Options for additional Object Generation on command line
-  /**
-   * boxLength
-   */
-  MDFlexOption<double, __LINE__> boxLength{10, "box-length", true, "Length of the simulation box as a cuboid."};
-  /**
-   * distributionMean
-   */
-  MDFlexOption<std::array<double, 3>, __LINE__> distributionMean{
-      {5., 5., 5.}, "distribution-mean", true, "Mean of the gaussian distribution for random particle initialization."};
-  /**
-   * distributionStdDev
-   */
-  MDFlexOption<std::array<double, 3>, __LINE__> distributionStdDev{
-      {2., 2., 2.},
-      "distribution-stddeviation",
-      true,
-      "Standard deviation of the gaussian distribution for random particle initialization."};
-  /**
-   * particlesPerDim
-   */
-  MDFlexOption<size_t, __LINE__> particlesPerDim{10, "particles-per-dimension", true,
-                                                 "Size of the scenario for the grid generator."};
-  /**
-   * particlesTotal
-   */
-  MDFlexOption<size_t, __LINE__> particlesTotal{
-      1000, "particles-total", true, "Total number of particles for the random distribution based generators."};
-  /**
-   * particleSpacing
-   * For a stable grid initialize this as 2^(1/6) sigma
-   */
-  MDFlexOption<double, __LINE__> particleSpacing{1.1225 * 1, "particle-spacing", true,
-                                                 "Space between two particles for the grid generator."};
-  /**
-   * generatorOption
-   */
-  MDFlexOption<GeneratorOption, __LINE__> generatorOption{
-      GeneratorOption::grid, "particle-generator", true,
-      "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
+ // Options for additional Object Generation on command line
+ /**
+  * boxLength
+  */
+ MDFlexOption<double, __LINE__> boxLength{10, "box-length", true, "Length of the simulation box as a cuboid."};
+ /**
+  * distributionMean
+  */
+ MDFlexOption<std::array<double, 3>, __LINE__> distributionMean{
+     {5., 5., 5.}, "distribution-mean", true, "Mean of the gaussian distribution for random particle initialization."};
+ /**
+  * distributionStdDev
+  */
+ MDFlexOption<std::array<double, 3>, __LINE__> distributionStdDev{
+     {2., 2., 2.},
+     "distribution-stddeviation",
+     true,
+     "Standard deviation of the gaussian distribution for random particle initialization."};
+ /**
+  * particlesPerDim
+  */
+ MDFlexOption<size_t, __LINE__> particlesPerDim{10, "particles-per-dimension", true,
+                                                "Size of the scenario for the grid generator."};
+ /**
+  * particlesTotal
+  */
+ MDFlexOption<size_t, __LINE__> particlesTotal{
+     1000, "particles-total", true, "Total number of particles for the random distribution based generators."};
+ /**
+  * particleSpacing
+  * For a stable grid initialize this as 2^(1/6) sigma
+  */
+ MDFlexOption<double, __LINE__> particleSpacing{1.1225 * 1, "particle-spacing", true,
+                                                "Space between two particles for the grid generator."};
+ /**
+  * generatorOption
+  */
+ MDFlexOption<GeneratorOption, __LINE__> generatorOption{
+     GeneratorOption::grid, "particle-generator", true,
+     "Scenario generator. Possible Values: (grid uniform gaussian sphere closestPacking) Default: grid"};
 
-  // Site Type Generation
-  /**
-   * siteStr
-   */
-  static inline const char *const siteStr{"Sites"};
-  /**
-   * epsilonMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
-      {{0ul, 1.}}, "epsilon", true, "Mapping from site type to an epsilon value."};
-  /**
-   * sigmaMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
-      {{0ul, 1.}}, "sigma", true, "Mapping from site type to a sigma value."};
-  /**
-   * nuMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> nuMap{
-      {{0ul, 0.1}}, "nu", true, "Mapping from site type to a nu value."};
-  /**
-   * massMap
-   */
-  MDFlexOption<std::map<unsigned long, double>, 0> massMap{
-      {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
-  // Molecule Type Generation
-  // Strings for parsing yaml files.
-  /**
-   * moleculesStr
-   */
-  static inline const char *const moleculesStr{"Molecules"};
-  /**
-   * moleculeToSiteIdStr
-   */
-  static inline const char *const moleculeToSiteIdStr{"site-types"};
-  /**
-   * moleculeToSitePosStr
-   */
-  static inline const char *const moleculeToSitePosStr{"relative-site-positions"};
-  /**
-   * momentOfInertiaStr
-   */
-  static inline const char *const momentOfInertiaStr{"moment-of-inertia"};
-  // Maps where the molecule type information is actually stored
-  /**
-   * molToSiteIdMap
-   */
-  std::map<unsigned long, std::vector<unsigned long>> molToSiteIdMap{};
-  /**
-   * molToSitePosMap
-   */
-  std::map<unsigned long, std::vector<std::array<double, 3>>> molToSitePosMap{};
-  /**
-   * momentOfInertiaMap
-   */
-  std::map<unsigned long, std::array<double, 3>> momentOfInertiaMap{};
-  // Object Generation:
-  /**
-   * objectsStr
-   */
-  static inline const char *const objectsStr{"Objects"};
-  /**
-   * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is
-   * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
-   */
-  static inline const char *const particleTypeStr{"particle-type-id"};
-  /**
-   * bottomLeftBackCornerStr
-   */
-  static inline const char *const bottomLeftBackCornerStr{"bottomLeftCorner"};
-  /**
-   * velocityStr
-   */
-  static inline const char *const velocityStr{"velocity"};
-  /**
-   * particlesPerObjectStr
-   */
-  static inline const char *const particlesPerObjectStr{"numberOfParticles"};
-  /**
-   * cubeGridObjectsStr
-   */
-  static inline const char *const cubeGridObjectsStr{"CubeGrid"};
-  /**
-   * cubeGridObjects
-   */
-  std::vector<CubeGrid> cubeGridObjects{};
-  /**
-   * cubeGaussObjectsStr
-   */
-  static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
-  /**
-   * cubeGaussObjects
-   */
-  std::vector<CubeGauss> cubeGaussObjects{};
-  /**
-   * cubeUniformObjectsStr
-   */
-  static inline const char *const cubeUniformObjectsStr{"CubeUniform"};
-  /**
-   * cubeUniformObjects
-   */
-  std::vector<CubeUniform> cubeUniformObjects{};
-  /**
-   * sphereObjectsStr
-   */
-  static inline const char *const sphereObjectsStr{"Sphere"};
-  /**
-   * sphereCenterStr
-   */
-  static inline const char *const sphereCenterStr{"center"};
-  /**
-   * sphereRadiusStr
-   */
-  static inline const char *const sphereRadiusStr{"radius"};
-  /**
-   * sphereObjects
-   */
-  std::vector<Sphere> sphereObjects{};
-  /**
-   * cubeClosestPackedObjects
-   */
-  std::vector<CubeClosestPacked> cubeClosestPackedObjects{};
-  /**
-   * cubeClosestPackedObjectsStr
-   */
-  static inline const char *const cubeClosestPackedObjectsStr{"CubeClosestPacked"};
+ // Site Type Generation
+ /**
+  * siteStr
+  */
+ static inline const char *const siteStr{"Sites"};
+ /**
+  * epsilonMap
+  */
+ MDFlexOption<std::map<unsigned long, double>, 0> epsilonMap{
+     {{0ul, 1.}}, "epsilon", true, "Mapping from site type to an epsilon value."};
+ /**
+  * sigmaMap
+  */
+ MDFlexOption<std::map<unsigned long, double>, 0> sigmaMap{
+     {{0ul, 1.}}, "sigma", true, "Mapping from site type to a sigma value."};
+ /**
+  * nuMap
+  */
+ MDFlexOption<std::map<unsigned long, double>, 0> nuMap{
+     {{0ul, 0.1}}, "nu", true, "Mapping from site type to a nu value."};
+ /**
+  * massMap
+  */
+ MDFlexOption<std::map<unsigned long, double>, 0> massMap{
+     {{0ul, 1.}}, "mass", true, "Mapping from site type to a mass value."};
+ // Molecule Type Generation
+ // Strings for parsing yaml files.
+ /**
+  * moleculesStr
+  */
+ static inline const char *const moleculesStr{"Molecules"};
+ /**
+  * moleculeToSiteIdStr
+  */
+ static inline const char *const moleculeToSiteIdStr{"site-types"};
+ /**
+  * moleculeToSitePosStr
+  */
+ static inline const char *const moleculeToSitePosStr{"relative-site-positions"};
+ /**
+  * momentOfInertiaStr
+  */
+ static inline const char *const momentOfInertiaStr{"moment-of-inertia"};
+ // Maps where the molecule type information is actually stored
+ /**
+  * molToSiteIdMap
+  */
+ std::map<unsigned long, std::vector<unsigned long>> molToSiteIdMap{};
+ /**
+  * molToSitePosMap
+  */
+ std::map<unsigned long, std::vector<std::array<double, 3>>> molToSitePosMap{};
+ /**
+  * momentOfInertiaMap
+  */
+ std::map<unsigned long, std::array<double, 3>> momentOfInertiaMap{};
+ // Object Generation:
+ /**
+  * objectsStr
+  */
+ static inline const char *const objectsStr{"Objects"};
+ /**
+  * particleTypeStr. A md-flex mode blind string name for the particle type of the object's particles. E.g. this is
+  * site-type-id in a single-site simulation and molecule-type-id in a multi-site simulation.
+  */
+ static inline const char *const particleTypeStr{"particle-type-id"};
+ /**
+  * bottomLeftBackCornerStr
+  */
+ static inline const char *const bottomLeftBackCornerStr{"bottomLeftCorner"};
+ /**
+  * velocityStr
+  */
+ static inline const char *const velocityStr{"velocity"};
+ /**
+  * particlesPerObjectStr
+  */
+ static inline const char *const particlesPerObjectStr{"numberOfParticles"};
+ /**
+  * cubeGridObjectsStr
+  */
+ static inline const char *const cubeGridObjectsStr{"CubeGrid"};
+ /**
+  * cubeGridObjects
+  */
+ std::vector<CubeGrid> cubeGridObjects{};
+ /**
+  * cubeGaussObjectsStr
+  */
+ static inline const char *const cubeGaussObjectsStr{"CubeGauss"};
+ /**
+  * cubeGaussObjects
+  */
+ std::vector<CubeGauss> cubeGaussObjects{};
+ /**
+  * cubeUniformObjectsStr
+  */
+ static inline const char *const cubeUniformObjectsStr{"CubeUniform"};
+ /**
+  * cubeUniformObjects
+  */
+ std::vector<CubeUniform> cubeUniformObjects{};
+ /**
+  * sphereObjectsStr
+  */
+ static inline const char *const sphereObjectsStr{"Sphere"};
+ /**
+  * sphereCenterStr
+  */
+ static inline const char *const sphereCenterStr{"center"};
+ /**
+  * sphereRadiusStr
+  */
+ static inline const char *const sphereRadiusStr{"radius"};
+ /**
+  * sphereObjects
+  */
+ std::vector<Sphere> sphereObjects{};
+ /**
+  * cubeClosestPackedObjects
+  */
+ std::vector<CubeClosestPacked> cubeClosestPackedObjects{};
+ /**
+  * cubeClosestPackedObjectsStr
+  */
+ static inline const char *const cubeClosestPackedObjectsStr{"CubeClosestPacked"};
 
-  // Thermostat Options
-  /**
-   * useThermostat
-   */
-  MDFlexOption<bool, __LINE__> useThermostat{
-      false, "thermostat", true,
-      "(De)Activate the thermostat. Only useful when used to overwrite a yaml file. "
-      "Possible Values: (true false) Default: false"};
-  /**
-   * initTemperature
-   */
-  MDFlexOption<double, __LINE__> initTemperature{0., "initialTemperature", true,
-                                                 "Thermostat option. Initial temperature of the system."};
-  /**
-   * targetTemperature
-   */
-  MDFlexOption<double, __LINE__> targetTemperature{0., "targetTemperature", true,
-                                                   "Thermostat option. Target temperature of the system."};
-  /**
-   * deltaTemp
-   */
-  MDFlexOption<double, __LINE__> deltaTemp{
-      0., "deltaTemperature", true, "Thermostat option. Maximal temperature jump the thermostat is allowed to apply."};
-  /**
-   * thermostatInterval
-   */
-  MDFlexOption<size_t, __LINE__> thermostatInterval{
-      0, "thermostatInterval", true,
-      "Thermostat option. Number of Iterations between two applications of the thermostat."};
-  /**
-   * addBrownianMotion
-   */
-  MDFlexOption<bool, __LINE__> addBrownianMotion{
-      true, "addBrownianMotion", true,
-      "Thermostat option. Whether the particle velocities should be initialized using "
-      "Brownian motion. Possible Values: (true false) Default: true"};
+ // Thermostat Options
+ /**
+  * useThermostat
+  */
+ MDFlexOption<bool, __LINE__> useThermostat{
+     false, "thermostat", true,
+     "(De)Activate the thermostat. Only useful when used to overwrite a yaml file. "
+     "Possible Values: (true false) Default: false"};
+ /**
+  * initTemperature
+  */
+ MDFlexOption<double, __LINE__> initTemperature{0., "initialTemperature", true,
+                                                "Thermostat option. Initial temperature of the system."};
+ /**
+  * targetTemperature
+  */
+ MDFlexOption<double, __LINE__> targetTemperature{0., "targetTemperature", true,
+                                                  "Thermostat option. Target temperature of the system."};
+ /**
+  * deltaTemp
+  */
+ MDFlexOption<double, __LINE__> deltaTemp{
+     0., "deltaTemperature", true, "Thermostat option. Maximal temperature jump the thermostat is allowed to apply."};
+ /**
+  * thermostatInterval
+  */
+ MDFlexOption<size_t, __LINE__> thermostatInterval{
+     0, "thermostatInterval", true,
+     "Thermostat option. Number of Iterations between two applications of the thermostat."};
+ /**
+  * addBrownianMotion
+  */
+ MDFlexOption<bool, __LINE__> addBrownianMotion{
+     true, "addBrownianMotion", true,
+     "Thermostat option. Whether the particle velocities should be initialized using "
+     "Brownian motion. Possible Values: (true false) Default: true"};
 
-  /**
-   * Global external force like e.g. gravity
-   */
-  MDFlexOption<std::array<double, 3>, __LINE__> globalForce{
-      {0, 0, 0},
-      "globalForce",
-      true,
-      "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
+ /**
+  * Global external force like e.g. gravity
+  */
+ MDFlexOption<std::array<double, 3>, __LINE__> globalForce{
+     {0, 0, 0},
+     "globalForce",
+     true,
+     "Global force applied on every particle. Useful to model e.g. gravity. Default: {0,0,0}"};
 
-  /**
-   * Convenience function testing if the global force contains only 0 entries.
-   * @return false if any entry in globalForce.value is != 0.
-   */
-  [[nodiscard]] bool globalForceIsZero() const {
-    bool isZero = true;
-    for (auto gf : globalForce.value) {
-      isZero &= gf == 0;
-    }
-    return isZero;
-  }
+ /**
+  * Convenience function testing if the global force contains only 0 entries.
+  * @return false if any entry in globalForce.value is != 0.
+  */
+ [[nodiscard]] bool globalForceIsZero() const {
+   bool isZero = true;
+   for (auto gf : globalForce.value) {
+     isZero &= gf == 0;
+   }
+   return isZero;
+ }
 
-  // Checkpoint Options
-  /**
-   * checkpointfile
-   */
-  MDFlexOption<std::string, __LINE__> checkpointfile{"", "checkpoint", true,
-                                                     "Path to a .pvtu File to load as a checkpoint."};
+ // Checkpoint Options
+ /**
+  * checkpointfile
+  */
+ MDFlexOption<std::string, __LINE__> checkpointfile{"", "checkpoint", true,
+                                                    "Path to a .pvtu File to load as a checkpoint."};
 
-  /**
-   * loadBalancer
-   */
-  MDFlexOption<LoadBalancerOption, __LINE__> loadBalancer{
-      LoadBalancerOption::invertedPressure, "load-balancer", true,
-      "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
-      "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
-          autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
+ /**
+  * loadBalancer
+  */
+ MDFlexOption<LoadBalancerOption, __LINE__> loadBalancer{
+     LoadBalancerOption::invertedPressure, "load-balancer", true,
+     "Defines which load balancing approach will be used with the adaptive grid decomposition. If ALL is chosen as "
+     "load balancer, MD-Flexible uses ALL's TENSOR method. Possible Values: " +
+         autopas::utils::ArrayUtils::to_string(LoadBalancerOption::getAllOptions(), " ", {"(", ")"})};
 
-  /**
-   * Whether to use the tuning logger or not.
-   *
-   * @see TuningStrategyLoggerProxy
-   */
-  MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true,
-                                               "If tuning information should be logged. Possible Values: (true false)"};
+ /**
+  * Whether to use the tuning logger or not.
+  *
+  * @see TuningStrategyLoggerProxy
+  */
+ MDFlexOption<bool, __LINE__> useTuningLogger{false, "use-tuning-logger", true,
+                                              "If tuning information should be logged. Possible Values: (true false)"};
 
-  /**
-   * The suffix for files created by the tuning logger.
-   */
-  MDFlexOption<std::string, __LINE__> outputSuffix{"", "output-suffix", true,
-                                                   "An identifier that is contained in the filename of all log files."};
+ /**
+  * The suffix for files created by the tuning logger.
+  */
+ MDFlexOption<std::string, __LINE__> outputSuffix{"", "output-suffix", true,
+                                                  "An identifier that is contained in the filename of all log files."};
 
-  /**
-   * valueOffset used for cli-output alignment
-   */
-  static constexpr int valueOffset{33};
+ /**
+  * valueOffset used for cli-output alignment
+  */
+ static constexpr int valueOffset{33};
 
   /**
    * Stores the particles generated based on the provided configuration file
@@ -834,26 +834,26 @@ class MDFlexConfig {
    */
   std::shared_ptr<ParticlePropertiesLibraryType> _particlePropertiesLibrary;
 
-  /**
-   * Stores the physical properties of the particles used in the an MDFlexSimulation
-   */
-  std::set<autopas::InteractionTypeOption> _interactionTypes = {};
+ /**
+  * Stores the physical properties of the particles used in the an MDFlexSimulation
+  */
+ std::set<autopas::InteractionTypeOption> _interactionTypes = {};
 
-  /**
-   * Initializes the ParticlePropertiesLibrary
-   */
-  void initializeParticlePropertiesLibrary();
+ /**
+  * Initializes the ParticlePropertiesLibrary
+  */
+ void initializeParticlePropertiesLibrary();
 
-  /**
-   * Initializes all particles present at the start of the simulation.
-   */
-  void initializeObjects();
+ /**
+  * Initializes all particles present at the start of the simulation.
+  */
+ void initializeObjects();
 };
 
 /**
- * Stream insertion operator for MDFlexConfig.
- * @param os
- * @param config
- * @return
- */
+* Stream insertion operator for MDFlexConfig.
+* @param os
+* @param config
+* @return
+*/
 inline std::ostream &operator<<(std::ostream &os, const MDFlexConfig &config) { return os << config.to_string(); }

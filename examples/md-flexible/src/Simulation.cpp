@@ -1,8 +1,8 @@
 /**
- * @file Simulation.cpp
- * @author F. Gratl
- * @date 01.03.2021
- */
+* @file Simulation.cpp
+* @author F. Gratl
+* @date 01.03.2021
+*/
 #include "Simulation.h"
 
 #include <algorithm>
@@ -44,69 +44,69 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 
 namespace {
 /**
- * Tries to identify the width of the terminal where the simulation is running.
- * If no width can be identified, the function defaults to 80.
- * @return width of the terminal.
- */
+* Tries to identify the width of the terminal where the simulation is running.
+* If no width can be identified, the function defaults to 80.
+* @return width of the terminal.
+*/
 size_t getTerminalWidth() {
-  size_t terminalWidth = 0;
-  // test all std pipes to get the current terminal width
-  for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
-    if (isatty(fd)) {
-      struct winsize w {};
-      ioctl(fd, TIOCGWINSZ, &w);
-      terminalWidth = w.ws_col;
-      break;
-    }
-  }
+ size_t terminalWidth = 0;
+ // test all std pipes to get the current terminal width
+ for (auto fd : {STDOUT_FILENO, STDIN_FILENO, STDERR_FILENO}) {
+   if (isatty(fd)) {
+     struct winsize w {};
+     ioctl(fd, TIOCGWINSZ, &w);
+     terminalWidth = w.ws_col;
+     break;
+   }
+ }
 
-  // if width is still zero try the environment variable COLUMNS
-  if (terminalWidth == 0) {
-    if (auto *terminalWidthCharArr = std::getenv("COLUMNS")) {
-      // this pointer could be used to detect parsing errors via terminalWidthCharArr == end
-      // but since we have a fallback further down we are ok if this fails silently.
-      char *end{};
-      terminalWidth = std::strtol(terminalWidthCharArr, &end, 10);
-    }
-  }
+ // if width is still zero try the environment variable COLUMNS
+ if (terminalWidth == 0) {
+   if (auto *terminalWidthCharArr = std::getenv("COLUMNS")) {
+     // this pointer could be used to detect parsing errors via terminalWidthCharArr == end
+     // but since we have a fallback further down we are ok if this fails silently.
+     char *end{};
+     terminalWidth = std::strtol(terminalWidthCharArr, &end, 10);
+   }
+ }
 
-  // if all of the above fail fall back to a fixed width
-  if (terminalWidth == 0) {
-    // this seems to be the default width in most terminal windows
-    terminalWidth = 80;
-  }
+ // if all of the above fail fall back to a fixed width
+ if (terminalWidth == 0) {
+   // this seems to be the default width in most terminal windows
+   terminalWidth = 80;
+ }
 
-  return terminalWidth;
+ return terminalWidth;
 }
 }  // namespace
 
 Simulation::Simulation(const MDFlexConfig &configuration,
-                       std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
-    : _configuration(configuration),
-      _domainDecomposition(domainDecomposition),
-      _createVtkFiles(not configuration.vtkFileName.value.empty()),
-      _vtkWriter(nullptr) {
-  _timers.total.start();
-  _timers.initialization.start();
+                      std::shared_ptr<RegularGridDecomposition> &domainDecomposition)
+   : _configuration(configuration),
+     _domainDecomposition(domainDecomposition),
+     _createVtkFiles(not configuration.vtkFileName.value.empty()),
+     _vtkWriter(nullptr) {
+ _timers.total.start();
+ _timers.initialization.start();
 
-  // only create the writer if necessary since this also creates the output dir
-  if (_createVtkFiles) {
-    _vtkWriter =
-        std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
-                                            std::to_string(_configuration.iterations.value).size());
-  }
+ // only create the writer if necessary since this also creates the output dir
+ if (_createVtkFiles) {
+   _vtkWriter =
+       std::make_shared<ParallelVtkWriter>(_configuration.vtkFileName.value, _configuration.vtkOutputFolder.value,
+                                           std::to_string(_configuration.iterations.value).size());
+ }
 
-  if (_configuration.logFileName.value.empty()) {
-    _outputStream = &std::cout;
-  } else {
-    _logFile = std::make_shared<std::ofstream>();
-    _logFile->open(_configuration.logFileName.value);
-    _outputStream = &(*_logFile);
-  }
+ if (_configuration.logFileName.value.empty()) {
+   _outputStream = &std::cout;
+ } else {
+   _logFile = std::make_shared<std::ofstream>();
+   _logFile->open(_configuration.logFileName.value);
+   _outputStream = &(*_logFile);
+ }
 
-  _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
-  _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
-  _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
+ _autoPasContainer = std::make_shared<autopas::AutoPas<ParticleType>>(*_outputStream);
+ _autoPasContainer->setAllowedCellSizeFactors(*_configuration.cellSizeFactors.value);
+ _autoPasContainer->setAllowedContainers(_configuration.containerOptions.value);
 
   if (_configuration.getInteractionTypes().empty()) {
     std::string functorName{};
@@ -176,104 +176,104 @@ Simulation::Simulation(const MDFlexConfig &configuration,
 
   _autoPasContainer->init();
 
-  // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
-  // phase is requested
-  if (_autoPasContainer->searchSpaceIsTrivial() and _configuration.tuningPhases.value > 0) {
-    throw std::runtime_error(
-        "Search space must not be trivial if the simulation time is limited by the number tuning phases");
-  }
+ // Throw an error if there is not more than one configuration to test in the search space but more than one tuning
+ // phase is requested
+ if (_autoPasContainer->searchSpaceIsTrivial() and _configuration.tuningPhases.value > 0) {
+   throw std::runtime_error(
+       "Search space must not be trivial if the simulation time is limited by the number tuning phases");
+ }
 
   // Load particles from the config file (object generators, checkpoint)
   loadParticles();
 
-  if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
-    if (_configuration.addBrownianMotion.value) {
-      Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                    _configuration.initTemperature.value);
-    }
+ if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
+   if (_configuration.addBrownianMotion.value) {
+     Thermostat::addBrownianMotion(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                   _configuration.initTemperature.value);
+   }
 
-    // Set the simulation directly to the desired initial temperature.
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.initTemperature.value, std::numeric_limits<double>::max());
-  }
+   // Set the simulation directly to the desired initial temperature.
+   Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                     _configuration.initTemperature.value, std::numeric_limits<double>::max());
+ }
 
-  _timers.initialization.stop();
+ _timers.initialization.stop();
 }
 
 void Simulation::finalize() {
-  _timers.total.stop();
+ _timers.total.stop();
 
-  autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
+ autopas::AutoPas_MPI_Barrier(AUTOPAS_MPI_COMM_WORLD);
 
-  logSimulationState();
-  logMeasurements();
+ logSimulationState();
+ logMeasurements();
 }
 
 void Simulation::run() {
-  _timers.simulate.start();
-  while (needsMoreIterations()) {
-    if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
-      _timers.vtk.start();
-      _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
-      _timers.vtk.stop();
-    }
+ _timers.simulate.start();
+ while (needsMoreIterations()) {
+   if (_createVtkFiles and _iteration % _configuration.vtkWriteFrequency.value == 0) {
+     _timers.vtk.start();
+     _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+     _timers.vtk.stop();
+   }
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
-      updateQuaternions();
+     updateQuaternions();
 #endif
 
-      _timers.updateContainer.start();
-      auto emigrants = _autoPasContainer->updateContainer();
-      _timers.updateContainer.stop();
+     _timers.updateContainer.start();
+     auto emigrants = _autoPasContainer->updateContainer();
+     _timers.updateContainer.stop();
 
-      const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
+     const auto computationalLoad = static_cast<double>(_timers.computationalLoad.stop());
 
-      // periodically resize box for MPI load balancing
-      if (_iteration % _configuration.loadBalancingInterval.value == 0) {
-        _timers.loadBalancing.start();
-        _domainDecomposition->update(computationalLoad);
-        auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
-                                                                _domainDecomposition->getLocalBoxMax());
-        // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
-        // container again.
-        // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
-        // so that remove_if can erase them after.
-        const auto &boxMin = _autoPasContainer->getBoxMin();
-        const auto &boxMax = _autoPasContainer->getBoxMax();
-        _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
-          if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
-            // This only changes the ownership state in the emigrants vector, not in AutoPas
-            p.setOwnershipState(autopas::OwnershipState::dummy);
-            return true;
-          }
-          return false;
-        });
+     // periodically resize box for MPI load balancing
+     if (_iteration % _configuration.loadBalancingInterval.value == 0) {
+       _timers.loadBalancing.start();
+       _domainDecomposition->update(computationalLoad);
+       auto additionalEmigrants = _autoPasContainer->resizeBox(_domainDecomposition->getLocalBoxMin(),
+                                                               _domainDecomposition->getLocalBoxMax());
+       // If the boundaries shifted, particles that were thrown out by updateContainer() previously might now be in the
+       // container again.
+       // Reinsert emigrants if they are now inside the domain and mark local copies as dummy,
+       // so that remove_if can erase them after.
+       const auto &boxMin = _autoPasContainer->getBoxMin();
+       const auto &boxMax = _autoPasContainer->getBoxMax();
+       _autoPasContainer->addParticlesIf(emigrants, [&](auto &p) {
+         if (autopas::utils::inBox(p.getR(), boxMin, boxMax)) {
+           // This only changes the ownership state in the emigrants vector, not in AutoPas
+           p.setOwnershipState(autopas::OwnershipState::dummy);
+           return true;
+         }
+         return false;
+       });
 
-        emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
-                        emigrants.end());
+       emigrants.erase(std::remove_if(emigrants.begin(), emigrants.end(), [&](const auto &p) { return p.isDummy(); }),
+                       emigrants.end());
 
-        emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
-        _timers.loadBalancing.stop();
-      }
+       emigrants.insert(emigrants.end(), additionalEmigrants.begin(), additionalEmigrants.end());
+       _timers.loadBalancing.stop();
+     }
 
-      _timers.migratingParticleExchange.start();
-      _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
-      _timers.migratingParticleExchange.stop();
+     _timers.migratingParticleExchange.start();
+     _domainDecomposition->exchangeMigratingParticles(*_autoPasContainer, emigrants);
+     _timers.migratingParticleExchange.stop();
 
-      _timers.reflectParticlesAtBoundaries.start();
-      _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
-                                                         *_configuration.getParticlePropertiesLibrary());
-      _timers.reflectParticlesAtBoundaries.stop();
+     _timers.reflectParticlesAtBoundaries.start();
+     _domainDecomposition->reflectParticlesAtBoundaries(*_autoPasContainer,
+                                                        *_configuration.getParticlePropertiesLibrary());
+     _timers.reflectParticlesAtBoundaries.stop();
 
-      _timers.haloParticleExchange.start();
-      _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
-      _timers.haloParticleExchange.stop();
+     _timers.haloParticleExchange.start();
+     _domainDecomposition->exchangeHaloParticles(*_autoPasContainer);
+     _timers.haloParticleExchange.stop();
 
-      _timers.computationalLoad.start();
-    }
+     _timers.computationalLoad.start();
+   }
 
     updateInteractionForces();
 
@@ -285,11 +285,11 @@ void Simulation::run() {
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
       updateVelocities();
 #if MD_FLEXIBLE_MODE == MULTISITE
-      updateAngularVelocities();
+     updateAngularVelocities();
 #endif
-      updateThermostat();
-    }
-    _timers.computationalLoad.stop();
+     updateThermostat();
+   }
+   _timers.computationalLoad.stop();
 
     if (not _simulationIsPaused) {
       ++_iteration;
@@ -300,19 +300,19 @@ void Simulation::run() {
                 << autopas::memoryProfiler::currentMemoryUsage() << " kB\n";
     }
 
-    if (_domainDecomposition->getDomainIndex() == 0) {
-      auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
-      if (not _configuration.dontShowProgressBar.value) {
-        printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
-      }
-    }
-  }
-  _timers.simulate.stop();
+   if (_domainDecomposition->getDomainIndex() == 0) {
+     auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
+     if (not _configuration.dontShowProgressBar.value) {
+       printProgress(_iteration, maxIterationsEstimate, maxIterationsIsPrecise);
+     }
+   }
+ }
+ _timers.simulate.stop();
 
-  // Record last state of simulation.
-  if (_createVtkFiles) {
-    _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
-  }
+ // Record last state of simulation.
+ if (_createVtkFiles) {
+   _vtkWriter->recordTimestep(_iteration, *_autoPasContainer, *_domainDecomposition);
+ }
 }
 
 std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
@@ -365,56 +365,56 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
 }
 
 void Simulation::printProgress(size_t iterationProgress, size_t maxIterations, bool maxIsPrecise) {
-  // percentage of iterations complete
-  const double fractionDone = static_cast<double>(iterationProgress) / static_cast<double>(maxIterations);
+ // percentage of iterations complete
+ const double fractionDone = static_cast<double>(iterationProgress) / static_cast<double>(maxIterations);
 
-  // length of the number of maxIterations
-  const auto numCharsOfMaxIterations = static_cast<int>(std::to_string(maxIterations).size());
+ // length of the number of maxIterations
+ const auto numCharsOfMaxIterations = static_cast<int>(std::to_string(maxIterations).size());
 
-  // trailing information string
-  std::stringstream info;
-  info << std::setw(3) << std::round(fractionDone * 100) << "% " << std::setw(numCharsOfMaxIterations)
-       << iterationProgress << "/";
-  if (not maxIsPrecise) {
-    info << "~";
-  }
-  info << maxIterations;
+ // trailing information string
+ std::stringstream info;
+ info << std::setw(3) << std::round(fractionDone * 100) << "% " << std::setw(numCharsOfMaxIterations)
+      << iterationProgress << "/";
+ if (not maxIsPrecise) {
+   info << "~";
+ }
+ info << maxIterations;
 
-  // actual progress bar
-  std::stringstream progressbar;
-  progressbar << "[";
-  // get current terminal width
-  const auto terminalWidth = getTerminalWidth();
+ // actual progress bar
+ std::stringstream progressbar;
+ progressbar << "[";
+ // get current terminal width
+ const auto terminalWidth = getTerminalWidth();
 
-  // the bar should fill the terminal window so subtract everything else (-2 for "] ")
-  const int maxBarWidth = static_cast<int>(terminalWidth - info.str().size() - progressbar.str().size() - 2ul);
-  // sanity check for underflow
-  if (maxBarWidth > terminalWidth) {
-    std::cerr << "Warning! Terminal width appears to be too small or could not be read. Disabling progress bar."
-              << std::endl;
-    _configuration.dontShowProgressBar.value = true;
-    return;
-  }
-  const auto barWidth =
-      std::max(std::min(static_cast<decltype(maxBarWidth)>(maxBarWidth * (fractionDone)), maxBarWidth), 1);
-  // don't print arrow tip if >= 100%
-  if (iterationProgress >= maxIterations) {
-    progressbar << std::string(barWidth, '=');
-  } else {
-    progressbar << std::string(barWidth - 1, '=') << '>' << std::string(maxBarWidth - barWidth, ' ');
-  }
-  progressbar << "] ";
-  // clear current line (=delete previous progress bar)
-  std::cout << std::string(terminalWidth, '\r');
-  // print everything
-  std::cout << progressbar.str() << info.str() << std::flush;
+ // the bar should fill the terminal window so subtract everything else (-2 for "] ")
+ const int maxBarWidth = static_cast<int>(terminalWidth - info.str().size() - progressbar.str().size() - 2ul);
+ // sanity check for underflow
+ if (maxBarWidth > terminalWidth) {
+   std::cerr << "Warning! Terminal width appears to be too small or could not be read. Disabling progress bar."
+             << std::endl;
+   _configuration.dontShowProgressBar.value = true;
+   return;
+ }
+ const auto barWidth =
+     std::max(std::min(static_cast<decltype(maxBarWidth)>(maxBarWidth * (fractionDone)), maxBarWidth), 1);
+ // don't print arrow tip if >= 100%
+ if (iterationProgress >= maxIterations) {
+   progressbar << std::string(barWidth, '=');
+ } else {
+   progressbar << std::string(barWidth - 1, '=') << '>' << std::string(maxBarWidth - barWidth, ' ');
+ }
+ progressbar << "] ";
+ // clear current line (=delete previous progress bar)
+ std::cout << std::string(terminalWidth, '\r');
+ // print everything
+ std::cout << progressbar.str() << info.str() << std::flush;
 }
 
 std::string Simulation::timerToString(const std::string &name, long timeNS, int numberWidth, long maxTime) {
-  // only print timers that were actually used
-  if (timeNS == 0) {
-    return "";
-  }
+ // only print timers that were actually used
+ if (timeNS == 0) {
+   return "";
+ }
 
   std::ostringstream ss;
   ss << std::fixed << std::setprecision(_floatStringPrecision) << name << " : " << std::setw(numberWidth) << std::right
@@ -438,11 +438,11 @@ void Simulation::updatePositionsAndResetForces() {
 }
 
 void Simulation::updateQuaternions() {
-  _timers.quaternionUpdate.start();
-  TimeDiscretization::calculateQuaternionsAndResetTorques(
-      *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
-      _configuration.globalForce.value);
-  _timers.quaternionUpdate.stop();
+ _timers.quaternionUpdate.start();
+ TimeDiscretization::calculateQuaternionsAndResetTorques(
+     *_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()), _configuration.deltaT.value,
+     _configuration.globalForce.value);
+ _timers.quaternionUpdate.stop();
 }
 
 void Simulation::updateInteractionForces() {
@@ -478,43 +478,43 @@ void Simulation::updateInteractionForces() {
     }
   }
 
-  _timers.forceUpdateTotal.stop();
+ _timers.forceUpdateTotal.stop();
 }
 
 void Simulation::updateVelocities() {
-  const double deltaT = _configuration.deltaT.value;
+ const double deltaT = _configuration.deltaT.value;
 
-  if (deltaT != 0) {
-    _timers.velocityUpdate.start();
-    TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                            deltaT);
-    _timers.velocityUpdate.stop();
-  }
+ if (deltaT != 0) {
+   _timers.velocityUpdate.start();
+   TimeDiscretization::calculateVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                           deltaT);
+   _timers.velocityUpdate.stop();
+ }
 }
 
 void Simulation::updateAngularVelocities() {
-  const double deltaT = _configuration.deltaT.value;
+ const double deltaT = _configuration.deltaT.value;
 
-  _timers.angularVelocityUpdate.start();
-  TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                                                 deltaT);
-  _timers.angularVelocityUpdate.stop();
+ _timers.angularVelocityUpdate.start();
+ TimeDiscretization::calculateAngularVelocities(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                                                deltaT);
+ _timers.angularVelocityUpdate.stop();
 }
 
 void Simulation::updateThermostat() {
-  if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
-    _timers.thermostat.start();
-    Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
-                      _configuration.targetTemperature.value, _configuration.deltaTemp.value);
-    _timers.thermostat.stop();
-  }
+ if (_configuration.useThermostat.value and (_iteration % _configuration.thermostatInterval.value) == 0) {
+   _timers.thermostat.start();
+   Thermostat::apply(*_autoPasContainer, *(_configuration.getParticlePropertiesLibrary()),
+                     _configuration.targetTemperature.value, _configuration.deltaTemp.value);
+   _timers.thermostat.stop();
+ }
 }
 
 long Simulation::accumulateTime(const long &time) {
-  long reducedTime{};
-  autopas::AutoPas_MPI_Reduce(&time, &reducedTime, 1, AUTOPAS_MPI_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+ long reducedTime{};
+ autopas::AutoPas_MPI_Reduce(&time, &reducedTime, 1, AUTOPAS_MPI_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
 
-  return reducedTime;
+ return reducedTime;
 }
 
 bool Simulation::calculatePairwiseForces() {
@@ -530,26 +530,26 @@ bool Simulation::calculateTriwiseForces() {
 }
 
 void Simulation::calculateGlobalForces(const std::array<double, 3> &globalForce) {
-  AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
-  for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
-    particle->addF(globalForce);
-  }
+ AUTOPAS_OPENMP(parallel shared(_autoPasContainer))
+ for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+   particle->addF(globalForce);
+ }
 }
 
 void Simulation::logSimulationState() {
-  size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
+ size_t totalNumberOfParticles{0ul}, ownedParticles{0ul}, haloParticles{0ul};
 
-  size_t particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
-                                 AUTOPAS_MPI_COMM_WORLD);
+ size_t particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::ownedOrHalo);
+ autopas::AutoPas_MPI_Allreduce(&particleCount, &totalNumberOfParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
+                                AUTOPAS_MPI_COMM_WORLD);
 
-  particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
-                                 AUTOPAS_MPI_COMM_WORLD);
+ particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
+ autopas::AutoPas_MPI_Allreduce(&particleCount, &ownedParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
+                                AUTOPAS_MPI_COMM_WORLD);
 
-  particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
-  autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
-                                 AUTOPAS_MPI_COMM_WORLD);
+ particleCount = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::halo);
+ autopas::AutoPas_MPI_Allreduce(&particleCount, &haloParticles, 1, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM,
+                                AUTOPAS_MPI_COMM_WORLD);
 
   if (_domainDecomposition->getDomainIndex() == 0) {
     std::cout << "\n\n"
@@ -580,6 +580,29 @@ void Simulation::updateSimulationPauseState() {
 
     _simulationIsPaused = false;
   }
+}
+
+void Simulation::updateSimulationPauseState() {
+ // If we are at the beginning of a tuning phase, we need to freeze the simulation
+ if (_currentIterationIsTuningIteration and (not _previousIterationWasTuningIteration)) {
+   std::cout << "Iteration " << _iteration << ": Freezing simulation for tuning phase. Starting tuning phase...\n";
+   _simulationIsPaused = true;
+ }
+
+ // If we are at the end of a tuning phase, we need to resume the simulation
+ if (_previousIterationWasTuningIteration and (not _currentIterationIsTuningIteration)) {
+   std::cout << "Iteration " << _iteration << ": Resuming simulation after tuning phase.\n";
+
+   // reset the forces which accumulated during the tuning phase
+   for (auto particle = _autoPasContainer->begin(autopas::IteratorBehavior::owned); particle.isValid(); ++particle) {
+     particle->setF(_configuration.globalForce.value);
+   }
+
+   // calculate the forces of the latest iteration again
+   updateInteractionForces();
+
+   _simulationIsPaused = false;
+ }
 }
 
 void Simulation::logMeasurements() {
@@ -614,7 +637,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("  Simulate                        ", simulate, maximumNumberOfDigits, total);
     std::cout << timerToString("    PositionUpdate                ", positionUpdate, maximumNumberOfDigits, simulate);
 #if MD_FLEXIBLE_MODE == MULTISITE
-    std::cout << timerToString("    QuaternionUpdate              ", quaternionUpdate, maximumNumberOfDigits, simulate);
+   std::cout << timerToString("    QuaternionUpdate              ", quaternionUpdate, maximumNumberOfDigits, simulate);
 #endif
     std::cout << timerToString("    UpdateContainer               ", updateContainer, maximumNumberOfDigits, simulate);
     std::cout << timerToString("    Boundaries                    ", haloParticleExchange + migratingParticleExchange,
@@ -635,14 +658,14 @@ void Simulation::logMeasurements() {
                                forceUpdateTotal);
     std::cout << timerToString("    VelocityUpdate                ", velocityUpdate, maximumNumberOfDigits, simulate);
 #if MD_FLEXIBLE_MODE == MULTISITE
-    std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits,
-                               simulate);
+   std::cout << timerToString("    AngularVelocityUpdate         ", angularVelocityUpdate, maximumNumberOfDigits,
+                              simulate);
 #endif
-    std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("    LoadBalancing                 ", loadBalancing, maximumNumberOfDigits, simulate);
-    std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
-                               maximumNumberOfDigits, total);
+   std::cout << timerToString("    Thermostat                    ", thermostat, maximumNumberOfDigits, simulate);
+   std::cout << timerToString("    Vtk                           ", vtk, maximumNumberOfDigits, simulate);
+   std::cout << timerToString("    LoadBalancing                 ", loadBalancing, maximumNumberOfDigits, simulate);
+   std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
+                              maximumNumberOfDigits, total);
 
     std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
     std::cout << "\n";
@@ -659,37 +682,37 @@ void Simulation::logMeasurements() {
 }
 
 bool Simulation::needsMoreIterations() const {
-  return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
+ return _iteration < _configuration.iterations.value or _numTuningPhasesCompleted < _configuration.tuningPhases.value;
 }
 
 void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t numParticlesCurrentlyMigratingLocal,
-                                   int lineNumber) {
-  if (std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
-                  [](const auto &boundary) {
-                    return boundary == options::BoundaryTypeOption::periodic or
-                           boundary == options::BoundaryTypeOption::reflective;
-                  })) {
-    const auto numParticlesNowLocal = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
-    std::array<size_t, 2> sendBuffer{numParticlesNowLocal, numParticlesCurrentlyMigratingLocal};
-    std::array<size_t, sendBuffer.size()> receiveBuffer{};
-    autopas::AutoPas_MPI_Reduce(sendBuffer.data(), receiveBuffer.data(), receiveBuffer.size(),
-                                AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
-    const auto &[numParticlesNowTotal, numParticlesMigratingTotal] = receiveBuffer;
-    if (expectedNumParticlesGlobal != numParticlesNowTotal + numParticlesMigratingTotal) {
-      const auto myRank = _domainDecomposition->getDomainIndex();
-      std::stringstream ss;
-      // clang-format off
-      ss << "Rank " << myRank << " Line " << lineNumber
-         << ": Particles Lost! All Boundaries are periodic but the number of particles changed:"
-         << "Expected        : " << expectedNumParticlesGlobal
-         << "Actual          : " << (numParticlesNowTotal + numParticlesMigratingTotal)
-         << "  in containers : " << numParticlesNowTotal
-         << "  migrating     : " << numParticlesMigratingTotal
-         << std::endl;
-      // clang-format on
-      throw std::runtime_error(ss.str());
-    }
-  }
+                                  int lineNumber) {
+ if (std::all_of(_configuration.boundaryOption.value.begin(), _configuration.boundaryOption.value.end(),
+                 [](const auto &boundary) {
+                   return boundary == options::BoundaryTypeOption::periodic or
+                          boundary == options::BoundaryTypeOption::reflective;
+                 })) {
+   const auto numParticlesNowLocal = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
+   std::array<size_t, 2> sendBuffer{numParticlesNowLocal, numParticlesCurrentlyMigratingLocal};
+   std::array<size_t, sendBuffer.size()> receiveBuffer{};
+   autopas::AutoPas_MPI_Reduce(sendBuffer.data(), receiveBuffer.data(), receiveBuffer.size(),
+                               AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0, AUTOPAS_MPI_COMM_WORLD);
+   const auto &[numParticlesNowTotal, numParticlesMigratingTotal] = receiveBuffer;
+   if (expectedNumParticlesGlobal != numParticlesNowTotal + numParticlesMigratingTotal) {
+     const auto myRank = _domainDecomposition->getDomainIndex();
+     std::stringstream ss;
+     // clang-format off
+     ss << "Rank " << myRank << " Line " << lineNumber
+        << ": Particles Lost! All Boundaries are periodic but the number of particles changed:"
+        << "Expected        : " << expectedNumParticlesGlobal
+        << "Actual          : " << (numParticlesNowTotal + numParticlesMigratingTotal)
+        << "  in containers : " << numParticlesNowTotal
+        << "  migrating     : " << numParticlesMigratingTotal
+        << std::endl;
+     // clang-format on
+     throw std::runtime_error(ss.str());
+   }
+ }
 }
 
 void Simulation::loadParticles() {
@@ -788,36 +811,45 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   switch (_configuration.functorOption.value) {
     case MDFlexConfig::FunctorOption::lj12_6: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
-      return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
+     return f(LJFunctorTypeAutovec{cutoff, particlePropertiesLibrary});
 #else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
+     throw std::runtime_error(
+         "MD-Flexible was not compiled with support for LJFunctor AutoVec. Activate it via `cmake "
+         "-DMD_FLEXIBLE_FUNCTOR_AUTOVEC=ON`.");
 #endif
     }
     case MDFlexConfig::FunctorOption::lj12_6_AVX: {
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX) && defined(__AVX__)
-      return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
+     return f(LJFunctorTypeAVX{cutoff, particlePropertiesLibrary});
 #else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
+     throw std::runtime_error(
+         "MD-Flexible was not compiled with support for LJFunctor AVX. Activate it via `cmake "
+         "-DMD_FLEXIBLE_FUNCTOR_AVX=ON`.");
 #endif
-    }
-    case MDFlexConfig::FunctorOption::lj12_6_SVE: {
+   }
+   case MDFlexConfig::FunctorOption::lj12_6_SVE: {
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
-      return f(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
+     return f(LJFunctorTypeSVE{cutoff, particlePropertiesLibrary});
 #else
-      throw std::runtime_error(
-          "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
+     throw std::runtime_error(
+         "MD-Flexible was not compiled with support for LJFunctor SVE. Activate it via `cmake "
+         "-DMD_FLEXIBLE_FUNCTOR_SVE=ON`.");
 #endif
-    }
-    default: {
-      throw std::runtime_error("Unknown pairwise functor choice" +
-                               std::to_string(static_cast<int>(_configuration.functorOption.value)));
-    }
-  }
+   }
+   case MDFlexConfig::FunctorOption::argon_pairwise: {
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE)
+     return f(ArgonPairwiseFunctorType{cutoff});
+#else
+     throw std::runtime_error(
+         "MD-Flexible was not compiled with support for the Argon Pair Functor. Activate it via `cmake "
+         "-MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE=ON`.");
+#endif
+   }
+   default: {
+     throw std::runtime_error("Unknown pairwise functor choice" +
+                              std::to_string(static_cast<int>(_configuration.functorOption.value)));
+   }
+ }
 }
 
 template <class ReturnType, class FunctionType>
@@ -833,10 +865,19 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
           "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
           "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
 #endif
-    }
-    default: {
-      throw std::runtime_error("Unknown triwise functor choice" +
-                               std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
-    }
-  }
+   }
+   case MDFlexConfig::FunctorOption3B::argon_triwise: {
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
+     return f(ArgonTriwiseFunctorType{cutoff});
+#else
+     throw std::runtime_error(
+         "MD-Flexible was not compiled with support for Argon Triwise Functor. Activate it via `cmake "
+         "-DMD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE=ON`.");
+#endif
+   }
+   default: {
+     throw std::runtime_error("Unknown triwise functor choice" +
+                              std::to_string(static_cast<int>(_configuration.functorOption3B.value)));
+   }
+ }
 }
