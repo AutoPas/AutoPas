@@ -120,7 +120,7 @@ template <size_t ID>
  * @param cosK
  * @return sum of the six possible terms that result from the permutation of the interior angles
  */
-[[nodiscard]] double Permutation(const size_t A, const size_t B, const size_t C, const CosineHandle &cosI,
+[[nodiscard]] inline double Permutation(const size_t A, const size_t B, const size_t C, const CosineHandle &cosI,
                                  const CosineHandle &cosJ, const CosineHandle &cosK) {
   return Q(A, B, C, cosI, cosJ, cosK) + Q(A, C, B, cosI, cosJ, cosK) + Q(B, A, C, cosI, cosJ, cosK) +
          Q(B, C, A, cosI, cosJ, cosK) + Q(C, A, B, cosI, cosJ, cosK) + Q(C, B, A, cosI, cosJ, cosK);

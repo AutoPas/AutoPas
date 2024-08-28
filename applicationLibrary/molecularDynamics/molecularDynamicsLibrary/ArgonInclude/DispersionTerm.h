@@ -8,6 +8,8 @@
 
 #include <cmath>
 
+#include "CosineHandle.h"
+#include "DisplacementHandle.h"
 #include "AngularFunctions.h"
 #include "DampingTerm.h"
 #include "Parameters.h"
@@ -30,13 +32,13 @@ namespace autopas::utils::ArrayMath::Argon {
 template <size_t a, size_t b, size_t c, size_t ID>
 [[nodiscard]] nabla F_dispersive_abc(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
                                      DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
-                                     DisplacementHandle displacementKI) {
+                                     DisplacementHandle displacementKI, CosineHandle cosineI, CosineHandle cosineJ, CosineHandle cosineK) {
   const auto Z_abc = Z[mdLib::Argon::index<mdLib::Argon::param::Z>(a, b, c)];
   const auto beta_abc = beta[mdLib::Argon::index<mdLib::Argon::param::beta>(a, b, c)];
 
-  const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
+  /*const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
   const auto cosineJ = CosineHandle(displacementIJ.getInv(), displacementJK);
-  const auto cosineK = CosineHandle(displacementKI, displacementJK.getInv());
+  const auto cosineK = CosineHandle(displacementKI, displacementJK.getInv());*/
 
   const auto n1 = a + b + 1;
   const auto n2 = b + c + 1;
@@ -61,13 +63,13 @@ template <size_t a, size_t b, size_t c, size_t ID>
 template <size_t a, size_t b, size_t c>
 [[nodiscard]] double U_dispersive_abc(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
                                       DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
-                                      DisplacementHandle displacementKI) {
+                                      DisplacementHandle displacementKI, CosineHandle cosineI, CosineHandle cosineJ, CosineHandle cosineK) {
   const auto Z_abc = Z[mdLib::Argon::index<mdLib::Argon::param::Z>(a, b, c)];
   const auto beta_abc = beta[mdLib::Argon::index<mdLib::Argon::param::beta>(a, b, c)];
 
-  const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
+  /*const auto cosineI = CosineHandle(displacementIJ, displacementKI.getInv());
   const auto cosineJ = CosineHandle(displacementIJ.getInv(), displacementJK);
-  const auto cosineK = CosineHandle(displacementKI, displacementJK.getInv());
+  const auto cosineK = CosineHandle(displacementKI, displacementJK.getInv());*/
 
   const auto n1 = a + b + 1;
   const auto n2 = b + c + 1;
@@ -95,35 +97,35 @@ template <size_t a, size_t b, size_t c>
 template <size_t ID>
 [[nodiscard]] nabla F_dispersive(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
                                  DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
-                                 DisplacementHandle displacementKI) {
-  const auto F = F_dispersive_abc<1, 1, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<1, 1, 2, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<1, 2, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<2, 1, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<1, 2, 2, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<2, 1, 2, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<2, 2, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<2, 2, 2, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<1, 1, 3, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<1, 3, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 F_dispersive_abc<3, 1, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI);
+                                 DisplacementHandle displacementKI, CosineHandle cosineI, CosineHandle cosineJ, CosineHandle cosineK) {
+  const auto F = F_dispersive_abc<1, 1, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<1, 1, 2, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<1, 2, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<2, 1, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<1, 2, 2, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<2, 1, 2, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<2, 2, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<2, 2, 2, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<1, 1, 3, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<1, 3, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 F_dispersive_abc<3, 1, 1, ID>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
   return F;
 }
 
-[[nodiscard]] double U_dispersive(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
+[[nodiscard]] inline double U_dispersive(const std::array<double, 5> &Z, const std::array<double, 5> &beta,
                                   DisplacementHandle displacementIJ, DisplacementHandle displacementJK,
-                                  DisplacementHandle displacementKI) {
-  const auto U = U_dispersive_abc<1, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<1, 1, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<1, 2, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<2, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<1, 2, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<2, 1, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<2, 2, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<2, 2, 2>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<1, 1, 3>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<1, 3, 1>(Z, beta, displacementIJ, displacementJK, displacementKI) +
-                 U_dispersive_abc<3, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI);
+                                  DisplacementHandle displacementKI, CosineHandle cosineI, CosineHandle cosineJ, CosineHandle cosineK) {
+  const auto U = U_dispersive_abc<1, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<1, 1, 2>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<1, 2, 1>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<2, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<1, 2, 2>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<2, 1, 2>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<2, 2, 1>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<2, 2, 2>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<1, 1, 3>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<1, 3, 1>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK) +
+                 U_dispersive_abc<3, 1, 1>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
   return U;
 }
 

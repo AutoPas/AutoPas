@@ -45,7 +45,7 @@ template <typename T>
  * @param n power to which r_AB is raised in the corresponding angular function W
  * @return damping term D of eq. 9
  */
-[[nodiscard]] double DampingTerm(const double &beta, const DisplacementHandle &displacementAB, const size_t &n) {
+[[nodiscard]] inline double DampingTerm(const double &beta, const DisplacementHandle &displacementAB, const size_t &n) {
   const auto AB = L2Norm(displacementAB.getDisplacement());
   const auto beta_AB = beta * AB;
   const auto exp = std::exp(-beta_AB);

@@ -14,8 +14,6 @@ using nabla = std::array<double, 3>;
 
 class DisplacementHandle {
  public:
-  DisplacementHandle() = default;
-
   /**
    * Constructor for DisplacementHandle. It stores the ids of start and end vertices and the displacement vector between
    * the two
@@ -24,7 +22,7 @@ class DisplacementHandle {
    * @param idEndVertex id of the end vertex
    */
   explicit DisplacementHandle(const std::array<double, 3> &displacement, const size_t &idStartVertex,
-                              const size_t &idEndVertex);
+                              const size_t &idEndVertex) : displacement_(displacement), idStartVertex_(idStartVertex), idEndVertex_(idEndVertex) {}
 
   /**
    *
@@ -48,7 +46,9 @@ class DisplacementHandle {
    *
    * @return DisplacementHandle with inverted start and end vertices
    */
-  [[nodiscard]] DisplacementHandle getInv() const;
+  [[nodiscard]] DisplacementHandle getInv()  const {
+    return DisplacementHandle(-1. * displacement_, idEndVertex_, idStartVertex_);
+  }
 
   /**
    *
@@ -56,23 +56,32 @@ class DisplacementHandle {
    * @return derivative of the cosine displacement_ w.r.t. ID
    */
   template <size_t ID>
-  [[nodiscard]] nabla derive_wrt() const;
+  [[nodiscard]] nabla derive_wrt() const {
+    auto moduloDisplacement{L2Norm(displacement_)};
+    if (ID == idStartVertex_) {
+      return -1. * displacement_ / moduloDisplacement;
+    } else if (ID == idEndVertex_) {
+      return displacement_ / moduloDisplacement;
+    }
+    return std::array<double, 3>{{0, 0, 0}};
+  }
 
  private:
   std::array<double, 3> displacement_;
   size_t idStartVertex_;
   size_t idEndVertex_;
 };
-
+/*
 DisplacementHandle::DisplacementHandle(const std::array<double, 3> &displacement, const size_t &idStartVertex,
                                        const size_t &idEndVertex)
     : displacement_(displacement), idStartVertex_(idStartVertex), idEndVertex_(idEndVertex) {}
+*/
 
-[[nodiscard]] DisplacementHandle DisplacementHandle::getInv() const {
+/*[[nodiscard]] DisplacementHandle DisplacementHandle::getInv() const {
   return DisplacementHandle(-1. * displacement_, idEndVertex_, idStartVertex_);
-}
+}*/
 
-template <size_t ID>
+/*template <size_t ID>
 [[nodiscard]] nabla DisplacementHandle::derive_wrt() const {
   auto moduloDisplacement{L2Norm(displacement_)};
   if (ID == idStartVertex_) {
@@ -81,6 +90,6 @@ template <size_t ID>
     return displacement_ / moduloDisplacement;
   }
   return std::array<double, 3>{{0, 0, 0}};
-}
+}*/
 
 }  // namespace autopas::utils::ArrayMath::Argon

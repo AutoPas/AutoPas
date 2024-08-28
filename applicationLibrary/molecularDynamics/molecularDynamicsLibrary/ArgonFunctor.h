@@ -6,16 +6,18 @@
 
 #pragma once
 
+#include <array>
+
 #include "ArgonInclude/DispersionTerm.h"
 #include "ArgonInclude/DisplacementHandle.h"
+#include "ArgonInclude/CosineHandle.h"
 #include "ArgonInclude/RepulsiveTerm.h"
-#include "ParticlePropertiesLibrary.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/SoA.h"
 #include "autopas/utils/WrapOpenMP.h"
 
-namespace mdLib::Argon {
+namespace mdLib {
 
 template <class Particle, autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both,
           bool calculateGlobals = false>
@@ -55,6 +57,7 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
    * @param newton3
    */
   void AoSFunctor(Particle &i, Particle &j, Particle &k, bool newton3) {
+    using namespace autopas::utils::ArrayMath::literals;
     if (i.isDummy() or j.isDummy() or k.isDummy()) {
       return;
     }
@@ -65,9 +68,9 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
     const auto JK = k.getR() - j.getR();
     const auto KI = i.getR() - k.getR();
 
-    const auto displacementIJ = DisplacementHandle(IJ, I, J);
-    const auto displacementJK = DisplacementHandle(JK, J, K);
-    const auto displacementKI = DisplacementHandle(KI, K, I);
+    const auto displacementIJ = autopas::utils::ArrayMath::Argon::DisplacementHandle(IJ, I, J);
+    const auto displacementJK = autopas::utils::ArrayMath::Argon::DisplacementHandle(JK, J, K);
+    const auto displacementKI = autopas::utils::ArrayMath::Argon::DisplacementHandle(KI, K, I);
 
     const auto distSquaredIJ = autopas::utils::ArrayMath::dot(IJ, IJ);
     const auto distSquaredJK = autopas::utils::ArrayMath::dot(JK, JK);
@@ -77,33 +80,37 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
       return;
     }
 
+    const auto cosineI = autopas::utils::ArrayMath::Argon::CosineHandle(displacementIJ, displacementKI.getInv());
+    const auto cosineJ = autopas::utils::ArrayMath::Argon::CosineHandle(displacementIJ.getInv(), displacementJK);
+    const auto cosineK = autopas::utils::ArrayMath::Argon::CosineHandle(displacementKI, displacementJK.getInv());
+
     const auto forceI_repulsive =
-        autopas::utils::ArrayMath::Argon::F_repulsive<I>(A, alpha, displacementIJ, displacementJK, displacementKI);
+        autopas::utils::ArrayMath::Argon::F_repulsive<I>(A, alpha, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
     const auto forceI_disperisve =
-        autopas::utils::ArrayMath::Argon::F_dispersive<I>(Z, beta, displacementIJ, displacementJK, displacementKI);
+        autopas::utils::ArrayMath::Argon::F_dispersive<I>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
     const auto forceI = forceI_repulsive + forceI_disperisve;
     i.addF(forceI);
 
-    const std::array<double, 3> forceJ{};
-    const std::array<double, 3> forceK{};
+    std::array<double, 3> forceJ{};
+    std::array<double, 3> forceK{};
     if (newton3) {
       const auto forceJ_repulsive =
-          autopas::utils::ArrayMath::Argon::F_repulsive<J>(A, alpha, displacementIJ, displacementJK, displacementKI);
+          autopas::utils::ArrayMath::Argon::F_repulsive<J>(A, alpha, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
       const auto forceJ_disperisve =
-          autopas::utils::ArrayMath::Argon::F_dispersive<J>(Z, beta, displacementIJ, displacementJK, displacementKI);
+          autopas::utils::ArrayMath::Argon::F_dispersive<J>(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
       forceJ = forceJ_repulsive + forceJ_disperisve;
       j.addF(forceJ);
 
-      forceK = (forceI + forceJ) * (-1.0);
+      forceK = (forceI + forceJ) * (-1.);
       k.addF(forceK);
     }
 
     if constexpr (calculateGlobals) {
       // Calculate third of total potential energy from 3-body interaction
       const auto potentialEnergy_repulsive =
-          autopas::utils::ArrayMath::Argon::U_repulsive(A, alpha, displacementIJ, displacementJK, displacementKI);
+          autopas::utils::ArrayMath::Argon::U_repulsive(A, alpha, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
       const auto potentialEnergy_disperisve =
-          autopas::utils::ArrayMath::Argon::U_dispersive(Z, beta, displacementIJ, displacementJK, displacementKI);
+          autopas::utils::ArrayMath::Argon::U_dispersive(Z, beta, displacementIJ, displacementJK, displacementKI, cosineI, cosineJ, cosineK);
       const double potentialEnergy = potentialEnergy_repulsive + potentialEnergy_disperisve;
 
       // Virial is calculated as f_i * r_i
