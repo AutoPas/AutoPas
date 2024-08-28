@@ -198,6 +198,9 @@ void Simulation::run() {
       // Griebel et al., Numerical simulation in molecular dynamics: numerics, algorithms, parallelization,
       // applications, 2007)
       if (_iteration == 0) {
+        // add global forces to particles
+        calculateGlobalForces(_configuration.globalForce.value);
+
         updateInteractionForces();
       }
 
