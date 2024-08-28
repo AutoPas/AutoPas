@@ -139,7 +139,7 @@ using LJFunctorTypeSVE =
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-using KryptonFunctorType = mdLib::KryptonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, true>;
+using KryptonPairwiseFunctorType = mdLib::KryptonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
@@ -162,7 +162,7 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Krypton functor does not have support for multisite molecules!"
 #else
-using KryptonFunctor3B =
+using KryptonTriwiseFunctorType =
     mdLib::KryptonExtendedATMFunctor<ParticleType, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
