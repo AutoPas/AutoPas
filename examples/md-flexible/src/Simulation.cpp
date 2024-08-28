@@ -30,7 +30,8 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonFunctor3B *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonPairwiseFunctorType *);
+extern template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonTriwiseFunctorType *);
 #endif
 //! @endcond
 
@@ -831,7 +832,7 @@ ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption::kr: {
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-      return f(KryptonFunctorType{cutoff});
+      return f(KryptonPairwiseFunctorType{cutoff});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for the Krypton Pair Functor. Activate it via `cmake "
@@ -861,7 +862,7 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
     }
     case MDFlexConfig::FunctorOption3B::kr: {
 #if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
-      return f(KryptonFunctor3B{cutoff});
+      return f(KryptonTriwiseFunctorType{cutoff});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for Krypton 3Body Functor. Activate it via `cmake "

@@ -1,5 +1,5 @@
 /**
- * @file computeInteractionsKryptonFunctor.cpp
+ * @file computeInteractionsKryptonFunctors.cpp
  *
  * Contains explicit template instantiations for the computeInteractions() method with the appropriate ab-initio
  * Krypton pair Functor aswell as the non-additive extended Axilrod-Teller-Muto 3-body functor. This is linked into the
@@ -11,9 +11,8 @@
 #include "src/TypeDefinitions.h"
 
 //! @cond Doxygen_Suppress
-template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonFunctorType *);
-
-template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonFunctor3B *);
+template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonPairwiseFunctorType *);
+template bool autopas::AutoPas<ParticleType>::computeInteractions(KryptonTriwiseFunctorType *);
 //! @endcond
 
 #endif
