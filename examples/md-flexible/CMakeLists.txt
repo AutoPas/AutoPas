@@ -21,6 +21,8 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calcula
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AT "Compile auto vectorized Axilrod Teller Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE "Compile Argon Pair Functor as defined in src/TypeDefinitions.h." OFF)
+option(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE "Compile Argon Triwise Functor as defined in src/TypeDefinitions.h." OFF)
 
 target_compile_definitions(
         md-flexible
@@ -30,6 +32,8 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT}>:MD_FLEXIBLE_FUNCTOR_AT>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE}>:MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE}>:MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
@@ -137,8 +141,8 @@ if (HAS_AVX)
             CONFIGURATIONS checkExamples
     )
 else ()
-  message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
-  set(TEST_FUNCTOR "Lennard-Jones")
+    message(STATUS "AVX could not be detected. Not testing the AVX Functor.")
+    set(TEST_FUNCTOR "Lennard-Jones")
 endif ()
 
 #stable, periodic particle grid tested with all configurations

@@ -1,8 +1,8 @@
 /**
- * @file TypeDefinitions.h
- * @author F. Gratl
- * @date 01.03.2021
- */
+* @file TypeDefinitions.h
+* @author F. Gratl
+* @date 01.03.2021
+*/
 
 #pragma once
 
@@ -30,8 +30,16 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE)
+#include "molecularDynamicsLibrary/AbInitioArgonPairFunctor.h"
+#endif
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 #include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
+#include "molecularDynamicsLibrary/ArgonFunctor.h"
 #endif
 
 #endif
@@ -39,123 +47,128 @@
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
 
 /**
- * Precision used for particle representations. If you want to test other precisions change it here.
- */
+* Precision used for particle representations. If you want to test other precisions change it here.
+*/
 using FloatPrecision = double;
 
 /**
- * Type of the Particles used in md-flexible.
- * Switches between autopas::MoleculeLJ and autopas::MultisiteMoleculeLJ as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- */
+* Type of the Particles used in md-flexible.
+* Switches between autopas::MoleculeLJ and autopas::MultisiteMoleculeLJ as determined by CMake flag
+* MD_FLEXIBLE_MODE.
+*/
 #if MD_FLEXIBLE_MODE == MULTISITE
 using ParticleType = mdLib::MultisiteMoleculeLJ;
 #else
 using ParticleType = mdLib::MoleculeLJ;
 #endif
 
+namespace mdFlexibleTypeDefs {
+/**
+* If AutoPas is compiled with FLOP logging enabled, use functors with FLOP counting enabled.
+*/
+constexpr bool countFLOPs =
+#ifdef AUTOPAS_LOG_FLOPS
+   true;
+#else
+   false;
+#endif
+}  // namespace mdFlexibleTypeDefs
+
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC)
 /**
- * Type of LJFunctorTypeAutovec used in md-flexible.
- * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- */
+* Type of LJFunctorTypeAutovec used in md-flexible.
+* Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
+* MD_FLEXIBLE_MODE.
+*/
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
+using LJFunctorTypeAutovec = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false,
+                                                      mdFlexibleTypeDefs::countFLOPs>;
 #else
-using LJFunctorTypeAutovec = mdLib::LJFunctor<ParticleType, true, true>;
+using LJFunctorTypeAutovec =
+   mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, false, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS)
 /**
- * Type of LJFunctorTypeAutovecGlobals used in md-flexible.
- * Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- */
+* Type of LJFunctorTypeAutovecGlobals used in md-flexible.
+* Switches between mdLib::LJFunctor and mdLib::LJMultisiteFunctor as determined by CMake flag
+* MD_FLEXIBLE_MODE.
+*/
 #if MD_FLEXIBLE_MODE == MULTISITE
-using LJFunctorTypeAutovecGlobals =
-    mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAutovecGlobals = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both,
+                                                             true, mdFlexibleTypeDefs::countFLOPs>;
 #else
-using LJFunctorTypeAutovecGlobals = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
+using LJFunctorTypeAutovecGlobals =
+   mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AVX)
 /**
- * Type of LJFunctorTypeAVX used in md-flexible.
- * Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- * @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
- */
+* Type of LJFunctorTypeAVX used in md-flexible.
+* Switches between mdLib::LJFunctorAVX and mdLib::LJMultisiteFunctorAVX as determined by CMake flag
+* MD_FLEXIBLE_MODE.
+* @note mdLib::LJMultisiteFunctorAVX is yet to be written, so a compiler pre-processing error is thrown.
+*/
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have AVX support!"
 #else
-using LJFunctorTypeAVX = mdLib::LJFunctorAVX<ParticleType, true, true>;
+using LJFunctorTypeAVX =
+   mdLib::LJFunctorAVX<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE)
 /**
- * Type of LJFunctorTypeSVE used in md-flexible.
- * Switches between mdLib::LJFunctorSVE and mdLib::LJMultisiteFunctorSVE as determined by CMake flag
- * MD_FLEXIBLE_MODE.
- * @note mdLib::LJMultisiteFunctorSVE is yet to be written, so a compiler pre-processing error is thrown.
- */
+* Type of LJFunctorTypeSVE used in md-flexible.
+* Switches between mdLib::LJFunctorSVE and mdLib::LJMultisiteFunctorSVE as determined by CMake flag
+* MD_FLEXIBLE_MODE.
+* @note mdLib::LJMultisiteFunctorSVE is yet to be written, so a compiler pre-processing error is thrown.
+*/
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "Multi-Site Lennard-Jones Functor does not have SVE support!"
 #else
-using LJFunctorTypeSVE = mdLib::LJFunctorSVE<ParticleType, true, true>;
+using LJFunctorTypeSVE =
+   mdLib::LJFunctorSVE<ParticleType, true, true, autopas::FunctorN3Modes::Both, true, mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
+#endif
+
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE)
+using ArgonPairwiseFunctorType = mdLib::AbInitioArgonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, false, false, false>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
 /**
- * Type of LJFunctorTypeAT used in md-flexible.
- */
+* Type of LJFunctorTypeAT used in md-flexible.
+*/
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true,
+                                             mdFlexibleTypeDefs::countFLOPs>;
 #endif
 
 #endif
 
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_TRIWISE)
 /**
- * Type of the Particle Properties Library.
- * Set to the same precision as ParticleType.
- */
-using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
-
-/**
- * We require access to a version of the force functor for non-computeInteractions purposes, e.g. calculating FLOPs or
- * AoS functor calls. This is abstracted from whichever SoA implementation is used, so we pick any functor that is
- * chosen to be used in the CMake.
+* Type of LJFunctorTypeAT used in md-flexible.
  */
 #if MD_FLEXIBLE_MODE == MULTISITE
-#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJMultisiteFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#endif
-
+#error "The Argon triwise functor does not have support for multisite molecules!"
 #else
-#ifdef MD_FLEXIBLE_FUNCTOR_AUTOVEC
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS
-using LJFunctorTypeAbstract = mdLib::LJFunctor<ParticleType, true, true, autopas::FunctorN3Modes::Both, true>;
-#elif MD_FLEXIBLE_FUNCTOR_AVX
-using LJFunctorTypeAbstract = mdLib::LJFunctorAVX<ParticleType, true, true>;
-#elif MD_FLEXIBLE_FUNCTOR_SVE
-using LJFunctorTypeAbstract = mdLib::LJFunctorSVE<ParticleType, true, true>;
-#endif
-
-#ifdef MD_FLEXIBLE_FUNCTOR_AT
-using ATFunctorTypeAbstract = mdLib::AxilrodTellerFunctor<ParticleType, true>;
+using ArgonTriwiseFunctorType = mdLib::ArgonFunctor<ParticleType, autopas::FunctorN3Modes::Both, false>;
 #endif
 
 #endif
+
+/**
+* Type of the Particle Properties Library.
+* Set to the same precision as ParticleType.
+*/
+using ParticlePropertiesLibraryType = ParticlePropertiesLibrary<FloatPrecision, size_t>;
