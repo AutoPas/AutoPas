@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <ios>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -161,7 +162,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
                          std::pow(10, -timestepFile.precision()))) {
           timestepFile << std::setprecision(timestepFile.precision() + 1);
           // Abort if the numbers are indistinguishable beyond machine precision
-          if (timestepFile.precision() > 20) {
+          if (timestepFile.precision() > std::numeric_limits<double>::digits10) {
             throw std::runtime_error(
                 "ParallelVtkWriter::writeWithDynamicPrecision(): "
                 "The two given numbers are identical up to 20 digits of precision!\n"
