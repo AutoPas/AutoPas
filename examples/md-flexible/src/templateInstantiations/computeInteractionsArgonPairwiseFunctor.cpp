@@ -6,7 +6,7 @@
 * declare, but not instantiate this template.
 */
 
-#if defined(MD_FLEXIBLE_FUNCTOR_KRYPTON)
+#if defined(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE)
 #include "autopas/AutoPasImpl.h"
 #include "src/TypeDefinitions.h"
 
