@@ -81,7 +81,7 @@ template <class T>
  * @param cosK
  * @return P_A(cosI) * P_B(cosJ) * P_C(cosK)
  */
-[[nodiscard]] double Q(const size_t A, const size_t B, const size_t C, const CosineHandle &cosI,
+[[nodiscard]] inline double Q(const size_t A, const size_t B, const size_t C, const CosineHandle &cosI,
                        const CosineHandle &cosJ, const CosineHandle &cosK) {
   return LegendrePol(cosI.getCos(), A) * LegendrePol(cosJ.getCos(), B) * LegendrePol(cosK.getCos(), C);
 }
