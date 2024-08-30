@@ -162,10 +162,13 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
                          std::pow(10, -timestepFile.precision()))) {
           timestepFile << std::setprecision(timestepFile.precision() + 1);
           // Abort if the numbers are indistinguishable beyond machine precision
-          if (timestepFile.precision() > std::numeric_limits<double>::digits10) {
+          constexpr auto machinePrecision = std::numeric_limits<double>::digits10;
+          if (timestepFile.precision() > machinePrecision) {
             throw std::runtime_error(
                 "ParallelVtkWriter::writeWithDynamicPrecision(): "
-                "The two given numbers are identical up to 20 digits of precision!\n"
+                "The two given numbers are identical up to " +
+                std::to_string(machinePrecision) +
+                " digits of precision!\n"
                 "Number: " +
                 std::to_string(position) + "\n" + particle->toString());
           }
