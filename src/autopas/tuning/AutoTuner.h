@@ -382,5 +382,21 @@ class AutoTuner {
    * CSV logger for all samples collected during a tuning phase.
    */
   TuningDataLogger _tuningDataLogger;
+
+  /**
+   * Is set to true during a tuning phase.
+   */
+  bool _isTuning{false};
+
+  /**
+   * Is only set to true in the iteration where a tuning phase ends. This is done in tuneConfiguration() and set back to
+   * false in bumpIterationCounters()
+   */
+  bool _endOfTuningPhase{false};
+
+  /**
+   * Stores the number of iterations the previous tuning phase used. Is reset at the beginning of a new tuning phase.
+   */
+  size_t _iterationsInLastTuningPhase{0};
 };
 }  // namespace autopas
