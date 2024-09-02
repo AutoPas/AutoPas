@@ -229,6 +229,13 @@ class Simulation {
 
  private:
   /**
+   * Load particles from this object's config into this object's AutoPas container.
+   *
+   * @note This also clears all particles from the config file!
+   */
+  void loadParticles();
+
+  /**
    * Estimates the number of tuning iterations which ocurred during the simulation so far.
    * @return an estimation of the number of tuning iterations which occured so far.
    */
