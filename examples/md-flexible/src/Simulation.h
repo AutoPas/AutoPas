@@ -112,11 +112,6 @@ class Simulation {
   constexpr static auto _floatStringPrecision = 3;
 
   /**
-   * Is set to true if the initial force calculation is a tuning iteration
-   */
-  bool _initialTuningIterationRecorded{false};
-
-  /**
    * Struct containing all timers used for the simulation.
    */
   struct Timers {

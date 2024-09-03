@@ -189,16 +189,6 @@ void Simulation::run() {
 
     _timers.computationalLoad.start();
     if (_configuration.deltaT.value != 0 and not _simulationIsPaused) {
-      // if we are in the first iteration we need an initial force calculation for Störmer Verlet (for details see:
-      // Griebel et al., Numerical simulation in molecular dynamics: numerics, algorithms, parallelization,
-      // applications, 2007)
-      if (_iteration == 0) {
-        // add global forces to particles
-        calculateGlobalForces(_configuration.globalForce.value);
-
-        updateInteractionForces();
-      }
-
       updatePositionsAndResetForces();
 #if MD_FLEXIBLE_MODE == MULTISITE
       updateQuaternions();
@@ -420,11 +410,7 @@ void Simulation::updateInteractionForces() {
   // count time spent for tuning
   if (_currentIterationIsTuningIteration) {
     _timers.forceUpdateTuning.addTime(timeIteration);
-    if (_iteration == 0 and not _initialTuningIterationRecorded) {
-      _initialTuningIterationRecorded = true;
-    } else {
-      ++_numTuningIterations;
-    }
+    ++_numTuningIterations;
   } else {
     _timers.forceUpdateNonTuning.addTime(timeIteration);
     // if the previous iteration was a tuning iteration and the current one is not
@@ -598,7 +584,7 @@ void Simulation::logMeasurements() {
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
               << (static_cast<double>(_numTuningIterations) / static_cast<double>(_iteration) * 100.) << "%"
-              << (_initialTuningIterationRecorded ? " (+1 initial tuning)" : "") << "\n";
+              << "\n";
 
     auto mfups =
         static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
