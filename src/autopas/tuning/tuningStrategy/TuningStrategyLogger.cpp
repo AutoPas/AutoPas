@@ -27,14 +27,20 @@ void TuningStrategyLogger::addEvidence(const Configuration &configuration, const
   _logOut << tuningLogEntry::writeEvidence(evidence.value, evidence.iteration, configuration) << std::endl;
 }
 
-void TuningStrategyLogger::optimizeSuggestions(std::vector<Configuration> &configQueue,
+bool TuningStrategyLogger::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                                const EvidenceCollection &evidenceCollection) {
   _logOut << tuningLogEntry::writeTune() << std::endl;
+
+  // TuningStrategyLogger does no intentional config wipes
+  return false;
 }
 
-void TuningStrategyLogger::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool TuningStrategyLogger::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                                  const autopas::EvidenceCollection &evidenceCollection) {
   _logOut << tuningLogEntry::writeReset(iteration) << std::endl;
+
+  // TuningStrategyLogger does no intentional config wipes
+  return false;
 }
 
 bool TuningStrategyLogger::needsLiveInfo() const {
