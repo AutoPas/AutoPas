@@ -75,6 +75,7 @@ bool AutoTuner::searchSpaceIsEmpty() const { return _searchSpace.empty(); }
 
 void AutoTuner::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
+  _iterationsInLastTuningPhase = 0;
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
 }
 
@@ -148,7 +149,7 @@ bool AutoTuner::tuneConfiguration() {
 
   // CASE: End of a tuning phase. This is not exclusive to the other cases!
   if (_configQueue.empty()) {
-    // if the queue is empty we are done tuning.
+    //  if the queue is empty we are done tuning.
     _endOfTuningPhase = true;
     const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase);
     _configQueue.push_back(optConf);
@@ -164,7 +165,7 @@ bool AutoTuner::tuneConfiguration() {
 const Configuration &AutoTuner::getCurrentConfig() const { return _configQueue.back(); }
 
 std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
-  // If we are not (yet) tuning or there is nothing to tune return immediately.
+  //  If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
     return {getCurrentConfig(), false};
   } else if (getCurrentNumSamples() < _maxSamples) {
@@ -300,8 +301,9 @@ void AutoTuner::bumpIterationCounters() {
 bool AutoTuner::willRebuildNeighborLists() const {
   const bool inTuningPhase = this->inTuningPhase();
   // How many iterations ago did the rhythm of rebuilds change?
-  const auto iterationBaseline =
-      inTuningPhase ? _iterationsSinceTuning : _iterationsSinceTuning - _iterationsInLastTuningPhase;
+  const auto iterationBaseline = inTuningPhase
+                                     ? (_iterationsSinceTuning == _tuningInterval ? 0 : _iterationsSinceTuning)
+                                     : _iterationsSinceTuning - _iterationsInLastTuningPhase;
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = inTuningPhase ? _maxSamples : _rebuildFrequency;
   return (iterationBaseline % iterationsPerRebuild) == 0;
@@ -424,7 +426,10 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
-bool AutoTuner::inTuningPhase() const { return _isTuning and not searchSpaceIsTrivial(); }
+bool AutoTuner::inTuningPhase() const {
+  return ((_iterationsSinceTuning + _iterationsInLastTuningPhase) == _tuningInterval or _isTuning) and
+         not searchSpaceIsTrivial();
+}
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
 
