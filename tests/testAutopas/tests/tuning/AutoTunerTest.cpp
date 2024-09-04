@@ -169,6 +169,48 @@ TEST_F(AutoTunerTest, testAllConfigurations) {
   EXPECT_EQ(expectedNumberOfIterations, iterations);
 }
 
+TEST_F(AutoTunerTest, testTuningIntervalIsFixed) {
+  const unsigned int verletRebuildFrequency = 20;
+  const unsigned int tuningInterval = 1000;
+  const autopas::AutoTunerInfo autoTunerInfo{
+      .tuningInterval = tuningInterval,
+      .maxSamples = 3,
+  };
+  const autopas::LogicHandlerInfo logicHandlerInfo{
+      .boxMin{0., 0., 0.},
+      .boxMax{10., 10., 10.},
+  };
+  autopas::AutoTuner::TuningStrategiesListType tuningStrategies{};
+
+  const autopas::AutoTuner::SearchSpaceType searchSpace{
+      _confDs_seq_noN3,
+      _confDs_seq_N3,
+      _confLc_c08_noN3,
+  };
+
+  autopas::AutoTuner autoTuner(tuningStrategies, searchSpace, autoTunerInfo, verletRebuildFrequency, "");
+  autopas::LogicHandler<Molecule> logicHandler(autoTuner, logicHandlerInfo, verletRebuildFrequency, "");
+
+  testing::NiceMock<MockFunctor<Molecule>> functor;
+  EXPECT_CALL(functor, isRelevantForTuning()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNewton3()).WillRepeatedly(::testing::Return(true));
+  EXPECT_CALL(functor, allowsNonNewton3()).WillRepeatedly(::testing::Return(true));
+
+  size_t numIterations = 5 * tuningInterval;
+  bool stillTuning = true;
+  bool lastWasTuningInteration = false;
+  size_t iterations = 0;
+  size_t tuningIterations = 0;
+  while (iterations < numIterations) {
+    stillTuning = logicHandler.iteratePairwisePipeline(&functor);
+    if (not lastWasTuningInteration and stillTuning) {
+      EXPECT_TRUE(iterations % tuningInterval == 0) << "Tuning phase does at start at fixed iteration number.";
+    }
+    ++iterations;
+    lastWasTuningInteration = stillTuning ? true : false;
+  }
+}
+
 TEST_F(AutoTunerTest, testWillRebuildDDL) {
   // also check if rebuild is detected if next config is invalid
 
