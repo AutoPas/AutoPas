@@ -37,7 +37,7 @@ class ArgonFunctor : public autopas::TriwiseFunctor<Particle, ArgonFunctor<Parti
    */
   explicit ArgonFunctor(double cutoff) : ArgonFunctor(cutoff, nullptr) {}
 
-  std::string getName() final { return "ArgonFunctorAutoVec"; }
+  std::string getName() final { return "ArgonFunctorTriwise"; }
 
   bool isRelevantForTuning() final { return true; }
 

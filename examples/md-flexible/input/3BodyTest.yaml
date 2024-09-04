@@ -1,15 +1,15 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
 container                            :  [LinkedCells] # DirectSum
-functor-3b                           :  argon-triwise
-traversal-3b                         :  [lc_c01] # ds_sequential
-newton3-3b                           :  [enabled, disabled]
-data-layout-3b                       :  [AoS]
+#functor-3b                           :  argon-triwise
+#traversal-3b                         :  [lc_c01] # ds_sequential
+#newton3-3b                           :  [disabled]
+#data-layout-3b                       :  [AoS]
 
 # Uncomment to combine pairwise and 3-body interaction
 functor                              :  argon-pairwise
-traversal                            :  [lc_c01, lc_c08, lc_sliced]
-newton3                              :  [enabled, disabled]
-data-layout                          :  [AoS, SoA]
+traversal                            :  [lc_sliced] #[lc_c01, lc_c08, lc_sliced]
+newton3                              :  [disables]
+data-layout                          :  [AoS]
 
 verlet-rebuild-frequency             :  10
 verlet-skin-radius-per-timestep      :  0.02
