@@ -12,8 +12,10 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   using FuncType = typename TypeParam::FuncType;
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
+  constexpr bool useLUT = FuncType::getUseLUT();
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
+  mdLib::TriwiseLUT lut(10);
   std::unique_ptr<FuncType> functor;
 
   particlePropertiesLibrary.addSiteType(0, 1.0);
@@ -25,6 +27,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
     particlePropertiesLibrary.addSiteType(2, 1.0);
     particlePropertiesLibrary.addATParametersToSite(2, this->nu3);
 
+  } else if (useLUT) {
+    functor = std::make_unique<FuncType>(this->cutoff, &lut);
+    functor->setParticleProperties(this->nu);
   } else {
     functor = std::make_unique<FuncType>(this->cutoff);
     functor->setParticleProperties(this->nu);
@@ -561,6 +566,7 @@ template <class FuncType>
 struct Newton3False : public TypeWrapper<FuncType, false> {};
 
 using MyTypes = ::testing::Types<Newton3True<ATFunMixNoGlob>, Newton3False<ATFunMixNoGlob>,
-                                 Newton3True<ATFunNoMixNoGlob>, Newton3False<ATFunNoMixNoGlob>>;
+                                 Newton3True<ATFunNoMixNoGlob>, Newton3False<ATFunNoMixNoGlob>,
+                                     Newton3True<ATFunNoMixNoGlobLUT>>;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(GeneratedTyped, ATFunctorTestNoGlobals, MyTypes);
