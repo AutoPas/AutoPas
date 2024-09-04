@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Run the style check
-      - uses: DoozyX/clang-format-lint-action@v0.18.1
+      - uses: DoozyX/clang-format-lint-action@v0.18.2
         with:
           source: 'src tests examples applicationLibrary tools'
           # exclude: 'none'
