@@ -146,11 +146,19 @@ class AxilrodTellerFunctor
    * @note Only to be used with mixing == false.
    *
    * @param cutoff
+   * @param lut
    */
-  explicit AxilrodTellerFunctor(double cutoff) : AxilrodTellerFunctor(cutoff, nullptr) {
+  template <typename T = void>
+  explicit AxilrodTellerFunctor(double cutoff, TriwiseLUT *lut = nullptr,
+                                typename std::enable_if<!useMixing, T>::type* = nullptr)
+      : AxilrodTellerFunctor(cutoff, nullptr) {
     static_assert(not useMixing,
                   "Mixing without a ParticlePropertiesLibrary is not possible! Use a different constructor or set "
                   "mixing to false.");
+    if (lut) {
+      _lut = lut;
+      _lut->fill< decltype(*this) >(*this, _cutoffSquared);
+    }
   }
 
   /**
@@ -159,11 +167,15 @@ class AxilrodTellerFunctor
    * @param cutoff
    * @param particlePropertiesLibrary
    */
-  explicit AxilrodTellerFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary)
+  template <typename T = void>
+  explicit AxilrodTellerFunctor(double cutoff, ParticlePropertiesLibrary<double, size_t> &particlePropertiesLibrary,
+                                typename std::enable_if<useMixing && !useLUT, T>::type* = nullptr)
       : AxilrodTellerFunctor(cutoff, nullptr) {
     static_assert(useMixing,
                   "Not using Mixing but using a ParticlePropertiesLibrary is not allowed! Use a different constructor "
                   "or set mixing to true.");
+    static_assert(not useLUT,
+                  "Using a Lookup Table with mixing is not possible.");
     _PPLibrary = &particlePropertiesLibrary;
   }
 
@@ -179,8 +191,7 @@ class AxilrodTellerFunctor
     return useNewton3 == autopas::FunctorN3Modes::Newton3Off or useNewton3 == autopas::FunctorN3Modes::Both;
   }
 
-  std::array<double, 3> getLUTValues(double dist1Squared, double dist2Squared, double dist3Squared) {
-    auto nu = _nu;
+  [[nodiscard]] std::array<double, 3> getLUTValues(double dist1Squared, double dist2Squared, double dist3Squared) const {
 
     const double dist1 = std::sqrt(dist1Squared);
     const double dist2 = std::sqrt(dist2Squared);
@@ -189,7 +200,7 @@ class AxilrodTellerFunctor
     // Calculate prefactor
     const double allDistsSquared = dist1Squared * dist2Squared * dist3Squared;
     const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
-    const double factor = 3.0 * nu / allDistsTo5;
+    const double factor = 3.0 * _nu / allDistsTo5;
 
     // Dot products of both distance vectors going from one particle
     const double IJDotKI = (dist1Squared + dist3Squared - dist2Squared) / (2. * dist1 * dist3);
@@ -239,17 +250,16 @@ class AxilrodTellerFunctor
 
     if constexpr (useLUT) {
 
-
-      const auto factors = _PPLibrary->getLUT().retrieveValues(distSquaredIJ, distSquaredJK, distSquaredKI);
+      const auto [factors, order] = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
 
       // TODO: signs
-      const auto forceI = displacementIJ * factors[0] + displacementKI * factors[2];
-      const auto forceJ = displacementIJ * factors[0] + displacementJK * factors[1];
-      const auto forceK = displacementJK * factors[1] + displacementKI * factors[2];
+      const auto forceI = displacementIJ * factors[order[0]] + displacementKI * factors[order[2]];
+      const auto forceJ = displacementIJ * factors[order[0]] + displacementJK * factors[order[1]];
+      const auto forceK = displacementJK * factors[order[1]] + displacementKI * factors[order[2]];
 
-      i.addForce(forceI);
-      j.addForce(forceJ);
-      k.addForce(forceK);
+      i.addF(forceI);
+      j.addF(forceJ);
+      k.addF(forceK);
 
     } else {
         // Calculate prefactor
@@ -372,6 +382,13 @@ class AxilrodTellerFunctor
    * @return useMixing
    */
   constexpr static bool getMixing() { return useMixing; }
+
+  /**
+   *
+   * @return useLUT
+   */
+  constexpr static bool getUseLUT() { return useLUT; }
+
 
   /**
    * Reset the global values.
@@ -636,6 +653,7 @@ class AxilrodTellerFunctor
   double _nu = 0.0;
 
   ParticlePropertiesLibrary<SoAFloatPrecision, size_t> *_PPLibrary = nullptr;
+  TriwiseLUT *_lut = nullptr;
 
   // sum of the potential energy, only calculated if calculateGlobals is true
   double _potentialEnergySum;

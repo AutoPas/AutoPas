@@ -10,6 +10,7 @@
 
 #include "ATFunctorTest.h"
 #include "molecularDynamicsLibrary/ParticlePropertiesLibrary.h"
+#include "molecularDynamicsLibrary/TriwiseLUT.h"
 
 template <class FuncType>
 class ATFunctorTestNoGlobals : public ATFunctorTest {

@@ -18,9 +18,9 @@
 // so they have to be explicitly instantiated here.
 extern template class autopas::AutoPas<Molecule>;
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::AxilrodTellerFunctor<Molecule, false, autopas::FunctorN3Modes::Both, false, /*countFLOPs*/ true> *);
+    mdLib::AxilrodTellerFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, false, /*countFLOPs*/ true> *);
 template bool autopas::AutoPas<Molecule>::computeInteractions(
-    mdLib::AxilrodTellerFunctor<Molecule, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true> *);
+    mdLib::AxilrodTellerFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, true, /*countFLOPs*/ true> *);
 
 /**
  * Generates a square of four particles, iterates over it with the AxilrodTellerFunctor and checks the values of
@@ -85,7 +85,7 @@ void ATFunctorFlopCounterTest::testFLOPCounter(autopas::DataLayoutOption dataLay
   //  // update container
   //  auto buffer = autoPas.updateContainer();  // buffer is meaningless here
 
-  mdLib::AxilrodTellerFunctor<Molecule, false, autopas::FunctorN3Modes::Both, calculateGlobals, true> atFunctor(
+  mdLib::AxilrodTellerFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, calculateGlobals, true> atFunctor(
       autoPas.getCutoff());
 
   autoPas.computeInteractions(&atFunctor);
@@ -130,7 +130,7 @@ void ATFunctorFlopCounterTest::testFLOPCounterAoSOMP(bool newton3) {
 
   const double cutoff = 1.;
 
-  mdLib::AxilrodTellerFunctor<Molecule, false, autopas::FunctorN3Modes::Both, calculateGlobals, true> atFunctor(cutoff);
+  mdLib::AxilrodTellerFunctor<Molecule, false, false, autopas::FunctorN3Modes::Both, calculateGlobals, true> atFunctor(cutoff);
 
   // This is a basic check for the global calculations, by checking the handling of two particle interactions in
   // parallel. If interactions are dangerous, archer will complain.
