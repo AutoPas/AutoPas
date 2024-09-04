@@ -19,6 +19,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Update clang-format to the specified version
+      - name: Install clang-format
+        run: |
+          apt-get update
+          apt-get install -y clang-format-14
+          ln -sf /usr/bin/clang-format-14 /usr/bin/clang-format
+
       - uses: DoozyX/clang-format-lint-action@v0.16.2
         with:
           source: 'src tests examples applicationLibrary tools'
