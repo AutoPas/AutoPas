@@ -9,7 +9,7 @@
 #include <array>
 
 #include "ParticlePropertiesLibrary.h"
-#include "autopas/baseFunctors/Functor.h"
+#include "autopas/baseFunctors/PairwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ArrayMath.h"
@@ -33,7 +33,7 @@ namespace mdLib {
 template <class Particle,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
           bool countFLOPs = false, bool relevantForTuning = true>
-class AbInitioArgonPairFunctor : public autopas::Functor<Particle, AbInitioArgonPairFunctor<Particle, useNewton3,
+class AbInitioArgonPairFunctor : public autopas::PairwiseFunctor<Particle, AbInitioArgonPairFunctor<Particle, useNewton3,
                                                                     calculateGlobals, countFLOPs, relevantForTuning>> {
   using SoAArraysType = typename Particle::SoAArraysType;
 
@@ -49,7 +49,7 @@ class AbInitioArgonPairFunctor : public autopas::Functor<Particle, AbInitioArgon
    * @note param dummy unused, only there to make the signature different from the public constructor.
    */
   explicit AbInitioArgonPairFunctor(double cutoff)
-      : autopas::Functor<Particle, AbInitioArgonPairFunctor<Particle, useNewton3, calculateGlobals,
+      : autopas::PairwiseFunctor<Particle, AbInitioArgonPairFunctor<Particle, useNewton3, calculateGlobals,
                                                 countFLOPs, relevantForTuning>>(cutoff),
         _cutoffSquared{cutoff * cutoff},
         _potentialEnergySum{0.},
@@ -63,6 +63,8 @@ class AbInitioArgonPairFunctor : public autopas::Functor<Particle, AbInitioArgon
       AutoPasLog(DEBUG, "Using AbInitioArgonPairFunctor with countFLOPs but FLOP counting is not implemented.");
     }
   }
+
+  std::string getName() final { return "ArgonFunctorPairwise"; }
 
   bool isRelevantForTuning() final { return relevantForTuning; }
 
