@@ -144,14 +144,11 @@ class LCC01Traversal : public C01BasedTraversal<ParticleCell, PairwiseFunctor, (
 
   /**
    * Appends all needed Attributes to the SoA buffer in cell.
-   * @tparam I
    * @param cell
    * @param appendCell
    */
-  template <std::size_t... I>
-  inline constexpr void appendNeeded(ParticleCell &cell, ParticleCell &appendCell, std::index_sequence<I...>) {
-    cell._particleSoABuffer.template append<std::get<I>(PairwiseFunctor::getNeededAttr(std::false_type()))...>(
-        appendCell._particleSoABuffer);
+  inline constexpr void appendNeeded(ParticleCell &cell, ParticleCell &appendCell) {
+    cell._particleSoABuffer.append(appendCell._particleSoABuffer);
   }
 
   /**
@@ -266,8 +263,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::processBa
         for (const auto &offset : _cellOffsets[offsetSlice]) {
           const unsigned long otherIndex = baseIndex + offset.first;
           ParticleCell &otherCell = cells[otherIndex];
-          appendNeeded(combinationSlice[offsetSlice], otherCell,
-                       std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
+          appendNeeded(combinationSlice[offsetSlice], otherCell);
         }
       }
     } else {
@@ -289,8 +285,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::processBa
              ++offsetIndex) {
           const unsigned long otherIndex = baseIndex + _cellOffsets[i][offsetIndex].first;
           ParticleCell &otherCell = cells[otherIndex];
-          appendNeeded(combinationSlice[slice], otherCell,
-                       std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
+          appendNeeded(combinationSlice[slice], otherCell);
         }
       }
 
@@ -299,8 +294,7 @@ inline void LCC01Traversal<ParticleCell, PairwiseFunctor, combineSoA>::processBa
       for (const auto &offset : _cellOffsets.back()) {
         const unsigned long otherIndex = baseIndex + offset.first;
         ParticleCell &otherCell = cells[otherIndex];
-        appendNeeded(combinationSlice[currentSlice], otherCell,
-                     std::make_index_sequence<PairwiseFunctor::getNeededAttr(std::false_type()).size()>{});
+        appendNeeded(combinationSlice[currentSlice], otherCell);
       }
 
       ++currentSlice %= cOffSize;

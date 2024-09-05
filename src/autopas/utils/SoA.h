@@ -21,7 +21,7 @@
 namespace autopas {
 
 /**
- * Structur of the array class.
+ * Structure of arrays class.
  * @tparam SoAArraysType The SoAArrayType to be used for storage.
  */
 template <class SoAArraysType>
@@ -85,20 +85,6 @@ class SoA {
   void append(const SoAView<SoAArraysType> &other) {
     if (other.size() > 0) {
       append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
-    }
-  }
-
-  /**
-   * Appends the specified attributes from the other SoA buffer to this.
-   * @tparam attributes Attributes to append.
-   * @param other Other buffer.
-   */
-  template <int... attributes>
-  void append(const SoA<SoAArraysType> &other) {
-    if (other.size() > 0) {
-      const auto newSize = size() + other.size();
-      append_impl(other.soaStorage, std::index_sequence<attributes...>{});
-      resizeArrays(newSize);
     }
   }
 
