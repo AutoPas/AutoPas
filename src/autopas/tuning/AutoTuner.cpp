@@ -301,6 +301,10 @@ void AutoTuner::bumpIterationCounters() {
 bool AutoTuner::willRebuildNeighborLists() const {
   const bool inTuningPhase = this->inTuningPhase();
   // How many iterations ago did the rhythm of rebuilds change?
+  // If we are in a tuning phase and in the first tuning iteration but tuneConfiguration has not been called yet
+  // (_iterationsSinceTuning == _tuningInterval) we have 0 as baseline, otherwise the baseline are the iterations we
+  // already did in this tuning phase. If we are not in a tuning phase we subtract the the number of iterations from the
+  // previous tuning phase to get the baseline
   const auto iterationBaseline = inTuningPhase
                                      ? (_iterationsSinceTuning == _tuningInterval ? 0 : _iterationsSinceTuning)
                                      : _iterationsSinceTuning - _iterationsInLastTuningPhase;
@@ -427,8 +431,9 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
 bool AutoTuner::inTuningPhase() const {
-  return ((_iterationsSinceTuning + _iterationsInLastTuningPhase) == _tuningInterval or _isTuning) and
-         not searchSpaceIsTrivial();
+  // If _iterationsSinceTuning == _tuningInterval we are in the first tuning iteration but tuneConfiguration has not
+  // been called yet.
+  return (_iterationsSinceTuning == _tuningInterval or _isTuning) and not searchSpaceIsTrivial();
 }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
