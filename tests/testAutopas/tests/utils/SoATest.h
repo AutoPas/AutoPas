@@ -8,7 +8,7 @@
 
 #include "AutoPasTestBase.h"
 #include "autopas/particles/Particle.h"
-#include "autopas/utils/SoA.h"
+#include "autopas/utils/SoAPartition.h"
 #include "autopas/utils/SoAType.h"
 
 class SoATest : public AutoPasTestBase {};

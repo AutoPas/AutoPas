@@ -1,5 +1,5 @@
 /**
- * @file SoA.h
+ * @file SoAPartition.h
  * @authors tchipevn, seckler
  * @date 18.01.2018
  */
@@ -14,9 +14,9 @@
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/SoAPartitionView.h"
 #include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/SoAType.h"
-#include "autopas/utils/SoAView.h"
 
 namespace autopas {
 
@@ -25,18 +25,18 @@ namespace autopas {
  * @tparam SoAArraysType The SoAArrayType to be used for storage.
  */
 template <class SoAArraysType>
-class SoA {
+class SoAPartition {
  public:
   /**
    * Default constructor.
    */
-  SoA() = default;
+  SoAPartition() = default;
 
   /**
    * Copy constructor.
-   * @param soa SoA to copy.
+   * @param soa SoAPartition to copy.
    */
-  SoA(const SoA &soa) = default;
+  SoAPartition(const SoAPartition &soa) = default;
 
   /**
    * Resizes all Vectors to the given length.
@@ -69,20 +69,20 @@ class SoA {
   }
 
   /**
-   * Appends the other SoA buffer to this.
+   * Appends the other SoAPartition buffer to this.
    * @param other Other buffer.
    */
-  void append(const SoA<SoAArraysType> &other) {
+  void append(const SoAPartition<SoAArraysType> &other) {
     if (other.size() > 0) {
       append_impl(other.soaStorage, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
   }
 
   /**
-   * Appends the other SoA buffer to this.
+   * Appends the other SoAPartition buffer to this.
    * @param other Other buffer.
    */
-  void append(const SoAView<SoAArraysType> &other) {
+  void append(const SoAPartitionView<SoAArraysType> &other) {
     if (other.size() > 0) {
       append_impl(other, std::make_index_sequence<std::tuple_size<SoAArraysType>::value>{});
     }
@@ -125,7 +125,7 @@ class SoA {
     std::array<double, sizeof...(attributes)> retArray;
     if (particleId >= size()) {
       autopas::utils::ExceptionHandler::exception(
-          "SoA::read: requested particle id ({}) is bigger than number of particles ({})", particleId, size());
+          "SoAPartition::read: requested particle id ({}) is bigger than number of particles ({})", particleId, size());
       return retArray;
     }
     read_impl<attributes...>(particleId, retArray);
@@ -183,17 +183,17 @@ class SoA {
   }
 
   /**
-   * Delete the last particle in the SoA.
+   * Delete the last particle in the SoAPartition.
    */
   void pop_back() {
     soaStorage.apply([](auto &list) { list.pop_back(); });
   }
 
   /**
-   * Constructs a SoAView for the whole SoA and returns it.
-   * @return the constructed SoAView on the whole SoA.
+   * Constructs a SoAPartitionView for the whole SoAPartition and returns it.
+   * @return the constructed SoAPartitionView on the whole SoAPartition.
    */
-  SoAView<SoAArraysType> constructView() { return {this, 0, size()}; }
+  SoAPartitionView<SoAArraysType> constructView() { return {this, 0, size()}; }
 
   /**
    * Constructs a view that starts at \p startIndex (inclusive) and ends at \p endIndex (exclusive).
@@ -202,9 +202,9 @@ class SoA {
    * endIndex has to be greater or equal to \p startIndex.
    * @param startIndex The index of the first entry to view.
    * @param endIndex The index of the entry after the last entry to view.
-   * @return the constructed SoAView from \p startIndex (inclusive) to \p endIndex (exclusive).
+   * @return the constructed SoAPartitionView from \p startIndex (inclusive) to \p endIndex (exclusive).
    */
-  SoAView<SoAArraysType> constructView(size_t startIndex, size_t endIndex) { return {this, startIndex, endIndex}; }
+  SoAPartitionView<SoAArraysType> constructView(size_t startIndex, size_t endIndex) { return {this, startIndex, endIndex}; }
 
  private:
   // actual implementation of read
@@ -240,7 +240,7 @@ class SoA {
 
   // helper function to append a single array
   template <std::size_t attribute>
-  void appendSingleArray(const SoAView<SoAArraysType> &valArrays) {
+  void appendSingleArray(const SoAPartitionView<SoAArraysType> &valArrays) {
     auto &currentVector = soaStorage.template get<attribute>();
     auto otherVectorIterator = valArrays.template begin<attribute>();
     currentVector.insert(currentVector.end(), otherVectorIterator, otherVectorIterator + valArrays.size());
@@ -255,14 +255,14 @@ class SoA {
 
   // actual implementation of append
   template <std::size_t... Is>
-  void append_impl(const SoAView<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
+  void append_impl(const SoAPartitionView<SoAArraysType> &valArrays, std::index_sequence<Is...>) {
     // fold expression
     (appendSingleArray<Is>(valArrays), ...);
   }
 
   // ------------- members ---------------
 
-  // storage container for the SoA's
+  // storage container for the SoAPartition's
   utils::SoAStorage<SoAArraysType> soaStorage;
 };
 }  // namespace autopas

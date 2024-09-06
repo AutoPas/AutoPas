@@ -1,6 +1,6 @@
 /**
  * @file SoAType.h
- * Provides a struct to easily generate the desired SoAType.
+ * Provides a struct to easily generate the desired SoAPartitionType.
  * @author seckler
  * @date 12.06.18
  */

@@ -6,7 +6,7 @@
 
 #include "SoATest.h"
 
-TEST_F(SoATest, testInitialization) { autopas::SoA<autopas::Particle::SoAArraysType> soa; }
+TEST_F(SoATest, testInitialization) { autopas::SoAPartition<autopas::Particle::SoAArraysType> soa; }
 
 TEST_F(SoATest, SoATypeTest) {
   static_assert(std::is_same<autopas::utils::SoAType<size_t, double, double, double>::Type,
@@ -86,7 +86,7 @@ TEST_F(SoATest, SoAStorageTestApply) {
 TEST_F(SoATest, SoATestPush) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  autopas::SoAPartition<Particle::SoAArraysType> soa;
 
   EXPECT_EQ(soa.size(), 0);
 
@@ -112,7 +112,7 @@ TEST_F(SoATest, SoATestPush) {
 TEST_F(SoATest, SoATestAppend) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  std::array<autopas::SoA<Particle::SoAArraysType>, 2> soaBuffer;
+  std::array<autopas::SoAPartition<Particle::SoAArraysType>, 2> soaBuffer;
 
   soaBuffer[0].push<Particle::AttributeNames::id>(2);
   soaBuffer[0].push<Particle::AttributeNames::posX>(0.3);
@@ -145,7 +145,7 @@ TEST_F(SoATest, SoATestAppend) {
 TEST_F(SoATest, SoATestSwap) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  autopas::SoAPartition<Particle::SoAArraysType> soa;
 
   soa.resizeArrays(2);
 
@@ -203,7 +203,7 @@ TEST_F(SoATest, SoATestSwap) {
 TEST_F(SoATest, SoATestMultiWriteRead) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  autopas::SoAPartition<Particle::SoAArraysType> soa;
 
   soa.resizeArrays(1);
 
@@ -240,7 +240,7 @@ TEST_F(SoATest, SoATestMultiWriteRead) {
 TEST_F(SoATest, SoATestComplicatedAccess) {
   // default soa using autopas::Particle
   using autopas::Particle;
-  autopas::SoA<Particle::SoAArraysType> soa;
+  autopas::SoAPartition<Particle::SoAArraysType> soa;
 
   EXPECT_EQ(soa.size(), 0);
 
