@@ -7,6 +7,7 @@
 #pragma once
 
 #include "ParticlePropertiesLibrary.h"
+#include "TriwiseLUT.h"
 #include "autopas/baseFunctors/TriwiseFunctor.h"
 #include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/AlignedAllocator.h"
@@ -157,7 +158,6 @@ class AxilrodTellerFunctor
                   "mixing to false.");
     if (lut) {
       _lut = lut;
-      _lut->fill< decltype(*this) >(*this, _cutoffSquared);
     }
   }
 
@@ -192,27 +192,28 @@ class AxilrodTellerFunctor
   }
 
   [[nodiscard]] std::array<double, 3> getLUTValues(double dist1Squared, double dist2Squared, double dist3Squared) const {
-
-    const double dist1 = std::sqrt(dist1Squared);
-    const double dist2 = std::sqrt(dist2Squared);
-    const double dist3 = std::sqrt(dist3Squared);
-
     // Calculate prefactor
     const double allDistsSquared = dist1Squared * dist2Squared * dist3Squared;
     const double allDistsTo5 = allDistsSquared * allDistsSquared * std::sqrt(allDistsSquared);
     const double factor = 3.0 * _nu / allDistsTo5;
 
     // Dot products of both distance vectors going from one particle
-    const double IJDotKI = (dist1Squared + dist3Squared - dist2Squared) / (2. * dist1 * dist3);
-    const double IJDotJK = (dist1Squared + dist2Squared - dist3Squared) / (2. * dist1 * dist2);
-    const double JKDotKI = (dist2Squared + dist3Squared - dist1Squared) / (2. * dist2 * dist3);
+    const double IJDotKI = - 0.5 * (dist1Squared + dist3Squared - dist2Squared);
+    const double IJDotJK = - 0.5 * (dist1Squared + dist2Squared - dist3Squared);
+    const double JKDotKI = - 0.5 * (dist2Squared + dist3Squared - dist1Squared);
 
     const double allDotProducts = IJDotKI * IJDotJK * JKDotKI;
 
-    // const auto forceIDirectionJK = (-displacementIJ - displacementKI) * IJDotKI * (IJDotJK - JKDotKI);
-    const auto forceIJ = (IJDotJK * JKDotKI - dist2Squared * dist3Squared + 5.0 * allDotProducts / dist1Squared - IJDotKI * (IJDotJK - JKDotKI)) * factor;
-    const auto forceJK = (IJDotKI * JKDotKI - dist1Squared * dist3Squared + 5.0 * allDotProducts / dist2Squared - IJDotJK * (JKDotKI - IJDotKI)) * factor;
-    const auto forceKI = (-IJDotJK * JKDotKI + dist1Squared * dist2Squared - 5.0 * allDotProducts / dist3Squared - IJDotKI * (IJDotJK - JKDotKI)) * factor;
+
+    const auto forceIDirIJ = IJDotJK * JKDotKI - dist2Squared * dist3Squared + 5.0 * allDotProducts / dist1Squared;
+    const auto forceJDirJK = IJDotKI * JKDotKI - dist1Squared * dist3Squared + 5.0 * allDotProducts / dist2Squared;
+    const auto forceKDirKI = IJDotJK * JKDotKI - dist1Squared * dist2Squared + 5.0 * allDotProducts / dist3Squared;
+    const auto forceIDirJK = IJDotKI * (IJDotJK - JKDotKI);
+    const auto forceJDirKI =  IJDotJK * (JKDotKI - IJDotKI);
+
+    const auto forceIJ = (forceIDirIJ - forceIDirJK) * factor;
+    const auto forceJK = (forceJDirJK - forceJDirKI) * factor;
+    const auto forceKI = (forceKDirKI + forceIDirJK) * factor;
 
     return {forceIJ, forceJK, forceKI};
   }
@@ -253,13 +254,15 @@ class AxilrodTellerFunctor
       const auto [factors, order] = _lut->retrieveValues(*this, distSquaredIJ, distSquaredJK, distSquaredKI);
 
       // TODO: signs
-      const auto forceI = displacementIJ * factors[order[0]] + displacementKI * factors[order[2]];
-      const auto forceJ = displacementIJ * factors[order[0]] + displacementJK * factors[order[1]];
-      const auto forceK = displacementJK * factors[order[1]] + displacementKI * factors[order[2]];
-
+      const auto forceI = displacementIJ * factors[order[0]] - displacementKI * factors[order[2]];
       i.addF(forceI);
-      j.addF(forceJ);
-      k.addF(forceK);
+
+      if (newton3) {
+        const auto forceJ = displacementJK * factors[order[1]] - displacementIJ * factors[order[0]];
+        const auto forceK = displacementKI * factors[order[2]] - displacementJK * factors[order[1]];
+        j.addF(forceJ);
+        k.addF(forceK);
+      }
 
     } else {
         // Calculate prefactor
@@ -348,7 +351,12 @@ class AxilrodTellerFunctor
    *
    * @param nu The Axilrod-Teller potential parameter
    */
-  void setParticleProperties(SoAFloatPrecision nu) { _nu = nu; }
+  void setParticleProperties(SoAFloatPrecision nu) {
+    _nu = nu;
+    if (useLUT) {
+      _lut->fill< decltype(*this) >(*this, _cutoffSquared);
+    }
+  }
 
   /**
    * @copydoc autopas::Functor::getNeededAttr()
