@@ -13,7 +13,7 @@
 namespace autopas::utils {
 
 /**
- * SoAStorage is a helper to access the stored SoA's.
+ * SoAStorage is a helper to access the SoA's storage arrays.
  * @tparam SoAArraysType the type of the storage arrays. should be a tuple of aligned vectors
  */
 template <class SoAArraysType>
