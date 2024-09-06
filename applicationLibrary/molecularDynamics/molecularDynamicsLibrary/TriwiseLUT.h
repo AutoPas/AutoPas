@@ -18,7 +18,7 @@ class TriwiseLUT {
   TriwiseLUT(int resolution) : _resolution(resolution) {}
 
   template <class Functor>
-  [[nodiscard]] std::pair<const std::array<double, 3>&, std::array<u_int8_t, 3>> retrieveValues(const Functor &functor, double dist1, double dist2, double dist3) const {
+  [[nodiscard]] std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> retrieveValues(const Functor &functor, double dist1, double dist2, double dist3) const {
 
     if (dist1 < _lutCutoff or dist2 < _lutCutoff or dist3 < _lutCutoff) {
       return std::make_pair(functor.getLUTValues(dist1, dist2, dist3), std::array<u_int8_t, 3>({0, 1, 2}));
@@ -60,7 +60,7 @@ class TriwiseLUT {
     }
 
     // Retrieve values from the LUT
-    std::pair<const std::array<double, 3>&, std::array<u_int8_t, 3>> result = std::make_pair(_lut[index1][index2][index3], order);
+    std::pair<const std::array<double, 3>, std::array<u_int8_t, 3>> result = std::make_pair(_lut[index1][index2][index3], order);
 
     return result;
   }

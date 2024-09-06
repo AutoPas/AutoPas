@@ -15,7 +15,7 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   constexpr bool useLUT = FuncType::getUseLUT();
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  mdLib::TriwiseLUT lut(10);
+  mdLib::TriwiseLUT lut(50);
   std::unique_ptr<FuncType> functor;
 
   particlePropertiesLibrary.addSiteType(0, 1.0);
@@ -206,11 +206,13 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
   using TestType = ATFunctorTestNoGlobals<FuncType>;
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
+  constexpr bool useLUT = FuncType::getUseLUT();
 
   for (typename TestType::InteractionType interactionType :
        {TestType::InteractionType::triple, TestType::InteractionType::pair12, TestType::InteractionType::pair21,
         TestType::InteractionType::verlet, TestType::InteractionType::own}) {
     ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
+    mdLib::TriwiseLUT lut(50);
     std::unique_ptr<FuncType> functor;
 
     if constexpr (mixing) {
@@ -222,6 +224,9 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
       particlePropertiesLibrary.addATParametersToSite(2, this->nu3);
       particlePropertiesLibrary.calculateMixingCoefficients();
       functor = std::make_unique<FuncType>(this->cutoff, particlePropertiesLibrary);
+    } else if (useLUT) {
+      functor = std::make_unique<FuncType>(this->cutoff, &lut);
+      functor->setParticleProperties(this->nu);
     } else {
       functor = std::make_unique<FuncType>(this->cutoff);
       functor->setParticleProperties(this->nu);
