@@ -1,0 +1,54 @@
+# This yaml file is for single-site molecular simulation. Uncomment the Molecules option to run this experiment using
+## md-flexible compiled for multi-site molecules.
+container                        :  [VerletClusterLists]
+verlet-rebuild-frequency         :  10
+verlet-skin-radius-per-timestep  :  0.1
+verlet-cluster-size              :  8
+selector-strategy                :  Fastest-Absolute-Value
+data-layout                      :  [SoA]
+#traversal                        :  [ lc_c01, lc_c18, lc_c08, lc_sliced_c02, vl_list_iteration, vlc_c01, vlc_c18, vlc_sliced_c02, vcl_cluster_iteration, vcl_c01_balanced, vcl_c06 ] # Please see AllOptions.yaml for a comprehensive list of traversals
+tuning-strategies                :  []
+tuning-interval                  :  1500
+tuning-samples                   :  3
+tuning-max-evidence              :  10
+functor                          :  highway
+vectorizationPattern             :  [1xVectorLength, 2xVectorLengthDiv2, VectorLengthDiv2x2, VectorLengthx1]
+newton3                          :  [enabled]
+cutoff                           :  3
+cell-size                        :  [1]
+deltaT                           :  0.0005
+iterations                       :  20000
+boundary-type                    :  [reflective,reflective,reflective]
+globalForce                      :  [0,0,0]
+box-min                          :  [0, 0, 0]
+box-max                          :  [90, 90, 60]
+Sites:
+  0:
+    epsilon                      :  0.5
+    sigma                        :  1.
+    mass                         :  1.
+# Uncomment below to run a multi-site simulation.
+#Molecules:
+#  0:
+#    site-types                   :  [ 0 ]
+#    relative-site-positions      :  [ [0, 0, 0 ] ]
+#    moment-of-inertia            :  [ 1., 1., 1. ]
+Objects:
+  Sphere:
+    0:  
+      center                     :  [45, 45, 45]
+      radius                     :  8
+      particle-spacing           :  2
+      velocity                   :  [0, 0, -10]
+      particle-type-id           :  0
+# thermostat:
+#   initialTemperature             :  1
+#   targetTemperature              :  4
+#   deltaTemperature               :  0.1
+#   thermostatInterval             :  10
+#   addBrownianMotion              :  false
+vtk-filename                     :  Gravity_Sphere
+vtk-write-frequency              :  30000
+# no-flops                         :  false
+no-end-config                    :  true
+log-level                        :  info
