@@ -9,6 +9,6 @@
 #include "AutoPasTestBase.h"
 #include "autopas/particles/Particle.h"
 #include "autopas/utils/SoAPartition.h"
-#include "autopas/utils/SoAType.h"
+#include "autopas/utils/SoAPartitionType.h"
 
 class SoATest : public AutoPasTestBase {};

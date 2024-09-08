@@ -12,7 +12,7 @@
 
 namespace autopas {
 
-template <typename MainPartitionType, typename... AdditionalPartitionTypes>
+template <class SoAType>
 class SoA;
 
 /**

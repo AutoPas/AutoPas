@@ -6,24 +6,17 @@
 
 #pragma once
 
-#include <algorithm>
-#include <initializer_list>
-#include <map>
 #include <tuple>
 #include <vector>
 
-#include "autopas/utils/AlignedAllocator.h"
-#include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SoAPartition.h"
-#include "autopas/utils/SoAStorage.h"
-#include "autopas/utils/SoAType.h"
 #include "autopas/utils/SoAView.h"
+#include "autopas/utils/TupleUtils.h"
 
 namespace autopas {
 
 /**
- * Structure of Arrays class. This is a tuple of a main SoA partition and zero, one, or more different types of vectors
- * of SoA partitions.
+ * Structure of Arrays class. This is a pair of a main SoA partition and a tuple of zero, one, or more different types of vectors
+ * of SoA partitions (See SoAType.h)
  *
  * For any particle with a fixed number of attributes, only the main SoA partition is to be used. This includes
  * particle attributes of a fixed number per particle (e.g. there are always 3 position buffers per particle).
@@ -63,7 +56,7 @@ namespace autopas {
  * @tparam MainPartitionType The type of the main SoA partition
  * @tparam AdditionalPartitionTypes List of addition partition types that make up this SoA
  */
-template <typename MainPartitionType, typename... AdditionalPartitionTypes>
+template <class SoAType>
 class SoA {
  public:
   /**
@@ -78,16 +71,6 @@ class SoA {
   SoA(const SoA &SoA) = default;
 
   /**
-   * Type alias for the additional partition part of the SoA
-   */
-  using additionalPartitionsType = std::tuple<std::vector<SoAPartition<AdditionalPartitionTypes>...>>;
-
-  /**
-   * Type alias for SoA of this type.
-   */
-  using SoAType = SoA<MainPartitionType, AdditionalPartitionTypes...>;
-
-  /**
    * Type alias for SoAView of this type.
    */
   using SoAViewType = SoAView<SoAType>;
@@ -95,25 +78,20 @@ class SoA {
   /**
    * Number of additional partition types
    */
-  static const size_t numTypes = std::tuple_size<additionalPartitionsType>::value;
+  static const size_t numAdditionalTypes = std::tuple_size<SoAType[SoAType::additional]>::value;
 
   /**
-   * The main partition.
+   * The SoA storage itself
    */
-  MainPartitionType mainSoAPartition;
-  
-  /**
-   * The additional partitions.
-   */
-  additionalPartitionsType additionalSoAPartitions;
+  SoAType soa;
 
   /**
    * Resizes all partitions to the given length.
    * @param length new length.
    */
   void resizeLengthOfArrays(size_t length) {
-    mainSoAPartition.resizeArrays(length);
-    resizeLengthOfArraysImpl(length, std::make_index_sequence<numTypes>{});
+    soa[SoAType::main].resizeArrays(length);
+    resizeLengthOfArraysAdditionalTypesImpl(length, std::make_index_sequence<numAdditionalTypes>{});
   }
 
   /**
@@ -121,9 +99,9 @@ class SoA {
    * @param other other SoA buffer
    */
   void append(const SoAType &other) {
-    mainSoAPartition.append(other->mainSoAPartition);
+    soa[SoAType::main].append(other->mainSoAPartition);
     if (other.size() > 0) {
-      appendImpl(other, std::make_index_sequence<numTypes>{});
+      appendAdditionalTypesImpl(other, std::make_index_sequence<numAdditionalTypes>{});
     }
   }
 
@@ -132,9 +110,9 @@ class SoA {
    * @param other other SoA buffer as an SoAView
    */
   void append(const SoAViewType &other) {
-    mainSoAPartition.append(other->mainSoAPartition);
+    soa[SoAType::main].append(other->mainSoAPartition);
     if (other.size() > 0) {
-      appendImpl(other, std::make_index_sequence<numTypes>{});
+      appendAdditionalTypesImpl(other, std::make_index_sequence<numAdditionalTypes>{});
     }
   }
   
@@ -145,7 +123,7 @@ class SoA {
    */
   template <size_t attribute>
   auto begin() {
-    return mainSoAPartition.template begin<attribute>();
+    return soa[SoAType::main].template begin<attribute>();
   }
 
   /**
@@ -157,7 +135,7 @@ class SoA {
    */
   template <size_t attribute>
   auto begin(size_t partitionTypeIndex, size_t depth) {
-    return additionalSoAPartitions[partitionTypeIndex][depth].template begin<attribute>();
+    return soa[SoAType::additional][partitionTypeIndex][depth].template begin<attribute>();
   }
 
   /**
@@ -166,17 +144,17 @@ class SoA {
    * @return Number of particles.
    */
   [[nodiscard]] inline size_t size() const {
-    return mainSoAPartition.size();
+    return soa[SoAType::main].size();
   }
 
   /**
    * Delete all particles in the SoA
    */
   void clear() {
-    mainSoAPartition.clear();
-    utils::TupleUtils::for_each(additionalSoAPartitions.getTuple(), [&](auto &SoAsOfSingleType) {
-      for (auto &soa : SoAsOfSingleType) {
-        soa->clear();
+    soa[SoAType::main].clear();
+    utils::TupleUtils::for_each(soa[SoAType::additional].getTuple(), [&](auto &SoAsOfSingleType) {
+      for (auto &soaTmp : SoAsOfSingleType) {
+        soaTmp->clear();
       }
     });
   }
@@ -208,7 +186,7 @@ class SoA {
    * @return maximum "depth" of the given partition type.
    */
   size_t getMaxDepthOfGivenType(size_t partitionTypeIndex) {
-    return additionalSoAPartitions[partitionTypeIndex].size();
+    return soa[SoAType::additional][partitionTypeIndex].size();
   }
 
   /**
@@ -217,7 +195,7 @@ class SoA {
    * @param newMaxDepth new maximum depth the vector of partitions is resized to.
    */
   void resizeMaxDepthOfGivenType(size_t partitionTypeIndex, size_t newMaxDepth) {
-    additionalSoAPartitions[partitionTypeIndex].resize(newMaxDepth);
+    soa[SoAType::additional][partitionTypeIndex].resize(newMaxDepth);
   }
 
   /**
@@ -226,7 +204,7 @@ class SoA {
    * @param length length arrays are resized to.
    */
   template <size_t... partitionTypeIndices>
-  void resizeLengthOfArraysImpl(size_t length, std::index_sequence<partitionTypeIndices...>) {
+  void resizeLengthOfArraysAdditionalTypesImpl(size_t length, std::index_sequence<partitionTypeIndices...>) {
     // fold expression
     (resizeLengthOfArraysOfSingleType<partitionTypeIndices>(length), ...);
   }
@@ -238,8 +216,8 @@ class SoA {
    */
   template <size_t partitionTypeIndex>
   void resizeLengthOfArraysOfSingleType(size_t length) {
-    for (auto soa : additionalSoAPartitions[partitionTypeIndex] ) {
-      soa.resizeArrays(length);
+    for (auto soaTmp : soa[SoAType::additional][partitionTypeIndex] ) {
+      soaTmp.resizeArrays(length);
     }
   }
 
@@ -260,7 +238,7 @@ class SoA {
    * @param other other SoAView buffer.
    */
   template <size_t... partitionTypeIndices>
-  void appendImpl(SoAViewType &other, std::index_sequence<partitionTypeIndices...>) {
+  void appendAdditionalTypesImpl(SoAViewType &other, std::index_sequence<partitionTypeIndices...>) {
     // fold expression
     (appendSingleType<partitionTypeIndices>(other), ...);
   }
@@ -281,7 +259,7 @@ class SoA {
 
     // Append SoAs up until otherMaxDepth.
     for (size_t i = 0; i < otherMaxDepth; ++i) {
-      additionalSoAPartitions[partitionTypeIndex][i].append(other[partitionTypeIndex][i]);
+      soa[SoAType::additional][partitionTypeIndex][i].append(other[partitionTypeIndex][i]);
     }
   }
 
@@ -304,7 +282,7 @@ class SoA {
       // A SoAView is a view on a SoA, not a Structure of SoAViews. Therefore, the SoAViews must be constructed from
       // the SoAs.
       auto soaView = SoAView(other[partitionTypeIndex][i], other->_s);
-      additionalSoAPartitions[partitionTypeIndex][i].append(soaView);
+      soa[SoAType::additional][partitionTypeIndex][i].append(soaView);
     }
   }
 };

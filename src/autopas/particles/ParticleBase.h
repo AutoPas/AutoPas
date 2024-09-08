@@ -15,8 +15,9 @@
 #include "autopas/utils/ArrayMath.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ExceptionHandler.h"
-#include "autopas/utils/SoAStorage.h"
+#include "autopas/utils/SoAPartitionType.h"
 #include "autopas/utils/SoAType.h"
+#include "autopas/utils/SoAStorage.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
 namespace autopas {
@@ -289,12 +290,11 @@ class ParticleBase {
 
   /**
    * The type for the soa storage.
-   * owned is currently used as a floatType to ease calculations within the functors.
    */
-  using SoAArraysType =
-      typename autopas::utils::SoAType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
+  using SoAType =
+      typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                       floatType /*fz*/, OwnershipState /*ownershipState*/>::Type;
+                                       floatType /*fz*/, OwnershipState /*ownershipState*/>>::Type;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -302,18 +302,18 @@ class ParticleBase {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr typename std::tuple_element<attribute, SoAType[SoAType::main]>::type::value_type get() {
     return this;
   }
 
   /**
-   * Getter, which allows access to an attribute using the corresponding attribute name (defined in AttributeNames).
+   * Getter, which allows access to an attribute of the main SoA partition using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+  constexpr typename std::tuple_element<attribute, SoAType[SoAType::main]>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -336,13 +336,13 @@ class ParticleBase {
   }
 
   /**
-   * Setter, which allows set an attribute using the corresponding attribute name (defined in AttributeNames).
+   * Setter, which allows set an attribute of the main SoA partition using the corresponding attribute name (defined in AttributeNames).
    * @tparam attribute Attribute name.
    * @param value New value of the requested attribute.
    * @note The value of owned is extracted from a floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute>
-  constexpr void set(typename std::tuple_element<attribute, SoAArraysType>::type::value_type value) {
+  constexpr void set(typename std::tuple_element<attribute, SoAType[SoAType::main]>::type::value_type value) {
     if constexpr (attribute == AttributeNames::id) {
       setID(value);
     } else if constexpr (attribute == AttributeNames::posX) {

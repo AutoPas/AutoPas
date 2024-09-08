@@ -9,7 +9,7 @@
 TEST_F(SoATest, testInitialization) { autopas::SoAPartition<autopas::Particle::SoAArraysType> soa; }
 
 TEST_F(SoATest, SoATypeTest) {
-  static_assert(std::is_same<autopas::utils::SoAType<size_t, double, double, double>::Type,
+  static_assert(std::is_same<autopas::utils::SoAPartitionType<size_t, double, double, double>::Type,
                              std::tuple<std::vector<size_t, autopas::AlignedAllocator<size_t>>,
                                         std::vector<double, autopas::AlignedAllocator<double>>,
                                         std::vector<double, autopas::AlignedAllocator<double>>,
@@ -17,7 +17,7 @@ TEST_F(SoATest, SoATypeTest) {
                 "type must be same");
 }
 
-using soatype = autopas::utils::SoAType<size_t, double, double, double>::Type;
+using soatype = autopas::utils::SoAPartitionType<size_t, double, double, double>::Type;
 
 TEST_F(SoATest, SoAStorageTestGet) {
   autopas::utils::SoAStorage<soatype> soAStorage;

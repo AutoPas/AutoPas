@@ -14,9 +14,9 @@
 
 #include "autopas/utils/AlignedAllocator.h"
 #include "autopas/utils/ExceptionHandler.h"
+#include "autopas/utils/SoAPartitionType.h"
 #include "autopas/utils/SoAPartitionView.h"
 #include "autopas/utils/SoAStorage.h"
-#include "autopas/utils/SoAType.h"
 
 namespace autopas {
 
