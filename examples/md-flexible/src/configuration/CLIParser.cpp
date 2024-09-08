@@ -291,7 +291,9 @@ MDFlexParser::exitCodes MDFlexParser::CLIParser::parseInput(int argc, char **arg
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SIMDe;
         } else if(strArg.find("highway") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_HWY;
-        }else if(strArg.find("smoHWY") != string::npos) {
+        } else if(strArg.find("smoHWYGS") != string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_smoothHWYGS;
+        } else if(strArg.find("smoHWY") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_smoothHWY;
         }else if(strArg.find("smooth") != string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6smooth;

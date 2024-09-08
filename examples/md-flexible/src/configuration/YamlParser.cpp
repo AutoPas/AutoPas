@@ -188,7 +188,7 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
 
         config.cutoff.value = node[key].as<double>();
         if (config.cutoff.value <= 0) {
-          throw std::runtime_error("innerCutoff has to be > 0!");
+          throw std::runtime_error("cutoff has to be > 0!");
         }
       }else if (key == config.innerCutoff.name) { //Added innercutoff to parser
         expected = "Positive floating point value > 0.";
@@ -233,6 +233,8 @@ bool MDFlexParser::YamlParser::parseYamlFile(MDFlexConfig &config) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_SVE;
         } else if (strArg.find("glob") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_Globals;
+        } else if(strArg.find("smohwygs") != std::string::npos) {
+          config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_smoothHWYGS;
         } else if(strArg.find("smohwy") != std::string::npos) {
           config.functorOption.value = MDFlexConfig::FunctorOption::lj12_6_smoothHWY;
         } else if(strArg.find("smooth") != std::string::npos) {

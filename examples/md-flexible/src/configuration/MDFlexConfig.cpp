@@ -315,12 +315,19 @@ std::string MDFlexConfig::to_string() const {
     }
     case FunctorOption::lj12_6_HWY: {
         os << "Lennard-Jones (12-6) Highway Wrapper" << endl;
+        break;
     }
     case FunctorOption::lj12_6smooth: {
         os << "Lennard-Jones (12-6) Smoothed" << endl;
+        break;
     }
     case FunctorOption::lj12_6_smoothHWY: {
         os << "Lennard-Jones (12-6) Smoothed with Highway Wrapper" << endl;
+        break;
+    }
+    case FunctorOption::lj12_6_smoothHWYGS: {
+        os << "Lennard-Jones (12-6) Smoothed with Highway Wrapper using Gather Scatter" << endl;
+        break;
     }
   }
   printOption(newton3Options);

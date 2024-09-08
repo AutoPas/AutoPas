@@ -53,16 +53,18 @@ namespace mdLib {
                _innerCutoffAoS{innerCutoff},
                _innerCutoffSquareAoS{innerCutoff*innerCutoff},
                _cutoffDiffAoS{cutoff - innerCutoff},
-               _cutoffDiffCubedAoS{ (cutoff - innerCutoff)*(cutoff - innerCutoff)*(cutoff - innerCutoff)},
-               _3c_iAoS{3* cutoff - innerCutoff},
+               _cutoffDiffCubedInvAoS{ 1 / ((cutoff - innerCutoff)*(cutoff - innerCutoff)*(cutoff - innerCutoff))},
+               _tripleOuterMinusInnerAoS{3* cutoff - innerCutoff},
 
-                _cutoffSquared{highway::Set(tag_double,cutoff*cutoff)},
-                _cutoff{highway::Set(tag_double, cutoff)},
-                _innerCutoff{highway::Set(tag_double, innerCutoff)},
-                _innerCutoffSquared{highway::Set(tag_double, innerCutoff*innerCutoff)},
-                _cutoffDiff{highway::Set(tag_double,cutoff - innerCutoff)},
-                _cutoffDiffCubed{highway::Set(tag_double, (cutoff - innerCutoff)*(cutoff - innerCutoff)*(cutoff - innerCutoff))},
-                _3c_i{highway::Set(tag_double,3 * cutoff - innerCutoff)},
+               _cutoffSquared{highway::Set(tag_double,cutoff*cutoff)},
+               _cutoff{highway::Set(tag_double, cutoff)},
+               _innerCutoff{highway::Set(tag_double, innerCutoff)},
+               _innerCutoffSquared{highway::Set(tag_double, innerCutoff*innerCutoff)},
+               _cutoffDiff{highway::Set(tag_double,cutoff - innerCutoff)},
+                _cutoffDiffCubedInv{highway::Set(tag_double, 1 / ((cutoff - innerCutoff)*(cutoff - innerCutoff)*(cutoff - innerCutoff)))},
+               _tripleOuterMinusInner{highway::Set(tag_double,3 * cutoff - innerCutoff)},
+
+
                 _uPotSum{0.},
                 _virialSum{0.,0.,0.},
                 _aosThreadData{},
@@ -70,9 +72,7 @@ namespace mdLib {
                     if (calculateGlobals) {
                         _aosThreadData.resize(autopas::autopas_get_max_threads());
                     }
-
                     initializeRestMasks();
-
                     //std::cout << hwy::TargetName(HWY_TARGET) << std::endl; // AutoPasLog(INFO, "Highway Wrapper initialized with a register size of ({}) with architecture {}.", _vecLengthDouble, hwy::TargetName(HWY_TARGET));
                 }
 
@@ -139,9 +139,9 @@ namespace mdLib {
                 else if(dr2 >= _innerCutoffSquareAoS){
                     double drtrue = std::sqrt(dr2);
                     double temp = drtrue-_innerCutoffAoS;
-                    double _3c_iAoSLocal = _3c_iAoS;
-                    double _cutoffDiffCubedAoSLocal = _cutoffDiffCubedAoS;
-                    smoothing = 1 - (temp * temp) * (_3c_iAoSLocal - 2 * drtrue) / _cutoffDiffCubedAoSLocal; //justify change
+                    double _tripleOuterMinusInnerAoSLocal = _tripleOuterMinusInnerAoS;
+                    double _cutoffDiffCubedInvAoSLocal = _cutoffDiffCubedInvAoS;
+                    smoothing = 1 - (temp * temp) * (_tripleOuterMinusInnerAoSLocal - 2 * drtrue) * _cutoffDiffCubedInvAoSLocal; //justify change
                 }
 
                 double invdr2 = 1. / dr2;
@@ -356,6 +356,7 @@ namespace mdLib {
                         remainder ? highway::BlendedStore(fz2New, restMasksDouble[rest-1], tag_double, &fz2Ptr[j])
                                 : highway::StoreU(fz2New, tag_double, &fz2Ptr[j]);
                     }
+                    /*
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         const auto lowerFx = highway::LowerHalf(fx);
                         const auto lowerFy = highway::LowerHalf(fy);
@@ -386,6 +387,7 @@ namespace mdLib {
                         highway::BlendedStore(newFy, mask, tag_double, &fy2Ptr[j]);
                         highway::BlendedStore(newFz, mask, tag_double, &fz2Ptr[j]);
                     }
+                     */
                 }
 
                 template <bool reversed, bool remainder>
@@ -397,6 +399,7 @@ namespace mdLib {
                         fyPtr[i] += highway::ReduceSum(tag_double, fyAcc);
                         fzPtr[i] += highway::ReduceSum(tag_double, fzAcc);
                     }
+                    /*
                     else if constexpr (vecPattern == VectorizationPattern::p2xVecDiv2) {
                         const auto lowerFxAcc = highway::LowerHalf(fxAcc);
                         const auto lowerFyAcc = highway::LowerHalf(fyAcc);
@@ -425,6 +428,7 @@ namespace mdLib {
                             fzPtr[index] += highway::ReduceSum(tag_double, upperFzAccExt);
                         }
                     }
+                  */
                 }
 
                 template <bool newton3>
@@ -491,6 +495,8 @@ namespace mdLib {
                         VectorDouble z1;
 
                         fillIRegisters<false, true>(i, xPtr, yPtr, zPtr, ownedStatePtr, x1, y1, z1, ownedMaskI, 0);
+                        VectorDouble interactionIndices = _zeroDouble;
+                        int numAssignedRegisters = 0; // = number of non-empty registers in interactionIndices
 
                         unsigned int j = 0;
                         for (; checkSecondLoopCondition(i, j); incrementSecondLoop(j)) {
@@ -740,6 +746,110 @@ namespace mdLib {
                         shift6s = highway::LoadU(tag_double, shifts);
                     }
                 }
+                template <bool newton3, bool remainderI, bool remainderJ>
+                inline void SoAKernelGS(const size_t j, const MaskDouble& ownedMaskI, const int64_t *const __restrict ownedStatePtr2,
+                                      const VectorDouble &x1, const VectorDouble &y1, const VectorDouble &z1, const double *const __restrict x2Ptr,
+                                      const double *const __restrict y2Ptr, const double *const __restrict z2Ptr,
+                                      double *const __restrict fx2Ptr, double *const __restrict fy2Ptr,
+                                      double *const __restrict fz2Ptr, const size_t *const typeID1Ptr, const size_t *const typeID2Ptr,
+                                      VectorDouble &fxAcc, VectorDouble &fyAcc, VectorDouble &fzAcc, VectorDouble &virialSumX, VectorDouble& virialSumY,
+                                      VectorDouble &virialSumZ, VectorDouble &uPotSum, const unsigned int restI, const unsigned int restJ) {
+
+                    VectorDouble epsilon24s = _epsilon24;
+                    VectorDouble sigmaSquareds = _sigmaSquared;
+                    VectorDouble shift6s = _shift6;
+
+                    if constexpr (useMixing) {
+                        fillPhysicsRegisters<remainderI, remainderJ>(typeID1Ptr, typeID2Ptr, epsilon24s, sigmaSquareds, shift6s, restI, restJ);
+                    }
+
+                    VectorDouble x2;
+                    VectorDouble y2;
+                    VectorDouble z2;
+                    VectorDouble ownedStateJDouble;
+
+                    fillJRegisters<remainderJ>(j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJDouble, restJ);
+
+                    // distance calculations
+                    const auto drX = x1 - x2;
+                    const auto drY = y1 - y2;
+                    const auto drZ = z1 - z2;
+
+                    const auto drX2 = drX * drX;
+                    const auto drY2 = drY * drY;
+                    const auto drZ2 = drZ * drZ;
+
+                    const auto dr2 = drX2 + drY2 + drZ2;
+
+                    const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
+                    const auto innerCutoffMask = highway::Ge(dr2, _innerCutoffSquared);
+                    const auto zeroMask = highway::Ne(dr2, _zeroDouble);
+                    const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
+                    const auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
+                    const auto innerCutoffDummyMask = highway::And(zeroMask, highway::And(innerCutoffMask, dummyMask));
+
+                    if (highway::AllFalse(tag_double, cutoffDummyMask)) {
+                        return;
+                    }
+
+                    //compute smoothing factor
+                    const auto drtrue = highway::Sqrt(dr2);
+                    const auto temp = drtrue - _innerCutoff;
+                    const auto temp2 = temp*temp;
+                    const auto twodrtrue = _twoDouble * drtrue;
+                    const auto tripleOuterMinusInnerAoSLocalm2drt = _tripleOuterMinusInner - twodrtrue;
+                    const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
+                    const auto fraction = numerator * _cutoffDiffCubedInv;
+                    const auto smoothingTerm = _oneDouble - fraction;
+                    const auto smoothingMasked = highway::IfThenElse(innerCutoffDummyMask,smoothingTerm,_oneDouble);
+
+                    // compute LJ Potential
+                    const auto invDr2 = _oneDouble / dr2;
+                    const auto lj2 = sigmaSquareds * invDr2;
+                    const auto lj4 = lj2 * lj2;
+                    const auto lj6 = lj2 * lj4;
+                    const auto lj12 = lj6 * lj6;
+                    const auto lj12m6 = lj12 - lj6;
+                    const auto lj12m6alj12 = lj12m6 + lj12;
+                    const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
+                    const auto fac = lj12m6alj12e * invDr2 * smoothingMasked;
+
+                    const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
+
+                    const VectorDouble fx = drX * facMasked;
+                    const VectorDouble fy = drY * facMasked;
+                    const VectorDouble fz = drZ * facMasked;
+
+                    fxAcc = fxAcc + fx;
+                    fyAcc = fyAcc + fy;
+                    fzAcc = fzAcc + fz;
+
+                    if constexpr (newton3) {
+                        handleNewton3Reduction<remainderJ>(fx, fy, fz, fx2Ptr, fy2Ptr, fz2Ptr, j, restJ);
+                    }
+
+                    if constexpr (calculateGlobals) {
+                        auto virialX = fx * drX;
+                        auto virialY = fy * drY;
+                        auto virialZ = fz * drZ;
+
+
+                        auto uPot = highway::Mul(epsilon24s, lj12m6);
+                        uPot = highway::Mul(uPot, smoothingMasked);
+                        auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
+
+                        auto energyFactor = highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
+
+                        if constexpr (newton3) {
+                            energyFactor = energyFactor + highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
+                        }
+
+                        uPotSum = highway::MulAdd(energyFactor, uPotMasked, uPotSum);
+                        virialSumX = highway::MulAdd(energyFactor, virialX, virialSumX);
+                        virialSumY = highway::MulAdd(energyFactor, virialY, virialSumY);
+                        virialSumZ = highway::MulAdd(energyFactor, virialZ, virialSumZ);
+                    }
+                }
 
                 template <bool newton3, bool remainderI, bool remainderJ>
                 inline void SoAKernel(const size_t j, const MaskDouble& ownedMaskI, const int64_t *const __restrict ownedStatePtr2,
@@ -790,8 +900,13 @@ namespace mdLib {
                     //compute smoothing factor
                     const auto drtrue = highway::Sqrt(dr2);
                     const auto temp = drtrue - _innerCutoff;
-                    const auto smoothingTerm = _oneDouble - (temp * temp) * (_3c_i - _twoDouble * drtrue) / (_cutoffDiffCubed);
-                    const auto smoothingVector = highway::IfThenElse(innerCutoffDummyMask,smoothingTerm,_oneDouble);
+                    const auto temp2 = temp*temp;
+                    const auto twodrtrue = _twoDouble * drtrue;
+                    const auto tripleOuterMinusInnerAoSLocalm2drt = _tripleOuterMinusInner - twodrtrue;
+                    const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
+                    const auto fraction = numerator * _cutoffDiffCubedInv;
+                    const auto smoothingTerm = _oneDouble - fraction;
+                    const auto smoothingMasked = highway::IfThenElse(innerCutoffDummyMask,smoothingTerm,_oneDouble);
 
                     // compute LJ Potential
                     const auto invDr2 = _oneDouble / dr2;
@@ -802,7 +917,7 @@ namespace mdLib {
                     const auto lj12m6 = lj12 - lj6;
                     const auto lj12m6alj12 = lj12m6 + lj12;
                     const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
-                    const auto fac = lj12m6alj12e * invDr2 * smoothingVector;
+                    const auto fac = lj12m6alj12e * invDr2 * smoothingMasked;
 
                     const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
@@ -824,8 +939,8 @@ namespace mdLib {
                         auto virialZ = fz * drZ;
 
 
-                        auto uPot = highway::Mul(epsilon24s, lj12m6);
-                        uPot = highway::Mul(uPot, smoothingVector);
+                        auto uPot = highway::MulAdd(epsilon24s, lj12m6,shift6s);
+                        uPot = highway::Mul(uPot, smoothingMasked);
                         auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
                         
                         auto energyFactor = highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
@@ -1165,9 +1280,9 @@ namespace mdLib {
                 const VectorDouble _cutoff {};
                 const VectorDouble _innerCutoffSquared {};
                 const VectorDouble _innerCutoff {};
-                const VectorDouble _cutoffDiffCubed {};
+                const VectorDouble _cutoffDiffCubedInv {};
                 const VectorDouble _cutoffDiff {};
-                const VectorDouble _3c_i {};
+                const VectorDouble _tripleOuterMinusInner {};
                 VectorDouble _shift6 {highway::Zero(tag_double)};
                 VectorDouble _epsilon24 {highway::Zero(tag_double)};
                 VectorDouble _sigmaSquared {highway::Zero(tag_double)};
@@ -1179,9 +1294,9 @@ namespace mdLib {
                 const double _cutoffAoS {0.};
                 const double _innerCutoffSquareAoS {0.};
                 const double _innerCutoffAoS {0.};
-                const double _cutoffDiffCubedAoS {0.};
+                const double _cutoffDiffCubedInvAoS {0.};
                 const double _cutoffDiffAoS {0.};
-                const double _3c_iAoS {0.};
+                const double _tripleOuterMinusInnerAoS {0.};
                 double _epsilon24AoS, _sigmaSquareAoS, _shift6AoS = 0.;
                 ParticlePropertiesLibrary<double, size_t>* _PPLibrary = nullptr;
                 double _uPotSum {0.};

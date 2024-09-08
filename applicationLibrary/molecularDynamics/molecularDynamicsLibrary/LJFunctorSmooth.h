@@ -140,7 +140,6 @@ class LJFunctorSmooth
     auto dr = i.getR() - j.getR();
     double dr2 = autopas::utils::ArrayMath::dot(dr, dr);
 
-
     double smoothing = 1;
     if (dr2 > _cutoffSquared) {
       return;
@@ -494,7 +493,7 @@ class LJFunctorSmooth
         const SoAFloatPrecision lj6 = lj2 * lj2 * lj2;
         const SoAFloatPrecision lj12 = lj6 * lj6;
         lj12m6 = lj12 - lj6;
-        const SoAFloatPrecision fac = mask ? fac * epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
+        const SoAFloatPrecision fac = mask ? smoothing * epsilon24 * (lj12 + lj12m6) * invdr2 : 0.;
 
 
         const SoAFloatPrecision fx = drx * fac;
