@@ -7,8 +7,8 @@ tuning-interval                  :  2000
 tuning-samples                   :  3
 tuning-max-evidence              :  10
 cutoff                           :  4
-verlet-rebuild-frequency         :  10
-verlet-skin-radius-per-timestep  :  0.1
+verlet-rebuild-frequency         :  3
+verlet-skin-radius-per-timestep  :  0.2
 deltaT                           :  0.0005
 iterations                       :  15000
 boundary-type                    :  [reflective,reflective,reflective]
@@ -18,7 +18,7 @@ box-max                          :  [90, 90, 65]
 Objects:
   CubeClosestPacked:
     0:
-      particle-spacing           : 1
+      particle-spacing           : 2.5
       bottomLeftCorner           : [ 35, 35, 15 ]
       box-length                 : [ 30, 30, 30 ]
       velocity                   : [ 0, 0, -10 ]

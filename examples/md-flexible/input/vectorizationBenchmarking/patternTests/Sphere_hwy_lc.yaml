@@ -25,3 +25,4 @@ load-balancer                    :  none
 tuning-interval                  :  2500
 tuning-samples                   :  3
 tuning-max-evidence              :  10
+tuning-metric                    :  energy
