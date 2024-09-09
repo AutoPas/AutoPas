@@ -13,9 +13,10 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   constexpr bool mixing = FuncType::getMixing();
   constexpr bool newton3 = TypeParam::newton3;
   constexpr bool useLUT = FuncType::getUseLUT();
+  double error_margin = useLUT ? 1e-1 : this->relDelta;
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  mdLib::TriwiseLUT lut(200);
+  mdLib::TriwiseLUT lut(100);
   std::unique_ptr<FuncType> functor;
 
   particlePropertiesLibrary.addSiteType(0, 1.0);
@@ -49,29 +50,29 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   const auto f3one = p3.getF();
 
   if (mixing) {
-    EXPECT_NEAR(f1one[0], this->expectedForceMixingP1[0], this->absDelta);
-    EXPECT_NEAR(f1one[1], this->expectedForceMixingP1[1], this->absDelta);
-    EXPECT_NEAR(f1one[2], this->expectedForceMixingP1[2], this->absDelta);
+    EXPECT_NEAR(f1one[0], this->expectedForceMixingP1[0], std::abs(this->expectedForceMixingP1[0] * error_margin));
+    EXPECT_NEAR(f1one[1], this->expectedForceMixingP1[1], std::abs(this->expectedForceMixingP1[1] * error_margin));
+    EXPECT_NEAR(f1one[2], this->expectedForceMixingP1[2], std::abs(this->expectedForceMixingP1[2] * error_margin));
   } else {
-    EXPECT_NEAR(f1one[0], this->expectedForceP1[0], this->absDelta);
-    EXPECT_NEAR(f1one[1], this->expectedForceP1[1], this->absDelta);
-    EXPECT_NEAR(f1one[2], this->expectedForceP1[2], this->absDelta);
+    EXPECT_NEAR(f1one[0], this->expectedForceP1[0], std::abs(this->expectedForceP1[0] * error_margin));
+    EXPECT_NEAR(f1one[1], this->expectedForceP1[1], std::abs(this->expectedForceP1[1] * error_margin));
+    EXPECT_NEAR(f1one[2], this->expectedForceP1[2], std::abs(this->expectedForceP1[2] * error_margin));
   }
   if (newton3) {
     if (mixing) {
-      EXPECT_NEAR(f2one[0], this->expectedForceMixingP2[0], this->absDelta);
-      EXPECT_NEAR(f2one[1], this->expectedForceMixingP2[1], this->absDelta);
-      EXPECT_NEAR(f2one[2], this->expectedForceMixingP2[2], this->absDelta);
-      EXPECT_NEAR(f3one[0], this->expectedForceMixingP3[0], this->absDelta);
-      EXPECT_NEAR(f3one[1], this->expectedForceMixingP3[1], this->absDelta);
-      EXPECT_NEAR(f3one[2], this->expectedForceMixingP3[2], this->absDelta);
+      EXPECT_NEAR(f2one[0], this->expectedForceMixingP2[0], std::abs(this->expectedForceMixingP2[0] * error_margin));
+      EXPECT_NEAR(f2one[1], this->expectedForceMixingP2[1], std::abs(this->expectedForceMixingP2[1] * error_margin));
+      EXPECT_NEAR(f2one[2], this->expectedForceMixingP2[2], std::abs(this->expectedForceMixingP2[2] * error_margin));
+      EXPECT_NEAR(f3one[0], this->expectedForceMixingP3[0], std::abs(this->expectedForceMixingP3[0] * error_margin));
+      EXPECT_NEAR(f3one[1], this->expectedForceMixingP3[1], std::abs(this->expectedForceMixingP3[1] * error_margin));
+      EXPECT_NEAR(f3one[2], this->expectedForceMixingP3[2], std::abs(this->expectedForceMixingP3[2] * error_margin));
     } else {
-      EXPECT_NEAR(f2one[0], this->expectedForceP2[0], this->absDelta);
-      EXPECT_NEAR(f2one[1], this->expectedForceP2[1], this->absDelta);
-      EXPECT_NEAR(f2one[2], this->expectedForceP2[2], this->absDelta);
-      EXPECT_NEAR(f3one[0], this->expectedForceP3[0], this->absDelta);
-      EXPECT_NEAR(f3one[1], this->expectedForceP3[1], this->absDelta);
-      EXPECT_NEAR(f3one[2], this->expectedForceP3[2], this->absDelta);
+      EXPECT_NEAR(f2one[0], this->expectedForceP2[0], std::abs(this->expectedForceP2[0] * error_margin));
+      EXPECT_NEAR(f2one[1], this->expectedForceP2[1], std::abs(this->expectedForceP2[1] * error_margin));
+      EXPECT_NEAR(f2one[2], this->expectedForceP2[2], std::abs(this->expectedForceP2[2] * error_margin));
+      EXPECT_NEAR(f3one[0], this->expectedForceP3[0], std::abs(this->expectedForceP3[0] * error_margin));
+      EXPECT_NEAR(f3one[1], this->expectedForceP3[1], std::abs(this->expectedForceP3[1] * error_margin));
+      EXPECT_NEAR(f3one[2], this->expectedForceP3[2], std::abs(this->expectedForceP3[2] * error_margin));
     }
   } else {
     EXPECT_DOUBLE_EQ(f2one[0], 0);
@@ -90,31 +91,31 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
 
   double factor = newton3 ? 2. : 1.;
   if (mixing) {
-    EXPECT_NEAR(f1two[0], factor * this->expectedForceMixingP1[0], this->absDelta);
-    EXPECT_NEAR(f1two[1], factor * this->expectedForceMixingP1[1], this->absDelta);
-    EXPECT_NEAR(f1two[2], factor * this->expectedForceMixingP1[2], this->absDelta);
+    EXPECT_NEAR(f1two[0], factor * this->expectedForceMixingP1[0], std::abs(this->expectedForceMixingP1[0] * error_margin));
+    EXPECT_NEAR(f1two[1], factor * this->expectedForceMixingP1[1], std::abs(this->expectedForceMixingP1[1] * error_margin));
+    EXPECT_NEAR(f1two[2], factor * this->expectedForceMixingP1[2], std::abs(this->expectedForceMixingP1[2] * error_margin));
 
-    EXPECT_NEAR(f2two[0], factor * this->expectedForceMixingP2[0], this->absDelta);
-    EXPECT_NEAR(f2two[1], factor * this->expectedForceMixingP2[1], this->absDelta);
-    EXPECT_NEAR(f2two[2], factor * this->expectedForceMixingP2[2], this->absDelta);
+    EXPECT_NEAR(f2two[0], factor * this->expectedForceMixingP2[0], std::abs(this->expectedForceMixingP2[0] * error_margin));
+    EXPECT_NEAR(f2two[1], factor * this->expectedForceMixingP2[1], std::abs(this->expectedForceMixingP2[1] * error_margin));
+    EXPECT_NEAR(f2two[2], factor * this->expectedForceMixingP2[2], std::abs(this->expectedForceMixingP2[2] * error_margin));
   } else {
-    EXPECT_NEAR(f1two[0], factor * this->expectedForceP1[0], this->absDelta);
-    EXPECT_NEAR(f1two[1], factor * this->expectedForceP1[1], this->absDelta);
-    EXPECT_NEAR(f1two[2], factor * this->expectedForceP1[2], this->absDelta);
+    EXPECT_NEAR(f1two[0], factor * this->expectedForceP1[0], std::abs(this->expectedForceP1[0] * error_margin));
+    EXPECT_NEAR(f1two[1], factor * this->expectedForceP1[1], std::abs(this->expectedForceP1[1] * error_margin));
+    EXPECT_NEAR(f1two[2], factor * this->expectedForceP1[2], std::abs(this->expectedForceP1[2] * error_margin));
 
-    EXPECT_NEAR(f2two[0], factor * this->expectedForceP2[0], this->absDelta);
-    EXPECT_NEAR(f2two[1], factor * this->expectedForceP2[1], this->absDelta);
-    EXPECT_NEAR(f2two[2], factor * this->expectedForceP2[2], this->absDelta);
+    EXPECT_NEAR(f2two[0], factor * this->expectedForceP2[0], std::abs(this->expectedForceP2[0] * error_margin));
+    EXPECT_NEAR(f2two[1], factor * this->expectedForceP2[1], std::abs(this->expectedForceP2[1] * error_margin));
+    EXPECT_NEAR(f2two[2], factor * this->expectedForceP2[2], std::abs(this->expectedForceP2[2] * error_margin));
   }
   if (newton3) {
     if (mixing) {
-      EXPECT_NEAR(f3two[0], factor * this->expectedForceMixingP3[0], this->absDelta);
-      EXPECT_NEAR(f3two[1], factor * this->expectedForceMixingP3[1], this->absDelta);
-      EXPECT_NEAR(f3two[2], factor * this->expectedForceMixingP3[2], this->absDelta);
+      EXPECT_NEAR(f3two[0], factor * this->expectedForceMixingP3[0], std::abs(this->expectedForceMixingP3[0] * error_margin));
+      EXPECT_NEAR(f3two[1], factor * this->expectedForceMixingP3[1], std::abs(this->expectedForceMixingP3[1] * error_margin));
+      EXPECT_NEAR(f3two[2], factor * this->expectedForceMixingP3[2], std::abs(this->expectedForceMixingP3[2] * error_margin));
     } else {
-      EXPECT_NEAR(f3two[0], factor * this->expectedForceP3[0], this->absDelta);
-      EXPECT_NEAR(f3two[1], factor * this->expectedForceP3[1], this->absDelta);
-      EXPECT_NEAR(f3two[2], factor * this->expectedForceP3[2], this->absDelta);
+      EXPECT_NEAR(f3two[0], factor * this->expectedForceP3[0], std::abs(this->expectedForceP3[0] * error_margin));
+      EXPECT_NEAR(f3two[1], factor * this->expectedForceP3[1], std::abs(this->expectedForceP3[1] * error_margin));
+      EXPECT_NEAR(f3two[2], factor * this->expectedForceP3[2], std::abs(this->expectedForceP3[2] * error_margin));
     }
   } else {
     EXPECT_DOUBLE_EQ(f3two[0], 0);
@@ -130,29 +131,29 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
 
   factor = newton3 ? 3. : 1.;
   if (mixing) {
-    EXPECT_NEAR(f1three[0], factor * this->expectedForceMixingP1[0], this->absDelta);
-    EXPECT_NEAR(f1three[1], factor * this->expectedForceMixingP1[1], this->absDelta);
-    EXPECT_NEAR(f1three[2], factor * this->expectedForceMixingP1[2], this->absDelta);
+    EXPECT_NEAR(f1three[0], factor * this->expectedForceMixingP1[0], std::abs(this->expectedForceMixingP1[0] * error_margin));
+    EXPECT_NEAR(f1three[1], factor * this->expectedForceMixingP1[1], std::abs(this->expectedForceMixingP1[1] * error_margin));
+    EXPECT_NEAR(f1three[2], factor * this->expectedForceMixingP1[2], std::abs(this->expectedForceMixingP1[2] * error_margin));
 
-    EXPECT_NEAR(f2three[0], factor * this->expectedForceMixingP2[0], this->absDelta);
-    EXPECT_NEAR(f2three[1], factor * this->expectedForceMixingP2[1], this->absDelta);
-    EXPECT_NEAR(f2three[2], factor * this->expectedForceMixingP2[2], this->absDelta);
+    EXPECT_NEAR(f2three[0], factor * this->expectedForceMixingP2[0], std::abs(this->expectedForceMixingP2[0] * error_margin));
+    EXPECT_NEAR(f2three[1], factor * this->expectedForceMixingP2[1], std::abs(this->expectedForceMixingP2[1] * error_margin));
+    EXPECT_NEAR(f2three[2], factor * this->expectedForceMixingP2[2], std::abs(this->expectedForceMixingP2[2] * error_margin));
 
-    EXPECT_NEAR(f3three[0], factor * this->expectedForceMixingP3[0], this->absDelta);
-    EXPECT_NEAR(f3three[1], factor * this->expectedForceMixingP3[1], this->absDelta);
-    EXPECT_NEAR(f3three[2], factor * this->expectedForceMixingP3[2], this->absDelta);
+    EXPECT_NEAR(f3three[0], factor * this->expectedForceMixingP3[0], std::abs(this->expectedForceMixingP3[0] * error_margin));
+    EXPECT_NEAR(f3three[1], factor * this->expectedForceMixingP3[1], std::abs(this->expectedForceMixingP3[1] * error_margin));
+    EXPECT_NEAR(f3three[2], factor * this->expectedForceMixingP3[2], std::abs(this->expectedForceMixingP3[2] * error_margin));
   } else {
-    EXPECT_NEAR(f1three[0], factor * this->expectedForceP1[0], this->absDelta);
-    EXPECT_NEAR(f1three[1], factor * this->expectedForceP1[1], this->absDelta);
-    EXPECT_NEAR(f1three[2], factor * this->expectedForceP1[2], this->absDelta);
+    EXPECT_NEAR(f1three[0], factor * this->expectedForceP1[0], std::abs(this->expectedForceP1[0] * error_margin));
+    EXPECT_NEAR(f1three[1], factor * this->expectedForceP1[1], std::abs(this->expectedForceP1[1] * error_margin));
+    EXPECT_NEAR(f1three[2], factor * this->expectedForceP1[2], std::abs(this->expectedForceP1[2] * error_margin));
 
-    EXPECT_NEAR(f2three[0], factor * this->expectedForceP2[0], this->absDelta);
-    EXPECT_NEAR(f2three[1], factor * this->expectedForceP2[1], this->absDelta);
-    EXPECT_NEAR(f2three[2], factor * this->expectedForceP2[2], this->absDelta);
+    EXPECT_NEAR(f2three[0], factor * this->expectedForceP2[0], std::abs(this->expectedForceP2[0] * error_margin));
+    EXPECT_NEAR(f2three[1], factor * this->expectedForceP2[1], std::abs(this->expectedForceP2[1] * error_margin));
+    EXPECT_NEAR(f2three[2], factor * this->expectedForceP2[2], std::abs(this->expectedForceP2[2] * error_margin));
 
-    EXPECT_NEAR(f3three[0], factor * this->expectedForceP3[0], this->absDelta);
-    EXPECT_NEAR(f3three[1], factor * this->expectedForceP3[1], this->absDelta);
-    EXPECT_NEAR(f3three[2], factor * this->expectedForceP3[2], this->absDelta);
+    EXPECT_NEAR(f3three[0], factor * this->expectedForceP3[0], std::abs(this->expectedForceP3[0] * error_margin));
+    EXPECT_NEAR(f3three[1], factor * this->expectedForceP3[1], std::abs(this->expectedForceP3[1] * error_margin));
+    EXPECT_NEAR(f3three[2], factor * this->expectedForceP3[2], std::abs(this->expectedForceP3[2] * error_margin));
   }
 
   // order of second and third particle should not matter
@@ -166,29 +167,29 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   const auto f3four = p3.getF();
 
   if (mixing) {
-    EXPECT_NEAR(f1one[0], this->expectedForceMixingP1[0], this->absDelta);
-    EXPECT_NEAR(f1one[1], this->expectedForceMixingP1[1], this->absDelta);
-    EXPECT_NEAR(f1one[2], this->expectedForceMixingP1[2], this->absDelta);
+    EXPECT_NEAR(f1one[0], this->expectedForceMixingP1[0], std::abs(this->expectedForceMixingP1[0] * error_margin));
+    EXPECT_NEAR(f1one[1], this->expectedForceMixingP1[1], std::abs(this->expectedForceMixingP1[1] * error_margin));
+    EXPECT_NEAR(f1one[2], this->expectedForceMixingP1[2], std::abs(this->expectedForceMixingP1[2] * error_margin));
   } else {
-    EXPECT_NEAR(f1one[0], this->expectedForceP1[0], this->absDelta);
-    EXPECT_NEAR(f1one[1], this->expectedForceP1[1], this->absDelta);
-    EXPECT_NEAR(f1one[2], this->expectedForceP1[2], this->absDelta);
+    EXPECT_NEAR(f1one[0], this->expectedForceP1[0], std::abs(this->expectedForceP1[0] * error_margin));
+    EXPECT_NEAR(f1one[1], this->expectedForceP1[1], std::abs(this->expectedForceP1[1] * error_margin));
+    EXPECT_NEAR(f1one[2], this->expectedForceP1[2], std::abs(this->expectedForceP1[2] * error_margin));
   }
   if (newton3) {
     if (mixing) {
-      EXPECT_NEAR(f2one[0], this->expectedForceMixingP2[0], this->absDelta);
-      EXPECT_NEAR(f2one[1], this->expectedForceMixingP2[1], this->absDelta);
-      EXPECT_NEAR(f2one[2], this->expectedForceMixingP2[2], this->absDelta);
-      EXPECT_NEAR(f3one[0], this->expectedForceMixingP3[0], this->absDelta);
-      EXPECT_NEAR(f3one[1], this->expectedForceMixingP3[1], this->absDelta);
-      EXPECT_NEAR(f3one[2], this->expectedForceMixingP3[2], this->absDelta);
+      EXPECT_NEAR(f2one[0], this->expectedForceMixingP2[0], std::abs(this->expectedForceMixingP2[0] * error_margin));
+      EXPECT_NEAR(f2one[1], this->expectedForceMixingP2[1], std::abs(this->expectedForceMixingP2[1] * error_margin));
+      EXPECT_NEAR(f2one[2], this->expectedForceMixingP2[2], std::abs(this->expectedForceMixingP2[2] * error_margin));
+      EXPECT_NEAR(f3one[0], this->expectedForceMixingP3[0], std::abs(this->expectedForceMixingP3[0] * error_margin));
+      EXPECT_NEAR(f3one[1], this->expectedForceMixingP3[1], std::abs(this->expectedForceMixingP3[1] * error_margin));
+      EXPECT_NEAR(f3one[2], this->expectedForceMixingP3[2], std::abs(this->expectedForceMixingP3[2] * error_margin));
     } else {
-      EXPECT_NEAR(f2one[0], this->expectedForceP2[0], this->absDelta);
-      EXPECT_NEAR(f2one[1], this->expectedForceP2[1], this->absDelta);
-      EXPECT_NEAR(f2one[2], this->expectedForceP2[2], this->absDelta);
-      EXPECT_NEAR(f3one[0], this->expectedForceP3[0], this->absDelta);
-      EXPECT_NEAR(f3one[1], this->expectedForceP3[1], this->absDelta);
-      EXPECT_NEAR(f3one[2], this->expectedForceP3[2], this->absDelta);
+      EXPECT_NEAR(f2one[0], this->expectedForceP2[0], std::abs(this->expectedForceP2[0] * error_margin));
+      EXPECT_NEAR(f2one[1], this->expectedForceP2[1], std::abs(this->expectedForceP2[1] * error_margin));
+      EXPECT_NEAR(f2one[2], this->expectedForceP2[2], std::abs(this->expectedForceP2[2] * error_margin));
+      EXPECT_NEAR(f3one[0], this->expectedForceP3[0], std::abs(this->expectedForceP3[0] * error_margin));
+      EXPECT_NEAR(f3one[1], this->expectedForceP3[1], std::abs(this->expectedForceP3[1] * error_margin));
+      EXPECT_NEAR(f3one[2], this->expectedForceP3[2], std::abs(this->expectedForceP3[2] * error_margin));
     }
   } else {
     EXPECT_DOUBLE_EQ(f2one[0], 0);
@@ -335,13 +336,13 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     auto f1 = cell1.begin()->getF();
 
     if (mixing) {
-      EXPECT_NEAR(f1[0], this->expectedForceMixingP1[0], this->absDelta);
-      EXPECT_NEAR(f1[1], this->expectedForceMixingP1[1], this->absDelta);
-      EXPECT_NEAR(f1[2], this->expectedForceMixingP1[2], this->absDelta);
+      EXPECT_NEAR(f1[0], this->expectedForceMixingP1[0], this->relDelta);
+      EXPECT_NEAR(f1[1], this->expectedForceMixingP1[1], this->relDelta);
+      EXPECT_NEAR(f1[2], this->expectedForceMixingP1[2], this->relDelta);
     } else {
-      EXPECT_NEAR(f1[0], this->expectedForceP1[0], this->absDelta);
-      EXPECT_NEAR(f1[1], this->expectedForceP1[1], this->absDelta);
-      EXPECT_NEAR(f1[2], this->expectedForceP1[2], this->absDelta);
+      EXPECT_NEAR(f1[0], this->expectedForceP1[0], this->relDelta);
+      EXPECT_NEAR(f1[1], this->expectedForceP1[1], this->relDelta);
+      EXPECT_NEAR(f1[2], this->expectedForceP1[2], this->relDelta);
     }
 
     // force of particle 2
@@ -362,13 +363,13 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     if (newton3 or interactionType == TestType::InteractionType::own or
         interactionType == TestType::InteractionType::pair21 or interactionType == TestType::InteractionType::verlet) {
       if (mixing) {
-        EXPECT_NEAR(f2[0], this->expectedForceMixingP2[0], this->absDelta);
-        EXPECT_NEAR(f2[1], this->expectedForceMixingP2[1], this->absDelta);
-        EXPECT_NEAR(f2[2], this->expectedForceMixingP2[2], this->absDelta);
+        EXPECT_NEAR(f2[0], this->expectedForceMixingP2[0], this->relDelta);
+        EXPECT_NEAR(f2[1], this->expectedForceMixingP2[1], this->relDelta);
+        EXPECT_NEAR(f2[2], this->expectedForceMixingP2[2], this->relDelta);
       } else {
-        EXPECT_NEAR(f2[0], this->expectedForceP2[0], this->absDelta);
-        EXPECT_NEAR(f2[1], this->expectedForceP2[1], this->absDelta);
-        EXPECT_NEAR(f2[2], this->expectedForceP2[2], this->absDelta);
+        EXPECT_NEAR(f2[0], this->expectedForceP2[0], this->relDelta);
+        EXPECT_NEAR(f2[1], this->expectedForceP2[1], this->relDelta);
+        EXPECT_NEAR(f2[2], this->expectedForceP2[2], this->relDelta);
       }
     } else {
       EXPECT_DOUBLE_EQ(f2[0], 0);
@@ -400,13 +401,13 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
     if (newton3 or interactionType == TestType::InteractionType::own or
         interactionType == TestType::InteractionType::verlet) {
       if (mixing) {
-        EXPECT_NEAR(f3[0], this->expectedForceMixingP3[0], this->absDelta);
-        EXPECT_NEAR(f3[1], this->expectedForceMixingP3[1], this->absDelta);
-        EXPECT_NEAR(f3[2], this->expectedForceMixingP3[2], this->absDelta);
+        EXPECT_NEAR(f3[0], this->expectedForceMixingP3[0], this->relDelta);
+        EXPECT_NEAR(f3[1], this->expectedForceMixingP3[1], this->relDelta);
+        EXPECT_NEAR(f3[2], this->expectedForceMixingP3[2], this->relDelta);
       } else {
-        EXPECT_NEAR(f3[0], this->expectedForceP3[0], this->absDelta);
-        EXPECT_NEAR(f3[1], this->expectedForceP3[1], this->absDelta);
-        EXPECT_NEAR(f3[2], this->expectedForceP3[2], this->absDelta);
+        EXPECT_NEAR(f3[0], this->expectedForceP3[0], this->relDelta);
+        EXPECT_NEAR(f3[1], this->expectedForceP3[1], this->relDelta);
+        EXPECT_NEAR(f3[2], this->expectedForceP3[2], this->relDelta);
       }
     } else {
       EXPECT_DOUBLE_EQ(f3[0], 0);
@@ -457,21 +458,21 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
 
       double factor = newton3 ? 2. : 1.;
       if (mixing) {
-        EXPECT_NEAR(f1[0], factor * this->expectedForceMixingP1[0], this->absDelta);
-        EXPECT_NEAR(f1[1], factor * this->expectedForceMixingP1[1], this->absDelta);
-        EXPECT_NEAR(f1[2], factor * this->expectedForceMixingP1[2], this->absDelta);
+        EXPECT_NEAR(f1[0], factor * this->expectedForceMixingP1[0], this->relDelta);
+        EXPECT_NEAR(f1[1], factor * this->expectedForceMixingP1[1], this->relDelta);
+        EXPECT_NEAR(f1[2], factor * this->expectedForceMixingP1[2], this->relDelta);
 
-        EXPECT_NEAR(f2[0], factor * this->expectedForceMixingP2[0], this->absDelta);
-        EXPECT_NEAR(f2[1], factor * this->expectedForceMixingP2[1], this->absDelta);
-        EXPECT_NEAR(f2[2], factor * this->expectedForceMixingP2[2], this->absDelta);
+        EXPECT_NEAR(f2[0], factor * this->expectedForceMixingP2[0], this->relDelta);
+        EXPECT_NEAR(f2[1], factor * this->expectedForceMixingP2[1], this->relDelta);
+        EXPECT_NEAR(f2[2], factor * this->expectedForceMixingP2[2], this->relDelta);
       } else {
-        EXPECT_NEAR(f1[0], factor * this->expectedForceP1[0], this->absDelta);
-        EXPECT_NEAR(f1[1], factor * this->expectedForceP1[1], this->absDelta);
-        EXPECT_NEAR(f1[2], factor * this->expectedForceP1[2], this->absDelta);
+        EXPECT_NEAR(f1[0], factor * this->expectedForceP1[0], this->relDelta);
+        EXPECT_NEAR(f1[1], factor * this->expectedForceP1[1], this->relDelta);
+        EXPECT_NEAR(f1[2], factor * this->expectedForceP1[2], this->relDelta);
 
-        EXPECT_NEAR(f2[0], factor * this->expectedForceP2[0], this->absDelta);
-        EXPECT_NEAR(f2[1], factor * this->expectedForceP2[1], this->absDelta);
-        EXPECT_NEAR(f2[2], factor * this->expectedForceP2[2], this->absDelta);
+        EXPECT_NEAR(f2[0], factor * this->expectedForceP2[0], this->relDelta);
+        EXPECT_NEAR(f2[1], factor * this->expectedForceP2[1], this->relDelta);
+        EXPECT_NEAR(f2[2], factor * this->expectedForceP2[2], this->relDelta);
       }
 
       // Force on particle 3
@@ -492,13 +493,13 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
 
       if (newton3 or interactionType != TestType::InteractionType::triple) {
         if (mixing) {
-          EXPECT_NEAR(f3[0], factor * this->expectedForceMixingP3[0], this->absDelta);
-          EXPECT_NEAR(f3[1], factor * this->expectedForceMixingP3[1], this->absDelta);
-          EXPECT_NEAR(f3[2], factor * this->expectedForceMixingP3[2], this->absDelta);
+          EXPECT_NEAR(f3[0], factor * this->expectedForceMixingP3[0], this->relDelta);
+          EXPECT_NEAR(f3[1], factor * this->expectedForceMixingP3[1], this->relDelta);
+          EXPECT_NEAR(f3[2], factor * this->expectedForceMixingP3[2], this->relDelta);
         } else {
-          EXPECT_NEAR(f3[0], factor * this->expectedForceP3[0], this->absDelta);
-          EXPECT_NEAR(f3[1], factor * this->expectedForceP3[1], this->absDelta);
-          EXPECT_NEAR(f3[2], factor * this->expectedForceP3[2], this->absDelta);
+          EXPECT_NEAR(f3[0], factor * this->expectedForceP3[0], this->relDelta);
+          EXPECT_NEAR(f3[1], factor * this->expectedForceP3[1], this->relDelta);
+          EXPECT_NEAR(f3[2], factor * this->expectedForceP3[2], this->relDelta);
         }
       } else {
         EXPECT_DOUBLE_EQ(f3[0], 0);
@@ -521,29 +522,29 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testSoANoGlobalsAT) {
 
         double factor = newton3 ? 3. : 1.;
         if (mixing) {
-          EXPECT_NEAR(f1[0], factor * this->expectedForceMixingP1[0], this->absDelta);
-          EXPECT_NEAR(f1[1], factor * this->expectedForceMixingP1[1], this->absDelta);
-          EXPECT_NEAR(f1[2], factor * this->expectedForceMixingP1[2], this->absDelta);
+          EXPECT_NEAR(f1[0], factor * this->expectedForceMixingP1[0], this->relDelta);
+          EXPECT_NEAR(f1[1], factor * this->expectedForceMixingP1[1], this->relDelta);
+          EXPECT_NEAR(f1[2], factor * this->expectedForceMixingP1[2], this->relDelta);
 
-          EXPECT_NEAR(f2[0], factor * this->expectedForceMixingP2[0], this->absDelta);
-          EXPECT_NEAR(f2[1], factor * this->expectedForceMixingP2[1], this->absDelta);
-          EXPECT_NEAR(f2[2], factor * this->expectedForceMixingP2[2], this->absDelta);
+          EXPECT_NEAR(f2[0], factor * this->expectedForceMixingP2[0], this->relDelta);
+          EXPECT_NEAR(f2[1], factor * this->expectedForceMixingP2[1], this->relDelta);
+          EXPECT_NEAR(f2[2], factor * this->expectedForceMixingP2[2], this->relDelta);
 
-          EXPECT_NEAR(f3[0], factor * this->expectedForceMixingP3[0], this->absDelta);
-          EXPECT_NEAR(f3[1], factor * this->expectedForceMixingP3[1], this->absDelta);
-          EXPECT_NEAR(f3[2], factor * this->expectedForceMixingP3[2], this->absDelta);
+          EXPECT_NEAR(f3[0], factor * this->expectedForceMixingP3[0], this->relDelta);
+          EXPECT_NEAR(f3[1], factor * this->expectedForceMixingP3[1], this->relDelta);
+          EXPECT_NEAR(f3[2], factor * this->expectedForceMixingP3[2], this->relDelta);
         } else {
-          EXPECT_NEAR(f1[0], factor * this->expectedForceP1[0], this->absDelta);
-          EXPECT_NEAR(f1[1], factor * this->expectedForceP1[1], this->absDelta);
-          EXPECT_NEAR(f1[2], factor * this->expectedForceP1[2], this->absDelta);
+          EXPECT_NEAR(f1[0], factor * this->expectedForceP1[0], this->relDelta);
+          EXPECT_NEAR(f1[1], factor * this->expectedForceP1[1], this->relDelta);
+          EXPECT_NEAR(f1[2], factor * this->expectedForceP1[2], this->relDelta);
 
-          EXPECT_NEAR(f2[0], factor * this->expectedForceP2[0], this->absDelta);
-          EXPECT_NEAR(f2[1], factor * this->expectedForceP2[1], this->absDelta);
-          EXPECT_NEAR(f2[2], factor * this->expectedForceP2[2], this->absDelta);
+          EXPECT_NEAR(f2[0], factor * this->expectedForceP2[0], this->relDelta);
+          EXPECT_NEAR(f2[1], factor * this->expectedForceP2[1], this->relDelta);
+          EXPECT_NEAR(f2[2], factor * this->expectedForceP2[2], this->relDelta);
 
-          EXPECT_NEAR(f3[0], factor * this->expectedForceP3[0], this->absDelta);
-          EXPECT_NEAR(f3[1], factor * this->expectedForceP3[1], this->absDelta);
-          EXPECT_NEAR(f3[2], factor * this->expectedForceP3[2], this->absDelta);
+          EXPECT_NEAR(f3[0], factor * this->expectedForceP3[0], this->relDelta);
+          EXPECT_NEAR(f3[1], factor * this->expectedForceP3[1], this->relDelta);
+          EXPECT_NEAR(f3[2], factor * this->expectedForceP3[2], this->relDelta);
         }
       }
     }

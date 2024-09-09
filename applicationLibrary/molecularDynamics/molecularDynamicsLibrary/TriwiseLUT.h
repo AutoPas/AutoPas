@@ -73,9 +73,9 @@ class TriwiseLUT {
   void fill(const Functor &functor, double cutoffSquared, bool forceRefill = false) {
     if (not _isFilled or forceRefill) {
       _cutoffSquared = cutoffSquared;
-      _lutCutoff = cutoffSquared / 20.;
+      _lutCutoff = cutoffSquared / 10.;
       double lutDistance = _cutoffSquared - _lutCutoff;
-      double _lutFactor = _resolution / lutDistance;
+      _lutFactor = _resolution / lutDistance;
       double pointDistance = lutDistance / static_cast<double>(_resolution);
 
       _lut.resize(_resolution + 1);
