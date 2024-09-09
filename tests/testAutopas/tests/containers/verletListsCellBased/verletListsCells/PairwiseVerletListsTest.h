@@ -12,7 +12,7 @@
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/containers/verletListsCellBased/verletListsCells/VerletListsCellsHelpers.h"
 #include "autopas/particles/Particle.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "mocks/MockFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "testingHelpers/commonTypedefs.h"

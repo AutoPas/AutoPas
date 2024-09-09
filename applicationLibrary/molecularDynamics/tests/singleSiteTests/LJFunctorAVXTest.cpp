@@ -10,7 +10,7 @@
 
 #include "autopas/cells/FullParticleCell.h"
 #include "autopas/particles/Particle.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamicsLibrary/LJFunctorAVX.h"
 
@@ -97,9 +97,9 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXTwoCells(bool newton3, bool do
   PPL.calculateMixingCoefficients();
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell1AVX, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2AVX, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
   for (auto &particle : cell1AVX) {
@@ -191,8 +191,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXOneCell(bool newton3, bool doD
   PPL.calculateMixingCoefficients();
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                                numParticles);
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
@@ -262,8 +262,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXVerlet(bool newton3, bool doDe
   PPL.calculateMixingCoefficients();
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                                numParticles);
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {
@@ -347,8 +347,8 @@ void LJFunctorAVXTest::testLJFunctorVSLJFunctorAVXAoS(bool newton3, bool doDelet
   PPL.calculateMixingCoefficients();
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
-                                                               numParticles);
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellAVX, defaultParticle, _lowCorner, _highCorner,
+                                                                numParticles);
 
   for (auto &particle : cellAVX) {
     if (doDeleteSomeParticles) {

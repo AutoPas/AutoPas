@@ -8,7 +8,7 @@
 
 #include "autopas/utils/WrapOpenMP.h"
 #include "autopasTools/generators/GridGenerator.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 #include "src/configuration/YamlParser.h"
 #include "testingHelpers/commonTypedefs.h"
 
@@ -32,6 +32,14 @@ TEST_F(GeneratorsTest, GridFillwithBoxMin) {
  * This test expects multipleObjectsWithMultipleTypesTest.yaml to be placed in md-flexible/tests/yamlTestFiles
  */
 TEST_F(GeneratorsTest, MultipleObjectGeneration) {
+  int myRank{};
+  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank != 0) {
+    GTEST_SKIP() << "[Rank " << myRank
+                 << "] MultipleObjectGeneration test works only on rank 0 because MDFlexConfig only generates "
+                    "particles on rank 0.";
+  }
+
   std::vector<std::string> arguments = {"md-flexible", "--yaml-filename",
                                         std::string(YAMLDIRECTORY) + "multipleObjectsWithMultipleTypesTest.yaml"};
 
@@ -53,7 +61,7 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   int closestCounter = 0;
 
   const std::array<double, 3> velocity = {0., 0., 0.};
-  for (auto &particle : configuration.getParticles()) {
+  for (auto &particle : configuration.particles) {
     EXPECT_EQ(velocity, particle.getV());  // velocity set to {0.,0.,0.} in parsingFile
     switch (particle.getTypeId()) {
       case 0: {
@@ -89,10 +97,10 @@ TEST_F(GeneratorsTest, MultipleObjectGeneration) {
   EXPECT_EQ(closestCounter, configuration.cubeClosestPackedObjects.at(0).getParticlesTotal());
   // check if during initialization, not 2 Particles were initialized with same id
   std::set<size_t> ids;
-  for (auto &particle : configuration.getParticles()) {
+  for (auto &particle : configuration.particles) {
     const auto particleId = particle.getID();
     ASSERT_EQ(ids.count(particleId), 0) << "Two particles have the same ID " << particleId;
     ids.insert(particleId);
   }
-  EXPECT_EQ(ids.size(), configuration.getParticles().size());
+  EXPECT_EQ(ids.size(), configuration.particles.size());
 }

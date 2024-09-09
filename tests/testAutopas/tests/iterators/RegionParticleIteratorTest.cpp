@@ -236,7 +236,7 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
   // This function creates particle positions within the simulation box that are the offset-value distant from the
   // boundary and the positions mirrored at the boundary. In addition, a search box is calculated for each position.
   auto generateParticlePositions = [&autoPas, &shortDistance]() {
-    using autopas::utils::Math::isNear;
+    using autopas::utils::Math::isNearRel;
     constexpr size_t numParticles1DTotal = 3;
     constexpr double margin = 1e-10;
 
@@ -260,8 +260,8 @@ TEST_P(RegionParticleIteratorTestTwo, testParticleMisplacement) {
     for (auto [x, xMirrored] : generateInteresting1DPositions(boxMin[0], boxMax[0])) {
       for (auto [y, yMirrored] : generateInteresting1DPositions(boxMin[1], boxMax[1])) {
         for (auto [z, zMirrored] : generateInteresting1DPositions(boxMin[2], boxMax[2])) {
-          if (not(isNear(x, (boxMax[0] - boxMin[0]) / 2.0) and isNear(y, (boxMax[1] - boxMin[1]) / 2.0) and
-                  isNear(z, (boxMax[2] - boxMin[2]) / 2.0))) {
+          if (not(isNearRel(x, (boxMax[0] - boxMin[0]) / 2.0) and isNearRel(y, (boxMax[1] - boxMin[1]) / 2.0) and
+                  isNearRel(z, (boxMax[2] - boxMin[2]) / 2.0))) {
             positionsInsideBox.push_back({x, y, z});
             positionsMirroredAtBoundary.push_back({xMirrored, yMirrored, zMirrored});
 
