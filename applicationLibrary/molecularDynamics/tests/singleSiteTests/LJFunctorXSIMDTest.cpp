@@ -7,7 +7,7 @@
 #include "molecularDynamics/molecularDynamicsLibrary/LJFunctorAVX.h"
 #include "molecularDynamics/molecularDynamicsLibrary/LJFunctorXSIMD.h"
 #include "autopas/particles/Particle.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 template <class SoAType>
 bool LJFunctorXSIMDTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -84,9 +84,9 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDTwoCells(bool newton3, boo
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell1XSIMD, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2XSIMD, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
   if (doDeleteSomeParticles) {
@@ -162,7 +162,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDOneCell(bool newton3, bool
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {
@@ -222,7 +222,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDVerlet(bool newton3, bool 
   constexpr size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {
@@ -297,7 +297,7 @@ void LJFunctorXSIMDTest::testLJFunctorVSLJFunctorXSIMDAoS(bool newton3, bool doD
   constexpr size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellXSIMD, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {

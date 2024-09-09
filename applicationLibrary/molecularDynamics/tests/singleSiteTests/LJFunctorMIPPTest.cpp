@@ -6,7 +6,7 @@
 #include "molecularDynamics/molecularDynamicsLibrary/LJFunctor.h"
 #include "molecularDynamics/molecularDynamicsLibrary/LJFunctorMIPP.h"
 #include "autopas/particles/Particle.h"
-#include "autopasTools/generators/RandomGenerator.h"
+#include "autopasTools/generators/UniformGenerator.h"
 
 template <class SoAType>
 bool LJFunctorMIPPTest::SoAParticlesEqual(autopas::SoA<SoAType> &soa1, autopas::SoA<SoAType> &soa2) {
@@ -83,9 +83,9 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPTwoCells(bool newton3, bool 
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell1MIPP, defaultParticle, _lowCorner, {_highCorner[0] / 2, _highCorner[1], _highCorner[2]}, numParticles);
-  autopasTools::generators::RandomGenerator::fillWithParticles(
+  autopasTools::generators::UniformGenerator::fillWithParticles(
       cell2MIPP, defaultParticle, {_highCorner[0] / 2, _lowCorner[1], _lowCorner[2]}, _highCorner, numParticles);
 
   if (doDeleteSomeParticles) {
@@ -161,7 +161,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPOneCell(bool newton3, bool d
   size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {
@@ -221,7 +221,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPVerlet(bool newton3, bool do
   constexpr size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {
@@ -296,7 +296,7 @@ void LJFunctorMIPPTest::testLJFunctorVSLJFunctorMIPPAoS(bool newton3, bool doDel
   constexpr size_t numParticles = 7;
 
   Molecule defaultParticle({0, 0, 0}, {0, 0, 0}, 0, 0);
-  autopasTools::generators::RandomGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
+  autopasTools::generators::UniformGenerator::fillWithParticles(cellMIPP, defaultParticle, _lowCorner, _highCorner,
                                                                numParticles);
 
   if (doDeleteSomeParticles) {
