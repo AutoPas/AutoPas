@@ -28,34 +28,34 @@ class TriwiseLUT {
     std::array<u_int8_t,3> order{};  // Array to track the original indices of the distances
 
     if (dist1 >= dist2 && dist2 >= dist3) {
-      index1 = static_cast<size_t>((dist1 - _lutCutoff) * _resolution);
-      index2 = static_cast<size_t>((dist2 - _lutCutoff) * _resolution);
-      index3 = static_cast<size_t>((dist3 - _lutCutoff) * _resolution);
+      index1 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor );
+      index2 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor );
+      index3 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor );
       order[0] = 0; order[1] = 1; order[2] = 2;
     } else if (dist1 >= dist3 && dist3 >= dist2) {
-      index1 = static_cast<size_t>((dist1 - _lutCutoff) * _resolution);
-      index2 = static_cast<size_t>((dist3 - _lutCutoff) * _resolution);
-      index3 = static_cast<size_t>((dist2 - _lutCutoff) * _resolution);
+      index1 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor );
+      index2 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor );
+      index3 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor );
       order[0] = 0; order[1] = 2; order[2] = 1;
     } else if (dist2 >= dist1 && dist1 >= dist3) {
-      index1 = static_cast<size_t>((dist2 - _lutCutoff) * _resolution);
-      index2 = static_cast<size_t>((dist1 - _lutCutoff) * _resolution);
-      index3 = static_cast<size_t>((dist3 - _lutCutoff) * _resolution);
+      index1 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor );
+      index2 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor );
+      index3 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor );
       order[0] = 1; order[1] = 0; order[2] = 2;
     } else if (dist2 >= dist3 && dist3 >= dist1) {
-      index1 = static_cast<size_t>((dist2 - _lutCutoff) * _resolution);
-      index2 = static_cast<size_t>((dist3 - _lutCutoff) * _resolution);
-      index3 = static_cast<size_t>((dist1 - _lutCutoff) * _resolution);
+      index1 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor );
+      index2 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor );
+      index3 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor);
       order[0] = 1; order[1] = 2; order[2] = 0;
     } else if (dist3 >= dist1 && dist1 >= dist2) {
-      index1 = static_cast<size_t>((dist3 - _lutCutoff) * _resolution);
-      index2 = static_cast<size_t>((dist1 - _lutCutoff) * _resolution);
-      index3 = static_cast<size_t>((dist2 - _lutCutoff) * _resolution);
+      index1 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor);
+      index2 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor);
+      index3 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor);
       order[0] = 2; order[1] = 0; order[2] = 1;
     } else {
-      index1 = static_cast<size_t>((dist3 - _lutCutoff) * _resolution);
-      index2 = static_cast<size_t>((dist2 - _lutCutoff) * _resolution);
-      index3 = static_cast<size_t>((dist1 - _lutCutoff) * _resolution);
+      index1 = static_cast<size_t>((dist3 - _lutCutoff) * _lutFactor);
+      index2 = static_cast<size_t>((dist2 - _lutCutoff) * _lutFactor);
+      index3 = static_cast<size_t>((dist1 - _lutCutoff) * _lutFactor);
       order[0] = 2; order[1] = 1; order[2] = 0;
     }
 
@@ -75,6 +75,7 @@ class TriwiseLUT {
       _cutoffSquared = cutoffSquared;
       _lutCutoff = cutoffSquared / 20.;
       double lutDistance = _cutoffSquared - _lutCutoff;
+      double _lutFactor = _resolution / lutDistance;
       double pointDistance = lutDistance / static_cast<double>(_resolution);
 
       _lut.resize(_resolution + 1);
@@ -100,6 +101,7 @@ class TriwiseLUT {
 
   double _cutoffSquared{};
   double _lutCutoff{};
+  double _lutFactor{};
   int _resolution{};
   bool _isFilled = false;
 };
