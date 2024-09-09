@@ -665,11 +665,11 @@ class LJFunctorSmoothHWYGS
   }
 
   inline VectorDouble alignr(VectorDouble a,  VectorDouble b, int shift){
-    alignas(64) double concatenated[2 * 4];
+    alignas(64) double concatenated[2 * _vecLengthDouble];
 
     // Store vectors 'a' and 'b' into concatenated array
     Store(a, tag_double, concatenated);
-    Store(b, tag_double, concatenated + 4);
+    Store(b, tag_double, concatenated + _vecLengthDouble);
 
     // Create a vector to hold the result
     VectorDouble result;
@@ -737,7 +737,8 @@ class LJFunctorSmoothHWYGS
       auto innerCutoffDummyMask = highway::And(zeroMask, highway::And(innerCutoffMask, dummyMask));
 
       const auto temp = highway::And(innerCutoffDummyMask, cutoffDummyMask);
-      cutoffDummyMask = highway::Xor(innerCutoffDummyMask, cutoffDummyMask);
+      const auto temp2 = highway::Xor(innerCutoffDummyMask, cutoffDummyMask);
+      cutoffDummyMask = highway::And(cutoffDummyMask,temp2);
       innerCutoffDummyMask = temp;
 
       const long popCountMask = highway::CountTrue(tag_double, cutoffDummyMask);
@@ -792,8 +793,8 @@ class LJFunctorSmoothHWYGS
         interactionInnerIndices = highway::IfThenElseZero(_alreadyProcessedMask,newInteractionInnerIndices);
         interactionInnerIndices = alignr(_zeroDouble,interactionInnerIndices,popCountInnerMask);
         numAssignedInnerRegisters = popCountInnerMask - (_vecLengthDouble - numAssignedInnerRegisters);
-
       }
+
     }
     //process the remaining indices for both
     if(numAssignedRegisters > 0){
@@ -1210,6 +1211,7 @@ class LJFunctorSmoothHWYGS
 
     fillJRegistersGS<remainderJ>(gatheredIndices,j, x2Ptr, y2Ptr, z2Ptr, ownedStatePtr2, x2, y2, z2, ownedStateJDouble, restJ);
 
+
     // distance calculations
     const auto drX = x1 - x2;
     const auto drY = y1 - y2;
@@ -1221,13 +1223,15 @@ class LJFunctorSmoothHWYGS
 
     const auto dr2 = drX2 + drY2 + drZ2;
 
+    const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
+
+    /*
     const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
     const auto innerCutoffMask = highway::Ge(dr2, _innerCutoff);
     const auto zeroMask = highway::Ne(dr2, _zeroDouble);
-    const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
     const auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
     const auto innerCutoffDummyMask = highway::And(zeroMask, highway::And(innerCutoffMask, dummyMask));
-
+     */
 
     //compute smoothing factor
     const auto drtrue = highway::Sqrt(dr2);
@@ -1238,7 +1242,7 @@ class LJFunctorSmoothHWYGS
     const auto numerator = temp2 * tripleOuterMinusInnerAoSLocalm2drt;
     const auto fraction = numerator * _cutoffDiffCubedInv;
     const auto smoothingTerm = _oneDouble - fraction;
-    const auto smoothingMasked = highway::IfThenElse(innerCutoffDummyMask,smoothingTerm,_oneDouble);
+    const auto smoothingMasked = highway::IfThenElse(dummyMask,smoothingTerm,_oneDouble);
 
     // compute LJ Potential
     const auto invDr2 = _oneDouble / dr2;
@@ -1251,7 +1255,7 @@ class LJFunctorSmoothHWYGS
     const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
     const auto fac = lj12m6alj12e * invDr2 * smoothingMasked;
 
-    const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
+    const auto facMasked = highway::IfThenElseZero(dummyMask, fac);
 
     const VectorDouble fx = drX * facMasked;
     const VectorDouble fy = drY * facMasked;
@@ -1272,7 +1276,7 @@ class LJFunctorSmoothHWYGS
 
       auto uPot = highway::MulAdd(epsilon24s, lj12m6,shift6s);
       uPot = highway::Mul(uPot, smoothingTerm);
-      auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
+      auto uPotMasked = highway::IfThenElseZero(dummyMask, uPot);
 
       auto energyFactor = highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
 
@@ -1322,10 +1326,13 @@ class LJFunctorSmoothHWYGS
 
     const auto dr2 = drX2 + drY2 + drZ2;
 
+    const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
+
+    /*
     const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
     const auto zeroMask = highway::Ne(dr2, _zeroDouble);
-    const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
     const auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
+     */
 
     // compute LJ Potential
     const auto invDr2 = _oneDouble / dr2;
@@ -1338,7 +1345,7 @@ class LJFunctorSmoothHWYGS
     const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
     const auto fac = lj12m6alj12e * invDr2;
 
-    const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
+    const auto facMasked = highway::IfThenElseZero(dummyMask, fac);
 
     const VectorDouble fx = drX * facMasked;
     const VectorDouble fy = drY * facMasked;
@@ -1358,7 +1365,7 @@ class LJFunctorSmoothHWYGS
       auto virialZ = fz * drZ;
 
       auto uPot = highway::MulAdd(epsilon24s, lj12m6,shift6s);
-      auto uPotMasked = highway::IfThenElseZero(cutoffDummyMask, uPot);
+      auto uPotMasked = highway::IfThenElseZero(dummyMask, uPot);
 
       auto energyFactor = highway::IfThenElse(dummyMask, _oneDouble, _zeroDouble);
 
