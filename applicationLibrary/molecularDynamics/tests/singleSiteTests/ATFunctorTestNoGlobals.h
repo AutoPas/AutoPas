@@ -30,5 +30,5 @@ class ATFunctorTestNoGlobals : public ATFunctorTest {
   const std::array<double, 3> expectedForceMixingP1{-94380.6251929043, -94380.6251929043, -94380.6251929043};
   const std::array<double, 3> expectedForceMixingP2{-47894.6456202798, 47190.3125964521, 142275.270813184};
   const std::array<double, 3> expectedForceMixingP3{142275.270813184, 47190.3125964521, -47894.6456202798};
-  constexpr static double absDelta{1e-7};
+  constexpr static double relDelta{1e-10};
 };
