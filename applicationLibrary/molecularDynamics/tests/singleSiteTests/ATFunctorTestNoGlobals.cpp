@@ -15,7 +15,7 @@ TYPED_TEST_P(ATFunctorTestNoGlobals, testAoSNoGlobalsAT) {
   constexpr bool useLUT = FuncType::getUseLUT();
 
   ParticlePropertiesLibrary<double, size_t> particlePropertiesLibrary(this->cutoff);
-  mdLib::TriwiseLUT lut(50);
+  mdLib::TriwiseLUT lut(200);
   std::unique_ptr<FuncType> functor;
 
   particlePropertiesLibrary.addSiteType(0, 1.0);
