@@ -311,6 +311,10 @@ void Simulation::run() {
                 << autopas::memoryProfiler::currentMemoryUsage() << " kB\n";
     }
 
+    if (autopas::Logger::get()->level() <= autopas::Logger::LogLevel::info) {
+      std::cout << std::setprecision(15) << _energySum << ", " << _virialSum << std::endl;
+    }
+
     if (_domainDecomposition->getDomainIndex() == 0) {
       auto [maxIterationsEstimate, maxIterationsIsPrecise] = estimateNumberOfIterations();
       if (not _configuration.dontShowProgressBar.value) {
@@ -457,6 +461,10 @@ void Simulation::updateQuaternions() {
 }
 
 void Simulation::updateInteractionForces() {
+  // Reset globals
+  _energySum = 0.0;
+  _virialSum = 0.0;
+
   _timers.forceUpdateTotal.start();
 
   _previousIterationWasTuningIteration = _currentIterationIsTuningIteration;
@@ -530,13 +538,23 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+      applyWithChosenFunctor<bool>([&](auto functor) {
+        const auto stillTuning = _autoPasContainer->computeInteractions(&functor);
+        _energySum += functor.getPotentialEnergy();
+        _virialSum += functor.getVirial();
+        return stillTuning;
+  });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+      applyWithChosenFunctor3B<bool>([&](auto functor) {
+        const auto stillTuning = _autoPasContainer->computeInteractions(&functor);
+        _energySum += functor.getPotentialEnergy();
+        _virialSum += functor.getVirial();
+        return stillTuning;
+      });
   return wasTuningIteration;
 }
 
@@ -566,7 +584,10 @@ void Simulation::logSimulationState() {
     std::cout << "\n\n"
               << "Total number of particles at the end of Simulation: " << totalNumberOfParticles << "\n"
               << "Owned: " << ownedParticles << "\n"
-              << "Halo : " << haloParticles << "\n";
+              << "Halo : " << haloParticles << "\n\n";
+
+    std::cout << "Global potential energy: " << _energySum << "\n"
+              << "Global virial sum:       " << _virialSum << "\n\n";
   }
 }
 
