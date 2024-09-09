@@ -16,7 +16,6 @@
 #include "src/ParallelVtkWriter.h"
 #include "src/TypeDefinitions.h"
 #include "src/configuration/MDFlexConfig.h"
-#include "src/domainDecomposition/DomainDecomposition.h"
 #include "src/domainDecomposition/RegularGridDecomposition.h"
 
 /**
@@ -251,6 +250,17 @@ class Simulation {
    * Defines, if vtk files should be created or not.
    */
   bool _createVtkFiles;
+
+  /**
+   * Global potential energy as obtained from the functors.
+   */
+  double _energySum;
+
+  /**
+   * Global virial sum as obtained from the functors.
+   */
+  double _virialSum;
+
 
  private:
   /**
