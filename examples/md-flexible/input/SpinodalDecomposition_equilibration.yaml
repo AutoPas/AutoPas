@@ -6,7 +6,7 @@ verlet-skin-radius               :  0.5
 verlet-rebuild-frequency         :  10
 deltaT                           :  0.00182367
 iterations                       :  100000
-boundary-type                    : [periodic, periodic, periodic]
+boundary-type                    :  [periodic, periodic, periodic]
 Sites:
   0:
     epsilon                      :  1.

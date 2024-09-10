@@ -30,11 +30,13 @@ class RandomSearch final : public TuningStrategyInterface {
 
   TuningStrategyOption getOptionType() const override;
 
-  void reset(size_t, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  bool reset(size_t, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
+
+  void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
  private:
   /**

@@ -62,8 +62,12 @@ AutoPas<Particle> &AutoPas<Particle>::operator=(AutoPas &&other) noexcept {
 
 template <class Particle>
 void AutoPas<Particle>::init() {
-  AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
-  AutoPasLog(INFO, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
+  int myRank{};
+  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank == 0) {
+    AutoPasLog(INFO, "AutoPas Version: {}", AutoPas_VERSION);
+    AutoPasLog(INFO, "Compiled with  : {}", utils::CompileInfo::getCompilerInfo());
+  }
 
   if (_tuningStrategyFactoryInfo.autopasMpiCommunicator == AUTOPAS_MPI_COMM_NULL) {
     AutoPas_MPI_Comm_dup(AUTOPAS_MPI_COMM_WORLD, &_tuningStrategyFactoryInfo.autopasMpiCommunicator);
