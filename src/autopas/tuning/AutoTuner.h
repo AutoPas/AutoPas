@@ -389,14 +389,15 @@ class AutoTuner {
   bool _isTuning{false};
 
   /**
-   * Is only set to true in the iteration where a tuning phase ends. This is done in tuneConfiguration() and set back to
-   * false in bumpIterationCounters()
+   * Is only set to true for the last iteration of a tuning phase.
+   * Specifically, from when tuneConfiguration() selects the optimum until it is reset to false in
+   * bumpIterationCounters().
    */
   bool _endOfTuningPhase{false};
 
   /**
    * Stores the number of iterations the previous tuning phase used. Is reset at the beginning of a new tuning phase.
    */
-  size_t _iterationsInLastTuningPhase{0};
+  size_t _lastTuningIterations{0};
 };
 }  // namespace autopas

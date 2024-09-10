@@ -62,7 +62,7 @@ void AutoTuner::addHomogeneityAndMaxDensity(double homogeneity, double maxDensit
 void AutoTuner::logIteration(const Configuration &conf, bool tuningIteration, long tuningTime) {
   // only log if we are at the end of a tuning phase
   if (_endOfTuningPhase) {
-    //  This string is part of several older scripts, hence it is not recommended to change it.
+    // This string is part of several older scripts, hence it is not recommended to change it.
     AutoPasLog(DEBUG, "Selected Configuration {}", getCurrentConfig().toString());
     const auto [_, optimalEvidence] = _evidenceCollection.getLatestOptimalConfiguration();
     _tuningResultLogger.logTuningResult(conf, _iteration, tuningTime, optimalEvidence.value);
@@ -75,7 +75,7 @@ bool AutoTuner::searchSpaceIsEmpty() const { return _searchSpace.empty(); }
 
 void AutoTuner::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
-  _iterationsInLastTuningPhase = 0;
+  _lastTuningIterations = 0;
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
 }
 
@@ -106,7 +106,7 @@ bool AutoTuner::tuneConfiguration() {
   // Determine where in a tuning phase we are
   if (_iterationsSinceTuning == _tuningInterval) {
     _iterationsSinceTuning = 0;
-    _iterationsInLastTuningPhase = 0;
+    _lastTuningIterations = 0;
     // CASE: Start of a tuning phase
     // in the first iteration of a tuning phase we reset all strategies
     // and refill the queue with the complete search space.
@@ -149,12 +149,12 @@ bool AutoTuner::tuneConfiguration() {
 
   // CASE: End of a tuning phase. This is not exclusive to the other cases!
   if (_configQueue.empty()) {
-    //  if the queue is empty we are done tuning.
+    // If the queue is empty we are done tuning.
     _endOfTuningPhase = true;
     const auto [optConf, optEvidence] = _evidenceCollection.getOptimalConfiguration(_tuningPhase);
     _configQueue.push_back(optConf);
     _isTuning = false;
-    // fill up sample buffer to indicate we are not collecting samples anymore
+    // Fill up sample buffer to indicate we are not collecting samples anymore.
     _samplesRebuildingNeighborLists.resize(_maxSamples);
   }
   tuningTimer.stop();
@@ -165,7 +165,7 @@ bool AutoTuner::tuneConfiguration() {
 const Configuration &AutoTuner::getCurrentConfig() const { return _configQueue.back(); }
 
 std::tuple<Configuration, bool> AutoTuner::getNextConfig() {
-  //  If we are not (yet) tuning or there is nothing to tune return immediately.
+  // If we are not (yet) tuning or there is nothing to tune return immediately.
   if (not inTuningPhase()) {
     return {getCurrentConfig(), false};
   } else if (getCurrentNumSamples() < _maxSamples) {
@@ -284,10 +284,12 @@ void AutoTuner::bumpIterationCounters() {
   ++_iteration;
   ++_iterationsSinceTuning;
   if (inTuningPhase()) {
-    ++_iterationsInLastTuningPhase;
-    if (_iterationsInLastTuningPhase > _tuningInterval) {
-      throw autopas::utils::ExceptionHandler::AutoPasException(
-          "Tuning needs more iterations than the tuning interval. Please use a higher value for the tuning interval.");
+    ++_lastTuningIterations;
+    if (_lastTuningIterations > _tuningInterval) {
+      utils::ExceptionHandler::exception(
+          "Tuning needs more iterations than the tuning interval ({}). Please use a higher value for the tuning "
+          "interval.",
+          _tuningInterval);
     }
   }
   _endOfTuningPhase = false;
@@ -307,7 +309,7 @@ bool AutoTuner::willRebuildNeighborLists() const {
   // previous tuning phase to get the baseline
   const auto iterationBaseline = inTuningPhase
                                      ? (_iterationsSinceTuning == _tuningInterval ? 0 : _iterationsSinceTuning)
-                                     : _iterationsSinceTuning - _iterationsInLastTuningPhase;
+                                     : _iterationsSinceTuning - _lastTuningIterations;
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = inTuningPhase ? _maxSamples : _rebuildFrequency;
   return (iterationBaseline % iterationsPerRebuild) == 0;
