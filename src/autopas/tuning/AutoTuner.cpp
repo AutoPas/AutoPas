@@ -74,6 +74,9 @@ bool AutoTuner::searchSpaceIsTrivial() const { return _searchSpace.size() == 1; 
 bool AutoTuner::searchSpaceIsEmpty() const { return _searchSpace.empty(); }
 
 void AutoTuner::forceRetune() {
+  if (inTuningPhase()) {
+    AutoPasLog(WARN, "Warning: Currently running tuning phase is aborted a new one is started!");
+  }
   _iterationsSinceTuning = _tuningInterval;
   _lastTuningIterations = 0;
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
@@ -285,11 +288,10 @@ void AutoTuner::bumpIterationCounters() {
   ++_iterationsSinceTuning;
   if (inTuningPhase()) {
     ++_lastTuningIterations;
-    if (_lastTuningIterations > _tuningInterval) {
-      utils::ExceptionHandler::exception(
-          "Tuning needs more iterations than the tuning interval ({}). Please use a higher value for the tuning "
-          "interval.",
-          _tuningInterval);
+    if (_lastTuningIterations == _tuningInterval + 1) {
+      // The tuning interval triggered a new tuning phase during a running tuning phase -> continue tuning ("merge" of
+      // two tuning phases)
+      AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval!");
     }
   }
   _endOfTuningPhase = false;

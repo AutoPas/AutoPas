@@ -285,7 +285,8 @@ class AutoTuner {
   size_t _tuningPhase{0};
 
   /**
-   * Number of iterations between two tuning phases.
+   * Fixed interval at which tuning phases are started.
+   * A tuning phase always starts when _iteration % _tuningInterval == 0.
    */
   size_t _tuningInterval;
 
