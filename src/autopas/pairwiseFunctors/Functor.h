@@ -88,33 +88,6 @@ class Functor {
   }
 
   /**
-   * Get attributes needed for computation.
-   * @return Attributes needed for computation.
-   * @todo C++20: make this function virtual
-   */
-  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr() {
-    return std::array<typename Particle::AttributeNames, 0>{};
-  }
-
-  /**
-   * Get attributes needed for computation without N3 optimization.
-   * @return Attributes needed for computation.
-   * @todo C++20: make this function virtual
-   */
-  constexpr static std::array<typename Particle::AttributeNames, 0> getNeededAttr(std::false_type) {
-    return Functor_T::getNeededAttr();
-  }
-
-  /**
-   * Get attributes computed by this functor.
-   * @return Attributes computed by this functor.
-   * @todo C++20: make this function virtual
-   */
-  constexpr static std::array<typename Particle::AttributeNames, 0> getComputedAttr() {
-    return std::array<typename Particle::AttributeNames, 0>{};
-  }
-
-  /**
    * Functor for structure of arrays (SoA)
    *
    * This functor should calculate the forces or any other pair-wise interaction
