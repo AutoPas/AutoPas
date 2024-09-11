@@ -138,6 +138,36 @@ class SoA {
     return soa[SoAType::additional][partitionTypeIndex][depth].template begin<attribute>();
   }
 
+  template <size_t... attributes>
+  auto begin() {
+    return soa[SoAType::main].template begin<attributes...>();
+  }
+
+  /**
+   * Returns pointers to the start of all arrays of the given desired attributes. Pointers are arranged in a structure
+   * that mimics the SoA's additional partitions structure:
+   *                                       (A)      (B)        (C)       (D)
+   * SoA additional partition structure: tuple of vectors of tuples of vectors
+   * Returned pointers:                  tuple of vectors of tuples of pointers (to start of vectors D)
+   *
+   * Note: For returned pointers, the tuple C is the requested subset of the tuple C of the structure. The sizes of the
+   * vectors B are equal.
+   *
+   * @tparam additionalAttributesType the type of the returned attribute pointers. This should be a tuple of arrays with
+   * one tuple element for each type of additional SoA partition type and, for each type, one array element for each desired
+   * attribute of that type.
+   * @tparam additionalAttr the desired attributes (of type additionalAttributesType)
+   * @return a tuple (an element for each SoAPartitionType) of a vector (of size maxDepth for each SoAPartitionType) of
+   * a tuple (an element for each desired attribute of that SoAPartitionType) of pointers to the start of the corresponding
+   * arrays.
+   */
+  template <typename additionalAttributesType, additionalAttributesType additionalAttr>
+  auto begin() {
+    static_assert(sizeof(additionalAttr)==numAdditionalTypes, "Number of parameter packs of requested "
+                  "additional attributes does not match number of types of additional partitions!");
+    return beginAdditionalAttrImpl<additionalAttributesType, additionalAttr>(std::make_index_sequence<numAdditionalTypes>{});
+  }
+
   /**
    * Returns the "length" of the SoA i.e. the number of particles. This is the size of the main partition.
    *
@@ -178,9 +208,8 @@ class SoA {
     return {this, startIndex, endIndex}; 
   }
 
- private:
   /**
-   * Helper for clarity to get the maximum "depth" of a given additional partition type i.e. how many partitions are 
+   * Helper for clarity to get the maximum "depth" of a given additional partition type i.e. how many partitions are
    * there of this type.
    * @param partitionTypeIndex index of the type of partition.
    * @return maximum "depth" of the given partition type.
@@ -198,6 +227,7 @@ class SoA {
     soa[SoAType::additional][partitionTypeIndex].resize(newMaxDepth);
   }
 
+ private:
   /**
    * Helper for the actual implementation of resizeLengthOfArrays that handles additional partition types.
    * @tparam partitionTypeIndices sequence of size_t indices representing the partition types.
@@ -284,6 +314,46 @@ class SoA {
       auto soaView = SoAView(other[partitionTypeIndex][i], other->_s);
       soa[SoAType::additional][partitionTypeIndex][i].append(soaView);
     }
+  }
+
+  /**
+   * Implementation of begin for the additional partitions.
+   *
+   * @tparam additionalAttributesType the type of the returned attribute pointers.
+   * @tparam additionalAttr the desired attributes (of type additionalAttributesType)
+   * @tparam types parameter pack of indices representing each SoAPartitionType
+   * @return a tuple (an element for each SoAPartitionType) of a vector (of size maxDepth for each SoAPartitionType) of
+   * a tuple (an element for each desired attribute of that SoAPartitionType) of pointers to the start of the corresponding
+   * arrays.
+   */
+  template <typename additionalAttributesType, additionalAttributesType additionalAttr, size_t... types>
+  auto beginAdditionalAttrImpl(std::index_sequence<types...>) {
+    return std::make_tuple(beginAdditionalAttrOfSingleKindImpl<std::tuple_element<types, additionalAttributesType>, additionalAttr[types], types>(types)...);
+  }
+
+  /**
+   * Returns a pointer to the start of all arrays of the given desired attributes of one partition type. Pointers are
+   * arranged in a vector of tuples of pointers where the size of the vector is the max depth of this type and the
+   * size of the tuple is the number of desired attributes of this type.
+   *
+   * @tparam additionalAttributesSingleKindType the type of the returned attribute pointers.
+   * @tparam additionalAttr the desired attributes (of type additionalAttributesSingleKindType)
+   * @tparam type the index of this partition type.
+   * @return
+   */
+  template <typename additionalAttributesSingleKindType, additionalAttributesSingleKindType additionalAttr, size_t type>
+  auto beginAdditionalAttrOfSingleKindImpl() {
+    std::vector<additionalAttributesSingleKindType> &soaPartitionsOfSingleKindPtrs{};
+    const auto maxDepthOfGivenType = getMaxDepthOfGivenType(type);
+    soaPartitionsOfSingleKindPtrs.resize(maxDepthOfGivenType);
+
+    for (size_t depth = 0; depth < maxDepthOfGivenType; ++depth) {
+      auto const pointerPackTmp = soa[SoAType::additional][type][depth].template begin<additionalAttr>();
+      for (size_t i = 0; i < std::tuple_size<additionalAttributesSingleKindType>(); ++i ) {
+        soaPartitionsOfSingleKindPtrs[depth][i] = pointerPackTmp[i];
+      }
+    }
+    return soaPartitionsOfSingleKindPtrs;
   }
 };
 }  // namespace autopas
