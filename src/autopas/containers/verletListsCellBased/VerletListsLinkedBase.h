@@ -181,7 +181,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * Searches the provided halo particle and updates the found particle.
    * Searches for the provided particle within the halo cells of the container
    * and overwrites the found particle with the provided particle.
-   * @param particle
+   * @param haloParticle
    * @return true if a particle was found and updated, false if it was not found.
    */
   bool updateHaloParticle(const Particle &haloParticle) override {
