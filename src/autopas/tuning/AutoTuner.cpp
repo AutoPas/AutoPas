@@ -107,10 +107,11 @@ bool AutoTuner::tuneConfiguration() {
   };
 
   // Determine where in a tuning phase we are
-  if (_iterationsSinceTuning == _tuningInterval) {
+  if (_iterationsSinceTuning == _tuningInterval and not(_lastTuningIterations >= _tuningInterval)) {
+    // CASE: Start of a tuning phase (if _lastTuningIterations > _tuningInterval the current tuning phase takes more
+    // iterations tahn the tuning interval -> continue tuning)
     _iterationsSinceTuning = 0;
     _lastTuningIterations = 0;
-    // CASE: Start of a tuning phase
     // in the first iteration of a tuning phase we reset all strategies
     // and refill the queue with the complete search space.
     // Reverse the order, because _configQueue is FiLo, and we aim to keep the order for legacy reasons.
@@ -291,7 +292,8 @@ void AutoTuner::bumpIterationCounters() {
     if (_lastTuningIterations == _tuningInterval + 1) {
       // The tuning interval triggered a new tuning phase during a running tuning phase -> continue tuning ("merge" of
       // two tuning phases)
-      AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval!");
+      AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
+                 _tuningInterval);
     }
   }
   _endOfTuningPhase = false;
