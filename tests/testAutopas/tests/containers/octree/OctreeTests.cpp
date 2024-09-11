@@ -499,6 +499,7 @@ OctreeTest::calculateForcesAndPairs(autopas::ContainerOption containerOption, au
   for (int unsigned i = 0; i < numHaloParticles; ++i) {
     auto position = haloParticlePositions[i];
     auto particle = Molecule(position, {0, 0, 0}, numParticles + i);
+    particle.setOwnershipState(autopas::OwnershipState::halo);
     container.addHaloParticle(particle);
   }
 

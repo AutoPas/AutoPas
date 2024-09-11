@@ -9,6 +9,7 @@
 #include <array>
 #include <random>
 
+#include "autopas/particles/OwnershipState.h"
 #include "autopas/utils/inBox.h"
 
 namespace autopasTools::generators {
@@ -75,7 +76,11 @@ void fillWithHaloParticles(Container &container, const Particle &defaultParticle
                            unsigned long numParticles, unsigned int seed = 42) {
   fillWithHaloParticles(
       container, defaultParticle, haloWidth, numParticles,
-      [](Container &c, const Particle &p) { c.addHaloParticle(p); }, seed);
+      [](Container &c, Particle &p) {
+        p.setOwnershipState(autopas::OwnershipState::halo);
+        c.addHaloParticle(p);
+      },
+      seed);
 }
 };  // namespace UniformGenerator
 
@@ -89,6 +94,7 @@ void UniformGenerator::fillWithParticles(Container &container, const Particle &d
     Particle particle(defaultParticle);
     particle.setR(randomPosition(generator, boxMin, boxMax));
     particle.setID(i);
+    particle.setOwnershipState(autopas::OwnershipState::owned);
     container.addParticle(particle);
   }
 }
