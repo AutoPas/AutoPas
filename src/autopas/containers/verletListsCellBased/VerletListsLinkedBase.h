@@ -184,10 +184,10 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @param particle
    * @return true if a particle was found and updated, false if it was not found.
    */
-  bool updateHaloParticle(const Particle &particle) override {
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), this->getVerletSkin());
+  bool updateHaloParticle(const Particle &haloParticle) override {
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, particle);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
         return true;
       }
@@ -195,7 +195,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
     AutoPasLog(TRACE,
                "updateHaloParticle was not able to update particle at "
                "[{}, {}, {}]",
-               particle.getR()[0], particle.getR()[1], particle.getR()[2]);
+               haloParticle.getR()[0], haloParticle.getR()[1], haloParticle.getR()[2]);
     return false;
   }
 

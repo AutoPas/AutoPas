@@ -32,7 +32,8 @@ namespace autopas {
 template <typename floatType, typename idType>
 class ParticleBase {
  public:
-  ParticleBase() : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0) {}
+  ParticleBase()
+      : _r({0.0, 0.0, 0.0}), _v({0., 0., 0.}), _f({0.0, 0.0, 0.0}), _id(0), _ownershipState(OwnershipState::owned) {}
 
   /**
    * Constructor of the Particle class.
@@ -40,8 +41,9 @@ class ParticleBase {
    * @param v Velocity of the particle.
    * @param id Id of the particle.
    */
-  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id)
-      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id) {}
+  ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
+               OwnershipState ownershipState = OwnershipState::owned)
+      : _r(r), _v(v), _f({0.0, 0.0, 0.0}), _id(id), _ownershipState(ownershipState) {}
 
   /**
    * Destructor of ParticleBase class
@@ -72,7 +74,7 @@ class ParticleBase {
   /**
    * Defines the state of the ownership of the particle.
    */
-  OwnershipState _ownershipState{OwnershipState::owned};
+  OwnershipState _ownershipState;
 
  public:
   /**

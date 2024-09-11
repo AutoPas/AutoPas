@@ -179,8 +179,7 @@ TEST_P(VerletListsTest, testVerletListBuildHalo) {
                                              cellSizeFactor);
 
   std::array<double, 3> r = {0.9, 0.9, 0.9};
-  Particle p(r, {0., 0., 0.}, 0);
-  p.setOwnershipState(autopas::OwnershipState::halo);
+  Particle p(r, {0., 0., 0.}, 0, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p);
   std::array<double, 3> r2 = {1.1, 1.1, 1.1};
   Particle p2(r2, {0., 0., 0.}, 1);
@@ -224,8 +223,7 @@ TEST_P(VerletListsTest, testUpdateHaloParticle) {
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
-  Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
-  p.setOwnershipState(autopas::OwnershipState::halo);
+  Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p);
 
   // test same position, change velocity
@@ -252,24 +250,20 @@ TEST_P(VerletListsTest, testUpdateHaloParticle) {
   EXPECT_TRUE(moveUpdateAndExpectEqual(verletLists, p, {.05, 9.95, .05}));
 
   // check for particle with wrong id
-  Particle p2({-.1, -.1, -.1}, {0., 0., 0.}, 2);
-  p2.setOwnershipState(autopas::OwnershipState::halo);
+  Particle p2({-.1, -.1, -.1}, {0., 0., 0.}, 2, autopas::OwnershipState::halo);
   EXPECT_FALSE(verletLists.updateHaloParticle(p2));
 
   // test move far, expect throw
   EXPECT_FALSE(moveUpdateAndExpectEqual(verletLists, p, {3, 3, 3}));
 
   // test particles at intermediate positions (not at corners)
-  Particle p3({-1., 4., 2.}, {0., 0., 0.}, 3);
-  p3.setOwnershipState(autopas::OwnershipState::halo);
+  Particle p3({-1., 4., 2.}, {0., 0., 0.}, 3, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p3);
   EXPECT_TRUE(verletLists.updateHaloParticle(p3));
-  Particle p4({4., 10.2, 2.}, {0., 0., 0.}, 4);
-  p4.setOwnershipState(autopas::OwnershipState::halo);
+  Particle p4({4., 10.2, 2.}, {0., 0., 0.}, 4, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p4);
   EXPECT_TRUE(verletLists.updateHaloParticle(p4));
-  Particle p5({5., 4., 10.2}, {0., 0., 0.}, 3);
-  p5.setOwnershipState(autopas::OwnershipState::halo);
+  Particle p5({5., 4., 10.2}, {0., 0., 0.}, 3, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p5);
   EXPECT_TRUE(verletLists.updateHaloParticle(p5));
 }
@@ -283,8 +277,7 @@ TEST_P(VerletListsTest, LoadExtractSoA) {
                                              autopas::VerletLists<Particle>::BuildVerletListType::VerletSoA,
                                              cellSizeFactor);
 
-  Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1);
-  p.setOwnershipState(autopas::OwnershipState::halo);
+  Particle p({-.1, 10.1, -.1}, {0., 0., 0.}, 1, autopas::OwnershipState::halo);
   verletLists.addHaloParticle(p);
 
   MockFunctor<Particle> mockFunctor;

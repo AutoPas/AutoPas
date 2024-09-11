@@ -34,11 +34,11 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   };
 
   // These are going to be halo particles
-  std::vector<autopas::Particle> haloParticles{
-      {{-0.5, +1.5, +1.5}, zero, 5},
-      {{+5.0, +1.5, +1.5}, zero, 6},
-      {{+1.5, -0.5, +1.5}, zero, 7},
-      {{+1.5, +1.5, -0.5}, zero, 8},
+  const std::vector<autopas::Particle> haloParticles{
+      {{-0.5, +1.5, +1.5}, zero, 5, autopas::OwnershipState::halo},
+      {{+5.0, +1.5, +1.5}, zero, 6, autopas::OwnershipState::halo},
+      {{+1.5, -0.5, +1.5}, zero, 7, autopas::OwnershipState::halo},
+      {{+1.5, +1.5, -0.5}, zero, 8, autopas::OwnershipState::halo},
   };
 
   // calculate the cell IDs for each particle
@@ -56,16 +56,12 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
   // we insert owned and halo particles alternating. This way we can check if references are updated correctly when
   // using LinkedCellsReferences
   linkedCells.addParticle(ownedParticles[0]);
-  haloParticles[0].setOwnershipState(autopas::OwnershipState::halo);
   linkedCells.addHaloParticle(haloParticles[0]);
   linkedCells.addParticle(ownedParticles[1]);
-  haloParticles[1].setOwnershipState(autopas::OwnershipState::halo);
   linkedCells.addHaloParticle(haloParticles[1]);
   linkedCells.addParticle(ownedParticles[2]);
-  haloParticles[2].setOwnershipState(autopas::OwnershipState::halo);
   linkedCells.addHaloParticle(haloParticles[2]);
   linkedCells.addParticle(ownedParticles[3]);
-  haloParticles[3].setOwnershipState(autopas::OwnershipState::halo);
   linkedCells.addHaloParticle(haloParticles[3]);
   linkedCells.addParticle(ownedParticles[4]);
 
