@@ -678,29 +678,6 @@ class LJMultisiteFunctor
   constexpr static bool getMixing() { return useMixing; }
 
   /**
-   * Get the number of flops used per kernel call - i.e. number of flops to calculate kernel *given* the two particles
-   * lie within the cutoff (i.e. distance^2 / cutoff has been already been calculated).
-   * Note: there is currently a large difference between AoS & SoA number of flops. This function returns the AoS
-   * number of flops.
-   * @param molAType molecule A's type id
-   * @param molBType molecule B's type id
-   * @param newton3 true if newton3 optimizations enabled
-   * @return Number of FLOPs
-   */
-  unsigned long getNumFlopsPerKernelCall(size_t molAType, size_t molBType, bool newton3) {
-    // Site-to-site displacement: 6 (3 in the SoA case, but this requires O(N) precomputing site positions)
-    // Site-to-site distance squared: 4
-    // Compute scale: 9
-    // Apply scale to force: With newton3: 6, Without: 3
-    // Apply scale to torque: With newton3 18, Without: 9 (0 in SoA case, with O(N) post computing)
-    // Site-to-site total: With newton3: 33, Without: 26
-    // (SoA total: With N3L: 22, Without N3L: 19)
-    // Above multiplied by number sites of i * number sites of j
-    const unsigned long siteToSiteFlops = newton3 ? 33ul : 26ul;
-    return _PPLibrary->getNumSites(molAType) * _PPLibrary->getNumSites(molBType) * siteToSiteFlops;
-  }
-
-  /**
    * Reset the global values.
    * Will set the global values to zero to prepare for the next iteration.
    */
