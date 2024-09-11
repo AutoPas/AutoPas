@@ -40,6 +40,7 @@ class ParticleBase {
    * @param r Position of the particle.
    * @param v Velocity of the particle.
    * @param id Id of the particle.
+   * @param ownershipState OwnershipState of the particle (can be either owned, halo, or dummy)
    */
   ParticleBase(const std::array<double, 3> &r, const std::array<double, 3> &v, idType id,
                OwnershipState ownershipState = OwnershipState::owned)
