@@ -36,7 +36,7 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * @param rebuildFrequency the rebuild frequency.
    * @param applicableTraversals all applicable traversals
    * @param cellSizeFactor cell size factor relative to cutoff. Verlet lists are only implemented for values >= 1.0
-   * (smaller values are set to 1.0)
+   * (smaller values are set to 1.0).
    */
   VerletListsLinkedBase(const std::array<double, 3> &boxMin, const std::array<double, 3> &boxMax, const double cutoff,
                         const double skin, const unsigned int rebuildFrequency,
@@ -181,17 +181,21 @@ class VerletListsLinkedBase : public ParticleContainerInterface<Particle> {
    * Searches the provided halo particle and updates the found particle.
    * Searches for the provided particle within the halo cells of the container
    * and overwrites the found particle with the provided particle.
-   * @param particle
+   * @param haloParticle
    * @return true if a particle was found and updated, false if it was not found.
    */
-  bool updateHaloParticle(const Particle &particle) override {
-    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(particle.getR(), this->getVerletSkin());
+  bool updateHaloParticle(const Particle &haloParticle) override {
+    auto cells = _linkedCells.getCellBlock().getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, particle);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
         return true;
       }
     }
+    AutoPasLog(TRACE,
+               "updateHaloParticle was not able to update particle at "
+               "[{}, {}, {}]",
+               haloParticle.getR()[0], haloParticle.getR()[1], haloParticle.getR()[2]);
     return false;
   }
 

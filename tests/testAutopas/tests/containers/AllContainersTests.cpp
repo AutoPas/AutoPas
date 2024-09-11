@@ -122,8 +122,7 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
         }
         auto pos = domainCenter + std::array<double, 3>{distCenterToMidHalo[0] * x, distCenterToMidHalo[1] * y,
                                                         distCenterToMidHalo[2] * z};
-        Particle p{pos, zeros, numParticles++};
-        p.setOwnershipState(autopas::OwnershipState::halo);
+        const Particle p{pos, zeros, numParticles++, autopas::OwnershipState::halo};
         container.addHaloParticle(p);
       }
     }
@@ -142,8 +141,8 @@ TEST_P(AllContainersTests, testDeleteHaloParticles) {
  */
 TEST_P(AllContainersTestsBothUpdates, testUpdateContainerHalo) {
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
-  autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42);
-  p.setOwnershipState(autopas::OwnershipState::halo);
+  const autopas::Particle p({boxMin[0] - 0.5, boxMin[1] - 0.5, boxMin[2] - 0.5}, {0, 0, 0}, 42,
+                            autopas::OwnershipState::halo);
   container.addHaloParticle(p);
 
   EXPECT_EQ(container.size(), 1);
@@ -238,20 +237,17 @@ TEST_P(AllContainersTests, testUpdateContainerKeepsNeighborListsValidIfSpecified
   auto &container = getInitializedContainer(std::get<0>(GetParam()));
 
   {
-    Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 0);
-    p.setOwnershipState(autopas::OwnershipState::halo);
+    const Particle p({-.1, -.1, -.1}, {0., 0., 0.}, 0, autopas::OwnershipState::halo);
     container.addHaloParticle(p);
   }
 
   {
-    Particle p({.02, .1, .1}, {0., 0., 0.}, 1);
-    p.setOwnershipState(autopas::OwnershipState::owned);
+    const Particle p({.02, .1, .1}, {0., 0., 0.}, 1);
     container.addParticle(p);
   }
 
   {
-    Particle p({1.23, .1, .1}, {0., 0., 0.}, 2);
-    p.setOwnershipState(autopas::OwnershipState::owned);
+    const Particle p({1.23, .1, .1}, {0., 0., 0.}, 2);
     container.addParticle(p);
   }
   struct Values {
