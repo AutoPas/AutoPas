@@ -202,6 +202,7 @@ TEST_F(AutoTunerTest, testTuningIntervalIsFixed) {
   size_t iterations = 0;
   size_t tuningIterations = 0;
   while (iterations < numIterations) {
+    [[maybe_unused]] auto emigrants = logicHandler.updateContainer();
     stillTuning = logicHandler.iteratePairwisePipeline(&functor);
     if (not lastWasTuningInteration and stillTuning) {
       EXPECT_TRUE(iterations % tuningInterval == 0) << "Tuning phase does at start at fixed iteration number.";
