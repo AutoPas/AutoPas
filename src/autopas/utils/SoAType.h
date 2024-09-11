@@ -15,22 +15,21 @@
 namespace autopas::utils {
 
 /**
- * Helper struct to get a the SoAType.
- * The type is defined as SoAType<SoAPartitionType<size_t, double, double, double>, SoAPartitionType<double>>::Type;
+ * Helper struct for getting the types of the main and additional parts of the SoA and passing the type of the SoA.
+ *
  * @tparam ArrayTypes the template parameter list of types.
  */
 template <typename mainPartitionType, typename... additionalPartitionTypes>
 struct SoAType {
   /**
-   * Enum for more verbose accesses to main and additional kinds of partitions.
+   * Type of the main SoA Partition.
    */
-  enum SoATypePartitionKind : int {main, additional};
+  using MainType = mainPartitionType;
 
   /**
-   * This is the Type of the SoAType.
-   * It is a pair of the main SoAPartitionType and a tuple of vectors of any additional SoAPartitionTypes
+   * Type of the structure of additional SoA Partitions
    */
-  using Type = std::pair<mainPartitionType, std::tuple<std::vector<additionalPartitionTypes>...>>;
+  using AdditionalType = typename std::tuple<std::vector<additionalPartitionTypes>...>;
 };
 
 }  // namespace autopas::utils
