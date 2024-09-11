@@ -942,8 +942,6 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
   autopas::utils::Timer timerIteratePairwise;
   autopas::utils::Timer timerRemainderTraversal;
 
-  timerTotal.start();
-
   const bool doListRebuild = not neighborListsAreValid();
   const auto &configuration = _autoTuner.getCurrentConfig();
   auto &container = _containerSelector.getCurrentContainer();
