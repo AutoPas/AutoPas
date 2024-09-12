@@ -294,7 +294,7 @@ class ParticleBase {
   using SoAType =
       typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
-                                       floatType /*fz*/, OwnershipState /*ownershipState*/>>::Type;
+                                       floatType /*fz*/, OwnershipState /*ownershipState*/>>;
 
   /**
    * Non-const getter for the pointer of this object.
