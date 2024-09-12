@@ -24,12 +24,18 @@ struct SoAType {
   /**
    * Type of the main SoA Partition.
    */
-  using MainType = mainPartitionType;
+  using MainType = typename mainPartitionType::Type;
 
   /**
-   * Type of the structure of additional SoA Partitions
+   * Type of the structure of additional SoA Partitions that the data is stored in.
    */
-  using AdditionalType = typename std::tuple<std::vector<additionalPartitionTypes>...>;
+  using AdditionalType = typename std::tuple<std::vector<typename additionalPartitionTypes::Type>...>;
+
+  /**
+   * Types of the additional SoA Partitions. Data is not intended to be stored using this type, this type is to provide
+   * a convenient lookup reference for the types of the additional partitions .
+   */
+  using AdditionalPartitionTypesReference = typename std::tuple<typename additionalPartitionTypes::Type...>;
 };
 
 }  // namespace autopas::utils

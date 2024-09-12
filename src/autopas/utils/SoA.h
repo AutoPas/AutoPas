@@ -9,6 +9,7 @@
 #include <tuple>
 #include <vector>
 
+#include "autopas/utils/SoAPartitionView.h"
 #include "autopas/utils/SoAView.h"
 #include "autopas/utils/TupleUtils.h"
 
@@ -143,6 +144,18 @@ class SoA {
   }
 
   /**
+   * Returns a pointer to the given attribute vector in the given additional SoA partition (of the given type and depth).
+   * @tparam additionalPartitionTypeIndex index corresponding to the desired additional SoA partition's type
+   * @tparam attribute desired attribute index
+   * @param depth depth of desired SoA partition
+   * @return
+   */
+  template <size_t additionalPartitionTypeIndex, size_t attribute>
+  auto begin(size_t depth) {
+    return std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions)[depth].template begin<attribute>();
+  }
+
+  /**
    * Returns pointers to the start of all vectors of the given desired attributes. Pointers are arranged in a structure
    * that mimics the SoA's additional partitions structure:
    *                                       (A)      (B)        (C)       (D)
@@ -210,124 +223,130 @@ class SoA {
   /**
    * Helper for clarity to get the maximum "depth" of a given additional partition type i.e. how many partitions are
    * there of this type.
-   * @param partitionTypeIndex index of the type of partition.
+   * @tparam additionalPartitionTypeIndex index corresponding to the desired additional SoA partition's type.
    * @return maximum "depth" of the given partition type.
    */
-  size_t getMaxDepthOfGivenType(size_t partitionTypeIndex) {
-    return _additionalSoAPartitions[partitionTypeIndex].size();
+  template <size_t additionalPartitionTypeIndex>
+  size_t getMaxDepthOfGivenType() {
+    return std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions).size();
   }
 
   /**
    * Helper for clarity to resize the maximum "depth" of a given additional partition type.
-   * @param partitionTypeIndex index of the type of partition.
+   * @tparam additionalPartitionTypeIndex index corresponding to the desired additional SoA partition's type.
    * @param newMaxDepth new maximum depth the vector of partitions is resized to.
    */
-  void resizeMaxDepthOfGivenType(size_t partitionTypeIndex, size_t newMaxDepth) {
-    _additionalSoAPartitions[partitionTypeIndex].resize(newMaxDepth);
+  template <size_t additionalPartitionTypeIndex>
+  void resizeMaxDepthOfGivenType(size_t newMaxDepth) {
+    std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions).resize(newMaxDepth);
   }
 
  private:
   /**
    * Helper for the actual implementation of resizeLengthOfArrays that handles additional partition types.
-   * @tparam partitionTypeIndices sequence of size_t indices representing the partition types.
+   * @tparam additionalPartitionTypeIndices sequence of size_t indices representing the partition types.
    * @param length length arrays are resized to.
    */
-  template <size_t... partitionTypeIndices>
-  void resizeLengthOfArraysAdditionalTypesImpl(size_t length, std::index_sequence<partitionTypeIndices...>) {
+  template <size_t... additionalPartitionTypeIndices>
+  void resizeLengthOfArraysAdditionalTypesImpl(size_t length, std::index_sequence<additionalPartitionTypeIndices...>) {
     // fold expression
-    (resizeLengthOfArraysOfSingleType<partitionTypeIndices>(length), ...);
+    (resizeLengthOfArraysOfSingleType<additionalPartitionTypeIndices>(length), ...);
   }
 
   /**
    * Applies resizeArrays to every additional partition of a given type.
-   * @tparam partitionTypeIndex partitionTypeIndex type index of given SoA
+   * @tparam additionalPartitionTypeIndex index corresponding to the desired additional SoA partition's type.
    * @param length length arrays are resized to.
    */
-  template <size_t partitionTypeIndex>
+  template <size_t additionalPartitionTypeIndex>
   void resizeLengthOfArraysOfSingleType(size_t length) {
-    for (auto soaTmp : _additionalSoAPartitions[partitionTypeIndex] ) {
+    for (auto soaTmp : std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions) ) {
       soaTmp.resizeArrays(length);
     }
   }
 
   /**
    * Helper for the actual implementation of append that handles additional partition types.
-   * @tparam partitionTypeIndices sequence of size_t indices representing the partition types.
+   * @tparam additionalPartitionTypeIndices sequence of size_t indices representing the partition types.
    * @param other other SoA buffer.
    */
-  template <size_t... partitionTypeIndices>
-  void appendImpl(SoAType &other, std::index_sequence<partitionTypeIndices...>) {
+  template <size_t... additionalPartitionTypeIndices>
+  void appendImpl(SoAType &other, std::index_sequence<additionalPartitionTypeIndices...>) {
     // fold expression
-    (appendSingleType<partitionTypeIndices>(other), ...);
+    (appendSingleType<additionalPartitionTypeIndices>(other), ...);
   }
 
   /**
    * Helper for the actual implementation of append that handles additional partition types.
-   * @tparam partitionTypeIndices sequence of size_t indices representing the partition types.
+   * @tparam additionalPartitionTypeIndices sequence of size_t indices representing the partition types.
    * @param other other SoAView buffer.
    */
-  template <size_t... partitionTypeIndices>
-  void appendAdditionalTypesImpl(SoAViewType &other, std::index_sequence<partitionTypeIndices...>) {
+  template <size_t... additionalPartitionTypeIndices>
+  void appendAdditionalTypesImpl(SoAViewType &other, std::index_sequence<additionalPartitionTypeIndices...>) {
     // fold expression
-    (appendSingleType<partitionTypeIndices>(other), ...);
+    (appendSingleType<additionalPartitionTypeIndices>(other), ...);
   }
 
   /**
    * Applies append to every partition of a given type with the relevant partition from the other SoA buffer. Increases the maximum
    * depth of the partition type if the other SoA buffer has deeper partitions of this type.
-   * @tparam partitionTypeIndex partitionTypeIndex type index of given partition
+   * @tparam additionalPartitionTypeIndex index corresponding to the desired additional SoA partition's type.
    * @param other other SoA buffer.
    */
-  template <size_t partitionTypeIndex>
+  template <size_t additionalPartitionTypeIndex>
   void appendSingleType(SoAType &other) {
     // check if resize is needed and if so resize
-    const auto otherMaxDepth = other->getMaxDepthOfGivenType(partitionTypeIndex);
-    if (otherMaxDepth > this->getMaxDepthOfGivenType(partitionTypeIndex)) {
-      this->resizeMaxDepthOfGivenType(partitionTypeIndex, otherMaxDepth);
+    const auto otherMaxDepth = other->template getMaxDepthOfGivenType<additionalPartitionTypeIndex>();
+    if (otherMaxDepth > this->template getMaxDepthOfGivenType<additionalPartitionTypeIndex>()) {
+      this->template resizeMaxDepthOfGivenType<additionalPartitionTypeIndex>(otherMaxDepth);
     }
 
     // Append SoAs up until otherMaxDepth.
     for (size_t i = 0; i < otherMaxDepth; ++i) {
-      _additionalSoAPartitions[partitionTypeIndex][i].append(other[partitionTypeIndex][i]);
+      std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions)[i].append(std::get<additionalPartitionTypeIndex>(other)[i]);
     }
   }
 
   /**
    * Applies append to every partition of a given type with the relevant partition from the other SoAView buffer. Increases the maximum
    * depth of the partition type if the other SoAView buffer has deeper partitions of this type.
-   * @tparam partitionTypeIndex partitionTypeIndex type index of given partition
+   * @tparam additionalPartitionTypeIndex index corresponding to the desired additional SoA partition's type.
    * @param other other SoAView buffer.
    */
-  template <size_t partitionTypeIndex>
+  template <size_t additionalPartitionTypeIndex>
   void appendSingleType(SoAView<SoAType> &other) {
+    using additionalPartitionType = std::tuple_element<additionalPartitionTypeIndex, typename SoAType::AdditionalPartitionTypesReference>;
     // check if resize is needed and if so resize
-    const auto otherMaxDepth = other->getMaxDepthOfGivenType(partitionTypeIndex);
-    if (otherMaxDepth > this->getMaxDepthOfGivenType(partitionTypeIndex)) {
-      this->resizeMaxDepthOfGivenType(partitionTypeIndex, otherMaxDepth);
+    const auto otherMaxDepth = other->template getMaxDepthOfGivenType<additionalPartitionTypeIndex>();
+    if (otherMaxDepth > this->template getMaxDepthOfGivenType<additionalPartitionTypeIndex>()) {
+      this->template resizeMaxDepthOfGivenType<additionalPartitionTypeIndex>(otherMaxDepth);
     }
 
     // Append SoAs up until otherMaxDepth.
     for (size_t i = 0; i < otherMaxDepth; ++i) {
-      // A SoAView is a view on a SoA, not a Structure of SoAViews. Therefore, the SoAViews must be constructed from
-      // the SoAs.
-      auto soaView = SoAView(other[partitionTypeIndex][i], other->_s);
-      _additionalSoAPartitions[partitionTypeIndex][i].append(soaView);
+      // A SoAView is a view on a SoA with normal SoAPartitions. Therefore, the SoAPartitionViews must be constructed from
+      // the SoAPartitions.
+      const auto partitionView = SoAPartitionView<additionalPartitionType>(std::get<additionalPartitionTypeIndex>(other)[i], other->_s);
+      std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions)[i].append(partitionView);
     }
   }
 
   /**
    * Implementation of begin for the additional partitions.
    *
-   * @tparam additionalAttributesType the type of the returned attribute pointers.
+   * @tparam additionalAttributesTypes tuple of the types of the returned attribute pointers.
    * @tparam additionalAttr the desired attributes (of type additionalAttributesType)
-   * @tparam types parameter pack of indices representing each SoAPartitionType
+   * @tparam typeIndices parameter pack of indices representing each SoAPartitionType
    * @return a tuple (an element for each SoAPartitionType) of a vector (of size maxDepth for each SoAPartitionType) of
    * a tuple (an element for each desired attribute of that SoAPartitionType) of pointers to the start of the corresponding
    * arrays.
    */
-  template <typename additionalAttributesType, additionalAttributesType additionalAttr, size_t... types>
-  auto beginAdditionalAttrImpl(std::index_sequence<types...>) {
-    return std::make_tuple(beginAdditionalAttrOfSingleKindImpl<std::tuple_element<types, additionalAttributesType>, additionalAttr[types], types>(types)...);
+  template <typename additionalAttributesTypes, additionalAttributesTypes additionalAttr, size_t... additionalPartitionTypeIndices>
+  auto beginAdditionalAttrImpl(std::index_sequence<additionalPartitionTypeIndices...>) {
+    return std::make_tuple(
+        beginAdditionalAttrOfSingleKindImpl<std::tuple_element<additionalPartitionTypeIndices, additionalAttributesTypes>,
+                                            std::get<additionalPartitionTypeIndices>(additionalAttr),
+                                            additionalPartitionTypeIndices>(additionalPartitionTypeIndices)...);
   }
 
   /**
@@ -335,20 +354,20 @@ class SoA {
    * arranged in a vector of tuples of pointers where the size of the vector is the max depth of this type and the
    * size of the tuple is the number of desired attributes of this type.
    *
-   * @tparam additionalAttributesSingleKindType the type of the returned attribute pointers.
+   * @tparam additionalAttributesType the type of the returned attribute pointers.
    * @tparam additionalAttr the desired attributes (of type additionalAttributesSingleKindType)
-   * @tparam type the index of this partition type.
+   * @tparam additionalPartitionTypeIndex the index of this partition type.
    * @return
    */
-  template <typename additionalAttributesSingleKindType, additionalAttributesSingleKindType additionalAttr, size_t type>
+  template <typename additionalAttributesType, additionalAttributesType additionalAttr, size_t additionalPartitionTypeIndex>
   auto beginAdditionalAttrOfSingleKindImpl() {
-    std::vector<additionalAttributesSingleKindType> &soaPartitionsOfSingleKindPtrs{};
-    const auto maxDepthOfGivenType = getMaxDepthOfGivenType(type);
+    std::vector<additionalAttributesType> &soaPartitionsOfSingleKindPtrs{};
+    const auto maxDepthOfGivenType = getMaxDepthOfGivenType<additionalPartitionTypeIndex>();
     soaPartitionsOfSingleKindPtrs.resize(maxDepthOfGivenType);
 
     for (size_t depth = 0; depth < maxDepthOfGivenType; ++depth) {
-      auto const pointerPackTmp = _additionalSoAPartitions[type][depth].template begin<additionalAttr>();
-      for (size_t i = 0; i < std::tuple_size<additionalAttributesSingleKindType>(); ++i ) {
+      auto const pointerPackTmp = std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions)[depth].template begin<additionalAttr>();
+      for (size_t i = 0; i < std::tuple_size<additionalAttributesType>(); ++i ) {
         soaPartitionsOfSingleKindPtrs[depth][i] = pointerPackTmp[i];
       }
     }

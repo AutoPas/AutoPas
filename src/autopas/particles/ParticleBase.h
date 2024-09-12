@@ -291,10 +291,20 @@ class ParticleBase {
   /**
    * The type for the soa storage.
    */
-  using SoAType =
+  using SoAArraysType =
       typename autopas::utils::SoAType<autopas::utils::SoAPartitionType<ParticleBase<floatType, idType> *, idType /*id*/, floatType /*x*/,
                                        floatType /*y*/, floatType /*z*/, floatType /*fx*/, floatType /*fy*/,
                                        floatType /*fz*/, OwnershipState /*ownershipState*/>>;
+
+  /**
+   * The type of the main soa partition.
+   */
+  using SoAMainPartitionType = typename SoAArraysType::MainType;
+
+  /**
+   * The type of the additional soa partition structure.
+   */
+  using SoAAdditionalPartitionType = typename SoAArraysType::AdditionalType;
 
   /**
    * Non-const getter for the pointer of this object.
@@ -302,7 +312,7 @@ class ParticleBase {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAType[SoAType::main]>::type::value_type get() {
+  constexpr typename std::tuple_element<attribute, SoAMainPartitionType>::type::value_type get() {
     return this;
   }
 
@@ -313,7 +323,7 @@ class ParticleBase {
    * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAType[SoAType::main]>::type::value_type get() const {
+  constexpr typename std::tuple_element<attribute, SoAMainPartitionType>::type::value_type get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {

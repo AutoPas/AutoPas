@@ -60,13 +60,25 @@ class SoAView {
   SoAView(SoAType &soa) : _soa(&soa), _startIndex(0), _endIndex(soa.size()) {}
 
   /**
-   * Returns a pointer to the given attribute vector const.
+   * Returns a pointer to the given attribute vector in the main SoA partition.
    * @tparam attribute ID of the desired attribute.
    * @return Pointer to the beginning of the attribute vector const
    */
-  template <size_t soaTypeIndex, size_t attribute>
+  template <size_t attribute>
+  auto begin() {
+    return _soa->template begin<attribute>();
+  }
+
+  /**
+   * Returns a pointer to the given attribute vector in the additional SoA partitions.
+   * @tparam additionalPartitionType index corresponding to the desired additional SoA partition's type.
+   * @tparam attribute desired attribute index
+   * @param depth depth of desired SoA partition
+   * @return Pointer to the beginning of the attribute vector const
+   */
+  template <size_t additionalPartitionType, size_t attribute>
   [[nodiscard]] auto begin(size_t depth) {
-    return _soa->template begin<soaTypeIndex, attribute>(depth);
+    return _soa->template begin<additionalPartitionType, attribute>(depth);
   }
 
   /**
