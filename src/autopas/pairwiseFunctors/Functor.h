@@ -52,6 +52,16 @@ class Functor {
    * Make the Implementation type template publicly available.
    */
   using Functor_T = CRTP_T;
+
+  /**
+   * Get aliases for Functor_T's getNeededAttr and getComputedAttr return types.
+   */
+  using getNeededAttrN3ReturnType = typename decltype(std::function{Functor_T::getNeededAttr()})::result_type;
+
+  using getComputedAttrReturnType = typename decltype(std::function{Functor_T::getComputedAttr()})::result_type;
+
+  using getNeededAdditionalAttrReturnType = typename decltype(std::function{Functor_T::getNeededAdditionalAttr()})::result_type;
+
   /**
    * Constructor
    * @param cutoff
@@ -85,6 +95,29 @@ class Functor {
    */
   virtual void AoSFunctor(Particle &i, Particle &j, bool newton3) {
     utils::ExceptionHandler::exception("Functor::AoSFunctor: not yet implemented");
+  }
+
+
+  /**
+   * Get attributes needed for computation.
+   * @return Attributes needed for computation.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static getNeededAttrN3ReturnType getNeededAttr() {
+    return getNeededAttrN3ReturnType{};
+  }
+
+  /**
+   * Get attributes computed by this functor.
+   * @return Attributes computed by this functor.
+   * @todo C++20: make this function virtual
+   */
+  constexpr static getComputedAttrReturnType getComputedAttr() {
+    return getComputedAttrReturnType{};
+  }
+
+  constexpr static getNeededAdditionalAttrReturnType getNeededAdditionalAttr() {
+    return getNeededAdditionalAttrReturnType{};
   }
 
   /**
