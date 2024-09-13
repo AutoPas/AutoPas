@@ -134,16 +134,6 @@ class SoA {
   }
 
   /**
-   * Returns a tuple of pointers to the vectors of the given attributes in the main partition.
-   * @tparam attributes parameter pack of the IDs of the desired attributes.
-   * @return Tuple of pointers to the beginnings of the desired attribute vectors.
-   */
-  template <size_t... attributes>
-  auto begin() {
-    return _mainSoAPartition.template begin<attributes...>();
-  }
-
-  /**
    * Returns a pointer to the given attribute vector in the given additional SoA partition (of the given type and depth).
    * @tparam additionalPartitionTypeIndex index corresponding to the desired additional SoA partition's type
    * @tparam attribute desired attribute index
@@ -156,8 +146,13 @@ class SoA {
   }
 
   /**
-   * Returns pointers to the start of all vectors of the given desired attributes. Pointers are arranged in a structure
-   * that mimics the SoA's additional partitions structure:
+   * Returns pointers to the start of all vectors of the given desired attributes in both main and additional partitions.
+   *
+   * For the main partition, pointers are simply a tuple of pointers to the beginning of arrays corresponding to
+   * the given mainAttributes.
+   *
+   * For the additional partitions, pointers are arranged in a structure that mimics the SoA's additional partitions
+   * structure:
    *                                       (A)      (B)        (C)       (D)
    * SoA additional partition structure: tuple of vectors of tuples of vectors
    * Returned pointers:                  tuple of vectors of tuples of pointers (to start of vectors D)
@@ -165,19 +160,30 @@ class SoA {
    * Note: For returned pointers, the tuple C is the requested subset of the tuple C of the structure. The sizes of the
    * vectors B are equal.
    *
-   * @tparam additionalAttributesType the type of the returned attribute pointers. This should be a tuple of arrays with
+   * @tparam mainAttributesType the type of the array of desired mainAttributes.
+   * @tparam mainAttributes the array of desired mainAttributes.
+   * @tparam additionalAttributesType the type of the tuple of arrays of desired additionalAttributes. There should be
    * one tuple element for each type of additional SoA partition type and, for each type, one array element for each desired
    * attribute of that type.
-   * @tparam additionalAttr the desired attributes (of type additionalAttributesType)
-   * @return a tuple (an element for each SoAPartitionType) of a vector (of size maxDepth for each SoAPartitionType) of
-   * a tuple (an element for each desired attribute of that SoAPartitionType) of pointers to the start of the corresponding
-   * arrays.
+   * @tparam additionalAttr the desired additionalAttributes.
+   * @return a pair of
+   * * a tuple (an element for each desired mainAttribute) of pointers to the start of the corresponding arrays
+   * * a tuple (an element for each SoAPartitionType) of a vector (of size maxDepth for each SoAPartitionType) of
+   *   a tuple (an element for each desired additionalAttributeof that SoAPartitionType) of pointers to the start of the
+   *   corresponding arrays.
    */
-  template <typename additionalAttributesType, additionalAttributesType additionalAttr>
+  template <typename mainAttributesType, mainAttributesType mainAttributes, typename additionalAttributesType, additionalAttributesType additionalAttributes>
   auto begin() {
-    static_assert(sizeof(additionalAttr)==numAdditionalTypes, "Number of parameter packs of requested "
-                  "additional attributes does not match number of types of additional partitions!");
-    return beginAdditionalAttrImpl<additionalAttributesType, additionalAttr>(std::make_index_sequence<numAdditionalTypes>{});
+    static_assert(sizeof(additionalAttributes)==numAdditionalTypes, "SoA::begin: Number of additional partition types of"
+                  "the requested additional attributes does not match number of types of additional partition types!");
+    static constexpr auto numMainAttr = std::tuple_size<mainAttributesType>::value;
+    // Get aliases for the return types for convenience
+    using mainBeginReturnType = typename decltype(std::function{beginMainAttrImpl<mainAttributesType, mainAttributes>(std::make_index_sequence<numMainAttr>{})})::result_type;
+    using additionalBeginReturnType = typename decltype(std::function{beginAdditionalAttrImpl<additionalAttributesType, additionalAttributes>(std::make_index_sequence<numAdditionalTypes>{})})::result_type;
+    return std::pair<mainBeginReturnType, additionalBeginReturnType> (
+        beginMainAttrImpl<mainAttributesType, mainAttributes>(std::make_index_sequence<numMainAttr>{}),
+        beginAdditionalAttrImpl<additionalAttributesType, additionalAttributes>(std::make_index_sequence<numAdditionalTypes>{})
+        );
   }
 
   /**
@@ -329,6 +335,16 @@ class SoA {
       const auto partitionView = SoAPartitionView<additionalPartitionType>(std::get<additionalPartitionTypeIndex>(other)[i], other->_s);
       std::get<additionalPartitionTypeIndex>(_additionalSoAPartitions)[i].append(partitionView);
     }
+  }
+
+  /**
+   * Returns a tuple of pointers to the vectors of the given attributes in the main partition.
+   * @tparam attributes parameter pack of the IDs of the desired attributes.
+   * @return Tuple of pointers to the beginnings of the desired attribute vectors.
+   */
+  template <typename mainAttributesType, mainAttributesType attributes, size_t... I>
+  auto beginMainAttrImpl() {
+    return _mainSoAPartition.template begin<std::get<I>(attributes)...>();
   }
 
   /**
