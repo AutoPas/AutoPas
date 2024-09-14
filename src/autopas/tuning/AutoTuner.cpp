@@ -107,9 +107,10 @@ bool AutoTuner::tuneConfiguration() {
   };
 
   // Determine where in a tuning phase we are
+  // If _lastTuningIterations >= _tuningInterval the current tuning phase takes more iterations than the tuning interval
+  // -> continue tuning
   if (_iterationsSinceTuning == _tuningInterval and not(_lastTuningIterations >= _tuningInterval)) {
-    // CASE: Start of a tuning phase (if _lastTuningIterations > _tuningInterval the current tuning phase takes more
-    // iterations tahn the tuning interval -> continue tuning)
+    // CASE: Start of a tuning phase
     _iterationsSinceTuning = 0;
     _lastTuningIterations = 0;
     // in the first iteration of a tuning phase we reset all strategies
@@ -290,8 +291,8 @@ void AutoTuner::bumpIterationCounters() {
   if (inTuningPhase()) {
     ++_lastTuningIterations;
     if (_lastTuningIterations == _tuningInterval + 1) {
-      // The tuning interval triggered a new tuning phase during a running tuning phase -> continue tuning ("merge" of
-      // two tuning phases)
+      // The tuning interval triggered a new tuning phase during a running tuning phase.
+      // -> continue tuning ("merge" of two tuning phases)
       AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
                  _tuningInterval);
     }
@@ -308,8 +309,8 @@ bool AutoTuner::willRebuildNeighborLists() const {
   const bool inTuningPhase = this->inTuningPhase();
   // How many iterations ago did the rhythm of rebuilds change?
   // If we are in a tuning phase and in the first tuning iteration but tuneConfiguration has not been called yet
-  // (_iterationsSinceTuning == _tuningInterval) we have 0 as baseline, otherwise the baseline are the iterations we
-  // already did in this tuning phase. If we are not in a tuning phase we subtract the the number of iterations from the
+  // (_iterationsSinceTuning == _tuningInterval) we have 0 as the baseline, otherwise, the baseline is the iterations we
+  // already did in this tuning phase. If we are not in a tuning phase, we subtract the number of iterations from the
   // previous tuning phase to get the baseline
   const auto iterationBaseline = inTuningPhase
                                      ? (_iterationsSinceTuning == _tuningInterval ? 0 : _iterationsSinceTuning)
