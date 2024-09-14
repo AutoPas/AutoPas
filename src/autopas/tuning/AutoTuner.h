@@ -397,8 +397,10 @@ class AutoTuner {
   bool _endOfTuningPhase{false};
 
   /**
-   * Stores the number of iterations the previous tuning phase used. Is reset at the beginning of a new tuning phase.
+   * Stores the number of iterations of the most recent tuning phase. During a tuning phase, this is the number of
+   * already performed iterations in that current tuning phase. After a tuning phase, the number of performed tuning
+   * iterations remains stored until the start of the next one.
    */
-  size_t _lastTuningIterations{0};
+  size_t _iterationsInMostRecentTuningPhase{0};
 };
 }  // namespace autopas

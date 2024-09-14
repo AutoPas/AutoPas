@@ -78,7 +78,7 @@ void AutoTuner::forceRetune() {
     AutoPasLog(WARN, "Warning: Currently running tuning phase is aborted a new one is started!");
   }
   _iterationsSinceTuning = _tuningInterval;
-  _lastTuningIterations = 0;
+  _iterationsInMostRecentTuningPhase = 0;
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
 }
 
@@ -109,10 +109,10 @@ bool AutoTuner::tuneConfiguration() {
   // Determine where in a tuning phase we are
   // If _lastTuningIterations >= _tuningInterval the current tuning phase takes more iterations than the tuning interval
   // -> continue tuning
-  if (_iterationsSinceTuning == _tuningInterval and not(_lastTuningIterations >= _tuningInterval)) {
+  if (_iterationsSinceTuning == _tuningInterval and not(_iterationsInMostRecentTuningPhase >= _tuningInterval)) {
     // CASE: Start of a tuning phase
     _iterationsSinceTuning = 0;
-    _lastTuningIterations = 0;
+    _iterationsInMostRecentTuningPhase = 0;
     // in the first iteration of a tuning phase we reset all strategies
     // and refill the queue with the complete search space.
     // Reverse the order, because _configQueue is FiLo, and we aim to keep the order for legacy reasons.
@@ -289,8 +289,8 @@ void AutoTuner::bumpIterationCounters() {
   ++_iteration;
   ++_iterationsSinceTuning;
   if (inTuningPhase()) {
-    ++_lastTuningIterations;
-    if (_lastTuningIterations == _tuningInterval + 1) {
+    ++_iterationsInMostRecentTuningPhase;
+    if (_iterationsInMostRecentTuningPhase == _tuningInterval + 1) {
       // The tuning interval triggered a new tuning phase during a running tuning phase.
       // -> continue tuning ("merge" of two tuning phases)
       AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
@@ -314,7 +314,7 @@ bool AutoTuner::willRebuildNeighborLists() const {
   // previous tuning phase to get the baseline
   const auto iterationBaseline = inTuningPhase
                                      ? (_iterationsSinceTuning == _tuningInterval ? 0 : _iterationsSinceTuning)
-                                     : _iterationsSinceTuning - _lastTuningIterations;
+                                     : _iterationsSinceTuning - _iterationsInMostRecentTuningPhase;
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = inTuningPhase ? _maxSamples : _rebuildFrequency;
   return (iterationBaseline % iterationsPerRebuild) == 0;
