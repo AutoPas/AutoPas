@@ -25,6 +25,10 @@ namespace mdLib {
  * A functor to handle the interactions between three krypton atoms using the extended AxilrodTeller potential.
  * This functor assumes that duplicated calculations are always happening, which is characteristic for a Full-Shell
  * scheme.
+ * The functor follows the potential described by Jäger et al. in: https://doi.org/10.1063/1.4943959
+ *
+ * @note  All calculations assume units to be in Angström and Kelvin.
+ *
  * @tparam Particle The type of particle.
  * @tparam useNewton3 Switch for the functor to support newton3 on, off or both. See FunctorN3Modes for possible values.
  * @tparam calculateGlobals Defines whether the global values are to be calculated (energy, virial).
