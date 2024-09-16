@@ -160,7 +160,9 @@ class KryptonPairFunctor
     const double term16 = _constC16 * distNeg16 * (-16.0 + expbr * (16.0 * ksumacc16 + bdist * ksum16));
 
     const double secondTerm = (term6 + term8 + term10 + term12 + term14 + term16) * distInv2;
-    auto f = displacement * (firstTerm + secondTerm);
+    auto f = displacement * (dist >= _minDistance ?
+      firstTerm + secondTerm :
+      _constATilde * distInv2 * std::exp(-_alphaTilde * dist) * (distInv + _alphaTilde));
 
     i.addF(f);
     if (newton3) {
@@ -169,13 +171,14 @@ class KryptonPairFunctor
     }
 
     if (calculateGlobals) {
-      double potentialEnergy =
+      double potentialEnergy = dist >= _minDistance ?
           _constA * expAlphaTerm - _constC6 * distInv6 * (1. - expbr * ksumacc6) -
           _constC8 * distNeg8 * (1. - expbr * ksumacc8) - _constC10 * distNeg10 * (1. - expbr * ksumacc10) -
           _constC12 * distNeg12 * (1. - expbr * ksumacc12) - _constC14 * distNeg14 * (1. - expbr * ksumacc14) -
-          _constC16 * distNeg16 * (1. - expbr * ksumacc16);
-      auto virial = displacement * f;
+          _constC16 * distNeg16 * (1. - expbr * ksumacc16) :
+          (_constATilde * distInv) * std::exp(-_alphaTilde * dist);
 
+      auto virial = displacement * f;
       const int threadnum = autopas::autopas_get_thread_num();
       if (i.isOwned()) {
         _aosThreadData[threadnum].potentialEnergySum += potentialEnergy;
@@ -385,6 +388,11 @@ class KryptonPairFunctor
   const double _constC12 = 1.1043747590e9;
   const double _constC14 = 2.0486474980e10;
   const double _constC16 = 5.0017084700e11;
+
+  const double _constATilde = 0.8268005465e7;
+  const double _alphaTilde = 0.1682493666e1;
+  // Use a different formula in the extreme repulsive region (r < _minDistance)
+  const double _minDistance = 1.2047406;
 
   const std::array<double, 17> _invFactorials = {1.,
                                                  1.,
