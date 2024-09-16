@@ -51,6 +51,10 @@ struct IterationMeasurements {
    */
   double energyRam{};
 
+  double energyGPU{};
+
+  double energyCores{};
+
   /**
    * Total energy consumed. This is identical to energyPsys if it is available, otherwise it is the sum of all other
    * energy sources.

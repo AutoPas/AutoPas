@@ -176,7 +176,7 @@ class AutoTuner {
    * Take an energy measurement.
    * @return Tuple<PsysEnergy, PkgEnergy, RamEnergy, TotalEnergy>
    */
-  std::tuple<double, double, double, long> sampleEnergy();
+  std::tuple<double, double, double, double, double, long> sampleEnergy();
 
   /**
    * Save the runtime of a given traversal.

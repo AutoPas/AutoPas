@@ -68,6 +68,8 @@ class RaplMeter {
    */
   double get_psys_energy();
 
+  double get_gpu_energy();
+
   /**
    * Return energy measurement for tuning purposes.
    * Depending on which perf counters are available this may return psys, or a sum of pkg and ram.
@@ -83,12 +85,12 @@ class RaplMeter {
 
  private:
   std::vector<int> _cpus;
-  long _psys_raw, _pkg_raw, _cores_raw, _ram_raw;
-  double _psys_unit, _pkg_unit, _cores_unit, _ram_unit;
-  std::vector<int> _psys_fd, _pkg_fd, _cores_fd, _ram_fd;
+  long _psys_raw, _pkg_raw, _cores_raw, _ram_raw, _gpu_raw;
+  double _psys_unit, _pkg_unit, _cores_unit, _ram_unit, _gpu_unit;
+  std::vector<int> _psys_fd, _pkg_fd, _cores_fd, _ram_fd, _gpu_fd;
 #ifdef AUTOPAS_ENABLE_ENERGY_MEASUREMENTS
   int _type;
-  int _psys_config, _pkg_config, _cores_config, _ram_config;
+  int _psys_config, _pkg_config, _cores_config, _ram_config, _gpu_config;
 
   int open_perf_event(int type, int config, int cpu);
   long read_perf_event(int fd);

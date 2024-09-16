@@ -30,10 +30,8 @@
 #include "autopas/utils/StaticContainerSelector.h"
 #include "autopas/utils/Timer.h"
 #include "autopas/utils/WrapOpenMP.h"
-#include "autopas/utils/logging/FLOPLogger.h"
 #include "autopas/utils/logging/IterationLogger.h"
 #include "autopas/utils/logging/IterationMeasurements.h"
-#include "autopas/utils/logging/LiveInfoLogger.h"
 #include "autopas/utils/logging/Logger.h"
 #include "autopas/utils/markParticleAsDeleted.h"
 
@@ -64,8 +62,6 @@ class LogicHandler {
         _verletClusterSize(logicHandlerInfo.verletClusterSize),
         _sortingThreshold(logicHandlerInfo.sortingThreshold),
         _iterationLogger(outputSuffix, autoTuner.canMeasureEnergy()),
-        _flopLogger(outputSuffix),
-        _liveInfoLogger(outputSuffix),
         _bufferLocks(std::max(2, autopas::autopas_get_max_threads())) {
     using namespace autopas::utils::ArrayMath::literals;
     // initialize the container and make sure it is valid
@@ -106,13 +102,11 @@ class LogicHandler {
     for (auto &cell : _particleBuffer) {
       auto &buffer = cell._particles;
       if (insertOwnedParticlesToContainer) {
-        // Can't be const because we potentially modify ownership before re-adding
-        for (auto &p : buffer) {
+        for (const auto &p : buffer) {
           if (p.isDummy()) {
             continue;
           }
           if (utils::inBox(p.getR(), boxMin, boxMax)) {
-            p.setOwnershipState(OwnershipState::owned);
             _containerSelector.getCurrentContainer().addParticle(p);
           } else {
             leavingBufferParticles.push_back(p);
@@ -294,14 +288,12 @@ class LogicHandler {
           "{}",
           boxMin, boxMax, p.toString());
     }
-    Particle particleCopy = p;
-    particleCopy.setOwnershipState(OwnershipState::owned);
     if (not neighborListsAreValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
-      _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
+      _containerSelector.getCurrentContainer().template addParticle<false>(p);
     } else {
       // If the container is valid, we add it to the particle buffer.
-      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+      _particleBuffer[autopas_get_thread_num()].addParticle(p);
     }
     _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
   }
@@ -321,17 +313,15 @@ class LogicHandler {
           "{}",
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
     }
-    Particle haloParticleCopy = haloParticle;
-    haloParticleCopy.setOwnershipState(OwnershipState::halo);
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
-      container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
+      container.template addHaloParticle</* checkInBox */ false>(haloParticle);
     } else {
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = container.updateHaloParticle(haloParticleCopy);
+      bool updated = container.updateHaloParticle(haloParticle);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
-        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
+        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticle);
         _haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
       }
     }
@@ -765,17 +755,7 @@ class LogicHandler {
    */
   std::vector<std::unique_ptr<std::mutex>> _bufferLocks;
 
-  /**
-   * Logger for configuration used and time spent breakdown of iteratePairwise.
-   */
   IterationLogger _iterationLogger;
-
-  LiveInfoLogger _liveInfoLogger;
-
-  /**
-   * Logger for FLOP count and hit rate.
-   */
-  FLOPLogger _flopLogger;
 };
 
 template <typename Particle>
@@ -876,7 +856,7 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
   timerRemainderTraversal.stop();
   functor.endTraversal(configuration.newton3);
 
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = _autoTuner.sampleEnergy();
+  const auto [energyPsys, energyPkg, energyRam, energyGPU, energyCores, energyTotal] = _autoTuner.sampleEnergy();
 
   timerTotal.stop();
 
@@ -890,6 +870,8 @@ IterationMeasurements LogicHandler<Particle>::iteratePairwise(PairwiseFunctor &f
           energyMeasurementsPossible ? energyPsys : nanD,
           energyMeasurementsPossible ? energyPkg : nanD,
           energyMeasurementsPossible ? energyRam : nanD,
+          energyMeasurementsPossible ? energyGPU : nanD,
+          energyMeasurementsPossible ? energyCores : nanD,
           energyMeasurementsPossible ? energyTotal : nanL};
 }
 
@@ -1076,7 +1058,6 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   bool stillTuning = false;
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
-  LiveInfo info{};
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
@@ -1116,6 +1097,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
     const auto needsLiveInfo = _autoTuner.prepareIteration();
 
     if (needsLiveInfo) {
+      LiveInfo info{};
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
       _autoTuner.receiveLiveInfo(info);
     }
@@ -1134,14 +1116,6 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
       std::tie(configuration, stillTuning) = _autoTuner.rejectConfig(configuration, rejectIndefinitely);
     }
   }
-
-#ifdef AUTOPAS_LOG_LIVEINFO
-  // if live info has not been gathered yet, gather it now and log it
-  if (info.get().empty()) {
-    info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-  }
-  _liveInfoLogger.logLiveInfo(info, _iteration);
-#endif
 
   return {configuration, std::move(traversalPtrOpt.value()), stillTuning};
 }
@@ -1182,8 +1156,6 @@ bool LogicHandler<Particle>::iteratePairwisePipeline(Functor *functor) {
                measurements.energyPkg, measurements.energyRam);
   }
   _iterationLogger.logIteration(configuration, _iteration, stillTuning, tuningTimer.getTotalTime(), measurements);
-
-  _flopLogger.logIteration(_iteration, functor->getNumFLOPs(), functor->getHitRate());
 
   /// Pass on measurements
   // if this was a major iteration add measurements and bump counters

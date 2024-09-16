@@ -121,6 +121,24 @@ bool RaplMeter::init(const bool mustSucceed) {
     fclose(fff);
   }
 
+  this->_gpu_config = 0;
+  if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-gpu", "r")) {
+    if (fscanf(fff, "event=%x", &this->_gpu_config) != 1) {
+      AutoPasLog(WARN, "gpu measurement support detected, but failed to parse config file");
+      _psys_config = 0;
+    }
+    fclose(fff);
+  }
+  if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-gpu.scale", "r")) {
+    if (fscanf(fff, "%lf", &this->_gpu_unit) != 1) {
+      AutoPasLog(WARN,
+                 "psys energy measurement support detected, but failed to parse scale file, using 1.0 as fallback");
+      _gpu_unit = 1.0;
+    }
+    AutoPasLog(DEBUG, "psys scale={} J", _gpu_unit);
+    fclose(fff);
+  }
+
   this->_pkg_config = 0;
   if (FILE *fff = fopen("/sys/bus/event_source/devices/power/events/energy-pkg", "r")) {
     if (fscanf(fff, "event=%x", &this->_pkg_config) != 1) {
@@ -225,6 +243,11 @@ RaplMeter::~RaplMeter() {
       close(f);
     }
   }
+  for (int f : _gpu_fd) {
+    if (f != -1) {
+      close(f);
+    }
+  }
 }
 
 void RaplMeter::reset() {
@@ -249,11 +272,17 @@ void RaplMeter::reset() {
       close(f);
     }
   }
+  for (int f : this->_gpu_fd) {
+    if (f != -1) {
+      close(f);
+    }
+  }
 
   this->_psys_fd.clear();
   this->_pkg_fd.clear();
   this->_cores_fd.clear();
   this->_ram_fd.clear();
+  this->_gpu_fd.clear();
 
   for (int i : this->_cpus) {
     if (this->_psys_config > 0) {
@@ -267,6 +296,9 @@ void RaplMeter::reset() {
     }
     if (this->_ram_config > 0) {
       this->_ram_fd.push_back(open_perf_event(this->_type, this->_ram_config, i));
+    }
+    if (this->_gpu_config > 0) {
+      this->_gpu_fd.push_back(open_perf_event(this->_type, this->_gpu_config, i));
     }
   }
 #endif
@@ -301,6 +333,12 @@ void RaplMeter::sample() {
       this->_ram_raw += read_perf_event(f);
     }
   }
+  this->_gpu_raw = 0;
+  for (int f : this->_gpu_fd) {
+    if (f != -1) {
+      this->_gpu_raw += read_perf_event(f);
+    }
+  }
 #endif
 }
 
@@ -308,6 +346,7 @@ double RaplMeter::get_psys_energy() { return this->_psys_unit * this->_psys_raw;
 double RaplMeter::get_pkg_energy() { return this->_pkg_unit * this->_pkg_raw; }
 double RaplMeter::get_cores_energy() { return this->_cores_unit * this->_cores_raw; }
 double RaplMeter::get_ram_energy() { return this->_ram_unit * this->_ram_raw; }
+double RaplMeter::get_gpu_energy() { return this->_gpu_unit * this->_gpu_raw;}
 
 long RaplMeter::get_total_energy() {
   if (this->_psys_raw > 0) {

@@ -95,11 +95,11 @@ bool AutoTuner::tuneConfiguration() {
   auto restoreConfigQueueIfEmpty = [&](const auto &configQueueBackup, const TuningStrategyOption &stratOpt) {
     if (_configQueue.empty()) {
       _configQueue = configQueueBackup;
-      AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}",
-                 stratOpt.to_string(), _configQueue.size(),
-                 utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
-                                              [](const auto &conf) { return conf.toShortString(false); }));
     }
+    AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}", stratOpt.to_string(),
+               _configQueue.size(), utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"}, [](const auto &conf) {
+                 return conf.toShortString(false);
+               }));
   };
 
   // Determine where in a tuning phase we are
@@ -117,14 +117,12 @@ bool AutoTuner::tuneConfiguration() {
     // then let the strategies filter and sort it
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       const auto configQueueBackup = _configQueue;
-      const auto intentionalWipe = tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
+      tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::reset(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
-      if (not intentionalWipe) {
-        restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
-      }
+      restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
     });
   } else {
     // CASE: somewhere in a tuning phase
@@ -133,14 +131,12 @@ bool AutoTuner::tuneConfiguration() {
                                             [](const auto &conf) { return conf.toShortString(false); }));
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       const auto configQueueBackup = _configQueue;
-      const auto intentionalWipe = tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
+      tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
-      if (not intentionalWipe) {
-        restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
-      }
+      restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
     });
   }
 
@@ -320,7 +316,7 @@ bool AutoTuner::resetEnergy() {
   return _energyMeasurementPossible;
 }
 
-std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
+std::tuple<double, double, double, double, double, long> AutoTuner::sampleEnergy() {
   if (_energyMeasurementPossible) {
     try {
       _raplMeter.sample();
@@ -332,7 +328,7 @@ std::tuple<double, double, double, long> AutoTuner::sampleEnergy() {
       }
     }
   }
-  return {_raplMeter.get_psys_energy(), _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy(),
+  return {_raplMeter.get_psys_energy(), _raplMeter.get_pkg_energy(), _raplMeter.get_ram_energy(), _raplMeter.get_gpu_energy(), _raplMeter.get_cores_energy(),
           _raplMeter.get_total_energy()};
 }
 
