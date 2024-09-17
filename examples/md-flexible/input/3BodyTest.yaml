@@ -1,13 +1,13 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
 container                            :  [LinkedCells] # DirectSum
-#functor-3b                           :  argon-triwise
-#traversal-3b                         :  [lc_c01] # ds_sequential
-#newton3-3b                           :  [disabled]
-#data-layout-3b                       :  [AoS]
+functor-3b                           :  axilrod-teller #[argon-triwise, axilrod-teller]
+traversal-3b                         :  [lc_c01] # ds_sequential
+newton3-3b                           :  [disabled]
+data-layout-3b                       :  [AoS]
 
 # Uncomment to combine pairwise and 3-body interaction
-functor                              :  argon-pairwise
-traversal                            :  [lc_sliced] #[lc_c01, lc_c08, lc_sliced]
+functor                              :  glob #[argon-pairwise, glob]
+traversal                            :  [lc_c01] #[lc_c01, lc_c08, lc_sliced]
 newton3                              :  [disables]
 data-layout                          :  [AoS]
 
@@ -28,10 +28,10 @@ fastParticlesThrow                   :  false
 
 Sites:
   0:
-    epsilon                          :  1.
-    sigma                            :  1.
-    mass                             :  1.
-    nu                               :  0.073 # Value for Argon
+    epsilon                          :  1.652638e-21 #K
+    sigma                            :  0.3403 #nm
+    mass                             :  6.6335209e-26 #kg
+    nu                               :  5.3235794e-4 # K nm^9 Value for Argon
 Objects:
   CubeClosestPacked:
     0:
@@ -50,7 +50,7 @@ thermostat:
 log-level                            :  warn
 #no-flops                             :  false
 no-end-config                        :  true
-no-progress-bar                      :  false
+no-progress-bar                      :  true
 vtk-filename                         :  3BodyTest
 vtk-output-folder                    :  3BodyTestOutput
 vtk-write-frequency                  :  10
