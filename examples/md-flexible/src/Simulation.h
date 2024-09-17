@@ -408,4 +408,11 @@ protected:
    */
   template <class ReturnType, class FunctionType>
   ReturnType applyWithChosenFunctor3B(FunctionType f);
+
+ double _potentialEnergy2B{0};
+ double _virial2B{0};
+ double _potentialEnergy3B{0};
+ double _virial3B{0};
+ double _potentialEnergy{0};
+ double _virial{0};
 };
