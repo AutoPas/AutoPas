@@ -283,7 +283,6 @@ class LogicHandler {
     // first check that the particle actually belongs in the container
     const auto &boxMin = _containerSelector.getCurrentContainer().getBoxMin();
     const auto &boxMax = _containerSelector.getCurrentContainer().getBoxMax();
-    Particle particleCopy = p;
     if (utils::notInBox(p.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a particle that is not in the bounding box.\n"
@@ -292,6 +291,7 @@ class LogicHandler {
           "{}",
           boxMin, boxMax, p.toString());
     }
+    Particle particleCopy = p;
     particleCopy.setOwnershipState(OwnershipState::owned);
     if (not neighborListsAreValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
@@ -310,25 +310,25 @@ class LogicHandler {
     auto &container = _containerSelector.getCurrentContainer();
     const auto &boxMin = container.getBoxMin();
     const auto &boxMax = container.getBoxMax();
-    Particle particleCopy = haloParticle;
-    if (utils::inBox(particleCopy.getR(), boxMin, boxMax)) {
+    Particle haloParticleCopy = haloParticle;
+    if (utils::inBox(haloParticleCopy.getR(), boxMin, boxMax)) {
       autopas::utils::ExceptionHandler::exception(
           "LogicHandler: Trying to add a halo particle that is not outside the box of the container.\n"
           "Box Min {}\n"
           "Box Max {}\n"
           "{}",
-          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), particleCopy.toString());
+          utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticleCopy.toString());
     }
-    particleCopy.setOwnershipState(OwnershipState::halo);
+    haloParticleCopy.setOwnershipState(OwnershipState::halo);
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
-      container.template addHaloParticle</* checkInBox */ false>(particleCopy);
+      container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = container.updateHaloParticle(particleCopy);
+      bool updated = container.updateHaloParticle(haloParticleCopy);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
-        _haloParticleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
+        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);

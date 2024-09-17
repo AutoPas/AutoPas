@@ -290,10 +290,11 @@ class LiveInfo {
    * @return A pair of strings in the form of (header, line).
    */
   [[nodiscard]] std::pair<std::string, std::string> getCSVLine() const {
-    // match all words that are followed by a '=' ignoring the 'Live Info: ' prefix
-    auto keyRegex = std::regex("([^=]+)=[^ ]*");
+    // match all words (anything that is neither a ' ' or '='), that are followed by a '=',
+    // ignoring the 'Live Info: ' prefix
+    const auto keyRegex = std::regex("([^= ]+)=[^ ]*");
     // match all words that are preceded by a '='
-    auto valueRegex = std::regex("=([^ ]+)");
+    const auto valueRegex = std::regex("=([^ ]+)");
 
     auto searchString = toString();
     // remove leading Live Info:
