@@ -139,7 +139,7 @@ using LJFunctorTypeSVE =
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_ARGON_PAIRWISE)
-using ArgonPairwiseFunctorType = mdLib::AbInitioArgonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, false, false, false>;
+using ArgonPairwiseFunctorType = mdLib::AbInitioArgonPairFunctor<ParticleType, autopas::FunctorN3Modes::Both, true, false, false>;
 #endif
 
 #if defined(MD_FLEXIBLE_FUNCTOR_AT)
@@ -149,8 +149,7 @@ using ArgonPairwiseFunctorType = mdLib::AbInitioArgonPairFunctor<ParticleType, a
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Axilrod Teller functor does not have support for multisite molecules!"
 #else
-using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true,
-                                             mdFlexibleTypeDefs::countFLOPs>;
+using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #endif
@@ -162,7 +161,7 @@ using ATFunctor = mdLib::AxilrodTellerFunctor<ParticleType, true, autopas::Funct
 #if MD_FLEXIBLE_MODE == MULTISITE
 #error "The Argon triwise functor does not have support for multisite molecules!"
 #else
-using ArgonTriwiseFunctorType = mdLib::ArgonFunctor<ParticleType, autopas::FunctorN3Modes::Both, false>;
+using ArgonTriwiseFunctorType = mdLib::ArgonFunctor<ParticleType, autopas::FunctorN3Modes::Both, true>;
 #endif
 
 #endif
