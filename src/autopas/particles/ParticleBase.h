@@ -169,7 +169,7 @@ class ParticleBase {
     const auto distanceVec = r - _r;
     const double distanceSquared = utils::ArrayMath::dot(distanceVec, distanceVec);
     setR(r);
-    const bool distanceIsFine = distanceSquared < maxDistSquared;
+    const bool distanceIsFine = distanceSquared < maxDistSquared or maxDistSquared == 0;
     if (not distanceIsFine) {
       AutoPasLog(WARN, "Particle {}: Distance between old and new position is larger than expected: {} > {}", _id,
                  distanceSquared, maxDistSquared);
