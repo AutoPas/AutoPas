@@ -41,9 +41,9 @@ Objects:
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
 thermostat:
-  initialTemperature                 :  1.1
-  targetTemperature                  :  1.1
-  deltaTemperature                   :  0.5
+  initialTemperature                 :  280
+  targetTemperature                  :  280
+  deltaTemperature                   :  100
   thermostatInterval                 :  25
   addBrownianMotion                  :  true
 
