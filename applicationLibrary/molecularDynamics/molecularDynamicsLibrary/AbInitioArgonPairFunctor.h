@@ -352,7 +352,7 @@ class AbInitioArgonPairFunctor : public autopas::PairwiseFunctor<Particle, AbIni
 
   // constants
   const double _A = 4.61330146e7;
-  const double _alpha1 = -2.98337630;
+  const double _alpha1 = -2.98337630e1;
   const double _alpha2 = -9.71208881;
   const double _alphaneg1 = 2.75206827e-2;
   const double _alphaneg2 = -1.01489050e-2;
