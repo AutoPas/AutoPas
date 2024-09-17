@@ -1,14 +1,14 @@
 # This yaml file creates a simple simulation box to be run with 3-body functors.
 container                            :  [LinkedCells] # DirectSum
-functor-3b                           :  axilrod-teller #[argon-triwise, axilrod-teller]
+functor-3b                           :  argon-triwise #[argon-triwise, axilrod-teller]
 traversal-3b                         :  [lc_c01] # ds_sequential
 newton3-3b                           :  [disabled]
 data-layout-3b                       :  [AoS]
 
 # Uncomment to combine pairwise and 3-body interaction
-functor                              :  glob #[argon-pairwise, glob]
+functor                              :  argon-pairwise #[argon-pairwise, glob]
 traversal                            :  [lc_c01] #[lc_c01, lc_c08, lc_sliced]
-newton3                              :  [disables]
+newton3                              :  [disabled]
 data-layout                          :  [AoS]
 
 verlet-rebuild-frequency             :  10
@@ -28,10 +28,10 @@ fastParticlesThrow                   :  false
 
 Sites:
   0:
-    epsilon                          :  1.652638e-21 #K
+    epsilon                          :  119.7 #K
     sigma                            :  0.3403 #nm
-    mass                             :  6.6335209e-26 #kg
-    nu                               :  5.3235794e-4 # K nm^9 Value for Argon
+    mass                             :  39.948 #uam
+    nu                               :  5.32358e-4 # K nm^9 Value for Argon
 Objects:
   CubeClosestPacked:
     0:
@@ -41,9 +41,9 @@ Objects:
       velocity                       :  [0, 0, 0]
       particle-type-id               :  0
 thermostat:
-  initialTemperature                 :  280
-  targetTemperature                  :  280
-  deltaTemperature                   :  100
+  initialTemperature                 :  131.67
+  targetTemperature                  :  131.67
+  deltaTemperature                   :  59.85
   thermostatInterval                 :  25
   addBrownianMotion                  :  true
 
