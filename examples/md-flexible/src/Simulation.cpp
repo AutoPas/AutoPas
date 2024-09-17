@@ -526,13 +526,23 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
  const auto wasTuningIteration =
-     applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+     applyWithChosenFunctor<bool>([&](auto functor) {
+        auto boolean = _autoPasContainer->computeInteractions(&functor);
+        _potentialEnergy2B += functor.getPotentialEnergy();
+        _virial2B += functor.getVirial();
+        return boolean;
+      });
  return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
  const auto wasTuningIteration =
-     applyWithChosenFunctor3B<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+     applyWithChosenFunctor3B<bool>([&](auto functor) {
+        auto boolean = _autoPasContainer->computeInteractions(&functor);
+        _potentialEnergy3B += functor.getPotentialEnergy();
+        _virial3B += functor.getVirial();
+        return boolean;
+      });
  return wasTuningIteration;
 }
 
@@ -661,6 +671,11 @@ void Simulation::logMeasurements() {
        static_cast<double>(_autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) * _iteration) *
        1e-6 / (static_cast<double>(forceUpdateTotal) * 1e-9);  // 1e-9 for ns to s, 1e-6 for M in MFUPs
    std::cout << "MFUPs/sec                          : " << mfups << "\n";
+
+   _potentialEnergy = _potentialEnergy2B + _potentialEnergy3B;
+   _virial = _virial2B + _virial3B;
+   std::cout << "Potential Energy: " << _potentialEnergy << " K" << "\n";
+   std::cout << "Virial: " << _virial << " K nm" << "\n";
  }
 }
 
