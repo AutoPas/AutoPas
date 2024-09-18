@@ -107,12 +107,11 @@ bool AutoTuner::tuneConfiguration() {
   };
 
   // Determine where in a tuning phase we are
-  // If _lastTuningIterations >= _tuningInterval the current tuning phase takes more iterations than the tuning interval
-  // -> continue tuning
-  if (_iterationsSinceTuning == _tuningInterval and not(_iterationsInMostRecentTuningPhase >= _tuningInterval)) {
+  // If _iterationsInMostRecentTuningPhase >= _tuningInterval the current tuning phase takes more iterations than the
+  // tuning interval -> continue tuning
+  if (_iteration % _tuningInterval == 0 and not(_iterationsInMostRecentTuningPhase >= _tuningInterval)) {
     // CASE: Start of a tuning phase
     _iterationsSinceTuning = 0;
-    _iterationsInMostRecentTuningPhase = 0;
     // in the first iteration of a tuning phase we reset all strategies
     // and refill the queue with the complete search space.
     // Reverse the order, because _configQueue is FiLo, and we aim to keep the order for legacy reasons.
@@ -286,8 +285,6 @@ void AutoTuner::addMeasurement(long sample, bool neighborListRebuilt) {
 }
 
 void AutoTuner::bumpIterationCounters() {
-  ++_iteration;
-  ++_iterationsSinceTuning;
   if (inTuningPhase()) {
     ++_iterationsInMostRecentTuningPhase;
     if (_iterationsInMostRecentTuningPhase == _tuningInterval + 1) {
@@ -296,7 +293,15 @@ void AutoTuner::bumpIterationCounters() {
       AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
                  _tuningInterval);
     }
+  } else {
+    if ((_iteration + 1) % _tuningInterval == 0) {
+      _iterationsInMostRecentTuningPhase = 0;
+    }
   }
+
+  ++_iteration;
+  ++_iterationsSinceTuning;
+
   _endOfTuningPhase = false;
   // this will NOT catch the first tuning phase because _iterationsSinceTuning is initialized to _tuningInterval.
   // Hence, _tuningPhase is initialized as 1.
@@ -438,9 +443,9 @@ void AutoTuner::receiveLiveInfo(const LiveInfo &liveInfo) {
 const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMetric; }
 
 bool AutoTuner::inTuningPhase() const {
-  // If _iterationsSinceTuning == _tuningInterval we are in the first tuning iteration but tuneConfiguration has not
+  // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
   // been called yet.
-  return (_iterationsSinceTuning == _tuningInterval or _isTuning) and not searchSpaceIsTrivial();
+  return (_iteration % _tuningInterval == 0 or _isTuning) and not searchSpaceIsTrivial();
 }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
