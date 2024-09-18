@@ -160,7 +160,7 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 
 void ParallelVtkWriter::recordDomainSubdivision(
     size_t currentIteration,
-    const std::unordered_map<autopas::InteractionTypeOption::Value, const autopas::Configuration *>
+    const std::unordered_map<autopas::InteractionTypeOption::Value, std::reference_wrapper<const autopas::Configuration>>
         &autoPasConfigurations,
     const RegularGridDecomposition &decomposition) {
   // Extract active interaction types to print them to the .pvts file.
@@ -203,24 +203,24 @@ void ParallelVtkWriter::recordDomainSubdivision(
   printDataArray(decomposition.getDomainIndex(), "Int32", "DomainId");
 
   // General Configuration information
-  printDataArray(autoPasConfigurations.begin()->second->cellSizeFactor, "Float32", "CellSizeFactor");
-  printDataArray(static_cast<int>(autoPasConfigurations.begin()->second->container), "Int32", "Container");
+  printDataArray(autoPasConfigurations.begin()->second.get().cellSizeFactor, "Float32", "CellSizeFactor");
+  printDataArray(static_cast<int>(autoPasConfigurations.begin()->second.get().container), "Int32", "Container");
 
   // Pairwise Configuration
   if (autoPasConfigurations.find(autopas::InteractionTypeOption::pairwise) != autoPasConfigurations.end()) {
-    auto pairwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::pairwise);
-    printDataArray(static_cast<int>(pairwiseConfig->dataLayout), "Int32", "DataLayout");
-    printDataArray(static_cast<int>(pairwiseConfig->loadEstimator), "Int32", "LoadEstimator");
-    printDataArray(static_cast<int>(pairwiseConfig->traversal), "Int32", "Traversal");
-    printDataArray(static_cast<int>(pairwiseConfig->newton3), "Int32", "Newton3");
+    auto pairwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::pairwise).get();
+    printDataArray(static_cast<int>(pairwiseConfig.dataLayout), "Int32", "DataLayout");
+    printDataArray(static_cast<int>(pairwiseConfig.loadEstimator), "Int32", "LoadEstimator");
+    printDataArray(static_cast<int>(pairwiseConfig.traversal), "Int32", "Traversal");
+    printDataArray(static_cast<int>(pairwiseConfig.newton3), "Int32", "Newton3");
   }
 
   // Triwise Configuration
   if (autoPasConfigurations.find(autopas::InteractionTypeOption::triwise) != autoPasConfigurations.end()) {
-    auto triwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::triwise);
-    printDataArray(static_cast<int>(triwiseConfig->dataLayout), "Int32", "DataLayout-3B");
-    printDataArray(static_cast<int>(triwiseConfig->traversal), "Int32", "Traversal-3B");
-    printDataArray(static_cast<int>(triwiseConfig->newton3), "Int32", "Newton3-3B");
+    auto triwiseConfig = autoPasConfigurations.at(autopas::InteractionTypeOption::triwise).get();
+    printDataArray(static_cast<int>(triwiseConfig.dataLayout), "Int32", "DataLayout-3B");
+    printDataArray(static_cast<int>(triwiseConfig.traversal), "Int32", "Traversal-3B");
+    printDataArray(static_cast<int>(triwiseConfig.newton3), "Int32", "Newton3-3B");
   }
 
   printDataArray(_mpiRank, "Int32", "Rank");

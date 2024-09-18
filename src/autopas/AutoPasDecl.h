@@ -952,12 +952,12 @@ class AutoPas {
    * Getter for the currently selected configuration.
    * @return Configuration objects currently used for respective interaction types.
    */
-  [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, const Configuration *> getCurrentConfigs() const {
-    std::unordered_map<InteractionTypeOption::Value, const Configuration *> currentConfigs;
+  [[nodiscard]] std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> getCurrentConfigs() const {
+    std::unordered_map<InteractionTypeOption::Value, std::reference_wrapper<const Configuration>> currentConfigs;
     currentConfigs.reserve(_autoTuners.size());
 
     for (const auto &[type, tuner] : _autoTuners) {
-      currentConfigs[type] = &tuner->getCurrentConfig();
+      currentConfigs.emplace(type, std::cref(tuner->getCurrentConfig()));
     }
     return currentConfigs;
   }

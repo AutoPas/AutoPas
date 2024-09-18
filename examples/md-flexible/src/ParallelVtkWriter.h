@@ -109,7 +109,7 @@ class ParallelVtkWriter {
    */
   void recordDomainSubdivision(size_t currentIteration,
                                const std::unordered_map<autopas::InteractionTypeOption::Value,
-                                                        const autopas::Configuration *> &autoPasConfigurations,
+                                                        std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
                                const RegularGridDecomposition &decomposition);
 
   /**
