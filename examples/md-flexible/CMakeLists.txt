@@ -20,7 +20,7 @@ option(MD_FLEXIBLE_FUNCTOR_AUTOVEC "Compile AutoVec Functor without calculation 
 option(MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS "Compile AutoVec Functor with calculation of global values." OFF)
 option(MD_FLEXIBLE_FUNCTOR_AVX "If instruction set is available, compile AVX Functor without calculation of global values." ON)
 option(MD_FLEXIBLE_FUNCTOR_SVE "If instruction set is available, compile SVE Functor without calculation of global values." OFF)
-option(MD_FLEXIBLE_FUNCTOR_AT "Compile auto vectorized Axilrod Teller Functor." OFF)
+option(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC "Compile auto vectorized Axilrod Teller Functor." OFF)
 
 target_compile_definitions(
         md-flexible
@@ -29,7 +29,7 @@ target_compile_definitions(
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS}>:MD_FLEXIBLE_FUNCTOR_AUTOVEC_GLOBALS>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AVX}>:MD_FLEXIBLE_FUNCTOR_AVX>
         $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_SVE}>:MD_FLEXIBLE_FUNCTOR_SVE>
-        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT}>:MD_FLEXIBLE_FUNCTOR_AT>
+        $<$<BOOL:${MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC}>:MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC>
 )
 
 # --- display warnings if single-/multi-site mode is used with a functor type that has not been implemented ---
@@ -41,7 +41,7 @@ if (MD_FLEXIBLE_MODE_lower MATCHES "multisite")
     if (MD_FLEXIBLE_FUNCTOR_SVE)
         message(WARNING "SVE Lennard-Jones functor has not been implemented for Multi-Site Molecules")
     endif()
-    if (MD_FLEXIBLE_FUNCTOR_AT)
+    if (MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
         message(WARNING "Axilrod Teller functor has not been implemented for Multi-Site Molecules")
     endif()
 endif()

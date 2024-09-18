@@ -29,7 +29,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunct
 #if defined(MD_FLEXIBLE_FUNCTOR_SVE) && defined(__ARM_FEATURE_SVE)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(LJFunctorTypeSVE *);
 #endif
-#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunctor *);
 #endif
 //! @endcond
@@ -752,12 +752,12 @@ T Simulation::applyWithChosenFunctor3B(F f) {
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {
     case MDFlexConfig::FunctorOption3B::at: {
-#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
       return f(ATFunctor{cutoff, particlePropertiesLibrary});
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AT=ON`.");
+          "-DMD_FLEXIBLE_FUNCTOR_AT_VEC=ON`.");
 #endif
     }
     default: {

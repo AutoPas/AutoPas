@@ -30,7 +30,7 @@
 #include "molecularDynamicsLibrary/LJFunctorSVE.h"
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 #include "molecularDynamicsLibrary/AxilrodTellerFunctor.h"
 #endif
 
@@ -130,7 +130,7 @@ using LJFunctorTypeSVE =
 
 #endif
 
-#if defined(MD_FLEXIBLE_FUNCTOR_AT)
+#if defined(MD_FLEXIBLE_FUNCTOR_AT_AUTOVEC)
 /**
  * Type of LJFunctorTypeAT used in md-flexible.
  */
