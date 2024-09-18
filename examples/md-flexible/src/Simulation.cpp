@@ -334,30 +334,29 @@ std::tuple<size_t, bool> Simulation::estimateNumberOfIterations() const {
         return static_cast<size_t>(_configuration.tuningMaxEvidence.value);
       } else {
         // @TODO: this can be improved by considering the tuning strategy
-        // or averaging number of iterations per tuning phase and dynamically adapt prediction
+        //      or averaging number of iterations per tuning phase and dynamically adapt prediction
 
         // This estimate is only valid for full search and no restrictions on the cartesian product.
         // add static to only evaluate this once
-        size_t searchSpaceSizePairwise = 0;
-        size_t searchSpaceSizeTriwise = 0;
-        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise) > 0) {
-          searchSpaceSizePairwise =
-              autopas::SearchSpaceGenerators::cartesianProduct(
-                  _configuration.containerOptions.value, _configuration.traversalOptions.value,
-                  _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
-                  _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
-                  autopas::InteractionTypeOption::pairwise)
-                  .size();
-        }
-        if (_configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) > 0) {
-          searchSpaceSizeTriwise =
-              autopas::SearchSpaceGenerators::cartesianProduct(
-                  _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
-                  _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
-                  _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
-                  autopas::InteractionTypeOption::triwise)
-                  .size();
-        }
+        const size_t searchSpaceSizePairwise =
+            _configuration.getInteractionTypes().count(autopas::InteractionTypeOption::pairwise) == 0
+                ? 0
+                : autopas::SearchSpaceGenerators::cartesianProduct(
+                      _configuration.containerOptions.value, _configuration.traversalOptions.value,
+                      _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions.value,
+                      _configuration.newton3Options.value, _configuration.cellSizeFactors.value.get(),
+                      autopas::InteractionTypeOption::pairwise)
+                      .size();
+
+        const size_t searchSpaceSizeTriwise =
+            _configuration.getInteractionTypes().count(autopas::InteractionTypeOption::triwise) == 0
+                ?: autopas::SearchSpaceGenerators::cartesianProduct(
+                       _configuration.containerOptions.value, _configuration.traversalOptions3B.value,
+                       _configuration.loadEstimatorOptions.value, _configuration.dataLayoutOptions3B.value,
+                       _configuration.newton3Options3B.value, _configuration.cellSizeFactors.value.get(),
+                       autopas::InteractionTypeOption::triwise)
+                       .size();
+
         return std::max(searchSpaceSizePairwise, searchSpaceSizeTriwise);
       }
     }();
@@ -526,13 +525,13 @@ long Simulation::accumulateTime(const long &time) {
 
 bool Simulation::calculatePairwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+      applyWithChosenFunctor<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
 bool Simulation::calculateTriwiseForces() {
   const auto wasTuningIteration =
-      applyWithChosenFunctor3B<bool>([&](auto functor) { return _autoPasContainer->computeInteractions(&functor); });
+      applyWithChosenFunctor3B<bool>([&](auto &&functor) { return _autoPasContainer->computeInteractions(&functor); });
   return wasTuningIteration;
 }
 
@@ -698,8 +697,8 @@ void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t num
   }
 }
 
-template <class T, class F>
-T Simulation::applyWithChosenFunctor(F f) {
+template <class ReturnType, class FunctionType>
+ReturnType Simulation::applyWithChosenFunctor(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption.value) {
@@ -746,8 +745,8 @@ T Simulation::applyWithChosenFunctor(F f) {
   }
 }
 
-template <class T, class F>
-T Simulation::applyWithChosenFunctor3B(F f) {
+template <class ReturnType, class FunctionType>
+ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
   const double cutoff = _configuration.cutoff.value;
   auto &particlePropertiesLibrary = *_configuration.getParticlePropertiesLibrary();
   switch (_configuration.functorOption3B.value) {

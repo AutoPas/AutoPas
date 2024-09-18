@@ -293,10 +293,10 @@ bool AutoTuner::willRebuildNeighborLists() const {
   const bool stillTuning = inTuningPhase();
 
   // Are we going to rebuild in the upcoming iteration?
-  auto itersSinceTuning = _iterationsSinceTuning + 1;
+  const auto itersSinceTuning = _iterationsSinceTuning + 1;
 
   // How many iterations ago did the rhythm of rebuilds change?
-  auto iterationBaseline = stillTuning ? (itersSinceTuning - _tuningInterval) : itersSinceTuning;
+  const auto iterationBaseline = stillTuning ? (itersSinceTuning - _tuningInterval) : itersSinceTuning;
 
   // What is the rebuild rhythm?
   const auto iterationsPerRebuild = stillTuning ? _maxSamples : _rebuildFrequency;

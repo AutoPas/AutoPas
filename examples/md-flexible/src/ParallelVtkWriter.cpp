@@ -160,8 +160,8 @@ void ParallelVtkWriter::recordParticleStates(size_t currentIteration,
 
 void ParallelVtkWriter::recordDomainSubdivision(
     size_t currentIteration,
-    const std::unordered_map<autopas::InteractionTypeOption::Value, std::reference_wrapper<const autopas::Configuration>>
-        &autoPasConfigurations,
+    const std::unordered_map<autopas::InteractionTypeOption::Value,
+                             std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
     const RegularGridDecomposition &decomposition) {
   // Extract active interaction types to print them to the .pvts file.
   std::unordered_set<autopas::InteractionTypeOption::Value> interactionTypes;

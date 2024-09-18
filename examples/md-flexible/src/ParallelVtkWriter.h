@@ -107,10 +107,11 @@ class ParallelVtkWriter {
    * @param autoPasConfigurations: All current configuration of an autopas container (pairwise, triwise).
    * @param decomposition: The simulations domain decomposition.
    */
-  void recordDomainSubdivision(size_t currentIteration,
-                               const std::unordered_map<autopas::InteractionTypeOption::Value,
-                                                        std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
-                               const RegularGridDecomposition &decomposition);
+  void recordDomainSubdivision(
+      size_t currentIteration,
+      const std::unordered_map<autopas::InteractionTypeOption::Value,
+                               std::reference_wrapper<const autopas::Configuration>> &autoPasConfigurations,
+      const RegularGridDecomposition &decomposition);
 
   /**
    * Calculates the whole extent of the decompositions local domain.
