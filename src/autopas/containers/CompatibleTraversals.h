@@ -230,9 +230,13 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
         }
       }
     }
+    case InteractionTypeOption::all: {
+      utils::ExceptionHandler::exception("CompatibleTraversals: Interaction type option {} is not supported!",
+                                         interactionTypeOption.to_string());
+    }
   }
 
-  autopas::utils::ExceptionHandler::exception(
+  utils::ExceptionHandler::exception(
       "CompatibleTraversals: Unknown container option {} or unsupported interaction type {}!",
       containerOption.to_string(), interactionTypeOption.to_string());
 

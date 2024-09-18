@@ -863,14 +863,13 @@ class AutoPas {
    * Set the list of allowed traversals.
    * For possible traversals choices see options::TraversalOption::Value.
    * @param allowedTraversals
-   * @param interactionType Set allowed traversals for this interaction type. Omitting this argument sets the given
-   * options for all interaction types.
+   * @param interactionType Set allowed traversals for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedTraversals(const std::set<TraversalOption> &allowedTraversals,
-                            const InteractionTypeOption interactionType = InteractionTypeOption()) {
-    if (interactionType == -1) {
-      // If interactionType value is default (-1), set for all interaction types
-      for (auto iType : InteractionTypeOption::getAllOptions()) {
+                            const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
         _allowedTraversals[iType] = allowedTraversals;
       }
     } else {
@@ -893,14 +892,13 @@ class AutoPas {
    * Set the list of allowed data layouts.
    * For possible data layouts choices see options::DataLayoutOption::Value.
    * @param allowedDataLayouts
-   * @param interactionType Set allowed data layouts for this interaction type. Omitting this argument sets the given
-   * options for all interaction types.
+   * @param interactionType Set allowed data layouts for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedDataLayouts(const std::set<DataLayoutOption> &allowedDataLayouts,
-                             const InteractionTypeOption interactionType = InteractionTypeOption()) {
-    if (interactionType == -1) {
-      // If interactionType value is default (-1), set for all interaction types
-      for (auto iType : InteractionTypeOption::getAllOptions()) {
+                             const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
         _allowedDataLayouts[iType] = allowedDataLayouts;
       }
     } else {
@@ -923,14 +921,13 @@ class AutoPas {
    * Set the list of allowed newton 3 options.
    * For possible newton 3 choices see options::Newton3Option::Value.
    * @param allowedNewton3Options
-   * @param interactionType Set allowed newton 3 options for this interaction type. Omitting this argument sets the
-   * given options for all interaction types.
+   * @param interactionType Set allowed newton 3 options for this interaction type. Defaults to
+   * InteractionTypeOption::pairwise.
    */
   void setAllowedNewton3Options(const std::set<Newton3Option> &allowedNewton3Options,
-                                const InteractionTypeOption interactionType = InteractionTypeOption()) {
-    if (interactionType == -1) {
-      // If interactionType value is default (-1), set for all interaction types
-      for (auto iType : InteractionTypeOption::getAllOptions()) {
+                                const InteractionTypeOption interactionType = InteractionTypeOption::pairwise) {
+    if (interactionType == InteractionTypeOption::all) {
+      for (auto iType : InteractionTypeOption::getMostOptions()) {
         _allowedNewton3Options[iType] = allowedNewton3Options;
       }
     } else {
