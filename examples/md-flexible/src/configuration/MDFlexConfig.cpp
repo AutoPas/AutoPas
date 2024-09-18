@@ -573,7 +573,8 @@ void MDFlexConfig::initializeParticlePropertiesLibrary() {
   // check size of LJ site parameter vectors match
   if (epsilonMap.value.size() != sigmaMap.value.size()) {
     throw std::runtime_error(
-        "Number of LJ site-level properties differ! Potentially missing epsilon or sigma for some LJ sites.");
+        "MDFlexConfig::initializeParticlePropertiesLibrary(): Number of LJ site-level properties differ! Potentially "
+        "missing epsilon or sigma for some LJ sites.");
   }
   // initialize LJ parameters
   for (auto [siteTypeId, epsilon] : epsilonMap.value) {
