@@ -398,7 +398,8 @@ class AutoTuner {
   bool _forceRetune{false};
 
   /**
-   * Is reset to zero at the beginning of a tuning phase and at the end
+   * A counter incremented in every iteration and reset to zero at the beginning of a tuning phase and at the end of
+   * a tuning phase
    */
   size_t _iterationBaseline{0};
 };

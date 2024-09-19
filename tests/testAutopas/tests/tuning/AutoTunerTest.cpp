@@ -719,10 +719,12 @@ TEST_F(AutoTunerTest, testRestoreAfterWipe) {
   for (const auto conf : searchSpace) {
     const auto iDontCare = autoTuner.getNextConfig();
     autoTuner.addMeasurement(42, true);
+    autoTuner.bumpIterationCounters();
   }
 
   // Trigger the tuning process with evidence. Here the slow config filter would wipe out everything
   const auto iDontCare = autoTuner.getNextConfig();
+  autoTuner.bumpIterationCounters();
 
   // The slow config filter should have been ignored
   // But the second strategy should still have been applied reversing the order of configs
