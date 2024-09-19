@@ -76,10 +76,10 @@ class LogicHandler {
     checkMinimalSize();
 
     // initialize locks needed for remainder traversal
-    const auto boxLength = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin;
-    const auto interactionLengthInv =
-        1. / (logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * rebuildFrequency);
-    initSpacialLocks(boxLength, interactionLengthInv);
+    const auto interactionLength = logicHandlerInfo.cutoff + logicHandlerInfo.verletSkinPerTimestep * rebuildFrequency;
+    const auto interactionLengthInv = 1. / interactionLength;
+    const auto boxLengthWithHalo = logicHandlerInfo.boxMax - logicHandlerInfo.boxMin + (2 * interactionLength);
+    initSpacialLocks(boxLengthWithHalo, interactionLengthInv);
     for (auto &lockPtr : _bufferLocks) {
       lockPtr = std::make_unique<std::mutex>();
     }
@@ -557,16 +557,56 @@ class LogicHandler {
    * If the locks are already initialized but the container size changed, surplus locks will
    * be deleted, new locks are allocated and locks that are still necessary are reused.
    *
-   * @param boxLength
-   * @param interactionLengthInv
+   * @note Should the generated number of locks exceed 1e6, the number of locks is reduced so that
+   * the number of locks per dimensions is proportional to the domain side lengths and smaller than the limit.
+   *
+   * @param boxLength Size per dimension for the box that should be covered by locks (should include halo).
+   * @param interactionLengthInv Inverse of the side length of the virtual boxes one lock is responsible for.
+   *
    */
   void initSpacialLocks(const std::array<double, 3> &boxLength, double interactionLengthInv) {
     using namespace autopas::utils::ArrayMath::literals;
     using autopas::utils::ArrayMath::ceil;
     using autopas::utils::ArrayUtils::static_cast_copy_array;
 
-    // one lock per interaction length + one for each halo region
-    const auto locksPerDim = static_cast_copy_array<size_t>(ceil(boxLength * interactionLengthInv) + 2.);
+    // The maximum number of spatial locks is capped at 1e6.
+    // Without this cap, very large domains (or tiny cutoffs) would generate an insane number of locks,
+    // that could blow up the memory.
+    constexpr size_t maxNumSpacialLocks{1000000};
+
+    // One lock per interaction length or less if this would generate too many.
+    const auto locksPerDim = [&]() {
+      // First naively calculate the number of locks if we simply take the desired cell length.
+      // Ceil because both decisions are possible, and we are generous gods.
+      const std::array<size_t, 3> locksPerDimNaive =
+          static_cast_copy_array<size_t>(ceil(boxLength * interactionLengthInv));
+      const auto totalLocksNaive =
+          std::accumulate(locksPerDimNaive.begin(), locksPerDimNaive.end(), 1ul, std::multiplies<>());
+      // If the number of locks is within the limits everything is fine and we can return.
+      if (totalLocksNaive <= maxNumSpacialLocks) {
+        return locksPerDimNaive;
+      } else {
+        // If the number of locks grows too large, calculate the locks per dimension proportionally to the side lengths.
+        // Calculate side length relative to dimension 0.
+        const std::array<double, 3> boxSideProportions = {
+            1.,
+            boxLength[0] / boxLength[1],
+            boxLength[0] / boxLength[2],
+        };
+        // With this, calculate the number of locks the first dimension should receive.
+        const auto prodProportions =
+            std::accumulate(boxSideProportions.begin(), boxSideProportions.end(), 1., std::multiplies<>());
+        // Needs floor, otherwise we exceed the limit.
+        const auto locksInFirstDimFloat = std::floor(std::cbrt(maxNumSpacialLocks * prodProportions));
+        // From this and the proportions relative to the first dimension, we can calculate the remaining number of locks
+        const std::array<size_t, 3> locksPerDimLimited = {
+            static_cast<size_t>(locksInFirstDimFloat),  // omitted div by 1
+            static_cast<size_t>(locksInFirstDimFloat / boxSideProportions[1]),
+            static_cast<size_t>(locksInFirstDimFloat / boxSideProportions[2]),
+        };
+        return locksPerDimLimited;
+      }
+    }();
     _spacialLocks.resize(locksPerDim[0]);
     for (auto &lockVecVec : _spacialLocks) {
       lockVecVec.resize(locksPerDim[1]);
@@ -962,12 +1002,31 @@ void LogicHandler<Particle>::remainderHelperBufferContainer(
   using autopas::utils::ArrayUtils::static_cast_copy_array;
   using namespace autopas::utils::ArrayMath::literals;
 
-  const auto haloBoxMin = container.getBoxMin() - container.getInteractionLength();
-  const auto interactionLengthInv = 1. / container.getInteractionLength();
+  // Bunch of shorthands
+  const auto cutoff = container.getCutoff();
+  const auto interactionLength = container.getInteractionLength();
+  const auto interactionLengthInv = 1. / interactionLength;
+  const auto haloBoxMin = container.getBoxMin() - interactionLength;
+  const auto totalBoxLengthInv = 1. / (container.getBoxMax() + interactionLength - haloBoxMin);
+  const std::array<size_t, 3> spacialLocksPerDim{
+      _spacialLocks.size(),
+      _spacialLocks[0].size(),
+      _spacialLocks[0][0].size(),
+  };
 
-  const double cutoff = container.getCutoff();
+  // Helper function to obtain the lock responsible for a given position.
+  // Implemented as lambda because it can reuse a lot of information that is known in this context.
+  const auto getSpacialLock = [&](const std::array<double, 3> &pos) -> std::mutex & {
+    const auto posDistFromLowerCorner = pos - haloBoxMin;
+    const auto relativePos = posDistFromLowerCorner * totalBoxLengthInv;
+    // Lock coordinates are the position scaled by the number of locks
+    const auto lockCoords =
+        static_cast_copy_array<size_t>(static_cast_copy_array<double>(spacialLocksPerDim) * relativePos);
+    return *_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]];
+  };
+
   // one halo and particle buffer pair per thread
-  AUTOPAS_OPENMP(parallel for schedule(static, 1) shared(f, _spacialLocks, haloBoxMin, interactionLengthInv))
+  AUTOPAS_OPENMP(parallel for schedule(static, 1) default(shared))
   for (int bufferId = 0; bufferId < particleBuffers.size(); ++bufferId) {
     auto &particleBuffer = particleBuffers[bufferId];
     auto &haloParticleBuffer = haloParticleBuffers[bufferId];
@@ -978,15 +1037,14 @@ void LogicHandler<Particle>::remainderHelperBufferContainer(
       const auto max = pos + cutoff;
       container.forEachInRegion(
           [&](auto &p2) {
-            const auto lockCoords = static_cast_copy_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
             if constexpr (newton3) {
-              const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+              const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
               f->AoSFunctor(p1, p2, true);
             } else {
               f->AoSFunctor(p1, p2, false);
               // no need to calculate force enacted on a halo
               if (not p2.isHalo()) {
-                const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+                const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
                 f->AoSFunctor(p2, p1, false);
               }
             }
@@ -1001,11 +1059,10 @@ void LogicHandler<Particle>::remainderHelperBufferContainer(
       const auto max = pos + cutoff;
       container.forEachInRegion(
           [&](auto &p2) {
-            const auto lockCoords = static_cast_copy_array<size_t>((p2.getR() - haloBoxMin) * interactionLengthInv);
             // No need to apply anything to p1halo
             //   -> AoSFunctor(p1, p2, false) not needed as it neither adds force nor Upot (potential energy)
             //   -> newton3 argument needed for correct globals
-            const std::lock_guard<std::mutex> lock(*_spacialLocks[lockCoords[0]][lockCoords[1]][lockCoords[2]]);
+            const std::lock_guard<std::mutex> lock(getSpacialLock(p2.getR()));
             f->AoSFunctor(p2, p1halo, newton3);
           },
           min, max, IteratorBehavior::owned);
