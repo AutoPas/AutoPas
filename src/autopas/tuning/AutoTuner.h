@@ -402,5 +402,11 @@ class AutoTuner {
    * iterations remains stored until the start of the next one.
    */
   size_t _iterationsInMostRecentTuningPhase{0};
+
+  /**
+   * Is set to true in forceRetune() to signal a new tuning phase should start outside the regular tuningInterval. Is
+   * set back to false in tuneConfiguration()
+   */
+  bool _forceRetune{false};
 };
 }  // namespace autopas

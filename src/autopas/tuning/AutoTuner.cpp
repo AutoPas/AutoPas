@@ -80,6 +80,7 @@ void AutoTuner::forceRetune() {
   _iterationsSinceTuning = _tuningInterval;
   _iterationsInMostRecentTuningPhase = 0;
   _samplesNotRebuildingNeighborLists.resize(_maxSamples);
+  _forceRetune = true;
 }
 
 bool AutoTuner::tuneConfiguration() {
@@ -109,9 +110,11 @@ bool AutoTuner::tuneConfiguration() {
   // Determine where in a tuning phase we are
   // If _iterationsInMostRecentTuningPhase >= _tuningInterval the current tuning phase takes more iterations than the
   // tuning interval -> continue tuning
-  if (_iteration % _tuningInterval == 0 and not(_iterationsInMostRecentTuningPhase >= _tuningInterval)) {
+  if ((_iteration % _tuningInterval == 0 and not(_iterationsInMostRecentTuningPhase >= _tuningInterval)) or
+      _forceRetune) {
     // CASE: Start of a tuning phase
     _iterationsSinceTuning = 0;
+    _forceRetune = false;
     // in the first iteration of a tuning phase we reset all strategies
     // and refill the queue with the complete search space.
     // Reverse the order, because _configQueue is FiLo, and we aim to keep the order for legacy reasons.
@@ -445,7 +448,7 @@ const TuningMetricOption &AutoTuner::getTuningMetric() const { return _tuningMet
 bool AutoTuner::inTuningPhase() const {
   // If _iteration % _tuningInterval == 0 we are in the first tuning iteration but tuneConfiguration has not
   // been called yet.
-  return (_iteration % _tuningInterval == 0 or _isTuning) and not searchSpaceIsTrivial();
+  return (_iteration % _tuningInterval == 0 or _isTuning or _forceRetune) and not searchSpaceIsTrivial();
 }
 
 const EvidenceCollection &AutoTuner::getEvidenceCollection() const { return _evidenceCollection; }
