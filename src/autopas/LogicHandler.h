@@ -89,9 +89,7 @@ class LogicHandler {
    * Returns a non-const reference to the currently selected particle container.
    * @return Non-const reference to the container.
    */
-  autopas::ParticleContainerInterface<Particle> &getContainer() {
-    return _containerSelector.getCurrentContainer();
-  }
+  autopas::ParticleContainerInterface<Particle> &getContainer() { return _containerSelector.getCurrentContainer(); }
 
   /**
    * Collects leaving particles from buffer and potentially inserts owned particles to the container.
