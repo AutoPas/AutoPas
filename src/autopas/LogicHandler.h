@@ -18,7 +18,6 @@
 #include "autopas/containers/TraversalInterface.h"
 #include "autopas/iterators/ContainerIterator.h"
 #include "autopas/options/IteratorBehavior.h"
-#include "autopas/particles/Particle.h"
 #include "autopas/tuning/AutoTuner.h"
 #include "autopas/tuning/Configuration.h"
 #include "autopas/tuning/selectors/ContainerSelector.h"
@@ -42,7 +41,7 @@ namespace autopas {
 /**
  * The LogicHandler takes care of the containers s.t. they are all in the same valid state.
  * This is mainly done by incorporating a global container rebuild frequency, which defines when containers and their
- * neighbor lists will be rebuild.
+ * neighbor lists will be rebuilt.
  */
 template <typename Particle>
 class LogicHandler {
@@ -90,7 +89,7 @@ class LogicHandler {
    * Returns a non-const reference to the currently selected particle container.
    * @return Non-const reference to the container.
    */
-  inline autopas::ParticleContainerInterface<Particle> &getContainer() {
+  autopas::ParticleContainerInterface<Particle> &getContainer() {
     return _containerSelector.getCurrentContainer();
   }
 
@@ -127,7 +126,7 @@ class LogicHandler {
             // Fast remove of particle, i.e., swap with last entry && pop.
             std::swap(p, buffer.back());
             buffer.pop_back();
-            // Do not increment the iter afterwards!
+            // Do not increment the iter afterward!
           };
           if (p.isDummy()) {
             // We remove dummies!
