@@ -332,7 +332,6 @@ class LogicHandler {
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
         _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
-        _haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);
