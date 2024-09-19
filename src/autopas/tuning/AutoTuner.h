@@ -291,11 +291,6 @@ class AutoTuner {
   size_t _tuningInterval;
 
   /**
-   * Number of iterations since the end of the last tuning phase.
-   */
-  size_t _iterationsSinceTuning;
-
-  /**
    * Metric to use for tuning.
    */
   TuningMetricOption _tuningMetric;
@@ -397,16 +392,14 @@ class AutoTuner {
   bool _endOfTuningPhase{false};
 
   /**
-   * Stores the number of iterations of the most recent tuning phase. During a tuning phase, this is the number of
-   * already performed iterations in that current tuning phase. After a tuning phase, the number of performed tuning
-   * iterations remains stored until the start of the next one.
-   */
-  size_t _iterationsInMostRecentTuningPhase{0};
-
-  /**
    * Is set to true in forceRetune() to signal a new tuning phase should start outside the regular tuningInterval. Is
    * set back to false in tuneConfiguration()
    */
   bool _forceRetune{false};
+
+  /**
+   * Is reset to zero at the beginning of a tuning phase and at the end
+   */
+  size_t _iterationBaseline{0};
 };
 }  // namespace autopas
