@@ -39,6 +39,7 @@ extern template bool autopas::AutoPas<ParticleType>::computeInteractions(ATFunct
 
 #include <iostream>
 
+#include "ParticleCommunicator.h"
 #include "Thermostat.h"
 #include "autopas/utils/MemoryProfiler.h"
 #include "autopas/utils/WrapMPI.h"
@@ -165,9 +166,7 @@ Simulation::Simulation(const MDFlexConfig &configuration,
   _autoPasContainer->setAcquisitionFunction(_configuration.acquisitionFunctionOption.value);
   _autoPasContainer->setUseTuningLogger(_configuration.useTuningLogger.value);
   _autoPasContainer->setSortingThreshold(_configuration.sortingThreshold.value);
-
-  int rank{};
-  autopas::AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &rank);
+  const auto rank = _domainDecomposition->getDomainIndex();
   const auto *fillerBeforeSuffix =
       _configuration.outputSuffix.value.empty() or _configuration.outputSuffix.value.front() == '_' ? "" : "_";
   const auto *fillerAfterSuffix =
@@ -185,13 +184,8 @@ Simulation::Simulation(const MDFlexConfig &configuration,
         "Search space must not be trivial if the simulation time is limited by the number tuning phases");
   }
 
-  // @todo: the object generators should only generate particles relevant for the current rank's domain
-  _autoPasContainer->addParticlesIf(_configuration.getParticles(),
-                                    [&](const auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
-
-  _configuration.flushParticles();
-  std::cout << "Total number of particles at the initialization: "
-            << _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned) << "\n";
+  // Load particles from the config file (object generators, checkpoint)
+  loadParticles();
 
   if (_configuration.useThermostat.value and _configuration.deltaT.value != 0) {
     if (_configuration.addBrownianMotion.value) {
@@ -610,7 +604,10 @@ void Simulation::logMeasurements() {
   const long loadBalancing = accumulateTime(_timers.loadBalancing.getTotalTime());
 
   if (_domainDecomposition->getDomainIndex() == 0) {
-    const auto maximumNumberOfDigits = static_cast<int>(std::to_string(total).length());
+    const long wallClockTime = _timers.total.getTotalTime();
+    // use the two potentially largest timers to determine the number of chars needed
+    const auto maximumNumberOfDigits =
+        static_cast<int>(std::max(std::to_string(total).length(), std::to_string(wallClockTime).length()));
     std::cout << "Measurements:\n";
     std::cout << timerToString("Total accumulated                 ", total, maximumNumberOfDigits);
     std::cout << timerToString("  Initialization                  ", initialization, maximumNumberOfDigits, total);
@@ -647,9 +644,7 @@ void Simulation::logMeasurements() {
     std::cout << timerToString("One iteration                     ", simulate / static_cast<long>(_iteration),
                                maximumNumberOfDigits, total);
 
-    const long wallClockTime = _timers.total.getTotalTime();
-    std::cout << timerToString("Total wall-clock time             ", wallClockTime,
-                               static_cast<int>(std::to_string(wallClockTime).length()), total);
+    std::cout << timerToString("Total wall-clock time             ", wallClockTime, maximumNumberOfDigits, total);
     std::cout << "\n";
 
     std::cout << "Tuning iterations                  : " << _numTuningIterations << " / " << _iteration << " = "
@@ -694,6 +689,95 @@ void Simulation::checkNumParticles(size_t expectedNumParticlesGlobal, size_t num
       // clang-format on
       throw std::runtime_error(ss.str());
     }
+  }
+}
+
+void Simulation::loadParticles() {
+  // Store how many particles are in this config object before removing them.
+  const auto numParticlesInConfigLocally = _configuration.particles.size();
+  // When loading checkpoints, the config file might contain particles that do not belong to this rank,
+  // because rank boundaries don't align with those at the end of the previous simulation due to dynamic load balancing.
+  // Idea: Only load what belongs here and send the rest away.
+  _autoPasContainer->addParticlesIf(_configuration.particles, [&](auto &p) {
+    if (_domainDecomposition->isInsideLocalDomain(p.getR())) {
+      // Mark particle in vector as dummy, so we know it has been inserted.
+      p.setOwnershipState(autopas::OwnershipState::dummy);
+      return true;
+    }
+    return false;
+  });
+
+  // Remove what has been inserted. Everything that remains does not belong into this rank.
+  _configuration.particles.erase(std::remove_if(_configuration.particles.begin(), _configuration.particles.end(),
+                                                [&](const auto &p) { return p.isDummy(); }),
+                                 _configuration.particles.end());
+
+  // Send all remaining particles to all ranks
+  // TODO: This is not optimal but since this only happens once upon initialization it is not too bad.
+  //       Nevertheless it could be improved by determining which particle has to go to which rank.
+  const auto rank = _domainDecomposition->getDomainIndex();
+  ParticleCommunicator particleCommunicator(_domainDecomposition->getCommunicator());
+  for (int receiverRank = 0; receiverRank < _domainDecomposition->getNumberOfSubdomains(); ++receiverRank) {
+    // don't send to ourselves
+    if (receiverRank == rank) {
+      continue;
+    }
+    particleCommunicator.sendParticles(_configuration.particles, receiverRank);
+  }
+  // Erase all locally stored particles. They don't belong to this rank and have been sent away.
+  _configuration.flushParticles();
+
+  // Receive particles from all other ranks.
+  for (int senderRank = 0; senderRank < _domainDecomposition->getNumberOfSubdomains(); ++senderRank) {
+    // don't send to ourselves
+    if (senderRank == rank) {
+      continue;
+    }
+    particleCommunicator.receiveParticles(_configuration.particles, senderRank);
+  }
+  particleCommunicator.waitForSendRequests();
+
+  // Add all new particles that belong in this rank
+  _autoPasContainer->addParticlesIf(_configuration.particles,
+                                    [&](auto &p) { return _domainDecomposition->isInsideLocalDomain(p.getR()); });
+  // cleanup
+  _configuration.flushParticles();
+
+  // Output and sanity checks
+  const size_t numParticlesLocally = _autoPasContainer->getNumberOfParticles(autopas::IteratorBehavior::owned);
+  std::cout << "Number of particles at initialization "
+            // align outputs based on the max number of ranks
+            << "on rank " << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length())
+            << std::right << rank << ": " << numParticlesLocally << "\n";
+
+  // Local unnamed struct to pack data for MPI
+  struct {
+    size_t numParticlesAdded;
+    size_t numParticlesInConfig;
+  } dataPackage{numParticlesLocally, numParticlesInConfigLocally};
+  // Let rank 0 also report the global number of particles
+  if (rank == 0) {
+    autopas::AutoPas_MPI_Reduce(AUTOPAS_MPI_IN_PLACE, &dataPackage, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
+                                _domainDecomposition->getCommunicator());
+    std::cout << "Number of particles at initialization globally"
+              // align ":" with the messages above
+              << std::setw(std::to_string(_domainDecomposition->getNumberOfSubdomains()).length()) << ""
+              << ": " << dataPackage.numParticlesAdded << "\n";
+    // Sanity check that on a global scope all particles have been loaded
+    if (dataPackage.numParticlesAdded != dataPackage.numParticlesInConfig) {
+      throw std::runtime_error(
+          "Simulation::loadParticles(): "
+          "Not all particles from the configuration file could be added to AutoPas!\n"
+          "Configuration : " +
+          std::to_string(dataPackage.numParticlesInConfig) +
+          "\n"
+          "Added globally: " +
+          std::to_string(dataPackage.numParticlesAdded));
+    }
+  } else {
+    // In-place reduce needs different calls on root vs rest...
+    autopas::AutoPas_MPI_Reduce(&dataPackage, nullptr, 2, AUTOPAS_MPI_UNSIGNED_LONG, AUTOPAS_MPI_SUM, 0,
+                                _domainDecomposition->getCommunicator());
   }
 }
 

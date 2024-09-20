@@ -24,8 +24,8 @@ MPIParallelizedStrategy::MPIParallelizedStrategy(const Configuration &fallbackCo
       _mpiTuningMaxDifferenceForBucket(mpiTuningMaxDifferenceForBucket),
       _mpiTuningWeightForMaxDensity(mpiTuningWeightForMaxDensity) {}
 
-void MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &configQueue,
-                                                  const EvidenceCollection &evidence) {
+bool MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                                  const EvidenceCollection &evidenceCollection) {
   // sanity check
   if (_bucket == AUTOPAS_MPI_COMM_NULL) {
     AutoPasLog(WARN, "_bucket was AUTOPAS_MPI_COMM_NULL");
@@ -34,7 +34,7 @@ void MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
 
   // All ranks should stay in tuning mode equally long so that none settles on an optimum
   // before the other's data is there.
-  const auto [myBestConf, myBestEvidence] = evidence.getLatestOptimalConfiguration();
+  const auto [myBestConf, myBestEvidence] = evidenceCollection.getLatestOptimalConfiguration();
   const auto globallyBestConfig =
       utils::AutoPasConfigurationCommunicator::findGloballyBestConfiguration(_bucket, myBestConf, myBestEvidence.value);
 
@@ -62,6 +62,8 @@ void MPIParallelizedStrategy::optimizeSuggestions(std::vector<Configuration> &co
         "MPIParallelizedStrategy::optimizeSuggestions: All ranks defaulted to their fallback configuration. This means "
         "no rank could find an applicable configuration in their respective configuration sub queue");
   }
+  // MPIParallelizedStrategy does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 Configuration MPIParallelizedStrategy::createFallBackConfiguration(const std::set<Configuration> &searchSpace,
@@ -101,7 +103,7 @@ void MPIParallelizedStrategy::rejectConfiguration(const Configuration &configura
   _rejectedConfigurations.insert(configuration);
 }
 
-void MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                                     const EvidenceCollection &evidenceCollection) {
   // clear rejects since they now might be valid.
   _rejectedConfigurations.clear();
@@ -135,6 +137,9 @@ void MPIParallelizedStrategy::reset(size_t iteration, size_t tuningPhase, std::v
     myConfigQueue.push_back(configQueue[randomConfigId]);
   }
   configQueue = myConfigQueue;
+
+  // MPIParallelizedStrategy does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 bool MPIParallelizedStrategy::needsSmoothedHomogeneityAndMaxDensity() const { return true; }

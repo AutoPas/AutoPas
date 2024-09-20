@@ -125,7 +125,8 @@ void ActiveHarmony::rejectConfiguration(const Configuration &configuration, bool
 #endif
 }
 
-void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue, const EvidenceCollection &evidence) {
+bool ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
+                                        const EvidenceCollection &evidenceCollection) {
 #ifdef AUTOPAS_ENABLE_HARMONY
   // get configurations from server until new configuration with valid newton3 option is found
   bool skipConfig;
@@ -136,7 +137,7 @@ void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
     }
     const auto potentialConf = fetchConfiguration();
     // If we already know the performance for this config in this tuning phase skip it.
-    if (const auto *potentialConfEvidence = evidence.getEvidence(potentialConf);
+    if (const auto *potentialConfEvidence = evidenceCollection.getEvidence(potentialConf);
         potentialConfEvidence and not potentialConfEvidence->empty() and
         potentialConfEvidence->back().tuningPhase == _tuningPhase) {
       addEvidence(potentialConf, potentialConfEvidence->back());
@@ -154,7 +155,7 @@ void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
       if (std::find(configQueue.begin(), configQueue.end(), potentialConf) == configQueue.end()) {
         skipConfig = true;
       } else {
-        return;
+        return false;
       }
     }
 
@@ -162,10 +163,12 @@ void ActiveHarmony::optimizeSuggestions(std::vector<Configuration> &configQueue,
       // When using a non-local server, it is possible that only tested configurations are fetched before the search
       // converges.
       // Because this is difficult to test for, the loop is simply ignored for non-local servers.
-      return;
+      return false;
     }
   } while (skipConfig);
 #endif
+  // ActiveHarmony does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 template <class OptionClass>
@@ -187,9 +190,11 @@ void ActiveHarmony::configureTuningParameter(hdef_t *hdef, const char *name, con
 #endif
 }
 
-void ActiveHarmony::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool ActiveHarmony::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                           const EvidenceCollection &evidenceCollection) {
   resetHarmony();
+  // ActiveHarmony does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 void ActiveHarmony::resetHarmony() {

@@ -73,6 +73,7 @@ TEST_P(ContainerSelectorTestFromTo, testContainerConversion) {
           if (autopas::utils::inBox(pos, bBoxMin, bBoxMax)) {
             container.addParticle(p);
           } else {
+            p.setOwnershipState(autopas::OwnershipState::halo);
             container.addHaloParticle(p);
           }
           ++id;

@@ -98,11 +98,11 @@ bool AutoTuner::tuneConfiguration() {
   auto restoreConfigQueueIfEmpty = [&](const auto &configQueueBackup, const TuningStrategyOption &stratOpt) {
     if (_configQueue.empty()) {
       _configQueue = configQueueBackup;
+      AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}",
+                 stratOpt.to_string(), _configQueue.size(),
+                 utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
+                                              [](const auto &conf) { return conf.toShortString(false); }));
     }
-    AutoPasLog(WARN, "ConfigQueue wipe by {} detected! Resetting to previous state: (Size={}) {}", stratOpt.to_string(),
-               _configQueue.size(), utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"}, [](const auto &conf) {
-                 return conf.toShortString(false);
-               }));
   };
 
   // Determine where in a tuning phase we are
@@ -120,12 +120,14 @@ bool AutoTuner::tuneConfiguration() {
     // then let the strategies filter and sort it
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       const auto configQueueBackup = _configQueue;
-      tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
+      const auto intentionalWipe = tuningStrategy->reset(_iteration, _tuningPhase, _configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::reset(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
-      restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
+      if (not intentionalWipe) {
+        restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
+      }
     });
   } else {
     // CASE: somewhere in a tuning phase
@@ -134,12 +136,14 @@ bool AutoTuner::tuneConfiguration() {
                                             [](const auto &conf) { return conf.toShortString(false); }));
     std::for_each(_tuningStrategies.begin(), _tuningStrategies.end(), [&](auto &tuningStrategy) {
       const auto configQueueBackup = _configQueue;
-      tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
+      const auto intentionalWipe = tuningStrategy->optimizeSuggestions(_configQueue, _evidenceCollection);
       AutoPasLog(DEBUG, "ConfigQueue after applying {}::optimizeSuggestions(): (Size={}) {}",
                  tuningStrategy->getOptionType().to_string(), _configQueue.size(),
                  utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
                                               [](const auto &conf) { return conf.toShortString(false); }));
-      restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
+      if (not intentionalWipe) {
+        restoreConfigQueueIfEmpty(configQueueBackup, tuningStrategy->getOptionType());
+      }
     });
   }
 

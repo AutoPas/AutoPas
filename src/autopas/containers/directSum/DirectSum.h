@@ -98,18 +98,16 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @copydoc ParticleContainerInterface::addHaloParticleImpl()
    */
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
     const auto boxMax = this->getBoxMax();
     const auto boxMin = this->getBoxMin();
-    const auto pos = pCopy.getR();
+    const auto pos = haloParticle.getR();
 
     for (size_t dim = 0; dim < 3; ++dim) {
       if (pos[dim] < boxMin[dim]) {
-        this->_cells[2 * dim + 1].addParticle(pCopy);
+        this->_cells[2 * dim + 1].addParticle(haloParticle);
         return;
       } else if (pos[dim] >= boxMax[dim]) {
-        this->_cells[2 * dim + 2].addParticle(pCopy);
+        this->_cells[2 * dim + 2].addParticle(haloParticle);
         return;
       }
     }
@@ -119,21 +117,19 @@ class DirectSum : public CellBasedParticleContainer<FullParticleCell<Particle>> 
    * @copydoc ParticleContainerInterface::updateHaloParticle()
    */
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
     const auto boxMax = this->getBoxMax();
     const auto boxMin = this->getBoxMin();
-    const auto pos = pCopy.getR();
+    const auto pos = haloParticle.getR();
     const auto skinHalf = 0.5 * this->getVerletSkin();
 
     // Look for the particle in halo cells that are within half the skin distance of its position
     for (size_t dim = 0; dim < 3; ++dim) {
       if (pos[dim] < boxMin[dim] + skinHalf) {
-        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 1], pCopy, skinHalf)) {
+        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 1], haloParticle, skinHalf)) {
           return true;
         }
       } else if (pos[dim] >= boxMax[dim] - skinHalf) {
-        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 2], pCopy, skinHalf)) {
+        if (internal::checkParticleInCellAndUpdateByIDAndPosition(this->_cells[2 * dim + 2], haloParticle, skinHalf)) {
           return true;
         }
       }

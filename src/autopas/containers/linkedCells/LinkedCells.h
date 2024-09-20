@@ -81,23 +81,19 @@ class LinkedCells : public CellBasedParticleContainer<FullParticleCell<Particle>
   }
 
   void addHaloParticleImpl(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    ParticleCell &cell = _cellBlock.getContainingCell(pCopy.getR());
-    cell.addParticle(pCopy);
+    ParticleCell &cell = _cellBlock.getContainingCell(haloParticle.getR());
+    cell.addParticle(haloParticle);
   }
 
   bool updateHaloParticle(const ParticleType &haloParticle) override {
-    ParticleType pCopy = haloParticle;
-    pCopy.setOwnershipState(OwnershipState::halo);
-    auto cells = _cellBlock.getNearbyHaloCells(pCopy.getR(), this->getVerletSkin());
+    auto cells = _cellBlock.getNearbyHaloCells(haloParticle.getR(), this->getVerletSkin());
     for (auto cellptr : cells) {
-      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, pCopy);
+      bool updated = internal::checkParticleInCellAndUpdateByID(*cellptr, haloParticle);
       if (updated) {
         return true;
       }
     }
-    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", pCopy.toString());
+    AutoPasLog(TRACE, "UpdateHaloParticle was not able to update particle: {}", haloParticle.toString());
     return false;
   }
 
