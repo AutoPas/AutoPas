@@ -1007,8 +1007,8 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
     }
   }();
   const bool doListRebuild = not _neighborListsAreValid.load(std::memory_order_relaxed);
-  auto *const autoTuner = _autoTunerRefs[interactionType].get();
-  const bool newton3 = autoTuner->getCurrentConfig().newton3;
+  auto &autoTuner = *_autoTunerRefs[interactionType];
+  const bool newton3 = autoTuner.getCurrentConfig().newton3;
   auto &container = _containerSelector.getCurrentContainer();
 
   autopas::utils::Timer timerTotal;
@@ -1016,7 +1016,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   autopas::utils::Timer timerComputeInteractions;
   autopas::utils::Timer timerComputeRemainder;
 
-  const bool energyMeasurementsPossible = autoTuner->resetEnergy();
+  const bool energyMeasurementsPossible = autoTuner.resetEnergy();
 
   timerTotal.start();
   functor.initTraversal();
@@ -1037,7 +1037,7 @@ IterationMeasurements LogicHandler<Particle>::computeInteractions(Functor &funct
   timerComputeRemainder.stop();
 
   functor.endTraversal(newton3);
-  const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner->sampleEnergy();
+  const auto [energyPsys, energyPkg, energyRam, energyTotal] = autoTuner.sampleEnergy();
   timerTotal.stop();
 
   constexpr auto nanD = std::numeric_limits<double>::quiet_NaN();
@@ -1258,8 +1258,7 @@ void LogicHandler<Particle>::computeRemainderInteractions3B(
     std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // Vector to collect pointers to all buffer particles
   std::vector<Particle *> bufferParticles;
-  const auto [numOwnedBufferParticles, numHaloBufferParticles] =
-      collectBufferParticles(bufferParticles, particleBuffers, haloParticleBuffers);
+  const auto numOwnedBufferParticles = collectBufferParticles(bufferParticles, particleBuffers, haloParticleBuffers);
 
   // The following part performs the main remainder traversal.
 
@@ -1441,7 +1440,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   bool stillTuning = false;
   Configuration configuration{};
   std::optional<std::unique_ptr<TraversalInterface>> traversalPtrOpt{};
-  auto *const autoTuner = _autoTunerRefs[interactionType].get();
+  auto &autoTuner = *_autoTunerRefs[interactionType];
   // Todo: Make LiveInfo persistent between multiple functor calls in the same timestep (e.g. 2B + 3B)
   // https://github.com/AutoPas/AutoPas/issues/916
   LiveInfo info{};
@@ -1449,7 +1448,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
   // if this iteration is not relevant take the same algorithm config as before.
   if (not functor.isRelevantForTuning()) {
     stillTuning = false;
-    configuration = autoTuner->getCurrentConfig();
+    configuration = autoTuner.getCurrentConfig();
     // The currently selected container might not be compatible with the configuration for this functor. Check and
     // change if necessary. (see https://github.com/AutoPas/AutoPas/issues/871)
     if (_containerSelector.getCurrentContainer().getContainerType() != configuration.container) {
@@ -1482,23 +1481,23 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
           }
         });
   } else {
-    if (autoTuner->needsHomogeneityAndMaxDensityBeforePrepare()) {
+    if (autoTuner.needsHomogeneityAndMaxDensityBeforePrepare()) {
       utils::Timer timerCalculateHomogeneity;
       timerCalculateHomogeneity.start();
       const auto &container = _containerSelector.getCurrentContainer();
       const auto [homogeneity, maxDensity] = autopas::utils::calculateHomogeneityAndMaxDensity(container);
       timerCalculateHomogeneity.stop();
-      autoTuner->addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
+      autoTuner.addHomogeneityAndMaxDensity(homogeneity, maxDensity, timerCalculateHomogeneity.getTotalTime());
     }
 
-    const auto needsLiveInfo = autoTuner->prepareIteration();
+    const auto needsLiveInfo = autoTuner.prepareIteration();
 
     if (needsLiveInfo) {
       info.gather(_containerSelector.getCurrentContainer(), functor, _neighborListRebuildFrequency);
-      autoTuner->receiveLiveInfo(info);
+      autoTuner.receiveLiveInfo(info);
     }
 
-    std::tie(configuration, stillTuning) = autoTuner->getNextConfig();
+    std::tie(configuration, stillTuning) = autoTuner.getNextConfig();
 
     // loop as long as we don't get a valid configuration
     bool rejectIndefinitely = false;
@@ -1510,7 +1509,7 @@ std::tuple<Configuration, std::unique_ptr<TraversalInterface>, bool> LogicHandle
         break;
       }
       // if no config is left after rejecting this one an exception is thrown here.
-      std::tie(configuration, stillTuning) = autoTuner->rejectConfig(configuration, rejectIndefinitely);
+      std::tie(configuration, stillTuning) = autoTuner.rejectConfig(configuration, rejectIndefinitely);
     }
   }
 
@@ -1540,8 +1539,8 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
   tuningTimer.start();
   const auto [configuration, traversalPtr, stillTuning] = selectConfiguration(*functor, interactionType);
   tuningTimer.stop();
-  auto *const autoTuner = _autoTunerRefs[interactionType].get();
-  autoTuner->logTuningResult(stillTuning, tuningTimer.getTotalTime());
+  auto &autoTuner = *_autoTunerRefs[interactionType];
+  autoTuner.logTuningResult(stillTuning, tuningTimer.getTotalTime());
 
   // Retrieve rebuild info before calling `computeInteractions()` to get the correct value.
   const auto rebuildIteration = not _neighborListsAreValid.load(std::memory_order_relaxed);
@@ -1583,7 +1582,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
     if (stillTuning) {
       // choose the metric of interest
       const auto measurement = [&]() {
-        switch (autoTuner->getTuningMetric()) {
+        switch (autoTuner.getTuningMetric()) {
           case TuningMetricOption::time:
             return measurements.timeTotal;
           case TuningMetricOption::energy:
@@ -1594,7 +1593,7 @@ bool LogicHandler<Particle>::computeInteractionsPipeline(Functor *functor,
             return 0l;
         }
       }();
-      autoTuner->addMeasurement(measurement, rebuildIteration);
+      autoTuner.addMeasurement(measurement, rebuildIteration);
     }
   } else {
     AutoPasLog(TRACE, "Skipping adding of sample because functor is not marked relevant.");

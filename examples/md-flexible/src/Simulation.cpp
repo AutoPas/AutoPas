@@ -756,7 +756,7 @@ ReturnType Simulation::applyWithChosenFunctor3B(FunctionType f) {
 #else
       throw std::runtime_error(
           "MD-Flexible was not compiled with support for AxilrodTeller Functor. Activate it via `cmake "
-          "-DMD_FLEXIBLE_FUNCTOR_AT_VEC=ON`.");
+          "-DMD_FLEXIBLE_FUNCTOR_AT_AUTOVEC=ON`.");
 #endif
     }
     default: {
