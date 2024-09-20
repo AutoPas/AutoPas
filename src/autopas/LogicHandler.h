@@ -570,6 +570,9 @@ class LogicHandler {
     using autopas::utils::ArrayUtils::static_cast_copy_array;
 
     // The maximum number of spatial locks is capped at 1e6.
+    // This limit is chosen more or less arbitrary. It is big enough so that our regular MD simulations
+    // fall well within it and small enough so that no memory issues arise.
+    // There were no rigorous tests for an optimal number of locks.
     // Without this cap, very large domains (or tiny cutoffs) would generate an insane number of locks,
     // that could blow up the memory.
     constexpr size_t maxNumSpacialLocks{1000000};
