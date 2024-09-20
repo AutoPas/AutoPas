@@ -317,7 +317,7 @@ class LogicHandler {
     }
     Particle particleCopy = p;
     particleCopy.setOwnershipState(OwnershipState::owned);
-    if (not neighborListsAreValid()) {
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // Container has to (about to) be invalid to be able to add Particles!
       _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
@@ -344,7 +344,7 @@ class LogicHandler {
     }
     Particle haloParticleCopy = haloParticle;
     haloParticleCopy.setOwnershipState(OwnershipState::halo);
-    if (not neighborListsAreValid()) {
+    if (not _neighborListsAreValid.load(std::memory_order_relaxed)) {
       // If the neighbor lists are not valid, we can add the particle.
       container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {
