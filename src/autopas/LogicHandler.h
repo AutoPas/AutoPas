@@ -106,11 +106,13 @@ class LogicHandler {
     for (auto &cell : _particleBuffer) {
       auto &buffer = cell._particles;
       if (insertOwnedParticlesToContainer) {
-        for (const auto &p : buffer) {
+        // Can't be const because we potentially modify ownership before re-adding
+        for (auto &p : buffer) {
           if (p.isDummy()) {
             continue;
           }
           if (utils::inBox(p.getR(), boxMin, boxMax)) {
+            p.setOwnershipState(OwnershipState::owned);
             _containerSelector.getCurrentContainer().addParticle(p);
           } else {
             leavingBufferParticles.push_back(p);
@@ -292,12 +294,14 @@ class LogicHandler {
           "{}",
           boxMin, boxMax, p.toString());
     }
+    Particle particleCopy = p;
+    particleCopy.setOwnershipState(OwnershipState::owned);
     if (not neighborListsAreValid()) {
       // Container has to (about to) be invalid to be able to add Particles!
-      _containerSelector.getCurrentContainer().template addParticle<false>(p);
+      _containerSelector.getCurrentContainer().template addParticle<false>(particleCopy);
     } else {
       // If the container is valid, we add it to the particle buffer.
-      _particleBuffer[autopas_get_thread_num()].addParticle(p);
+      _particleBuffer[autopas_get_thread_num()].addParticle(particleCopy);
     }
     _numParticlesOwned.fetch_add(1, std::memory_order_relaxed);
   }
@@ -317,16 +321,17 @@ class LogicHandler {
           "{}",
           utils::ArrayUtils::to_string(boxMin), utils::ArrayUtils::to_string(boxMax), haloParticle.toString());
     }
+    Particle haloParticleCopy = haloParticle;
+    haloParticleCopy.setOwnershipState(OwnershipState::halo);
     if (not neighborListsAreValid()) {
       // If the neighbor lists are not valid, we can add the particle.
-      container.template addHaloParticle</* checkInBox */ false>(haloParticle);
+      container.template addHaloParticle</* checkInBox */ false>(haloParticleCopy);
     } else {
       // Check if we can update an existing halo(dummy) particle.
-      bool updated = container.updateHaloParticle(haloParticle);
+      bool updated = container.updateHaloParticle(haloParticleCopy);
       if (not updated) {
         // If we couldn't find an existing particle, add it to the halo particle buffer.
-        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticle);
-        _haloParticleBuffer[autopas_get_thread_num()]._particles.back().setOwnershipState(OwnershipState::halo);
+        _haloParticleBuffer[autopas_get_thread_num()].addParticle(haloParticleCopy);
       }
     }
     _numParticlesHalo.fetch_add(1, std::memory_order_relaxed);

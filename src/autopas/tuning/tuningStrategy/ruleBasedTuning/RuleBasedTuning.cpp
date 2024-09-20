@@ -24,7 +24,11 @@ RuleBasedTuning::RuleBasedTuning(const std::set<Configuration> &searchSpace, boo
     utils::ExceptionHandler::exception("Rule file {} does not exist!", _ruleFileName);
   }
   // By default, dump the rules for reproducibility reasons.
-  AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
+  int myRank{};
+  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank == 0) {
+    AutoPasLog(INFO, "Rule File {}:\n{}", _ruleFileName, rulesToString(_ruleFileName));
+  }
 #else
 {
   autopas::utils::ExceptionHandler::exception(
@@ -51,7 +55,7 @@ void RuleBasedTuning::addEvidence(const Configuration &configuration, const Evid
 #endif
 }
 
-void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                             const EvidenceCollection &evidenceCollection) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
   if (_verifyModeEnabled and _tuningTime > 0) {
@@ -73,13 +77,16 @@ void RuleBasedTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Co
   _rulesTooHarsh = false;
   optimizeSuggestions(configQueue, evidenceCollection);
 #endif
+
+  // RuleBasedTuning does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 long RuleBasedTuning::getLifetimeWouldHaveSkippedTuningTime() const { return _wouldHaveSkippedTuningTimeLifetime; }
 
 long RuleBasedTuning::getLifetimeTuningTime() const { return _tuningTimeLifetime; }
 
-void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+bool RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                           const EvidenceCollection &evidenceCollection) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
   _lastApplicableConfigurationOrders = applyRules(configQueue);
@@ -88,7 +95,7 @@ void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueu
   if (_rulesTooHarsh or (_searchSpace.empty() and _tuningTime == 0)) {
     _rulesTooHarsh = true;
     AutoPasLog(WARN, "Rules would remove all available options! Not applying them until next reset.");
-    return;
+    return false;
   }
 
   if (not _verifyModeEnabled) {
@@ -96,6 +103,8 @@ void RuleBasedTuning::optimizeSuggestions(std::vector<Configuration> &configQueu
     std::copy(_searchSpace.rbegin(), _searchSpace.rend(), std::back_inserter(configQueue));
   }
 #endif
+  // RuleBasedTuning does no intentional config wipes to stop the tuning phase
+  return false;
 }
 
 TuningStrategyOption RuleBasedTuning::getOptionType() const { return TuningStrategyOption::ruleBasedTuning; }

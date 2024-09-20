@@ -35,10 +35,10 @@ TYPED_TEST_P(LinkedCellsTest, testUpdateContainer) {
 
   // These are going to be halo particles
   const std::vector<autopas::Particle> haloParticles{
-      {{-0.5, +1.5, +1.5}, zero, 5},
-      {{+5.0, +1.5, +1.5}, zero, 6},
-      {{+1.5, -0.5, +1.5}, zero, 7},
-      {{+1.5, +1.5, -0.5}, zero, 8},
+      {{-0.5, +1.5, +1.5}, zero, 5, autopas::OwnershipState::halo},
+      {{+5.0, +1.5, +1.5}, zero, 6, autopas::OwnershipState::halo},
+      {{+1.5, -0.5, +1.5}, zero, 7, autopas::OwnershipState::halo},
+      {{+1.5, +1.5, -0.5}, zero, 8, autopas::OwnershipState::halo},
   };
 
   // calculate the cell IDs for each particle
