@@ -1179,9 +1179,9 @@ void LogicHandler<Particle>::computeRemainderInteractions2B(
 #endif
 
   // unpack particle SoAs. Halo data is not interesting
-  for (auto &buffer : particleBuffers) {
-    f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
-  }
+  // for (auto &buffer : particleBuffers) {
+  //   f->SoAExtractor(buffer, buffer._particleSoABuffer, 0);
+  // }
 
   AutoPasLog(TRACE, "Timer Buffers <-> Container (1+2): {}", timerBufferContainer.getTotalTime());
   AutoPasLog(TRACE, "Timer PBuffers<-> PBuffer   (  3): {}", timerPBufferPBuffer.getTotalTime());
@@ -1272,28 +1272,41 @@ void LogicHandler<Particle>::remainderHelperBufferBuffer(PairwiseFunctor *f,
                                                          std::vector<FullParticleCell<Particle>> &particleBuffers,
                                                          std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // All (halo-)buffer interactions shall happen vectorized, hence, load all buffer data into SoAs
-  for (auto &buffer : particleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  }
-  for (auto &buffer : haloParticleBuffers) {
-    f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
-  }
+  // for (auto &buffer : particleBuffers) {
+  //   f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  // }
+  // for (auto &buffer : haloParticleBuffers) {
+  //   f->SoALoader(buffer, buffer._particleSoABuffer, 0, /*skipSoAResize*/ false);
+  // }
 
-  AUTOPAS_OPENMP(parallel) {
-    // For buffer interactions where bufferA == bufferB we can always enable newton3. For all interactions between
-    // different buffers we turn newton3 always off, which ensures that only one thread at a time is writing to a
-    // buffer. This saves expensive locks.
-    // we can not use collapse here without locks, otherwise races would occur.
-    AUTOPAS_OPENMP(for)
-    for (size_t i = 0; i < particleBuffers.size(); ++i) {
-      for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
-        auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
-        const auto j = (i + jj) % particleBuffers.size();
-        if (i == j) {
-          f->SoAFunctorSingle(*particleBufferSoAA, true);
-        } else {
-          auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
-          f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+  // AUTOPAS_OPENMP(parallel) {
+  //   // For buffer interactions where bufferA == bufferB we can always enable newton3. For all interactions between
+  //   // different buffers we turn newton3 always off, which ensures that only one thread at a time is writing to a
+  //   // buffer. This saves expensive locks.
+  //   // we can not use collapse here without locks, otherwise races would occur.
+  //   AUTOPAS_OPENMP(for)
+  //   for (size_t i = 0; i < particleBuffers.size(); ++i) {
+  //     for (size_t jj = 0; jj < particleBuffers.size(); ++jj) {
+  //       auto *particleBufferSoAA = &particleBuffers[i]._particleSoABuffer;
+  //       const auto j = (i + jj) % particleBuffers.size();
+  //       if (i == j) {
+  //         f->SoAFunctorSingle(*particleBufferSoAA, true);
+  //       } else {
+  //         auto *particleBufferSoAB = &particleBuffers[j]._particleSoABuffer;
+  //         f->SoAFunctorPair(*particleBufferSoAA, *particleBufferSoAB, false);
+  //       }
+  //     }
+  //   }
+  // }
+  AUTOPAS_OPENMP(parallel for)
+  for (size_t i = 0; i < particleBuffers.size(); ++i) {
+    for (auto &p1 : particleBuffers[i]) {
+      for (size_t j = 0; j < particleBuffers.size(); ++j) {
+        for (auto &p2 : particleBuffers[j]) {
+          if (p1 == p2) {
+          } else {
+            f->AoSFunctor(p1, p2, false);
+          }
         }
       }
     }
@@ -1306,14 +1319,25 @@ void LogicHandler<Particle>::remainderHelperBufferHaloBuffer(
     PairwiseFunctor *f, std::vector<FullParticleCell<Particle>> &particleBuffers,
     std::vector<FullParticleCell<Particle>> &haloParticleBuffers) {
   // Here, phase / color based parallelism turned out to be more efficient than tasks
-  AUTOPAS_OPENMP(parallel)
-  for (int interactionOffset = 0; interactionOffset < haloParticleBuffers.size(); ++interactionOffset) {
-    AUTOPAS_OPENMP(for)
-    for (size_t i = 0; i < particleBuffers.size(); ++i) {
-      auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
-      auto &haloBufferSoA =
-          haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
-      f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
+  // AUTOPAS_OPENMP(parallel)
+  // for (int interactionOffset = 0; interactionOffset < haloParticleBuffers.size(); ++interactionOffset) {
+  //   AUTOPAS_OPENMP(for)
+  //   for (size_t i = 0; i < particleBuffers.size(); ++i) {
+  //     auto &particleBufferSoA = particleBuffers[i]._particleSoABuffer;
+  //     auto &haloBufferSoA =
+  //         haloParticleBuffers[(i + interactionOffset) % haloParticleBuffers.size()]._particleSoABuffer;
+  //     f->SoAFunctorPair(particleBufferSoA, haloBufferSoA, false);
+  //   }
+  // }
+
+  AUTOPAS_OPENMP(parallel for)
+  for (size_t i = 0; i < particleBuffers.size(); ++i) {
+    for (auto &p1 : particleBuffers[i]) {
+      for (size_t j = 0; j < haloParticleBuffers.size(); ++j) {
+        for (auto &p2 : haloParticleBuffers[j]) {
+          f->AoSFunctor(p1, p2, false);
+        }
+      }
     }
   }
 }
