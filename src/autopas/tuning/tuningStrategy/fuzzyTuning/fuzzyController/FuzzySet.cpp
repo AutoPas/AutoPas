@@ -108,7 +108,7 @@ double FuzzySet::meanOfMaximum(size_t numSamples) const {
       maxMembershipXs.clear();
     }
     // To avoid missing a maximum due to numerical inaccuracies, we use a small tolerance to compare the two values.
-    if (utils::Math::isNear(membership, maxMembershipValue, 1e-5)) {
+    if (utils::Math::isNearRel(membership, maxMembershipValue, 1e-5)) {
       maxMembershipXs.push_back(x);
     }
   }

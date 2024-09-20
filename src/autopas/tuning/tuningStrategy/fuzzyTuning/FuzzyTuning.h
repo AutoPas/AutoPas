@@ -102,7 +102,7 @@ class FuzzyTuning : public TuningStrategyInterface {
    */
   explicit FuzzyTuning(std::string fuzzyRuleFileName);
 
-  TuningStrategyOption getOptionType() const override;
+  [[nodiscard]] TuningStrategyOption getOptionType() const override;
 
   bool needsLiveInfo() const override;
 
@@ -110,10 +110,10 @@ class FuzzyTuning : public TuningStrategyInterface {
 
   void addEvidence(const Configuration &configuration, const Evidence &evidence) override;
 
-  void reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+  bool reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
              const autopas::EvidenceCollection &evidenceCollection) override;
 
-  void optimizeSuggestions(std::vector<Configuration> &configQueue,
+  bool optimizeSuggestions(std::vector<Configuration> &configQueue,
                            const EvidenceCollection &evidenceCollection) override;
 
   /**

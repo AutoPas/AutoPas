@@ -97,7 +97,7 @@ void FuzzyTuning::receiveLiveInfo(const LiveInfo &info) {
 
 void FuzzyTuning::addEvidence(const Configuration &configuration, const Evidence &evidence) {}
 
-void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
+bool FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Configuration> &configQueue,
                         const EvidenceCollection &evidenceCollection) {
 #ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
   using namespace autopas::FuzzyLogic;
@@ -121,14 +121,16 @@ void FuzzyTuning::reset(size_t iteration, size_t tuningPhase, std::vector<Config
   autopas::utils::ExceptionHandler::exception(
       "FuzzyTuning constructed but AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=OFF! ");
 #endif
+  return false;
 }
 
-void FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
+bool FuzzyTuning::optimizeSuggestions(std::vector<Configuration> &configQueue,
                                       const EvidenceCollection &evidenceCollection) {
   // This is left empty because the FuzzyTuning strategy is only run once at the beginning of a tuning phase.
   AutoPasLog(TRACE,
              "FuzzyTuning: optimizeSuggestions called. This method does nothing, as reset() already updated the "
              "config-queue");
+  return false;
 }
 
 TuningStrategyOption FuzzyTuning::getOptionType() const { return TuningStrategyOption::fuzzyTuning; }
