@@ -58,13 +58,15 @@ FuzzyTuning::FuzzyTuning(std::string fuzzyRuleFileName) : _fuzzyRuleFileName(std
                          const std::pair<const std::string, std::shared_ptr<FuzzyLogic::FuzzyControlSystem>> &b) {
                         return acc + std::string(*b.second);
                       });
-
-  AutoPasLog(INFO, "FuzzyTuning initialized with the following Rules:");
-  AutoPasLog(INFO, "{}", settingsStr);
-  AutoPasLog(INFO, "{}", linguisticVariablesStr);
-  AutoPasLog(INFO, "{}", outputMappingsStr);
-  AutoPasLog(INFO, "{}", fuzzyControlSystemsStr);
-
+  int myRank{};
+  AutoPas_MPI_Comm_rank(AUTOPAS_MPI_COMM_WORLD, &myRank);
+  if (myRank == 0) {
+    AutoPasLog(INFO, "FuzzyTuning initialized with the following Rules:");
+    AutoPasLog(INFO, "{}", settingsStr);
+    AutoPasLog(INFO, "{}", linguisticVariablesStr);
+    AutoPasLog(INFO, "{}", outputMappingsStr);
+    AutoPasLog(INFO, "{}", fuzzyControlSystemsStr);
+  }
   _fuzzyControlSettings = fuzzyControlSettings;
   _fuzzyControlSystems = fuzzyControlSystems;
   _outputMappings = outputMappings;
