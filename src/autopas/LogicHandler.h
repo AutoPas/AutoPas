@@ -414,7 +414,7 @@ class LogicHandler {
   template <class Iterator>
   typename Iterator::ParticleVecType gatherAdditionalVectors(IteratorBehavior behavior) {
     typename Iterator::ParticleVecType additionalVectors;
-    if (!(behavior & IteratorBehavior::containerOnly)) {
+    if (not(behavior & IteratorBehavior::containerOnly)) {
       additionalVectors.reserve(static_cast<bool>(behavior & IteratorBehavior::owned) * _particleBuffer.size() +
                                 static_cast<bool>(behavior & IteratorBehavior::halo) * _haloParticleBuffer.size());
       if (behavior & IteratorBehavior::owned) {
@@ -562,9 +562,10 @@ class LogicHandler {
     if (_rebuildIntervals.empty()) {
       return 0.;
     } else {
-      // Neglecting the first entry in the vector as _stepsSinceLastListRebuild is initialised to a very large value
-      // which gets stored into the vector on the very first rebuild. This large value is ignored in the calculating the
-      // mean value below.
+      // Neglecting the first entry in the vector as _stepsSinceLastListRebuild is initialized to a very large value,
+      // to trigger the first rebuild when starting the simulation,
+      // which gets stored in the vector on the very first rebuild.
+      // This large value is ignored when calculating the mean value below.
       return std::accumulate(_rebuildIntervals.begin() + 1, _rebuildIntervals.end(), 0.) /
              static_cast<double>(_rebuildIntervals.size() - 1);
     }
@@ -883,9 +884,7 @@ void LogicHandler<Particle>::checkNeighborListsInvalidDoDynamicRebuild() {
     const auto distance = iter->calculateDisplacementSinceRebuild();
     const double distanceSquare = utils::ArrayMath::dot(distance, distance);
 
-    if (distanceSquare >= halfSkinSquare) {
-      _neighborListInvalidDoDynamicRebuild = true;
-    }
+    _neighborListInvalidDoDynamicRebuild |= distanceSquare >= halfSkinSquare;
   }
 }
 
