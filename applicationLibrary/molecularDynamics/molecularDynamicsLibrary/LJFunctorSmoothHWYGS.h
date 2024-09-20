@@ -2,7 +2,7 @@
 //modified by ivander alson tanjaya 08.09.2024
 
 #pragma once
-
+#include <chrono>
 #include "ParticlePropertiesLibrary.h"
 #include "VectorizationPatterns.h"
 #include "autopas/pairwiseFunctors/Functor.h"
@@ -28,6 +28,11 @@ using VectorDouble = decltype(highway::Zero(tag_double));
 using VectorLong = decltype(highway::Zero(tag_long));
 using MaskDouble = decltype(highway::FirstN(tag_double, 1));
 using MaskLong = decltype(highway::FirstN(tag_long, 2));
+//time counter
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::duration;
+using std::chrono::milliseconds;
 
 template <class Particle, bool applyShift = false, bool useMixing = false,
           autopas::FunctorN3Modes useNewton3 = autopas::FunctorN3Modes::Both, bool calculateGlobals = false,
@@ -730,10 +735,14 @@ class LJFunctorSmoothHWYGS
       const auto dr2 = drX2 + drY2 + drZ2;
 
       const auto cutoffMask = highway::Le(dr2, _cutoffSquared);
-      const auto innerCutoffMask = highway::Ge(dr2,_innerCutoffSquared);
-      const auto zeroMask = highway::Ne(dr2, _zeroDouble);
       const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
+      const auto zeroMask = highway::Ne(dr2, _zeroDouble);
       auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
+      //huge difference!!!! 4-6 times speedup
+      if (highway::AllFalse(tag_double, cutoffDummyMask)) {
+            return;
+      }
+      const auto innerCutoffMask = highway::Ge(dr2,_innerCutoffSquared);
       auto innerCutoffDummyMask = highway::And(zeroMask, highway::And(innerCutoffMask, dummyMask));
 
       const auto temp = highway::And(innerCutoffDummyMask, cutoffDummyMask);
@@ -769,7 +778,6 @@ class LJFunctorSmoothHWYGS
         interactionIndices = highway::IfThenElseZero(_alreadyProcessedMask,newInteractionIndices);
         interactionIndices = alignr(_zeroDouble,interactionIndices,popCountMask);
         numAssignedRegisters = popCountMask - (_vecLengthDouble - numAssignedRegisters);
-
       }
 
       //gathering indices for the smoothed functor
@@ -1514,7 +1522,6 @@ class LJFunctorSmoothHWYGS
     if (highway::AllFalse(tag_double, cutoffDummyMask)) {
       return;
     }
-
     //compute smoothing factor
     const auto drtrue = highway::Sqrt(dr2);
     const auto temp = drtrue - _innerCutoff;
@@ -1526,6 +1533,7 @@ class LJFunctorSmoothHWYGS
     const auto smoothingTerm = _oneDouble - fraction;
     const auto smoothingMasked = highway::IfThenElse(innerCutoffDummyMask,smoothingTerm,_oneDouble);
 
+
     // compute LJ Potential
     const auto invDr2 = _oneDouble / dr2;
     const auto lj2 = sigmaSquareds * invDr2;
@@ -1536,6 +1544,7 @@ class LJFunctorSmoothHWYGS
     const auto lj12m6alj12 = lj12m6 + lj12;
     const auto lj12m6alj12e = lj12m6alj12 * epsilon24s;
     const auto fac = lj12m6alj12e * invDr2 * smoothingMasked;
+
 
     const auto facMasked = highway::IfThenElseZero(cutoffDummyMask, fac);
 
@@ -1656,7 +1665,7 @@ class LJFunctorSmoothHWYGS
         ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
-      SoAKernel<newton3, false, false>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
+      SoAKernelSmooth<newton3, false, false>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
                                        x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
                                        &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
                                        virialSumY, virialSumZ, uPotSum, 0, 0);
@@ -1686,10 +1695,10 @@ class LJFunctorSmoothHWYGS
         ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
-      SoAKernel<newton3, false, true>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
+      SoAKernelSmooth<newton3, false, true>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
                                       x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
                                       &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
-                                      virialSumY, virialSumZ, uPotSum, 0, rest);
+                                     virialSumY, virialSumZ, uPotSum, 0, rest);
 
       if constexpr (newton3) {
 
@@ -1785,7 +1794,7 @@ class LJFunctorSmoothHWYGS
         ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
-      SoAKernel<newton3, false, false>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
+      SoAKernelSmooth<newton3, false, false>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
                                        x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
                                        &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
                                        virialSumY, virialSumZ, uPotSum, 0, 0);
@@ -1816,7 +1825,7 @@ class LJFunctorSmoothHWYGS
         ownedStates2Tmp[vecIndex] = ownedStatePtr[neighborList[j + vecIndex]];
       }
 
-      SoAKernel<newton3, false, true>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
+      SoAKernelSmooth<newton3, false, true>(0, ownedMaskI, reinterpret_cast<const int64_t *>(ownedStates2Tmp.data()), x1, y1, z1,
                                       x2Tmp.data(), y2Tmp.data(), z2Tmp.data(), fx2Tmp.data(), fy2Tmp.data(), fz2Tmp.data(),
                                       &typeIDPtr[indexFirst], typeID2Tmp.data(), fxAcc, fyAcc, fzAcc, virialSumX,
                                       virialSumY, virialSumZ, uPotSum, 0, rest);
@@ -2025,7 +2034,7 @@ class LJFunctorSmoothHWYGS
   const VectorDouble _twoDouble {highway::Set(tag_double, 2.)};
   const VectorLong _oneLong {highway::Set(tag_long, 1)};
   double asc[_vecLengthDouble];
-   VectorDouble _ascendingIndices{};
+  VectorDouble _ascendingIndices{};
   const VectorDouble _ownedStateDummy{highway::Zero(tag_double)};
   const VectorDouble _cutoffSquared {};
   const VectorDouble _cutoff {};
@@ -2055,6 +2064,10 @@ class LJFunctorSmoothHWYGS
   std::array<double, 3> _virialSum;
   std::vector<AoSThreadData> _aosThreadData;
   bool _postProcessed;
+  public:
+  duration<double, std::milli> timeSmoothAoS{0};
+  duration<double, std::milli> timeSmoothSoA{0};
+  duration<double, std::milli> timeNoSmoothSoA{0};
 };
 // } // Highway
 } // mdLib
