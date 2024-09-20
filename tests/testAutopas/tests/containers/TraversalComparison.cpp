@@ -322,7 +322,7 @@ static auto toString = [](const auto &info) {
 auto TraversalComparison::getTestParams() {
   std::vector<TestingTuple> testParams{};
   for (auto containerOption : autopas::ContainerOption::getAllOptions()) {
-    for (auto interactionType : autopas::InteractionTypeOption::getAllOptions()) {
+    for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
       for (auto traversalOption :
            autopas::compatibleTraversals::allCompatibleTraversals(containerOption, interactionType)) {
         for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {

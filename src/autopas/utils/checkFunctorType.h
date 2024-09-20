@@ -46,13 +46,13 @@ namespace autopas::utils {
  * @tparam FunctorT
  */
 template <typename FunctorT>
-using isPairwiseFunctor = decltype(isPairwiseFunctorImpl(std::declval<FunctorT &>()));
+using isPairwiseFunctor = decltype(isPairwiseFunctorImpl(std::declval<FunctorT>()));
 
 /**
  * Check whether a Functor Type is inheriting from TriwiseFunctor
  * @tparam FunctorT
  */
 template <typename FunctorT>
-using isTriwiseFunctor = decltype(isTriwiseFunctorImpl(std::declval<FunctorT &>()));
+using isTriwiseFunctor = decltype(isTriwiseFunctorImpl(std::declval<FunctorT>()));
 
 }  // namespace autopas::utils

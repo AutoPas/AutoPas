@@ -54,7 +54,7 @@ INSTANTIATE_TEST_SUITE_P(
         autopas::ParticleContainerInterface<Particle> &container = containerSelector.getCurrentContainer();
 
         for (auto dataLayoutOption : autopas::DataLayoutOption::getAllOptions()) {
-          for (auto interactionType : autopas::InteractionTypeOption::getAllOptions()) {
+          for (auto interactionType : autopas::InteractionTypeOption::getMostOptions()) {
             for (auto traversalOption : container.getAllTraversals(interactionType)) {
               // this is the functor that will be used in the test.
               bool configOk = false;

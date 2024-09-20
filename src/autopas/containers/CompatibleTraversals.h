@@ -253,7 +253,7 @@ std::set<TraversalOption> filterAllOptions(const std::string &prefix, const Inte
   std::set<ContainerOption> result{};
 
   for (const auto &container : ContainerOption::getAllOptions()) {
-    for (const auto &interactionType : InteractionTypeOption::getAllOptions()) {
+    for (const auto &interactionType : InteractionTypeOption::getMostOptions()) {
       auto allCompatible = compatibleTraversals::allCompatibleTraversals(container, interactionType);
       if (allCompatible.find(traversalOption) != allCompatible.end()) {
         result.insert(container);
