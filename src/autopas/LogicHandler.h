@@ -793,6 +793,8 @@ class LogicHandler {
 
   /**
    * Locks for regions in the domain. Used for buffer <-> container interaction.
+   * The number of locks depends on the size of the domain and interaction length but is capped to avoid
+   * having an insane number of locks. For details see initSpacialLocks().
    */
   std::vector<std::vector<std::vector<std::unique_ptr<std::mutex>>>> _spacialLocks;
 
