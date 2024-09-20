@@ -575,7 +575,7 @@ class LogicHandler {
     constexpr size_t maxNumSpacialLocks{1000000};
 
     // One lock per interaction length or less if this would generate too many.
-    const auto locksPerDim = [&]() {
+    const std::array<size_t, 3> locksPerDim = [&]() {
       // First naively calculate the number of locks if we simply take the desired cell length.
       // Ceil because both decisions are possible, and we are generous gods.
       const std::array<size_t, 3> locksPerDimNaive =
