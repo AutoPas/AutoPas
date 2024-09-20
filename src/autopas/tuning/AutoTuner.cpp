@@ -134,12 +134,6 @@ bool AutoTuner::tuneConfiguration() {
     });
   } else {
     // CASE: somewhere in a tuning phase
-
-    if (_iteration % _tuningInterval == 0) {
-      AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
-                 _tuningInterval);
-    }
-
     _isTuning = true;
     AutoPasLog(DEBUG, "ConfigQueue at tuneConfiguration before optimizeSuggestions: (Size={}) {}", _configQueue.size(),
                utils::ArrayUtils::to_string(_configQueue, ", ", {"[", "]"},
@@ -299,6 +293,11 @@ void AutoTuner::bumpIterationCounters() {
 
   if (_iteration % _tuningInterval == 0) {
     ++_tuningPhase;
+
+    if (_isTuning) {
+      AutoPasLog(WARN, "Warning: Tuning needs more iterations than the specified tuning interval of {}!",
+                 _tuningInterval);
+    }
   }
 }
 
