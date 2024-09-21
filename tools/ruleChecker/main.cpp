@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
   int numErrors = 0;
   constexpr double bigErrorThreshold = 1.15;
   int numBigErrors = 0;
-  auto errorHandler = [&](const autopas::rule_syntax::ConfigurationOrder &order,
+  auto errorHandler = [&](const autopas::RuleSyntax::ConfigurationOrder &order,
                           const autopas::Configuration &actualBetterConfig, unsigned long betterRuntime,
                           const autopas::Configuration &shouldBeBetterConfig, unsigned long shouldBeBetterRuntime,
                           const autopas::LiveInfo &liveInfo) {

@@ -7,7 +7,7 @@
 #include "RuleLanguageVisitor.h"
 #include "antlr4-runtime.h"
 
-namespace autopas_generated_rule_syntax {
+namespace AutopasGeneratedRuleSyntax {
 
 /**
  * This class provides an empty implementation of RuleLanguageVisitor, which can be
@@ -56,4 +56,4 @@ class RuleLanguageBaseVisitor : public RuleLanguageVisitor {
   }
 };
 
-}  // namespace autopas_generated_rule_syntax
+}  // namespace AutopasGeneratedRuleSyntax
