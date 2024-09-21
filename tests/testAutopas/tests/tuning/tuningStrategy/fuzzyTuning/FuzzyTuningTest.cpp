@@ -573,4 +573,4 @@ if ("homogeneity" == "lower than 0.041") && ("particlesPerCellStdDev" == "lower 
   auto result = newtonSystem->predict(data);
   EXPECT_NEAR(result, 0.6667, 1e-2);
 }
-#endif //AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
+#endif  // AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
