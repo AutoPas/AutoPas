@@ -1402,12 +1402,12 @@ template <bool newton3, class ContainerType, class TriwiseFunctor>
 void LogicHandler<Particle>::remainderHelper3bBufferContainerContainer(const std::vector<Particle *> &bufferParticles,
                                                                        const size_t numOwnedBufferParticles,
                                                                        ContainerType &container, TriwiseFunctor *f) {
+  // Todo: parallelize without race conditions - https://github.com/AutoPas/AutoPas/issues/904
   using autopas::utils::ArrayUtils::static_cast_copy_array;
   using namespace autopas::utils::ArrayMath::literals;
 
   const double cutoff = container.getCutoff();
 
-  AUTOPAS_OPENMP(parallel for)
   for (auto i = 0; i < bufferParticles.size(); ++i) {
     Particle &p1 = *bufferParticles[i];
     const auto pos = p1.getR();
@@ -1421,17 +1421,22 @@ void LogicHandler<Particle>::remainderHelper3bBufferContainerContainer(const std
 
       auto p3Iter = p2Iter;
       ++p3Iter;
+
       for (; p3Iter.isValid(); ++p3Iter) {
         Particle &p3 = *p3Iter;
 
-        if (i < numOwnedBufferParticles) {
-          f->AoSFunctor(p1, p2, p3, false);
-        }
-        if (p2.isOwned()) {
-          f->AoSFunctor(p2, p1, p3, false);
-        }
-        if (p3.isOwned()) {
-          f->AoSFunctor(p3, p1, p2, false);
+        if constexpr (newton3) {
+          f->AoSFunctor(p1, p2, p3, true);
+        } else {
+          if (i < numOwnedBufferParticles) {
+            f->AoSFunctor(p1, p2, p3, false);
+          }
+          if (p2.isOwned()) {
+            f->AoSFunctor(p2, p1, p3, false);
+          }
+          if (p3.isOwned()) {
+            f->AoSFunctor(p3, p1, p2, false);
+          }
         }
       }
     }
