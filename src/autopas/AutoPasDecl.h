@@ -981,6 +981,14 @@ class AutoPas {
   void setRuleFileName(const std::string &ruleFileName) { _tuningStrategyFactoryInfo.ruleFileName = ruleFileName; }
 
   /**
+   * Set fuzzy rule file name for the RuleBasedTuning.
+   * @param fuzzyRuleFileName The name of the fuzzy rule file to use during rule based tuning.
+   */
+  void setFuzzyRuleFileName(const std::string &fuzzyRuleFileName) {
+    _tuningStrategyFactoryInfo.fuzzyRuleFileName = fuzzyRuleFileName;
+  }
+
+  /**
    * Get the name / path of the rule file for the RuleBasedTuning.
    * @return
    */
