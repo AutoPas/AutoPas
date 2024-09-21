@@ -285,6 +285,9 @@ std::string MDFlexConfig::to_string() const {
   if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::ruleBasedTuning})) {
     printOption(ruleFilename);
   }
+  if (tuningStrategyOptionsContainAnyOf({autopas::TuningStrategyOption::fuzzyTuning})) {
+    printOption(fuzzyRuleFilename);
+  }
 
   // TODO: C++20 Use contains instead of count
   if (getInteractionTypes().count(autopas::InteractionTypeOption::pairwise)) {
