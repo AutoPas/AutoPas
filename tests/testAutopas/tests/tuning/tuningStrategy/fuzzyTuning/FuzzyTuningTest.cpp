@@ -4,11 +4,12 @@
  * @date 30.06.2024
  */
 
+// Disable these tests if fuzzy tuning is not enabled
+#ifdef AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
 #include "FuzzyTuningTest.h"
 
 #include <filesystem>
 #include <fstream>
-#include <iostream>
 
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/FuzzyTuning.h"
 #include "autopas/tuning/tuningStrategy/fuzzyTuning/fuzzyController/FuzzySetFactory.h"
@@ -572,3 +573,4 @@ if ("homogeneity" == "lower than 0.041") && ("particlesPerCellStdDev" == "lower 
   auto result = newtonSystem->predict(data);
   EXPECT_NEAR(result, 0.6667, 1e-2);
 }
+#endif  // AUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING
