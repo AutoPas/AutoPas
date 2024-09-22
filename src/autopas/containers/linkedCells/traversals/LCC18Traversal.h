@@ -7,9 +7,9 @@
 #pragma once
 
 #include "LCTraversalInterface.h"
-#include "autopas/containers/cellPairTraversals/C18BasedTraversal.h"
+#include "autopas/baseFunctors/CellFunctor.h"
+#include "autopas/containers/cellTraversals/C18BasedTraversal.h"
 #include "autopas/options/DataLayoutOption.h"
-#include "autopas/pairwiseFunctors/CellFunctor.h"
 #include "autopas/utils/ArrayUtils.h"
 #include "autopas/utils/ThreeDimensionalMapping.h"
 #include "autopas/utils/WrapOpenMP.h"
@@ -28,8 +28,7 @@ namespace autopas {
  * @tparam PairwiseFunctor The functor that defines the interaction of two particles.
  */
 template <class ParticleCell, class PairwiseFunctor>
-class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
-                       public LCTraversalInterface<ParticleCell> {
+class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>, public LCTraversalInterface {
  public:
   /**
    * Constructor of the lc_c18 traversal.
@@ -38,13 +37,13 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
    * @param pairwiseFunctor The functor that defines the interaction of two particles.
    * @param interactionLength Interaction length (cutoff + skin).
    * @param cellLength cell length.
-   * @param dataLayout The data layout with which this traversal should be initialised.
+   * @param dataLayout The data layout with which this traversal should be initialized.
    * @param useNewton3 Parameter to specify whether the traversal makes use of newton3 or not.
    * @todo Pass cutoff to _cellFunctor instead of interactionLength, unless this functor is used to build verlet-lists,
    * in that case the interactionLength is needed!
    */
   explicit LCC18Traversal(const std::array<unsigned long, 3> &dims, PairwiseFunctor *pairwiseFunctor,
-                          double interactionLength, const std::array<double, 3> &cellLength,
+                          const double interactionLength, const std::array<double, 3> &cellLength,
                           DataLayoutOption dataLayout, bool useNewton3)
       : C18BasedTraversal<ParticleCell, PairwiseFunctor>(dims, pairwiseFunctor, interactionLength, cellLength,
                                                          dataLayout, useNewton3),
@@ -53,7 +52,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
     computeOffsets();
   }
 
-  void traverseParticlePairs() override;
+  void traverseParticles() override;
 
   /**
    * Computes all interactions between the base
@@ -74,7 +73,7 @@ class LCC18Traversal : public C18BasedTraversal<ParticleCell, PairwiseFunctor>,
   [[nodiscard]] bool isApplicable() const override { return true; }
 
   /**
-   * @copydoc autopas::CellPairTraversal::setSortingThreshold()
+   * @copydoc autopas::CellTraversal::setSortingThreshold()
    */
   void setSortingThreshold(size_t sortingThreshold) override { _cellFunctor.setSortingThreshold(sortingThreshold); }
 
@@ -203,7 +202,7 @@ void LCC18Traversal<ParticleCell, PairwiseFunctor>::processBaseCell(std::vector<
 }
 
 template <class ParticleCell, class PairwiseFunctor>
-inline void LCC18Traversal<ParticleCell, PairwiseFunctor>::traverseParticlePairs() {
+inline void LCC18Traversal<ParticleCell, PairwiseFunctor>::traverseParticles() {
   auto &cells = *(this->_cells);
   this->template c18Traversal</*allCells*/ false>(
       [&](unsigned long x, unsigned long y, unsigned long z) { this->processBaseCell(cells, x, y, z); });

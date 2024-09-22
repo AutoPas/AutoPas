@@ -171,60 +171,64 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionPair) {
   constexpr autopas::OwnershipState halo = autopas::OwnershipState::halo;
   constexpr autopas::OwnershipState ownedOrHalo = autopas::OwnershipState::owned | autopas::OwnershipState::halo;
 
-  // Test all reasonable combinations of owned / halo particles and cells
-  for (const auto ownershipParticleA : {owned, halo}) {
-    for (const auto ownershipParticleB : {owned, halo}) {
-      for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
-        for (const auto ownerShipStateCellB : {ownershipParticleB, ownedOrHalo}) {
-          LJFunctorType<> ljFunctor(cutoff);
-          ljFunctor.setParticleProperties(sigma, epsilon);
+  // Test with and without sorting
+  for (const auto sortingThreshold : {0, 100}) {
+    // Test all reasonable combinations of owned / halo particles and cells
+    for (const auto ownershipParticleA : {owned, halo}) {
+      for (const auto ownershipParticleB : {owned, halo}) {
+        for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
+          for (const auto ownerShipStateCellB : {ownershipParticleB, ownedOrHalo}) {
+            LJFunctorType<> ljFunctor(cutoff);
+            ljFunctor.setParticleProperties(sigma, epsilon);
 
-          ljFunctor.initTraversal();
+            ljFunctor.initTraversal();
 
-          CellFunctorType cellFunctor(&ljFunctor, cutoff);
+            CellFunctorType cellFunctor(&ljFunctor, cutoff);
+            cellFunctor.setSortingThreshold(sortingThreshold);
 
-          const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
-              cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownerShipStateCellB,
-              cellFunctor.getDataLayout(), ljFunctor, false);
+            const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
+                cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownerShipStateCellB,
+                cellFunctor.getDataLayout(), ljFunctor, false);
 
-          ljFunctor.endTraversal(cellFunctor.getNewton3());
+            ljFunctor.endTraversal(cellFunctor.getNewton3());
 
-          // EXPECTATIONS
-          if (ownershipCellA == halo and ownerShipStateCellB == halo) {
-            EXPECT_EQ(forceParticleA, 0)
-                << "Particle in Cell1 is experiencing force with both cells containing only halo particles."
-                   "\nCell1: "
-                << ownershipCellA << "\nCell2: " << ownerShipStateCellB << "\nParticle in Cell1: " << ownershipParticleA
-                << "\nParticle in Cell2: " << ownershipParticleB;
-            EXPECT_EQ(forceParticleB, 0)
-                << "Particle in Cell2 is experiencing force with with both cells containing only halo particles."
-                   "\nCell1: "
-                << ownershipCellA << "\nCell2: " << ownerShipStateCellB << "\nParticle in Cell1: " << ownershipParticleA
-                << "\nParticle in Cell2: " << ownershipParticleB;
-          } else if (ownershipCellA == halo and (not cellFunctor.getNewton3()) and
-                     (not cellFunctor.getBidirectional())) {
-            // if cell1 is halo, and NoN3 and no bidirectional we can skip the interaction
-            EXPECT_EQ(forceParticleA, 0) << "Particle in Cell1 is experiencing force with "
-                                            "OwnershipState halo, no newton3 and bidirectional off."
-                                            "\nCell1: "
-                                         << ownershipCellA << "\nCell2: " << ownerShipStateCellB
-                                         << "\nParticle in Cell1: " << ownershipParticleA
-                                         << "\nParticle in Cell2: " << ownershipParticleB;
-          } else {
-            // in all other cases we expect force on particle in Cell1
-            EXPECT_GT(forceParticleA, 0) << "Particle in Cell1 does not experience force."
-                                            "\nCell1: "
-                                         << ownershipCellA << "\nCell2: " << ownerShipStateCellB
-                                         << "\nParticle in Cell1: " << ownershipParticleA
-                                         << "\nParticle in Cell2: " << ownershipParticleB;
-
-            // if bidirectional or newton3=true we expect also force on particle in Cell2
-            if ((cellFunctor.getBidirectional() or cellFunctor.getNewton3()) and containsOwned(ownershipParticleB)) {
-              EXPECT_GT(forceParticleB, 0)
-                  << "Particle in Cell2 does not experience force."
+            // EXPECTATIONS
+            if (ownershipCellA == halo and ownerShipStateCellB == halo) {
+              EXPECT_EQ(forceParticleA, 0)
+                  << "Particle in Cell1 is experiencing force with both cells containing only halo particles."
                      "\nCell1: "
                   << ownershipCellA << "\nCell2: " << ownerShipStateCellB
                   << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+              EXPECT_EQ(forceParticleB, 0)
+                  << "Particle in Cell2 is experiencing force with with both cells containing only halo particles."
+                     "\nCell1: "
+                  << ownershipCellA << "\nCell2: " << ownerShipStateCellB
+                  << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+            } else if (ownershipCellA == halo and (not cellFunctor.getNewton3()) and
+                       (not cellFunctor.getBidirectional())) {
+              // if cell1 is halo, and NoN3 and no bidirectional we can skip the interaction
+              EXPECT_EQ(forceParticleA, 0)
+                  << "Particle in Cell1 is experiencing force with "
+                     "OwnershipState halo, no newton3 and bidirectional off."
+                     "\nCell1: "
+                  << ownershipCellA << "\nCell2: " << ownerShipStateCellB
+                  << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+            } else {
+              // in all other cases we expect force on particle in Cell1
+              EXPECT_GT(forceParticleA, 0)
+                  << "Particle in Cell1 does not experience force."
+                     "\nCell1: "
+                  << ownershipCellA << "\nCell2: " << ownerShipStateCellB
+                  << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+
+              // if bidirectional or newton3=true we expect also force on particle in Cell2
+              if ((cellFunctor.getBidirectional() or cellFunctor.getNewton3()) and containsOwned(ownershipParticleB)) {
+                EXPECT_GT(forceParticleB, 0)
+                    << "Particle in Cell2 does not experience force."
+                       "\nCell1: "
+                    << ownershipCellA << "\nCell2: " << ownerShipStateCellB
+                    << "\nParticle in Cell1: " << ownershipParticleA << "\nParticle in Cell2: " << ownershipParticleB;
+              }
             }
           }
         }
@@ -250,55 +254,59 @@ TYPED_TEST_P(CellFunctorTest, testOwnedAndHaloCellInteractionSingle) {
   constexpr autopas::OwnershipState halo = autopas::OwnershipState::halo;
   constexpr autopas::OwnershipState ownedOrHalo = autopas::OwnershipState::owned | autopas::OwnershipState::halo;
 
-  // Test all reasonable combinations of owned / halo particles and cells
-  for (const auto ownershipParticleA : {owned, halo}) {
-    for (const auto ownershipParticleB : {owned, halo}) {
-      for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
-        // skip inapplicable cases
-        if (ownershipCellA == owned and ownershipParticleB == halo) {
-          continue;
-        }
-        if (ownershipCellA == halo and ownershipParticleB == owned) {
-          continue;
-        }
-
-        LJFunctorType<> ljFunctor(cutoff);
-        ljFunctor.setParticleProperties(sigma, epsilon);
-
-        ljFunctor.initTraversal();
-
-        CellFunctorType cellFunctor(&ljFunctor, cutoff);
-
-        const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
-            cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownershipCellA,
-            cellFunctor.getDataLayout(), ljFunctor, true);
-
-        ljFunctor.endTraversal(cellFunctor.getNewton3());
-
-        // EXPECTATIONS
-        if (ownershipCellA == halo) {
-          EXPECT_EQ(forceParticleA, 0) << "Particle 1 is experiencing force."
-                                          "\nCell1: "
-                                       << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
-                                       << "\nParticle 2 in Cell1: " << ownershipParticleB;
-          EXPECT_EQ(forceParticleB, 0) << "Particle 2 is experiencing force."
-                                          "\nCell1: "
-                                       << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
-                                       << "\nParticle 2 in Cell1: " << ownershipParticleB;
-        } else {
-          // in all other cases we expect force on particle A in Cell1 as long as it is owned.
-          if (containsOwned(ownershipParticleA)) {
-            EXPECT_GT(forceParticleA, 0) << "Particle 1 in Cell1 does not experience force."
-                                            "\nCell1: "
-                                         << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
-                                         << "\nParticle 2 in Cell1: " << ownershipParticleB;
+  // Test with and without sorting
+  for (const auto sortingThreshold : {0, 100}) {
+    // Test all reasonable combinations of owned / halo particles and cells
+    for (const auto ownershipParticleA : {owned, halo}) {
+      for (const auto ownershipParticleB : {owned, halo}) {
+        for (const auto ownershipCellA : {ownershipParticleA, ownedOrHalo}) {
+          // skip inapplicable cases
+          if (ownershipCellA == owned and ownershipParticleB == halo) {
+            continue;
           }
-          // if bidirectional or newton3=true we expect also force on particle in Cell2
-          if ((cellFunctor.getBidirectional() or cellFunctor.getNewton3()) and containsOwned(ownershipParticleB)) {
-            EXPECT_GT(forceParticleB, 0) << "Particle 2 does not experience force."
+          if (ownershipCellA == halo and ownershipParticleB == owned) {
+            continue;
+          }
+
+          LJFunctorType<> ljFunctor(cutoff);
+          ljFunctor.setParticleProperties(sigma, epsilon);
+
+          ljFunctor.initTraversal();
+
+          CellFunctorType cellFunctor(&ljFunctor, cutoff);
+          cellFunctor.setSortingThreshold(sortingThreshold);
+
+          const auto &[forceParticleA, forceParticleB] = ownedHaloInteractionHelper<CellFunctorType>(
+              cellFunctor, ownershipParticleA, ownershipParticleB, ownershipCellA, ownershipCellA,
+              cellFunctor.getDataLayout(), ljFunctor, true);
+
+          ljFunctor.endTraversal(cellFunctor.getNewton3());
+
+          // EXPECTATIONS
+          if (ownershipCellA == halo) {
+            EXPECT_EQ(forceParticleA, 0) << "Particle 1 is experiencing force."
                                             "\nCell1: "
                                          << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
                                          << "\nParticle 2 in Cell1: " << ownershipParticleB;
+            EXPECT_EQ(forceParticleB, 0) << "Particle 2 is experiencing force."
+                                            "\nCell1: "
+                                         << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
+                                         << "\nParticle 2 in Cell1: " << ownershipParticleB;
+          } else {
+            // in all other cases we expect force on particle A in Cell1 as long as it is owned.
+            if (containsOwned(ownershipParticleA)) {
+              EXPECT_GT(forceParticleA, 0) << "Particle 1 in Cell1 does not experience force."
+                                              "\nCell1: "
+                                           << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
+                                           << "\nParticle 2 in Cell1: " << ownershipParticleB;
+            }
+            // for a single cell always expect force on particle 2 too
+            if (containsOwned(ownershipParticleB)) {
+              EXPECT_GT(forceParticleB, 0) << "Particle 2 does not experience force."
+                                              "\nCell1: "
+                                           << ownershipCellA << "\nParticle 1 in Cell1: " << ownershipParticleA
+                                           << "\nParticle 2 in Cell1: " << ownershipParticleB;
+            }
           }
         }
       }

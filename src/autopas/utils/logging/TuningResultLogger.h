@@ -41,7 +41,7 @@ class TuningResultLogger {
    * @param optimumPerformance Performance of the best configuration
    */
   void logTuningResult(const autopas::Configuration &configuration, size_t iteration, long timeTuning,
-                       long optimumPerformance);
+                       long optimumPerformance) const;
 
  private:
   std::string _loggerName;

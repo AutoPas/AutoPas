@@ -12,14 +12,16 @@
 
 namespace autopas {
 
-ActiveHarmony::ActiveHarmony(const std::set<ContainerOption> &allowedContainerOptions,
+ActiveHarmony::ActiveHarmony(const InteractionTypeOption &interactionType,
+                             const std::set<ContainerOption> &allowedContainerOptions,
                              const NumberSet<double> &allowedCellSizeFactors,
                              const std::set<TraversalOption> &allowedTraversalOptions,
                              const std::set<LoadEstimatorOption> &allowedLoadEstimatorOptions,
                              const std::set<DataLayoutOption> &allowedDataLayoutOptions,
                              const std::set<Newton3Option> &allowedNewton3Options, bool mpiDivideAndConquer,
                              AutoPas_MPI_Comm comm)
-    : _allowedContainerOptions(allowedContainerOptions),
+    : _interactionType(interactionType),
+      _allowedContainerOptions(allowedContainerOptions),
       _allowedCellSizeFactors(allowedCellSizeFactors.clone()),
       _allowedTraversalOptions(allowedTraversalOptions),
       _allowedLoadEstimatorOptions(allowedLoadEstimatorOptions),
@@ -103,7 +105,8 @@ Configuration ActiveHarmony::fetchConfiguration() {
     cellSizeFactor = ah_get_real(htask, cellSizeFactorsName);
   }
 
-  return {containerOption, cellSizeFactor, traversalOption, loadEstimatorOption, dataLayoutOption, newton3Option};
+  return {containerOption,  cellSizeFactor, traversalOption, loadEstimatorOption,
+          dataLayoutOption, newton3Option,  _interactionType};
 #else
   return {};
 #endif

@@ -74,19 +74,24 @@ const std::string makeErrorMsg(const YAML::Mark &mark, const std::string &key, c
  * @param node root-YAML-node of a complex-type.
  * @param key The key to parse.
  * @param complexTypeErrors Vector to store all errors during parsing of one complex-type node
+ * @param required Throw error if a value is required
  * @return Parsed value of key. Throws a runtime_error if key could not be parsed.
  */
 template <typename T>
 const T parseComplexTypeValueSingle(const YAML::Node node, const std::string &key,
-                                    std::vector<std::string> &complexTypeErrors) {
+                                    std::vector<std::string> &complexTypeErrors, bool required = true) {
   T value;
   try {
     value = node[key].as<T>();
   } catch (const std::exception &e) {
-    std::stringstream ss;
-    ss << "Error parsing " << key << ". Make sure that key \"" << key
-       << "\" exists and has the expected value: " << typeToStr<T>();
-    complexTypeErrors.push_back(ss.str());
+    if (required) {
+      std::stringstream ss;
+      ss << "Error parsing " << key << ". Make sure that key \"" << key
+         << "\" exists and has the expected value: " << typeToStr<T>();
+      complexTypeErrors.push_back(ss.str());
+    } else {
+      return T{};
+    }
   }
   return value;
 }
