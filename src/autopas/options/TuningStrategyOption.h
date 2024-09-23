@@ -61,6 +61,10 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
      */
     ruleBasedTuning,
     /**
+     * Uses a fuzzy logic system to predict the best configuration based on a set of fuzzy-rules.
+     */
+    fuzzyTuning,
+    /**
      * Dynamic blacklist that throws out configurations that perform poorly.
      */
     slowConfigFilter,
@@ -120,6 +124,7 @@ class TuningStrategyOption : public Option<TuningStrategyOption> {
         {TuningStrategyOption::activeHarmony, "active-harmony"},
         {TuningStrategyOption::predictiveTuning, "predictive-tuning"},
         {TuningStrategyOption::ruleBasedTuning, "rule-based-tuning"},
+        {TuningStrategyOption::fuzzyTuning, "fuzzy-tuning"},
         {TuningStrategyOption::slowConfigFilter, "slow-config-filter"},
         {TuningStrategyOption::tuningStrategyLogger, "tuning-strategy-logger"},
         {TuningStrategyOption::sortByName, "sort-by-name"},

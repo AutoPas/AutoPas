@@ -8,8 +8,8 @@
 
 Optional:
 * For `tuningLogToSQL`: `libsqlite3`
-* For rule based tuning: `pkg-config`. By default, rule based tuning is disabled but can be enabled via the CMake 
-(see [below](#rule-based-tuning)).
+* For rule based tuning and fuzzy tuning: `pkg-config`. By default, rule based tuning and fuzzy tuning are disabled but can be enabled via the CMake 
+(see [below](#rules-based-tuning-fuzzy-tuning))
 
 There are a few more dependencies, however you don't need to install them because they come bundled with AutoPas.
 See [libs/](/libs) for a complete list.
@@ -38,17 +38,17 @@ Here is an example of a parallel compilation of the md-flexible example:
 cmake --build . --target md-flexible --parallel 12
 ```
 
-### Enabling Rule Based Tuning
-<a id="rule-based-tuning"> </a>
+### Enabling Rules-Based Tuning and Fuzzy Tuning
+<a id="rules-based-tuning-fuzzy-tuning"></a>
 
 
-One of the possible tuning strategies of AutoPas, rule based tuning, requires dependencies `antlr4cpp` and `uuid`. These
+Two of the possible tuning strategies of AutoPas, rules-based tuning and fuzzy-tuning, require dependencies `antlr4cpp` and `uuid`. These
 are bundled with AutoPas, but can take some time to compile and, in some rare cases, lead to compilation errors. 
 As such, by default, rule based tuning is disabled, and `antlr4cpp` and `uuid` are not compiled.
 
-Rule based tuning can be enabled using a CMake option:
+Both tuning strategies can be enabled via the CMake option:
 ```bash
-cmake -DAUTOPAS_ENABLE_RULE_BASED_TUNING=ON .. 
+cmake -DAUTOPAS_ENABLE_RULES_BASED_AND_FUZZY_TUNING=ON .. 
 ```
 
 ### Energy Measurements and Tuning
