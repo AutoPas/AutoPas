@@ -19,11 +19,11 @@ class AllContainersTestsBase : public AutoPasTestBase {
 
   template <class ParticleType = autopas::Particle>
   auto &getInitializedContainer(autopas::ContainerOption containerOptionToTest) {
-    const double skinPerTimestep = 0.01;
+    const double skin = 0.2;
     const unsigned int rebuildFrequency = 20;
     const double cellSizeFactor = 1;
 
-    const autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skinPerTimestep, rebuildFrequency, 32,
+    const autopas::ContainerSelectorInfo selectorInfo{cellSizeFactor, skin, rebuildFrequency, 32,
                                                       autopas::LoadEstimatorOption::none};
     selector.selectContainer(containerOptionToTest, selectorInfo);
     return selector.getCurrentContainer();

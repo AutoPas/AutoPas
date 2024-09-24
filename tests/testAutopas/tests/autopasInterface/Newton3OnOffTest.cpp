@@ -39,7 +39,7 @@ INSTANTIATE_TEST_SUITE_P(
           autopas::ContainerSelector<Particle> containerSelector(
               Newton3OnOffTest::getBoxMin(), Newton3OnOffTest::getBoxMax(), Newton3OnOffTest::getCutoff());
           autopas::ContainerSelectorInfo containerInfo(
-              Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkinPerTimestep(),
+              Newton3OnOffTest::getCellSizeFactor(), Newton3OnOffTest::getVerletSkin(),
               Newton3OnOffTest::getRebuildFrequency(), Newton3OnOffTest::getClusterSize(),
               autopas::LoadEstimatorOption::none);
 
@@ -84,9 +84,8 @@ void Newton3OnOffTest::countFunctorCalls(autopas::ContainerOption containerOptio
                                          autopas::TraversalOption traversalOption,
                                          autopas::DataLayoutOption dataLayout) {
   autopas::ContainerSelector<Particle> containerSelector(getBoxMin(), getBoxMax(), getCutoff());
-  const autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkinPerTimestep(),
-                                                     getRebuildFrequency(), getClusterSize(),
-                                                     autopas::LoadEstimatorOption::none);
+  const autopas::ContainerSelectorInfo containerInfo(getCellSizeFactor(), getVerletSkin(), getRebuildFrequency(),
+                                                     getClusterSize(), autopas::LoadEstimatorOption::none);
 
   containerSelector.selectContainer(containerOption, containerInfo);
 

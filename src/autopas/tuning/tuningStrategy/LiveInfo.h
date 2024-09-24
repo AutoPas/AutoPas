@@ -160,9 +160,10 @@ class LiveInfo {
         if (particlesInBin == 0) {
           ++numEmptyCellsLambda;
         } else {
-          // FIXME: Tobias explain this calculation (:
-          estimatedNumNeighborInteractionsLambda +=
-              static_cast<double>(particlesInBin * (particlesInBin * 27 - 1)) * 0.155;
+          const auto estimatedNumParticlesInVicinity = particlesInBin * (particlesInBin * 27 - 1);
+          // ratio of sphere volume to volume of 3x3x3 cubes where edge size of cube is same as the radius of sphere
+          constexpr double probabilityParticleWithinCutoff = 0.155;
+          estimatedNumNeighborInteractionsLambda += estimatedNumParticlesInVicinity * probabilityParticleWithinCutoff;
         }
         maxParticlesPerCellLambda = std::max(particlesInBin, maxParticlesPerCellLambda);
         minParticlesPerCellLambda = std::min(particlesInBin, minParticlesPerCellLambda);
