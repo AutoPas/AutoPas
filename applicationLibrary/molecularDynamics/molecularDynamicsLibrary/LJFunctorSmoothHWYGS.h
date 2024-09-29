@@ -670,18 +670,47 @@ class LJFunctorSmoothHWYGS
   }
 
   inline VectorDouble alignr(VectorDouble a,  VectorDouble b, int shift){
+#if HWY_TARGET <= HWY_AVX3_DL
+    switch(shift){
+      case 0:
+            return highway::detail::CombineShiftRightI64Lanes<0>(a,b);
+            break;
+      case 1:
+            return highway::detail::CombineShiftRightI64Lanes<1>(a,b);
+            break;
+      case 2:
+            return highway::detail::CombineShiftRightI64Lanes<2>(a,b);
+            break;
+      case 3:
+            return highway::detail::CombineShiftRightI64Lanes<3>(a,b);
+            break;
+      case 4:
+            return highway::detail::CombineShiftRightI64Lanes<4>(a,b);
+            break;
+      case 5:
+            return highway::detail::CombineShiftRightI64Lanes<5>(a,b);
+            break;
+      case 6:
+            return highway::detail::CombineShiftRightI64Lanes<6>(a,b);
+            break;
+      case 7:
+            return highway::detail::CombineShiftRightI64Lanes<7>(a,b);
+            break;
+      case 8:
+            return highway::detail::CombineShiftRightI64Lanes<8>(a,b);
+            break;
+      default:
+            return a;
+    }
+#else
     alignas(64) double concatenated[2 * _vecLengthDouble];
-
     // Store vectors 'a' and 'b' into concatenated array
     Store(a, tag_double, concatenated);
     Store(b, tag_double, concatenated + _vecLengthDouble);
-
     // Create a vector to hold the result
-    VectorDouble result;
-
     // Load the result starting from the appropriate position
-    result = highway::LoadU(tag_double,concatenated+shift);
-    return result;
+    return highway::LoadU(tag_double,concatenated+shift);
+#endif
   }
 
 
@@ -738,9 +767,8 @@ class LJFunctorSmoothHWYGS
       const auto dummyMask = highway::And(ownedMaskI, highway::Ne(ownedStateJDouble, _ownedStateDummy));
       const auto zeroMask = highway::Ne(dr2, _zeroDouble);
       auto cutoffDummyMask = highway::And(zeroMask, highway::And(cutoffMask, dummyMask));
-      //huge difference!!!! 4-6 times speedup
       if (highway::AllFalse(tag_double, cutoffDummyMask)) {
-            return;
+            continue;
       }
       const auto innerCutoffMask = highway::Ge(dr2,_innerCutoffSquared);
       auto innerCutoffDummyMask = highway::And(zeroMask, highway::And(innerCutoffMask, dummyMask));
