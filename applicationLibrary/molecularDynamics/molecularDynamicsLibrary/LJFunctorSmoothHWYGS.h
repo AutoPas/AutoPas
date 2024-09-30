@@ -517,31 +517,31 @@ class LJFunctorSmoothHWYGS
 
   inline VectorDouble alignr(VectorDouble a,  VectorDouble b, int shift) {
 
-    #if HWY_TARGET <= HWY_AVX3_DL
-        switch(shift){
-          case 0:
-            return a;
-          case 1:
-            return highway::detail::CombineShiftRightI64Lanes<1>(b,a);
-          case 2:
-            return highway::detail::CombineShiftRightI64Lanes<2>(b,a);
-          case 3:
-            return highway::detail::CombineShiftRightI64Lanes<3>(b,a);
-          case 4:
-            return highway::detail::CombineShiftRightI64Lanes<4>(b,a);
-          case 5:
-            return highway::detail::CombineShiftRightI64Lanes<5>(b,a);
-          case 6:
-            return highway::detail::CombineShiftRightI64Lanes<6>(b,a);
-          case 7:
-            return highway::detail::CombineShiftRightI64Lanes<7>(b,a);
-          case 8:
-            return b;
-          default:
-            return a;
+#if HWY_TARGET <= HWY_AVX3_DL
+    switch(shift){
+      case 0:
+        return a;
+      case 1:
+        return highway::detail::CombineShiftRightI64Lanes<1>(b,a);
+      case 2:
+        return highway::detail::CombineShiftRightI64Lanes<2>(b,a);
+      case 3:
+        return highway::detail::CombineShiftRightI64Lanes<3>(b,a);
+      case 4:
+        return highway::detail::CombineShiftRightI64Lanes<4>(b,a);
+      case 5:
+        return highway::detail::CombineShiftRightI64Lanes<5>(b,a);
+      case 6:
+        return highway::detail::CombineShiftRightI64Lanes<6>(b,a);
+      case 7:
+        return highway::detail::CombineShiftRightI64Lanes<7>(b,a);
+      case 8:
+        return b;
+      default:
+        return a;
 
-        }
-    #else
+    }
+#else
     double concatenated[2 * _vecLengthDouble];
     // Store vectors 'a' and 'b' into concatenated array
     Store(a, tag_double, concatenated);
@@ -549,7 +549,7 @@ class LJFunctorSmoothHWYGS
     // Create a vector to hold the result
     // Load the result starting from the appropriate position
     return highway::LoadU(tag_double,concatenated+shift);
-
+#endif
   }
 
 
