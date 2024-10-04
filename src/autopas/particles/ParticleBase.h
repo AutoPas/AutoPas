@@ -278,9 +278,19 @@ class ParticleBase {
   void setOwnershipState(OwnershipState ownershipState) { _ownershipState = ownershipState; }
 
   /**
-   * Enums used as ids for accessing and creating a dynamically sized SoA.
+   * Enums used as ids for attributes of this particle. Used for accessing and creating a SoA with a structure that is
+   * known only at compile-time.
    */
   enum AttributeNames : int { ptr, id, posX, posY, posZ, forceX, forceY, forceZ, ownershipState };
+
+  /**
+   * Enums used as ids for additional component types of this particle. Used for accessing and creating a SoA with a
+   * structure that is only known at compile-time. By "additional components", we mean components of the particle of
+   * which there are a run-time-known variable number of, per component type, per particle. See MultisiteMoleculeLJ
+   * in the molecularDynamicsLibrary in the applicationLibrary for an example. For most simple particles, this is not
+   * needed.
+   */
+  enum AdditionalComponentTypeNames : int {};
 
   /**
    * Floating Point Type used for this particle
@@ -316,18 +326,21 @@ class ParticleBase {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAMainPartitionType>::type::value_type get() {
+  constexpr auto get() {
     return this;
   }
 
   /**
-   * Getter, which allows access to an attribute of the main SoA partition using the corresponding attribute name (defined in AttributeNames).
+   * Getter, which allows access to a given main attribute using the corresponding attribute name. This is primarily
+   * used for constructing the main SoA partition of an SoA.
+   *
+   * By "main", we mean any attribute for which there is a fixed number per particle.
+   *
    * @tparam attribute Attribute name.
    * @return Value of the requested attribute.
-   * @note The value of owned is return as floating point number (true = 1.0, false = 0.0).
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAMainPartitionType>::type::value_type get() const {
+  constexpr auto get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {
@@ -345,8 +358,18 @@ class ParticleBase {
     } else if constexpr (attribute == AttributeNames::ownershipState) {
       return this->_ownershipState;
     } else {
-      utils::ExceptionHandler::exception("ParticleBase::get() unknown attribute {}", attribute);
+      utils::ExceptionHandler::exception("ParticleBase::get(): invalid main attribute {}", attribute);
     }
+  }
+
+  /**
+   * Getter, which allows access to a given attribute of a given additional particle component using the corresponding
+   * attribute name (defined in AttributeNames), the name of the additional component type (defined in
+   * AdditionalComponentTypeNames), and the index ("depth") of the desired component of that type.
+   */
+  template <AttributeNames attribute, AdditionalComponentTypeNames additionalComponentType>
+  auto get(size_t depth) const {
+    utils::ExceptionHandler::exception("ParticleBase::get({}) called, but ParticleBase has no additiona attributes", depth);
   }
 
   /**

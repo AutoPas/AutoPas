@@ -74,7 +74,7 @@ class MoleculeLJ : public autopas::Particle {
    * @return this.
    */
   template <AttributeNames attribute, std::enable_if_t<attribute == AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() {
+  constexpr auto get() {
     return this;
   }
   /**
@@ -85,7 +85,7 @@ class MoleculeLJ : public autopas::Particle {
    * @note Moving this function to the .cpp leads to undefined references
    */
   template <AttributeNames attribute, std::enable_if_t<attribute != AttributeNames::ptr, bool> = true>
-  constexpr typename std::tuple_element<attribute, SoAArraysType>::type::value_type get() const {
+  constexpr auto get() const {
     if constexpr (attribute == AttributeNames::id) {
       return getID();
     } else if constexpr (attribute == AttributeNames::posX) {

@@ -369,16 +369,15 @@ class Functor {
                                                    size_t arrayIndex, size_t maxDepth, std::index_sequence<attr...>) {
     // Loop over each partition of this type
     for (size_t depth = 0; depth < maxDepth; ++depth) {
-      // Todo add depth to RHS
       /**
        * This is a fold expression that "loop" over each attribute (see SoALoaderMainPartitionImpl). For each attribute,
        * it copies the RHS to the LHS:
-       * * RHS:
+       * * RHS: Calls the particle's getter with desired additionalPartitionTypeIndex and desired additional attribute.
        * * LHS: This is the "arrayIndex"'th element of the "attr"'th array in the relevant SoAPartition. This SoAPartition
        *   has type index "additionalPartitionTypeIndex" and is the partition of depth "depth" of this type.
        */
       ((std::get<attr>(std::get<additionalPartitionTypeIndex>(additionalPtr)[depth])[arrayIndex] =
-            cellIter->template get<std::get<additionalPartitionTypeIndex>(Functor_T::getNeededAdditionalAttr())[attr]>()), ...);
+            cellIter->template get<std::get<additionalPartitionTypeIndex, (Functor_T::getNeededAdditionalAttr())[attr]>(depth)>), ...);
     }
 
   }
